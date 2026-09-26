@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bảng 214 Bộ Thủ Chữ Hán Khang Hy - HanziGo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Serif SC", sans-serif;
+      background: #fdfbf7;
+      color: #1e293b;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header {
+      background: linear-gradient(135deg, #E85D3F, #CB4529);
+      color: white;
+      padding: 32px 24px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(232, 93, 63, 0.25);
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: gap;
+    }
+    h1 { font-size: 28px; font-weight: 900; margin-bottom: 6px; }
+    p.subtitle { font-size: 14px; opacity: 0.95; }
+    .print-btn {
+      background: white;
+      color: #E85D3F;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: transform 0.15s;
+    }
+    .print-btn:hover { transform: scale(1.05); }
+
+    .search-box {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+    }
+    .search-input {
+      flex: 1;
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      font-size: 14px;
+      outline: none;
+      background: white;
+    }
+    .search-input:focus { border-color: #E85D3F; }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #E85D3F;
+      margin: 24px 0 12px;
+      padding-left: 10px;
+      border-left: 4px solid #E85D3F;
+    }
+
+    .radicals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #f1e5d8;
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      border-color: #E85D3F;
+    }
+    .radical-char {
+      width: 48px;
+      height: 48px;
+      background: #fdeeee;
+      color: #E85D3F;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: 900;
+      font-family: "Noto Serif SC", serif;
+      flex-shrink: 0;
+    }
+    .info { flex: 1; min-width: 0; }
+    .name-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    .pinyin { font-size: 14px; font-weight: 800; color: #1e293b; }
+    .hanviet { font-size: 12px; font-weight: 700; color: #d97706; }
+    .meaning { font-size: 12px; color: #475569; margin-bottom: 4px; }
+    .examples { font-size: 11px; color: #94a3b8; }
+    .examples span { color: #0f172a; font-weight: 600; }
+
+    @media print {
+      body { background: white; padding: 0; }
+      header { background: none; color: black; padding: 0 0 16px; border-bottom: 2px solid #E85D3F; border-radius: 0; box-shadow: none; }
+      .print-btn, .search-box { display: none !important; }
+      .card { page-break-inside: avoid; border: 1px solid #ccc; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Bảng 214 Bộ Thủ Chữ Hán Khang Hy</h1>
+        <p class="subtitle">Tài liệu tra cứu chiết tự, âm Hán Việt, phiên âm Pinyin và chữ Hán tạo thành - HanziGo</p>
+      </div>
+      <button class="print-btn" onclick="window.print()">🖨️ In / Lưu PDF</button>
+    </header>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" class="search-input" placeholder="🔍 Tìm kiếm theo bộ thủ, Pinyin, âm Hán Việt hoặc ý nghĩa..." oninput="filterRadicals()">
+    </div>
+
+    <div id="content"></div>
+  </div>
+
+  <script>
+    const RADICALS = [
+      // 1 nét
+      { char: '一', pinyin: 'yī', hanviet: 'Nhất', strokes: 1, meaning: 'Số một, bắt đầu', ex: '三, 天, 下' },
+      { char: '丨', pinyin: 'gǔn', hanviet: 'Cổn', strokes: 1, meaning: 'Nét sổ thẳng đứng', ex: '中, 十, 丰' },
+      { char: '丶', pinyin: 'zhǔ', hanviet: 'Chủ', strokes: 1, meaning: 'Dấu chấm', ex: '丸, 凡, 丹' },
+      { char: '丿', pinyin: 'piě', hanviet: 'Phiệt', strokes: 1, meaning: 'Nét phẩy, uốn về trái', ex: '久, 升, 生' },
+      { char: '乙', pinyin: 'yǐ', hanviet: 'Ất', strokes: 1, meaning: 'Vị trí thứ hai thiên can', ex: '九, 也, 乞' },
+      { char: '亅', pinyin: 'jué', hanviet: 'Quyết', strokes: 1, meaning: 'Nét móc lên', ex: '了, 予, 矛' },
+
+      // 2 nét
+      { char: '二', pinyin: 'èr', hanviet: 'Nhị', strokes: 2, meaning: 'Số hai', ex: '于, 亚, 些' },
+      { char: '亠', pinyin: 'tóu', hanviet: 'Đầu', strokes: 2, meaning: 'Phần nắp, ở trên đầu', ex: '亡, 交, 京' },
+      { char: '人', pinyin: 'rén', hanviet: 'Nhân (亻)', strokes: 2, meaning: 'Con người, nhân loại', ex: '你, 他, 们, 伯' },
+      { char: '儿', pinyin: 'ér', hanviet: 'Nhi', strokes: 2, meaning: 'Trẻ em, người nhỏ', ex: '先, 光, 免' },
+      { char: '入', pinyin: 'rù', hanviet: 'Nhập', strokes: 2, meaning: 'Đi vào, tham gia', ex: '全, 內' },
+      { char: '八', pinyin: 'bā', hanviet: 'Bát (丷)', strokes: 2, meaning: 'Số tám, chia rẽ', ex: '公, 六, 分, 关' },
+      { char: '冂', pinyin: 'jiōng', hanviet: 'Quynh', strokes: 2, meaning: 'Vùng biên cương xa xôi', ex: '同, 冈, 网' },
+      { char: '冖', pinyin: 'mì', hanviet: 'Mịch', strokes: 2, meaning: 'Khăn trùm, che phủ', ex: '军, 冠, 冤' },
+      { char: '冫', pinyin: 'bīng', hanviet: 'Băng', strokes: 2, meaning: 'Băng tuyết, giá lạnh', ex: '冷, 冻, 冬, 冰' },
+      { char: '几', pinyin: 'jī', hanviet: 'Kỷ', strokes: 2, meaning: 'Bàn nhỏ, mấy', ex: '凡, 凤, 凭' },
+      { char: '凵', pinyin: 'kǎn', hanviet: 'Khảm', strokes: 2, meaning: 'Hố sâu, há miệng', ex: '凶, 凹, 凸' },
+      { char: '刀', pinyin: 'dāo', hanviet: 'Đao (刂)', strokes: 2, meaning: 'Con dao, chặt chém', ex: '分, 剪, 到, 别' },
+      { char: '力', pinyin: 'lì', hanviet: 'Lực', strokes: 2, meaning: 'Sức mạnh, nỗ lực', ex: '加, 功, 助, 动' },
+      { char: '勹', pinyin: 'bāo', hanviet: 'Bao', strokes: 2, meaning: 'Bao bọc, ôm lấy', ex: '包, 句, 匀' },
+      { char: '匕', pinyin: 'bǐ', hanviet: 'Chủy', strokes: 2, meaning: 'Cái thìa, cái muỗng', ex: '北, 匙, 化' },
+      { char: '匚', pinyin: 'fāng', hanviet: 'Phương', strokes: 2, meaning: 'Tủ đựng đồ, hộp', ex: '匠, 匡, 匪' },
+      { char: '十', pinyin: 'shí', hanviet: 'Thập', strokes: 2, meaning: 'Số mười, hoàn hảo', ex: '千, 午, 华, 协' },
+      { char: '卜', pinyin: 'bǔ', hanviet: 'Bặc', strokes: 2, meaning: 'Bói toán, tiên tri', ex: '卡, 占, 卧' },
+      { char: '卩', pinyin: 'jié', hanviet: 'Tiết (阝)', strokes: 2, meaning: 'Đốt tre, quỳ gối', ex: '即, 卷, 却' },
+      { char: '厂', pinyin: 'chǎng', hanviet: 'Hán', strokes: 2, meaning: 'Vách núi, nhà xưởng', ex: '历, 压, 厕, 原' },
+      { char: '厶', pinyin: 'sī', hanviet: 'Khư', strokes: 2, meaning: 'Riêng tư, cá nhân', ex: '去, 县, 参' },
+      { char: '又', pinyin: 'yòu', hanviet: 'Hựu', strokes: 2, meaning: 'Lại nữa, bàn tay phải', ex: '友, 双, 反, 发' },
+
+      // 3 nét
+      { char: '口', pinyin: 'kǒu', hanviet: 'Khẩu', strokes: 3, meaning: 'Miệng, nói năng, ăn uống', ex: '吃, 喝, 叫, 问, 听' },
+      { char: '囗', pinyin: 'wéi', hanviet: 'Vi', strokes: 3, meaning: 'Vây quanh, tường thành', ex: '国, 回, 因, 圆, 四' },
+      { char: '土', pinyin: 'tǔ', hanviet: 'Thổ', strokes: 3, meaning: 'Đất cát, thổ nhưỡng', ex: '地, 在, 城, 坡' },
+      { char: '士', pinyin: 'shì', hanviet: 'Sĩ', strokes: 3, meaning: 'Kẻ sĩ, trí thức', ex: '壮, 声, 处' },
+      { char: '夂', pinyin: 'zhǐ', hanviet: 'Trĩ', strokes: 3, meaning: 'Đi chậm rãi, đến sau', ex: '复, 夏, 条' },
+      { char: '夕', pinyin: 'xī', hanviet: 'Tịch', strokes: 3, meaning: 'Buổi chiều tối, đêm', ex: '外, 多, 夜' },
+      { char: '大', pinyin: 'dà', hanviet: 'Đại', strokes: 3, meaning: 'To lớn, vĩ đại', ex: '太, 天, 头, 奇' },
+      { char: '女', pinyin: 'nǚ', hanviet: 'Nữ', strokes: 3, meaning: 'Phụ nữ, giống cái', ex: '好, 妈, 姐, 妹, 她' },
+      { char: '子', pinyin: 'zǐ', hanviet: 'Tử', strokes: 3, meaning: 'Con cái, trẻ nhỏ', ex: '字, 学, 孩, 孙' },
+      { char: '宀', pinyin: 'mián', hanviet: 'Miên', strokes: 3, meaning: 'Mái nhà, che chở', ex: '家, 安, 室, 客, 定' },
+      { char: '寸', pinyin: 'cùn', hanviet: 'Thốn', strokes: 3, meaning: 'Tấc, đơn vị đo', ex: '对, 导, 封, 射' },
+      { char: '小', pinyin: 'xiǎo', hanviet: 'Tiểu', strokes: 3, meaning: 'Nhỏ bé, ít ỏi', ex: '少, 尖, 尘, 光' },
+      { char: '尸', pinyin: 'shī', hanviet: 'Thi', strokes: 3, meaning: 'Xác chết, thân thể', ex: '居, 屋, 展, 尺' },
+      { char: '山', pinyin: 'shān', hanviet: 'Sơn', strokes: 3, meaning: 'Núi non, đồi cao', ex: '峰, 岛, 岸, 岁' },
+      { char: '巛', pinyin: 'chuān', hanviet: 'Xuyên (川)', strokes: 3, meaning: 'Sông ngòi, dòng chảy', ex: '州, 巡, 顺' },
+      { char: '工', pinyin: 'gōng', hanviet: 'Công', strokes: 3, meaning: 'Thợ thuyền, công việc', ex: '左, 巧, 巨, 差' },
+      { char: '己', pinyin: 'jǐ', hanviet: 'Kỷ', strokes: 3, meaning: 'Bản thân mình', ex: '已, 巳, 导' },
+      { char: '巾', pinyin: 'jīn', hanviet: 'Cân', strokes: 3, meaning: 'Khăn vải, cờ xí', ex: '帮, 常, 市, 带' },
+      { char: '干', pinyin: 'gān', hanviet: 'Can', strokes: 3, meaning: 'Lá chắn, can thiệp, khô', ex: '年, 并, 平' },
+      { char: '广', pinyin: 'guǎng', hanviet: 'Quảng', strokes: 3, meaning: 'Ngôi nhà rộng trên đồi', ex: '店, 库, 府, 度, 座' },
+      { char: '弓', pinyin: 'gōng', hanviet: 'Cung', strokes: 3, meaning: 'Cây cung bắn tên', ex: '引, 弟, 张, 弱' },
+      { char: '心', pinyin: 'xīn', hanviet: 'Tâm (忄)', strokes: 3, meaning: 'Trái tim, tình cảm', ex: '想, 念, 快, 慢, 忙' },
+      { char: '手', pinyin: 'shǒu', hanviet: 'Thủ (扌)', strokes: 3, meaning: 'Bàn tay, thao tác', ex: '打, 拿, 找, 提, 扫' },
+      { char: '日', pinyin: 'rì', hanviet: 'Nhật', strokes: 4, meaning: 'Mặt trời, ban ngày', ex: '明, 时, 早, 星, 晴' },
+      { char: '月', pinyin: 'yuè', hanviet: 'Nguyệt', strokes: 4, meaning: 'Mặt trăng, cơ thể thịt (nhục)', ex: '期, 朋, 脑, 肚, 胖' },
+      { char: '木', pinyin: 'mù', hanviet: 'Mộc', strokes: 4, meaning: 'Cây cối, gỗ', ex: '本, 机, 李, 桌, 林' },
+      { char: '水', pinyin: 'shuǐ', hanviet: 'Thủy (氵)', strokes: 4, meaning: 'Nước, chất lỏng', ex: '江, 河, 海, 汉, 洗' },
+      { char: '火', pinyin: 'huǒ', hanviet: 'Hỏa (灬)', strokes: 4, meaning: 'Lửa, nhiệt độ', ex: '热, 点, 烧, 炒, 照' },
+      { char: '目', pinyin: 'mù', hanviet: 'Mục', strokes: 5, meaning: 'Mắt, thị giác', ex: '眼, 睛, 看, 睡' },
+      { char: '示', pinyin: 'shì', hanviet: 'Thị (礻)', strokes: 5, meaning: 'Thần linh, lễ bái', ex: '社, 祝, 福, 礼' },
+      { char: '言', pinyin: 'yán', hanviet: 'Ngôn (讠)', strokes: 7, meaning: 'Lời nói, ngôn ngữ', ex: '语, 话, 谁, 说, 请' },
+      { char: '走', pinyin: 'zǒu', hanviet: 'Tẩu', strokes: 7, meaning: 'Chạy, đi bộ', ex: '起, 超, 越, 赶' },
+      { char: '辶', pinyin: 'chuò', hanviet: 'Sước', strokes: 3, meaning: 'Chợt đi chợt dừng, đường sá', ex: '边, 远, 近, 进, 过' },
+      { char: '金', pinyin: 'jīn', hanviet: 'Kim (钅)', strokes: 8, meaning: 'Kim loại, vàng bạc', ex: '钱, 银, 钟, 铁, 错' },
+      { char: '食', pinyin: 'shí', hanviet: 'Thực (饣)', strokes: 8, meaning: 'Thức ăn, ẩm thực', ex: '饭, 饱, 饺, 馆, 饮' },
+      { char: '马', pinyin: 'mǎ', hanviet: 'Mã', strokes: 3, meaning: 'Con ngựa', ex: '骑, 骗, 驾, 驰' }
+    ];
+
+    function render(list) {
+      const container = document.getElementById('content');
+      container.innerHTML = '';
+
+      if (list.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding: 40px; color: #94a3b8; font-weight: bold;">Không tìm thấy bộ thủ phù hợp</div>';
+        return;
+      }
+
+      // Group by stroke count
+      const groups = {};
+      list.forEach(item => {
+        if (!groups[item.strokes]) groups[item.strokes] = [];
+        groups[item.strokes].push(item);
+      });
+
+      Object.keys(groups).sort((a,b) => a - b).forEach(stroke => {
+        const title = document.createElement('h3');
+        title.className = 'section-title';
+        title.textContent = `Nhóm ${stroke} Nét (${groups[stroke].length} bộ)`;
+        container.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.className = 'radicals-grid';
+
+        groups[stroke].forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="radical-char">${item.char}</div>
+            <div class="info">
+              <div class="name-row">
+                <span class="pinyin">${item.pinyin}</span>
+                <span class="hanviet">(${item.hanviet})</span>
+              </div>
+              <p class="meaning">${item.meaning}</p>
+              <p class="examples">Ví dụ: <span>${item.ex}</span></p>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+
+        container.appendChild(grid);
+      });
+    }
+
+    function filterRadicals() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      if (!q) {
+        render(RADICALS);
+        return;
+      }
+      const filtered = RADICALS.filter(item => 
+        item.char.includes(q) ||
+        item.pinyin.toLowerCase().includes(q) ||
+        item.hanviet.toLowerCase().includes(q) ||
+        item.meaning.toLowerCase().includes(q) ||
+        item.ex.includes(q)
+      );
+      render(filtered);
+    }
+
+    render(RADICALS);
+  </script>
+</body>
+</html>

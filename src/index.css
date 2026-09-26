@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --primary: #E85D3F;
+    --primary-light: #FDEEEB;
+    --primary-dark: #CB4529;
+    --secondary: #F4B942;
+    --secondary-light: #FEF7E9;
+    --dark: #243447;
+    --dark-surface: #1E293B;
+    --bg-warm: #FFF9F2;
+    --card-bg: #FFFFFF;
+    --border-color: #F1E5D8;
+    --success: #45B97C;
+    --success-light: #EBF8F2;
+    --text-muted: #748092;
+  }
+
+  .dark {
+    --bg-warm: #131B24;
+    --card-bg: #1B2636;
+    --border-color: #2B3A4F;
+    --dark: #F3F4F6;
+    --text-muted: #94A3B8;
+    --primary-light: #2D1E1B;
+    --secondary-light: #2D2619;
+    --success-light: #162B21;
+  }
+
+  body {
+    background-color: var(--bg-warm);
+    color: var(--dark);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom Tianzige / Mizige Grid for Chinese Character writing */
+.tianzige-grid {
+  background-color: #FFFFFF;
+  background-image: 
+    linear-gradient(to right, #F1E5D8 1px, transparent 1px),
+    linear-gradient(to bottom, #F1E5D8 1px, transparent 1px),
+    linear-gradient(45deg, transparent 49.5%, #F7EFE6 49.5%, #F7EFE6 50.5%, transparent 50.5%),
+    linear-gradient(-45deg, transparent 49.5%, #F7EFE6 49.5%, #F7EFE6 50.5%, transparent 50.5%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+}
+
+.tianzige-cross {
+  position: relative;
+}
+.tianzige-cross::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  border-top: 1px dashed #E5D5C5;
+  pointer-events: none;
+}
+.tianzige-cross::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  border-left: 1px dashed #E5D5C5;
+  pointer-events: none;
+}
+
+/* 3D Flip Card */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #E2D7CC;
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #2D3E53;
+}

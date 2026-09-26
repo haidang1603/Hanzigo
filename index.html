@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HanziGo — Học tiếng Trung dễ hơn mỗi ngày | Nền tảng học tiếng Trung hàng đầu cho người Việt</title>
+    <meta name="description" content="HanziGo là nền tảng học tiếng Trung trực tuyến hiện đại dành riêng cho người Việt. Học pinyin, từ vựng HSK, phát âm chuẩn, luyện viết chữ Hán và hội thoại thực tế." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%23E85D3F'/><text x='50%' y='62%' font-size='52' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'>汉</text><circle cx='80' cy='24' r='10' fill='%23F4B942'/></svg>" />
+  </head>
+  <body class="bg-[#FFF9F2] text-[#243447] min-h-screen transition-colors duration-200">
+    <div id="root"></div>
+    <script>
+      try {
+        const u = localStorage.getItem('hanzigo_user');
+        if (u) {
+          const parsed = JSON.parse(u);
+          if (!parsed.uid || parsed.email === 'minh.nguyen@hanzigo.vn' || parsed.streak > 0 || parsed.xp > 0 || (parsed.avatar && parsed.avatar.includes('unsplash'))) {
+            localStorage.removeItem('hanzigo_user');
+          }
+        }
+      } catch (e) {
+        localStorage.removeItem('hanzigo_user');
+      }
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

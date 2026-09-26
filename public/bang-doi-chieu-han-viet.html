@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bảng Quy Tắc Chuyển Âm Hán Việt - Pinyin - HanziGo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #FFF9F2;
+      color: #243447;
+      padding: 24px;
+      line-height: 1.6;
+    }
+    .container { max-width: 1000px; margin: 0 auto; background: white; padding: 32px; border-radius: 24px; border: 1px solid #f1e5d8; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+    h1 { font-size: 26px; font-weight: 900; color: #E85D3F; margin-bottom: 8px; }
+    p.lead { font-size: 14px; color: #64748b; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    th, td { padding: 12px 14px; text-align: left; border: 1px solid #f1e5d8; font-size: 13px; }
+    th { background: #FEF7E9; color: #D97706; font-weight: 800; }
+    td strong { color: #E85D3F; }
+    .tip-box { background: #FDEEEB; border-left: 4px solid #E85D3F; padding: 16px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; }
+    .print-btn { background: #E85D3F; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; float: right; }
+    @media print { .print-btn { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button class="print-btn" onclick="window.print()">🖨️ In tài liệu</button>
+    <h1>Bí Quyết Đoán Âm & Quy Tắc Đối Chiếu Hán Việt - Pinyin</h1>
+    <p class="lead">Gần 70% từ vựng tiếng Việt là từ gốc Hán. Nắm vững bảng quy luật chuyển âm này sẽ giúp bạn đoán nghĩa và đọc chuẩn hàng nghìn từ vựng tiếng Trung mà không cần tra từ điển!</p>
+
+    <div class="tip-box">
+      <strong>💡 Nguyên lý vàng:</strong> Phụ âm đầu tiếng Việt thường chuyển dịch có quy luật sang thanh mẫu tiếng Trung (Ví dụ: Âm "B" tiếng Việt -> thanh mẫu "b" hoặc "f", âm "Đ" -> thanh mẫu "d" hoặc "t").
+    </div>
+
+    <h3>1. Quy luật chuyển đổi Phụ Âm Đầu (Thanh mẫu)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Âm đầu Tiếng Việt</th>
+          <th>Thanh mẫu Pinyin tương ứng</th>
+          <th>Ví dụ thực tế (Hán Việt - Pinyin - Chữ Hán)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>B</strong></td>
+          <td>b, f, p</td>
+          <td>Bắc (běi - 北), Bằng (péng - 朋), Bất (bù - 不), Biến (biàn - 变)</td>
+        </tr>
+        <tr>
+          <td><strong>C, K</strong></td>
+          <td>g, k, j, q</td>
+          <td>Cao (gāo - 高), Khẩu (kǒu - 口), Kiến (jiàn - 见), Kỳ (qí - 奇)</td>
+        </tr>
+        <tr>
+          <td><strong>Đ</strong></td>
+          <td>d, t</td>
+          <td>Địa (dì - 地), Đại (dà - 大), Động (dòng - 动), Đẳng (děng - 等)</td>
+        </tr>
+        <tr>
+          <td><strong>H</strong></td>
+          <td>h, x</td>
+          <td>Hoa (huā - 花), Hải (hǎi - 海), Hảo (hǎo - 好), Hạ (xià - 下)</td>
+        </tr>
+        <tr>
+          <td><strong>L</strong></td>
+          <td>l</td>
+          <td>Lão (lǎo - 老), Lộ (lù - 路), Lực (lì - 力), Lưu (liú - 流)</td>
+        </tr>
+        <tr>
+          <td><strong>M</strong></td>
+          <td>m</td>
+          <td>Mã (mǎ - 马), Môn (mén - 门), Minh (míng - 明), Mỹ (měi - 美)</td>
+        </tr>
+        <tr>
+          <td><strong>N</strong></td>
+          <td>n</td>
+          <td>Nam (nán - 南), Niên (nián - 年), Nữ (nǚ - 女), Năng (néng - 能)</td>
+        </tr>
+        <tr>
+          <td><strong>T</strong></td>
+          <td>x, s, c, q, z</td>
+          <td>Tây (xī - 西), Tân (xīn - 新), Tiền (qián - 钱), Tự (zì - 字)</td>
+        </tr>
+        <tr>
+          <td><strong>V</strong></td>
+          <td>w, y</td>
+          <td>Vương (wáng - 王), Vấn (wèn - 问), Văn (wén - 文), Vũ (yǔ - 雨)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>2. Quy luật chuyển đổi Vần (Vận mẫu phổ biến)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Vần Tiếng Việt</th>
+          <th>Vận mẫu Pinyin</th>
+          <th>Ví dụ minh họa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>-AN</strong></td>
+          <td>-an</td>
+          <td>An (ān - 安), Ban (bān - 班), Nam (nán - 南)</td>
+        </tr>
+        <tr>
+          <td><strong>-ANH, -INH</strong></td>
+          <td>-ing, -eng</td>
+          <td>Sinh (shēng - 生), Tinh (xīng - 星), Minh (míng - 明), Thanh (qīng - 青)</td>
+        </tr>
+        <tr>
+          <td><strong>-ÔNG, -UNG</strong></td>
+          <td>-ong, -ung</td>
+          <td>Công (gōng - 工), Đông (dōng - 东), Trung (zhōng - 中)</td>
+        </tr>
+        <tr>
+          <td><strong>-UYÊN</strong></td>
+          <td>-uan, -üan</td>
+          <td>Viên (yuán - 员), Toàn (quán - 全), Tuyên (xuān - 宣)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vở Tập Viết Chữ Hán Ô Mễ Tự (米字格) - HanziGo</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Serif SC", sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    .no-print-toolbar {
+      background: white;
+      padding: 12px 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .btn {
+      background: #E85D3F;
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover {
+      background: #CB4529;
+    }
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 12mm 14mm;
+      background: white;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 2px solid #E85D3F;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+    .brand {
+      font-size: 18px;
+      font-weight: 900;
+      color: #E85D3F;
+      letter-spacing: -0.5px;
+    }
+    .title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #1e293b;
+    }
+    .meta {
+      display: flex;
+      gap: 20px;
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .meta span strong {
+      color: #0f172a;
+    }
+    
+    /* Grid container */
+    .grid-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+    }
+    .pinyin-row {
+      height: 14px;
+    }
+    .pinyin-cell {
+      height: 14px;
+      border-top: 1px solid #e2e8f0;
+      border-left: 1px solid #e2e8f0;
+      border-right: 1px solid #e2e8f0;
+      border-bottom: 1px dashed #cbd5e1;
+    }
+    .grid-cell {
+      width: 15.4mm;
+      height: 15.4mm;
+      border: 1px solid #e11d48;
+      position: relative;
+      background: #fff;
+    }
+    /* Mizige (8-star grid) internal dashed lines */
+    .grid-cell::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      border-top: 1px dashed #fca5a5;
+    }
+    .grid-cell::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      border-left: 1px dashed #fca5a5;
+    }
+    .diagonal-1 {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom right, transparent calc(50% - 0.5px), #fee2e2 calc(50% - 0.5px), #fee2e2 calc(50% + 0.5px), transparent calc(50% + 0.5px));
+      pointer-events: none;
+    }
+    .diagonal-2 {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to top right, transparent calc(50% - 0.5px), #fee2e2 calc(50% - 0.5px), #fee2e2 calc(50% + 0.5px), transparent calc(50% + 0.5px));
+      pointer-events: none;
+    }
+
+    .footer {
+      margin-top: auto;
+      padding-top: 8px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #94a3b8;
+    }
+
+    @media print {
+      body {
+        background: transparent;
+        padding: 0;
+      }
+      .no-print-toolbar {
+        display: none !important;
+      }
+      .sheet {
+        box-shadow: none;
+        padding: 0;
+        width: 100%;
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="no-print-toolbar">
+    <button class="btn" onclick="window.print()">
+      🖨️ In ra giấy A4 hoặc Lưu thành PDF
+    </button>
+    <span style="font-size: 13px; color: #64748b;">
+      (Khuyến nghị: Chọn "Lưu dưới dạng PDF" hoặc chọn máy in, khổ giấy A4, tỉ lệ 100%)
+    </span>
+  </div>
+
+  <div class="sheet">
+    <div class="header">
+      <div>
+        <div class="brand">HanziGo 汉字</div>
+        <div class="title">Vở Tập Viết Chữ Hán Chuẩn Ô Mễ Tự (米字格)</div>
+      </div>
+      <div class="meta">
+        <span>Họ tên: ____________________</span>
+        <span>Ngày: ____/____/2026</span>
+        <span>Bài: ________</span>
+      </div>
+    </div>
+
+    <table class="grid-table" id="practiceGrid">
+      <!-- 14 Rows generated by script for high precision -->
+    </table>
+
+    <div class="footer">
+      <span>Nền tảng học tiếng Trung trực tuyến HanziGo (hanzigo.vn)</span>
+      <span>Quy tắc bút thuận: Ngang trước sổ sau - Phẩy trước mác sau - Trên trước dưới sau - Trái trước phải sau - Ngoài trước trong sau - Vào trước đóng sau - Giữa trước hai bên sau.</span>
+    </div>
+  </div>
+
+  <script>
+    const table = document.getElementById('practiceGrid');
+    const rows = 12;
+    const cols = 11;
+
+    for (let r = 0; r < rows; r++) {
+      // Pinyin Row
+      const pinyinTr = document.createElement('tr');
+      pinyinTr.className = 'pinyin-row';
+      for (let c = 0; c < cols; c++) {
+        const td = document.createElement('td');
+        td.className = 'pinyin-cell';
+        pinyinTr.appendChild(td);
+      }
+      table.appendChild(pinyinTr);
+
+      // Grid Row
+      const gridTr = document.createElement('tr');
+      for (let c = 0; c < cols; c++) {
+        const td = document.createElement('td');
+        td.className = 'grid-cell';
+        const d1 = document.createElement('div');
+        d1.className = 'diagonal-1';
+        const d2 = document.createElement('div');
+        d2.className = 'diagonal-2';
+        td.appendChild(d1);
+        td.appendChild(d2);
+        gridTr.appendChild(td);
+      }
+      table.appendChild(gridTr);
+    }
+  </script>
+</body>
+</html>
