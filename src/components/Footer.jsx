@@ -68,11 +68,11 @@ export default function Footer({ setActiveTab }) {
             <div className="pt-2 text-xs text-[#94A3B8] space-y-1">
               <p className="flex items-center gap-2">
                 <Mail size={14} className="text-[#F4B942]" />
-                <span>support@hanzigo.vn</span>
+                <span>lehaidang16032006@gmail.com</span>
               </p>
               <p className="flex items-center gap-2">
                 <Globe size={14} className="text-[#45B97C]" />
-                <span>Hà Nội & TP. Hồ Chí Minh, Việt Nam</span>
+                <span>Đà Nẵng, Việt Nam</span>
               </p>
             </div>
           </div>
