@@ -1,26 +1,33 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import confetti from 'canvas-confetti';
 import { 
   Search, 
   RotateCw, 
   Check, 
   Clock, 
-  ChevronLeft,
-  ChevronRight,
-  LayoutGrid,
-  CreditCard,
-  Plus,
-  Trash2,
-  Sparkles,
-  Filter,
-  X,
-  Zap,
-  CheckCircle2
+  ChevronLeft, 
+  ChevronRight, 
+  LayoutGrid, 
+  CreditCard, 
+  Plus, 
+  Trash2, 
+  Sparkles, 
+  Filter, 
+  X, 
+  Zap, 
+  CheckCircle2,
+  Download,
+  PenTool,
+  Mic,
+  Flame,
+  BookOpen,
+  Keyboard
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { playClickSound, playSuccessSound, playErrorSound } from '../utils/audio';
 import { VOCABULARY_LIST, TOPIC_FILTERS } from '../data/chineseData';
 import { getStoredCustomVocab, saveCustomVocab, deleteCustomVocab } from '../utils/materialsStorage';
-import { triggerCloudSync } from '../firebase/services';
+import { triggerCloudSync, getVocabularyFromDb, addVocabularyToDb } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
 
 const STORAGE_REMEMBERED = 'hanzigo_vocab_remembered';
@@ -114,7 +121,7 @@ const QUICK_VOCAB_SUGGESTIONS = [
   }
 ];
 
-// Helper to normalize vocabulary shape
+// Helper to normalize vocabulary shape across local & Supabase sources
 function normalizeVocab(item) {
   let exampleObj = null;
   if (item.example) {
@@ -123,33 +130,40 @@ function normalizeVocab(item) {
     } else if (typeof item.example === 'string' && item.example.trim()) {
       exampleObj = {
         hanzi: item.example,
-        pinyin: item.examplePinyin || '',
-        meaning: item.exampleMeaning || ''
+        pinyin: item.examplePinyin || item.example_pinyin || '',
+        meaning: item.exampleMeaning || item.example_meaning || ''
       };
     }
+  } else if (item.example_hanzi) {
+    exampleObj = {
+      hanzi: item.example_hanzi,
+      pinyin: item.example_pinyin || '',
+      meaning: item.example_meaning || ''
+    };
   }
 
   return {
-    id: item.id || `vocab-${item.hanzi}`,
+    id: String(item.id || `vocab-${item.hanzi}`),
     hanzi: item.hanzi,
     pinyin: item.pinyin || '',
     hanviet: item.hanviet || '',
     meaning: item.meaning || '',
     level: item.level || item.hsk || 'HSK 1',
-    topic: item.topic || 'Khác',
+    topic: item.topic || 'Đời sống',
     radical: item.radical || '—',
-    strokes: item.strokes || item.strokeCount || 5,
+    strokes: Number(item.strokes) || Number(item.strokeCount) || 5,
     mnemonic: item.mnemonic || item.memoryTip || 'Ghi nhớ cấu trúc bộ thủ và hình tượng của chữ.',
     example: exampleObj,
     isCustom: !!item.isCustom
   };
 }
 
-export default function VocabularyPage() {
+export default function VocabularyPage({ setActiveTab }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('Tất cả');
   const [selectedHsk, setSelectedHsk] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'remembered', 'review', 'custom'
+  const [lengthFilter, setLengthFilter] = useState('all'); // 'all', 'single', 'compound'
   const [viewMode, setViewMode] = useState('flashcard'); // 'flashcard', 'grid', 'quiz'
 
   // Master vocabulary state initialized lazily from storage + static data
@@ -164,6 +178,26 @@ export default function VocabularyPage() {
       return VOCABULARY_LIST.map(normalizeVocab);
     }
   });
+
+  // Fetch words from Supabase on mount
+  useEffect(() => {
+    let isMounted = true;
+    getVocabularyFromDb().then(dbItems => {
+      if (!isMounted || !dbItems || dbItems.length === 0) return;
+      const normalizedDb = dbItems.map(normalizeVocab);
+      setAllVocabList(prev => {
+        const custom = prev.filter(p => p.isCustom);
+        const merged = [...custom];
+        normalizedDb.forEach(dbItem => {
+          if (!merged.some(m => m.hanzi === dbItem.hanzi)) {
+            merged.push(dbItem);
+          }
+        });
+        return merged;
+      });
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   // Flashcard interaction state
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -211,8 +245,16 @@ export default function VocabularyPage() {
   const [newExamplePinyin, setNewExamplePinyin] = useState('');
   const [newExampleMeaning, setNewExampleMeaning] = useState('');
 
+  // Auto-detect vocabulary when typing in Add Modal
+  const matchedVocabInDict = useMemo(() => {
+    const clean = newHanzi.trim();
+    if (!clean) return null;
+    return VOCABULARY_LIST.find(v => v.hanzi === clean) || null;
+  }, [newHanzi]);
+
   // Quiz Mode State
   const [quizScore, setQuizScore] = useState(0);
+  const [quizStreak, setQuizStreak] = useState(0);
   const [quizAnswered, setQuizAnswered] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
 
@@ -237,71 +279,99 @@ export default function VocabularyPage() {
         matchesStatus = !!item.isCustom;
       }
 
-      return matchesSearch && matchesTopic && matchesHsk && matchesStatus;
+      let matchesLength = true;
+      if (lengthFilter === 'single') {
+        matchesLength = item.hanzi.length === 1;
+      } else if (lengthFilter === 'compound') {
+        matchesLength = item.hanzi.length > 1;
+      }
+
+      return matchesSearch && matchesTopic && matchesHsk && matchesStatus && matchesLength;
     });
-  }, [allVocabList, searchTerm, selectedTopic, selectedHsk, statusFilter, rememberedIds, reviewIds]);
+  }, [allVocabList, searchTerm, selectedTopic, selectedHsk, statusFilter, lengthFilter, rememberedIds, reviewIds]);
 
   const currentCard = filteredVocab[currentIndex] || filteredVocab[0];
 
   // Flip card
-  const handleFlip = () => {
+  const handleFlip = useCallback(() => {
     playClickSound();
-    setIsFlipped(!isFlipped);
-  };
+    setIsFlipped(prev => !prev);
+  }, []);
 
   // Next & Prev card
-  const handleNextCard = () => {
+  const handleNextCard = useCallback(() => {
     playClickSound();
     setIsFlipped(false);
-    if (currentIndex < filteredVocab.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      setCurrentIndex(0);
-    }
-  };
+    setCurrentIndex(prev => (prev < filteredVocab.length - 1 ? prev + 1 : 0));
+  }, [filteredVocab.length]);
 
-  const handlePrevCard = () => {
+  const handlePrevCard = useCallback(() => {
     playClickSound();
     setIsFlipped(false);
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    } else {
-      setCurrentIndex(filteredVocab.length - 1);
-    }
-  };
+    setCurrentIndex(prev => (prev > 0 ? prev - 1 : Math.max(0, filteredVocab.length - 1)));
+  }, [filteredVocab.length]);
 
   // Mark as remembered
-  const handleMarkRemembered = (id) => {
+  const handleMarkRemembered = useCallback((id) => {
     playSuccessSound();
-    let updatedRemembered = rememberedIds;
-    if (!rememberedIds.includes(id)) {
-      updatedRemembered = [...rememberedIds, id];
-      setRememberedIds(updatedRemembered);
-      localStorage.setItem(STORAGE_REMEMBERED, JSON.stringify(updatedRemembered));
-      awardXp(10);
-    }
-    const updatedReview = reviewIds.filter(item => item !== id);
-    setReviewIds(updatedReview);
-    localStorage.setItem(STORAGE_REVIEW, JSON.stringify(updatedReview));
+    setRememberedIds(prev => {
+      const updated = prev.includes(id) ? prev : [...prev, id];
+      localStorage.setItem(STORAGE_REMEMBERED, JSON.stringify(updated));
+      return updated;
+    });
+    setReviewIds(prev => {
+      const updated = prev.filter(item => item !== id);
+      localStorage.setItem(STORAGE_REVIEW, JSON.stringify(updated));
+      return updated;
+    });
+    awardXp(10);
     triggerCloudSync();
     handleNextCard();
-  };
+  }, [handleNextCard]);
 
   // Mark as need review
-  const handleMarkReview = (id) => {
+  const handleMarkReview = useCallback((id) => {
     playClickSound();
-    let updatedReview = reviewIds;
-    if (!reviewIds.includes(id)) {
-      updatedReview = [...reviewIds, id];
-      setReviewIds(updatedReview);
-      localStorage.setItem(STORAGE_REVIEW, JSON.stringify(updatedReview));
-    }
-    const updatedRemembered = rememberedIds.filter(item => item !== id);
-    setRememberedIds(updatedRemembered);
-    localStorage.setItem(STORAGE_REMEMBERED, JSON.stringify(updatedRemembered));
+    setReviewIds(prev => {
+      const updated = prev.includes(id) ? prev : [...prev, id];
+      localStorage.setItem(STORAGE_REVIEW, JSON.stringify(updated));
+      return updated;
+    });
+    setRememberedIds(prev => {
+      const updated = prev.filter(item => item !== id);
+      localStorage.setItem(STORAGE_REMEMBERED, JSON.stringify(updated));
+      return updated;
+    });
     triggerCloudSync();
     handleNextCard();
-  };
+  }, [handleNextCard]);
+
+  // Keyboard navigation for Flashcards
+  useEffect(() => {
+    if (viewMode !== 'flashcard' || showAddModal) return;
+
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+        e.preventDefault();
+        handleFlip();
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        handleNextCard();
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrevCard();
+      } else if (e.key === '1' || e.key === 'r' || e.key === 'R') {
+        if (currentCard) handleMarkReview(currentCard.id);
+      } else if (e.key === '2' || e.key === 'm' || e.key === 'M') {
+        if (currentCard) handleMarkRemembered(currentCard.id);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode, showAddModal, currentCard, handleFlip, handleNextCard, handlePrevCard, handleMarkReview, handleMarkRemembered]);
 
   // Quick fill suggestion in Add Modal
   const handleApplySuggestion = (sug) => {
@@ -318,6 +388,24 @@ export default function VocabularyPage() {
     setNewExampleHanzi(sug.exampleHanzi || '');
     setNewExamplePinyin(sug.examplePinyin || '');
     setNewExampleMeaning(sug.exampleMeaning || '');
+  };
+
+  const handleApplyDictMatch = () => {
+    if (!matchedVocabInDict) return;
+    playClickSound();
+    setNewPinyin(matchedVocabInDict.pinyin || '');
+    setNewHanviet(matchedVocabInDict.hanviet || '');
+    setNewMeaning(matchedVocabInDict.meaning || '');
+    setNewLevel(matchedVocabInDict.level || 'HSK 1');
+    setNewTopic(matchedVocabInDict.topic || 'Đời sống');
+    setNewRadical(matchedVocabInDict.radical || '—');
+    setNewStrokes(String(matchedVocabInDict.strokes || 5));
+    if (matchedVocabInDict.mnemonic) setNewMnemonic(matchedVocabInDict.mnemonic);
+    if (matchedVocabInDict.example) {
+      setNewExampleHanzi(matchedVocabInDict.example.hanzi || '');
+      setNewExamplePinyin(matchedVocabInDict.example.pinyin || '');
+      setNewExampleMeaning(matchedVocabInDict.example.meaning || '');
+    }
   };
 
   // Submit new custom vocabulary
@@ -351,11 +439,29 @@ export default function VocabularyPage() {
       isCustom: true
     };
 
-    // Save to localStorage via materialsStorage
+    // 1. Save to local storage
     saveCustomVocab(newVocabItem);
     awardXp(15);
 
-    // Update in-memory state
+    // 2. Save directly to Supabase cloud
+    const cloudPayload = {
+      hanzi: newVocabItem.hanzi,
+      pinyin: newVocabItem.pinyin,
+      hanviet: newVocabItem.hanviet,
+      meaning: newVocabItem.meaning,
+      level: newVocabItem.level,
+      topic: newVocabItem.topic,
+      radical: newVocabItem.radical,
+      strokes: newVocabItem.strokes,
+      mnemonic: newVocabItem.mnemonic,
+      example_hanzi: newVocabItem.example?.hanzi || '',
+      example_pinyin: newVocabItem.example?.pinyin || '',
+      example_meaning: newVocabItem.example?.meaning || ''
+    };
+    addVocabularyToDb(cloudPayload);
+    triggerCloudSync();
+
+    // 3. Update in-memory state
     const updatedAll = [normalizeVocab(newVocabItem), ...allVocabList];
     setAllVocabList(updatedAll);
     setCurrentIndex(0);
@@ -392,7 +498,37 @@ export default function VocabularyPage() {
     }
   };
 
-  // Quiz Options generator for current card (pure and deterministic based on card)
+  // Export current list to CSV (UTF-8 with BOM for Excel & Anki)
+  const handleExportCsv = () => {
+    playClickSound();
+    if (filteredVocab.length === 0) return;
+
+    const headers = ['Chữ Hán', 'Pinyin', 'Hán-Việt', 'Nghĩa', 'Cấp độ', 'Chủ đề', 'Bộ thủ', 'Số nét', 'Chiết tự', 'Ví dụ'];
+    const rows = filteredVocab.map(v => [
+      `"${v.hanzi}"`,
+      `"${v.pinyin}"`,
+      `"${v.hanviet}"`,
+      `"${v.meaning}"`,
+      `"${v.level}"`,
+      `"${v.topic}"`,
+      `"${v.radical}"`,
+      `"${v.strokes}"`,
+      `"${(v.mnemonic || '').replace(/"/g, '""')}"`,
+      `"${(v.example?.hanzi || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `hanzigo-tu-vung-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Quiz Options generator for current card
   const quizOptions = useMemo(() => {
     if (!currentCard) return [];
     const correctMeaning = currentCard.meaning;
@@ -402,7 +538,6 @@ export default function VocabularyPage() {
 
     if (otherMeanings.length === 0) return [correctMeaning];
 
-    // Pick distractors deterministically based on character code hash
     const charCodeSum = (currentCard.hanzi || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
     const distractor1 = otherMeanings[charCodeSum % otherMeanings.length];
     const distractor2 = otherMeanings[(charCodeSum + 3) % otherMeanings.length];
@@ -411,7 +546,6 @@ export default function VocabularyPage() {
     const uniqueDistractors = Array.from(new Set([distractor1, distractor2, distractor3]))
       .filter(m => m && m !== correctMeaning);
 
-    // Combine and position correct answer deterministically
     const position = charCodeSum % (uniqueDistractors.length + 1);
     const result = [...uniqueDistractors];
     result.splice(position, 0, correctMeaning);
@@ -426,9 +560,22 @@ export default function VocabularyPage() {
     if (option === currentCard.meaning) {
       playSuccessSound();
       setQuizScore(prev => prev + 1);
+      const newStreak = quizStreak + 1;
+      setQuizStreak(newStreak);
       awardXp(10);
+
+      if (newStreak > 0 && newStreak % 5 === 0) {
+        try {
+          confetti({
+            particleCount: 55,
+            spread: 65,
+            origin: { y: 0.6 }
+          });
+        } catch (e) {}
+      }
     } else {
       playErrorSound();
+      setQuizStreak(0);
     }
   };
 
@@ -482,7 +629,7 @@ export default function VocabularyPage() {
             </div>
           </div>
 
-          {/* Primary "+ Thêm từ vựng" Button */}
+          {/* Primary "Thêm từ vựng" Button */}
           <button
             onClick={() => {
               playClickSound();
@@ -491,7 +638,7 @@ export default function VocabularyPage() {
             className="px-4 py-3 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center gap-2 active:scale-95 shrink-0"
           >
             <Plus size={18} />
-            <span>+ Thêm từ vựng muốn học</span>
+            <span>Thêm từ vựng muốn học</span>
           </button>
 
         </div>
@@ -633,6 +780,43 @@ export default function VocabularyPage() {
           ))}
         </div>
 
+        {/* Secondary Bar: Length Filter & Export CSV */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70">
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            <span className="text-[11px] font-bold text-[#748092] uppercase tracking-wider mr-1">Độ dài:</span>
+            {[
+              { id: 'all', label: 'Tất cả' },
+              { id: 'single', label: 'Từ đơn (1 chữ)' },
+              { id: 'compound', label: 'Từ ghép (2+ chữ)' }
+            ].map(lf => (
+              <button
+                key={lf.id}
+                onClick={() => {
+                  playClickSound();
+                  setLengthFilter(lf.id);
+                  setCurrentIndex(0);
+                }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                  lengthFilter === lf.id
+                    ? 'bg-[#243447] text-white dark:bg-white dark:text-[#131B24] shadow-sm'
+                    : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:text-[#243447]'
+                }`}
+              >
+                {lf.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={handleExportCsv}
+            title="Tải danh sách từ vựng hiện tại dạng file CSV (Hỗ trợ Anki, Excel)"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-[#FDEEEB] dark:hover:bg-[#2D1E1B] text-[#748092] hover:text-[#E85D3F] text-xs font-bold transition-all shadow-sm active:scale-95"
+          >
+            <Download size={14} />
+            <span>Xuất CSV ({filteredVocab.length})</span>
+          </button>
+        </div>
+
       </div>
 
       {/* Main Content Area */}
@@ -768,7 +952,35 @@ export default function VocabularyPage() {
                   )}
                 </div>
 
-                <div className="text-right text-[10px] text-[#748092] italic pt-1 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
+                {/* Cross-practice Quick Access */}
+                {setActiveTab && (
+                  <div className="flex items-center gap-2 pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveTab('writing');
+                      }}
+                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                    >
+                      <PenTool size={13} />
+                      <span>✍️ Luyện viết chữ</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveTab('pronunciation');
+                      }}
+                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                    >
+                      <Mic size={13} />
+                      <span>🎙️ Luyện phát âm</span>
+                    </button>
+                  </div>
+                )}
+
+                <div className="text-right text-[10px] text-[#748092] italic pt-1">
                   Bấm lần nữa để lật lại mặt trước
                 </div>
               </div>
@@ -783,7 +995,7 @@ export default function VocabularyPage() {
               className="flex-1 py-3 px-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-[#FEF7E9] border border-[#F4B942]/50 text-[#D97706] font-bold text-xs sm:text-sm shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
             >
               <Clock size={16} />
-              <span>Cần ôn lại</span>
+              <span>Cần ôn lại (Phím 1)</span>
             </button>
 
             <button
@@ -791,7 +1003,7 @@ export default function VocabularyPage() {
               className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-[#45B97C] to-[#2E8B57] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#45B97C]/25 hover:opacity-95 transition-all flex items-center justify-center gap-2 active:scale-95"
             >
               <Check size={16} />
-              <span>Đã nhớ vững</span>
+              <span>Đã nhớ vững (Phím 2)</span>
             </button>
           </div>
 
@@ -799,6 +1011,7 @@ export default function VocabularyPage() {
           <div className="flex items-center justify-center gap-6 pt-1">
             <button
               onClick={handlePrevCard}
+              title="Thẻ trước (←)"
               className="p-2.5 rounded-full bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white shadow-sm transition-colors active:scale-95"
             >
               <ChevronLeft size={18} />
@@ -808,10 +1021,20 @@ export default function VocabularyPage() {
             </span>
             <button
               onClick={handleNextCard}
+              title="Thẻ tiếp theo (→)"
               className="p-2.5 rounded-full bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white shadow-sm transition-colors active:scale-95"
             >
               <ChevronRight size={18} />
             </button>
+          </div>
+
+          {/* Keyboard shortcut guide */}
+          <div className="hidden sm:flex flex-wrap items-center justify-center gap-2 text-[11px] text-[#748092] dark:text-[#94A3B8] pt-1">
+            <span className="flex items-center gap-1 font-bold text-[#243447] dark:text-white"><Keyboard size={13} /> Phím tắt:</span>
+            <span className="bg-[#FFF9F2] dark:bg-[#131B24] px-2 py-0.5 rounded-md border border-[#F1E5D8] dark:border-[#2B3A4F] font-mono">Space: Lật</span>
+            <span className="bg-[#FFF9F2] dark:bg-[#131B24] px-2 py-0.5 rounded-md border border-[#F1E5D8] dark:border-[#2B3A4F] font-mono">← / →: Thẻ</span>
+            <span className="bg-[#FFF9F2] dark:bg-[#131B24] px-2 py-0.5 rounded-md border border-[#F1E5D8] dark:border-[#2B3A4F] font-mono">1: Ôn lại</span>
+            <span className="bg-[#FFF9F2] dark:bg-[#131B24] px-2 py-0.5 rounded-md border border-[#F1E5D8] dark:border-[#2B3A4F] font-mono">2: Đã nhớ</span>
           </div>
 
         </div>
@@ -909,6 +1132,28 @@ export default function VocabularyPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* Quick Cross Practice */}
+                {setActiveTab && (
+                  <div className="flex items-center gap-1.5 pt-2 border-t border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70">
+                    <button
+                      onClick={() => setActiveTab('writing')}
+                      title="Chuyển sang trang Luyện viết chữ"
+                      className="flex-1 py-1.5 px-2 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-orange-50 dark:hover:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-[#F1E5D8] dark:border-[#2B3A4F] text-[10px] font-bold flex items-center justify-center gap-1 transition-all"
+                    >
+                      <PenTool size={11} />
+                      <span>Viết chữ</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('pronunciation')}
+                      title="Chuyển sang trang Luyện phát âm"
+                      className="flex-1 py-1.5 px-2 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-[#F1E5D8] dark:border-[#2B3A4F] text-[10px] font-bold flex items-center justify-center gap-1 transition-all"
+                    >
+                      <Mic size={11} />
+                      <span>Phát âm</span>
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -922,10 +1167,18 @@ export default function VocabularyPage() {
             <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">
               Thử thách phản xạ từ vựng
             </span>
-            <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-              <Zap size={12} />
-              Đã đúng: {quizScore} từ
-            </span>
+            <div className="flex items-center gap-2">
+              {quizStreak > 0 && (
+                <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 animate-pulse">
+                  <Flame size={13} className="text-amber-500 fill-amber-500" />
+                  Chuỗi {quizStreak} từ!
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                <Zap size={12} />
+                Đã đúng: {quizScore} từ
+              </span>
+            </div>
           </div>
 
           <div className="space-y-1">
@@ -1060,6 +1313,27 @@ export default function VocabularyPage() {
                   className="w-full px-4 py-3 rounded-2xl text-lg font-['Noto_Serif_SC'] font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
+
+              {/* Smart Dict Match Banner */}
+              {matchedVocabInDict && (
+                <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 flex items-center justify-between gap-3 animate-in fade-in">
+                  <div className="text-xs text-amber-900 dark:text-amber-200">
+                    <p className="font-bold flex items-center gap-1">
+                      <span>💡 Tìm thấy "{matchedVocabInDict.hanzi}" trong từ điển mẫu!</span>
+                    </p>
+                    <p className="text-[11px] opacity-80">
+                      Pinyin: {matchedVocabInDict.pinyin} • Nghĩa: {matchedVocabInDict.meaning}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleApplyDictMatch}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shrink-0 transition-colors shadow-sm"
+                  >
+                    Tự điền nhanh
+                  </button>
+                </div>
+              )}
 
               {/* Pinyin, Hán-Việt & Nghĩa tiếng Việt */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

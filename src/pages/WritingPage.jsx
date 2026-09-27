@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import confetti from 'canvas-confetti';
 import { 
   Trash2, 
   Check, 
@@ -12,12 +13,18 @@ import {
   Download,
   X,
   CheckCircle2,
-  Palette
+  Palette,
+  RotateCcw,
+  ArrowRight,
+  Target,
+  Scale,
+  PenTool,
+  Info
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { CHARACTERS_WRITING, VOCABULARY_LIST } from '../data/chineseData';
 import { playSuccessSound, playClickSound } from '../utils/audio';
-import { triggerCloudSync } from '../firebase/services';
+import { triggerCloudSync } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
 
 const STORAGE_CUSTOM_CHARS = 'hanzigo_custom_writing_chars';
@@ -73,6 +80,17 @@ export default function WritingPage() {
   const [isAnimatingStroke, setIsAnimatingStroke] = useState(false);
   const [animatedStrokeIndex, setAnimatedStrokeIndex] = useState(-1);
   const [evaluationResult, setEvaluationResult] = useState(null);
+  const [strokeCount, setStrokeCount] = useState(0);
+
+  // Stored best scores per character
+  const [savedScores, setSavedScores] = useState(() => {
+    try {
+      const saved = localStorage.getItem('hanzigo_writing_scores');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
   // Modal to add custom character
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -109,6 +127,7 @@ export default function WritingPage() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     historyRef.current = [];
     setHasDrawn(false);
+    setStrokeCount(0);
     setEvaluationResult(null);
   }, []);
 
@@ -134,7 +153,7 @@ export default function WritingPage() {
     try {
       const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
       historyRef.current.push(snapshot);
-      if (historyRef.current.length > 20) {
+      if (historyRef.current.length > 50) {
         historyRef.current.shift();
       }
     } catch (err) {
@@ -147,6 +166,9 @@ export default function WritingPage() {
   };
 
   const stopDrawing = () => {
+    if (isDrawing) {
+      setStrokeCount(prev => prev + 1);
+    }
     setIsDrawing(false);
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -187,6 +209,8 @@ export default function WritingPage() {
     const ctx = canvas.getContext('2d');
     const previousState = historyRef.current.pop();
     ctx.putImageData(previousState, 0, 0);
+
+    setStrokeCount(prev => Math.max(0, prev - 1));
 
     if (historyRef.current.length === 0) {
       setHasDrawn(false);
@@ -257,16 +281,265 @@ export default function WritingPage() {
     }, 700);
   };
 
-  // Evaluate drawing accuracy and balance
+  // Evaluate drawing accuracy, balance and stroke count
   const handleEvaluate = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const userImgData = ctx.getImageData(0, 0, width, height);
+    const userPixels = userImgData.data;
+
+    // 1. Analyze User Ink Pixels
+    let userInkCount = 0;
+    let sumX = 0;
+    let sumY = 0;
+    let minX = width;
+    let maxX = 0;
+    let minY = height;
+    let maxY = 0;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        const alpha = userPixels[idx + 3];
+        if (alpha > 30) {
+          userInkCount++;
+          sumX += x;
+          sumY += y;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (userInkCount < 200) {
+      showToast('⚠️ Nét chữ còn quá ít hoặc mờ! Hãy hoàn thành chữ trước khi chấm điểm nhé.');
+      return;
+    }
+
+    // 2. Render Reference Character Offscreen for Comparison
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = width;
+    offCanvas.height = height;
+    const offCtx = offCanvas.getContext('2d');
+    offCtx.fillStyle = '#000000';
+    offCtx.font = "bold 210px 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif";
+    offCtx.textAlign = 'center';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillText(currentChar.char, width / 2, height / 2 - 8);
+
+    const refImgData = offCtx.getImageData(0, 0, width, height);
+    const refPixels = refImgData.data;
+
+    let refInkCount = 0;
+    let refSumX = 0;
+    let refSumY = 0;
+
+    const refOccupied = new Uint8Array(width * height);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        if (refPixels[idx + 3] > 30) {
+          refInkCount++;
+          refSumX += x;
+          refSumY += y;
+          refOccupied[y * width + x] = 1;
+        }
+      }
+    }
+
+    if (refInkCount === 0) refInkCount = userInkCount;
+
+    // 3. Centroid & Balance Analysis
+    const userCenterX = sumX / userInkCount;
+    const userCenterY = sumY / userInkCount;
+    const refCenterX = refSumX / refInkCount;
+    const refCenterY = refSumY / refInkCount;
+
+    const deltaX = userCenterX - refCenterX;
+    const deltaY = userCenterY - refCenterY;
+    const centerDist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    // Balance score: 100 if centerDist <= 12px, decreases gradually
+    let balanceScore = Math.max(50, Math.round(100 - (centerDist / 70) * 50));
+    if (balanceScore > 100) balanceScore = 100;
+
+    // 4. Shape & Form Accuracy (with tolerance padding for brush width)
+    const R = Math.max(10, Math.round(brushSize * 0.8));
+    const dilatedRef = new Uint8Array(width * height);
+
+    for (let y = 0; y < height; y += 2) {
+      for (let x = 0; x < width; x += 2) {
+        if (refOccupied[y * width + x]) {
+          const yStart = Math.max(0, y - R);
+          const yEnd = Math.min(height - 1, y + R);
+          const xStart = Math.max(0, x - R);
+          const xEnd = Math.min(width - 1, x + R);
+          for (let dy = yStart; dy <= yEnd; dy += 2) {
+            for (let dx = xStart; dx <= xEnd; dx += 2) {
+              dilatedRef[dy * width + dx] = 1;
+            }
+          }
+        }
+      }
+    }
+
+    let userInTolerance = 0;
+    let sampleCount = 0;
+    for (let y = 0; y < height; y += 2) {
+      for (let x = 0; x < width; x += 2) {
+        const idx = (y * width + x) * 4;
+        if (userPixels[idx + 3] > 30) {
+          sampleCount++;
+          if (dilatedRef[y * width + x]) {
+            userInTolerance++;
+          }
+        }
+      }
+    }
+
+    const accuracyRatio = sampleCount > 0 ? (userInTolerance / sampleCount) : 0;
+    const massRatio = Math.min(userInkCount / (refInkCount * 0.65), (refInkCount * 1.6) / userInkCount);
+    const clampedMass = Math.min(1, Math.max(0.4, massRatio));
+
+    let shapeScore = Math.round(accuracyRatio * 75 + clampedMass * 25);
+    shapeScore = Math.max(52, Math.min(100, shapeScore));
+
+    // 5. Stroke Count Analysis
+    const expectedStrokes = (currentChar.strokeOrder && currentChar.strokeOrder.length > 0)
+      ? currentChar.strokeOrder.length
+      : (currentChar.strokesCount || 4);
+
+    const actualStrokes = strokeCount > 0 ? strokeCount : 1;
+    const strokeDiff = Math.abs(actualStrokes - expectedStrokes);
+
+    let strokeScore = 100;
+    if (strokeDiff === 0) {
+      strokeScore = 100;
+    } else if (strokeDiff === 1) {
+      strokeScore = 92;
+    } else if (strokeDiff === 2) {
+      strokeScore = 80;
+    } else if (strokeDiff === 3) {
+      strokeScore = 68;
+    } else {
+      strokeScore = Math.max(45, 100 - strokeDiff * 12);
+    }
+
+    // 6. Overall Weighted Score
+    const totalScore = Math.round(shapeScore * 0.45 + balanceScore * 0.35 + strokeScore * 0.20);
+
+    // 7. Granular constructive feedback
+    let rank = 'Xuất sắc';
+    let rankBadge = 'Xuất sắc 🌟';
+    let baseComment = '';
+    const tips = [];
+
+    if (totalScore >= 90) {
+      rank = 'Xuất sắc';
+      rankBadge = 'Xuất sắc 🌟';
+      baseComment = 'Tuyệt vời! Nét bút dứt khoát, hình thái chữ chuẩn mực và trọng tâm đặt đúng tâm mễ tự cách!';
+    } else if (totalScore >= 78) {
+      rank = 'Rất tốt';
+      rankBadge = 'Rất tốt 👏';
+      baseComment = 'Rất tốt! Chữ viết thanh thoát, nét chữ ngay ngắn và phân bổ đường nét hài hòa.';
+    } else if (totalScore >= 65) {
+      rank = 'Đạt yêu cầu';
+      rankBadge = 'Đạt yêu cầu 👍';
+      baseComment = 'Hình dáng chữ cơ bản đúng nhận diện. Hãy kiểm soát cọ đều tay hơn ở các nét chuyển hướng.';
+    } else {
+      rank = 'Cần luyện thêm';
+      rankBadge = 'Cần luyện thêm ✍️';
+      baseComment = 'Nét chữ cần được rèn luyện thêm. Hãy bật chế độ "Hiện nét mẫu" và quan sát thứ tự nét để viết chuẩn hơn nhé!';
+    }
+
+    // Specific constructive tips
+    if (strokeDiff === 0) {
+      tips.push(`Số nét viết chính xác hoàn hảo (${actualStrokes}/${expectedStrokes} nét).`);
+    } else if (actualStrokes < expectedStrokes) {
+      tips.push(`Bạn đã viết ${actualStrokes} nét (chuẩn ${expectedStrokes} nét). Có thể một số nét rời đã bị viết liền.`);
+    } else {
+      tips.push(`Bạn đã viết ${actualStrokes} nét (chuẩn ${expectedStrokes} nét). Hãy chú ý viết liền mạch các nét gập móc.`);
+    }
+
+    if (centerDist > 22) {
+      const dirX = deltaX > 8 ? 'sang phải' : (deltaX < -8 ? 'sang trái' : '');
+      const dirY = deltaY > 8 ? 'xuống dưới' : (deltaY < -8 ? 'lên trên' : '');
+      const direction = [dirX, dirY].filter(Boolean).join(' và ');
+      if (direction) {
+        tips.push(`Trọng tâm chữ hơi lệch ${direction}, nên căn đều vào đường trục chữ thập của ô.`);
+      }
+    } else {
+      tips.push('Trọng tâm chữ rất cân xứng trong tâm ô Mễ tự.');
+    }
+
+    if (accuracyRatio >= 0.85) {
+      tips.push('Đường nét đi sát khuôn chữ mẫu, bút lực ổn định.');
+    } else if (accuracyRatio < 0.65) {
+      tips.push('Một số nét hơi vươn ra ngoài khuôn khổ, hãy chú ý tỷ lệ dài ngắn của nét.');
+    }
+
+    // XP calculation
+    let xpEarned = 10;
+    if (totalScore >= 90) xpEarned = 25;
+    else if (totalScore >= 78) xpEarned = 18;
+    else if (totalScore >= 65) xpEarned = 12;
+    else xpEarned = 6;
+
+    // Confetti effect on high score
+    if (totalScore >= 75) {
+      try {
+        confetti({
+          particleCount: totalScore >= 90 ? 75 : 40,
+          spread: 65,
+          origin: { y: 0.6 }
+        });
+      } catch (err) {
+        console.warn('Confetti error:', err);
+      }
+    }
+
     playSuccessSound();
-    awardXp(15);
-    setEvaluationResult({
-      score: 96,
-      comment: 'Nét bút dứt khoát, trọng tâm chữ đặt đúng tâm mễ tự cách! Nét khởi bút vững chãi và thu bút rất gọn gàng.',
-      rank: 'Xuất sắc'
+    awardXp(xpEarned);
+
+    const newResult = {
+      score: totalScore,
+      shapeScore,
+      balanceScore,
+      strokeScore,
+      actualStrokes,
+      expectedStrokes,
+      rank,
+      rankBadge,
+      comment: baseComment,
+      tips,
+      xpEarned
+    };
+
+    setEvaluationResult(newResult);
+
+    // Save best score to state and localStorage
+    setSavedScores(prev => {
+      const prevBest = prev[currentChar.char] || 0;
+      const updated = {
+        ...prev,
+        [currentChar.char]: Math.max(prevBest, totalScore)
+      };
+      try {
+        localStorage.setItem('hanzigo_writing_scores', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Writing scores storage error:', e);
+      }
+      return updated;
     });
-    showToast('Đã hoàn thành chấm điểm nét viết! (+15 XP)');
+
+    triggerCloudSync();
+    showToast(`Đã hoàn thành chấm điểm: ${totalScore}/100 (+${xpEarned} XP)`);
   };
 
   // Handle auto-fill when user types or picks a character in Add Modal
@@ -401,27 +674,40 @@ export default function WritingPage() {
         </button>
       </div>
 
-      {/* Character Selector Pills with Add Badge */}
+      {/* Character Selector Pills with Add Badge & Saved Score */}
       <div className="flex items-center gap-2.5 overflow-x-auto pb-2 pt-1">
-        {allCharacters.map((c, idx) => (
-          <button
-            key={`${c.char}-${idx}`}
-            onClick={() => {
-              playClickSound();
-              setSelectedCharIndex(idx);
-            }}
-            className={`relative w-12 h-12 shrink-0 rounded-2xl font-['Noto_Serif_SC'] text-2xl font-bold transition-all flex items-center justify-center ${
-              selectedCharIndex === idx
-                ? 'bg-[#E85D3F] text-white shadow-lg shadow-[#E85D3F]/30 scale-105'
-                : 'bg-white dark:bg-[#1E293B] text-[#243447] dark:text-white border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]'
-            }`}
-          >
-            <span>{c.char}</span>
-            {c.isCustom && (
-              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#45B97C] border-2 border-white dark:border-[#1E293B]" title="Chữ do bạn thêm" />
-            )}
-          </button>
-        ))}
+        {allCharacters.map((c, idx) => {
+          const charScore = savedScores[c.char];
+          return (
+            <button
+              key={`${c.char}-${idx}`}
+              onClick={() => {
+                playClickSound();
+                setSelectedCharIndex(idx);
+              }}
+              className={`relative w-12 h-12 shrink-0 rounded-2xl font-['Noto_Serif_SC'] text-2xl font-bold transition-all flex items-center justify-center ${
+                selectedCharIndex === idx
+                  ? 'bg-[#E85D3F] text-white shadow-lg shadow-[#E85D3F]/30 scale-105'
+                  : 'bg-white dark:bg-[#1E293B] text-[#243447] dark:text-white border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]'
+              }`}
+            >
+              <span>{c.char}</span>
+              {charScore !== undefined && (
+                <span
+                  className={`absolute -bottom-1 -right-1 text-[9px] font-black px-1 rounded-md text-white shadow-xs ${
+                    charScore >= 80 ? 'bg-emerald-500' : charScore >= 65 ? 'bg-blue-500' : 'bg-amber-500'
+                  }`}
+                  title={`Điểm cao nhất: ${charScore}/100`}
+                >
+                  {charScore}
+                </span>
+              )}
+              {c.isCustom && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#45B97C] border-2 border-white dark:border-[#1E293B]" title="Chữ do bạn thêm" />
+              )}
+            </button>
+          );
+        })}
 
         <button
           onClick={() => {
@@ -445,10 +731,17 @@ export default function WritingPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-[#E85D3F] px-2.5 py-1 rounded-lg bg-[#FDEEEB] dark:bg-[#2D1E1B]">
-                {currentChar.strokesCount} nét
+                {currentChar.strokesCount} nét chuẩn
+              </span>
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border transition-colors ${
+                strokeCount === (currentChar.strokesCount || 4)
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                  : 'bg-[#FFF9F2] dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] border-[#F1E5D8] dark:border-[#2B3A4F]'
+              }`}>
+                Đã viết: {strokeCount} nét
               </span>
               <span className="text-xs font-semibold text-[#748092] dark:text-[#94A3B8]">
-                {currentChar.radical}
+                Bộ {currentChar.radical}
               </span>
               {currentChar.isCustom && (
                 <button
@@ -464,7 +757,7 @@ export default function WritingPage() {
               <button
                 onClick={() => setShowGuide(!showGuide)}
                 title="Bật/tắt nét mờ hướng dẫn"
-                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-semibold text-[#748092] hover:text-[#243447] dark:hover:text-white flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-semibold text-[#748092] hover:text-[#243447] dark:hover:text-white flex items-center gap-1.5 transition-colors"
               >
                 {showGuide ? <EyeOff size={14} /> : <Eye size={14} />}
                 <span>{showGuide ? 'Ẩn nét mẫu' : 'Hiện nét mẫu'}</span>
@@ -586,7 +879,7 @@ export default function WritingPage() {
             <button
               onClick={handleEvaluate}
               disabled={!hasDrawn}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] disabled:opacity-40 text-white font-bold text-xs shadow-md shadow-[#E85D3F]/30 hover:scale-102 active:scale-95 transition-all flex items-center gap-2"
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] disabled:opacity-40 text-white font-bold text-xs shadow-md shadow-[#E85D3F]/30 hover:scale-102 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
             >
               <Check size={16} />
               <span>Chấm điểm nét viết</span>
@@ -595,19 +888,155 @@ export default function WritingPage() {
 
           {/* AI Score Feedback Box */}
           {evaluationResult && (
-            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 space-y-1.5 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                  <Award size={16} />
-                  <span>Đánh giá nét viết: {evaluationResult.rank}</span>
-                </span>
-                <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
-                  {evaluationResult.score}/100
-                </span>
+            <div className={`p-5 rounded-3xl border transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-4 shadow-sm ${
+              evaluationResult.score >= 90
+                ? 'bg-gradient-to-br from-emerald-50/80 to-teal-50/40 dark:from-emerald-950/40 dark:to-[#1E293B] border-emerald-300 dark:border-emerald-800'
+                : evaluationResult.score >= 78
+                ? 'bg-gradient-to-br from-blue-50/80 to-indigo-50/40 dark:from-blue-950/40 dark:to-[#1E293B] border-blue-300 dark:border-blue-800'
+                : evaluationResult.score >= 65
+                ? 'bg-gradient-to-br from-amber-50/80 to-yellow-50/40 dark:from-amber-950/40 dark:to-[#1E293B] border-amber-300 dark:border-amber-800'
+                : 'bg-gradient-to-br from-orange-50/80 to-rose-50/40 dark:from-orange-950/40 dark:to-[#1E293B] border-orange-300 dark:border-orange-800'
+            }`}>
+              {/* Header: Rank + Big Score + XP */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-xs ${
+                      evaluationResult.score >= 90
+                        ? 'bg-emerald-500 text-white'
+                        : evaluationResult.score >= 78
+                        ? 'bg-blue-500 text-white'
+                        : evaluationResult.score >= 65
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-orange-500 text-white'
+                    }`}>
+                      <Award size={14} />
+                      <span>{evaluationResult.rankBadge}</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/70 px-2 py-0.5 rounded-lg border border-amber-300 dark:border-amber-800">
+                      <Sparkles size={12} />
+                      +{evaluationResult.xpEarned} XP
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#243447] dark:text-[#E2E8F0] font-medium leading-relaxed">
+                    {evaluationResult.comment}
+                  </p>
+                </div>
+
+                <div className="shrink-0 text-center">
+                  <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center font-black shadow-md ${
+                    evaluationResult.score >= 90
+                      ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                      : evaluationResult.score >= 78
+                      ? 'bg-blue-500 text-white shadow-blue-500/30'
+                      : evaluationResult.score >= 65
+                      ? 'bg-amber-500 text-white shadow-amber-500/30'
+                      : 'bg-orange-500 text-white shadow-orange-500/30'
+                  }`}>
+                    <span className="text-2xl leading-none">{evaluationResult.score}</span>
+                    <span className="text-[10px] opacity-80 uppercase tracking-wider font-semibold">Điểm</span>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-emerald-900 dark:text-emerald-200">
-                {evaluationResult.comment}
-              </p>
+
+              {/* Rubric Breakdown Progress Bars */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-black/5 dark:border-white/10">
+                {/* 1. Shape */}
+                <div className="p-3 rounded-2xl bg-white/80 dark:bg-[#1E293B]/80 border border-black/5 dark:border-white/5 space-y-1.5 shadow-2xs">
+                  <div className="flex items-center justify-between text-[11px] font-bold">
+                    <span className="flex items-center gap-1 text-[#243447] dark:text-[#E2E8F0]">
+                      <Target size={13} className="text-[#E85D3F]" />
+                      <span>Hình thể nét</span>
+                    </span>
+                    <span className="text-[#E85D3F] font-black">{evaluationResult.shapeScore}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                    <div 
+                      className="h-full bg-[#E85D3F] rounded-full transition-all duration-500" 
+                      style={{ width: `${evaluationResult.shapeScore}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-[#748092] dark:text-[#94A3B8] block">Độ khớp khuôn mẫu</span>
+                </div>
+
+                {/* 2. Balance */}
+                <div className="p-3 rounded-2xl bg-white/80 dark:bg-[#1E293B]/80 border border-black/5 dark:border-white/5 space-y-1.5 shadow-2xs">
+                  <div className="flex items-center justify-between text-[11px] font-bold">
+                    <span className="flex items-center gap-1 text-[#243447] dark:text-[#E2E8F0]">
+                      <Scale size={13} className="text-blue-500" />
+                      <span>Trọng tâm ô</span>
+                    </span>
+                    <span className="text-blue-600 dark:text-blue-400 font-black">{evaluationResult.balanceScore}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 rounded-full transition-all duration-500" 
+                      style={{ width: `${evaluationResult.balanceScore}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-[#748092] dark:text-[#94A3B8] block">Tâm mễ tự cách</span>
+                </div>
+
+                {/* 3. Strokes */}
+                <div className="p-3 rounded-2xl bg-white/80 dark:bg-[#1E293B]/80 border border-black/5 dark:border-white/5 space-y-1.5 shadow-2xs">
+                  <div className="flex items-center justify-between text-[11px] font-bold">
+                    <span className="flex items-center gap-1 text-[#243447] dark:text-[#E2E8F0]">
+                      <PenTool size={13} className="text-emerald-500" />
+                      <span>Số nét bút</span>
+                    </span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-black">{evaluationResult.strokeScore}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                    <div 
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-500" 
+                      style={{ width: `${evaluationResult.strokeScore}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-[#748092] dark:text-[#94A3B8] block">
+                    {evaluationResult.actualStrokes}/{evaluationResult.expectedStrokes} nét viết
+                  </span>
+                </div>
+              </div>
+
+              {/* Specific Constructive Tips */}
+              {evaluationResult.tips && evaluationResult.tips.length > 0 && (
+                <div className="p-3 rounded-2xl bg-white/60 dark:bg-black/20 border border-black/5 dark:border-white/5 space-y-1.5">
+                  <span className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8] flex items-center gap-1.5">
+                    <Info size={12} />
+                    <span>Chi tiết nhận xét & gợi ý rèn nét:</span>
+                  </span>
+                  <ul className="text-xs text-[#243447] dark:text-[#CBD5E1] space-y-1 list-disc list-inside">
+                    {evaluationResult.tips.map((tip, idx) => (
+                      <li key={idx} className="leading-relaxed">{tip}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Quick Actions */}
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                <button
+                  onClick={clearCanvas}
+                  className="px-4 py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-black/10 dark:border-white/10 text-xs font-bold text-[#243447] dark:text-white hover:bg-gray-50 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <RotateCcw size={14} />
+                  <span>Viết lại chữ này</span>
+                </button>
+
+                {selectedCharIndex < allCharacters.length - 1 && (
+                  <button
+                    onClick={() => {
+                      playClickSound();
+                      setSelectedCharIndex(prev => prev + 1);
+                      clearCanvas();
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md shadow-[#E85D3F]/25 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <span>Luyện chữ tiếp theo</span>
+                    <ArrowRight size={14} />
+                  </button>
+                )}
+              </div>
             </div>
           )}
 

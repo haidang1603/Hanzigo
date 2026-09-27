@@ -16,7 +16,7 @@ import {
 import AudioButton from '../components/AudioButton';
 import { CONVERSATIONS_DATA } from '../data/chineseData';
 import { speakChinese, playSuccessSound, playClickSound } from '../utils/audio';
-import { triggerCloudSync } from '../firebase/services';
+import { triggerCloudSync } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
 
 const STORAGE_KEY = 'hanzigo_ai_chat_history';

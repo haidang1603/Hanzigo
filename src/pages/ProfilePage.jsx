@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   User, 
   Flame, 
@@ -9,14 +9,46 @@ import {
   LogOut, 
   Calendar,
   Award,
-  CheckCircle2
+  CheckCircle2,
+  Edit3,
+  Camera,
+  Upload,
+  X,
+  Check,
+  Sparkles,
+  Shield,
+  BookOpen
 } from 'lucide-react';
 import { USER_ACHIEVEMENTS } from '../data/chineseData';
 import { playClickSound, playSuccessSound } from '../utils/audio';
-import { calculateTotalXp, getStreakStatus, getUserLevelInfo } from '../utils/gamification';
+import { calculateTotalXp, getStreakStatus, getUserLevelInfo, getUserStorageKey } from '../utils/gamification';
+import { updateUserProfile } from '../supabase/services.js';
+
+// Preset avatar collection
+const PRESET_AVATARS = [
+  { id: 'panda', name: 'Gấu trúc', emoji: '🐼', color: '#FFF5F2' },
+  { id: 'tiger', name: 'Hổ dũng', emoji: '🐯', color: '#FEF7E9' },
+  { id: 'dragon', name: 'Rồng vàng', emoji: '🐲', color: '#FFF8E6' },
+  { id: 'scholar', name: 'Học sĩ', emoji: '🎓', color: '#EBF8F2' },
+  { id: 'monkey', name: 'Đại Thánh', emoji: '🐒', color: '#FDEEEB' },
+  { id: 'lantern', name: 'Lồng đèn', emoji: '🏮', color: '#FDEEEB' },
+  { id: 'tea', name: 'Trà đạo', emoji: '🍵', color: '#EBF8F2' },
+  { id: 'bamboo', name: 'Trúc xanh', emoji: '🎋', color: '#EBF8F2' }
+];
+
+const HSK_LEVEL_OPTIONS = [
+  'Nhập môn - Pinyin & Nét bút',
+  'HSK 1 - Sơ cấp',
+  'HSK 2 - Sơ cấp nâng cao',
+  'HSK 3 - Trung cấp 1',
+  'HSK 4 - Trung cấp 2',
+  'HSK 5 - Cao cấp 1',
+  'HSK 6 - Cao cấp 2'
+];
 
 export default function ProfilePage({ 
   user, 
+  onUpdateUser,
   onLogout, 
   darkMode, 
   setDarkMode, 
@@ -27,54 +59,70 @@ export default function ProfilePage({
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState('15');
   const [showSavedToast, setShowSavedToast] = useState(false);
 
-  const streakStatus = useMemo(() => getStreakStatus(), []);
+  // Edit Profile Modal States
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editLevel, setEditLevel] = useState(user?.level || 'HSK 1 - Sơ cấp');
+  const [editAvatar, setEditAvatar] = useState(() => user?.avatar || localStorage.getItem('hanzigo_custom_avatar') || '');
+  const [editBio, setEditBio] = useState(() => user?.bio || localStorage.getItem('hanzigo_user_bio') || '');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileToast, setProfileToast] = useState('');
+
+  const fileInputRef = useRef(null);
+
+  const streakStatus = useMemo(() => getStreakStatus(user), [user]);
   const streakCount = Math.max(streakStatus.streak, user?.streak || 0);
 
-  // Dynamic learning stats from storage
+  // Dynamic learning stats from storage for this specific user
   const rememberedIds = useMemo(() => {
     try {
-      const s = localStorage.getItem('hanzigo_vocab_remembered');
+      const key = getUserStorageKey('hanzigo_vocab_remembered', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_vocab_remembered'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
-  }, []);
+  }, [user]);
 
   const completedLessonIds = useMemo(() => {
     try {
-      const s = localStorage.getItem('hanzigo_completed_lessons');
+      const key = getUserStorageKey('hanzigo_completed_lessons', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_completed_lessons'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
-  }, []);
+  }, [user]);
 
   const pronounceHistory = useMemo(() => {
     try {
-      const s = localStorage.getItem('hanzigo_pronounce_history');
+      const key = getUserStorageKey('hanzigo_pronounce_history', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_pronounce_history'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
-  }, []);
+  }, [user]);
 
   const customWritingChars = useMemo(() => {
     try {
-      const s = localStorage.getItem('hanzigo_custom_writing_chars');
+      const key = getUserStorageKey('hanzigo_custom_writing_chars', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_custom_writing_chars'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
-  }, []);
+  }, [user]);
 
   const aiChatHistory = useMemo(() => {
     try {
-      const s = localStorage.getItem('hanzigo_ai_chat_history');
+      const key = getUserStorageKey('hanzigo_ai_chat_history', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_ai_chat_history'));
       return s ? JSON.parse(s) : {};
     } catch {
       return {};
     }
-  }, []);
+  }, [user]);
 
   const wordsLearnedCount = rememberedIds.length > 0 ? rememberedIds.length : (user?.wordsLearned || 0);
 
@@ -120,6 +168,146 @@ export default function ProfilePage({
     });
   }, [streakCount, streakStatus.hasStudiedToday]);
 
+  const handleOpenEditModal = () => {
+    playClickSound();
+    setEditName(user?.name || '');
+    setEditLevel(user?.level || 'HSK 1 - Sơ cấp');
+    setEditAvatar(user?.avatar || localStorage.getItem('hanzigo_custom_avatar') || '');
+    setEditBio(user?.bio || localStorage.getItem('hanzigo_user_bio') || '');
+    setIsEditModalOpen(true);
+  };
+
+  // Helper: Compress and center-crop uploaded image to compact 256x256 DataURL (~20KB)
+  const compressAvatarImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const targetSize = 256;
+          canvas.width = targetSize;
+          canvas.height = targetSize;
+          const ctx = canvas.getContext('2d');
+
+          // Center-crop to square
+          const minDim = Math.min(img.width, img.height);
+          const startX = (img.width - minDim) / 2;
+          const startY = (img.height - minDim) / 2;
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, targetSize, targetSize);
+
+          // Compress to JPEG with 0.85 quality (~15-25KB, safe for localStorage & DB)
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          resolve(compressedDataUrl);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Handle local image file upload with instant compression
+  const handleImageFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Vui lòng chọn ảnh có kích thước dưới 10MB.');
+      return;
+    }
+
+    try {
+      const compressedDataUrl = await compressAvatarImage(file);
+      setEditAvatar(compressedDataUrl);
+      playClickSound();
+    } catch (err) {
+      console.error('Image compression failed:', err);
+      // Fallback to direct read if canvas fails
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setEditAvatar(event.target.result);
+        playClickSound();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Save profile changes to local state & Supabase
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    if (!editName.trim()) {
+      alert('Vui lòng nhập họ và tên của bạn.');
+      return;
+    }
+
+    setIsSavingProfile(true);
+    playSuccessSound();
+
+    const finalAvatar = editAvatar || null;
+
+    const updatedData = {
+      name: editName.trim(),
+      level: editLevel,
+      avatar: finalAvatar,
+      bio: editBio.trim()
+    };
+
+    // 1. Persist custom avatar locally immediately
+    try {
+      if (finalAvatar) {
+        localStorage.setItem('hanzigo_custom_avatar', finalAvatar);
+      } else {
+        localStorage.removeItem('hanzigo_custom_avatar');
+      }
+      localStorage.setItem('hanzigo_user_bio', updatedData.bio);
+    } catch (err) {
+      console.warn('LocalStorage avatar save error:', err);
+    }
+
+    // 2. Update Supabase if user is logged in
+    const uid = user?.uid || user?.id;
+    if (uid) {
+      try {
+        await updateUserProfile(uid, {
+          name: updatedData.name,
+          level: updatedData.level,
+          avatar: updatedData.avatar
+        });
+      } catch (err) {
+        console.warn('Could not sync profile to Supabase:', err);
+      }
+    }
+
+    // 3. Update global user state in App.jsx
+    if (onUpdateUser) {
+      onUpdateUser(prev => {
+        const next = {
+          ...(prev || {}),
+          name: updatedData.name,
+          level: updatedData.level,
+          avatar: updatedData.avatar,
+          bio: updatedData.bio
+        };
+        try {
+          localStorage.setItem('hanzigo_user', JSON.stringify(next));
+        } catch (e) {
+          console.warn('LocalStorage save hanzigo_user error:', e);
+        }
+        return next;
+      });
+    }
+
+    setIsSavingProfile(false);
+    setIsEditModalOpen(false);
+    setProfileToast('Đã cập nhật thông tin cá nhân và ảnh đại diện thành công!');
+    setTimeout(() => setProfileToast(''), 3000);
+  };
+
   const handleSaveSettings = (e) => {
     e.preventDefault();
     playSuccessSound();
@@ -130,34 +318,87 @@ export default function ProfilePage({
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
       
+      {/* Toast Notification */}
+      {profileToast && (
+        <div className="fixed top-20 right-5 z-50 p-4 rounded-2xl bg-emerald-600 text-white shadow-xl flex items-center gap-3 animate-in slide-in-from-top duration-300">
+          <CheckCircle2 size={20} />
+          <span className="text-xs sm:text-sm font-bold">{profileToast}</span>
+        </div>
+      )}
+
       {/* Profile Header Card */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
         
-        <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
-          {user?.avatar ? (
-            <img 
-              src={user.avatar} 
-              alt={user.name}
-              className="w-20 h-20 rounded-full object-cover border-4 border-[#E85D3F] shadow-md"
-            />
-          ) : (
-            <div className="w-20 h-20 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border-4 border-[#E85D3F] flex items-center justify-center text-[#E85D3F] font-bold text-2xl shadow-md">
-              {user?.name ? user.name.charAt(0).toUpperCase() : <User size={36} />}
+        {/* Subtle background ambient */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-[#E85D3F]/10 via-[#F4B942]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left z-10">
+          
+          {/* Avatar with Camera Action Button */}
+          <div 
+            className="relative group cursor-pointer"
+            onClick={handleOpenEditModal}
+            title="Bấm để đổi ảnh đại diện"
+          >
+            {(() => {
+              const activeAvatar = user?.avatar || localStorage.getItem('hanzigo_custom_avatar') || null;
+              if (activeAvatar) {
+                return activeAvatar.length <= 4 ? (
+                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full bg-[#FFF5F2] dark:bg-[#2C1D1A] border-4 border-[#E85D3F] flex items-center justify-center text-4xl shadow-md group-hover:scale-105 transition-transform">
+                    {activeAvatar}
+                  </div>
+                ) : (
+                  <img 
+                    src={activeAvatar} 
+                    alt={user?.name || 'Avatar'}
+                    className="w-20 h-20 sm:w-22 sm:h-22 rounded-full object-cover border-4 border-[#E85D3F] shadow-md group-hover:scale-105 transition-transform"
+                  />
+                );
+              }
+              return (
+                <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border-4 border-[#E85D3F] flex items-center justify-center text-[#E85D3F] font-black text-3xl shadow-md group-hover:scale-105 transition-transform">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : <User size={40} />}
+                </div>
+              );
+            })()}
+
+            <button 
+              type="button"
+              className="absolute bottom-0 right-0 p-2 rounded-full bg-[#E85D3F] hover:bg-[#CB4529] text-white shadow-md border-2 border-white dark:border-[#1E293B] transition-transform group-hover:scale-110"
+              title="Đổi ảnh đại diện"
+            >
+              <Camera size={14} />
+            </button>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white">
+                {user?.name || 'Học viên HanziGo'}
+              </h1>
+              {user?.level && (
+                <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] text-[11px] font-bold border border-[#F4B942]/30 w-fit mx-auto sm:mx-0">
+                  {user.level}
+                </span>
+              )}
             </div>
-          )}
-          <div className="space-y-1">
-            <h1 className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white">
-              {user?.name || 'Học viên HanziGo'}
-            </h1>
+
             <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-              {user?.email || 'Tài khoản chưa đăng nhập'}
+              {user?.email || 'Tài khoản học viên'}
             </p>
+
+            {(user?.bio || localStorage.getItem('hanzigo_user_bio')) && (
+              <p className="text-xs text-[#E85D3F] dark:text-[#F7A693] font-medium italic pt-0.5">
+                “{user?.bio || localStorage.getItem('hanzigo_user_bio')}”
+              </p>
+            )}
+
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] text-xs font-bold flex items-center gap-1">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] text-xs font-bold flex items-center gap-1 border border-[#45B97C]/20">
                 <span>{levelInfo.badge}</span>
                 <span>{levelInfo.title}</span>
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] text-xs font-bold flex items-center gap-1">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] text-xs font-bold flex items-center gap-1 border border-[#F4B942]/20">
                 <Flame size={12} className="fill-[#F4B942]" />
                 <span>Streak {streakCount} ngày</span>
               </span>
@@ -165,18 +406,237 @@ export default function ProfilePage({
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            playClickSound();
-            onLogout();
-          }}
-          className="px-4 py-2 rounded-xl border border-red-200 dark:border-red-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-bold transition-colors flex items-center gap-1.5 self-center md:self-start"
-        >
-          <LogOut size={14} />
-          <span>Đăng xuất</span>
-        </button>
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-2.5 self-center md:self-start z-10">
+          <button
+            onClick={handleOpenEditModal}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white text-xs font-bold transition-all shadow-md shadow-[#E85D3F]/25 hover:shadow-lg hover:shadow-[#E85D3F]/35 flex items-center gap-1.5 cursor-pointer"
+          >
+            <Edit3 size={14} />
+            <span>Chỉnh sửa hồ sơ</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              playClickSound();
+              onLogout();
+            }}
+            className="px-3.5 py-2 rounded-xl border border-red-200 dark:border-red-900/60 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <LogOut size={14} />
+            <span>Đăng xuất</span>
+          </button>
+        </div>
 
       </div>
+
+      {/* Edit Profile Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg bg-white dark:bg-[#1E293B] rounded-3xl shadow-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] overflow-hidden max-h-[90vh] flex flex-col"
+          >
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[#E85D3F] to-[#CB4529] p-5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Edit3 size={20} />
+                <h3 className="text-base sm:text-lg font-bold">Chỉnh sửa hồ sơ cá nhân</h3>
+              </div>
+              <button 
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-1 rounded-full hover:bg-white/20 transition-colors text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSaveProfile} className="p-6 overflow-y-auto space-y-6">
+              
+              {/* 1. Avatar Selection Section */}
+              <div className="space-y-3 pb-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F]">
+                <label className="block text-xs font-bold text-[#243447] dark:text-white uppercase tracking-wider">
+                  Ảnh đại diện (Avatar)
+                </label>
+
+                <div className="flex items-center gap-4">
+                  {/* Avatar Preview */}
+                  <div className="relative">
+                    {editAvatar ? (
+                      editAvatar.length <= 4 ? (
+                        <div className="w-20 h-20 rounded-full bg-[#FFF5F2] dark:bg-[#2C1D1A] border-4 border-[#E85D3F] flex items-center justify-center text-4xl shadow-md">
+                          {editAvatar}
+                        </div>
+                      ) : (
+                        <img 
+                          src={editAvatar} 
+                          alt="Avatar preview" 
+                          className="w-20 h-20 rounded-full object-cover border-4 border-[#E85D3F] shadow-md"
+                        />
+                      )
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border-4 border-[#E85D3F] flex items-center justify-center text-[#E85D3F] font-black text-2xl shadow-md">
+                        {editName ? editName.charAt(0).toUpperCase() : <User size={36} />}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 flex-1">
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={handleImageFileChange} 
+                    />
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3.5 py-1.5 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#E85D3F]/40 text-[#E85D3F] hover:bg-[#FDEEEB] dark:hover:bg-[#2D1E1B] text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+                      >
+                        <Upload size={14} />
+                        <span>Tải ảnh từ máy</span>
+                      </button>
+
+                      {editAvatar && (
+                        <button
+                          type="button"
+                          onClick={() => setEditAvatar('')}
+                          className="px-3 py-1.5 rounded-xl border border-gray-300 dark:border-gray-700 text-[#748092] hover:text-red-500 text-xs font-semibold transition-colors cursor-pointer"
+                        >
+                          Xóa ảnh
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-[#748092] dark:text-[#94A3B8]">
+                      Hỗ trợ định dạng JPG, PNG, WEBP (Tối đa 4MB).
+                    </p>
+                  </div>
+                </div>
+
+                {/* Preset Avatars Grid */}
+                <div className="pt-2">
+                  <p className="text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-2">
+                    Hoặc chọn linh vật may mắn có sẵn:
+                  </p>
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                    {PRESET_AVATARS.map((p) => {
+                      const isSelected = editAvatar === p.emoji;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            playClickSound();
+                            setEditAvatar(p.emoji);
+                          }}
+                          className={`p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 border transition-all cursor-pointer ${
+                            isSelected 
+                              ? 'bg-[#FDEEEB] dark:bg-[#2D1E1B] border-[#E85D3F] scale-105 shadow-sm' 
+                              : 'bg-[#FFF9F2] dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]/50'
+                          }`}
+                        >
+                          <span className="text-2xl">{p.emoji}</span>
+                          <span className="text-[9px] font-bold text-[#748092] dark:text-[#94A3B8] truncate w-full text-center">
+                            {p.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Personal Information Fields */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
+                    Họ và tên hiển thị *
+                  </label>
+                  <input 
+                    type="text" 
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Ví dụ: Nguyễn Văn An"
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
+                    Trình độ hiện tại / Mục tiêu
+                  </label>
+                  <select 
+                    value={editLevel}
+                    onChange={(e) => setEditLevel(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  >
+                    {HSK_LEVEL_OPTIONS.map((lvl) => (
+                      <option key={lvl} value={lvl}>{lvl}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
+                    Châm ngôn / Mục tiêu học tập cá nhân
+                  </label>
+                  <textarea 
+                    value={editBio}
+                    onChange={(e) => setEditBio(e.target.value)}
+                    placeholder="Ví dụ: Mục tiêu đạt HSK 3 trong 3 tháng tới! Mỗi ngày học 15 phút."
+                    rows={2}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-medium text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1.5 flex items-center gap-1.5">
+                    <Shield size={13} />
+                    <span>Email đăng nhập (Không thể thay đổi)</span>
+                  </label>
+                  <input 
+                    type="email" 
+                    value={user?.email || 'Chưa đăng nhập'}
+                    disabled
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800 text-xs font-medium text-[#748092] cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              {/* Modal Footer Actions */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-[#748092] hover:bg-gray-100 dark:hover:bg-gray-800 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingProfile}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white text-xs font-bold transition-all shadow-md shadow-[#E85D3F]/30 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingProfile ? (
+                    <span>Đang lưu...</span>
+                  ) : (
+                    <>
+                      <Check size={16} />
+                      <span>Lưu thay đổi</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Level Progress Banner */}
       <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500/10 via-[#FFF9F2] to-amber-500/10 dark:from-[#1E293B] dark:via-[#131B24] dark:to-[#1E293B] border border-amber-200 dark:border-amber-900/40 shadow-sm space-y-3">
@@ -422,7 +882,7 @@ export default function ProfilePage({
           <div className="pt-4">
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white font-bold text-xs shadow-md transition-all"
+              className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white font-bold text-xs shadow-md transition-all cursor-pointer"
             >
               Lưu cài đặt
             </button>

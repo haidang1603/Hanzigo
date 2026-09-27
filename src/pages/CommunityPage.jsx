@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import { 
   Heart, 
   MessageCircle, 
@@ -18,7 +19,13 @@ import {
   Check,
   Award,
   Pin,
-  Database
+  Database,
+  RefreshCw,
+  PhoneCall,
+  Calendar,
+  Layers,
+  HelpCircle,
+  Clock
 } from 'lucide-react';
 import { COMMUNITY_POSTS } from '../data/chineseData';
 import { playClickSound, playSuccessSound } from '../utils/audio';
@@ -30,7 +37,8 @@ import {
   getStudyPartnersFromDb,
   addStudyPartnerToDb,
   deleteStudyPartnerFromDb
-} from '../firebase/services';
+} from '../supabase/services';
+import { awardXp } from '../utils/gamification';
 
 const STORAGE_KEYS = {
   POSTS: 'hanzigo_community_posts',
@@ -41,48 +49,105 @@ const STORAGE_KEYS = {
 };
 
 const TAG_FILTERS = [
-  { id: 'all', label: 'Tất cả' },
+  { id: 'all', label: 'Tất cả bài viết' },
   { id: '#HoiDapNguPhap', label: '#HỏiĐápNgữPháp' },
   { id: '#TimBanLuyenNoi', label: '#TìmBạnLuyệnNói' },
   { id: '#KinhNghiemHoc', label: '#KinhNghiệmHọc' },
   { id: '#ThiHSK', label: '#ThiHSK' },
-  { id: 'saved', label: 'Đã lưu' }
+  { id: 'saved', label: '⭐ Đã lưu' }
 ];
 
+const QUICK_POST_PROMPTS = [
+  {
+    tag: '#HoiDapNguPhap',
+    label: '💡 Phân biệt câu chữ 把 & 被',
+    prompt: 'Mọi người cho mình hỏi câu chữ 把 (Bǎ) và câu chữ 被 (Bèi) khác nhau cơ bản thế nào và khi nào bắt buộc phải dùng câu chữ 把 ạ? Xin cảm ơn cả nhà!'
+  },
+  {
+    tag: '#TimBanLuyenNoi',
+    label: '🗣️ Tìm bạn luyện nói tối nay',
+    prompt: 'Chào các bạn! Mình đang học HSK 2 lên HSK 3, muốn tìm 1 bạn cùng luyện khẩu ngữ 20 - 30 phút mỗi tối qua Zalo hoặc Google Meet. Bạn nào cùng mục tiêu thì kết nối nhé!'
+  },
+  {
+    tag: '#KinhNghiemHoc',
+    label: '📚 Mẹo nhớ nhanh 214 bộ thủ',
+    prompt: 'Chia sẻ kinh nghiệm: Mình thấy học chữ Hán qua chiết tự và 214 bộ thủ Khang Hy nhớ nhanh hơn rất nhiều so với chép tay từng nét. Mọi người hay áp dụng phương pháp nào?'
+  },
+  {
+    tag: '#ThiHSK',
+    label: '🎯 Kinh nghiệm phân bổ thời gian thi HSK',
+    prompt: 'Các bạn từng thi HSK cho mình xin lời khuyên: Trong phần Nghe hiểu (听力) và Đọc hiểu (阅读), phần nào dễ bẫy nhất và cần lưu ý phân bổ thời gian làm bài thế nào ạ?'
+  }
+];
+
+const FAKE_AUTHORS = [
+  'Trần Thảo Ly', 
+  'Đặng Quốc Anh', 
+  'Phạm Thu Trang', 
+  'Nguyễn Thu Trang', 
+  'Trần Đăng Khoa', 
+  'Lê Hoàng Nam'
+];
+
+const FAKE_PARTNERS = [
+  'Nguyễn Thị Ánh Tuyết', 
+  'Hoàng Minh Tuấn', 
+  'Vũ Lan Phương', 
+  'Nguyễn Thúy Hằng', 
+  'Lê Tuấn Anh', 
+  'Đặng Mai Phương'
+];
+
+export function isFakePost(p) {
+  if (!p) return true;
+  const author = (p.author_name || p.author || '').trim();
+  return FAKE_AUTHORS.some(fake => author.includes(fake));
+}
+
+export function isFakePartner(p) {
+  if (!p) return true;
+  const name = (p.name || '').trim();
+  return FAKE_PARTNERS.some(fake => name.includes(fake));
+}
+
 export default function CommunityPage({ user }) {
-  // Posts state initialized from localStorage
+  // Posts state initialized from localStorage with demo user purge
   const [posts, setPosts] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.POSTS);
       if (saved) {
         const parsed = JSON.parse(saved);
-        const clean = Array.isArray(parsed) 
-          ? parsed.filter(p => p.author !== 'Nguyễn Thu Trang' && p.author !== 'Trần Đăng Khoa' && p.author !== 'Lê Hoàng Nam')
-          : [];
-        if (clean.length > 0) {
+        if (Array.isArray(parsed)) {
+          const clean = parsed.filter(p => !isFakePost(p));
+          localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(clean));
           return clean;
         }
       }
-      return COMMUNITY_POSTS;
-    } catch {
-      return COMMUNITY_POSTS;
-    }
+    } catch {}
+    const defaultClean = COMMUNITY_POSTS.filter(p => !isFakePost(p));
+    try {
+      localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(defaultClean));
+    } catch {}
+    return defaultClean;
   });
 
-  // Study Partners state from localStorage (sanitizing legacy demo partners)
+  // Study Partners state from localStorage with demo user purge
   const [studyPartners, setStudyPartners] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.PARTNERS);
       if (saved) {
         const parsed = JSON.parse(saved);
-        return Array.isArray(parsed) 
-          ? parsed.filter(p => p.name !== 'Nguyễn Thúy Hằng' && p.name !== 'Lê Tuấn Anh' && p.name !== 'Đặng Mai Phương')
-          : [];
+        if (Array.isArray(parsed)) {
+          const clean = parsed.filter(p => !isFakePartner(p));
+          localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(clean));
+          return clean;
+        }
       }
-      return [];
-    } catch {
-      return [];
-    }
+    } catch {}
+    try {
+      localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify([]));
+    } catch {}
+    return [];
   });
 
   // Challenge state from localStorage
@@ -109,20 +174,22 @@ export default function CommunityPage({ user }) {
     }
   });
 
-  // State tracking Firestore DB sync
+  // State tracking Supabase DB sync
   const [isCloudSynced, setIsCloudSynced] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Load latest posts and study partners from Firestore DB on mount
+  // Load latest posts and study partners from Supabase DB on mount
   useEffect(() => {
     let isMounted = true;
 
-    // Sync posts from Firestore
+    // Sync posts from Supabase (purging any demo data)
     getCommunityPosts().then((dbPosts) => {
-      if (isMounted && dbPosts && dbPosts.length > 0) {
-        setPosts(dbPosts);
+      if (isMounted && dbPosts) {
+        const clean = dbPosts.filter(p => !isFakePost(p));
+        setPosts(clean);
         setIsCloudSynced(true);
         try {
-          localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(dbPosts));
+          localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(clean));
         } catch (e) {
           console.error(e);
         }
@@ -133,12 +200,13 @@ export default function CommunityPage({ user }) {
       if (isMounted) setIsCloudSynced(false);
     });
 
-    // Sync study partners from Firestore
+    // Sync study partners from Supabase (purging any demo data)
     getStudyPartnersFromDb().then((dbPartners) => {
-      if (isMounted && dbPartners && dbPartners.length > 0) {
-        setStudyPartners(dbPartners);
+      if (isMounted && dbPartners) {
+        const clean = dbPartners.filter(p => !isFakePartner(p));
+        setStudyPartners(clean);
         try {
-          localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(dbPartners));
+          localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(clean));
         } catch (e) {
           console.error(e);
         }
@@ -155,6 +223,10 @@ export default function CommunityPage({ user }) {
   const [newPostTag, setNewPostTag] = useState('#HoiDapNguPhap');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('all');
+
+  // Study partner filter
+  const [partnerFilterLevel, setPartnerFilterLevel] = useState('all');
+  const [partnerFilterMethod, setPartnerFilterMethod] = useState('all');
 
   // Comments toggled per post: { [postId]: boolean }
   const [expandedComments, setExpandedComments] = useState({});
@@ -201,18 +273,55 @@ export default function CommunityPage({ user }) {
     }
   };
 
-  // Handle post creation with dual-layer persistence (Firestore DB + Local)
+  // Refresh data from Supabase
+  const handleRefreshCloud = async () => {
+    setIsRefreshing(true);
+    playClickSound();
+    try {
+      const [dbPosts, dbPartners] = await Promise.all([
+        getCommunityPosts(),
+        getStudyPartnersFromDb()
+      ]);
+      if (dbPosts) {
+        const cleanPosts = dbPosts.filter(p => !isFakePost(p));
+        setPosts(cleanPosts);
+        setIsCloudSynced(true);
+        localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(cleanPosts));
+      }
+      if (dbPartners) {
+        const cleanPartners = dbPartners.filter(p => !isFakePartner(p));
+        setStudyPartners(cleanPartners);
+        localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(cleanPartners));
+      }
+      showToast('Đã làm mới dữ liệu cộng đồng từ Supabase!');
+    } catch {
+      showToast('Sử dụng dữ liệu lưu trữ cục bộ.');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Handle post creation with dual-layer persistence (Supabase DB + Local)
   const handleCreatePost = (e) => {
     e.preventDefault();
     if (!newPostContent.trim()) return;
 
     playSuccessSound();
+    awardXp(20);
+    try {
+      confetti({
+        particleCount: 45,
+        spread: 60,
+        origin: { y: 0.5 }
+      });
+    } catch {}
+
     const tempId = `post-${Date.now()}`;
     const newPost = {
       id: tempId,
       author: user?.name || 'Học viên HanziGo',
       avatar: user?.avatar || null,
-      initial: user?.name ? user.name.charAt(0).toUpperCase() : 'B',
+      initial: user?.name ? user.name.charAt(0).toUpperCase() : 'H',
       level: user?.level || 'HSK 1',
       time: 'Vừa xong',
       tag: newPostTag,
@@ -227,9 +336,9 @@ export default function CommunityPage({ user }) {
     const updated = [newPost, ...posts];
     persistPosts(updated);
     setNewPostContent('');
-    showToast('Đã lưu bài viết (Đồng bộ Cloud DB & Local Storage)!');
+    showToast('Đã đăng bài viết lên cộng đồng (+20 XP)!');
 
-    // Asynchronously save to Firestore Cloud DB
+    // Asynchronously save to Supabase Cloud DB
     addCommunityPost({
       author: newPost.author,
       avatar: newPost.avatar,
@@ -254,8 +363,15 @@ export default function CommunityPage({ user }) {
         });
       }
     }).catch(err => {
-      console.warn('Firestore cloud sync fallback to local storage:', err);
+      console.warn('Supabase cloud sync fallback to local storage:', err);
     });
+  };
+
+  // Apply quick starter prompt
+  const handleApplyPrompt = (item) => {
+    playClickSound();
+    setNewPostTag(item.tag);
+    setNewPostContent(item.prompt);
   };
 
   // Toggle like
@@ -318,6 +434,7 @@ export default function CommunityPage({ user }) {
     if (!text) return;
 
     playSuccessSound();
+    awardXp(5);
     let allComments = [];
     const updated = posts.map(p => {
       if (p.id === postId) {
@@ -338,13 +455,22 @@ export default function CommunityPage({ user }) {
 
     persistPosts(updated);
     setCommentInputs(prev => ({ ...prev, [postId]: '' }));
-    showToast('Đã gửi bình luận (Đã lưu vào DB)!');
+    showToast('Đã gửi bình luận (+5 XP)!');
     updateCommunityPost(postId, { comments: allComments }).catch(() => {});
   };
 
   // Join 21-Day Challenge
   const handleJoinChallenge = () => {
     playSuccessSound();
+    awardXp(20);
+    try {
+      confetti({
+        particleCount: 55,
+        spread: 65,
+        origin: { y: 0.6 }
+      });
+    } catch {}
+
     const today = new Date().toISOString().slice(0, 10);
     const updated = {
       joined: true,
@@ -353,7 +479,7 @@ export default function CommunityPage({ user }) {
     };
     setChallengeData(updated);
     localStorage.setItem(STORAGE_KEYS.CHALLENGE, JSON.stringify(updated));
-    showToast('Chúc mừng! Bạn đã bắt đầu Thử Thách 21 Ngày!');
+    showToast('Chúc mừng! Bạn đã bắt đầu Thử Thách 21 Ngày (+20 XP)!');
   };
 
   // Daily Check-in for Challenge
@@ -365,6 +491,15 @@ export default function CommunityPage({ user }) {
     }
 
     playSuccessSound();
+    awardXp(15);
+    try {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.6 }
+      });
+    } catch {}
+
     const updated = {
       ...challengeData,
       checkIns: Math.min(21, (challengeData.checkIns || 0) + 1),
@@ -372,7 +507,7 @@ export default function CommunityPage({ user }) {
     };
     setChallengeData(updated);
     localStorage.setItem(STORAGE_KEYS.CHALLENGE, JSON.stringify(updated));
-    showToast(`Điểm danh thành công! Đã hoàn thành Ngày ${updated.checkIns}/21 (+15 XP)`);
+    showToast(`Điểm danh thành công! Đã hoàn thành Ngày ${updated.checkIns}/21 (+15 XP) 🎉`);
   };
 
   // Save new study partner request
@@ -384,6 +519,7 @@ export default function CommunityPage({ user }) {
     }
 
     playSuccessSound();
+    awardXp(15);
     const tempPartnerId = `partner-${Date.now()}`;
     const newPartner = {
       id: tempPartnerId,
@@ -407,9 +543,9 @@ export default function CommunityPage({ user }) {
       contactMethod: 'Zalo',
       contactInfo: ''
     });
-    showToast('Đã đăng bài tìm bạn học (Đồng bộ Cloud DB & Local)!');
+    showToast('Đã đăng bài tìm bạn học (+15 XP)!');
 
-    // Async sync study partner to Firestore
+    // Async sync study partner to Supabase
     addStudyPartnerToDb({
       name: newPartner.name,
       initial: newPartner.initial,
@@ -480,8 +616,15 @@ export default function CommunityPage({ user }) {
     return post.tag === selectedTag;
   });
 
+  // Filter partners
+  const filteredPartners = studyPartners.filter(p => {
+    const matchesLevel = partnerFilterLevel === 'all' || p.level === partnerFilterLevel;
+    const matchesMethod = partnerFilterMethod === 'all' || p.contactMethod === partnerFilterMethod;
+    return matchesLevel && matchesMethod;
+  });
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
       
       {/* Toast Notification */}
       {toastMessage && (
@@ -497,16 +640,22 @@ export default function CommunityPage({ user }) {
           <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">
             Không Gian Học Tập Tương Tác
           </span>
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border shadow-xs ${
-            isCloudSynced 
-              ? 'bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] border-[#45B97C]/30' 
-              : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#D97706] border-[#F4B942]/30'
-          }`}>
+          <button
+            onClick={handleRefreshCloud}
+            disabled={isRefreshing}
+            title="Đồng bộ dữ liệu cộng đồng mới nhất từ Supabase"
+            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border shadow-xs transition-all ${
+              isCloudSynced 
+                ? 'bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] border-[#45B97C]/30 hover:bg-[#D7F2E6]' 
+                : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#D97706] border-[#F4B942]/30 hover:bg-[#FDEEEB]'
+            }`}
+          >
             <Database size={11} className={isCloudSynced ? 'text-[#45B97C]' : 'text-[#D97706]'} />
-            <span>{isCloudSynced ? 'Cloud DB: Đã kết nối Firestore' : 'Database: Local Storage Ready'}</span>
-          </span>
+            <span>{isCloudSynced ? 'Cloud DB: Supabase Đã kết nối' : 'Database: Local Storage Ready'}</span>
+            <RefreshCw size={10} className={`ml-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white">
+        <h1 className="text-2xl sm:text-4xl font-black text-[#243447] dark:text-white font-['Noto_Serif_SC']">
           Cộng Đồng Người Học HanziGo
         </h1>
         <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8]">
@@ -521,15 +670,39 @@ export default function CommunityPage({ user }) {
           
           {/* Post Creation Box */}
           <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-[#243447] dark:text-white flex items-center gap-2">
-              <Sparkles size={16} className="text-[#E85D3F]" />
-              <span>Chia sẻ thắc mắc hoặc câu hỏi hôm nay</span>
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-[#243447] dark:text-white flex items-center gap-2">
+                <Sparkles size={16} className="text-[#E85D3F]" />
+                <span>Chia sẻ câu hỏi hoặc cảm nhận học tập</span>
+              </h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                +20 XP khi đăng bài
+              </span>
+            </div>
+
+            {/* Quick Starter Prompts */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-[#748092] uppercase tracking-wider block">
+                ⚡ Gợi ý chủ đề nhanh (Nhấp để điền):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_POST_PROMPTS.map((item, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleApplyPrompt(item)}
+                    className="px-2.5 py-1 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F] hover:text-[#E85D3F] transition-all font-medium"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <form onSubmit={handleCreatePost} className="space-y-3">
               <textarea
                 rows={3}
-                placeholder="Bạn đang vướng mắc ngữ pháp nào, hay muốn tìm bạn học cùng? Đăng bài chia sẻ tại đây nhé..."
+                placeholder="Bạn đang vướng mắc điểm ngữ pháp nào, hoặc muốn tìm bạn cùng học? Hãy viết câu hỏi tại đây..."
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
                 className="w-full p-4 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] resize-none"
@@ -553,9 +726,9 @@ export default function CommunityPage({ user }) {
                 <button
                   type="submit"
                   disabled={!newPostContent.trim()}
-                  className="px-5 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#D44C2E] disabled:opacity-40 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#D44C2E] disabled:opacity-40 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 active:scale-95"
                 >
-                  <span>Đăng bài</span>
+                  <span>Đăng bài (+20 XP)</span>
                   <Send size={13} />
                 </button>
               </div>
@@ -573,13 +746,21 @@ export default function CommunityPage({ user }) {
                   placeholder="Tìm kiếm bài viết, tác giả hoặc chủ đề..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-xs font-medium text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-xs font-medium text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
                 />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#748092] hover:text-[#243447]"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
               </div>
             </div>
 
             {/* Tag Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {TAG_FILTERS.map(tag => (
                 <button
                   key={tag.id}
@@ -602,7 +783,7 @@ export default function CommunityPage({ user }) {
           {/* Posts Feed List */}
           <div className="space-y-4">
             {filteredPosts.length === 0 ? (
-              <div className="p-8 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center space-y-3">
+              <div className="p-8 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center space-y-3 shadow-sm">
                 <MessageCircle size={36} className="mx-auto text-[#748092]/50" />
                 <p className="text-sm font-bold text-[#243447] dark:text-white">Chưa có bài viết nào phù hợp</p>
                 <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
@@ -627,7 +808,13 @@ export default function CommunityPage({ user }) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {post.avatar ? (
-                          <img src={post.avatar} alt={post.author} className="w-10 h-10 rounded-full object-cover border border-[#E85D3F]" />
+                          post.avatar.length <= 4 ? (
+                            <div className="w-10 h-10 rounded-full bg-[#FFF5F2] dark:bg-[#2C1D1A] border border-[#E85D3F] flex items-center justify-center text-lg shadow-sm">
+                              {post.avatar}
+                            </div>
+                          ) : (
+                            <img src={post.avatar} alt={post.author} className="w-10 h-10 rounded-full object-cover border border-[#E85D3F]" />
+                          )
                         ) : (
                           <div className={`w-10 h-10 rounded-full font-bold text-xs flex items-center justify-center border ${
                             post.isPinned 
@@ -713,8 +900,8 @@ export default function CommunityPage({ user }) {
                         <button 
                           onClick={() => {
                             playClickSound();
-                            navigator.clipboard.writeText(`${window.location.origin}/community#${post.id}`);
-                            showToast('Đã sao chép link chia sẻ bài viết!');
+                            navigator.clipboard.writeText(`${window.location.origin}/#${post.id}`);
+                            showToast('Đã sao chép liên kết bài viết!');
                           }}
                           className="p-1.5 rounded-lg hover:text-[#243447] dark:hover:text-white"
                           title="Chia sẻ"
@@ -765,9 +952,10 @@ export default function CommunityPage({ user }) {
                           <button
                             onClick={() => handleAddComment(post.id)}
                             disabled={!commentInputs[post.id]?.trim()}
-                            className="px-3.5 py-2 rounded-xl bg-[#E85D3F] disabled:opacity-40 text-white font-bold text-xs hover:bg-[#D44C2E] transition-colors"
+                            className="px-3.5 py-2 rounded-xl bg-[#E85D3F] disabled:opacity-40 text-white font-bold text-xs hover:bg-[#D44C2E] transition-colors flex items-center gap-1"
                           >
-                            <Send size={12} />
+                            <span>Gửi</span>
+                            <Send size={11} />
                           </button>
                         </div>
                       </div>
@@ -784,7 +972,7 @@ export default function CommunityPage({ user }) {
         {/* Right Sidebar (4 cols) */}
         <div className="lg:col-span-4 space-y-6">
           
-          {/* 1. Real Learner Progress & Milestones (Replaces fake demo leaderboard) */}
+          {/* 1. Real Learner Progress & Milestones */}
           <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-[#243447] dark:text-white flex items-center gap-2">
@@ -857,7 +1045,7 @@ export default function CommunityPage({ user }) {
                 Thử thách 21 ngày: Chinh phục HSK
               </h4>
               <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
-                Mỗi ngày học 15 phút, duy trì chuỗi học liên tục để nhận huy hiệu Chiến Binh Hanzi độc quyền.
+                Mỗi ngày học 15 phút, điểm danh để nhận huy hiệu Chiến Binh Hanzi độc quyền.
               </p>
             </div>
 
@@ -867,16 +1055,35 @@ export default function CommunityPage({ user }) {
                   <span className="text-[#243447] dark:text-white">Tiến độ thử thách:</span>
                   <span className="text-[#E85D3F] font-black">{challengeData.checkIns} / 21 ngày</span>
                 </div>
-                <div className="w-full h-2.5 rounded-full bg-white/70 dark:bg-black/30 overflow-hidden">
-                  <div 
-                    className="h-full bg-[#45B97C] rounded-full transition-all duration-300"
-                    style={{ width: `${Math.round((challengeData.checkIns / 21) * 100)}%` }}
-                  />
+
+                {/* 21-Day Visual Progress Calendar */}
+                <div className="grid grid-cols-7 gap-1.5 pt-1">
+                  {Array.from({ length: 21 }, (_, i) => {
+                    const dayNum = i + 1;
+                    const isCompleted = dayNum <= (challengeData.checkIns || 0);
+                    const isToday = dayNum === (challengeData.checkIns || 0) + 1 && !isCheckedInToday;
+
+                    return (
+                      <div
+                        key={dayNum}
+                        className={`h-7 rounded-lg flex items-center justify-center text-[10px] font-bold border transition-all ${
+                          isCompleted
+                            ? 'bg-[#45B97C] text-white border-[#45B97C]'
+                            : isToday
+                            ? 'bg-[#E85D3F]/15 text-[#E85D3F] border-[#E85D3F] animate-pulse'
+                            : 'bg-white/60 dark:bg-black/20 text-[#748092] border-[#F1E5D8] dark:border-[#2B3A4F]'
+                        }`}
+                        title={`Ngày ${dayNum}${isCompleted ? ': Đã hoàn thành' : ''}`}
+                      >
+                        {isCompleted ? <Check size={11} strokeWidth={3} /> : dayNum}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <button
                   onClick={handleCheckIn}
-                  className={`w-full py-2.5 rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 ${
+                  className={`w-full py-2.5 rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 ${
                     isCheckedInToday
                       ? 'bg-[#45B97C] text-white cursor-default'
                       : 'bg-[#E85D3F] hover:bg-[#CB4529] text-white'
@@ -898,14 +1105,14 @@ export default function CommunityPage({ user }) {
             ) : (
               <button
                 onClick={handleJoinChallenge}
-                className="w-full py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white font-bold text-xs shadow-md transition-all text-center"
+                className="w-full py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white font-bold text-xs shadow-md transition-all text-center active:scale-95"
               >
-                Tham gia thử thách ngay
+                Tham gia thử thách ngay (+20 XP)
               </button>
             )}
           </div>
 
-          {/* 3. Study Partner Finder (Real registered partners, zero fake data) */}
+          {/* 3. Study Partner Finder (Call 1-1) */}
           <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-[#243447] dark:text-white flex items-center gap-2">
@@ -924,11 +1131,40 @@ export default function CommunityPage({ user }) {
               </button>
             </div>
 
-            {studyPartners.length === 0 ? (
+            {/* Quick Partner Level & Method Filter */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <select
+                value={partnerFilterLevel}
+                onChange={(e) => setPartnerFilterLevel(e.target.value)}
+                className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[11px] font-semibold text-[#243447] dark:text-white focus:outline-none"
+              >
+                <option value="all">Mọi cấp độ</option>
+                <option value="HSK 1">HSK 1</option>
+                <option value="HSK 2">HSK 2</option>
+                <option value="HSK 3">HSK 3</option>
+                <option value="HSK 4">HSK 4</option>
+                <option value="Giao tiếp tự do">Giao tiếp tự do</option>
+              </select>
+
+              <select
+                value={partnerFilterMethod}
+                onChange={(e) => setPartnerFilterMethod(e.target.value)}
+                className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[11px] font-semibold text-[#243447] dark:text-white focus:outline-none"
+              >
+                <option value="all">Mọi kênh</option>
+                <option value="Zalo">Zalo</option>
+                <option value="Google Meet">Google Meet</option>
+                <option value="WeChat">WeChat</option>
+                <option value="Zoom">Zoom</option>
+                <option value="Telegram">Telegram</option>
+              </select>
+            </div>
+
+            {filteredPartners.length === 0 ? (
               <div className="p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center space-y-2">
-                <p className="text-xs font-bold text-[#243447] dark:text-white">Chưa có ai đăng ký ghép đôi</p>
+                <p className="text-xs font-bold text-[#243447] dark:text-white">Chưa có ai đăng ký phù hợp</p>
                 <p className="text-[11px] text-[#748092] dark:text-[#94A3B8]">
-                  Bạn muốn tìm bạn cùng luyện phản xạ khẩu ngữ? Hãy nhấn đăng tin để kết nối nhé!
+                  Bạn muốn tìm bạn cùng luyện phản xạ khẩu ngữ? Hãy nhấn đăng tin để ghép đôi ngay nhé!
                 </p>
                 <button
                   onClick={() => {
@@ -942,7 +1178,7 @@ export default function CommunityPage({ user }) {
               </div>
             ) : (
               <div className="space-y-3">
-                {studyPartners.map((partner) => (
+                {filteredPartners.map((partner) => (
                   <div 
                     key={partner.id}
                     className="p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2.5"
@@ -1016,7 +1252,7 @@ export default function CommunityPage({ user }) {
             <form onSubmit={handleSavePartner} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1">
-                  Họ tên hoặc biệt danh
+                  Họ tên hoặc biệt danh *
                 </label>
                 <input
                   type="text"
@@ -1056,9 +1292,9 @@ export default function CommunityPage({ user }) {
                     className="w-full px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none"
                   >
                     <option value="Zalo">Zalo</option>
-                    <option value="Zoom">Zoom</option>
                     <option value="Google Meet">Google Meet</option>
                     <option value="WeChat">WeChat</option>
+                    <option value="Zoom">Zoom</option>
                     <option value="Telegram">Telegram</option>
                   </select>
                 </div>
@@ -1066,7 +1302,7 @@ export default function CommunityPage({ user }) {
 
               <div>
                 <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1">
-                  Thông tin liên hệ (SĐT / Link / ID)
+                  Thông tin liên hệ (SĐT / Link / ID) *
                 </label>
                 <input
                   type="text"
@@ -1103,7 +1339,7 @@ export default function CommunityPage({ user }) {
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-[#45B97C] hover:bg-[#3AA56E] text-white text-xs font-bold shadow-md transition-colors"
                 >
-                  Đăng tin ngay
+                  Đăng tin ngay (+15 XP)
                 </button>
               </div>
             </form>

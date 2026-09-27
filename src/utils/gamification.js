@@ -1,9 +1,5 @@
 // Gamification, Real-time XP and Consecutive Streak Engine for HanziGo
-import { triggerCloudSync } from '../firebase/services';
-
-const STORAGE_BONUS_XP = 'hanzigo_bonus_xp';
-const STORAGE_LAST_STUDY_DATE = 'hanzigo_last_study_date';
-const STORAGE_STREAK = 'hanzigo_streak_count';
+import { triggerCloudSync } from '../supabase/services.js';
 
 // Format local date YYYY-MM-DD
 export function getLocalDateString(d = new Date()) {
@@ -14,56 +10,86 @@ export function getLocalDateString(d = new Date()) {
 }
 
 /**
- * Calculate total XP accurately based on all real learning activities across HanziGo
+ * Get unique identifier key for current user to isolate storage and scoring
+ */
+export function getUserStorageKey(key, user = null) {
+  let targetUser = user;
+  if (!targetUser) {
+    try {
+      const saved = localStorage.getItem('hanzigo_user');
+      if (saved) targetUser = JSON.parse(saved);
+    } catch {}
+  }
+  const userIdent = targetUser?.uid || targetUser?.id || (targetUser?.email ? targetUser.email.replace(/[^a-zA-Z0-9]/g, '_') : 'guest');
+  return `${key}_${userIdent}`;
+}
+
+/**
+ * Calculate total XP accurately for a SPECIFIC user
  */
 export function calculateTotalXp(user = null) {
+  let targetUser = user;
+  if (!targetUser) {
+    try {
+      const saved = localStorage.getItem('hanzigo_user');
+      if (saved) targetUser = JSON.parse(saved);
+    } catch {}
+  }
+
+  const bonusKey = getUserStorageKey('hanzigo_bonus_xp', targetUser);
+  const lessonsKey = getUserStorageKey('hanzigo_completed_lessons', targetUser);
+  const vocabKey = getUserStorageKey('hanzigo_vocab_remembered', targetUser);
+  const pronounceKey = getUserStorageKey('hanzigo_pronounce_history', targetUser);
+  const writingKey = getUserStorageKey('hanzigo_custom_writing_chars', targetUser);
+  const chatKey = getUserStorageKey('hanzigo_ai_chat_history', targetUser);
+
   let xp = 0;
 
-  // 1. Bonus / explicitly awarded XP
+  // 1. User-specific bonus XP
   try {
-    const rawBonus = localStorage.getItem(STORAGE_BONUS_XP);
+    const rawBonus = localStorage.getItem(bonusKey);
     if (rawBonus) xp += parseInt(rawBonus, 10) || 0;
   } catch {}
 
-  // 2. XP from completed lessons (50 XP each)
+  // 2. User-specific completed lessons (50 XP each)
   try {
-    const rawLessons = localStorage.getItem('hanzigo_completed_lessons');
+    const rawLessons = localStorage.getItem(lessonsKey) || (targetUser ? null : localStorage.getItem('hanzigo_completed_lessons'));
     if (rawLessons) {
       const lessons = JSON.parse(rawLessons);
       if (Array.isArray(lessons)) xp += lessons.length * 50;
     }
   } catch {}
 
-  // 3. XP from mastered vocabulary (10 XP each)
+  // 3. User-specific mastered vocab (10 XP each)
   try {
-    const rawVocab = localStorage.getItem('hanzigo_vocab_remembered');
+    const rawVocab = localStorage.getItem(vocabKey) || (targetUser ? null : localStorage.getItem('hanzigo_vocab_remembered'));
     if (rawVocab) {
       const vocab = JSON.parse(rawVocab);
       if (Array.isArray(vocab)) xp += vocab.length * 10;
     }
   } catch {}
 
-  // 4. XP from pronunciation practice (15 XP each)
+  // 4. User-specific pronunciation (15 XP each)
   try {
-    const rawPronounce = localStorage.getItem('hanzigo_pronounce_history');
+    const rawPronounce = localStorage.getItem(pronounceKey) || (targetUser ? null : localStorage.getItem('hanzigo_pronounce_history'));
     if (rawPronounce) {
       const hist = JSON.parse(rawPronounce);
       if (Array.isArray(hist)) xp += hist.length * 15;
     }
   } catch {}
 
-  // 5. XP from calligraphy writing characters (15 XP each)
+  // 5. User-specific calligraphy writing (15 XP each)
   try {
-    const rawWriting = localStorage.getItem('hanzigo_custom_writing_chars');
+    const rawWriting = localStorage.getItem(writingKey) || (targetUser ? null : localStorage.getItem('hanzigo_custom_writing_chars'));
     if (rawWriting) {
       const chars = JSON.parse(rawWriting);
       if (Array.isArray(chars)) xp += chars.length * 15;
     }
   } catch {}
 
-  // 6. XP from AI conversations (10 XP per user dialogue message)
+  // 6. User-specific AI chat conversations (10 XP per dialogue message)
   try {
-    const rawChat = localStorage.getItem('hanzigo_ai_chat_history');
+    const rawChat = localStorage.getItem(chatKey) || (targetUser ? null : localStorage.getItem('hanzigo_ai_chat_history'));
     if (rawChat) {
       const chats = JSON.parse(rawChat);
       if (typeof chats === 'object') {
@@ -75,54 +101,89 @@ export function calculateTotalXp(user = null) {
     }
   } catch {}
 
-  // 7. Base XP from user profile if higher
-  if (user && typeof user.xp === 'number' && user.xp > xp) {
-    xp = user.xp;
+  // 7. Base profile XP (if user profile has higher baseline)
+  if (targetUser && typeof targetUser.xp === 'number' && targetUser.xp > xp) {
+    xp = targetUser.xp;
   }
 
   return xp;
 }
 
 /**
- * Award XP to the learner, update streak activity, and sync to DB
+ * Award XP to the specific learner, update streak activity, and sync to DB
  */
-export function awardXp(amount) {
-  if (typeof amount !== 'number' || amount <= 0) return calculateTotalXp();
+export function awardXp(amount, user = null) {
+  if (typeof amount !== 'number' || amount <= 0) return calculateTotalXp(user);
+
+  let targetUser = user;
+  if (!targetUser) {
+    try {
+      const saved = localStorage.getItem('hanzigo_user');
+      if (saved) targetUser = JSON.parse(saved);
+    } catch {}
+  }
+
+  const bonusKey = getUserStorageKey('hanzigo_bonus_xp', targetUser);
 
   try {
-    const rawBonus = localStorage.getItem(STORAGE_BONUS_XP);
+    const rawBonus = localStorage.getItem(bonusKey);
     const current = rawBonus ? parseInt(rawBonus, 10) || 0 : 0;
     const nextBonus = current + amount;
-    localStorage.setItem(STORAGE_BONUS_XP, String(nextBonus));
+    localStorage.setItem(bonusKey, String(nextBonus));
   } catch (err) {
     console.error('Error awarding XP:', err);
   }
 
-  // Also record study activity to maintain/advance streak
-  recordStudyActivity();
+  // Record streak activity specifically for this user
+  recordStudyActivity(targetUser);
 
-  // Async sync to Firestore
-  triggerCloudSync();
+  // Recalculate total XP
+  const updatedXp = calculateTotalXp(targetUser);
 
-  return calculateTotalXp();
+  // Update target user in localStorage if matching
+  if (targetUser) {
+    try {
+      const saved = localStorage.getItem('hanzigo_user');
+      if (saved) {
+        const u = JSON.parse(saved);
+        if (u && (u.uid === targetUser.uid || u.email === targetUser.email)) {
+          u.xp = updatedXp;
+          localStorage.setItem('hanzigo_user', JSON.stringify(u));
+        }
+      }
+    } catch {}
+  }
+
+  // Trigger cloud sync for this user
+  triggerCloudSync(targetUser?.uid || targetUser?.id);
+
+  return updatedXp;
 }
 
 /**
- * Record a study activity today and advance the consecutive day streak
+ * Record a study activity today and advance the consecutive day streak for a SPECIFIC user
  */
-export function recordStudyActivity() {
+export function recordStudyActivity(user = null) {
   const today = getLocalDateString();
+  let targetUser = user;
+  if (!targetUser) {
+    try {
+      const saved = localStorage.getItem('hanzigo_user');
+      if (saved) targetUser = JSON.parse(saved);
+    } catch {}
+  }
+
+  const dateKey = getUserStorageKey('hanzigo_last_study_date', targetUser);
+  const streakKey = getUserStorageKey('hanzigo_streak_count', targetUser);
 
   try {
-    const lastDate = localStorage.getItem(STORAGE_LAST_STUDY_DATE);
-    const rawStreak = localStorage.getItem(STORAGE_STREAK);
-    let currentStreak = rawStreak ? parseInt(rawStreak, 10) || 0 : 0;
+    const lastDate = localStorage.getItem(dateKey);
+    const rawStreak = localStorage.getItem(streakKey);
+    let currentStreak = rawStreak ? parseInt(rawStreak, 10) || 0 : (targetUser?.streak || 0);
 
     if (!lastDate) {
-      // First ever recorded study day
-      currentStreak = 1;
+      currentStreak = Math.max(1, currentStreak || 1);
     } else if (lastDate === today) {
-      // Already studied today: ensure streak is at least 1
       if (currentStreak < 1) currentStreak = 1;
     } else {
       const yesterday = new Date();
@@ -130,32 +191,31 @@ export function recordStudyActivity() {
       const yesterdayStr = getLocalDateString(yesterday);
 
       if (lastDate === yesterdayStr) {
-        // Consecutive calendar day -> increment streak!
         currentStreak += 1;
       } else {
-        // Skipped more than 1 day -> streak restarts at 1
         currentStreak = 1;
       }
     }
 
-    localStorage.setItem(STORAGE_LAST_STUDY_DATE, today);
-    localStorage.setItem(STORAGE_STREAK, String(currentStreak));
+    localStorage.setItem(dateKey, today);
+    localStorage.setItem(streakKey, String(currentStreak));
 
-    // Update current cached user
-    const savedUser = localStorage.getItem('hanzigo_user');
-    if (savedUser) {
+    // Update cached user object if applicable
+    if (targetUser) {
       try {
-        const u = JSON.parse(savedUser);
-        if (u) {
-          u.streak = currentStreak;
-          u.lastActiveDate = today;
-          u.xp = calculateTotalXp(u);
-          localStorage.setItem('hanzigo_user', JSON.stringify(u));
+        const saved = localStorage.getItem('hanzigo_user');
+        if (saved) {
+          const u = JSON.parse(saved);
+          if (u && (u.uid === targetUser.uid || u.email === targetUser.email)) {
+            u.streak = currentStreak;
+            u.lastActiveDate = today;
+            localStorage.setItem('hanzigo_user', JSON.stringify(u));
+          }
         }
       } catch {}
     }
 
-    triggerCloudSync();
+    triggerCloudSync(targetUser?.uid || targetUser?.id);
     return currentStreak;
   } catch (err) {
     console.error('Error recording study activity:', err);
@@ -164,17 +224,28 @@ export function recordStudyActivity() {
 }
 
 /**
- * Get current streak status based on calendar dates
+ * Get current streak status based on calendar dates for a SPECIFIC user
  */
-export function getStreakStatus() {
+export function getStreakStatus(user = null) {
+  let targetUser = user;
+  if (!targetUser) {
+    try {
+      const saved = localStorage.getItem('hanzigo_user');
+      if (saved) targetUser = JSON.parse(saved);
+    } catch {}
+  }
+
+  const dateKey = getUserStorageKey('hanzigo_last_study_date', targetUser);
+  const streakKey = getUserStorageKey('hanzigo_streak_count', targetUser);
+
   try {
     const today = getLocalDateString();
-    const lastDate = localStorage.getItem(STORAGE_LAST_STUDY_DATE);
-    const rawStreak = localStorage.getItem(STORAGE_STREAK);
-    let streak = rawStreak ? parseInt(rawStreak, 10) || 0 : 0;
+    const lastDate = localStorage.getItem(dateKey);
+    const rawStreak = localStorage.getItem(streakKey);
+    let streak = rawStreak ? parseInt(rawStreak, 10) || 0 : (targetUser?.streak || 0);
 
     if (!lastDate) {
-      return { streak: 0, hasStudiedToday: false };
+      return { streak: streak > 0 ? streak : 0, hasStudiedToday: false };
     }
 
     const yesterday = new Date();
@@ -186,11 +257,9 @@ export function getStreakStatus() {
     }
 
     if (lastDate === yesterdayStr) {
-      // Active from yesterday, hasn't studied today yet
       return { streak: Math.max(1, streak), hasStudiedToday: false };
     }
 
-    // Missed at least 2 full days
     return { streak: 0, hasStudiedToday: false };
   } catch {
     return { streak: 0, hasStudiedToday: false };

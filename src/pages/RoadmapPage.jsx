@@ -27,7 +27,7 @@ import {
   deleteCustomLesson 
 } from '../utils/materialsStorage';
 import { playClickSound, playSuccessSound } from '../utils/audio';
-import { triggerCloudSync } from '../firebase/services';
+import { triggerCloudSync } from '../supabase/services';
 
 // Base curriculums for each roadmap level
 const BASE_LEVEL_LESSONS = {
@@ -376,7 +376,7 @@ export default function RoadmapPage({ setActiveTab, onSelectLesson }) {
               className="px-5 py-3 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white font-bold text-xs sm:text-sm shadow-lg hover:scale-105 active:scale-100 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
             >
               <Plus size={18} />
-              <span>+ Thêm bài học vào lộ trình</span>
+              <span>Thêm bài học vào lộ trình</span>
             </button>
 
             {/* Overall Progress Meter */}

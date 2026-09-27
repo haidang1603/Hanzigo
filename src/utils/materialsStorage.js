@@ -1,5 +1,5 @@
 // Helper for managing Documents, Materials, and Custom Content in HanziGo
-import { triggerCloudSync } from '../firebase/services';
+import { triggerCloudSync } from '../supabase/services.js';
 
 export const DEFAULT_MATERIALS = [
   {

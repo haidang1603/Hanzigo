@@ -19,7 +19,8 @@ import {
   Users,
   Zap,
   Check,
-  RotateCcw
+  RotateCcw,
+  UserPlus
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
@@ -217,7 +218,11 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
 
   const handleStartLearning = () => {
     playClickSound();
-    setActiveTab('roadmap');
+    if (!user && openAuthModal) {
+      openAuthModal('register');
+    } else {
+      setActiveTab('roadmap');
+    }
   };
 
   const handleExploreRoadmap = () => {
@@ -341,24 +346,39 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
             </div>
 
             {/* Right Interactive Visual Showcase */}
-            <div className="lg:col-span-5 relative">
+            <div className="lg:col-span-5 relative pt-4 pb-2">
               <div className="relative mx-auto max-w-md lg:max-w-none">
                 
+                {/* Ambient glow decorative background */}
+                <div className="absolute -top-8 -right-8 w-60 h-60 bg-gradient-to-br from-[#E85D3F]/15 via-[#F4B942]/10 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
+                <div className="absolute -bottom-8 -left-8 w-60 h-60 bg-gradient-to-tr from-[#45B97C]/15 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
+
+                {/* Floating Achievement badge - Repositioned cleanly to top-left so it NEVER collides with bottom interactive controls */}
+                <div className="absolute -top-4 -left-3 sm:-left-5 z-20 bg-white/95 dark:bg-[#1E293B]/95 backdrop-blur-md py-2 px-3.5 rounded-2xl shadow-xl border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#FEF7E9] to-[#FDE8BF] dark:from-[#2D2619] dark:to-[#382E19] flex items-center justify-center text-base shadow-xs">
+                    ⚡
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-[#243447] dark:text-white leading-tight">Lộ trình HSK 1 – HSK 6</p>
+                    <p className="text-[10px] text-[#45B97C] font-bold">Tự tin giao tiếp thực tế</p>
+                  </div>
+                </div>
+
                 {/* Decorative card wrapper */}
-                <div className="rounded-3xl p-6 sm:p-7 bg-white dark:bg-[#1B2636] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl relative">
+                <div className="rounded-3xl p-6 sm:p-7 bg-white/95 dark:bg-[#1B2636]/95 backdrop-blur-sm border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl relative transition-all">
                   
                   {/* Category Filter Tabs */}
-                  <div className="flex items-center justify-between pb-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F] mb-5">
+                  <div className="flex items-center justify-between pb-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F] mb-4.5 pt-2">
                     <div className="flex items-center gap-1.5 p-1 bg-[#FFF9F2] dark:bg-[#131B24] rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
                       <button
                         onClick={() => {
                           playClickSound();
                           setShowcaseTab('vocab');
                         }}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           showcaseTab === 'vocab'
-                            ? 'bg-[#E85D3F] text-white shadow-sm'
-                            : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447]'
+                            ? 'bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-sm'
+                            : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
                         }`}
                       >
                         Từ vựng
@@ -368,10 +388,10 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                           playClickSound();
                           setShowcaseTab('phrases');
                         }}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           showcaseTab === 'phrases'
-                            ? 'bg-[#E85D3F] text-white shadow-sm'
-                            : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447]'
+                            ? 'bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-sm'
+                            : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
                         }`}
                       >
                         Mẫu câu
@@ -381,18 +401,18 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                           playClickSound();
                           setShowcaseTab('radicals');
                         }}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           showcaseTab === 'radicals'
-                            ? 'bg-[#E85D3F] text-white shadow-sm'
-                            : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447]'
+                            ? 'bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-sm'
+                            : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
                         }`}
                       >
                         Chiết tự
                       </button>
                     </div>
 
-                    <span className="text-[11px] font-bold text-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] px-2.5 py-1 rounded-full flex items-center gap-1">
-                      <Sparkles size={12} />
+                    <span className="text-[11px] font-bold text-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-[#45B97C]/20 shadow-xs">
+                      <Sparkles size={12} className="animate-spin-slow" />
                       <span>Trực quan</span>
                     </span>
                   </div>
@@ -402,41 +422,83 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                     {SHOWCASE_ITEMS[showcaseTab].map((item, idx) => (
                       <div 
                         key={idx}
-                        className="p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between group hover:border-[#E85D3F] transition-all"
+                        className="p-3 sm:p-3.5 rounded-2xl bg-[#FFFDF9] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between group hover:border-[#E85D3F]/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                       >
-                        <div className="flex items-center gap-3.5">
-                          <div 
-                            className="w-13 h-13 rounded-xl bg-white dark:bg-[#1E293B] shadow-sm flex items-center justify-center font-['Noto_Serif_SC'] text-xl font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] px-2"
-                            style={{ color: item.color }}
-                          >
-                            {item.hanzi}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs sm:text-sm font-bold text-[#243447] dark:text-white">{item.pinyin}</span>
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] font-semibold">
-                                {item.hanViet}
-                              </span>
+                        {showcaseTab === 'phrases' ? (
+                          /* Layout for Phrases (Mẫu câu) - Displays full sentence gracefully */
+                          <div className="flex items-center gap-3 sm:gap-3.5 flex-1 min-w-0 pr-2">
+                            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-[#FEF7E9] to-[#FDE8BF] dark:from-[#2D2619] dark:to-[#382E19] flex items-center justify-center text-lg shrink-0 border border-[#F4B942]/30 shadow-xs">
+                              💬
                             </div>
-                            <p className="text-[11px] text-[#748092] dark:text-[#94A3B8] font-medium line-clamp-1 mt-0.5">
-                              {item.meaning}
-                            </p>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span 
+                                  className="font-['Noto_Serif_SC'] text-base sm:text-lg font-black tracking-wide"
+                                  style={{ color: item.color }}
+                                >
+                                  {item.hanzi}
+                                </span>
+                                {item.tag && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#FFF5F2] dark:bg-[#2C1D1A] text-[#E85D3F] font-bold border border-[#E85D3F]/20">
+                                    {item.tag}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                <span className="text-xs font-bold text-[#243447] dark:text-[#E2E8F0]">{item.pinyin}</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] font-semibold">
+                                  {item.hanViet}
+                                </span>
+                              </div>
+                              <p className="text-[11px] sm:text-xs text-[#748092] dark:text-[#94A3B8] font-medium truncate mt-0.5">
+                                {item.meaning}
+                              </p>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          /* Layout for Từ vựng & Chiết tự (1-2 characters in the character box) */
+                          <div className="flex items-center gap-3 sm:gap-3.5 flex-1 min-w-0 pr-2">
+                            <div 
+                              className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-white dark:bg-[#1E293B] shadow-sm flex items-center justify-center font-['Noto_Serif_SC'] text-lg sm:text-xl font-black border border-[#F1E5D8] dark:border-[#2B3A4F] shrink-0 group-hover:scale-105 transition-transform"
+                              style={{ color: item.color }}
+                            >
+                              {item.hanzi}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs sm:text-sm font-black text-[#243447] dark:text-white tracking-wide">{item.pinyin}</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] font-bold border border-[#F4B942]/30">
+                                  {item.hanViet}
+                                </span>
+                                {item.tag && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] font-medium border border-[#F1E5D8]/80 dark:border-[#2B3A4F]">
+                                    {item.tag}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] sm:text-xs text-[#748092] dark:text-[#94A3B8] font-medium truncate mt-1">
+                                {item.meaning}
+                              </p>
+                            </div>
+                          </div>
+                        )}
 
-                        <div className="flex items-center gap-1">
-                          <AudioButton text={item.hanzi} size="sm" />
+                        <div className="shrink-0 pl-1">
+                          <AudioButton text={item.hanzi} size="md" />
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* Interactive Buttons at Bottom */}
-                  <div className="mt-5 pt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
+                  {/* Interactive Buttons at Bottom - Clean and 100% Unobstructed */}
+                  <div className="mt-5 pt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#45B97C] animate-pulse" />
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#45B97C] opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#45B97C]"></span>
+                      </span>
                       <span className="text-xs text-[#748092] dark:text-[#94A3B8] font-medium">
-                        Bấm loa để nghe phát âm
+                        Bấm loa để nghe phát âm chuẩn
                       </span>
                     </div>
                     <button
@@ -444,24 +506,13 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                         playClickSound();
                         setActiveTab(showcaseTab === 'vocab' ? 'vocabulary' : showcaseTab === 'phrases' ? 'conversation' : 'writing');
                       }}
-                      className="px-3 py-1.5 rounded-lg bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold transition-colors flex items-center gap-1"
+                      className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white text-xs font-bold transition-all shadow-md shadow-[#E85D3F]/25 hover:shadow-lg hover:shadow-[#E85D3F]/35 flex items-center gap-1.5 group cursor-pointer"
                     >
                       <span>Thử ngay</span>
-                      <ArrowRight size={13} />
+                      <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
                     </button>
                   </div>
 
-                </div>
-
-                {/* Floating Achievement badge */}
-                <div className="absolute -bottom-6 -left-6 bg-white dark:bg-[#1E293B] p-3.5 rounded-2xl shadow-xl border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#FEF7E9] dark:bg-[#2D2619] flex items-center justify-center text-xl">
-                    ⚡
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-[#243447] dark:text-white">Lộ trình HSK 1 - HSK 6</p>
-                    <p className="text-[10px] text-[#45B97C] font-semibold">Tự tin giao tiếp thực tế</p>
-                  </div>
                 </div>
 
               </div>
@@ -1008,13 +1059,22 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
             <p className="text-sm sm:text-base text-white/90 leading-relaxed">
               Không cần tốn hàng chục triệu đi trung tâm. Chỉ cần 15 phút mỗi ngày với phương pháp Hán-Việt khoa học, bạn sẽ thấy sự khác biệt sau 2 tuần!
             </p>
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 onClick={handleStartLearning}
-                className="px-8 py-4 rounded-xl bg-white text-[#E85D3F] hover:bg-[#FFF9F2] font-black text-base shadow-xl hover:scale-105 transition-all inline-flex items-center gap-2"
+                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-[#E85D3F] hover:bg-[#FFF9F2] font-black text-base shadow-xl hover:scale-105 transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Bắt đầu học miễn phí ngay</span>
-                <ArrowRight size={18} />
+                {!user ? (
+                  <>
+                    <UserPlus size={20} />
+                    <span>Đăng ký tài khoản miễn phí ngay</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Tiếp tục học lộ trình ngay</span>
+                    <ArrowRight size={18} />
+                  </>
+                )}
               </button>
             </div>
           </div>

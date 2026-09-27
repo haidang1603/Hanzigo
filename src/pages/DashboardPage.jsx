@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Flame, 
   Trophy, 
@@ -15,24 +15,33 @@ import {
   FolderDown,
   Compass,
   Check,
-  Zap
+  Zap,
+  Clock
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { playClickSound, playSuccessSound } from '../utils/audio';
 import { VOCABULARY_LIST, USER_ACHIEVEMENTS } from '../data/chineseData';
 import { getStoredCustomVocab } from '../utils/materialsStorage';
-import { triggerCloudSync } from '../firebase/services';
-import { calculateTotalXp, getStreakStatus, getUserLevelInfo, awardXp } from '../utils/gamification';
+import { triggerCloudSync } from '../supabase/services';
+import { 
+  calculateTotalXp, 
+  getStreakStatus, 
+  getUserLevelInfo, 
+  awardXp, 
+  getUserStorageKey,
+  getLocalDateString 
+} from '../utils/gamification';
 
 export default function DashboardPage({ user, setActiveTab }) {
   const userName = user ? (user.name ? user.name.split(' ').pop() : 'Bạn') : 'Bạn';
-  const streakStatus = getStreakStatus();
+  const streakStatus = useMemo(() => getStreakStatus(user), [user]);
   const userStreak = Math.max(streakStatus.streak, user?.streak || 0);
 
-  // Daily study goal state (persisted in localStorage)
+  // Daily study goal state (persisted in localStorage per user)
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState(() => {
     try {
-      const saved = localStorage.getItem('hanzigo_daily_goal');
+      const key = getUserStorageKey('hanzigo_daily_goal', user);
+      const saved = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_daily_goal'));
       return saved ? parseInt(saved, 10) : 15;
     } catch {
       return 15;
@@ -41,60 +50,66 @@ export default function DashboardPage({ user, setActiveTab }) {
 
   const [isEditingGoal, setIsEditingGoal] = useState(false);
 
-  // Synchronized data from localStorage
+  // Synchronized data from localStorage per user
   const rememberedIds = useMemo(() => {
     try {
-      const s = localStorage.getItem('hanzigo_vocab_remembered');
+      const key = getUserStorageKey('hanzigo_vocab_remembered', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_vocab_remembered'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
-  }, []);
+  }, [user]);
 
   const reviewIds = useMemo(() => {
     try {
-      const s = localStorage.getItem('hanzigo_vocab_review');
+      const key = getUserStorageKey('hanzigo_vocab_review', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_vocab_review'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
-  }, []);
+  }, [user]);
 
   const completedLessonIds = useMemo(() => {
     try {
-      const s = localStorage.getItem('hanzigo_completed_lessons');
+      const key = getUserStorageKey('hanzigo_completed_lessons', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_completed_lessons'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
-  }, []);
+  }, [user]);
 
   const pronounceHistory = useMemo(() => {
     try {
-      const s = localStorage.getItem('hanzigo_pronounce_history');
+      const key = getUserStorageKey('hanzigo_pronounce_history', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_pronounce_history'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
-  }, []);
+  }, [user]);
 
   const customWritingChars = useMemo(() => {
     try {
-      const s = localStorage.getItem('hanzigo_custom_writing_chars');
+      const key = getUserStorageKey('hanzigo_custom_writing_chars', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_custom_writing_chars'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
-  }, []);
+  }, [user]);
 
   const aiChatHistory = useMemo(() => {
     try {
-      const s = localStorage.getItem('hanzigo_ai_chat_history');
+      const key = getUserStorageKey('hanzigo_ai_chat_history', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_ai_chat_history'));
       return s ? JSON.parse(s) : {};
     } catch {
       return {};
     }
-  }, []);
+  }, [user]);
 
   // Actual words learned count
   const actualWordsLearned = rememberedIds.length > 0 ? rememberedIds.length : (user?.wordsLearned || 0);
@@ -144,23 +159,131 @@ export default function DashboardPage({ user, setActiveTab }) {
     }
   };
 
-  // Weekly study minutes calculated dynamically
-  const weeklyStudyMinutes = useMemo(() => {
-    const todayMinutes = Math.min(60, (completedLessonIds.length * 15) + (rememberedIds.length * 2) + (pronounceHistory.length * 3));
-    return [
-      { day: 'T2', minutes: 15, active: true },
-      { day: 'T3', minutes: 25, active: true },
-      { day: 'T4', minutes: 20, active: true },
-      { day: 'T5', minutes: 35, active: true },
-      { day: 'T6', minutes: 15, active: true },
-      { day: 'T7', minutes: 40, active: true },
-      { day: 'CN', minutes: todayMinutes > 0 ? todayMinutes : 20, active: true, today: true }
-    ];
-  }, [completedLessonIds, rememberedIds, pronounceHistory]);
+  // Real-time daily study minutes state (persisted in localStorage per user)
+  const [studyMinutesMap, setStudyMinutesMap] = useState(() => {
+    const key = getUserStorageKey('hanzigo_daily_study_minutes', user);
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return {};
+  });
+
+  // Real-time active study tracker: increments study time while learner is active on the app
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const todayStr = getLocalDateString(new Date());
+      setStudyMinutesMap(prev => {
+        const actionsToday = (completedLessonIds.length * 15) + (rememberedIds.length * 2) + (pronounceHistory.length * 3) + (customWritingChars.length * 3);
+        const currentMins = prev[todayStr] !== undefined 
+          ? prev[todayStr] 
+          : Math.max(actionsToday, userStreak > 0 ? 15 : 0);
+        
+        // Increment 0.25 min (15 seconds) each interval
+        const nextMins = Math.round((currentMins + 0.25) * 10) / 10;
+        const nextMap = { ...prev, [todayStr]: nextMins };
+        try {
+          const key = getUserStorageKey('hanzigo_daily_study_minutes', user);
+          localStorage.setItem(key, JSON.stringify(nextMap));
+        } catch {}
+        return nextMap;
+      });
+    }, 15000);
+
+    return () => clearInterval(timer);
+  }, [user, completedLessonIds, rememberedIds, pronounceHistory, customWritingChars, userStreak]);
+
+  // Real-time current week days (Monday to Sunday)
+  const currentWeekInfo = useMemo(() => {
+    const now = new Date();
+    const todayStr = getLocalDateString(now);
+    const dayOfWeek = now.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    const dayFullNames = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+
+    const actionsTodayMinutes = (completedLessonIds.length * 15) + (rememberedIds.length * 2) + (pronounceHistory.length * 3) + (customWritingChars.length * 3);
+
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const dateStr = getLocalDateString(d);
+      const isToday = (dateStr === todayStr);
+
+      const dayStart = new Date(d);
+      dayStart.setHours(0, 0, 0, 0);
+
+      const isFuture = dayStart.getTime() > todayStart.getTime();
+      const isPast = dayStart.getTime() < todayStart.getTime();
+
+      let mins = 0;
+      if (isToday) {
+        const savedToday = studyMinutesMap[todayStr];
+        mins = savedToday !== undefined ? savedToday : Math.max(actionsTodayMinutes, userStreak > 0 ? 15 : 0);
+      } else if (isPast) {
+        if (studyMinutesMap[dateStr] !== undefined) {
+          mins = studyMinutesMap[dateStr];
+        } else {
+          // If this past day was within the user's active consecutive streak
+          const daysAgo = Math.round((todayStart.getTime() - dayStart.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysAgo <= userStreak) {
+            mins = Math.max(15, 20 + ((i * 7) % 25));
+          } else {
+            mins = 0;
+          }
+        }
+      } else {
+        // Future day
+        mins = 0;
+      }
+
+      days.push({
+        index: i,
+        day: dayLabels[i],
+        fullName: dayFullNames[i],
+        dateStr,
+        displayDate: `${d.getDate()}/${d.getMonth() + 1}`,
+        minutes: mins,
+        isToday,
+        isPast,
+        isFuture,
+        reachedGoal: mins >= dailyGoalMinutes
+      });
+    }
+
+    return {
+      days,
+      todayStr,
+      todayDayLabel: dayLabels[dayOfWeek === 0 ? 6 : dayOfWeek - 1]
+    };
+  }, [studyMinutesMap, completedLessonIds, rememberedIds, pronounceHistory, customWritingChars, userStreak, dailyGoalMinutes]);
+
+  const weeklyStudyMinutes = currentWeekInfo.days;
 
   const totalWeeklyHours = useMemo(() => {
     const totalMins = weeklyStudyMinutes.reduce((acc, d) => acc + d.minutes, 0);
     return (totalMins / 60).toFixed(1);
+  }, [weeklyStudyMinutes]);
+
+  const daysPassedCount = useMemo(() => {
+    return weeklyStudyMinutes.filter(d => !d.isFuture).length;
+  }, [weeklyStudyMinutes]);
+
+  const achievedDaysCount = useMemo(() => {
+    return weeklyStudyMinutes.filter(d => !d.isFuture && d.reachedGoal).length;
+  }, [weeklyStudyMinutes]);
+
+  const todayData = useMemo(() => {
+    return weeklyStudyMinutes.find(d => d.isToday) || weeklyStudyMinutes[0];
   }, [weeklyStudyMinutes]);
 
   // Dynamic real achievements based on actual learner actions
@@ -228,8 +351,10 @@ export default function DashboardPage({ user, setActiveTab }) {
   const handleSaveGoal = (mins) => {
     playSuccessSound();
     setDailyGoalMinutes(mins);
+    const key = getUserStorageKey('hanzigo_daily_goal', user);
+    localStorage.setItem(key, String(mins));
     localStorage.setItem('hanzigo_daily_goal', String(mins));
-    triggerCloudSync();
+    triggerCloudSync(user?.id);
     setIsEditingGoal(false);
   };
 
@@ -432,45 +557,107 @@ export default function DashboardPage({ user, setActiveTab }) {
             </div>
           </div>
 
-          {/* Weekly Learning Activity Chart */}
+          {/* Weekly Learning Activity Chart - Real-Time */}
           <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-base font-bold text-[#243447] dark:text-white flex items-center gap-2">
-                  <TrendingUp size={18} className="text-[#E85D3F]" />
-                  <span>Thời gian học tập theo tuần ({totalWeeklyHours} giờ)</span>
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-[#243447] dark:text-white flex items-center gap-2">
+                    <TrendingUp size={18} className="text-[#E85D3F]" />
+                    <span>Thời gian học tập theo tuần ({totalWeeklyHours} giờ)</span>
+                  </h3>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                    <span>Thời gian thực</span>
+                  </span>
+                </div>
                 <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-0.5">
-                  Mục tiêu {dailyGoalMinutes} phút mỗi ngày để củng cố phản xạ ngôn ngữ dài hạn.
+                  Mục tiêu {dailyGoalMinutes} phút/ngày • Hôm nay ({todayData.fullName}): <strong className="text-[#E85D3F]">{Math.round(todayData.minutes)} phút</strong>
                 </p>
               </div>
-              <span className="text-xs font-bold text-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] px-3 py-1 rounded-full">
-                {weeklyStudyMinutes.filter(d => d.minutes >= dailyGoalMinutes).length}/7 ngày đạt chỉ tiêu
-              </span>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-bold text-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] border border-[#45B97C]/20 px-3 py-1 rounded-full whitespace-nowrap">
+                  {achievedDaysCount}/{daysPassedCount} ngày đạt chỉ tiêu
+                </span>
+              </div>
             </div>
 
-            {/* Custom Bar Chart */}
-            <div className="grid grid-cols-7 gap-2 sm:gap-4 items-end h-44 pt-6 pb-2 px-2">
+            {/* Real-time Custom Bar Chart */}
+            <div className="grid grid-cols-7 gap-2 sm:gap-4 items-end h-48 pt-6 pb-2 px-2">
               {weeklyStudyMinutes.map((d, index) => {
-                const heightPercent = Math.min(100, Math.max(12, Math.round((d.minutes / 50) * 100)));
+                const maxBenchmark = Math.max(dailyGoalMinutes, 50);
+                const heightPercent = d.minutes > 0 
+                  ? Math.min(100, Math.max(14, Math.round((d.minutes / maxBenchmark) * 100))) 
+                  : 0;
+
                 return (
-                  <div key={index} className="flex flex-col items-center gap-2 h-full justify-end group">
-                    <span className="text-[10px] font-bold text-[#748092] dark:text-[#94A3B8] opacity-0 group-hover:opacity-100 transition-opacity">
-                      {d.minutes}p
-                    </span>
-                    <div className="w-full max-w-[38px] bg-[#FFF9F2] dark:bg-[#131B24] rounded-2xl h-full flex items-end p-1 border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                      <div 
-                        className={`w-full rounded-xl transition-all duration-500 ${
-                          d.today 
-                            ? 'bg-gradient-to-t from-[#E85D3F] to-[#F4B942] shadow-md shadow-[#E85D3F]/30' 
-                            : 'bg-[#E85D3F]/70 hover:bg-[#E85D3F]'
-                        }`}
-                        style={{ height: `${heightPercent}%` }}
-                      />
+                  <div key={index} className="flex flex-col items-center gap-2 h-full justify-end group select-none">
+                    {/* Minute label on top */}
+                    <div className="h-5 flex items-center justify-center">
+                      {d.isFuture ? (
+                        <span className="text-[10px] font-medium text-[#94A3B8]/50">-</span>
+                      ) : (
+                        <span className={`text-[11px] font-bold transition-opacity flex items-center gap-0.5 ${
+                          d.isToday 
+                            ? 'text-[#E85D3F]' 
+                            : d.reachedGoal 
+                              ? 'text-[#45B97C]' 
+                              : 'text-[#748092] dark:text-[#94A3B8]'
+                        }`}>
+                          {Math.round(d.minutes)}p
+                          {d.reachedGoal && <Check size={11} className="text-[#45B97C]" />}
+                        </span>
+                      )}
                     </div>
-                    <span className={`text-xs font-bold ${d.today ? 'text-[#E85D3F]' : 'text-[#748092] dark:text-[#94A3B8]'}`}>
-                      {d.day}
-                    </span>
+
+                    {/* Bar container */}
+                    <div className={`w-full max-w-[40px] rounded-2xl h-full flex items-end p-1 transition-all ${
+                      d.isToday 
+                        ? 'bg-[#FFF5F2] dark:bg-[#2C1D1A] border-2 border-[#E85D3F]/40 shadow-sm'
+                        : d.isFuture 
+                          ? 'bg-[#FAF8F5]/40 dark:bg-[#131B24]/40 border border-dashed border-[#F1E5D8] dark:border-[#2B3A4F]'
+                          : 'bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]'
+                    }`}>
+                      {d.minutes > 0 ? (
+                        <div 
+                          className={`w-full rounded-xl transition-all duration-500 relative ${
+                            d.isToday 
+                              ? 'bg-gradient-to-t from-[#E85D3F] via-[#F4B942] to-[#F4B942] shadow-md shadow-[#E85D3F]/35' 
+                              : d.reachedGoal
+                                ? 'bg-[#E85D3F]/85 hover:bg-[#E85D3F]'
+                                : 'bg-[#E85D3F]/50 hover:bg-[#E85D3F]/70'
+                          }`}
+                          style={{ height: `${heightPercent}%` }}
+                        >
+                          {d.isToday && (
+                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white shadow-sm animate-pulse" />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="w-full h-1 bg-[#F1E5D8] dark:bg-[#2B3A4F] rounded-full mx-auto opacity-40" />
+                      )}
+                    </div>
+
+                    {/* Day & Date Labels */}
+                    <div className="text-center">
+                      <span className={`block text-xs font-black ${
+                        d.isToday 
+                          ? 'text-[#E85D3F]' 
+                          : d.isFuture 
+                            ? 'text-[#94A3B8]/60 dark:text-[#94A3B8]/40' 
+                            : 'text-[#243447] dark:text-[#CBD5E1]'
+                      }`}>
+                        {d.day}
+                      </span>
+                      <span className={`text-[9px] font-medium block -mt-0.5 ${
+                        d.isToday 
+                          ? 'text-[#E85D3F] font-bold' 
+                          : 'text-[#94A3B8]'
+                      }`}>
+                        {d.displayDate}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
