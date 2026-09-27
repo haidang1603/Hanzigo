@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   Mic, 
@@ -128,7 +128,7 @@ const QUICK_SUGGESTIONS = [
   { hanzi: '我想去北京旅游', pinyin: 'Wǒ xiǎng qù Běijīng lǚyóu', meaning: 'Tôi muốn đi Bắc Kinh du lịch', tip: 'qù bật hơi mặt lưỡi, lǚ cần tròn môi như huýt sáo.' }
 ];
 
-export default function PronunciationPage() {
+export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
   const [activeTab, setActiveTab] = useState('record'); // Default to AI Practice ('tones', 'initials', 'finals', 'record', 'quiz')
 
   // Custom Items & Practice Items State initialized lazily
@@ -148,6 +148,17 @@ export default function PronunciationPage() {
   });
 
   const [selectedItem, setSelectedItem] = useState(() => {
+    if (targetVocab && targetVocab.hanzi) {
+      return {
+        id: `target-vocab-${targetVocab.id || targetVocab.hanzi}`,
+        hanzi: targetVocab.hanzi,
+        pinyin: targetVocab.pinyin || '',
+        meaning: targetVocab.meaning || '',
+        category: targetVocab.level || 'Từ vựng HSK',
+        tip: targetVocab.mnemonic || `Luyện phát âm chuẩn: ${targetVocab.hanzi} (${targetVocab.pinyin || ''}) - ${targetVocab.meaning || ''}`,
+        isTargetVocab: true
+      };
+    }
     try {
       const stored = localStorage.getItem(STORAGE_CUSTOM_PRONOUNCE);
       if (stored) {
@@ -161,6 +172,35 @@ export default function PronunciationPage() {
     }
     return DEFAULT_PRONUNCIATION_ITEMS[0];
   });
+
+  // Extract practice item if a vocabulary word is being practiced
+  const targetPracticeItem = useMemo(() => {
+    if (!targetVocab || !targetVocab.hanzi) return null;
+    return {
+      id: `target-vocab-${targetVocab.id || targetVocab.hanzi}`,
+      hanzi: targetVocab.hanzi,
+      pinyin: targetVocab.pinyin || '',
+      meaning: targetVocab.meaning || '',
+      category: targetVocab.level || 'Từ vựng HSK',
+      tip: targetVocab.mnemonic || `Luyện phát âm chuẩn: ${targetVocab.hanzi} (${targetVocab.pinyin || ''}) - ${targetVocab.meaning || ''}`,
+      isTargetVocab: true
+    };
+  }, [targetVocab]);
+
+  // Synchronize targetPracticeItem when user navigates from VocabularyPage
+  useEffect(() => {
+    if (targetPracticeItem) {
+      setActiveTab('record');
+      setPracticeList(prev => {
+        const withoutTarget = prev.filter(p => p.hanzi !== targetPracticeItem.hanzi);
+        return [targetPracticeItem, ...withoutTarget];
+      });
+      setSelectedItem(targetPracticeItem);
+      setRecordingScore(null);
+      setSpeechError(null);
+      setUserAudioUrl(null);
+    }
+  }, [targetPracticeItem]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all'); // 'all', 'hsk', 'communication', 'custom'
@@ -706,6 +746,7 @@ export default function PronunciationPage() {
 
   // Filtered practice items
   const filteredList = practiceList.filter(item => {
+    if (item.isTargetVocab) return true;
     const matchesSearch = 
       item.hanzi.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.pinyin.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -714,8 +755,8 @@ export default function PronunciationPage() {
     if (!matchesSearch) return false;
 
     if (categoryFilter === 'custom') return item.isCustom;
-    if (categoryFilter === 'hsk') return item.category.includes('HSK');
-    if (categoryFilter === 'communication') return item.category.includes('giao tiếp') || item.category.includes('Câu');
+    if (categoryFilter === 'hsk') return (item.category || '').includes('HSK');
+    if (categoryFilter === 'communication') return (item.category || '').includes('giao tiếp') || (item.category || '').includes('Câu');
     return true;
   });
 
@@ -865,6 +906,11 @@ export default function PronunciationPage() {
                               {itemBestScore}đ
                             </span>
                           )}
+                          {item.isTargetVocab && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold shrink-0">
+                              Đang luyện
+                            </span>
+                          )}
                           {item.isCustom && (
                             <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold shrink-0">
                               Tự thêm
@@ -978,6 +1024,45 @@ export default function PronunciationPage() {
                   onEnded={() => setIsPlayingUserAudio(false)} 
                   className="hidden" 
                 />
+              )}
+
+              {/* Target Vocabulary Highlight Banner */}
+              {targetVocab && (
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50/50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-950/20 border-2 border-emerald-400/50 shadow-sm flex items-center justify-between gap-3 animate-in fade-in">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+                      🎙️
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-200 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
+                          Từ vựng đang luyện phát âm
+                        </span>
+                        <span className="text-base sm:text-lg font-black font-['Noto_Serif_SC'] text-[#243447] dark:text-white">
+                          {targetVocab.hanzi}
+                        </span>
+                        <span className="text-xs font-bold text-[#E85D3F]">
+                          ({targetVocab.pinyin})
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
+                        Nghĩa: <strong className="text-emerald-600 dark:text-emerald-400">{targetVocab.meaning}</strong>
+                      </p>
+                    </div>
+                  </div>
+                  {onClearTargetVocab && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        onClearTargetVocab();
+                      }}
+                      className="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#748092] hover:text-[#E85D3F] border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] shrink-0 transition-colors"
+                    >
+                      ✕ Xem danh sách chung
+                    </button>
+                  )}
+                </div>
               )}
 
               {/* Top controls: Category badge & Audio Speed */}

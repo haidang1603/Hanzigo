@@ -158,7 +158,7 @@ function normalizeVocab(item) {
   };
 }
 
-export default function VocabularyPage({ setActiveTab }) {
+export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelectPronounce }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('Tất cả');
   const [selectedHsk, setSelectedHsk] = useState('all');
@@ -172,28 +172,34 @@ export default function VocabularyPage({ setActiveTab }) {
       const custom = getStoredCustomVocab();
       const normalizedCustom = custom.map(normalizeVocab);
       const normalizedStatic = VOCABULARY_LIST.map(normalizeVocab);
-      return [...normalizedCustom, ...normalizedStatic];
+      const map = new Map();
+      normalizedStatic.forEach(item => map.set(item.hanzi, item));
+      normalizedCustom.forEach(item => map.set(item.hanzi, item));
+      return Array.from(map.values());
     } catch (e) {
       console.error('Error loading vocabulary list:', e);
       return VOCABULARY_LIST.map(normalizeVocab);
     }
   });
 
-  // Fetch words from Supabase on mount
+  // Fetch all words from Supabase on mount and synchronize seamlessly
   useEffect(() => {
     let isMounted = true;
     getVocabularyFromDb().then(dbItems => {
       if (!isMounted || !dbItems || dbItems.length === 0) return;
       const normalizedDb = dbItems.map(normalizeVocab);
       setAllVocabList(prev => {
-        const custom = prev.filter(p => p.isCustom);
-        const merged = [...custom];
-        normalizedDb.forEach(dbItem => {
-          if (!merged.some(m => m.hanzi === dbItem.hanzi)) {
-            merged.push(dbItem);
-          }
-        });
-        return merged;
+        const map = new Map();
+        // 1. Static base list
+        VOCABULARY_LIST.map(normalizeVocab).forEach(item => map.set(item.hanzi, item));
+        // 2. Previous in-memory items
+        prev.forEach(item => map.set(item.hanzi, item));
+        // 3. Supabase DB items (latest authority)
+        normalizedDb.forEach(item => map.set(item.hanzi, item));
+        // 4. Custom user created items
+        const custom = getStoredCustomVocab().map(normalizeVocab);
+        custom.forEach(item => map.set(item.hanzi, item));
+        return Array.from(map.values());
       });
     });
     return () => { isMounted = false; };
@@ -601,9 +607,14 @@ export default function VocabularyPage({ setActiveTab }) {
             <Sparkles size={14} />
             Học Sâu Qua Spaced Repetition & Tự Tạo Từ Điển
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white">
-            Kho Flashcard Từ Vựng Tiếng Trung
-          </h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white">
+              Kho Flashcard Từ Vựng Tiếng Trung
+            </h1>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 border border-orange-200 dark:border-orange-800">
+              {allVocabList.length} từ vựng
+            </span>
+          </div>
           <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-1">
             Ghi nhớ chữ Hán qua chiết tự, âm Hán-Việt, câu ví dụ thực tế và tự do thêm các từ vựng bạn muốn học.
           </p>
@@ -677,6 +688,9 @@ export default function VocabularyPage({ setActiveTab }) {
             <option value="HSK 1">HSK 1</option>
             <option value="HSK 2">HSK 2</option>
             <option value="HSK 3">HSK 3</option>
+            <option value="HSK 4">HSK 4</option>
+            <option value="HSK 5">HSK 5</option>
+            <option value="HSK 6">HSK 6</option>
           </select>
 
           {/* Learning Status Filter */}
@@ -953,13 +967,14 @@ export default function VocabularyPage({ setActiveTab }) {
                 </div>
 
                 {/* Cross-practice Quick Access */}
-                {setActiveTab && (
+                {(onSelectWriting || onSelectPronounce || setActiveTab) && (
                   <div className="flex items-center gap-2 pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setActiveTab('writing');
+                        if (onSelectWriting) onSelectWriting(currentCard);
+                        else if (setActiveTab) setActiveTab('writing');
                       }}
                       className="flex-1 py-1.5 px-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
                     >
@@ -970,7 +985,8 @@ export default function VocabularyPage({ setActiveTab }) {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setActiveTab('pronunciation');
+                        if (onSelectPronounce) onSelectPronounce(currentCard);
+                        else if (setActiveTab) setActiveTab('pronunciation');
                       }}
                       className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
                     >
@@ -1134,19 +1150,25 @@ export default function VocabularyPage({ setActiveTab }) {
                 </div>
 
                 {/* Quick Cross Practice */}
-                {setActiveTab && (
+                {(onSelectWriting || onSelectPronounce || setActiveTab) && (
                   <div className="flex items-center gap-1.5 pt-2 border-t border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70">
                     <button
-                      onClick={() => setActiveTab('writing')}
-                      title="Chuyển sang trang Luyện viết chữ"
+                      onClick={() => {
+                        if (onSelectWriting) onSelectWriting(item);
+                        else if (setActiveTab) setActiveTab('writing');
+                      }}
+                      title="Chuyển sang trang Luyện viết chữ này"
                       className="flex-1 py-1.5 px-2 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-orange-50 dark:hover:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-[#F1E5D8] dark:border-[#2B3A4F] text-[10px] font-bold flex items-center justify-center gap-1 transition-all"
                     >
                       <PenTool size={11} />
                       <span>Viết chữ</span>
                     </button>
                     <button
-                      onClick={() => setActiveTab('pronunciation')}
-                      title="Chuyển sang trang Luyện phát âm"
+                      onClick={() => {
+                        if (onSelectPronounce) onSelectPronounce(item);
+                        else if (setActiveTab) setActiveTab('pronunciation');
+                      }}
+                      title="Chuyển sang trang Luyện phát âm từ này"
                       className="flex-1 py-1.5 px-2 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-[#F1E5D8] dark:border-[#2B3A4F] text-[10px] font-bold flex items-center justify-center gap-1 transition-all"
                     >
                       <Mic size={11} />
@@ -1231,17 +1253,35 @@ export default function VocabularyPage({ setActiveTab }) {
 
           {/* Quiz Feedback & Next Button */}
           {quizAnswered && (
-            <div className="p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs space-y-2 animate-in fade-in">
+            <div className="p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs space-y-3 animate-in fade-in">
               <p className="font-bold text-[#243447] dark:text-white">
                 {selectedOption === currentCard.meaning ? '🎉 Chính xác tuyệt vời!' : `⚠️ Chưa đúng! Nghĩa đúng là: ${currentCard.meaning}`}
               </p>
               {currentCard.mnemonic && (
                 <p className="text-[11px] text-[#748092]">💡 Mẹo nhớ: {currentCard.mnemonic}</p>
               )}
-              <div className="text-right pt-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onSelectWriting ? onSelectWriting(currentCard) : setActiveTab?.('writing')}
+                    className="px-2.5 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 text-[11px] font-bold flex items-center gap-1 hover:bg-orange-100 transition-colors"
+                  >
+                    <PenTool size={12} />
+                    <span>Viết chữ</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSelectPronounce ? onSelectPronounce(currentCard) : setActiveTab?.('pronunciation')}
+                    className="px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold flex items-center gap-1 hover:bg-emerald-100 transition-colors"
+                  >
+                    <Mic size={12} />
+                    <span>Phát âm</span>
+                  </button>
+                </div>
                 <button
                   onClick={handleNextQuizCard}
-                  className="px-5 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-sm transition-all"
+                  className="px-5 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-sm transition-all ml-auto"
                 >
                   Từ tiếp theo ➔
                 </button>

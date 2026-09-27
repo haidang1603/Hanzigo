@@ -706,7 +706,8 @@ export async function getVocabularyFromDb() {
     const { data, error } = await supabase
       .from('vocabulary')
       .select('*')
-      .order('id', { ascending: true });
+      .order('id', { ascending: true })
+      .limit(5000);
     if (error) throw error;
     return data;
   } catch (err) {
@@ -836,7 +837,8 @@ export async function getWritingCharactersFromDb() {
     const { data, error } = await supabase
       .from('writing_characters')
       .select('*')
-      .order('id', { ascending: true });
+      .order('id', { ascending: true })
+      .limit(1000);
     if (error) throw error;
     return (data || []).map(w => ({
       char: w.hanzi,
@@ -860,7 +862,8 @@ export async function getPronunciationItemsFromDb() {
     const { data, error } = await supabase
       .from('pronunciation_items')
       .select('*')
-      .order('id', { ascending: true });
+      .order('id', { ascending: true })
+      .limit(1000);
     if (error) throw error;
     return (data || []).map(p => ({
       id: String(p.id),

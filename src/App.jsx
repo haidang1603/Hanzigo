@@ -365,9 +365,60 @@ export default function App() {
 
   const [selectedLessonIndex, setSelectedLessonIndex] = useState(0);
 
+  // Selected vocabulary for cross-page writing and pronunciation practice
+  const [writingTarget, setWritingTarget] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('hanzigo_writing_target');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [pronounceTarget, setPronounceTarget] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('hanzigo_pronounce_target');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const handleSelectLesson = (index) => {
     setSelectedLessonIndex(index);
     setActiveTab('lesson');
+  };
+
+  const handleSelectWriting = (vocabItem) => {
+    setWritingTarget(vocabItem);
+    try {
+      sessionStorage.setItem('hanzigo_writing_target', JSON.stringify(vocabItem));
+    } catch {}
+    setActiveTab('writing');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectPronounce = (vocabItem) => {
+    setPronounceTarget(vocabItem);
+    try {
+      sessionStorage.setItem('hanzigo_pronounce_target', JSON.stringify(vocabItem));
+    } catch {}
+    setActiveTab('pronunciation');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleClearWritingTarget = () => {
+    setWritingTarget(null);
+    try {
+      sessionStorage.removeItem('hanzigo_writing_target');
+    } catch {}
+  };
+
+  const handleClearPronounceTarget = () => {
+    setPronounceTarget(null);
+    try {
+      sessionStorage.removeItem('hanzigo_pronounce_target');
+    } catch {}
   };
 
   return (
@@ -423,15 +474,25 @@ export default function App() {
         )}
 
         {activeTab === 'vocabulary' && (
-          <VocabularyPage setActiveTab={setActiveTab} />
+          <VocabularyPage 
+            setActiveTab={setActiveTab} 
+            onSelectWriting={handleSelectWriting}
+            onSelectPronounce={handleSelectPronounce}
+          />
         )}
 
         {activeTab === 'pronunciation' && (
-          <PronunciationPage />
+          <PronunciationPage 
+            targetVocab={pronounceTarget}
+            onClearTargetVocab={handleClearPronounceTarget}
+          />
         )}
 
         {activeTab === 'writing' && (
-          <WritingPage />
+          <WritingPage 
+            targetVocab={writingTarget}
+            onClearTargetVocab={handleClearWritingTarget}
+          />
         )}
 
         {activeTab === 'conversation' && (

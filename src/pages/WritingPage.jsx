@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   Trash2, 
@@ -24,7 +24,7 @@ import {
 import AudioButton from '../components/AudioButton';
 import { CHARACTERS_WRITING, VOCABULARY_LIST } from '../data/chineseData';
 import { playSuccessSound, playClickSound } from '../utils/audio';
-import { triggerCloudSync } from '../supabase/services';
+import { triggerCloudSync, getWritingCharactersFromDb } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
 
 const STORAGE_CUSTOM_CHARS = 'hanzigo_custom_writing_chars';
@@ -57,7 +57,7 @@ const BRUSH_COLORS = [
   { id: 'blue', label: 'Mực lam', color: '#2563EB', bg: 'bg-[#2563EB]' }
 ];
 
-export default function WritingPage() {
+export default function WritingPage({ targetVocab, onClearTargetVocab }) {
   // Stored custom characters
   const [customChars, setCustomChars] = useState(() => {
     try {
@@ -68,10 +68,95 @@ export default function WritingPage() {
     }
   });
 
-  // All characters combined
-  const allCharacters = [...CHARACTERS_WRITING, ...customChars];
+  // DB writing characters loaded from Supabase
+  const [dbChars, setDbChars] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getWritingCharactersFromDb().then(chars => {
+      if (isMounted && chars && chars.length > 0) {
+        setDbChars(chars);
+      }
+    });
+    return () => { isMounted = false; };
+  }, []);
+
+  // Combined base characters (static + DB + custom)
+  const baseCharacters = useMemo(() => {
+    const map = new Map();
+    CHARACTERS_WRITING.forEach(c => map.set(c.char, c));
+    dbChars.forEach(c => map.set(c.char, c));
+    customChars.forEach(c => map.set(c.char, c));
+    return Array.from(map.values());
+  }, [dbChars, customChars]);
+
+  // Extract individual characters if a vocabulary word is being practiced
+  const targetWordChars = useMemo(() => {
+    if (!targetVocab || !targetVocab.hanzi) return [];
+    const hanziStr = String(targetVocab.hanzi);
+    const chars = Array.from(hanziStr).filter(ch => /\p{Script=Han}/u.test(ch));
+    const validChars = chars.length > 0 ? chars : Array.from(hanziStr.trim());
+    const pinyinParts = (targetVocab.pinyin || '').trim().split(/\s+/);
+
+    return validChars.map((ch, idx) => {
+      const existing = baseCharacters.find(b => b.char === ch);
+      if (existing) {
+        return {
+          ...existing,
+          parentVocab: targetVocab,
+          isTargetChar: true
+        };
+      }
+      const pop = POPULAR_CHARS_DICT[ch];
+      if (pop) {
+        return {
+          char: ch,
+          pinyin: pop.pinyin,
+          hanviet: pop.hanviet,
+          meaning: pop.meaning,
+          radical: pop.radical,
+          strokesCount: pop.strokesCount || 6,
+          strokeOrder: ['Nét phẩy (丿)', 'Nét ngang (一)', 'Nét sổ (丨)', 'Nét mác (乀)'],
+          components: pop.radical,
+          mnemonic: pop.mnemonic,
+          tip: pop.tip,
+          parentVocab: targetVocab,
+          isTargetChar: true
+        };
+      }
+      return {
+        char: ch,
+        pinyin: pinyinParts[idx] || targetVocab.pinyin || '',
+        hanviet: targetVocab.hanviet || '',
+        meaning: targetVocab.meaning,
+        strokesCount: Number(targetVocab.strokes) || 6,
+        radical: targetVocab.radical || 'Bộ thủ',
+        strokeOrder: ['Nét phẩy (丿)', 'Nét ngang (一)', 'Nét sổ (丨)', 'Nét mác (乀)'],
+        components: `Chữ trong từ vựng "${targetVocab.hanzi}"`,
+        mnemonic: targetVocab.mnemonic || `Chữ "${ch}" trong từ "${targetVocab.hanzi}" (${targetVocab.meaning}).`,
+        tip: 'Viết cân xứng quanh tâm mễ tự, giữ nét bút dứt khoát.',
+        parentVocab: targetVocab,
+        isTargetChar: true
+      };
+    });
+  }, [targetVocab, baseCharacters]);
+
+  // All characters combined (active word characters at front)
+  const allCharacters = useMemo(() => {
+    if (targetWordChars.length === 0) return baseCharacters;
+    const targetSet = new Set(targetWordChars.map(t => t.char));
+    const rest = baseCharacters.filter(b => !targetSet.has(b.char));
+    return [...targetWordChars, ...rest];
+  }, [targetWordChars, baseCharacters]);
 
   const [selectedCharIndex, setSelectedCharIndex] = useState(0);
+
+  // When targetVocab changes, automatically select the first character of this word
+  useEffect(() => {
+    if (targetVocab) {
+      setSelectedCharIndex(0);
+    }
+  }, [targetVocab]);
   const [showGuide, setShowGuide] = useState(true);
   const [gridMode, setGridMode] = useState('mizige'); // 'mizige' or 'tianzige'
   const [brushSize, setBrushSize] = useState(14);
@@ -674,6 +759,76 @@ export default function WritingPage() {
         </button>
       </div>
 
+      {/* Target Vocabulary Highlight Banner */}
+      {targetVocab && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-orange-50 via-amber-50 to-orange-50/50 dark:from-orange-950/40 dark:via-amber-950/30 dark:to-orange-950/20 border-2 border-orange-400/50 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-orange-500 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-orange-500/30 shrink-0">
+              ✍️
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-orange-200 dark:bg-orange-900/60 text-orange-800 dark:text-orange-200">
+                  Từ vựng đang luyện viết
+                </span>
+                <span className="text-xl sm:text-2xl font-black font-['Noto_Serif_SC'] text-[#243447] dark:text-white">
+                  {targetVocab.hanzi}
+                </span>
+                <span className="text-sm font-bold text-[#E85D3F]">
+                  ({targetVocab.pinyin})
+                </span>
+              </div>
+              <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-0.5">
+                Nghĩa: <strong className="text-emerald-600 dark:text-emerald-400">{targetVocab.meaning}</strong>
+                {targetVocab.hanviet && ` • Âm Hán-Việt: ${targetVocab.hanviet}`}
+                {targetVocab.level && ` • Cấp độ: ${targetVocab.level}`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start md:self-auto shrink-0 flex-wrap">
+            {targetWordChars.length > 1 && (
+              <div className="flex items-center gap-1 bg-white dark:bg-[#1E293B] p-1 rounded-2xl border border-orange-300 dark:border-orange-800 shadow-sm">
+                <span className="text-[11px] font-bold text-[#748092] px-2">Chọn chữ viết:</span>
+                {targetWordChars.map((tc, tcIdx) => {
+                  const isCurrent = currentChar.char === tc.char;
+                  return (
+                    <button
+                      key={tcIdx}
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setSelectedCharIndex(tcIdx);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl font-['Noto_Serif_SC'] text-base font-black transition-all ${
+                        isCurrent
+                          ? 'bg-[#E85D3F] text-white shadow-sm scale-105'
+                          : 'text-[#243447] dark:text-white hover:bg-orange-100 dark:hover:bg-orange-900/40'
+                      }`}
+                    >
+                      {tc.char}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {onClearTargetVocab && (
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  onClearTargetVocab();
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-semibold text-[#748092] hover:text-[#E85D3F] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] transition-colors"
+                title="Quay lại danh sách luyện viết chung"
+              >
+                ✕ Xem tất cả chữ
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Character Selector Pills with Add Badge & Saved Score */}
       <div className="flex items-center gap-2.5 overflow-x-auto pb-2 pt-1">
         {allCharacters.map((c, idx) => {
@@ -692,6 +847,9 @@ export default function WritingPage() {
               }`}
             >
               <span>{c.char}</span>
+              {c.isTargetChar && (
+                <span className="absolute -top-1 -left-1 w-3.5 h-3.5 rounded-full bg-orange-500 border-2 border-white dark:border-[#1E293B]" title="Chữ từ vựng bạn đã chọn" />
+              )}
               {charScore !== undefined && (
                 <span
                   className={`absolute -bottom-1 -right-1 text-[9px] font-black px-1 rounded-md text-white shadow-xs ${
