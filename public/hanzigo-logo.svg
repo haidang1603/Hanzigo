@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="hzg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E85D3F" />
+      <stop offset="100%" stop-color="#CB4529" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="50" fill="url(#hzg-grad)" />
+  <text x="50" y="65" font-size="52" font-family="'Noto Serif SC', 'Songti SC', 'Source Han Serif SC', serif" font-weight="900" fill="#FFFFFF" text-anchor="middle">汉</text>
+  <circle cx="76" cy="24" r="9" fill="#F4B942" stroke="#FFFFFF" stroke-width="2.5" />
+</svg>

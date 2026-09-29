@@ -113,7 +113,7 @@ const DEFAULT_PRONUNCIATION_ITEMS = [
 const DEFAULT_COMMUNITY_POSTS = [
   {
     author_name: 'Ban Quản Trị HanziGo',
-    author_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    author_avatar: '/hanzigo-logo.svg',
     author_level: 'Quản trị viên',
     content: 'Chào mừng các bạn học viên đến với Không gian Cộng đồng HanziGo! 🌟 Đây là nơi giao lưu học hỏi, giải đáp thắc mắc ngữ pháp, tìm bạn cùng luyện phản xạ khẩu ngữ và chia sẻ kinh nghiệm thi đỗ HSK điểm cao. Hãy đăng câu hỏi hoặc cảm nhận học tập đầu tiên của bạn ở khung phía trên nhé! 🇨🇳🇻🇳✨',
     tag: '#KinhNghiemHoc',

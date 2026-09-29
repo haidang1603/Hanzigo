@@ -387,18 +387,25 @@ export async function getCommunityPosts() {
 
     if (error) throw error;
 
-    return (data || []).map(row => ({
-      id: row.id,
-      author: row.author_name || 'Học viên HanziGo',
-      avatar: row.author_avatar || null,
-      level: row.author_level || 'HSK 1',
-      content: row.content,
-      tag: row.tag || '',
-      likes: row.likes || 0,
-      likedBy: row.liked_by || [],
-      comments: row.comments || [],
-      time: row.created_at ? new Date(row.created_at).toLocaleDateString('vi-VN') : 'Vừa xong'
-    }));
+    return (data || []).map(row => {
+      const isBqt = (row.author_name || '').includes('Ban Quản Trị') || (row.author_level === 'Quản trị viên');
+      const avatarUrl = isBqt || (row.author_avatar && row.author_avatar.includes('photo-1534528741775-53994a69daeb'))
+        ? '/hanzigo-logo.svg'
+        : (row.author_avatar || null);
+
+      return {
+        id: row.id,
+        author: row.author_name || 'Học viên HanziGo',
+        avatar: avatarUrl,
+        level: row.author_level || 'HSK 1',
+        content: row.content,
+        tag: row.tag || '',
+        likes: row.likes || 0,
+        likedBy: row.liked_by || [],
+        comments: row.comments || [],
+        time: row.created_at ? new Date(row.created_at).toLocaleDateString('vi-VN') : 'Vừa xong'
+      };
+    });
   } catch (err) {
     console.warn('Could not fetch Supabase community posts:', err);
     return null;

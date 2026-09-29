@@ -5512,9 +5512,9 @@ export const COMMUNITY_POSTS = [
   {
     id: 'system-welcome',
     author: 'Ban Quản Trị HanziGo',
-    avatar: null,
+    avatar: '/hanzigo-logo.svg',
     initial: 'HZ',
-    level: 'BQT',
+    level: 'Quản trị viên',
     time: 'Ghim đầu trang',
     tag: '#KinhNghiemHoc',
     content: 'Chào mừng các bạn học viên đến với Không gian Cộng đồng HanziGo! 🌟 Đây là nơi giao lưu học hỏi, giải đáp thắc mắc ngữ pháp, tìm bạn cùng luyện phản xạ khẩu ngữ và tham gia các thử thách học tập. Hãy đăng câu hỏi hoặc cảm nhận học tập đầu tiên của bạn ở khung phía trên nhé! 🇨🇳🇻🇳✨',

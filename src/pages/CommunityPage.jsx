@@ -104,6 +104,31 @@ export function isFakePost(p) {
   return FAKE_AUTHORS.some(fake => author.includes(fake));
 }
 
+export function sanitizeCommunityPosts(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter(p => !isFakePost(p))
+    .map(p => {
+      const authorName = (p.author_name || p.author || '').trim();
+      const isBqt = authorName.includes('Ban Quản Trị') || 
+                    p.author_level === 'Quản trị viên' || 
+                    p.level === 'Quản trị viên' || 
+                    p.level === 'BQT' ||
+                    p.id === 'system-welcome';
+      const isLegacyUnsplash = (p.author_avatar && p.author_avatar.includes('photo-1534528741775-53994a69daeb')) ||
+                               (p.avatar && p.avatar.includes('photo-1534528741775-53994a69daeb'));
+      if (isBqt || isLegacyUnsplash) {
+        return {
+          ...p,
+          avatar: '/hanzigo-logo.svg',
+          author_avatar: '/hanzigo-logo.svg',
+          level: p.level || p.author_level || 'Quản trị viên'
+        };
+      }
+      return p;
+    });
+}
+
 export function isFakePartner(p) {
   if (!p) return true;
   const name = (p.name || '').trim();
@@ -111,20 +136,20 @@ export function isFakePartner(p) {
 }
 
 export default function CommunityPage({ user }) {
-  // Posts state initialized from localStorage with demo user purge
+  // Posts state initialized from localStorage with demo user purge and logo normalization
   const [posts, setPosts] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.POSTS);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const clean = parsed.filter(p => !isFakePost(p));
+          const clean = sanitizeCommunityPosts(parsed);
           localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(clean));
           return clean;
         }
       }
     } catch {}
-    const defaultClean = COMMUNITY_POSTS.filter(p => !isFakePost(p));
+    const defaultClean = sanitizeCommunityPosts(COMMUNITY_POSTS);
     try {
       localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(defaultClean));
     } catch {}
@@ -182,10 +207,10 @@ export default function CommunityPage({ user }) {
   useEffect(() => {
     let isMounted = true;
 
-    // Sync posts from Supabase (purging any demo data)
+    // Sync posts from Supabase (purging any demo data and normalizing logo)
     getCommunityPosts().then((dbPosts) => {
       if (isMounted && dbPosts) {
-        const clean = dbPosts.filter(p => !isFakePost(p));
+        const clean = sanitizeCommunityPosts(dbPosts);
         setPosts(clean);
         setIsCloudSynced(true);
         try {
@@ -283,7 +308,7 @@ export default function CommunityPage({ user }) {
         getStudyPartnersFromDb()
       ]);
       if (dbPosts) {
-        const cleanPosts = dbPosts.filter(p => !isFakePost(p));
+        const cleanPosts = sanitizeCommunityPosts(dbPosts);
         setPosts(cleanPosts);
         setIsCloudSynced(true);
         localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(cleanPosts));
@@ -807,23 +832,42 @@ export default function CommunityPage({ user }) {
                     {/* Author & Meta */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {post.avatar ? (
-                          post.avatar.length <= 4 ? (
-                            <div className="w-10 h-10 rounded-full bg-[#FFF5F2] dark:bg-[#2C1D1A] border border-[#E85D3F] flex items-center justify-center text-lg shadow-sm">
-                              {post.avatar}
+                        {(() => {
+                          const isBqt = (post.author || '').includes('Ban Quản Trị') || 
+                                        post.level === 'Quản trị viên' || 
+                                        post.level === 'BQT' || 
+                                        post.avatar === '/hanzigo-logo.svg' ||
+                                        (post.avatar && post.avatar.includes('photo-1534528741775-53994a69daeb'));
+                          if (isBqt) {
+                            return (
+                              <div 
+                                className="relative w-10 h-10 rounded-full bg-gradient-to-br from-[#E85D3F] to-[#CB4529] flex items-center justify-center text-white font-bold shadow-md shadow-[#E85D3F]/25 shrink-0 border border-[#E85D3F] select-none group-hover:scale-105 transition-transform"
+                                title="Ban Quản Trị HanziGo"
+                              >
+                                <span className="font-['Noto_Serif_SC'] text-xl font-black">汉</span>
+                                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#F4B942] rounded-full border-2 border-white dark:border-[#1E293B]" />
+                              </div>
+                            );
+                          }
+                          if (post.avatar) {
+                            return post.avatar.length <= 4 ? (
+                              <div className="w-10 h-10 rounded-full bg-[#FFF5F2] dark:bg-[#2C1D1A] border border-[#E85D3F] flex items-center justify-center text-lg shadow-sm">
+                                {post.avatar}
+                              </div>
+                            ) : (
+                              <img src={post.avatar} alt={post.author} className="w-10 h-10 rounded-full object-cover border border-[#E85D3F]" />
+                            );
+                          }
+                          return (
+                            <div className={`w-10 h-10 rounded-full font-bold text-xs flex items-center justify-center border ${
+                              post.isPinned 
+                                ? 'bg-[#E85D3F] text-white border-[#E85D3F]' 
+                                : 'bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] border-[#E85D3F]/40'
+                            }`}>
+                              {post.initial || (post.author ? post.author.charAt(0).toUpperCase() : 'H')}
                             </div>
-                          ) : (
-                            <img src={post.avatar} alt={post.author} className="w-10 h-10 rounded-full object-cover border border-[#E85D3F]" />
-                          )
-                        ) : (
-                          <div className={`w-10 h-10 rounded-full font-bold text-xs flex items-center justify-center border ${
-                            post.isPinned 
-                              ? 'bg-[#E85D3F] text-white border-[#E85D3F]' 
-                              : 'bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] border-[#E85D3F]/40'
-                          }`}>
-                            {post.initial || (post.author ? post.author.charAt(0).toUpperCase() : 'H')}
-                          </div>
-                        )}
+                          );
+                        })()}
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-[#243447] dark:text-white">
