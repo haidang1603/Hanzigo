@@ -20,12 +20,7 @@ import {
   Award,
   Pin,
   Database,
-  RefreshCw,
-  PhoneCall,
-  Calendar,
-  Layers,
-  HelpCircle,
-  Clock
+  RefreshCw
 } from 'lucide-react';
 import { COMMUNITY_POSTS } from '../data/chineseData';
 import { playClickSound, playSuccessSound } from '../utils/audio';
@@ -98,13 +93,13 @@ const FAKE_PARTNERS = [
   'Đặng Mai Phương'
 ];
 
-export function isFakePost(p) {
+function isFakePost(p) {
   if (!p) return true;
   const author = (p.author_name || p.author || '').trim();
   return FAKE_AUTHORS.some(fake => author.includes(fake));
 }
 
-export function sanitizeCommunityPosts(list) {
+function sanitizeCommunityPosts(list) {
   if (!Array.isArray(list)) return [];
   return list
     .filter(p => !isFakePost(p))
@@ -129,7 +124,7 @@ export function sanitizeCommunityPosts(list) {
     });
 }
 
-export function isFakePartner(p) {
+function isFakePartner(p) {
   if (!p) return true;
   const name = (p.name || '').trim();
   return FAKE_PARTNERS.some(fake => name.includes(fake));

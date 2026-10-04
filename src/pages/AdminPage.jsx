@@ -5,7 +5,6 @@ import {
   Trash2, 
   Edit3, 
   Search, 
-  Save, 
   X, 
   ExternalLink, 
   Download, 
@@ -15,24 +14,17 @@ import {
   RefreshCw, 
   Upload, 
   ShieldCheck, 
-  FolderOpen,
   ArrowRight,
   Users,
   UserCheck,
-  UserX,
   Lock,
   Unlock,
-  Key,
   Shield,
   Star,
   Eye,
   EyeOff,
-  Filter,
   Crown,
-  Award,
   Activity,
-  FileSpreadsheet,
-  AlertTriangle,
   Check
 } from 'lucide-react';
 import { 
@@ -58,7 +50,6 @@ import {
   addMaterialToDb,
   updateMaterialInDb,
   deleteMaterialFromDb,
-  getMaterialsFromDb,
   updateUserProfile
 } from '../supabase/services';
 import { playClickSound, playSuccessSound } from '../utils/audio';
@@ -83,9 +74,9 @@ function isDemoUser(u) {
          id.startsWith('user-stu-');
 }
 
-export const ADMIN_EMAILS = ['lehaidang16032006@gmail.com', 'admin@hanzigo.com'];
+const ADMIN_EMAILS = ['lehaidang16032006@gmail.com', 'admin@hanzigo.com'];
 
-export function checkIsAdmin(user) {
+function checkIsAdmin(user) {
   if (!user) return false;
   const email = (user.email || '').toLowerCase().trim();
   return ADMIN_EMAILS.includes(email) || user.role === 'admin';

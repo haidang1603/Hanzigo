@@ -20,7 +20,6 @@ import {
   PenTool,
   Mic,
   Flame,
-  BookOpen,
   Keyboard
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
@@ -29,7 +28,7 @@ import { VOCABULARY_LIST, TOPIC_FILTERS } from '../data/chineseData';
 import { getStoredCustomVocab, saveCustomVocab, deleteCustomVocab } from '../utils/materialsStorage';
 import { triggerCloudSync, getVocabularyFromDb, addVocabularyToDb } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
-import { calculateNextSrsReview, SRS_QUALITY, SRS_STAGES } from '../utils/srsEngine';
+import { calculateNextSrsReview, SRS_QUALITY } from '../utils/srsEngine';
 import { saveUserVocabSrsCard } from '../services';
 
 const STORAGE_REMEMBERED = 'hanzigo_vocab_remembered';
@@ -612,7 +611,7 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
             spread: 65,
             origin: { y: 0.6 }
           });
-        } catch (e) {}
+        } catch {}
       }
     } else {
       playErrorSound();

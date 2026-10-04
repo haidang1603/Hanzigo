@@ -271,13 +271,14 @@ Hệ thống tính toán thời điểm ôn tập từ vựng dựa trên điể
 
 ---
 
-## 🎙️ Động Cơ Đánh Giá Phát Âm Khoa Học
+## 🎙️ Động Cơ Đánh Giá Phát Âm & Ngữ Âm (Pronunciation & Speech Diagnostic Engine)
 
-Động cơ đánh giá phát âm tại [`src/utils/pronunciationEvaluator.js`](src/utils/pronunciationEvaluator.js) hoạt động dựa trên nguyên lý:
-1. **Phân tách âm vị**: So khớp phụ âm đầu (Thanh mẫu) và vần (Vận mẫu).
-2. **Kiểm tra Thanh điệu (Tone Extraction)**: Trích xuất số thanh điệu (1, 2, 3, 4 hoặc 5 - thanh nhẹ) từ ký tự Pinyin có dấu (ví dụ: `mā` -> 1, `má` -> 2, `mǎ` -> 3, `mà` -> 4).
-3. **Độ lệch nhịp điệu & Thời lượng**: Phân tích thời gian phát âm để phát hiện trường hợp nuốt âm hoặc kéo dài quá mức.
-4. **Chẩn đoán phản hồi**: Đưa ra nhận xét cụ thể (ví dụ: *"Bạn đã phát âm đúng âm tiết nhưng nhầm sang Thanh 4"*) thay vì hiển thị điểm số ngẫu nhiên.
+Động cơ thẩm định phát âm tại [`src/utils/pronunciationEvaluator.js`](src/utils/pronunciationEvaluator.js) được thiết kế theo nguyên lý minh bạch, trung thực và khoa học:
+1. **Nhận dạng âm vị & ký tự (ASR & Character Alignment)**: Tiếp nhận văn bản giọng nói thực tế từ Web Speech API, phân tách và so khớp từng ký tự chữ Hán cùng hệ thống phiên âm Pinyin mục tiêu.
+2. **Kiểm tra Thanh điệu & Ký âm (Tone Notation Mapping)**: Trích xuất chính xác số thanh điệu (1, 2, 3, 4 hoặc 5 - khinh thanh) từ ký tự Pinyin có dấu (ví dụ: `mā` -> 1, `má` -> 2, `mǎ` -> 3, `mà` -> 4).
+3. **Phân tích Trường âm & Năng lượng (Acoustic Duration & RMS)**: Đo lường thời lượng phát âm thực tế (chuẩn trung bình 300ms - 900ms cho mỗi âm tiết) và năng lượng thu âm từ Web Audio API AnalyserNode nhằm phát hiện phát âm quá vội, ngập ngừng hoặc thiếu âm lượng.
+4. **Chẩn đoán phản hồi sư phạm thực chất**: Đưa ra nhận xét cụ thể (ví dụ: phát âm chuẩn từng chữ, lệch thanh điệu, hay chưa thu được tín hiệu micro) — **tuyệt đối không sử dụng `Math.random()` để tạo điểm số ảo 98/100**.
+5. **Minh định kỹ thuật**: Hệ thống định vị trung thực là **Pronunciation & Speech Diagnostic Engine** dựa trên nhận diện âm vị và phân tích trường âm (ASR + Acoustic Heuristics), không nhận vơ là trích xuất đường cong cao độ F0 (Fundamental Frequency Pitch Contour) phức tạp từ DSP âm thanh.
 
 ---
 
@@ -312,23 +313,37 @@ npm run build
 
 ---
 
-## ⚙️ Cấu Hình Biến Môi Trường
+## ⚙️ Cấu Hình Biến Môi Trường & Kiến Trúc Bảo Mật API
 
 Tạo file `.env` tại thư mục gốc của dự án (hoặc thêm vào **Environment Variables** trên Vercel):
 
 ```env
-# Supabase Configuration
+# 1. Supabase Configuration (Frontend an toàn với anon key)
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
 
-# Optional: Google Gemini AI API Key (Dùng cho tính năng AI Conversation Tutor)
-VITE_GEMINI_API_KEY=your-gemini-api-key-here
+# 2. Server-side Secret (Bảo mật tuyệt đối - KHÔNG dùng tiền tố VITE_)
+# Biến này chỉ được đọc bởi Vercel Serverless Function (/api/ai/chat) hoặc Vite Dev Server
+GEMINI_API_KEY=your-gemini-api-key-here
 
-# App Environment
+# 3. Môi trường ứng dụng
 VITE_APP_ENV=production
 ```
 
-> **Cảnh báo bảo mật**: Tuyệt đối **KHÔNG** đưa `SUPABASE_SERVICE_ROLE_KEY` vào file `.env` của frontend! `service_role` chỉ được sử dụng trong các môi trường backend/Edge Functions.
+### 🛡️ Kiến trúc bảo mật Backend Proxy cho AI Tutor:
+```
+[Trình duyệt / React Frontend]
+       │
+       ▼  (POST /api/ai/chat - không chứa Secret Key)
+[Vercel Serverless Function / Vite Dev Server]
+       │
+       ▼  (Sử dụng process.env.GEMINI_API_KEY phía Server)
+[Google Gemini API]
+```
+> **Cảnh báo bảo mật**: 
+> 1. Biến `GEMINI_API_KEY` **tuyệt đối không đặt tiền tố `VITE_`** để ngăn chặn việc Vite tự động đóng gói khóa bí mật vào bundle Javascript gửi về trình duyệt của người dùng.
+> 2. Tuyệt đối **KHÔNG** đưa `SUPABASE_SERVICE_ROLE_KEY` vào frontend; frontend chỉ sử dụng `anon` key kết hợp Supabase RLS.
+> 3. Các tác vụ quản trị người dùng (`admin_update_user_status`, `admin_delete_user`) thực thi độc quyền qua PostgreSQL Stored Procedures, không fallback sửa bảng trực tiếp từ client.
 
 ---
 

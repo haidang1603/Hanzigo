@@ -26,28 +26,21 @@ export async function updateUserRoleAndStatusInDb(userId, updates) {
   if (!isSupabaseConfigured || !supabase || !isValidUuid(userId)) return false;
 
   try {
-    // Try calling admin RPC if available
+    // Strictly call secure admin stored procedure (enforces is_admin() on PostgreSQL)
     const { error: rpcError } = await supabase.rpc('admin_update_user_status', {
       target_user_id: userId,
       new_role: updates.role || null,
       new_status: updates.status || null
     });
 
-    if (!rpcError) return true;
+    if (rpcError) {
+      console.error('Supabase admin_update_user_status RPC failed:', rpcError.message);
+      return false;
+    }
 
-    // Fallback direct update (guarded by DB trigger & RLS)
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-
-    if (error) throw error;
     return true;
   } catch (err) {
-    console.warn('Supabase updateUserRoleAndStatus error:', err);
+    console.error('Supabase updateUserRoleAndStatus error:', err);
     return false;
   }
 }
@@ -59,23 +52,19 @@ export async function deleteUserProfileFromDb(userId) {
   if (!isSupabaseConfigured || !supabase || !isValidUuid(userId)) return false;
 
   try {
-    // Try server-side RPC for clean cascading deletion
+    // Strictly call secure admin stored procedure for cascading deletion
     const { error: rpcError } = await supabase.rpc('admin_delete_user', {
       target_user_id: userId
     });
 
-    if (!rpcError) return true;
+    if (rpcError) {
+      console.error('Supabase admin_delete_user RPC failed:', rpcError.message);
+      return false;
+    }
 
-    // Fallback direct delete guarded by RLS
-    const { error } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
-
-    if (error) throw error;
     return true;
   } catch (err) {
-    console.warn('Supabase deleteUserProfile error:', err);
+    console.error('Supabase deleteUserProfile error:', err);
     return false;
   }
 }

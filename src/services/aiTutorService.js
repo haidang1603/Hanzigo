@@ -14,67 +14,27 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { isValidUuid } from './authService.js';
 
-const SYSTEM_PROMPT = `
-Bạn là "Lão Sư HanziGo", một gia sư tiếng Trung bản ngữ kiên nhẫn, thân thiện và giàu kinh nghiệm sư phạm dành cho người Việt Nam.
-Nhiệm vụ của bạn là trò chuyện tự nhiên bằng tiếng Trung, đồng thời hướng dẫn và sửa lỗi cho người học.
-
-Yêu cầu trả về BẮT BUỘC theo định dạng JSON với cấu trúc sau:
-{
-  "hanzi": "Câu trả lời bằng chữ Hán giản thể",
-  "pinyin": "Pinyin có dấu thanh điệu chuẩn xác",
-  "meaning": "Bản dịch tiếng Việt tự nhiên, chuẩn nghĩa",
-  "grammarAnalysis": "Giải thích ngắn gọn 1-2 điểm ngữ pháp xuất hiện trong câu hội thoại",
-  "userCorrection": "Nếu câu của người học có lỗi sai (ngữ pháp, trật tự từ, từ vựng), hãy chỉ ra lỗi và đưa ra cách diễn đạt tự nhiên hơn bằng tiếng Việt. Nếu người học đã nói rất tốt, hãy khen ngợi và đưa ra 1 cách diễn đạt nâng cao tương đương.",
-  "vocabSuggestions": [
-    { "hanzi": "从", "pinyin": "cóng", "meaning": "Từ (nơi chốn, thời gian)", "level": "HSK 1" }
-  ]
-}
-Chỉ trả về chuỗi JSON thuần túy, không bọc trong markdown code block nếu không cần thiết.
-`;
-
 /**
- * Gọi AI Model (Gemini REST API trực tiếp hoặc Backend Endpoint)
+ * Gọi Backend Serverless Function (/api/ai/chat)
+ * GEMINI_API_KEY được bảo mật 100% trên server-side, không bao giờ lộ ra Client Bundle.
  */
-async function callGeminiApi(apiKey, userText, hskLevel = 'HSK 1', conversationHistory = []) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-  const contents = [
-    {
-      role: 'user',
-      parts: [{ text: `${SYSTEM_PROMPT}\nTrình độ hiện tại của học viên: ${hskLevel}` }]
-    },
-    ...conversationHistory.slice(-6).map(msg => ({
-      role: msg.sender === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.hanzi || msg.text || '' }]
-    })),
-    {
-      role: 'user',
-      parts: [{ text: `Câu người học vừa nói: "${userText}"` }]
-    }
-  ];
-
-  const response = await fetch(url, {
+async function callBackendAiTutor(userText, hskLevel = 'HSK 1', conversationHistory = []) {
+  const response = await fetch('/api/ai/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents,
-      generationConfig: {
-        temperature: 0.7,
-        responseMimeType: 'application/json'
-      }
+      userText,
+      hskLevel,
+      conversationHistory
     })
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData?.error?.message || `HTTP ${response.status}`);
+    throw new Error(errorData?.error || `HTTP ${response.status}`);
   }
 
-  const data = await response.json();
-  const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!rawText) throw new Error('Không nhận được phản hồi từ AI.');
-
-  return JSON.parse(rawText);
+  return await response.json();
 }
 
 /**
@@ -152,22 +112,18 @@ export async function sendTutorMessage(userText, options = {}) {
     userId = null
   } = options;
 
-  const apiKey = import.meta.env?.VITE_GEMINI_API_KEY || localStorage.getItem('hanzigo_ai_api_key');
-
   let tutorResponse;
   let provider = 'offline';
 
-  if (apiKey) {
-    try {
-      tutorResponse = await callGeminiApi(apiKey, userText, hskLevel, conversationHistory);
-      provider = 'gemini';
-    } catch (err) {
-      console.warn('Gemini API call failed, falling back to intelligent offline tutor:', err);
-      tutorResponse = getOfflineAiTutorResponse(userText, hskLevel);
-      provider = 'offline';
-    }
-  } else {
+  try {
+    // Gọi Serverless Function /api/ai/chat (bảo mật GEMINI_API_KEY ở server)
+    tutorResponse = await callBackendAiTutor(userText, hskLevel, conversationHistory);
+    provider = 'gemini';
+  } catch (err) {
+    // Khi chưa cấu hình serverless function hoặc ngoại tuyến: kích hoạt AI offline tutor
+    console.info('Backend AI proxy không phản hồi hoặc ngoại tuyến, chuyển sang AI Tutor Offline:', err.message);
     tutorResponse = getOfflineAiTutorResponse(userText, hskLevel);
+    provider = 'offline';
   }
 
   // Save to DB if logged in
