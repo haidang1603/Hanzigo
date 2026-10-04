@@ -29,9 +29,12 @@ import { VOCABULARY_LIST, TOPIC_FILTERS } from '../data/chineseData';
 import { getStoredCustomVocab, saveCustomVocab, deleteCustomVocab } from '../utils/materialsStorage';
 import { triggerCloudSync, getVocabularyFromDb, addVocabularyToDb } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
+import { calculateNextSrsReview, SRS_QUALITY, SRS_STAGES } from '../utils/srsEngine';
+import { saveUserVocabSrsCard } from '../services';
 
 const STORAGE_REMEMBERED = 'hanzigo_vocab_remembered';
 const STORAGE_REVIEW = 'hanzigo_vocab_review';
+const STORAGE_SRS_STATE = 'hanzigo_vocab_srs_state';
 
 // Quick suggestion templates for rapid vocabulary addition
 const QUICK_VOCAB_SUGGESTIONS = [
@@ -236,6 +239,16 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
     return [];
   });
 
+  // SM-2 Spaced Repetition State Map
+  const [srsMap, setSrsMap] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_SRS_STATE);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
   // Add Custom Vocabulary Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [newHanzi, setNewHanzi] = useState('');
@@ -317,40 +330,62 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
     setCurrentIndex(prev => (prev > 0 ? prev - 1 : Math.max(0, filteredVocab.length - 1)));
   }, [filteredVocab.length]);
 
-  // Mark as remembered
-  const handleMarkRemembered = useCallback((id) => {
-    playSuccessSound();
-    setRememberedIds(prev => {
-      const updated = prev.includes(id) ? prev : [...prev, id];
-      localStorage.setItem(STORAGE_REMEMBERED, JSON.stringify(updated));
-      return updated;
-    });
-    setReviewIds(prev => {
-      const updated = prev.filter(item => item !== id);
-      localStorage.setItem(STORAGE_REVIEW, JSON.stringify(updated));
-      return updated;
-    });
-    awardXp(10);
-    triggerCloudSync();
-    handleNextCard();
-  }, [handleNextCard]);
+  // Handle SM-2 Spaced Repetition Rating
+  const handleSrsRate = useCallback((card, quality) => {
+    if (!card) return;
+    const currentSrs = srsMap[card.hanzi] || { repetitions: 0, intervalDays: 1, easeFactor: 2.50 };
+    const nextSrs = calculateNextSrsReview(currentSrs, quality);
 
-  // Mark as need review
-  const handleMarkReview = useCallback((id) => {
-    playClickSound();
-    setReviewIds(prev => {
-      const updated = prev.includes(id) ? prev : [...prev, id];
-      localStorage.setItem(STORAGE_REVIEW, JSON.stringify(updated));
+    setSrsMap(prev => {
+      const updated = { ...prev, [card.hanzi]: nextSrs };
+      try {
+        localStorage.setItem(STORAGE_SRS_STATE, JSON.stringify(updated));
+      } catch {}
       return updated;
     });
-    setRememberedIds(prev => {
-      const updated = prev.filter(item => item !== id);
-      localStorage.setItem(STORAGE_REMEMBERED, JSON.stringify(updated));
-      return updated;
-    });
+
+    if (quality >= SRS_QUALITY.GOOD) {
+      playSuccessSound();
+      awardXp(10, null, `vocab_srs_${card.hanzi}`);
+      setRememberedIds(prev => (prev.includes(card.id) ? prev : [...prev, card.id]));
+      setReviewIds(prev => prev.filter(item => item !== card.id));
+    } else {
+      playClickSound();
+      setReviewIds(prev => (prev.includes(card.id) ? prev : [...prev, card.id]));
+      setRememberedIds(prev => prev.filter(item => item !== card.id));
+    }
+
+    // Sync to Supabase user_vocab_srs table
+    try {
+      const userStr = localStorage.getItem('hanzigo_user');
+      const userObj = userStr ? JSON.parse(userStr) : null;
+      if (userObj?.uid) {
+        saveUserVocabSrsCard(userObj.uid, {
+          hanzi: card.hanzi,
+          pinyin: card.pinyin,
+          meaning: card.meaning,
+          level: card.level,
+          ...nextSrs
+        });
+      }
+    } catch (e) {
+      console.warn('SRS DB sync notice:', e);
+    }
+
     triggerCloudSync();
     handleNextCard();
-  }, [handleNextCard]);
+  }, [srsMap, handleNextCard]);
+
+  // Backward-compatible triggers
+  const handleMarkRemembered = useCallback((id) => {
+    const card = allVocabList.find(v => v.id === id);
+    handleSrsRate(card, SRS_QUALITY.GOOD);
+  }, [allVocabList, handleSrsRate]);
+
+  const handleMarkReview = useCallback((id) => {
+    const card = allVocabList.find(v => v.id === id);
+    handleSrsRate(card, SRS_QUALITY.FORGOT);
+  }, [allVocabList, handleSrsRate]);
 
   // Keyboard navigation for Flashcards
   useEffect(() => {
@@ -1004,22 +1039,60 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
             </div>
           </div>
 
-          {/* Action Buttons: Cần ôn lại vs Đã nhớ vững */}
-          <div className="flex items-center justify-between gap-4 pt-1">
+          {/* SM-2 SRS Card Status Indicator */}
+          {currentCard && (
+            <div className="px-3 py-1.5 rounded-xl bg-white/70 dark:bg-[#1E293B]/70 border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-[11px] text-[#748092] dark:text-[#94A3B8]">
+              <span className="flex items-center gap-1.5 font-bold">
+                <Sparkles size={13} className="text-[#E85D3F]" />
+                <span>
+                  SRS: {srsMap[currentCard.hanzi]?.stage === 2 
+                    ? '🏆 Đã thuần thục' 
+                    : srsMap[currentCard.hanzi]?.stage === 1 
+                      ? '🔄 Đang trong chu kỳ ôn' 
+                      : '🆕 Từ mới học'}
+                </span>
+              </span>
+              <span>
+                Ôn liên tiếp: <strong>{srsMap[currentCard.hanzi]?.repetitions || 0}</strong> lần • Khoảng cách: <strong>{srsMap[currentCard.hanzi]?.intervalDays || 1}</strong> ngày
+              </span>
+            </div>
+          )}
+
+          {/* Action Buttons: 3-tier SM-2 SRS Rating */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
             <button
-              onClick={() => handleMarkReview(currentCard.id)}
-              className="flex-1 py-3 px-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-[#FEF7E9] border border-[#F4B942]/50 text-[#D97706] font-bold text-xs sm:text-sm shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
+              onClick={() => handleSrsRate(currentCard, SRS_QUALITY.FORGOT)}
+              className="py-3 px-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-[#FEF7E9] border border-[#F4B942]/60 text-[#D97706] font-bold text-xs shadow-sm transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 cursor-pointer"
             >
-              <Clock size={16} />
-              <span>Cần ôn lại (Phím 1)</span>
+              <div className="flex items-center gap-1.5">
+                <Clock size={14} />
+                <span>1. Quên / Khó</span>
+              </div>
+              <span className="text-[10px] opacity-75 font-normal">Ôn lại sau 1 ngày</span>
             </button>
 
             <button
-              onClick={() => handleMarkRemembered(currentCard.id)}
-              className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-[#45B97C] to-[#2E8B57] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#45B97C]/25 hover:opacity-95 transition-all flex items-center justify-center gap-2 active:scale-95"
+              onClick={() => handleSrsRate(currentCard, SRS_QUALITY.GOOD)}
+              className="py-3 px-3 rounded-2xl bg-gradient-to-r from-[#45B97C] to-[#2E8B57] text-white font-bold text-xs shadow-md shadow-[#45B97C]/25 hover:opacity-95 transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 cursor-pointer"
             >
-              <Check size={16} />
-              <span>Đã nhớ vững (Phím 2)</span>
+              <div className="flex items-center gap-1.5">
+                <Check size={14} />
+                <span>2. Nhớ tốt</span>
+              </div>
+              <span className="text-[10px] text-white/80 font-normal">
+                Ôn sau {srsMap[currentCard.hanzi]?.repetitions === 0 ? '1' : srsMap[currentCard.hanzi]?.repetitions === 1 ? '6' : Math.round((srsMap[currentCard.hanzi]?.intervalDays || 1) * (srsMap[currentCard.hanzi]?.easeFactor || 2.5))} ngày
+              </span>
+            </button>
+
+            <button
+              onClick={() => handleSrsRate(currentCard, SRS_QUALITY.EASY)}
+              className="py-3 px-3 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white font-bold text-xs shadow-md shadow-[#E85D3F]/25 transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5">
+                <Zap size={14} />
+                <span>3. Rất dễ</span>
+              </div>
+              <span className="text-[10px] text-white/80 font-normal">Tăng tốc độ nhớ sâu</span>
             </button>
           </div>
 

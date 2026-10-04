@@ -27,9 +27,9 @@ import {
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { PINYIN_DATA, VOCABULARY_LIST } from '../data/chineseData';
-import { speakChinese, playSuccessSound, playErrorSound, playClickSound } from '../utils/audio';
 import { triggerCloudSync, getPronunciationItemsFromDb, addPronunciationItemToDb } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
+import { evaluateRealPronunciation } from '../utils/pronunciationEvaluator';
 
 const STORAGE_CUSTOM_PRONOUNCE = 'hanzigo_custom_pronounce_list';
 const STORAGE_PRONOUNCE_HISTORY = 'hanzigo_pronounce_history';
@@ -254,6 +254,7 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
   const userAudioPlayerRef = useRef(null);
   const isRecordingRef = useRef(false);
   const recognitionRef = useRef(null);
+  const recordingStartTimeRef = useRef(0);
   
   const [historyList, setHistoryList] = useState(() => {
     try {
@@ -505,7 +506,8 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
     // 2. Setup SpeechRecognition
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      runSimulationGrading();
+      cleanupAudioRecording();
+      setSpeechError('Trình duyệt hiện tại không hỗ trợ Web Speech API nhận diện tiếng Trung. Khuyên dùng Google Chrome hoặc Microsoft Edge để luyện nói và chấm điểm chính xác.');
       return;
     }
 
@@ -518,11 +520,13 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
       recognition.onstart = () => {
         setIsRecording(true);
         isRecordingRef.current = true;
+        recordingStartTimeRef.current = Date.now();
       };
 
       recognition.onresult = (event) => {
         const spoken = event.results[0][0].transcript;
-        evaluatePronunciation(selectedItem.hanzi, spoken);
+        const durationMs = Date.now() - (recordingStartTimeRef.current || Date.now());
+        evaluatePronunciation(selectedItem.hanzi, selectedItem.pinyin, spoken, durationMs);
         cleanupAudioRecording();
       };
 
@@ -532,9 +536,9 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
         if (event.error === 'not-allowed') {
           setSpeechError('Microphone bị chặn. Vui lòng cấp quyền Micro trên trình duyệt để luyện nói.');
         } else if (event.error === 'no-speech') {
-          setSpeechError('Không nghe thấy giọng nói. Hãy phát âm to và rõ hơn nhé!');
+          setSpeechError('Không phát hiện được giọng nói. Hãy tiến gần microphone hơn và phát âm to, dứt khoát từng chữ nhé!');
         } else {
-          runSimulationGrading();
+          setSpeechError('Nhận dạng giọng nói gặp lỗi: ' + (event.error || 'Vui lòng thử lại.'));
         }
       };
 
@@ -546,7 +550,8 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
       recognition.start();
     } catch (err) {
       console.warn('SpeechRecognition start failed', err);
-      runSimulationGrading();
+      cleanupAudioRecording();
+      setSpeechError('Không thể khởi động bộ nhận dạng giọng nói. Vui lòng kiểm tra micro hoặc tải lại trang.');
     }
   };
 
@@ -561,104 +566,43 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
     cleanupAudioRecording();
   };
 
-  // Intelligent speech evaluation comparing target with spoken transcript
-  const evaluatePronunciation = (target, spoken) => {
-    const cleanTarget = target.replace(/[\s\p{P}]/gu, '');
-    const cleanSpoken = (spoken || '').replace(/[\s\p{P}]/gu, '');
-
-    // Character breakdown
-    const targetChars = Array.from(cleanTarget);
-    let exactMatches = 0;
-    let partialMatches = 0;
-
-    const charBreakdown = targetChars.map((char, idx) => {
-      if (cleanSpoken[idx] === char) {
-        exactMatches++;
-        return { char, status: 'correct', label: 'Chuẩn xác' };
-      } else if (cleanSpoken.includes(char)) {
-        partialMatches++;
-        return { char, status: 'warning', label: 'Lưu ý thanh điệu' };
-      } else {
-        return { char, status: 'incorrect', label: 'Cần chỉnh âm' };
-      }
+  // Real speech evaluation comparing target with spoken transcript
+  const evaluatePronunciation = (targetHanzi, targetPinyin, spoken, durationMs) => {
+    const result = evaluateRealPronunciation({
+      targetHanzi,
+      targetPinyin,
+      spokenTranscript: spoken,
+      audioDurationMs: durationMs
     });
 
-    const accuracyRatio = cleanTarget.length > 0 ? (exactMatches * 1.0 + partialMatches * 0.5) / cleanTarget.length : 1;
-    let wordScore = Math.min(100, Math.max(35, Math.round(accuracyRatio * 96 + (Math.random() * 4))));
-    if (cleanTarget === cleanSpoken) {
-      wordScore = 100;
-    }
-
-    const toneScore = Math.min(100, Math.max(40, Math.round(wordScore * 0.96 + (Math.random() * 5))));
-    const fluencyScore = Math.min(100, Math.max(40, Math.round(wordScore * 0.94 + (Math.random() * 6))));
-
-    const overall = Math.round(wordScore * 0.45 + toneScore * 0.35 + fluencyScore * 0.20);
-
-    let rank = 'Xuất sắc';
-    let rankBadge = 'Xuất sắc 🌟';
-    let feedback = '';
-
-    if (overall >= 90) {
-      rank = 'Xuất sắc';
-      rankBadge = 'Xuất sắc 🌟';
-      feedback = 'Xuất sắc! Bạn phát âm cực kỳ chuẩn xác, ngữ điệu tự nhiên, trường độ và cao độ thanh điệu như người bản xứ.';
-    } else if (overall >= 78) {
-      rank = 'Rất tốt';
-      rankBadge = 'Rất tốt 👏';
-      feedback = `Rất tốt! Nhận diện đúng ${exactMatches}/${cleanTarget.length} chữ. Hãy chú ý mở rộng khẩu hình và giữ thanh 1 cao phẳng hơn.`;
-    } else if (overall >= 65) {
-      rank = 'Đạt yêu cầu';
-      rankBadge = 'Đạt yêu cầu 👍';
-      feedback = 'Khá tốt! Bạn đã phát âm được các từ cốt lõi. Hãy nghe lại âm mẫu ở tốc độ 0.5x để nắm chắc thanh điệu nhé!';
-    } else {
-      rank = 'Cần luyện thêm';
-      rankBadge = 'Cần luyện thêm ✍️';
-      feedback = `Máy nhận diện được: "${spoken || 'Chưa rõ'}". Hãy nghe lại âm mẫu, phát âm chậm rãi dứt khoát từng chữ và thử lại nhé!`;
-    }
-
-    let xp = 10;
-    if (overall >= 90) xp = 25;
-    else if (overall >= 78) xp = 18;
-    else if (overall >= 65) xp = 12;
-    else xp = 6;
-
-    if (overall >= 75) {
+    if (result.overall >= 75) {
       try {
         confetti({
-          particleCount: overall >= 90 ? 75 : 40,
-          spread: 65,
+          particleCount: result.overall >= 90 ? 70 : 35,
+          spread: 60,
           origin: { y: 0.6 }
         });
       } catch (err) {
         console.warn('Confetti error:', err);
       }
+      playSuccessSound();
+    } else {
+      playClickSound();
     }
 
-    playSuccessSound();
-    awardXp(xp);
-
-    const result = {
-      overall,
-      wordScore,
-      toneScore,
-      fluencyScore,
-      spokenText: spoken,
-      charBreakdown,
-      rank,
-      rankBadge,
-      feedback,
-      xpEarned: xp
-    };
+    if (result.xpEarned > 0) {
+      awardXp(result.xpEarned, null, `pronounce_${targetHanzi}`);
+    }
 
     setRecordingScore(result);
     saveHistoryResult(result);
 
     // Save best score for this item
     setSavedScores(prev => {
-      const prevBest = prev[selectedItem.hanzi] || 0;
+      const prevBest = prev[targetHanzi] || 0;
       const updated = {
         ...prev,
-        [selectedItem.hanzi]: Math.max(prevBest, overall)
+        [targetHanzi]: Math.max(prevBest, result.overall)
       };
       try {
         localStorage.setItem('hanzigo_pronounce_scores', JSON.stringify(updated));
@@ -669,52 +613,6 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
     });
 
     triggerCloudSync();
-  };
-
-  // Fallback simulation when Web Speech API is not permitted or unsupported
-  const runSimulationGrading = () => {
-    setIsRecording(true);
-    isRecordingRef.current = true;
-    setTimeout(() => {
-      cleanupAudioRecording();
-      const cleanTarget = selectedItem.hanzi.replace(/[\s\p{P}]/gu, '');
-      const charBreakdown = Array.from(cleanTarget).map((char, i) => ({
-        char,
-        status: i === 0 ? 'correct' : (Math.random() > 0.3 ? 'correct' : 'warning'),
-        label: i === 0 ? 'Chuẩn xác' : 'Lưu ý thanh điệu'
-      }));
-
-      const randomScore = Math.floor(Math.random() * 10) + 89;
-      const result = {
-        overall: randomScore,
-        wordScore: randomScore,
-        toneScore: Math.min(100, randomScore + 2),
-        fluencyScore: Math.min(100, randomScore - 1),
-        spokenText: selectedItem.hanzi,
-        charBreakdown,
-        rank: 'Xuất sắc',
-        rankBadge: 'Xuất sắc 🌟',
-        feedback: 'Phát âm rất tốt! Tròn vành rõ chữ, thanh điệu chuyển tiếp tự nhiên. Tiếp tục duy trì phong độ nhé!',
-        xpEarned: 25
-      };
-
-      try {
-        confetti({ particleCount: 65, spread: 65, origin: { y: 0.6 } });
-      } catch (e) { console.warn(e); }
-
-      playSuccessSound();
-      awardXp(25);
-      setRecordingScore(result);
-      saveHistoryResult(result);
-
-      setSavedScores(prev => {
-        const prevBest = prev[selectedItem.hanzi] || 0;
-        const updated = { ...prev, [selectedItem.hanzi]: Math.max(prevBest, randomScore) };
-        try { localStorage.setItem('hanzigo_pronounce_scores', JSON.stringify(updated)); } catch (e) {}
-        return updated;
-      });
-      triggerCloudSync();
-    }, 2200);
   };
 
   // Tone Quiz handlers

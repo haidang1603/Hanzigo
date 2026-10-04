@@ -110,9 +110,10 @@ export function calculateTotalXp(user = null) {
 }
 
 /**
- * Award XP to the specific learner, update streak activity, and sync to DB
+ * Award XP to the specific learner, update streak activity, and sync to DB.
+ * Supports idempotencyKey to prevent duplicate XP on repetitive clicks.
  */
-export function awardXp(amount, user = null) {
+export function awardXp(amount, user = null, idempotencyKey = null) {
   if (typeof amount !== 'number' || amount <= 0) return calculateTotalXp(user);
 
   let targetUser = user;
@@ -121,6 +122,25 @@ export function awardXp(amount, user = null) {
       const saved = localStorage.getItem('hanzigo_user');
       if (saved) targetUser = JSON.parse(saved);
     } catch {}
+  }
+
+  // Idempotency check: prevent duplicate awarding for the exact same action today
+  if (idempotencyKey) {
+    const today = getLocalDateString();
+    const actionHistoryKey = getUserStorageKey('hanzigo_awarded_actions', targetUser);
+    try {
+      const rawActions = localStorage.getItem(actionHistoryKey);
+      const actions = rawActions ? JSON.parse(rawActions) : {};
+      const fullActionId = `${idempotencyKey}_${today}`;
+      if (actions[fullActionId]) {
+        // Already awarded today, do not award duplicate points
+        return calculateTotalXp(targetUser);
+      }
+      actions[fullActionId] = Date.now();
+      localStorage.setItem(actionHistoryKey, JSON.stringify(actions));
+    } catch (e) {
+      console.warn('Idempotency check notice:', e);
+    }
   }
 
   const bonusKey = getUserStorageKey('hanzigo_bonus_xp', targetUser);

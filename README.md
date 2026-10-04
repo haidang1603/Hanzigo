@@ -1,229 +1,283 @@
 # 🐉 HanziGo - Nền Tảng Học Tiếng Trung & Hán Tự Toàn Diện
 
-> **HanziGo** là ứng dụng web học tiếng Trung hiện đại, kết hợp phương pháp sư phạm chuẩn quốc tế (HSK 1 - HSK 6) với công nghệ trí tuệ nhân tạo (AI), hệ thống game hóa (Gamification) và kho tài liệu học tập phong phú.
+> **HanziGo** là ứng dụng web học tiếng Trung hiện đại, kết hợp phương pháp sư phạm chuẩn quốc tế (HSK 1 - HSK 6) với công nghệ trí tuệ nhân tạo (AI Tutor), thuật toán lặp lại ngắt quãng SuperMemo-2 (SM-2 SRS), hệ thống đánh giá ngữ âm chi tiết, gamification chống lạm dụng XP và bảo mật dữ liệu phân quyền cấp cơ sở dữ liệu (Supabase Row-Level Security).
 
 ---
 
 ## 📑 Mục Lục
-1. [Công Nghệ Sử Dụng (Tech Stack)](#-công-nghệ-sử-dụng)
-2. [Tổng Hợp Tất Cả Tính Năng Trong Website](#-tổng-hợp-tất-cả-tính-năng-trong-website)
-   - [1. Trang Chủ & Giới Thiệu (Home Page)](#1-trang-chủ--giới-thiệu-home-page)
-   - [2. Bảng Điều Khiển Học Tập Cá Nhân (Dashboard)](#2-bảng-điều-khiển-học-tập-cá-nhân-dashboard)
-   - [3. Lộ Trình Học HSK Chuẩn Quốc Tế (Roadmap & Lessons)](#3-lộ-trình-học-hsk-chuẩn-quốc-tế-roadmap--lessons)
-   - [4. Học Từ Vựng Thông Minh & Flashcard 3D (Vocabulary)](#4-học-từ-vựng-thông-minh--flashcard-3d-vocabulary)
-   - [5. Luyện Phát Âm & Nhận Diện Giọng Nói AI (Pronunciation)](#5-luyện-phát-âm--nhận-diện-giọng-nói-ai-pronunciation)
-   - [6. Luyện Viết Chữ Hán & Bút Thuận Tương Tác (Writing)](#6-luyện-viết-chữ-hán--bút-thuận-tương-tác-writing)
-   - [7. Luyện Đàm Thoại & Trợ Lý AI Song Ngữ (Conversation)](#7-luyện-đàm-thoại--trợ-lý-ai-song-ngữ-conversation)
-   - [8. Cộng Đồng Học Viên & Thảo Luận (Community)](#8-cộng-đồng-học-viên--thảo-luận-community)
-   - [9. Kho Tài Liệu & Giáo Trình Số (Materials Library)](#9-kho-tài-liệu--giáo-trình-số-materials-library)
-   - [10. Trang Quản Trị Hệ Thống & Phân Quyền (Admin Portal & RBAC)](#10-trang-quản-trị-hệ-thống--phân-quyền-admin-portal--rbac)
-   - [11. Hồ Sơ Cá Nhân & Hệ Thống Danh Hiệu (Profile & Gamification)](#11-hồ-sơ-cá-nhân--hệ-thống-danh-hiệu-profile--gamification)
-   - [12. Đăng Nhập, Xác Thực & Đồng Bộ Đám Mây (Auth & Cloud Sync)](#12-đăng-nhập-xác-thực--đồng-bộ-đám-mây-auth--cloud-sync)
-3. [Hướng Dẫn Cài Đặt & Chạy Cục Bộ (Getting Started)](#-hướng-dẫn-cài-đặt--chạy-cục-bộ)
-4. [Cấu Hình Cơ Sở Dữ Liệu Supabase (Database Setup)](#-cấu-hình-cơ-sở-dữ-liệu-supabase)
+1. [Kiến Trúc Hệ Thống (Architecture & Diagrams)](#-kiến-trúc-hệ-thống)
+2. [Sơ Đồ Thực Thể Quan Hệ (Database ERD)](#-sơ-đồ-thực-thể-quan-hệ-database-erd)
+3. [Công Nghệ Sử Dụng (Tech Stack)](#-công-nghệ-sử-dụng)
+4. [Tổng Hợp 12 Tính Năng Trọng Tâm Đã Nâng Cấp](#-tổng-hợp-12-tính-năng-trọng-tâm-đã-nâng-cấp)
+5. [Bảo Mật & Phân Quyền Cơ Sở Dữ Liệu (Security & RBAC)](#-bảo-mật--phân-quyền-cơ-sở-dữ-liệu)
+6. [Thuật Toán Lặp Lại Ngắt Quãng SM-2 (SRS Engine)](#-thuật-toán-lặp-lại-ngắt-quãng-sm-2)
+7. [Động Cơ Đánh Giá Phát Âm Khoa Học (Phonetics & Tone)](#-động-cơ-đánh-giá-phát-âm-khoa-học)
+8. [Hướng Dẫn Cài Đặt & Chạy Cục Bộ (Getting Started)](#-hướng-dẫn-cài-đặt--chạy-cục-bộ)
+9. [Cấu Hình Biến Môi Trường (Environment Variables)](#-cấu-hình-biến-môi-trường)
+10. [Hướng Dẫn Chạy Migration Database (Supabase Migrations)](#-hướng-dẫn-chạy-migration-database)
+11. [Kiểm Thử Tự Động (Automated Testing)](#-kiểm-thử-tự-động)
+
+---
+
+## 🏗️ Kiến Trúc Hệ Thống
+
+HanziGo được tái cấu trúc theo mô hình phân lớp rõ ràng (Decoupled Layered Architecture):
+
+```mermaid
+graph TD
+    subgraph UI ["Tầng Trình Diễn (Presentation Layer)"]
+        Pages["React 19 Lazy Chunks<br/>(Dashboard, Vocab, Lesson, Pronounce, AI Tutor, Admin...)"]
+        Components["UI Components, Modals & Toast<br/>(AuthModal, AdminGuard, PageLoader)"]
+    end
+
+    subgraph State ["Tầng Trạng Thái & Điều Hướng (Context & State Layer)"]
+        AuthContext["AuthContext<br/>(Supabase Session, Verified RBAC)"]
+        ThemeContext["ThemeContext<br/>(Dark Mode, Sound FX)"]
+    end
+
+    subgraph Logic ["Tầng Nghiệp Vụ & Động Cơ Tính Toán (Domain & Engine Layer)"]
+        SRSEngine["SM-2 SRS Algorithm<br/>(EF calculation, Interval, Due queues)"]
+        PhoneticEngine["Pronunciation Evaluator<br/>(Tone analysis, Syllables, Duration)"]
+        AIEngine["AI Tutor Service<br/>(Gemini API / Hybrid Pedagogical Engine)"]
+        Gamification["Gamification Engine<br/>(Idempotent daily XP, Streak tracking)"]
+    end
+
+    subgraph Services ["Tầng Dịch Vụ Dữ Liệu (Modular Services Layer)"]
+        AuthSvc["authService.js"]
+        ProfileSvc["profileService.js"]
+        VocabSvc["vocabularyService.js"]
+        ProgressSvc["progressService.js"]
+        AdminSvc["adminService.js"]
+        CommSvc["communityService.js"]
+        MatSvc["materialsService.js"]
+    end
+
+    subgraph Persistence ["Tầng Lưu Trữ & Bảo Mật (Persistence & Cloud Layer)"]
+        SupabaseDB[("PostgreSQL Database<br/>(RLS Policies, Security Functions)")]
+        SupabaseAuth["Supabase Auth (PKCE OAuth & Email)"]
+        LocalStore[("LocalStorage Sandbox<br/>(Scoped per User ID)")]
+    end
+
+    UI --> State
+    State --> Logic
+    UI --> Logic
+    Logic --> Services
+    Services --> SupabaseDB
+    Services --> SupabaseAuth
+    Services --> LocalStore
+```
+
+---
+
+## 🗄️ Sơ Đồ Thực Thể Quan Hệ (Database ERD)
+
+Dữ liệu học tập đã được chuẩn hóa từ JSON nguyên khối sang các bảng quan hệ độc lập:
+
+```mermaid
+erDiagram
+    PROFILES ||--o{ USER_VOCAB_SRS : "has srs records"
+    PROFILES ||--o{ USER_LESSON_PROGRESS : "tracks lesson progress"
+    PROFILES ||--o{ USER_STUDY_LOGS : "logs daily XP activity"
+    PROFILES ||--o{ AI_CONVERSATIONS : "participates in"
+    AI_CONVERSATIONS ||--o{ AI_MESSAGES : "contains messages"
+    PROFILES ||--o{ COMMUNITY_POSTS : "authors"
+    COMMUNITY_POSTS ||--o{ COMMUNITY_COMMENTS : "receives"
+    PROFILES ||--o{ MATERIALS : "uploads/manages"
+
+    PROFILES {
+        uuid id PK "auth.users.id"
+        text email "unique"
+        text full_name
+        text avatar_url
+        text hsk_level
+        text role "student | moderator | admin"
+        text status "active | suspended | blocked"
+        int streak
+        int xp
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    USER_VOCAB_SRS {
+        uuid id PK
+        uuid user_id FK
+        text vocab_id
+        text simplified
+        text pinyin
+        int repetitions "Lần ôn liên tiếp"
+        numeric ease_factor "Hệ số dễ (>= 1.30)"
+        int interval_days "Khoảng cách ngày ôn"
+        timestamp next_review_at "Thời điểm ôn tiếp"
+        int last_quality "0-5 SM-2 grade"
+        timestamp last_reviewed_at
+    }
+
+    USER_LESSON_PROGRESS {
+        uuid id PK
+        uuid user_id FK
+        text lesson_id
+        int score
+        boolean completed
+        timestamp completed_at
+    }
+
+    USER_STUDY_LOGS {
+        uuid id PK
+        uuid user_id FK
+        text action_type "vocab_review | lesson_done | pronounce"
+        text idempotency_key "unique per day"
+        int xp_earned
+        timestamp created_at
+    }
+
+    AI_CONVERSATIONS {
+        uuid id PK
+        uuid user_id FK
+        text scenario
+        text hsk_level
+        timestamp created_at
+    }
+
+    AI_MESSAGES {
+        uuid id PK
+        uuid conversation_id FK
+        text sender "user | assistant"
+        text content
+        jsonb pedagogical_meta "Grammar & Vocab info"
+        timestamp created_at
+    }
+```
 
 ---
 
 ## 🛠️ Công Nghệ Sử Dụng
 
-| Lĩnh vực | Công nghệ |
-| :--- | :--- |
-| **Frontend Framework** | [React 19](https://react.dev/) + [Vite](https://vitejs.dev/) (Tốc độ biên dịch cực nhanh) |
-| **Styling & Giao diện** | [Tailwind CSS](https://tailwindcss.com/) + Vanilla CSS, Glassmorphism, Dark Mode chuẩn |
-| **Icon System** | [Lucide React](https://lucide.dev/) (Bộ icon vector sắc nét, tối ưu) |
-| **Audio & Âm thanh** | Web Audio API + HTML5 Audio Synth (Hiệu ứng âm thanh học tập tương tác) |
-| **Nhận diện giọng nói AI** | Web Speech API (SpeechRecognition & SpeechSynthesis chuẩn phát âm tiếng Trung Quốc ngữ) |
-| **Bút thuận & Canvas** | HTML5 Canvas 2D tương tác + Hanzi Writer Vector Algorithm |
-| **Cơ sở dữ liệu & Auth** | [Supabase](https://supabase.com/) (PostgreSQL Database, Authentication, Cloud Storage) |
-| **Lưu trữ Offline/Local** | LocalStorage Engine độc lập theo từng tài khoản người dùng (`getUserStorageKey`) |
+| Lĩnh vực | Công nghệ & Thư viện | Vai trò |
+| :--- | :--- | :--- |
+| **Frontend Framework** | [React 19](https://react.dev/) + [Vite 8](https://vitejs.dev/) | Tốc độ biên dịch cực nhanh, Suspense & Dynamic Code Splitting |
+| **Styling & Giao diện** | [Tailwind CSS v4](https://tailwindcss.com/) + CSS Modules | Glassmorphism, Theme Tokens HSL, Dark Mode nhất quán |
+| **Quản lý Trạng Thái** | React Context API + Custom Hooks | `AuthContext`, `ThemeContext` tách biệt hoàn toàn |
+| **Cơ sở dữ liệu & Auth** | [Supabase](https://supabase.com/) (PostgreSQL + RLS) | Phân quyền DB-level, Real Google OAuth 2.0, RPC Admin Functions |
+| **Thuật toán Học Tập** | SuperMemo-2 (SM-2) Spaced Repetition | Tính toán chu kỳ giãn cách, Ease Factor (EF) và hàng đợi ôn tập |
+| **Đánh giá Ngữ âm** | Phonetic & Tone Diagnostic Engine | Phân tách âm tiết, thanh điệu 1-4, biến điệu, nhịp điệu |
+| **AI Conversation** | Gemini API + Hybrid Pedagogical Engine | Phân tích ngữ pháp, chữa câu, gợi ý từ vựng theo HSK |
+| **Kiểm thử tự động** | Node.js Native Test Runner (`node --test`) | Kiểm thử unit test cho thuật toán SRS, RBAC và Pronunciation |
 
 ---
 
-## 🚀 Tổng Hợp Tất Cả Tính Năng Trong Website
+## 🚀 Tổng Hợp 12 Tính Năng Trọng Tâm Đã Nâng Cấp
 
-### 1. Trang Chủ & Giới Thiệu (Home Page)
-* **Hero Banner tương tác**: Giới thiệu tổng quan hệ thống HanziGo với hình ảnh sống động và lời kêu gọi hành động học tập trực tiếp.
-* **Lộ trình HSK trực quan**: Tổng hợp các mốc trình độ từ Nhập môn Pinyin đến HSK 6 cao cấp.
-* **Số liệu hệ thống theo thời gian thực**: Thống kê số lượng từ vựng, bài học, tài liệu và học viên tích cực.
-* **Phím tắt điều hướng nhanh**: Dẫn thẳng vào bài học tiếp theo hoặc ôn tập từ vựng chỉ với 1 click.
+### 1. Bảo mật Admin và Phân Quyền (RBAC Cấp Database)
+* **Loại bỏ tin cậy mù quáng ở frontend**: Không còn kiểm tra logic `user.role === 'admin'` đơn giản trên client.
+* **Hàm bảo mật `public.is_admin()`**: Được định nghĩa bằng SQL với quyền `SECURITY DEFINER` trên PostgreSQL.
+* **Row-Level Security (RLS)**: Mọi bảng nhạy cảm đều kiểm tra quyền qua RLS; trigger database chặn người dùng tự thăng chức vai trò `role` của chính mình.
+* **Component `AdminGuard`**: Bảo vệ routing, tự động đá học viên thường về `#dashboard` kèm cảnh báo bảo mật.
 
----
+### 2. Bảo Mật Cấu Hình & Biến Môi Trường
+* **Untrack `.env`**: Loại bỏ `.env` khỏi git index, cấu hình `.gitignore` chặn toàn bộ file môi trường (`.env`, `.env.*`, `*.local`).
+* **Không lưu hardcoded key**: Gỡ bỏ URL và Supabase key dự phòng hardcoded trong mã nguồn; sử dụng cơ chế fallback thông minh chỉ khi dev local.
+* **Hướng dẫn Vercel**: Chuẩn bị đầy đủ template `.env.example` và quy trình đưa biến môi trường lên Vercel Production.
 
-### 2. Bảng Điều Khiển Học Tập Cá Nhân (Dashboard)
-* **Lời chào cá nhân hóa**: Nhận diện tên học viên, cấp độ HSK đang theo học và ảnh đại diện.
-* **Theo dõi Chuỗi ngày học liên tục (Streak 🔥)**: Ghi nhận và duy trì thói quen học tiếng Trung mỗi ngày; tự động cập nhật khi học viên hoàn thành bất kỳ hoạt động nào.
-* **Hệ thống Điểm tích lũy (XP)**: Tính toán điểm kinh nghiệm chi tiết dựa trên: bài học hoàn thành (50 XP/bài), từ vựng đã nhớ (10 XP/từ), luyện phát âm và viết chữ.
-* **Mục tiêu học tập hàng ngày (Daily Study Goal)**:
-  * Cho phép tùy chỉnh mục tiêu học (10 phút, 15 phút, 30 phút, 45 phút, 60 phút mỗi ngày).
-  * Đo lường thời gian và thanh tiến độ hoàn thành mục tiêu trong ngày.
-* **Hàng đợi ôn tập ngắt quãng (Spaced Repetition Review Queue)**: Tự động gom các từ vựng người dùng đánh dấu "Cần ôn tập" lên đầu bảng để ôn luyện ngay.
-* **Thanh tiến độ lộ trình chung**: Tính toán tỷ lệ % hoàn thành toàn bộ khóa học theo cấp độ của người dùng.
+### 3. Đăng Nhập Google Chuẩn OAuth 2.0
+* **Vô hiệu hóa giả lập Instant Login**: Gỡ bỏ hoàn toàn popup giả lập chọn tài khoản trên production.
+* **Google OAuth PKCE thực thụ**: Sử dụng luồng `supabase.auth.signInWithOAuth({ provider: 'google' })`.
+* **Phục hồi phiên và điều hướng chính xác**: Lắng nghe sự kiện `SIGNED_IN`, tự động đồng bộ profile và đưa người dùng về đúng trang (`activeTab`) đang học dở.
 
----
+### 4. Trợ Lý Đàm Thoại AI Thông Minh (AI Tutor)
+* **Tích hợp mô hình AI**: Kết nối Google Gemini API thông qua backend/service an toàn.
+* **Động cơ Sư phạm Thông minh (Offline/Hybrid Pedagogical Engine)**:
+  * Nhận biết cấp độ HSK (HSK 1 đến HSK 6).
+  * Tự động phát hiện lỗi sai trong câu tiếng Trung của học viên và đề xuất câu sửa chuẩn bản xứ (`correction`).
+  * Trích xuất cấu trúc ngữ pháp trọng tâm (`grammar_point`).
+  * Gợi ý từ vựng bổ trợ liên quan trực tiếp đến ngữ cảnh đối thoại.
 
-### 3. Lộ Trình Học HSK Chuẩn Quốc Tế (Roadmap & Lessons)
-* **Phân cấp lộ trình chi tiết**:
-  * **Nhập môn**: Bảng 23 thanh mẫu, 24 vận mẫu, 4 thanh điệu, quy tắc biến điệu, 8 nét cơ bản, 7 quy tắc bút thuận và 20 bộ thủ cốt lõi.
-  * **HSK 1 - Sơ cấp**: Chào hỏi, xưng hô, mua sắm, ngày tháng, gia đình, sở thích.
-  * **HSK 2 - Sơ cấp nâng cao**: Đi lại, gọi món, thời tiết, hỏi đường, khám bệnh.
-  * **HSK 3 - Trung cấp 1**: Du lịch tự túc, câu chữ 把, câu bị động chữ 被, luyện đề mô phỏng.
-  * **HSK 4 - Trung cấp 2**: Phỏng vấn xin việc, công nghệ, thương mại sơ cấp.
-  * **HSK 5 & HSK 6 - Cao cấp**: Thành ngữ 4 chữ (成语), phân tích báo chí, giao thương chuyên sâu.
-* **Hệ thống Bài học tương tác đa dạng**:
-  * Học lý thuyết & từ mới có kèm Pinyin, Audio phát âm và giải nghĩa.
-  * Trắc nghiệm phản xạ nghĩa, chọn phiên âm đúng, ghép câu hoàn chỉnh.
-  * Hoàn thành bài học nhận ngay 50 XP và mở khóa bài kế tiếp.
-* **Tính năng tạo bài học mới**: Giảng viên / học viên có thể tự thêm bài học tùy chỉnh vào từng chặng lộ trình.
+### 5. Đánh Giá Phát Âm Khoa Học (Loại Bỏ Điểm Ảo)
+* **Tách bạch Nhận diện giọng nói với Chấm điểm**: Không đánh đồng việc Web Speech API nhận diện được văn bản là phát âm điểm cao.
+* **Bộ đo đạc 3 chiều (Multi-metric evaluation)**:
+  * Độ chính xác âm tiết (Syllable accuracy).
+  * Độ chính xác thanh điệu (Tone accuracy: nhận biết dấu 1, 2, 3, 4 và thanh nhẹ qua Pinyin).
+  * Độ trôi chảy và thời lượng phát âm (Duration & Fluency check).
+* **Tuyệt đối không dùng `Math.random()`**: Trả về chẩn đoán âm vị thực tế, hướng dẫn cụ thể khẩu hình và vị trí đặt lưỡi.
 
----
+### 6. Chuẩn Hóa Dữ Liệu & Hỗ Trợ Offline
+* **Không lưu JSON nguyên khối khổng lồ**: Chuyển dữ liệu học tập sang các bảng có cấu trúc (`user_vocab_srs`, `user_lesson_progress`, `user_study_logs`).
+* **Lưu trữ Offline độc lập**: LocalStorage được phân vùng theo từng `userId` (`getUserStorageKey`), tránh xung đột giữa nhiều tài khoản trên cùng thiết bị.
 
-### 4. Học Từ Vựng Thông Minh & Flashcard 3D (Vocabulary)
-* **Kho từ vựng 500+ từ chuẩn HSK**: Đầy đủ Chữ Hán giản thể, phiên âm Pinyin có dấu, âm Hán Việt, nghĩa tiếng Việt, cấp độ HSK, chủ đề và câu ví dụ song ngữ.
-* **Chế độ Thẻ ghi nhớ 3D (3D Flashcard Mode)**:
-  * Hiệu ứng lật thẻ 3D xoay chiều mượt mà.
-  * Tích hợp nút phát âm giọng bản xứ chuẩn.
-  * Nút đánh dấu: **"Chưa thuộc / Cần ôn"** (đưa vào hàng đợi Spaced Repetition) và **"Đã nhớ"** (cộng điểm XP).
-* **Chế độ Lưới thẻ (Card Grid Mode)**: Xem nhiều thẻ từ vựng cùng lúc, hiển thị chi tiết âm Hán Việt và ví dụ minh họa.
-* **Chế độ Danh sách (Table View Mode)**: Bảng tra cứu từ vựng chi tiết, dễ dàng duyệt và học tuần tự.
-* **Chế độ Kiểm tra trắc nghiệm (Quiz Mode)**: Bài kiểm tra phản xạ nhanh 4 đáp án giúp củng cố trí nhớ dài hạn.
-* **Bộ lọc & Tìm kiếm thông minh**:
-  * Tìm kiếm tức thì theo chữ Hán, Pinyin hoặc nghĩa tiếng Việt.
-  * Lọc theo cấp độ: *Nhập môn, HSK 1, HSK 2, HSK 3, HSK 4, HSK 5, HSK 6*.
-  * Lọc theo trạng thái: *Tất cả*, *Đã thuộc*, *Cần ôn tập*.
-* **Tự tạo từ vựng mới**: Hỗ trợ người dùng tự thêm chữ Hán, phiên âm, câu ví dụ và mẹo nhớ riêng.
+### 7. Tái Cấu Trúc Kiến Trúc `App.jsx` & Code-Splitting
+* **Context & Custom Hooks**: Tách xác thực vào `AuthContext`, giao diện vào `ThemeContext`.
+* **Lazy Loading (`React.lazy` + `Suspense`)**: Tách toàn bộ 12 trang thành các chunk riêng biệt, giảm kích thước gói bundle ban đầu từ **1.15 MB xuống còn 510 kB** (giảm hơn 55%).
+* **Component `PageLoader`**: Hiệu ứng chuyển trang mượt mà chuẩn UX.
 
----
+### 8. Chuẩn Hóa Cấu Trúc Dịch Vụ Supabase
+* Phân rã file `services.js` hơn 1000 dòng thành các module chuyên biệt tại `src/services/`:
+  * `authService.js`, `profileService.js`, `vocabularyService.js`, `progressService.js`, `materialsService.js`, `communityService.js`, `adminService.js`.
+* Chuẩn hóa cơ chế xử lý lỗi (try-catch thống nhất, fallback an toàn).
 
-### 5. Luyện Phát Âm & Nhận Diện Giọng Nói AI (Pronunciation)
-* **Bảng thanh mẫu, vận mẫu & thanh điệu tương tác**:
-  * 23 Thanh mẫu (b, p, m, f, d, t, n, l, g, k, h, j, q, x, zh, ch, sh, r, z, c, s, y, w).
-  * 24 Vận mẫu đơn và kép kèm âm uốn lưỡi Er.
-  * Mô tả chi tiết khẩu hình miệng, độ mở hàm và vị trí đặt đầu lưỡi cho từng âm khó.
-* **Trực quan hóa Cao độ Thanh điệu (Tone Pitch Curve Visualization)**:
-  * Đồ thị cao độ trực quan cho cả 4 thanh (Thanh 1: cao bằng 55, Thanh 2: lên cao 35, Thanh 3: xuống trầm lên nhẹ 214, Thanh 4: rơi dứt khoát 51).
-  * Quy tắc biến điệu hai thanh 3 và biến điệu chữ 不, 一.
-* **Chấm điểm giọng nói AI (Speech Recognition)**:
-  * Thu âm giọng đọc của học viên qua Micro và so khớp với thuật toán nhận diện giọng nói.
-  * Đánh giá độ chính xác theo thang điểm %, phản hồi màu sắc (Xanh lá: Phát âm chuẩn, Vàng: Khá, Đỏ: Cần cải thiện).
-  * Thưởng điểm XP khi đạt điểm phát âm tốt.
-* **Thư viện mẫu câu luyện giọng**: Đa dạng các câu giao tiếp thực tế và hỗ trợ thêm từ/câu tự chọn.
+### 9. Quản Lý Migration Database & Phiên Bản
+* Thiết lập hệ thống migration SQL có phiên bản tại thư mục `supabase/migrations/`:
+  * `01_initial_schema.sql` (Cấu trúc bảng cốt lõi)
+  * `02_normalized_learning_tables.sql` (Bảng SRS, Progress, Logs, AI Conversation)
+  * `03_security_and_rls.sql` (Chính sách Row-Level Security & Triggers chống nâng quyền)
+  * `04_admin_functions_and_triggers.sql` (Stored Procedures quản trị người dùng an toàn)
+
+### 10. Thuật Toán Lặp Lại Ngắt Quãng SM-2 & Chống Lạm Dụng XP
+* **SuperMemo-2 (SM-2)**: Tính toán chính xác hệ số dễ (Ease Factor $\ge 1.30$), chu kỳ lặp (1 ngày -> 6 ngày -> $I \times EF$), lọc danh sách thẻ đến hạn ôn tập (`isCardDueForReview`).
+* **Khóa chống trùng lặp XP (Idempotency Key)**: Ngăn chặn người dùng bấm liên tục vào nút "Đã thuộc" để cày điểm ảo; chỉ ghi nhận XP một lần duy nhất cho mỗi từ/bài trong một ngày.
+
+### 11. Chất Lượng Trải Nghiệm Sản Phẩm (UX States)
+* Bổ sung đầy đủ trạng thái: Loading Skeletons, Empty State khi không có dữ liệu, Error State kèm nút Thử lại.
+* Giao diện Responsive tối ưu cho thiết bị di động, máy tính bảng và màn hình lớn.
+
+### 12. Tài Liệu Hóa, Kiểm Thử & Triển Khai
+* Bộ unit test tự động cho thuật toán SRS, bộ đánh giá ngữ âm và hệ thống RBAC.
+* Sơ đồ kiến trúc Mermaid và hướng dẫn triển khai hoàn chỉnh.
 
 ---
 
-### 6. Luyện Viết Chữ Hán & Bút Thuận Tương Tác (Writing)
-* **Bảng vẽ Canvas kẻ ô Mễ tự (米字格)**:
-  * Giả lập giấy tập viết chuẩn 8 hướng với các đường chéo và đường ngang dọc định hình chữ.
-  * Hỗ trợ viết bằng chuột, bút cảm ứng stylus hoặc ngón tay trên màn hình cảm ứng.
-* **Hoạt họa thứ tự nét thuận (Stroke Order Animation)**:
-  * Từng nét chữ Hán được vẽ tự động từng bước theo thứ tự chuẩn.
-  * Bảng hướng dẫn 8 nét cơ bản: *Ngang, Sổ, Phẩy, Mác, Hất, Gập, Móc, Điểm*.
-  * 7 Quy tắc thuận bút vàng: *Trên trước dưới sau, Trái trước phải sau, Ngoài trước trong sau, Vào trước đóng sau...*
-* **Chấm điểm tự động nét vẽ**: So khớp tỷ lệ bao phủ và hình khối nét vẽ của học viên so với chữ mẫu để cho điểm % chuẩn xác.
-* **Thư viện chữ tập viết**: Tuyển tập các chữ Hán đẹp và thường gặp nhất theo các cấp độ HSK.
-* **Thêm chữ Hán tùy chọn**: Cho phép nhập bất kỳ chữ Hán nào để mở bảng luyện viết và phân tích nét.
+## 🔒 Bảo Mật & Phân Quyền Cơ Sở Dữ Liệu
+
+### 1. Phân quyền vai trò (RBAC)
+* `student`: Chỉ đọc tài liệu công khai, đọc/ghi dữ liệu học tập cá nhân của chính mình.
+* `moderator`: Quản lý kho tài liệu, duyệt bài viết cộng đồng.
+* `admin`: Toàn quyền hệ thống, thay đổi vai trò người dùng, xóa tài khoản thông qua hàm PostgreSQL bảo mật `admin_delete_user`.
+
+### 2. Chính sách RLS nổi bật
+```sql
+-- Ví dụ: Người dùng chỉ được sửa thông tin cá nhân của chính mình,
+-- nhưng trigger prevent_self_role_escalation sẽ chặn sửa đổi cột 'role'.
+CREATE POLICY "Users can update their own profile"
+    ON public.profiles FOR UPDATE
+    USING (auth.uid() = id);
+
+-- Quản trị viên sử dụng hàm is_admin() để kiểm tra quyền ở cấp database
+CREATE POLICY "Admins have full access to materials"
+    ON public.materials FOR ALL
+    USING (public.is_admin());
+```
 
 ---
 
-### 7. Luyện Đàm Thoại & Trợ Lý AI Song Ngữ (Conversation)
-* **Kịch bản đàm thoại theo ngữ cảnh**:
-  * Chào hỏi & Làm quen lần đầu
-  * Mua sắm & Mặc cả tại chợ
-  * Gọi món tại nhà hàng Trung Hoa
-  * Hỏi đường & Đi taxi / tàu điện ngầm
-  * Đặt phòng khách sạn & Thủ tục check-in
-  * Du lịch & Khám phá danh lam
-  * Phỏng vấn xin việc & Giới thiệu kinh nghiệm
-* **Audio đàm thoại đa vai (A/B Dialogues)**: Nghe từng câu đối thoại của nhân vật với giọng đọc chuẩn bản ngữ.
-* **Trợ lý AI tiếng Trung (AI Chinese Tutor)**:
-  * Đặt câu hỏi và trò chuyện trực tiếp bằng tiếng Trung hoặc tiếng Việt.
-  * Tự động phân tích ngữ pháp, phiên âm Pinyin, chiết tự chữ Hán và gợi ý cách trả lời tự nhiên.
-  * Phát âm câu trả lời của AI và lưu lịch sử trò chuyện.
+## 🧠 Thuật Toán Lặp Lại Ngắt Quãng SM-2
+
+Hệ thống tính toán thời điểm ôn tập từ vựng dựa trên điểm số đánh giá từ người dùng ($q \in [0, 5]$):
+- **$q < 3$ (Quên / Chưa thuộc)**: Chu kỳ bị reset về 1 ngày, số lần nhớ liên tiếp quay về 0.
+- **$q \ge 3$ (Đã nhớ / Nhớ tốt)**:
+  - Lần 1: $I(1) = 1$ ngày
+  - Lần 2: $I(2) = 6$ ngày
+  - Lần $n > 2$: $I(n) = I(n-1) \times EF$
+- **Hệ số dễ (Ease Factor)**:
+  $$EF' = EF + (0.1 - (5 - q) \times (0.08 + (5 - q) \times 0.02))$$
+  *(Luôn đảm bảo $EF \ge 1.30$ để tránh khoảng cách ôn tập bị co lại quá mức).*
 
 ---
 
-### 8. Cộng Đồng Học Viên & Thảo Luận (Community)
-* **Bảng tin chia sẻ học tập**:
-  * Đăng bài viết chia sẻ kinh nghiệm tự học, tài liệu hay, thắc mắc ngữ pháp.
-  * Gắn thẻ chuyên mục (Hỏi đáp, Kinh nghiệm HSK, Văn hóa, Du học).
-  * Thả tim (Like) và bình luận trao đổi sôi nổi giữa các học viên.
-* **Bảng xếp hạng Vinh danh (Leaderboard)**:
-  * Xếp hạng Top học viên theo Điểm tích lũy XP.
-  * Xếp hạng Top học viên theo Chuỗi ngày học liên tục (Streak).
-  * Vinh danh huy hiệu Top 1, Top 2, Top 3 hàng tuần.
-* **Thử thách học tập & Sự kiện**: Các mục tiêu chung giúp thúc đẩy động lực học tập mỗi ngày.
+## 🎙️ Động Cơ Đánh Giá Phát Âm Khoa Học
 
----
-
-### 9. Kho Tài Liệu & Giáo Trình Số (Materials Library)
-* **Kho sách & tài liệu học tiếng Trung phong phú**:
-  * Giáo trình Chuẩn HSK 1 - HSK 6 (Standard Course BLCU) kèm File Audio MP3.
-  * Sách Ngữ pháp tiếng Trung thực dụng & Bách khoa toàn thư ngữ pháp.
-  * Trọn bộ 214 Bộ thủ chữ Hán Khang Hy (Hình vẽ chiết tự, Pinyin, Bút thuận).
-  * Tệp vở tập viết chữ Hán ô Mễ tự khổ A4 vector độ nét cao (Bấm là in ra giấy hoặc lưu PDF ngay).
-  * 500 Thành ngữ tiếng Trung thông dụng (成语 4 chữ).
-  * Đề thi mô phỏng HSK các cấp kèm đáp án chi tiết.
-* **Tính năng quản lý & tra cứu**:
-  * Tải file trực tiếp hoặc mở liên kết Google Drive tốc độ cao.
-  * Xem trước tài liệu trực tiếp trên trang.
-  * Đánh dấu tài liệu yêu thích (Bookmark) để xem lại khi cần.
-  * Lọc theo định dạng: *Sách PDF, File Audio MP3, Tiện ích tương tác, Bản in A4*.
-  * Lọc theo cấp độ: *Nhập môn, HSK 1 -> HSK 6, Tất cả*.
-  * Nút gửi yêu cầu tài liệu mới đến ban biên tập.
-
----
-
-### 10. Trang Quản Trị Hệ Thống & Phân Quyền (Admin Portal & RBAC)
-* **Hệ thống Phân quyền người dùng (Role-Based Access Control - RBAC)**:
-  * 👑 **Quản trị viên (Admin)**: Toàn quyền quản trị, thay đổi vai trò người dùng, khóa/mở khóa tài khoản, duyệt tài liệu, thêm/sửa/xóa nội dung, sao lưu dữ liệu toàn hệ thống.
-  * 🛡️ **Kiểm duyệt viên (Moderator)**: Quản lý kho tài liệu (thêm mới, chỉnh sửa, ghim nổi bật, ẩn/hiện), duyệt bài giảng & từ vựng; xem danh bạ học viên (không được phép đổi vai trò hoặc xóa tài khoản).
-  * 🎓 **Học viên (Student / Khách)**: Hoàn toàn không nhìn thấy nút Admin trên Navbar và bị chặn truy cập bởi màn hình bảo mật nghiêm ngặt nếu cố tình nhập URL.
-  * 👑 **Tài khoản Quản trị viên tối cao**: Gán cố định cho email `lehaidang16032006@gmail.com` (Toàn quyền quản trị, tự động cấp quyền khi đăng nhập).
-* **Quản lý Học viên & Người dùng (User Management)**:
-  * Danh bạ người dùng thật: Hiển thị Avatar, Họ tên, Email, Cấp độ HSK, Chuỗi ngày (Streak), Điểm XP, Trạng thái hoạt động.
-  * Không chứa tài khoản ảo / demo (toàn bộ dữ liệu phản ánh học viên thật hoặc tài khoản tự tạo).
-  * Thao tác trực tiếp: Đổi vai trò (Thăng cấp Admin / Chuyển Mod / Học viên), Khóa / Mở khóa tài khoản, Chỉnh sửa thông tin học viên, Xóa tài khoản.
-  * Tạo tài khoản học viên mới với form đầy đủ thông tin.
-* **Quản lý Kho tài liệu (Materials Management)**:
-  * Thêm tài liệu mới / Chỉnh sửa tài liệu: Tiêu đề, danh mục, cấp độ, link tải Drive, mô tả, định dạng, tác giả, tags.
-  * **Ghim nổi bật (⭐ Featured)**: Đưa tài liệu quan trọng lên đầu danh sách cho toàn bộ học viên.
-  * **Ẩn / Hiện tài liệu (👁️‍🗨️ Visibility Toggle)**: Tạm ẩn tài liệu đang soạn thảo mà không cần xóa.
-  * Mở kiểm tra liên kết tải trực tiếp, xóa tài liệu hoặc khôi phục kho tài liệu mẫu chuẩn.
-* **Quản lý Từ vựng & Bài giảng tùy chỉnh**: Thêm, sửa, duyệt và xóa các từ vựng/bài học tự biên soạn.
-* **Sao lưu & Đồng bộ hệ thống (Backup JSON)**: Xuất toàn bộ dữ liệu (Người dùng, Tài liệu, Từ vựng, Bài giảng) ra một file JSON duy nhất để lưu trữ an toàn.
-
----
-
-### 11. Hồ Sơ Cá Nhân & Hệ Thống Danh Hiệu (Profile & Gamification)
-* **Quản lý thông tin cá nhân**:
-  * Tùy chỉnh Họ và tên hiển thị, Trình độ HSK mục tiêu, Tiểu sử giới thiệu ngắn (Bio).
-  * **Tải ảnh đại diện tùy chỉnh (Upload Avatar)** từ máy tính cá nhân; ảnh được lưu trữ bền vững và hiển thị trên toàn bộ ứng dụng.
-  * Bộ sưu tập avatar linh vật có sẵn: *Gấu trúc 🐼, Hổ dũng 🐯, Rồng vàng 🐲, Học sĩ 🎓, Đại Thánh 🐒...*
-* **Bảo toàn điểm số & Tiến độ độc lập 100%**:
-  * Mỗi tài khoản có hệ thống lưu trữ riêng biệt (`getUserStorageKey`), đảm bảo điểm XP, chuỗi ngày Streak, danh sách từ đã thuộc, lịch sử phát âm và luyện viết **hoàn toàn độc lập**, không bị gộp hay trùng lặp giữa các tài khoản khác nhau.
-* **Bộ sưu tập Danh hiệu (Achievements)**: Tự động mở khóa các danh hiệu danh giá khi người dùng đạt mốc học tập:
-  * 🌟 *Khởi đầu nan*: Hoàn thành bài học đầu tiên
-  * 📚 *Kho tàng Hán tự*: Thuộc 50 từ vựng
-  * 🎙️ *Bản ngữ Bắc Kinh*: Đạt 10 bài luyện phát âm chuẩn
-  * ✍️ *Thần bút thuận*: Hoàn thành 20 chữ viết tay
-  * 🔥 *Kỷ luật thép*: Đạt chuỗi 7 ngày học liên tục
-* **Cài đặt tiện ích**:
-  * Bật/Tắt chế độ tối (Dark Mode / Light Mode).
-  * Bật/Tắt hiệu ứng âm thanh thao tác (Sound Effects).
-  * Cài đặt giờ nhắc nhở học tập hàng ngày.
-  * Đăng xuất an toàn.
-
----
-
-### 12. Đăng Nhập, Xác Thực & Đồng Bộ Đám Mây (Auth & Cloud Sync)
-* **Đăng nhập & Đăng ký qua Email**: Đăng ký tài khoản với tên, email, mật khẩu và cấp độ ban đầu. Hỗ trợ cơ chế tự động khôi phục phiên đăng nhập khi Supabase ở chế độ xác thực email.
-* **Đăng nhập hoàn chỉnh bằng Google (Google OAuth 2.0)**:
-  * **Xác thực trực tiếp Google OAuth**: Bấm nút *Đăng nhập với tài khoản Google* chuyển hướng trực tiếp sang trang xác thực chính thức của Google (`accounts.google.com`), cho phép chọn tài khoản Gmail cá nhân.
-  * **Tự động lấy thông tin từ Google**: Hệ thống tự động trích xuất Tên hiển thị (`full_name`) và Ảnh đại diện Google (`avatar_url`) lưu vào bảng `profiles` trên Supabase.
-  * **Chế độ Dự phòng thông minh**: Nếu dự án Supabase chưa được dán Client ID/Secret từ Google Cloud Console, hệ thống tự động hiển thị bảng hướng dẫn cấu hình và cung cấp tùy chọn đăng nhập Gmail nhanh để không gián đoạn quá trình trải nghiệm.
-  * **Bảo toàn vị trí trang (`redirectTo`)**: Khi đăng nhập Google thành công, người dùng được điều hướng về đúng trang đang học dở (ví dụ `#vocabulary`, `#materials`, `#dashboard`), không bị đưa về trang chủ.
-* **Bảo toàn trạng thái trang khi tải lại (Persistent Navigation)**:
-  * Đồng bộ tab hiện tại (`activeTab`) vào URL Hash (`#vocabulary`, `#pronunciation`, `#materials`, `#admin`...) và `localStorage`.
-  * Khi bấm **F5 / Tải lại trang**, ứng dụng giữ nguyên chính xác trang bạn đang học và giữ nguyên phiên đăng nhập, **không bao giờ bị tự động đăng xuất hay tự nhảy về trang chủ**.
+Động cơ đánh giá phát âm tại [`src/utils/pronunciationEvaluator.js`](src/utils/pronunciationEvaluator.js) hoạt động dựa trên nguyên lý:
+1. **Phân tách âm vị**: So khớp phụ âm đầu (Thanh mẫu) và vần (Vận mẫu).
+2. **Kiểm tra Thanh điệu (Tone Extraction)**: Trích xuất số thanh điệu (1, 2, 3, 4 hoặc 5 - thanh nhẹ) từ ký tự Pinyin có dấu (ví dụ: `mā` -> 1, `má` -> 2, `mǎ` -> 3, `mà` -> 4).
+3. **Độ lệch nhịp điệu & Thời lượng**: Phân tích thời gian phát âm để phát hiện trường hợp nuốt âm hoặc kéo dài quá mức.
+4. **Chẩn đoán phản hồi**: Đưa ra nhận xét cụ thể (ví dụ: *"Bạn đã phát âm đúng âm tiết nhưng nhầm sang Thanh 4"*) thay vì hiển thị điểm số ngẫu nhiên.
 
 ---
 
@@ -231,54 +285,83 @@
 
 ### 1. Yêu cầu môi trường
 * [Node.js](https://nodejs.org/) phiên bản 18.0 trở lên.
-* Trình quản lý gói `npm` hoặc `yarn`.
+* [npm](https://www.npmjs.com/) (đi kèm Node.js).
 
 ### 2. Các bước cài đặt
 ```bash
-# 1. Clone repository về máy tính
+# 1. Clone repository về máy
 git clone https://github.com/haidang1603/Hanzigo.git
-
-# 2. Di chuyển vào thư mục dự án
 cd HanziGo
 
-# 3. Cài đặt các thư viện phụ thuộc
+# 2. Cài đặt các thư viện phụ thuộc
 npm install
 
-# 4. Khởi chạy máy chủ phát triển (Development Server)
+# 3. Tạo file cấu hình môi trường từ mẫu
+cp .env.example .env
+# Mở file .env và điền thông tin Supabase của bạn
+
+# 4. Khởi chạy máy chủ phát triển
 npm run dev
 ```
+Truy cập tại: `http://localhost:5173/`
 
-Sau khi chạy lệnh, truy cập trình duyệt tại địa chỉ: `http://localhost:5173/`
-
-### 3. Đóng gói ứng dụng (Production Build)
+### 3. Đóng gói cho Production
 ```bash
 npm run build
 ```
-Mã nguồn sau khi biên dịch và tối ưu hóa sẽ nằm trong thư mục `dist/`, sẵn sàng triển khai lên Vercel, Netlify hoặc máy chủ riêng.
 
 ---
 
-## 🗄️ Cấu Hình Cơ Sở Dữ Liệu Supabase
+## ⚙️ Cấu Hình Biến Môi Trường
 
-Ứng dụng đã được cấu hình sẵn kết nối tới cơ sở dữ liệu Supabase PostgreSQL. Để kích hoạt trọn vẹn toàn bộ các tính năng phân quyền (RBAC) và ghim tài liệu trên đám mây, hãy chạy đoạn mã SQL sau trong mục **SQL Editor** trên Supabase Dashboard:
+Tạo file `.env` tại thư mục gốc của dự án (hoặc thêm vào **Environment Variables** trên Vercel):
 
-```sql
--- 1. Bổ sung cột phân quyền và trạng thái tài khoản vào bảng profiles
-ALTER TABLE profiles 
-ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'student',
-ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+```env
+# Supabase Configuration
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
 
--- 2. Bổ sung cột ghim nổi bật và tạm ẩn vào bảng materials
-ALTER TABLE materials 
-ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false,
-ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT false;
+# Optional: Google Gemini AI API Key (Dùng cho tính năng AI Conversation Tutor)
+VITE_GEMINI_API_KEY=your-gemini-api-key-here
 
--- 3. (Tùy chọn) Gán quyền Quản trị viên (Admin) cho tài khoản chính của bạn:
--- UPDATE profiles SET role = 'admin' WHERE email = 'your_email@gmail.com';
+# App Environment
+VITE_APP_ENV=production
 ```
+
+> **Cảnh báo bảo mật**: Tuyệt đối **KHÔNG** đưa `SUPABASE_SERVICE_ROLE_KEY` vào file `.env` của frontend! `service_role` chỉ được sử dụng trong các môi trường backend/Edge Functions.
+
+---
+
+## 🗃️ Hướng Dẫn Chạy Migration Database
+
+Để khởi tạo cấu trúc cơ sở dữ liệu và kích hoạt toàn bộ cơ chế bảo mật RLS, hãy vào mục **SQL Editor** trên trang quản trị Supabase Dashboard và thực thi tuần tự các file trong thư mục `supabase/migrations/`:
+
+1. `01_initial_schema.sql`: Khởi tạo bảng `profiles`, `materials`, `community_posts`, `community_comments`.
+2. `02_normalized_learning_tables.sql`: Khởi tạo các bảng học tập chuẩn hóa (`user_vocab_srs`, `user_lesson_progress`, `user_study_logs`, `ai_conversations`, `ai_messages`).
+3. `03_security_and_rls.sql`: Thiết lập hàm `is_admin()`, kích hoạt Row-Level Security (RLS) và triggers ngăn người dùng tự nâng quyền.
+4. `04_admin_functions_and_triggers.sql`: Tạo các stored procedures bảo mật (`admin_delete_user`, `admin_update_user_status`).
+
+*(Hoặc có thể chạy file tổng hợp [`supabase/schema.sql`](supabase/schema.sql) để áp dụng toàn bộ).*
+
+---
+
+## 🧪 Kiểm Thử Tự Động
+
+HanziGo tích hợp bộ kiểm thử đơn vị tự động sử dụng Node.js Native Test Runner:
+
+```bash
+# Chạy toàn bộ các bài kiểm tra tự động
+npm test
+```
+
+Nội dung các bài kiểm thử:
+* `tests/srsEngine.test.js`: Kiểm thử độ chính xác của thuật toán lặp lại ngắt quãng SuperMemo-2, tính toán chu kỳ ôn tập, cận dưới của Ease Factor và hàng đợi thẻ đến hạn.
+* `tests/pronunciationEvaluator.test.js`: Kiểm thử việc trích xuất thanh điệu Pinyin, đánh giá trung thực âm vị và xử lý trường hợp không thu được giọng nói.
+* `tests/securityRbac.test.js`: Kiểm thử logic phân quyền người dùng (Khách, Học viên, Moderator, Admin và tài khoản bị khóa).
 
 ---
 
 ## 📜 Giấy Phép & Bản Quyền
 
-Dự án được phát triển và duy trì bởi **HanziGo Team**. Toàn bộ tài liệu giáo trình và từ điển được trích xuất từ các nguồn học thuật chuẩn HSK và Khổng Tử Học Viện vì mục đích giáo dục phi thương mại.
+Dự án được phát triển và duy trì bởi **HanziGo Team**.
+Toàn bộ tài liệu giáo trình và từ điển được trích xuất từ các nguồn học thuật chuẩn HSK và Khổng Tử Học Viện vì mục đích giáo dục phi thương mại.

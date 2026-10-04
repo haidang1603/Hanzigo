@@ -1,17 +1,18 @@
 -- =========================================================================
--- HANZI GO - COMPLETE SUPABASE POSTGRESQL DATABASE SCHEMA
--- Phiên bản hoàn chỉnh: Hỗ trợ Auth, Phân quyền (RBAC), Lộ trình, Từ vựng,
--- Bút thuận, Luyện âm, Kho tài liệu, Cộng đồng & Đồng bộ học tập cá nhân.
+-- HANZI GO - CANONICAL SUPABASE POSTGRESQL DATABASE SCHEMA (v2.0 PRODUCTION)
+-- Phiên bản hoàn chỉnh: Auth, RBAC, RLS Chặt chẽ, Thuật toán SRS SM-2,
+-- Tiến độ học tập chuẩn hóa, Quản lý tài liệu & Quản trị hệ thống.
 -- =========================================================================
 
--- 1. Enable UUID Extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- =========================================================================
--- 1. TABLE: profiles (Thông tin hồ sơ học viên & quản trị viên)
+-- 1. BẢNG DỮ LIỆU CỐT LÕI
 -- =========================================================================
-CREATE TABLE IF NOT EXISTS profiles (
-  id UUID PRIMARY KEY,
+
+-- 1.1. profiles: Hồ sơ học viên & quản trị viên
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE NOT NULL,
   name TEXT,
   level TEXT DEFAULT 'HSK 1 - Sơ cấp',
@@ -26,40 +27,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Tự động bổ sung các cột nếu bảng profiles đã tồn tại
-ALTER TABLE profiles 
-ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'student',
-ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active',
-ADD COLUMN IF NOT EXISTS bio TEXT,
-ADD COLUMN IF NOT EXISTS words_learned INT DEFAULT 0,
-ADD COLUMN IF NOT EXISTS streak INT DEFAULT 1,
-ADD COLUMN IF NOT EXISTS xp INT DEFAULT 50;
-
--- =========================================================================
--- 2. TABLE: users_learning_data (Dữ liệu học tập chi tiết từng học viên)
--- =========================================================================
-CREATE TABLE IF NOT EXISTS users_learning_data (
-  uid UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
-  streak INT DEFAULT 1,
-  xp INT DEFAULT 50,
-  vocab_remembered JSONB DEFAULT '[]'::jsonb,
-  vocab_review JSONB DEFAULT '[]'::jsonb,
-  completed_lessons JSONB DEFAULT '[]'::jsonb,
-  custom_vocab JSONB DEFAULT '[]'::jsonb,
-  custom_lessons JSONB DEFAULT '[]'::jsonb,
-  pronounce_history JSONB DEFAULT '[]'::jsonb,
-  custom_writing_chars JSONB DEFAULT '[]'::jsonb,
-  chat_history JSONB DEFAULT '{}'::jsonb,
-  custom_materials JSONB DEFAULT '[]'::jsonb,
-  saved_materials JSONB DEFAULT '[]'::jsonb,
-  daily_goal INT DEFAULT 15,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- =========================================================================
--- 3. TABLE: materials (Kho tài liệu, giáo trình, sách ngữ pháp, đề thi HSK)
--- =========================================================================
-CREATE TABLE IF NOT EXISTS materials (
+-- 1.2. materials: Kho tài liệu & giáo trình
+CREATE TABLE IF NOT EXISTS public.materials (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   category TEXT DEFAULT 'Giáo trình chuẩn',
@@ -76,18 +45,10 @@ CREATE TABLE IF NOT EXISTS materials (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Bổ sung cột nếu bảng materials đã tồn tại
-ALTER TABLE materials 
-ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false,
-ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT false,
-ADD COLUMN IF NOT EXISTS downloads_count INT DEFAULT 0;
-
--- =========================================================================
--- 4. TABLE: lessons (Danh mục bài học lộ trình HSK)
--- =========================================================================
-CREATE TABLE IF NOT EXISTS lessons (
+-- 1.3. lessons: Lộ trình bài học HSK
+CREATE TABLE IF NOT EXISTS public.lessons (
   id TEXT PRIMARY KEY,
-  level_id TEXT NOT NULL, -- 'intro', 'hsk1', 'hsk2', 'hsk3', 'hsk4', 'hsk5-6'
+  level_id TEXT NOT NULL,
   number INT NOT NULL,
   title TEXT NOT NULL,
   duration INT DEFAULT 20,
@@ -97,10 +58,8 @@ CREATE TABLE IF NOT EXISTS lessons (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- =========================================================================
--- 5. TABLE: vocabulary (Từ điển HSK & Từ vựng thông dụng)
--- =========================================================================
-CREATE TABLE IF NOT EXISTS vocabulary (
+-- 1.4. vocabulary: Từ điển HSK
+CREATE TABLE IF NOT EXISTS public.vocabulary (
   id BIGSERIAL PRIMARY KEY,
   hanzi TEXT NOT NULL,
   pinyin TEXT NOT NULL,
@@ -115,10 +74,8 @@ CREATE TABLE IF NOT EXISTS vocabulary (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- =========================================================================
--- 6. TABLE: writing_characters (Thư viện chữ Hán tập viết & bút thuận)
--- =========================================================================
-CREATE TABLE IF NOT EXISTS writing_characters (
+-- 1.5. writing_characters: Thư viện tập viết & bút thuận
+CREATE TABLE IF NOT EXISTS public.writing_characters (
   id BIGSERIAL PRIMARY KEY,
   hanzi TEXT NOT NULL,
   pinyin TEXT NOT NULL,
@@ -132,10 +89,8 @@ CREATE TABLE IF NOT EXISTS writing_characters (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- =========================================================================
--- 7. TABLE: pronunciation_items (Thanh mẫu, vận mẫu, thanh điệu & mẫu câu)
--- =========================================================================
-CREATE TABLE IF NOT EXISTS pronunciation_items (
+-- 1.6. pronunciation_items: Luyện phát âm
+CREATE TABLE IF NOT EXISTS public.pronunciation_items (
   id BIGSERIAL PRIMARY KEY,
   char TEXT NOT NULL,
   pinyin TEXT NOT NULL,
@@ -150,11 +105,10 @@ CREATE TABLE IF NOT EXISTS pronunciation_items (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- =========================================================================
--- 8. TABLE: community_posts (Bảng tin cộng đồng, trao đổi ngữ pháp)
--- =========================================================================
-CREATE TABLE IF NOT EXISTS community_posts (
+-- 1.7. community_posts: Bảng tin cộng đồng
+CREATE TABLE IF NOT EXISTS public.community_posts (
   id BIGSERIAL PRIMARY KEY,
+  author_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   author_name TEXT NOT NULL DEFAULT 'Học viên HanziGo',
   author_avatar TEXT,
   author_level TEXT DEFAULT 'HSK 1',
@@ -166,11 +120,10 @@ CREATE TABLE IF NOT EXISTS community_posts (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- =========================================================================
--- 9. TABLE: study_partners (Ghép đôi bạn học cùng tiến)
--- =========================================================================
-CREATE TABLE IF NOT EXISTS study_partners (
+-- 1.8. study_partners: Ghép cặp học tập
+CREATE TABLE IF NOT EXISTS public.study_partners (
   id BIGSERIAL PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   target_level TEXT DEFAULT 'HSK 2',
   daily_time TEXT DEFAULT 'Tối 20h - 21h',
@@ -180,85 +133,160 @@ CREATE TABLE IF NOT EXISTS study_partners (
 );
 
 -- =========================================================================
--- INDEXES & PERFORMANCE OPTIMIZATION
+-- ĐẢM BẢO CÁC CỘT BỔ SUNG TỒN TẠI (DÀNH CHO TRƯỜNG HỢP BẢNG ĐÃ ĐƯỢC TẠO TỪ TRƯỚC)
 -- =========================================================================
-CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
-CREATE INDEX IF NOT EXISTS idx_materials_category ON materials(category);
-CREATE INDEX IF NOT EXISTS idx_materials_level ON materials(level);
-CREATE INDEX IF NOT EXISTS idx_lessons_level_id ON lessons(level_id);
-CREATE INDEX IF NOT EXISTS idx_vocab_level ON vocabulary(level);
-CREATE INDEX IF NOT EXISTS idx_vocab_hanzi ON vocabulary(hanzi);
-CREATE INDEX IF NOT EXISTS idx_writing_hanzi ON writing_characters(hanzi);
-CREATE INDEX IF NOT EXISTS idx_community_created_at ON community_posts(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_partners_created_at ON study_partners(created_at DESC);
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'student';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS streak INT DEFAULT 1;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS xp INT DEFAULT 50;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS words_learned INT DEFAULT 0;
 
--- =========================================================================
--- ROW LEVEL SECURITY (RLS) POLICIES
--- =========================================================================
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE users_learning_data ENABLE ROW LEVEL SECURITY;
-ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
-ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
-ALTER TABLE vocabulary ENABLE ROW LEVEL SECURITY;
-ALTER TABLE writing_characters ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pronunciation_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE community_posts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE study_partners ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.materials ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false;
+ALTER TABLE public.materials ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT false;
 
--- Bỏ các policy cũ nếu có để tránh trùng lặp
-DROP POLICY IF EXISTS "Public read profiles" ON profiles;
-DROP POLICY IF EXISTS "Public write profiles" ON profiles;
-DROP POLICY IF EXISTS "Public read learning data" ON users_learning_data;
-DROP POLICY IF EXISTS "Public write learning data" ON users_learning_data;
-DROP POLICY IF EXISTS "Public read materials" ON materials;
-DROP POLICY IF EXISTS "Public write materials" ON materials;
-DROP POLICY IF EXISTS "Public read lessons" ON lessons;
-DROP POLICY IF EXISTS "Public write lessons" ON lessons;
-DROP POLICY IF EXISTS "Public read vocabulary" ON vocabulary;
-DROP POLICY IF EXISTS "Public write vocabulary" ON vocabulary;
-DROP POLICY IF EXISTS "Public read writing_characters" ON writing_characters;
-DROP POLICY IF EXISTS "Public write writing_characters" ON writing_characters;
-DROP POLICY IF EXISTS "Public read pronunciation_items" ON pronunciation_items;
-DROP POLICY IF EXISTS "Public write pronunciation_items" ON pronunciation_items;
-DROP POLICY IF EXISTS "Public read community posts" ON community_posts;
-DROP POLICY IF EXISTS "Public write community posts" ON community_posts;
-DROP POLICY IF EXISTS "Public read study partners" ON study_partners;
-DROP POLICY IF EXISTS "Public write study partners" ON study_partners;
+ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS author_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL;
+ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS author_name TEXT DEFAULT 'Học viên HanziGo';
+ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS author_avatar TEXT;
+ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS author_level TEXT DEFAULT 'HSK 1';
+ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS tag TEXT DEFAULT '#HoiDapNguPhap';
+ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS likes INT DEFAULT 0;
+ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS liked_by JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS comments JSONB DEFAULT '[]'::jsonb;
 
--- 1. Profiles Policies
-CREATE POLICY "Public read profiles" ON profiles FOR SELECT USING (true);
-CREATE POLICY "Public write profiles" ON profiles FOR ALL USING (true);
-
--- 2. Learning Data Policies
-CREATE POLICY "Public read learning data" ON users_learning_data FOR SELECT USING (true);
-CREATE POLICY "Public write learning data" ON users_learning_data FOR ALL USING (true);
-
--- 3. Educational Content Policies
-CREATE POLICY "Public read materials" ON materials FOR SELECT USING (true);
-CREATE POLICY "Public write materials" ON materials FOR ALL USING (true);
-
-CREATE POLICY "Public read lessons" ON lessons FOR SELECT USING (true);
-CREATE POLICY "Public write lessons" ON lessons FOR ALL USING (true);
-
-CREATE POLICY "Public read vocabulary" ON vocabulary FOR SELECT USING (true);
-CREATE POLICY "Public write vocabulary" ON vocabulary FOR ALL USING (true);
-
-CREATE POLICY "Public read writing_characters" ON writing_characters FOR SELECT USING (true);
-CREATE POLICY "Public write writing_characters" ON writing_characters FOR ALL USING (true);
-
-CREATE POLICY "Public read pronunciation_items" ON pronunciation_items FOR SELECT USING (true);
-CREATE POLICY "Public write pronunciation_items" ON pronunciation_items FOR ALL USING (true);
-
--- 4. Community & Study Partners Policies
-CREATE POLICY "Public read community posts" ON community_posts FOR SELECT USING (true);
-CREATE POLICY "Public write community posts" ON community_posts FOR ALL USING (true);
-
-CREATE POLICY "Public read study partners" ON study_partners FOR SELECT USING (true);
-CREATE POLICY "Public write study partners" ON study_partners FOR ALL USING (true);
+ALTER TABLE public.study_partners ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL;
 
 -- =========================================================================
--- AUTOMATIC PROFILE CREATION TRIGGER (WHEN USER SIGNS UP IN SUPABASE AUTH)
+-- 2. BẢNG TIẾN ĐỘ HỌC TẬP CHUẨN HÓA (SRS, BÀI HỌC, AI CHAT)
 -- =========================================================================
+
+-- 2.1. user_vocab_srs: Tiến độ từ vựng theo thuật toán Spaced Repetition (SM-2)
+CREATE TABLE IF NOT EXISTS public.user_vocab_srs (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  vocab_id BIGINT,
+  hanzi TEXT NOT NULL,
+  pinyin TEXT,
+  meaning TEXT,
+  level TEXT DEFAULT 'HSK 1',
+  stage INT DEFAULT 0,              -- 0: Học mới, 1: Đang ôn, 2: Thuần thục
+  repetitions INT DEFAULT 0,        -- Số lần ôn liên tiếp đúng
+  interval_days INT DEFAULT 1,      -- Khoảng cách ngày ôn
+  ease_factor NUMERIC(4,2) DEFAULT 2.50, -- Hệ số SM-2 (tối thiểu 1.30)
+  next_review_at TIMESTAMPTZ DEFAULT NOW(),
+  last_reviewed_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT uq_user_vocab UNIQUE (user_id, hanzi)
+);
+
+-- 2.2. user_lesson_progress: Tiến độ hoàn thành bài học
+CREATE TABLE IF NOT EXISTS public.user_lesson_progress (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  lesson_id TEXT NOT NULL,
+  completed_at TIMESTAMPTZ DEFAULT NOW(),
+  score INT DEFAULT 100,
+  xp_earned INT DEFAULT 50,
+  CONSTRAINT uq_user_lesson UNIQUE (user_id, lesson_id)
+);
+
+-- 2.3. user_study_logs: Lịch sử hoạt động học tập (Audit trail & Chống gian lận XP)
+CREATE TABLE IF NOT EXISTS public.user_study_logs (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  activity_type TEXT NOT NULL, -- 'vocab_srs', 'lesson_complete', 'pronounce_practice', 'writing_practice', 'ai_chat'
+  item_ref TEXT,
+  xp_awarded INT DEFAULT 0,
+  study_date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2.4. ai_conversations: Phiên đàm thoại với AI Tutor
+CREATE TABLE IF NOT EXISTS public.ai_conversations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  topic_id TEXT,
+  title TEXT NOT NULL DEFAULT 'Hội thoại tiếng Trung',
+  hsk_level TEXT DEFAULT 'HSK 1',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2.5. ai_messages: Tin nhắn trong hội thoại AI
+CREATE TABLE IF NOT EXISTS public.ai_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  conversation_id UUID NOT NULL REFERENCES public.ai_conversations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  sender TEXT NOT NULL CHECK (sender IN ('user', 'ai', 'system')),
+  hanzi TEXT NOT NULL,
+  pinyin TEXT,
+  meaning TEXT,
+  grammar_analysis TEXT,
+  correction TEXT,
+  vocab_suggestions JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2.6. user_saved_materials: Tài liệu đã lưu
+CREATE TABLE IF NOT EXISTS public.user_saved_materials (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  material_id TEXT NOT NULL REFERENCES public.materials(id) ON DELETE CASCADE,
+  saved_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT uq_user_material UNIQUE (user_id, material_id)
+);
+
+-- =========================================================================
+-- 3. CHỈ MỤC TỐI ƯU HIỆU NĂNG (INDEXES)
+-- =========================================================================
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+CREATE INDEX IF NOT EXISTS idx_materials_category ON public.materials(category);
+CREATE INDEX IF NOT EXISTS idx_materials_level ON public.materials(level);
+CREATE INDEX IF NOT EXISTS idx_lessons_level_id ON public.lessons(level_id);
+CREATE INDEX IF NOT EXISTS idx_vocab_level ON public.vocabulary(level);
+CREATE INDEX IF NOT EXISTS idx_vocab_hanzi ON public.vocabulary(hanzi);
+CREATE INDEX IF NOT EXISTS idx_writing_hanzi ON public.writing_characters(hanzi);
+CREATE INDEX IF NOT EXISTS idx_community_created_at ON public.community_posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_vocab_srs_user_review ON public.user_vocab_srs(user_id, next_review_at);
+CREATE INDEX IF NOT EXISTS idx_user_vocab_srs_stage ON public.user_vocab_srs(user_id, stage);
+CREATE INDEX IF NOT EXISTS idx_user_lesson_user ON public.user_lesson_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_study_logs_user_date ON public.user_study_logs(user_id, study_date);
+CREATE INDEX IF NOT EXISTS idx_ai_messages_conv ON public.ai_messages(conversation_id, created_at ASC);
+
+-- =========================================================================
+-- 4. HÀM BẢO MẬT & TRIGGER BẢO VỆ PHÂN QUYỀN
+-- =========================================================================
+
+-- Kiểm tra quyền Admin an toàn trên database
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin' AND status = 'active'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- Chặn người dùng tự nâng quyền (role) hoặc gỡ chặn (status)
+CREATE OR REPLACE FUNCTION public.prevent_self_role_escalation()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (NEW.role IS DISTINCT FROM OLD.role OR NEW.status IS DISTINCT FROM OLD.status) THEN
+    IF NOT public.is_admin() THEN
+      RAISE EXCEPTION 'Quyền hạn bị từ chối: Chỉ Quản trị viên (Admin) mới có thể sửa đổi vai trò hoặc trạng thái.';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_prevent_role_escalation ON public.profiles;
+CREATE TRIGGER trg_prevent_role_escalation
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.prevent_self_role_escalation();
+
+-- Trigger tự động tạo profile khi người dùng đăng ký
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
@@ -278,7 +306,7 @@ BEGIN
       new.raw_user_meta_data->>'picture',
       null
     ),
-    CASE WHEN new.email IN ('lehaidang16032006@gmail.com', 'admin@hanzigo.com') THEN 'admin' ELSE 'student' END,
+    'student',
     'active',
     1,
     50,
@@ -288,7 +316,6 @@ BEGIN
     email = EXCLUDED.email,
     name = COALESCE(EXCLUDED.name, profiles.name),
     avatar = COALESCE(EXCLUDED.avatar, profiles.avatar),
-    role = CASE WHEN EXCLUDED.email IN ('lehaidang16032006@gmail.com', 'admin@hanzigo.com') THEN 'admin' ELSE profiles.role END,
     updated_at = NOW();
   RETURN new;
 END;
@@ -299,8 +326,116 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- Gán quyền Admin vĩnh viễn cho tài khoản quản trị chính thức
-UPDATE public.profiles 
-SET role = 'admin' 
-WHERE email IN ('lehaidang16032006@gmail.com', 'admin@hanzigo.com');
+-- =========================================================================
+-- 5. ROW LEVEL SECURITY (RLS) POLICIES
+-- =========================================================================
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.materials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.vocabulary ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.writing_characters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pronunciation_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.community_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.study_partners ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_vocab_srs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_lesson_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_study_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_saved_materials ENABLE ROW LEVEL SECURITY;
 
+-- 5.1 Profiles
+CREATE POLICY "profiles_select_public" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "profiles_update_owner_or_admin" ON public.profiles FOR UPDATE USING (auth.uid() = id OR public.is_admin()) WITH CHECK (auth.uid() = id OR public.is_admin());
+CREATE POLICY "profiles_delete_admin_only" ON public.profiles FOR DELETE USING (public.is_admin());
+
+-- 5.2 Content (Public read, Admin manage)
+CREATE POLICY "materials_select_public" ON public.materials FOR SELECT USING (true);
+CREATE POLICY "materials_admin_insert" ON public.materials FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "materials_admin_update" ON public.materials FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "materials_admin_delete" ON public.materials FOR DELETE USING (public.is_admin());
+
+CREATE POLICY "lessons_select_public" ON public.lessons FOR SELECT USING (true);
+CREATE POLICY "lessons_admin_insert" ON public.lessons FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "lessons_admin_update" ON public.lessons FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "lessons_admin_delete" ON public.lessons FOR DELETE USING (public.is_admin());
+
+CREATE POLICY "vocabulary_select_public" ON public.vocabulary FOR SELECT USING (true);
+CREATE POLICY "vocabulary_admin_insert" ON public.vocabulary FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "vocabulary_admin_update" ON public.vocabulary FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "vocabulary_admin_delete" ON public.vocabulary FOR DELETE USING (public.is_admin());
+
+CREATE POLICY "writing_select_public" ON public.writing_characters FOR SELECT USING (true);
+CREATE POLICY "writing_admin_insert" ON public.writing_characters FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "writing_admin_update" ON public.writing_characters FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "writing_admin_delete" ON public.writing_characters FOR DELETE USING (public.is_admin());
+
+CREATE POLICY "pronunciation_select_public" ON public.pronunciation_items FOR SELECT USING (true);
+CREATE POLICY "pronunciation_admin_insert" ON public.pronunciation_items FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "pronunciation_admin_update" ON public.pronunciation_items FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "pronunciation_admin_delete" ON public.pronunciation_items FOR DELETE USING (public.is_admin());
+
+-- 5.3 Student Progress & Logs
+CREATE POLICY "user_vocab_srs_owner_all" ON public.user_vocab_srs FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "user_lesson_progress_owner_all" ON public.user_lesson_progress FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "user_study_logs_owner_all" ON public.user_study_logs FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "ai_conversations_owner_all" ON public.ai_conversations FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "ai_messages_owner_all" ON public.ai_messages FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "user_saved_materials_owner_all" ON public.user_saved_materials FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
+
+-- 5.4 Community
+CREATE POLICY "community_posts_select" ON public.community_posts FOR SELECT USING (true);
+CREATE POLICY "community_posts_insert" ON public.community_posts FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "community_posts_update" ON public.community_posts FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
+CREATE POLICY "community_posts_delete" ON public.community_posts FOR DELETE USING (auth.uid() = author_id OR public.is_admin());
+
+CREATE POLICY "study_partners_select" ON public.study_partners FOR SELECT USING (true);
+CREATE POLICY "study_partners_insert" ON public.study_partners FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "study_partners_update" ON public.study_partners FOR UPDATE USING (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "study_partners_delete" ON public.study_partners FOR DELETE USING (auth.uid() = user_id OR public.is_admin());
+
+-- =========================================================================
+-- 6. HÀM RPC CHO QUẢN TRỊ VIÊN
+-- =========================================================================
+
+-- Xóa user an toàn qua Server-side RPC
+CREATE OR REPLACE FUNCTION public.admin_delete_user(target_user_id UUID)
+RETURNS JSONB AS $$
+BEGIN
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Chỉ có Admin mới có quyền thực thi thao tác xóa người dùng.';
+  END IF;
+
+  IF target_user_id = auth.uid() THEN
+    RAISE EXCEPTION 'Không thể tự xóa tài khoản quản trị đang đăng nhập.';
+  END IF;
+
+  DELETE FROM public.user_vocab_srs WHERE user_id = target_user_id;
+  DELETE FROM public.user_lesson_progress WHERE user_id = target_user_id;
+  DELETE FROM public.user_study_logs WHERE user_id = target_user_id;
+  DELETE FROM public.ai_conversations WHERE user_id = target_user_id;
+  DELETE FROM public.profiles WHERE id = target_user_id;
+  DELETE FROM auth.users WHERE id = target_user_id;
+
+  RETURN jsonb_build_object('success', true, 'message', 'Đã xóa người dùng thành công.');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Sửa quyền / trạng thái user an toàn qua Server-side RPC
+CREATE OR REPLACE FUNCTION public.admin_update_user_status(target_user_id UUID, new_role TEXT, new_status TEXT)
+RETURNS JSONB AS $$
+BEGIN
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Chỉ có Admin mới có quyền thay đổi role hoặc status của người dùng.';
+  END IF;
+
+  UPDATE public.profiles
+  SET 
+    role = COALESCE(new_role, role),
+    status = COALESCE(new_status, status),
+    updated_at = NOW()
+  WHERE id = target_user_id;
+
+  RETURN jsonb_build_object('success', true, 'message', 'Cập nhật thành công.');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

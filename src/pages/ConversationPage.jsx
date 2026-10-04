@@ -18,101 +18,9 @@ import { CONVERSATIONS_DATA } from '../data/chineseData';
 import { speakChinese, playSuccessSound, playClickSound } from '../utils/audio';
 import { triggerCloudSync } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
+import { sendTutorMessage } from '../services/aiTutorService';
 
 const STORAGE_KEY = 'hanzigo_ai_chat_history';
-
-// Context-aware AI intelligent responder
-function getAiResponse(userText, convId) {
-  const text = (userText || '').toLowerCase();
-
-  // Greetings
-  if (text.includes('你好') || text.includes('您好') || text.includes('哈喽') || text.includes('hi') || text.includes('hello')) {
-    return {
-      hanzi: '你好呀！今天学习中文感觉怎么样？我们可以多聊聊！',
-      pinyin: 'Nǐ hǎo ya! Jīntiān xuéxí Zhōngwén gǎnjué zěnmeyàng? Wǒmen kěyǐ duō liáo liáo!',
-      meaning: 'Chào bạn nha! Hôm nay học tiếng Trung cảm thấy thế nào? Chúng mình có thể trò chuyện nhiều hơn nhé!'
-    };
-  }
-
-  // Name / Introduction
-  if (text.includes('名字') || text.includes('我叫') || text.includes('我是') || text.includes('越南')) {
-    return {
-      hanzi: '很高兴认识你！越南是一个非常美丽的国家，听说河内和岘港风景特别好，有机会真想去看看。',
-      pinyin: 'Hěn gāoxìng rènshi nǐ! Yuènán shì yí gè fēicháng měilì de guójiā, tīngshuō Hénèi hé Xiàngǎng fēngjǐng tèbié hǎo, yǒu jīhuì zhēn xiǎng qù kànkan.',
-      meaning: 'Rất vui được làm quen với bạn! Việt Nam là một quốc gia rất tươi đẹp, nghe nói phong cảnh Hà Nội và Đà Nẵng đặc biệt đẹp, có cơ hội mình thật lòng muốn tới thăm.'
-    };
-  }
-
-  // WeChat / Phone / Contact
-  if (text.includes('微信') || text.includes('电话') || text.includes('号码') || text.includes('wechat')) {
-    return {
-      hanzi: '太好了，我已经把你的联系方式记下来了！以后我们常在微信上交流，一起练习中文口语！',
-      pinyin: 'Tài hǎo le, wǒ yǐjīng bǎ nǐ de liánxì fāngshì jì xiàlái le! Yǐhòu wǒmen cháng zài Wēixìn shang jiāoliú, yìqǐ liànxí Zhōngwén kǒuyǔ!',
-      meaning: 'Tuyệt quá, mình đã lưu thông tin liên hệ của bạn rồi! Sau này chúng mình thường xuyên trao đổi qua WeChat, cùng luyện khẩu ngữ tiếng Trung nhé!'
-    };
-  }
-
-  // Learning / Chinese / Study
-  if (text.includes('学') || text.includes('汉语') || text.includes('中文') || text.includes('难') || text.includes('字') || text.includes('拼音')) {
-    return {
-      hanzi: '学中文最重要的是保持兴趣和多开口。你现在的表达已经很自然流畅了，每天坚持15分钟一定能过HSK！',
-      pinyin: 'Xué Zhōngwén zuì zhòngyào de shì bǎochí xìngqù hé duō kāikǒu. Nǐ xiànzài de biǎodá yǐjīng hěn zìrán liúchàng le, měitiān jiānchí shíwǔ fēnzhōng yídìng néng guò HSK!',
-      meaning: 'Học tiếng Trung quan trọng nhất là giữ niềm say mê và dám mở miệng nói. Cách diễn đạt hiện tại của bạn đã rất tự nhiên trôi chảy, mỗi ngày kiên trì 15 phút nhất định sẽ đỗ HSK!'
-    };
-  }
-
-  // Restaurant / Food / Drinking
-  if (convId === 'conv-2' || text.includes('吃') || text.includes('喝') || text.includes('菜单') || text.includes('米饭') || text.includes('火锅') || text.includes('水') || text.includes('菜')) {
-    return {
-      hanzi: '好的，我已经为您下单记好了！菜品很快就会为您做好端上来，请您稍候片刻。还需要其他饮品吗？',
-      pinyin: 'Hǎo de, wǒ yǐjīng wèi nín xiàdān jì hǎo le! Càipǐn hěn kuài jiù huì wèi nín zuò hǎo duān shànglái, qǐng nín shāohòu piànkè. Hái xūyào qítā yǐnpǐn ma?',
-      meaning: 'Vâng ạ, tôi đã lên đơn và ghi nhận cho quý khách rồi! Món ăn sẽ nhanh chóng được chuẩn bị và mang lên, xin quý khách đợi một lát. Quý khách có cần dùng thêm đồ uống nào khác không ạ?'
-    };
-  }
-
-  // Shopping / Bargaining
-  if (convId === 'conv-4' || text.includes('钱') || text.includes('贵') || text.includes('便宜') || text.includes('买') || text.includes('折') || text.includes('块')) {
-    return {
-      hanzi: '行行行，看你这么有诚意，就按你说的价格成交！我再送你一双精美棉袜，祝你穿得帅气/漂亮！',
-      pinyin: 'Xíng xíng xíng, kàn nǐ zhème yǒu chéngyì, jiù àn nǐ shuō de jiàgé chéngjiāo! Wǒ zài sòng nǐ yì shuāng jīngměi miánwà, zhù nǐ chuān de shuàiqì/piàoliang!',
-      meaning: 'Được rồi được rồi, thấy bạn nhiệt tình thiện chí như vậy, chốt bán theo giá bạn đề xuất luôn! Chị tặng thêm bạn một đôi tất cotton đẹp, chúc bạn mặc thật đẹp nhé!'
-    };
-  }
-
-  // Directions / Travel / Metro
-  if (convId === 'conv-3' || text.includes('路') || text.includes('地铁') || text.includes('远') || text.includes('走') || text.includes('在哪') || text.includes('几分钟')) {
-    return {
-      hanzi: '不远不远，顺着大路直走大概三五分钟就能看到醒目的蓝色地铁标志，进站就能直接扫码乘车了。',
-      pinyin: 'Bù yuǎn bù yuǎn, shùnzhe dàlù zhí zǒu dàgài sān wǔ fēnzhōng jiù néng kàndào xǐngmù de lánsè dìtiě biāozhì, jìnzhàn jiù néng zhíjiē sǎomǎ chéngchē le.',
-      meaning: 'Không xa đâu, cứ đi thẳng theo đường lớn tầm 3 đến 5 phút là thấy biểu tượng tàu điện ngầm màu xanh nổi bật ngay, vào ga là quét mã đi tàu được luôn.'
-    };
-  }
-
-  // Thanks / Praise
-  if (text.includes('谢谢') || text.includes('多谢') || text.includes('太棒') || text.includes('厉害') || text.includes('感谢')) {
-    return {
-      hanzi: '不客气！能帮到你我也感到特别开心。你的中文语感越来越棒了，我们一起继续加油！',
-      pinyin: 'Bú kèqi! Néng bāng dào nǐ wǒ yě gǎndào tèbié kāixīn. Nǐ de Zhōngwén yǔgǎn yuè lái yuè bàng le, wǒmen yìqǐ jìxù jiāyóu!',
-      meaning: 'Không có chi! Giúp được bạn mình cũng thấy rất vui mừng. Cảm giác ngôn ngữ tiếng Trung của bạn ngày một đỉnh hơn rồi, chúng mình cùng cố gắng tiếp nhé!'
-    };
-  }
-
-  // Goodbye
-  if (text.includes('再见') || text.includes('拜拜') || text.includes('下次') || text.includes('明天见') || text.includes('88')) {
-    return {
-      hanzi: '好的，今天和你用中文聊天非常愉快！祝你今天过得充实开心，期待我们下次再聊！再见！',
-      pinyin: 'Hǎo de, jīntiān hé nǐ yòng Zhōngwén liáotiān fēicháng yúkuài! Zhù nǐ jīntiān guò de chōngshí kāixīn, qīdài wǒmen xià cì zài liáo! Zàijiàn!',
-      meaning: 'Vâng, hôm nay nói chuyện tiếng Trung cùng bạn rất vui vẻ! Chúc bạn một ngày trọn vẹn niềm vui, mong chờ lần sau lại được trò chuyện cùng bạn! Tạm biệt nhé!'
-    };
-  }
-
-  // General intelligent fallback
-  return {
-    hanzi: '你说的很有意思！用中文表达自己的想法是非常棒的口语练习，我们继续聊聊吧。',
-    pinyin: 'Nǐ shuō de hěn yǒu yìsi! Yòng Zhōngwén biǎodá zìjǐ de xiǎngfǎ shì fēicháng bàng de kǒuyǔ liànxí, wǒmen jìxù liáo liáo ba.',
-    meaning: 'Bạn nói rất có ý nghĩa! Dùng tiếng Trung để diễn đạt ý tưởng của mình là bài tập khẩu ngữ rất tuyệt vời, chúng mình cùng trò chuyện tiếp nhé.'
-  };
-}
 
 export default function ConversationPage() {
   const [selectedConvIndex, setSelectedConvIndex] = useState(0);
@@ -221,7 +129,7 @@ export default function ConversationPage() {
   };
 
   // Send a message & trigger AI intelligent response
-  const handleSendMessage = (userMessageObj) => {
+  const handleSendMessage = async (userMessageObj) => {
     const userMsg = {
       speaker: 'user',
       hanzi: userMessageObj.hanzi,
@@ -232,7 +140,7 @@ export default function ConversationPage() {
 
     const updatedWithUser = [...chatHistory, userMsg];
     saveConversationHistory(conversation.id, updatedWithUser);
-    awardXp(10);
+    awardXp(10, null, `aichat_${conversation.id}_${Date.now()}`);
 
     // Speak user's sentence
     speakChinese(userMessageObj.hanzi);
@@ -241,14 +149,21 @@ export default function ConversationPage() {
     setIsAiTyping(true);
     setAiFeedback(null);
 
-    setTimeout(() => {
-      setIsAiTyping(false);
-      const aiReply = getAiResponse(userMessageObj.hanzi, conversation.id);
+    try {
+      const aiReply = await sendTutorMessage(userMessageObj.hanzi, {
+        hskLevel: conversation.level || 'HSK 1',
+        conversationHistory: updatedWithUser
+      });
+
       const aiMsg = {
         speaker: 'ai',
         hanzi: aiReply.hanzi,
         pinyin: aiReply.pinyin,
         meaning: aiReply.meaning,
+        grammarAnalysis: aiReply.grammarAnalysis,
+        userCorrection: aiReply.userCorrection,
+        vocabSuggestions: aiReply.vocabSuggestions || [],
+        provider: aiReply.provider,
         time: 'Vừa xong'
       };
 
@@ -259,12 +174,17 @@ export default function ConversationPage() {
       playSuccessSound();
       speakChinese(aiReply.hanzi);
 
-      // Constructive AI feedback score
-      setAiFeedback({
-        rating: 'Phản xạ 98/100',
-        note: 'Cách đặt câu rất tự nhiên, phát âm chuẩn xác và đáp ứng đúng ngữ cảnh giao tiếp.'
-      });
-    }, 1100);
+      if (aiReply.userCorrection) {
+        setAiFeedback({
+          rating: aiReply.provider === 'gemini' ? 'AI Tutor Gemini' : 'AI Offline Tutor',
+          note: aiReply.userCorrection
+        });
+      }
+    } catch (err) {
+      console.warn('AI chat error:', err);
+    } finally {
+      setIsAiTyping(false);
+    }
   };
 
   // Handle custom input submission
@@ -589,6 +509,34 @@ export default function ConversationPage() {
                     }`}>
                       {msg.meaning}
                     </p>
+                  )}
+
+                  {/* AI Pedagogical Extensions: Grammar, Correction & Vocab */}
+                  {isAI && (msg.grammarAnalysis || msg.userCorrection || (msg.vocabSuggestions && msg.vocabSuggestions.length > 0)) && (
+                    <div className="pt-2 mt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F] space-y-1.5 text-[11px]">
+                      {msg.grammarAnalysis && (
+                        <div className="p-2 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 border border-orange-200/60 dark:border-orange-800/60 leading-relaxed">
+                          <span className="font-bold">💡 Ngữ pháp: </span>
+                          <span>{msg.grammarAnalysis}</span>
+                        </div>
+                      )}
+                      {msg.userCorrection && (
+                        <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 leading-relaxed">
+                          <span className="font-bold">✍️ Sửa câu / Gợi ý: </span>
+                          <span>{msg.userCorrection}</span>
+                        </div>
+                      )}
+                      {msg.vocabSuggestions && msg.vocabSuggestions.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          <span className="text-[10px] text-[#748092] dark:text-[#94A3B8] font-bold">Từ mới gợi ý:</span>
+                          {msg.vocabSuggestions.map((v, vIdx) => (
+                            <span key={vIdx} className="px-2 py-0.5 rounded-lg bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[10px] font-medium text-[#243447] dark:text-white">
+                              <strong className="text-[#E85D3F] font-['Noto_Serif_SC']">{v.hanzi}</strong> ({v.pinyin}): {v.meaning}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 

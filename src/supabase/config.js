@@ -14,8 +14,8 @@ const getEnvVar = (key, fallback) => {
   return fallback;
 };
 
-const supabaseUrl = getEnvVar('VITE_SUPABASE_URL', 'https://woszblniatdvijwdkmpm.supabase.co');
-const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indvc3pibG5pYXRkdmlqd2RrbXBtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NzEwMTcsImV4cCI6MjEwNjA0NzAxN30.qpSGtdIgGG55MXsLJGbMS3KOLz6W_ZsC16r-6XixMXY');
+const supabaseUrl = getEnvVar('VITE_SUPABASE_URL', '');
+const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY', '');
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && 
