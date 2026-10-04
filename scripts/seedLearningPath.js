@@ -14,17 +14,22 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 async function seedLearningPath() {
   console.log('🚀 Bắt đầu cập nhật dữ liệu Learning Path lên Supabase...');
 
-  // 1. Seed Learning Levels (6 Levels)
-  console.log('📦 1. Đang nạp 6 Levels...');
+  // 1. Seed Learning Levels (HSK 1 đến HSK 7-9)
+  console.log(`📦 1. Đang nạp ${LEARNING_LEVELS.length} Cấp độ HSK 3.0...`);
   const levelsPayload = LEARNING_LEVELS.map(lvl => ({
     id: lvl.id,
-    level_number: lvl.number,
-    title: lvl.title,
-    title_zh: lvl.titleZh,
-    pinyin: lvl.pinyin,
-    badge: lvl.badge,
+    level_number: lvl.levelNumber,
+    code: lvl.code,
+    hsk_level: lvl.hskLevel || lvl.code,
+    hsk_stage: lvl.hskStage || '',
+    title: lvl.name,
+    title_zh: lvl.chineseName,
+    tagline: lvl.tagline || '',
+    pinyin: lvl.pinyin || '',
+    badge: lvl.icon || '🌱',
     color: lvl.color,
-    description: lvl.desc
+    description: lvl.description,
+    syllabus_5_pillars: lvl.syllabus5Pillars || {}
   }));
 
   const { error: lvlErr } = await supabase
@@ -34,19 +39,19 @@ async function seedLearningPath() {
   if (lvlErr) {
     console.warn('⚠️ Cảnh báo nạp levels (có thể bảng chưa được tạo trong SQL Editor):', lvlErr.message);
   } else {
-    console.log(`✅ Đã nạp thành công ${levelsPayload.length} Levels!`);
+    console.log(`✅ Đã nạp thành công ${levelsPayload.length} Cấp độ HSK!`);
   }
 
   // 2. Seed Learning Chapters (24 Chapters)
-  console.log('📦 2. Đang nạp 24 Chapters...');
-  const chaptersPayload = LEARNING_CHAPTERS.map(ch => ({
+  console.log(`📦 2. Đang nạp ${LEARNING_CHAPTERS.length} Chapters...`);
+  const chaptersPayload = LEARNING_CHAPTERS.map((ch, idx) => ({
     id: ch.id,
     level_id: ch.levelId,
-    chapter_number: ch.number,
+    chapter_number: ch.chapterNumber,
     title: ch.title,
-    title_zh: ch.titleZh,
+    title_zh: ch.chineseTitle,
     description: ch.desc,
-    order_index: ch.order
+    order_index: ch.chapterNumber || (idx + 1)
   }));
 
   const { error: chErr } = await supabase
@@ -60,18 +65,28 @@ async function seedLearningPath() {
   }
 
   // 3. Seed Flagship Lessons (9 steps)
-  console.log('📦 3. Đang nạp Bài học mẫu chuẩn 9 bước...');
+  console.log(`📦 3. Đang nạp ${LEARNING_LESSONS.length} Bài học chuẩn 9 bước...`);
   const lessonsPayload = LEARNING_LESSONS.map(l => ({
     id: l.id,
     chapter_id: l.chapterId,
     level_id: l.levelId,
-    lesson_number: l.number,
+    lesson_number: l.lessonNumber,
     title: l.title,
-    title_zh: l.titleZh,
-    duration_minutes: l.duration,
-    xp_reward: l.xp,
-    description: l.description,
-    content: l.steps
+    title_zh: l.chineseTitle,
+    duration_minutes: l.durationMinutes || 18,
+    xp_reward: l.xpReward || 50,
+    description: l.subtitle || '',
+    content: {
+      step1_learn: l.step1_learn,
+      step2_vocabulary: l.step2_vocabulary,
+      step3_hanzi: l.step3_hanzi,
+      step4_grammar: l.step4_grammar,
+      step5_listening: l.step5_listening,
+      step6_speaking: l.step6_speaking,
+      step7_writing: l.step7_writing,
+      step8_quiz: l.step8_quiz,
+      step9_challenge: l.step9_challenge
+    }
   }));
 
   const { error: lErr } = await supabase
@@ -85,15 +100,15 @@ async function seedLearningPath() {
   }
 
   // 4. Seed Boss Challenges
-  console.log('📦 4. Đang nạp Boss Challenges...');
+  console.log(`📦 4. Đang nạp ${BOSS_CHALLENGES.length} Boss Challenges...`);
   const bossesPayload = BOSS_CHALLENGES.map(b => ({
     id: b.id,
     chapter_id: b.chapterId,
     title: b.title,
-    title_zh: b.titleZh,
+    title_zh: b.chineseTitle,
     scenario: b.scenario,
-    xp_reward: b.xp,
-    passing_score: b.passingScore,
+    xp_reward: b.xpReward || 200,
+    passing_score: b.requiredScoreToPass || 80,
     stages: b.stages
   }));
 

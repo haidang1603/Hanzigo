@@ -445,21 +445,33 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- =========================================================================
--- 7. LEARNING PATH & GAMIFICATION SYSTEM (6 Levels, 24 Chapters, Boss Battles)
+-- 7. LEARNING PATH & GAMIFICATION SYSTEM (HSK 1 đến HSK 7-9, 24 Chapters, Boss Battles)
 -- =========================================================================
 
--- 7.1. learning_levels: Định nghĩa 6 Level
+-- 7.1. learning_levels: Định nghĩa 7 Cấp độ HSK 3.0
 CREATE TABLE IF NOT EXISTS public.learning_levels (
   id TEXT PRIMARY KEY,
   level_number INT NOT NULL UNIQUE,
+  code TEXT NOT NULL DEFAULT 'HSK 1',
+  hsk_level TEXT DEFAULT 'HSK 1',
+  hsk_stage TEXT DEFAULT 'Stage 1: HSK 1–3 (Sơ cấp & Giao tiếp)',
   title TEXT NOT NULL,
   title_zh TEXT NOT NULL,
+  tagline TEXT DEFAULT '',
   pinyin TEXT DEFAULT '',
   badge TEXT DEFAULT '🌱',
-  color TEXT DEFAULT 'emerald',
+  color TEXT DEFAULT '#45B97C',
   description TEXT DEFAULT '',
+  syllabus_5_pillars JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Đảm bảo các cột HSK 3.0 tồn tại nếu bảng đã được tạo trước đó
+ALTER TABLE public.learning_levels ADD COLUMN IF NOT EXISTS code TEXT DEFAULT 'HSK 1';
+ALTER TABLE public.learning_levels ADD COLUMN IF NOT EXISTS hsk_level TEXT DEFAULT 'HSK 1';
+ALTER TABLE public.learning_levels ADD COLUMN IF NOT EXISTS hsk_stage TEXT DEFAULT 'Stage 1: HSK 1–3';
+ALTER TABLE public.learning_levels ADD COLUMN IF NOT EXISTS tagline TEXT DEFAULT '';
+ALTER TABLE public.learning_levels ADD COLUMN IF NOT EXISTS syllabus_5_pillars JSONB DEFAULT '{}'::jsonb;
 
 -- 7.2. learning_chapters: Định nghĩa 24 Chapter
 CREATE TABLE IF NOT EXISTS public.learning_chapters (
