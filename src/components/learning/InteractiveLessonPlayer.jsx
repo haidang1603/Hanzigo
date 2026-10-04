@@ -18,17 +18,42 @@ import {
   EyeOff,
   Flame,
   Award,
-  Layers
+  Layers,
+  AlertCircle
 } from 'lucide-react';
-import { completeLesson } from '../../services/learningPathService';
+import { completeLesson, getUserJourneyProgress } from '../../services/learningPathService';
 import { evaluatePronunciation } from '../../utils/pronunciationEvaluator';
 import { playClickSound, playSuccessSound, playErrorSound, playLevelUpSound } from '../../utils/audio';
 
-export default function InteractiveLessonPlayer({ lesson, user, onBack, onCompleteNext }) {
+export default function InteractiveLessonPlayer({ 
+  lesson, 
+  user, 
+  onBack, 
+  onClose, 
+  onCompleteNext, 
+  onNextLesson, 
+  onCompleteLesson 
+}) {
   const [currentStep, setCurrentStep] = useState(0); // 0 to 8 (9 steps)
   const [isCompleted, setIsCompleted] = useState(false);
   const [earnedStars, setEarnedStars] = useState(3);
   const [quizScore, setQuizScore] = useState(0);
+  const [stepWarning, setStepWarning] = useState(null);
+
+  const handleClose = () => {
+    if (onBack) onBack();
+    else if (onClose) onClose();
+  };
+
+  const handleNextLessonAction = () => {
+    if (onNextLesson && lesson?.nextLessonId) {
+      onNextLesson(lesson.nextLessonId);
+    } else if (onCompleteNext) {
+      onCompleteNext();
+    } else {
+      handleClose();
+    }
+  };
 
   // Step 5: Listening speed & toggles
   const [isSlowAudio, setIsSlowAudio] = useState(false);
@@ -54,12 +79,17 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [quizFeedbacks, setQuizFeedbacks] = useState({});
 
+  // Check if previously completed
+  const journeyProgress = getUserJourneyProgress(user);
+  const isAlreadyCompleted = Boolean(journeyProgress.completedLessons?.[lesson?.id]);
+
   useEffect(() => {
     if (lesson?.step7_writing?.words) {
       setAvailableWords([...lesson.step7_writing.words].sort(() => Math.random() - 0.5));
       setReorderedWords([]);
       setWritingChecked(false);
       setWritingCorrect(false);
+      setStepWarning(null);
     }
   }, [lesson]);
 
@@ -101,6 +131,7 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
       // Start recording
       setSpeakingFeedback(null);
       setRecordedAudioUrl(null);
+      setStepWarning(null);
       audioChunksRef.current = [];
 
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -122,10 +153,12 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
               const evalResult = evaluatePronunciation(target, targetPinyin, 1200, 45);
               setSpeakingFeedback(evalResult);
 
-              if (evalResult.score >= 70) {
+              if (evalResult.score >= 50) {
                 playSuccessSound();
+                setStepWarning(null);
               } else {
-                playClickSound();
+                playErrorSound();
+                setStepWarning(`Điểm phát âm: ${evalResult.score}/100. Hãy bấm Mic và luyện nói lại to, rõ hơn để vượt qua nhé!`);
               }
             };
             mediaRecorder.start();
@@ -145,22 +178,41 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
             }
           })
           .catch(() => {
-            alert('Vui lòng cấp quyền Microphone để thực hành nói.');
+            // Graceful fallback for devices without mic hardware
+            setSpeakingFeedback({ score: 80, feedback: 'Đã hoàn thành luyện nói theo mẫu âm thanh', passed: true });
+            playSuccessSound();
           });
+      } else {
+        setSpeakingFeedback({ score: 80, feedback: 'Đã hoàn thành luyện nói theo mẫu âm thanh', passed: true });
+        playSuccessSound();
       }
     }
   };
 
   // Writing tile toggle
   const handleWordTileClick = (word, isFromAvailable) => {
+    if (writingCorrect) return; // Locked only once solved correctly
     playClickSound();
-    if (writingChecked) return;
+    setWritingChecked(false);
+    setWritingCorrect(false);
+    setStepWarning(null);
     if (isFromAvailable) {
-      setAvailableWords(availableWords.filter(w => w !== word));
-      setReorderedWords([...reorderedWords, word]);
+      setAvailableWords(prev => prev.filter(w => w !== word));
+      setReorderedWords(prev => [...prev, word]);
     } else {
-      setReorderedWords(reorderedWords.filter(w => w !== word));
-      setAvailableWords([...availableWords, word]);
+      setReorderedWords(prev => prev.filter(w => w !== word));
+      setAvailableWords(prev => [...prev, word]);
+    }
+  };
+
+  const handleResetWriting = () => {
+    playClickSound();
+    if (lesson?.step7_writing?.words) {
+      setAvailableWords([...lesson.step7_writing.words].sort(() => Math.random() - 0.5));
+      setReorderedWords([]);
+      setWritingChecked(false);
+      setWritingCorrect(false);
+      setStepWarning(null);
     }
   };
 
@@ -170,12 +222,18 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
     const isCorrect = reorderedWords.join('') === correctOrder.join('');
     setWritingChecked(true);
     setWritingCorrect(isCorrect);
-    if (isCorrect) playSuccessSound(); else playErrorSound();
+    if (isCorrect) {
+      playSuccessSound();
+      setStepWarning(null);
+    } else {
+      playErrorSound();
+      setStepWarning('❌ Thứ tự câu chưa đúng! Hãy bấm vào thẻ từ để chỉnh lại hoặc bấm "Xếp lại".');
+    }
   };
 
-  // Quiz answering
+  // Quiz answering: can retry wrong options until correct!
   const handleSelectQuizOption = (quizId, optIdx, correctIdx) => {
-    if (selectedAnswers[quizId] !== undefined) return;
+    if (quizFeedbacks[quizId] === true) return; // Locked once answered correctly
     playClickSound();
     const isCorrect = optIdx === correctIdx;
     setSelectedAnswers(prev => ({ ...prev, [quizId]: optIdx }));
@@ -184,9 +242,101 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
     if (isCorrect) {
       setQuizScore(prev => prev + 25);
       playSuccessSound();
+      setStepWarning(null);
     } else {
       playErrorSound();
+      setStepWarning('❌ Đáp án chưa chính xác, hãy suy nghĩ và chọn lại phương án đúng để vượt qua!');
     }
+  };
+
+  // Validation gating: check if learner meets requirements to advance
+  const canProceedToNextStep = () => {
+    // Step 6: Speaking (Index 5)
+    if (currentStep === 5) {
+      if (!speakingFeedback) {
+        return {
+          canProceed: false,
+          message: '🎙️ Vui lòng bật Mic và luyện phát âm câu tiếng Trung trước khi sang bước tiếp theo!'
+        };
+      }
+      if (speakingFeedback.score < 50) {
+        return {
+          canProceed: false,
+          message: `⚠️ Điểm phát âm (${speakingFeedback.score}/100) chưa đạt tối thiểu 50đ. Hãy luyện phát âm lại nhé!`
+        };
+      }
+    }
+
+    // Step 7: Writing / Ghép câu (Index 6)
+    if (currentStep === 6 && lesson.step7_writing) {
+      if (!writingChecked) {
+        return {
+          canProceed: false,
+          message: '✍️ Bạn chưa hoàn thành ghép câu! Vui lòng xếp các từ và bấm "Kiểm tra đáp án".'
+        };
+      }
+      if (!writingCorrect) {
+        return {
+          canProceed: false,
+          message: '❌ Thứ tự ghép câu chưa đúng! Hãy chỉnh lại các từ cho đúng để tiếp tục.'
+        };
+      }
+    }
+
+    // Step 8: Quiz (Index 7)
+    if (currentStep === 7 && lesson.step8_quiz) {
+      for (let i = 0; i < lesson.step8_quiz.length; i++) {
+        const q = lesson.step8_quiz[i];
+        if (selectedAnswers[q.id] === undefined) {
+          return {
+            canProceed: false,
+            message: `🎯 Bạn chưa chọn đáp án cho Câu hỏi số ${i + 1}!`
+          };
+        }
+        if (quizFeedbacks[q.id] !== true) {
+          return {
+            canProceed: false,
+            message: `❌ Câu hỏi số ${i + 1} chưa chính xác! Hãy chọn phương án đúng để vượt qua.`
+          };
+        }
+      }
+    }
+
+    return { canProceed: true, message: null };
+  };
+
+  const handleNextStep = () => {
+    const check = canProceedToNextStep();
+    if (!check.canProceed) {
+      playErrorSound();
+      setStepWarning(check.message);
+      return;
+    }
+    setStepWarning(null);
+    playClickSound();
+    setCurrentStep(prev => Math.min(8, prev + 1));
+  };
+
+  // Replay / Re-learn lesson anytime
+  const handleRestartLesson = () => {
+    playClickSound();
+    setCurrentStep(0);
+    setIsCompleted(false);
+    setEarnedStars(3);
+    setQuizScore(0);
+    setSpeakingFeedback(null);
+    setRecordedAudioUrl(null);
+    setSpeechTranscript('');
+    setIsRecording(false);
+    if (lesson?.step7_writing?.words) {
+      setAvailableWords([...lesson.step7_writing.words].sort(() => Math.random() - 0.5));
+      setReorderedWords([]);
+      setWritingChecked(false);
+      setWritingCorrect(false);
+    }
+    setSelectedAnswers({});
+    setQuizFeedbacks({});
+    setStepWarning(null);
   };
 
   // Complete lesson
@@ -196,6 +346,7 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
     const { stars } = completeLesson(lesson.id, finalScore, user);
     setEarnedStars(stars);
     setIsCompleted(true);
+    if (onCompleteLesson) onCompleteLesson(finalScore, stars);
 
     try {
       confetti({
@@ -212,7 +363,7 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
       <div className="sticky top-0 z-30 bg-white/95 dark:bg-[#1E293B]/95 backdrop-blur-md border-b border-[#F1E5D8] dark:border-[#2B3A4F] px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
           <button
-            onClick={onBack}
+            onClick={handleClose}
             className="p-2 rounded-xl text-[#748092] hover:text-[#243447] dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-1.5 text-xs font-bold"
           >
             <ArrowLeft size={16} />
@@ -220,9 +371,15 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
           </button>
 
           <div className="flex-1 max-w-md mx-auto text-center min-w-0">
-            <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#748092]">
+            <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#748092]">
               <span>Bài {lesson.lessonNumber}:</span>
               <span className="text-[#243447] dark:text-white truncate">{lesson.title}</span>
+              {isAlreadyCompleted && (
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] px-2 py-0.5 rounded-full">
+                  <CheckCircle2 size={11} />
+                  <span>Ôn tập lại</span>
+                </span>
+              )}
             </div>
             <div className="h-2 w-full bg-[#F1E5D8] dark:bg-[#131B24] rounded-full overflow-hidden mt-1.5">
               <div 
@@ -232,9 +389,20 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
             </div>
           </div>
 
-          <div className="flex items-center gap-1 text-xs font-bold text-[#E85D3F] bg-[#FDEEEB] dark:bg-[#2D1E1B] px-3 py-1.5 rounded-xl shrink-0">
-            <Sparkles size={14} />
-            <span>+{lesson.xpReward} XP</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRestartLesson}
+              title="Học lại bài này từ đầu"
+              className="p-2 rounded-xl text-[#748092] hover:text-[#E85D3F] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-1 text-xs font-bold cursor-pointer"
+            >
+              <RotateCcw size={14} />
+              <span className="hidden md:inline">Học lại</span>
+            </button>
+
+            <div className="flex items-center gap-1 text-xs font-bold text-[#E85D3F] bg-[#FDEEEB] dark:bg-[#2D1E1B] px-3 py-1.5 rounded-xl shrink-0">
+              <Sparkles size={14} />
+              <span>+{lesson.xpReward} XP</span>
+            </div>
           </div>
         </div>
       </div>
@@ -249,6 +417,15 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
               <button
                 key={s.num}
                 onClick={() => {
+                  if (idx > currentStep) {
+                    const check = canProceedToNextStep();
+                    if (!check.canProceed) {
+                      playErrorSound();
+                      setStepWarning(check.message);
+                      return;
+                    }
+                  }
+                  setStepWarning(null);
                   playClickSound();
                   setCurrentStep(idx);
                 }}
@@ -735,12 +912,22 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
                   ))}
                 </div>
 
-                {/* Validation button */}
-                <div className="pt-2">
+                {/* Validation button & Reset button */}
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    onClick={handleResetWriting}
+                    disabled={reorderedWords.length === 0 && availableWords.length === (lesson.step7_writing?.words?.length || 0)}
+                    className="py-3 px-4 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 text-[#748092] hover:text-[#243447] dark:hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                    title="Xếp lại từ đầu"
+                  >
+                    <RotateCcw size={15} />
+                    <span>Xếp lại</span>
+                  </button>
+
                   <button
                     onClick={handleCheckWriting}
                     disabled={reorderedWords.length === 0}
-                    className="w-full py-3 rounded-xl bg-[#45B97C] hover:bg-[#3AA56E] disabled:opacity-40 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="flex-1 py-3 rounded-xl bg-[#45B97C] hover:bg-[#3AA56E] disabled:opacity-40 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Check size={16} />
                     <span>Kiểm tra đáp án</span>
@@ -798,23 +985,32 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
                           {q.options.map((opt, optIdx) => {
                             const isSelected = selectedAnswers[q.id] === optIdx;
                             const isThisCorrect = optIdx === q.correctIndex;
+                            const isAnsweredCorrectly = quizFeedbacks[q.id] === true;
 
                             return (
                               <button
                                 key={optIdx}
-                                disabled={isAnswered}
+                                disabled={isAnsweredCorrectly}
                                 onClick={() => handleSelectQuizOption(q.id, optIdx, q.correctIndex)}
-                                className={`p-3 rounded-xl border text-left transition-all ${
-                                  isAnswered
+                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                                  isAnsweredCorrectly
                                     ? isThisCorrect
-                                      ? 'border-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] text-[#3AA56E] font-bold'
-                                      : isSelected
-                                      ? 'border-red-500 bg-red-50 dark:bg-red-950/30 text-red-500'
-                                      : 'border-[#F1E5D8] opacity-50'
+                                      ? 'border-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] text-[#3AA56E] font-bold shadow-xs'
+                                      : 'border-[#F1E5D8] dark:border-[#2B3A4F] opacity-40'
+                                    : isSelected
+                                    ? 'border-red-500 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 font-semibold'
                                     : 'border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] hover:border-[#E85D3F]'
                                 }`}
                               >
-                                {opt}
+                                <div className="flex items-center justify-between">
+                                  <span>{opt}</span>
+                                  {isAnsweredCorrectly && isThisCorrect && (
+                                    <CheckCircle2 size={15} className="text-[#3AA56E]" />
+                                  )}
+                                  {!isAnsweredCorrectly && isSelected && (
+                                    <XCircle size={15} className="text-red-500" />
+                                  )}
+                                </div>
                               </button>
                             );
                           })}
@@ -867,32 +1063,39 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
             )}
 
             {/* Bottom Next/Prev Action Bar */}
-            <div className="flex items-center justify-between gap-3 pt-3">
-              <button
-                type="button"
-                disabled={currentStep === 0}
-                onClick={() => {
-                  playClickSound();
-                  setCurrentStep(prev => Math.max(0, prev - 1));
-                }}
-                className="py-2.5 px-4 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] hover:text-[#243447] disabled:opacity-30 cursor-pointer"
-              >
-                Bước trước
-              </button>
+            <div className="space-y-3 pt-3">
+              {stepWarning && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/50 text-amber-800 dark:text-amber-200 text-xs font-bold flex items-center gap-2.5 animate-in shake duration-200">
+                  <AlertCircle size={16} className="text-amber-600 shrink-0" />
+                  <span className="flex-1">{stepWarning}</span>
+                </div>
+              )}
 
-              {currentStep < 8 ? (
+              <div className="flex items-center justify-between gap-3">
                 <button
                   type="button"
+                  disabled={currentStep === 0}
                   onClick={() => {
                     playClickSound();
-                    setCurrentStep(prev => Math.min(8, prev + 1));
+                    setStepWarning(null);
+                    setCurrentStep(prev => Math.max(0, prev - 1));
                   }}
-                  className="py-2.5 px-5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="py-2.5 px-4 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] hover:text-[#243447] disabled:opacity-30 cursor-pointer"
                 >
-                  <span>Tiếp theo: {stepsMeta[currentStep + 1]?.label}</span>
-                  <ArrowRight size={14} />
+                  Bước trước
                 </button>
-              ) : null}
+
+                {currentStep < 8 ? (
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="py-2.5 px-5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Tiếp theo: {stepsMeta[currentStep + 1]?.label}</span>
+                    <ArrowRight size={14} />
+                  </button>
+                ) : null}
+              </div>
             </div>
           </>
         ) : (
@@ -933,19 +1136,25 @@ export default function InteractiveLessonPlayer({ lesson, user, onBack, onComple
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
               <button
-                onClick={onBack}
-                className="py-3 px-5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] hover:text-[#243447] cursor-pointer"
+                onClick={handleClose}
+                className="w-full sm:w-auto py-3 px-5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] hover:text-[#243447] dark:hover:text-white cursor-pointer"
               >
                 Về Bản đồ Lộ trình
               </button>
+
               <button
-                onClick={() => {
-                  if (onCompleteNext) onCompleteNext();
-                  else onBack();
-                }}
-                className="flex-1 py-3 px-6 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                onClick={handleRestartLesson}
+                className="w-full sm:w-auto py-3 px-5 rounded-xl border-2 border-[#E85D3F] text-[#E85D3F] hover:bg-[#FDEEEB] dark:hover:bg-[#2D1E1B] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-95"
+              >
+                <RotateCcw size={15} />
+                <span>Học lại bài này</span>
+              </button>
+
+              <button
+                onClick={handleNextLessonAction}
+                className="w-full sm:flex-1 py-3 px-6 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Học bài tiếp theo</span>
                 <ArrowRight size={15} />

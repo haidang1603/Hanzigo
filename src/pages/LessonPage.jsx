@@ -6,7 +6,8 @@ import {
   ArrowRight, 
   RotateCcw, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  AlertCircle
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { 
@@ -28,6 +29,7 @@ export default function LessonPage({ setActiveTab, onAddXp, initialLessonIndex =
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [score, setScore] = useState(0);
+  const [warningMessage, setWarningMessage] = useState(null);
 
   // Sentence reorder state
   const [unscrambledSentence, setUnscrambledSentence] = useState([]);
@@ -42,6 +44,7 @@ export default function LessonPage({ setActiveTab, onAddXp, initialLessonIndex =
       setSelectedAnswer(null);
       setIsAnswerChecked(false);
       setIsCorrect(false);
+      setWarningMessage(null);
       const targetLesson = LESSONS_DATA[initialLessonIndex] || LESSONS_DATA[0];
       setAvailableWords(targetLesson.quizzes[2]?.words || []);
       setUnscrambledSentence([]);
@@ -58,7 +61,24 @@ export default function LessonPage({ setActiveTab, onAddXp, initialLessonIndex =
   ];
 
   const handleNextStep = () => {
+    // Pedagogical gating: on quiz/reorder steps (Step 2, 3, 4), user must choose correct answer to pass!
+    if (currentStep === 2 || currentStep === 3) {
+      if (!isAnswerChecked || !isCorrect) {
+        playErrorSound();
+        setWarningMessage('Bạn cần chọn đáp án chính xác để vượt qua câu hỏi này trước khi tiếp tục!');
+        return;
+      }
+    } else if (currentStep === 4) {
+      if (!isAnswerChecked || !isCorrect) {
+        playErrorSound();
+        setWarningMessage('Bạn chưa hoàn thành ghép câu chính xác! Hãy kiểm tra đáp án đúng trước khi hoàn thành bài.');
+        return;
+      }
+    }
+
+    setWarningMessage(null);
     playClickSound();
+
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
       setSelectedAnswer(null);
@@ -92,6 +112,7 @@ export default function LessonPage({ setActiveTab, onAddXp, initialLessonIndex =
 
   const handlePrevStep = () => {
     playClickSound();
+    setWarningMessage(null);
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
       setSelectedAnswer(null);
@@ -101,22 +122,28 @@ export default function LessonPage({ setActiveTab, onAddXp, initialLessonIndex =
   };
 
   const handleCheckMultipleChoice = (index, correctIndex) => {
-    if (isAnswerChecked) return;
+    if (isAnswerChecked && isCorrect) return; // Keep locked only once answered correctly
     setSelectedAnswer(index);
     setIsAnswerChecked(true);
     if (index === correctIndex) {
       setIsCorrect(true);
       setScore(score + 10);
       playSuccessSound();
+      setWarningMessage(null);
     } else {
       setIsCorrect(false);
       playErrorSound();
+      setWarningMessage('Đáp án chưa chính xác! Hãy suy nghĩ và chọn lại phương án đúng để vượt qua.');
     }
   };
 
   // Sentence tile clicking
   const handleWordTileClick = (word, fromAvailable = true) => {
+    if (isAnswerChecked && isCorrect) return; // Keep locked only once answered correctly
     playClickSound();
+    setIsAnswerChecked(false);
+    setIsCorrect(false);
+    setWarningMessage(null);
     if (fromAvailable) {
       setAvailableWords(availableWords.filter(w => w !== word));
       setUnscrambledSentence([...unscrambledSentence, word]);
@@ -126,6 +153,15 @@ export default function LessonPage({ setActiveTab, onAddXp, initialLessonIndex =
     }
   };
 
+  const handleResetSentence = () => {
+    playClickSound();
+    setUnscrambledSentence([]);
+    setAvailableWords(lesson.quizzes[2]?.words || []);
+    setIsAnswerChecked(false);
+    setIsCorrect(false);
+    setWarningMessage(null);
+  };
+
   const handleCheckReorder = (correctOrder) => {
     setIsAnswerChecked(true);
     const isMatched = unscrambledSentence.join('') === correctOrder.join('');
@@ -133,9 +169,11 @@ export default function LessonPage({ setActiveTab, onAddXp, initialLessonIndex =
       setIsCorrect(true);
       setScore(score + 10);
       playSuccessSound();
+      setWarningMessage(null);
     } else {
       setIsCorrect(false);
       playErrorSound();
+      setWarningMessage('Thứ tự câu chưa đúng! Hãy bấm vào các từ để sắp xếp lại hoặc bấm Xếp lại.');
     }
   };
 
@@ -146,6 +184,7 @@ export default function LessonPage({ setActiveTab, onAddXp, initialLessonIndex =
     setIsAnswerChecked(false);
     setIsCorrect(false);
     setScore(0);
+    setWarningMessage(null);
     setUnscrambledSentence([]);
     setAvailableWords(lesson.quizzes[2]?.words || []);
   };
@@ -448,18 +487,32 @@ export default function LessonPage({ setActiveTab, onAddXp, initialLessonIndex =
               ))}
             </div>
 
-            {/* Check Button */}
-            {!isAnswerChecked ? (
-              <button
-                disabled={unscrambledSentence.length === 0}
-                onClick={() => handleCheckReorder(lesson.quizzes[2].correctOrder)}
-                className="px-6 py-2.5 rounded-xl bg-[#E85D3F] disabled:opacity-50 text-white font-bold text-xs shadow-md transition-all"
-              >
-                Kiểm tra kết quả
-              </button>
-            ) : (
+            {/* Check Button & Retry Button */}
+            <div className="flex items-center gap-3 pt-2">
+              {(!isAnswerChecked || !isCorrect) && (
+                <button
+                  disabled={unscrambledSentence.length === 0}
+                  onClick={() => handleCheckReorder(lesson.quizzes[2].correctOrder)}
+                  className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] disabled:opacity-50 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                >
+                  Kiểm tra kết quả
+                </button>
+              )}
+
+              {unscrambledSentence.length > 0 && !isCorrect && (
+                <button
+                  onClick={handleResetSentence}
+                  className="px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw size={14} />
+                  <span>Xếp lại</span>
+                </button>
+              )}
+            </div>
+
+            {isAnswerChecked && (
               <div className={`p-4 rounded-xl text-xs ${isCorrect ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300' : 'bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300'}`}>
-                <p className="font-bold">{isCorrect ? '🎉 Bạn ghép câu hoàn toàn chính xác!' : '💡 Đáp án đúng:'}</p>
+                <p className="font-bold">{isCorrect ? '🎉 Bạn ghép câu hoàn toàn chính xác!' : '💡 Đáp án chưa chính xác, hãy thử lại:'}</p>
                 <p className="mt-1 font-semibold">{lesson.quizzes[2].correctOrder.join(' ')}</p>
                 <p className="mt-0.5">{lesson.quizzes[2].explanation}</p>
               </div>
@@ -522,6 +575,14 @@ export default function LessonPage({ setActiveTab, onAddXp, initialLessonIndex =
                 <ArrowRight size={14} />
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Warning banner if user tries to skip or answer is incorrect */}
+        {warningMessage && (
+          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/50 text-amber-800 dark:text-amber-200 text-xs font-bold flex items-center gap-2.5 animate-in shake duration-200 my-3">
+            <AlertCircle size={16} className="text-amber-600 shrink-0" />
+            <span className="flex-1">{warningMessage}</span>
           </div>
         )}
 

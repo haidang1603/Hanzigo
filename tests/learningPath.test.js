@@ -16,7 +16,8 @@ import {
   getDailyMissions,
   claimDailyMission,
   getSkillMastery,
-  getPersonalizedRecommendation
+  getPersonalizedRecommendation,
+  getUserJourneyProgress
 } from '../src/services/learningPathService.js';
 
 // Polyfill localStorage in Node test environment
@@ -159,3 +160,26 @@ test('Learning Path: Skill mastery radar & personalized advice', () => {
   assert.ok(recommendation.weakestSkill, 'Must identify weakest skill');
   assert.ok(recommendation.recommendedTab, 'Must recommend practice tab');
 });
+
+test('Learning Path: Lesson replayability and progression gating', () => {
+  localStorage.clear();
+  const mockUser = { uid: 'replay_user_1' };
+
+  // 1. Complete lesson 1
+  const completeResult = completeLesson('hsk1-c1-l1', 95, mockUser);
+  assert.ok(completeResult.stars >= 2, 'Should earn stars');
+
+  // 2. Check that completed lesson status is "completed" or "mastered" and remains accessible
+  const progress = getUserJourneyProgress(mockUser);
+  const nodeStatus = getLessonNodeStatus('hsk1-c1-l1', progress);
+  assert.equal(nodeStatus === 'completed' || nodeStatus === 'mastered', true, 'Completed lesson must have completed/mastered status');
+  assert.notEqual(nodeStatus, 'locked', 'Completed lesson must NEVER be locked, user can replay anytime');
+
+  // 3. User can replay and re-complete lesson without breaking progress
+  const replayResult = completeLesson('hsk1-c1-l1', 100, mockUser);
+  assert.equal(replayResult.stars, 3, 'Replaying can update to 3 stars');
+
+  const updatedProgress = getUserJourneyProgress(mockUser);
+  assert.ok(updatedProgress.completedLessons['hsk1-c1-l1'], 'Completed lesson remains in completedLessons');
+});
+
