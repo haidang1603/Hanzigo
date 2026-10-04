@@ -29,7 +29,7 @@ import {
   getBossChallengeByChapter,
   getLevelById
 } from '../../services/learningPathService';
-import { playClickSound } from '../../utils/audio';
+import { playClickSound, playErrorSound } from '../../utils/audio';
 
 export default function LearningJourneyMap({ 
   user, 
@@ -37,7 +37,8 @@ export default function LearningJourneyMap({
   onOpenBoss, 
   onOpenPlacementTest,
   onOpenDailyMissions,
-  onOpenSkills
+  onOpenSkills,
+  onLockedClick
 }) {
   const levels = getAllLevels();
   const [selectedLevelId, setSelectedLevelId] = useState('lvl-1');
@@ -398,8 +399,16 @@ export default function LearningJourneyMap({
                     >
                       <button
                         type="button"
-                        disabled={isLocked}
                         onClick={() => {
+                          if (isLocked) {
+                            playErrorSound();
+                            if (onLockedClick) {
+                              onLockedClick(lesson);
+                            } else if (onOpenPlacementTest) {
+                              onOpenPlacementTest();
+                            }
+                            return;
+                          }
                           playClickSound();
                           onSelectLesson(lesson);
                         }}
@@ -410,7 +419,7 @@ export default function LearningJourneyMap({
                             ? 'bg-[#E85D3F] text-white shadow-[#E85D3F]/30 ring-4 ring-[#E85D3F]/30 animate-pulse'
                             : isAvailable
                             ? 'bg-white dark:bg-[#1E293B] text-[#E85D3F] border-2 border-[#E85D3F] shadow-sm hover:scale-105'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-75'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 opacity-75 hover:opacity-100'
                         }`}
                       >
                         {isLocked ? (
@@ -435,12 +444,28 @@ export default function LearningJourneyMap({
                       </button>
 
                       {/* Tooltip Label */}
-                      <div className="mt-2 text-center max-w-44 px-2 py-1 rounded-xl bg-white/90 dark:bg-[#1E293B]/90 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isLocked) {
+                            playErrorSound();
+                            if (onLockedClick) {
+                              onLockedClick(lesson);
+                            } else if (onOpenPlacementTest) {
+                              onOpenPlacementTest();
+                            }
+                            return;
+                          }
+                          playClickSound();
+                          onSelectLesson(lesson);
+                        }}
+                        className="mt-2 text-center max-w-44 px-2 py-1 rounded-xl bg-white/90 dark:bg-[#1E293B]/90 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs hover:border-[#E85D3F] transition-all cursor-pointer"
+                      >
                         <p className="text-xs font-bold text-[#243447] dark:text-white truncate">
                           {lesson.title}
                         </p>
                         <p className="text-[10px] text-[#748092]">+{lesson.xpReward} XP</p>
-                      </div>
+                      </button>
                     </div>
                   );
                 })}

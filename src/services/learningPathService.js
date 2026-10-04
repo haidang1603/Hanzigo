@@ -51,12 +51,103 @@ export function getChapterById(chapterId) {
   return LEARNING_CHAPTERS.find(ch => ch.id === chapterId);
 }
 
+function generateFallbackLesson(lessonId, chapter, lessonNumber) {
+  const levelObj = getLevelById(chapter.levelId) || { name: 'HSK 1', levelNumber: 1 };
+  return {
+    id: lessonId,
+    chapterId: chapter.id,
+    levelId: chapter.levelId,
+    lessonNumber: lessonNumber,
+    title: `${chapter.title} (Bài ${lessonNumber})`,
+    chineseTitle: chapter.chineseTitle || '汉语学习',
+    subtitle: chapter.desc || 'Bài học phản xạ giao tiếp và ngữ pháp ứng dụng.',
+    durationMinutes: 18,
+    xpReward: 50,
+    tags: [levelObj.name, 'Giao tiếp', 'Ngữ pháp'],
+    step1_learn: {
+      topic: `${chapter.title} - Trọng tâm bài ${lessonNumber}`,
+      summary: chapter.desc || 'Nắm vững kiến thức trọng tâm và mẫu câu thực tế.',
+      audioDemoText: 'Nǐ hǎo! Hěn gāoxìng rènshi nǐ.'
+    },
+    step2_vocabulary: [
+      { id: `${lessonId}-v1`, hanzi: '你好', pinyin: 'nǐ hǎo', meaning: 'Xin chào', hanviet: 'Nhĩ hảo', example: '你好，很高兴认识你！' },
+      { id: `${lessonId}-v2`, hanzi: '谢谢', pinyin: 'xièxie', meaning: 'Cảm ơn', hanviet: 'Tạ tạ', example: '太谢谢你了！' },
+      { id: `${lessonId}-v3`, hanzi: '再见', pinyin: 'zàijiàn', meaning: 'Tạm biệt', hanviet: 'Tái kiến', example: '明天见，再见！' }
+    ],
+    step3_hanzi: [
+      { char: '你', pinyin: 'nǐ', meaning: 'Bạn / Anh / Chị', strokes: 7, radical: '亻 (Nhân đứng)', strokeOrder: ['撇', '竖', '撇', '横撇', '竖', '横折钩', '点'] },
+      { char: '好', pinyin: 'hǎo', meaning: 'Tốt / Đẹp / Khỏe', strokes: 6, radical: '女 (Nữ)', strokeOrder: ['撇点', '撇', '横', '横撇', '弯钩', '横'] }
+    ],
+    step4_grammar: {
+      title: 'Mẫu câu giao tiếp cốt lõi',
+      formula: 'Chủ ngữ + Vị ngữ + Tân ngữ',
+      explanation: 'Thứ tự từ trong câu tiếng Trung cơ bản tương tự tiếng Việt.',
+      examples: [
+        { cn: '我很开心。', pinyin: 'Wǒ hěn kāixīn.', vi: 'Tôi rất vui.' },
+        { cn: '他是我的老师。', pinyin: 'Tā shì wǒ de lǎoshī.', vi: 'Thầy ấy là giáo viên của tôi.' }
+      ]
+    },
+    step5_listening: {
+      dialogue: [
+        { speaker: 'A', cn: '你好！你是哪国人？', pinyin: 'Nǐ hǎo! Nǐ shì nǎ guó rén?', vi: 'Xin chào! Bạn là người nước nào?' },
+        { speaker: 'B', cn: '我是越南人。', pinyin: 'Wǒ shì Yuènán rén.', vi: 'Tôi là người Việt Nam.' }
+      ]
+    },
+    step6_speaking: {
+      targetSentence: '很高兴认识你',
+      targetPinyin: 'Hěn gāoxìng rènshi nǐ',
+      meaning: 'Rất vui được làm quen với bạn',
+      guide: 'Nhấn phím Mic và đọc to rõ ràng từng âm tiết.'
+    },
+    step7_writing: {
+      prompt: 'Sắp xếp các từ thành câu chào hỏi: "Rất vui được làm quen với bạn"',
+      words: ['很高兴', '认识', '你'],
+      correctOrder: ['很高兴', '认识', '你']
+    },
+    step8_quiz: [
+      {
+        id: `${lessonId}-q1`,
+        question: 'Từ "你好" mang ý nghĩa gì?',
+        options: ['Xin chào', 'Tạm biệt', 'Cảm ơn', 'Không có gì'],
+        correctIndex: 0,
+        explanation: '你好 (Nǐ hǎo) là lời chào hỏi cơ bản và thông dụng nhất trong tiếng Trung.'
+      },
+      {
+        id: `${lessonId}-q2`,
+        question: 'Chọn câu đáp lại lịch sự khi ai đó nói "谢谢 (Cảm ơn)":',
+        options: ['不用谢 (Bú yòng xiè)', '再见 (Zàijiàn)', '没听懂 (Méi tīng dǒng)', '对不起 (Duìbuqǐ)'],
+        correctIndex: 0,
+        explanation: '不用谢 hoặc 不客气 là câu đáp lại chuẩn khi người khác cảm ơn bạn.'
+      }
+    ],
+    step9_challenge: {
+      title: 'Ứng dụng thực tế',
+      taskDesc: `Thực hành sử dụng các mẫu câu của "${chapter.title}" trong đời sống hoặc gửi tin nhắn cho bạn bè người Trung Quốc.`,
+      badge: 'Giao tiếp tự tin'
+    }
+  };
+}
+
 export function getLessonsByChapter(chapterId) {
-  return LEARNING_LESSONS.filter(l => l.chapterId === chapterId);
+  const direct = LEARNING_LESSONS.filter(l => l.chapterId === chapterId);
+  if (direct.length > 0) return direct;
+
+  const chapter = getChapterById(chapterId);
+  if (!chapter || !chapter.lessonIds) return [];
+
+  return chapter.lessonIds.map((lid, idx) => generateFallbackLesson(lid, chapter, idx + 1));
 }
 
 export function getLessonById(lessonId) {
-  return LEARNING_LESSONS.find(l => l.id === lessonId);
+  const direct = LEARNING_LESSONS.find(l => l.id === lessonId);
+  if (direct) return direct;
+
+  const chapter = LEARNING_CHAPTERS.find(ch => ch.lessonIds && ch.lessonIds.includes(lessonId));
+  if (chapter) {
+    const idx = chapter.lessonIds.indexOf(lessonId);
+    return generateFallbackLesson(lessonId, chapter, idx + 1);
+  }
+  return null;
 }
 
 export function getBossChallengeByChapter(chapterId) {
@@ -146,9 +237,6 @@ export function getLessonNodeStatus(lessonId, progress) {
   if (levelObj.levelNumber > progress.unlockedLevelNumber) {
     return 'locked';
   }
-
-  // In Chapter 1: First lesson is always available
-  if (lessonId === 'l-101') return 'available';
 
   // Check if previous lesson in same chapter is completed
   const chapterLessons = getLessonsByChapter(targetLesson.chapterId);

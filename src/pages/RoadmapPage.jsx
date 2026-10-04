@@ -6,7 +6,7 @@ import {
   Calendar,
   CheckCircle2
 } from 'lucide-react';
-import { playClickSound, playSuccessSound } from '../utils/audio';
+import { playClickSound, playSuccessSound, playErrorSound } from '../utils/audio';
 import LearningJourneyMap from '../components/learning/LearningJourneyMap';
 import InteractiveLessonPlayer from '../components/learning/InteractiveLessonPlayer';
 import BossChallengeModal from '../components/learning/BossChallengeModal';
@@ -33,6 +33,39 @@ export default function RoadmapPage({ user, setActiveTab, onSelectLesson, onAddX
   const progress = getUserJourneyProgress(user);
   const totalCompletedLessons = Object.keys(progress.completedLessons || {}).length;
   const totalCompletedBosses = Object.keys(progress.completedBosses || {}).length;
+
+  // 1. IMMERSIVE LESSON VIEW: If a lesson is being played, render directly on screen
+  if (activeLessonToPlay) {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-[#FFF9F2] dark:bg-[#131B24] animate-in fade-in duration-200">
+        <InteractiveLessonPlayer
+          lesson={activeLessonToPlay}
+          user={user}
+          onClose={() => {
+            setActiveLessonToPlay(null);
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+          onBack={() => {
+            setActiveLessonToPlay(null);
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+          onCompleteLesson={(score, stars) => {
+            playSuccessSound();
+            showToast(`🎉 Xuất sắc! Bạn đã hoàn thành bài học với ${score} điểm (${stars} sao)`);
+            if (onAddXp) onAddXp(activeLessonToPlay.xpReward || 50);
+          }}
+          onNextLesson={(nextId) => {
+            const next = getLessonById(nextId);
+            if (next) {
+              setActiveLessonToPlay(next);
+            } else {
+              setActiveLessonToPlay(null);
+            }
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -142,6 +175,10 @@ export default function RoadmapPage({ user, setActiveTab, onSelectLesson, onAddX
           onOpenPlacementTest={() => setShowPlacementTest(true)}
           onOpenDailyMissions={() => setShowDailyMissions(true)}
           onOpenSkills={() => setRoadmapView('skills')}
+          onLockedClick={(lesson) => {
+            playErrorSound();
+            showToast(`🔒 Bài học "${lesson.title}" đang khóa. Hoàn thành bài trước hoặc làm bài Test để mở khóa!`);
+          }}
         />
       )}
 
@@ -175,28 +212,6 @@ export default function RoadmapPage({ user, setActiveTab, onSelectLesson, onAddX
             </div>
           </div>
         </div>
-      )}
-
-      {/* MODAL 1: 9-STEP INTERACTIVE LESSON PLAYER */}
-      {activeLessonToPlay && (
-        <InteractiveLessonPlayer
-          lesson={activeLessonToPlay}
-          user={user}
-          onClose={() => setActiveLessonToPlay(null)}
-          onCompleteLesson={(score, stars) => {
-            playSuccessSound();
-            showToast(`🎉 Xuất sắc! Bạn đã hoàn thành bài học với ${score} điểm (${stars} sao)`);
-            if (onAddXp) onAddXp(activeLessonToPlay.xpReward || 50);
-          }}
-          onNextLesson={(nextId) => {
-            const next = getLessonById(nextId);
-            if (next) {
-              setActiveLessonToPlay(next);
-            } else {
-              setActiveLessonToPlay(null);
-            }
-          }}
-        />
       )}
 
       {/* MODAL 2: BOSS CHALLENGE ROLEPLAY BATTLE */}

@@ -204,6 +204,7 @@ function MainApp() {
               xp={xp}
               setActiveTab={setActiveTab} 
               openAuthModal={handleOpenAuth} 
+              onSelectLesson={handleSelectLesson}
             />
           )}
 
@@ -211,6 +212,7 @@ function MainApp() {
             <DashboardPage 
               user={user} 
               setActiveTab={setActiveTab} 
+              onSelectLesson={handleSelectLesson}
             />
           )}
 

@@ -93,6 +93,10 @@ export default function InteractiveLessonPlayer({
     }
   }, [lesson]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [lesson?.id, currentStep]);
+
   if (!lesson) return null;
 
   const stepsMeta = [

@@ -174,7 +174,7 @@ const FAQS = [
   }
 ];
 
-export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openAuthModal }) {
+export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openAuthModal, onSelectLesson }) {
   // Showcase Tab State
   const [showcaseTab, setShowcaseTab] = useState('vocab');
 
@@ -955,12 +955,16 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {LESSONS_DATA.map((lesson) => (
+          {LESSONS_DATA.map((lesson, idx) => (
             <div 
               key={lesson.id}
               onClick={() => {
                 playClickSound();
-                setActiveTab('lesson');
+                if (onSelectLesson) {
+                  onSelectLesson(idx);
+                } else {
+                  setActiveTab('lesson');
+                }
               }}
               className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-md hover:border-[#E85D3F] transition-all cursor-pointer group flex flex-col justify-between"
             >

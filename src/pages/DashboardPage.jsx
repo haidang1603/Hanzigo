@@ -34,7 +34,7 @@ import {
   getLocalDateString 
 } from '../utils/gamification';
 
-export default function DashboardPage({ user, setActiveTab }) {
+export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   const userName = user ? (user.name ? user.name.split(' ').pop() : 'Bạn') : 'Bạn';
   const streakStatus = useMemo(() => getStreakStatus(user), [user]);
   const userStreak = Math.max(streakStatus.streak, user?.streak || 0);
@@ -347,7 +347,11 @@ export default function DashboardPage({ user, setActiveTab }) {
 
   const handleContinueLesson = () => {
     playClickSound();
-    setActiveTab('lesson');
+    if (onSelectLesson && nextLessonInfo) {
+      onSelectLesson(nextLessonInfo.stepIndex);
+    } else {
+      setActiveTab('lesson');
+    }
   };
 
   const handleSaveGoal = (mins) => {
