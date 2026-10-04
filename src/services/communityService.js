@@ -24,6 +24,7 @@ export async function getCommunityPosts() {
         level: row.author_level || 'HSK 1',
         content: row.content,
         tag: row.tag || '',
+        image: row.image_url || row.image || null,
         likes: row.likes || 0,
         likedBy: row.liked_by || [],
         comments: row.comments || [],
@@ -40,20 +41,37 @@ export async function addCommunityPost(postData) {
   if (!isSupabaseConfigured || !supabase) return null;
 
   try {
-    const { data, error } = await supabase
+    const payload = {
+      author_name: postData.author || postData.authorName || 'Học viên HanziGo',
+      author_avatar: postData.avatar || null,
+      author_level: postData.level || 'HSK 1',
+      content: postData.content,
+      tag: postData.tag || '',
+      likes: postData.likes || 0,
+      liked_by: postData.likedBy || [],
+      comments: postData.comments || []
+    };
+
+    if (postData.image) {
+      payload.image_url = postData.image;
+    }
+
+    let { data, error } = await supabase
       .from('community_posts')
-      .insert([{
-        author_name: postData.author || postData.authorName || 'Học viên HanziGo',
-        author_avatar: postData.avatar || null,
-        author_level: postData.level || 'HSK 1',
-        content: postData.content,
-        tag: postData.tag || '',
-        likes: postData.likes || 0,
-        liked_by: postData.likedBy || [],
-        comments: postData.comments || []
-      }])
+      .insert([payload])
       .select('id')
       .single();
+
+    if (error && error.message && error.message.includes('image_url')) {
+      delete payload.image_url;
+      const retry = await supabase
+        .from('community_posts')
+        .insert([payload])
+        .select('id')
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) throw error;
     return data?.id;
@@ -143,6 +161,7 @@ export async function getStudyPartnersFromDb() {
         dailyTime: row.daily_time || '',
         contactMethod,
         contactInfo,
+        qrImage: row.qr_image || row.qrImage || null,
         contact: row.contact || `${contactMethod}: ${contactInfo}`,
         createdAt: row.created_at ? new Date(row.created_at).toLocaleDateString('vi-VN') : 'Hôm nay'
       };
@@ -166,17 +185,34 @@ export async function addStudyPartnerToDb(partnerData) {
     const goal = partnerData.goal || partnerData.intro || 'Luyện phản xạ giao tiếp';
     const level = partnerData.level || partnerData.targetLevel || 'HSK 1';
 
-    const { data, error } = await supabase
+    const payload = {
+      name: partnerData.name,
+      target_level: level,
+      daily_time: partnerData.dailyTime || goal,
+      contact: formattedContact,
+      intro: goal
+    };
+
+    if (partnerData.qrImage) {
+      payload.qr_image = partnerData.qrImage;
+    }
+
+    let { data, error } = await supabase
       .from('study_partners')
-      .insert([{
-        name: partnerData.name,
-        target_level: level,
-        daily_time: partnerData.dailyTime || goal,
-        contact: formattedContact,
-        intro: goal
-      }])
+      .insert([payload])
       .select('id')
       .single();
+
+    if (error && error.message && error.message.includes('qr_image')) {
+      delete payload.qr_image;
+      const retry = await supabase
+        .from('study_partners')
+        .insert([payload])
+        .select('id')
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) throw error;
     return data?.id;

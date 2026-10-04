@@ -20,10 +20,53 @@ import {
   Award,
   Pin,
   Database,
-  RefreshCw
+  RefreshCw,
+  QrCode,
+  Image as ImageIcon,
+  Download
 } from 'lucide-react';
 import { COMMUNITY_POSTS } from '../data/chineseData';
 import { playClickSound, playSuccessSound } from '../utils/audio';
+
+// Helper nén ảnh cục bộ cho mã QR và tệp đính kèm (giữ độ sắc nét cho QR)
+function compressImageFile(file, maxWidth = 600, maxHeight = 600) {
+  return new Promise((resolve, reject) => {
+    if (!file) return reject(new Error('No file provided'));
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 import { 
   getCommunityPosts, 
   addCommunityPost, 
@@ -243,6 +286,7 @@ export default function CommunityPage({ user }) {
   const [newPostTag, setNewPostTag] = useState('#HoiDapNguPhap');
   const [postContactMethod, setPostContactMethod] = useState('Zalo');
   const [postContactInfo, setPostContactInfo] = useState('');
+  const [postImage, setPostImage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('all');
 
@@ -261,11 +305,13 @@ export default function CommunityPage({ user }) {
     level: user?.level || 'HSK 1',
     goal: '',
     contactMethod: 'Zalo',
-    contactInfo: ''
+    contactInfo: '',
+    qrImage: ''
   });
 
-  // Contact view modal
+  // Contact view modal & image zoom modal
   const [activeContactModal, setActiveContactModal] = useState(null);
+  const [zoomImageModal, setZoomImageModal] = useState(null);
 
   // Toast feedback
   const [toastMessage, setToastMessage] = useState(null);
@@ -353,6 +399,7 @@ export default function CommunityPage({ user }) {
       time: 'Vừa xong',
       tag: newPostTag,
       content: finalContent,
+      image: postImage || null,
       likes: 0,
       liked: false,
       saved: false,
@@ -364,6 +411,7 @@ export default function CommunityPage({ user }) {
     persistPosts(updated);
     setNewPostContent('');
     setPostContactInfo('');
+    setPostImage('');
     showToast('Đã đăng bài viết lên cộng đồng (+20 XP)!');
 
     // Asynchronously save to Supabase Cloud DB
@@ -374,6 +422,7 @@ export default function CommunityPage({ user }) {
       level: newPost.level,
       tag: newPost.tag,
       content: newPost.content,
+      image: newPost.image,
       likes: 0,
       time: 'Vừa xong',
       comments: []
@@ -557,6 +606,7 @@ export default function CommunityPage({ user }) {
       goal: partnerForm.goal.trim() || 'Luyện phản xạ giao tiếp',
       contactMethod: partnerForm.contactMethod,
       contactInfo: partnerForm.contactInfo.trim(),
+      qrImage: partnerForm.qrImage || null,
       createdAt: 'Hôm nay',
       isMyPartnerPost: true
     };
@@ -569,7 +619,8 @@ export default function CommunityPage({ user }) {
       level: user?.level || 'HSK 1',
       goal: '',
       contactMethod: 'Zalo',
-      contactInfo: ''
+      contactInfo: '',
+      qrImage: ''
     });
     showToast('Đã đăng bài tìm bạn học (+15 XP)!');
 
@@ -581,6 +632,7 @@ export default function CommunityPage({ user }) {
       goal: newPartner.goal,
       contactMethod: newPartner.contactMethod,
       contactInfo: newPartner.contactInfo,
+      qrImage: newPartner.qrImage,
       createdAt: 'Hôm nay'
     }).then(cloudId => {
       if (cloudId) {
@@ -763,25 +815,73 @@ export default function CommunityPage({ user }) {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">Chủ đề:</span>
-                  <select
-                    value={newPostTag}
-                    onChange={(e) => setNewPostTag(e.target.value)}
-                    className="text-xs px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-medium focus:outline-none focus:border-[#E85D3F]"
+              {/* Xem trước ảnh / mã QR đính kèm bài viết */}
+              {postImage && (
+                <div className="relative inline-block mt-1">
+                  <div className="p-1 rounded-xl bg-white dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs">
+                    <img 
+                      src={postImage} 
+                      alt="Ảnh đính kèm" 
+                      className="h-20 w-auto rounded-lg object-contain"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPostImage('')}
+                    className="absolute -top-1.5 -right-1.5 p-1 rounded-full bg-red-500 hover:bg-red-600 text-white shadow-md transition-colors"
+                    title="Xóa ảnh"
                   >
-                    <option value="#HoiDapNguPhap">#HỏiĐápNgữPháp</option>
-                    <option value="#TimBanLuyenNoi">#TìmBạnLuyệnNói</option>
-                    <option value="#KinhNghiemHoc">#KinhNghiệmHọc</option>
-                    <option value="#ThiHSK">#ThiHSK</option>
-                  </select>
+                    <X size={11} />
+                  </button>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">Chủ đề:</span>
+                    <select
+                      value={newPostTag}
+                      onChange={(e) => setNewPostTag(e.target.value)}
+                      className="text-xs px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-medium focus:outline-none focus:border-[#E85D3F]"
+                    >
+                      <option value="#HoiDapNguPhap">#HỏiĐápNgữPháp</option>
+                      <option value="#TimBanLuyenNoi">#TìmBạnLuyệnNói</option>
+                      <option value="#KinhNghiemHoc">#KinhNghiệmHọc</option>
+                      <option value="#ThiHSK">#ThiHSK</option>
+                    </select>
+                  </div>
+
+                  <label className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] hover:text-[#E85D3F] hover:border-[#E85D3F] cursor-pointer font-medium transition-colors shrink-0">
+                    <ImageIcon size={14} className="text-[#E85D3F]" />
+                    <span>{postImage ? 'Đổi ảnh/QR' : 'Ảnh / Mã QR'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 10 * 1024 * 1024) {
+                          alert('Kích thước ảnh tối đa 10MB');
+                          return;
+                        }
+                        try {
+                          const dataUrl = await compressImageFile(file, 800, 800);
+                          setPostImage(dataUrl);
+                          playClickSound();
+                        } catch {
+                          alert('Không thể tải ảnh, vui lòng thử lại.');
+                        }
+                      }}
+                    />
+                  </label>
                 </div>
 
                 <button
                   type="submit"
                   disabled={!newPostContent.trim()}
-                  className="px-5 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#D44C2E] disabled:opacity-40 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 active:scale-95"
+                  className="px-5 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#D44C2E] disabled:opacity-40 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
                 >
                   <span>Đăng bài (+20 XP)</span>
                   <Send size={13} />
@@ -938,6 +1038,28 @@ export default function CommunityPage({ user }) {
                     <p className="text-xs sm:text-sm text-[#243447] dark:text-[#CBD5E1] leading-relaxed whitespace-pre-line">
                       {post.content}
                     </p>
+
+                    {/* Ảnh / Mã QR đính kèm bài viết */}
+                    {post.image && (
+                      <div className="pt-1">
+                        <div className="relative inline-block group">
+                          <img 
+                            src={post.image} 
+                            alt="Ảnh đính kèm" 
+                            onClick={() => setZoomImageModal(post.image)}
+                            className="max-h-64 sm:max-h-80 w-auto max-w-full rounded-2xl object-contain border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#0F172A] p-1.5 cursor-zoom-in group-hover:opacity-95 shadow-xs transition-all"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setZoomImageModal(post.image)}
+                            className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-sm text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 cursor-pointer shadow-md"
+                          >
+                            <QrCode size={12} />
+                            <span>Xem ảnh lớn / QR</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Actions: Like, Comment, Save */}
                     <div className="flex items-center justify-between pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] text-xs text-[#748092]">
@@ -1296,6 +1418,19 @@ export default function CommunityPage({ user }) {
                           </span>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
+                          {partner.qrImage && (
+                            <button
+                              onClick={() => {
+                                playClickSound();
+                                setZoomImageModal({ url: partner.qrImage, title: `Mã QR kết bạn - ${partner.name}` });
+                              }}
+                              className="p-1.5 rounded-lg bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] hover:bg-[#45B97C] hover:text-white transition-colors cursor-pointer flex items-center gap-1 text-[10px] font-bold"
+                              title="Xem mã QR kết bạn"
+                            >
+                              <QrCode size={13} />
+                              <span className="hidden sm:inline">QR</span>
+                            </button>
+                          )}
                           {(partner.contactInfo || partner.contact) && (
                             <button
                               onClick={() => handleCopyContact(partner.contactInfo || partner.contact)}
@@ -1422,6 +1557,68 @@ export default function CommunityPage({ user }) {
                 />
               </div>
 
+              {/* Tải ảnh mã QR (Zalo / WeChat / MoMo) */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-[#243447] dark:text-white flex items-center gap-1.5">
+                    <QrCode size={14} className="text-[#45B97C]" />
+                    <span>Mã QR kết bạn (Zalo / WeChat - Tùy chọn)</span>
+                  </label>
+                  {partnerForm.qrImage && (
+                    <button
+                      type="button"
+                      onClick={() => setPartnerForm(prev => ({ ...prev, qrImage: '' }))}
+                      className="text-[10px] text-red-500 hover:underline flex items-center gap-0.5 cursor-pointer"
+                    >
+                      <Trash2 size={11} />
+                      <span>Xóa ảnh QR</span>
+                    </button>
+                  )}
+                </div>
+
+                {partnerForm.qrImage ? (
+                  <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center gap-3">
+                    <img 
+                      src={partnerForm.qrImage} 
+                      alt="Mã QR xem trước" 
+                      className="w-16 h-16 object-contain rounded-xl bg-white p-1 border border-[#F1E5D8] shadow-xs"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-[#243447] dark:text-white truncate">Đã đính kèm ảnh mã QR</p>
+                      <p className="text-[10px] text-[#748092]">Bạn bè có thể quét trực tiếp để kết bạn nhanh</p>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-3 rounded-2xl border-2 border-dashed border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#45B97C] bg-[#FFF9F2]/50 dark:bg-[#131B24]/50 cursor-pointer transition-colors group">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[#748092] dark:text-[#94A3B8] group-hover:text-[#45B97C]">
+                      <QrCode size={18} className="text-[#45B97C]" />
+                      <span>Tải ảnh mã QR (Zalo, WeChat,...) từ máy</span>
+                    </div>
+                    <span className="text-[10px] text-[#748092] mt-0.5">Hỗ trợ PNG, JPG (Tối đa 10MB, tự động nén tối ưu)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 10 * 1024 * 1024) {
+                          alert('Kích thước ảnh tối đa 10MB');
+                          return;
+                        }
+                        try {
+                          const dataUrl = await compressImageFile(file, 600, 600);
+                          setPartnerForm(prev => ({ ...prev, qrImage: dataUrl }));
+                          playClickSound();
+                        } catch {
+                          alert('Không thể xử lý ảnh này, vui lòng thử lại.');
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+
               <div className="flex items-center justify-end gap-2.5 pt-2">
                 <button
                   type="button"
@@ -1476,12 +1673,92 @@ export default function CommunityPage({ user }) {
               </button>
             </div>
 
+            {/* Mã QR kết bạn nếu người dùng đã tải lên */}
+            {activeContactModal.qrImage && (
+              <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-[#243447] dark:text-white">
+                  <span className="flex items-center gap-1.5">
+                    <QrCode size={14} className="text-[#45B97C]" />
+                    <span>Mã QR kết bạn</span>
+                  </span>
+                  <button
+                    onClick={() => setZoomImageModal({ url: activeContactModal.qrImage, title: `Mã QR kết bạn - ${activeContactModal.name}` })}
+                    className="text-[10px] text-[#45B97C] hover:underline cursor-pointer"
+                  >
+                    Phóng to
+                  </button>
+                </div>
+                <div
+                  onClick={() => setZoomImageModal({ url: activeContactModal.qrImage, title: `Mã QR kết bạn - ${activeContactModal.name}` })}
+                  className="p-2 bg-white rounded-xl border border-[#F1E5D8] cursor-pointer hover:shadow-md transition-shadow group flex items-center justify-center"
+                  title="Bấm để phóng to hoặc quét mã QR"
+                >
+                  <img
+                    src={activeContactModal.qrImage}
+                    alt="Mã QR kết bạn"
+                    className="w-40 h-40 object-contain mx-auto group-hover:scale-105 transition-transform"
+                  />
+                </div>
+                <p className="text-[10px] text-[#748092]">Mở app {activeContactModal.contactMethod || 'Zalo'} hoặc camera để quét kết bạn</p>
+              </div>
+            )}
+
             <button
               onClick={() => setActiveContactModal(null)}
               className="w-full py-2.5 rounded-xl bg-[#243447] dark:bg-[#334155] text-white text-xs font-bold hover:bg-black transition-colors"
             >
               Đóng
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal phóng to ảnh / Mã QR */}
+      {zoomImageModal && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setZoomImageModal(null)}
+        >
+          <div 
+            className="bg-white dark:bg-[#1E293B] rounded-3xl p-5 w-full max-w-md border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-3 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-3">
+              <div className="flex items-center gap-2">
+                <QrCode size={18} className="text-[#45B97C]" />
+                <h4 className="text-sm font-bold text-[#243447] dark:text-white truncate">
+                  {typeof zoomImageModal === 'object' ? zoomImageModal.title : 'Xem ảnh / Mã QR'}
+                </h4>
+              </div>
+              <button 
+                onClick={() => setZoomImageModal(null)}
+                className="p-1 rounded-lg text-[#748092] hover:text-[#243447] dark:hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-3 bg-[#FFF9F2] dark:bg-[#131B24] rounded-2xl flex items-center justify-center">
+              <img 
+                src={typeof zoomImageModal === 'object' ? zoomImageModal.url : zoomImageModal} 
+                alt="Ảnh phóng to" 
+                className="max-h-[70vh] w-auto max-w-full object-contain rounded-xl bg-white p-2 shadow-xs"
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <p className="text-[11px] text-[#748092]">
+                Có thể quét trực tiếp bằng camera hoặc app
+              </p>
+              <a
+                href={typeof zoomImageModal === 'object' ? zoomImageModal.url : zoomImageModal}
+                download="hanzigo-qr-image.png"
+                className="px-3 py-1.5 rounded-xl bg-[#45B97C] text-white text-xs font-bold hover:bg-[#3AA56E] flex items-center gap-1.5 transition-colors shadow-xs"
+              >
+                <Download size={13} />
+                <span>Tải ảnh về máy</span>
+              </a>
+            </div>
           </div>
         </div>
       )}
