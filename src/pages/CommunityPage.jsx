@@ -23,8 +23,11 @@ import {
   RefreshCw,
   QrCode,
   Image as ImageIcon,
-  Download
+  Download,
+  Crown,
+  ArrowRight
 } from 'lucide-react';
+import LeaderboardView from '../components/learning/LeaderboardView';
 import { COMMUNITY_POSTS } from '../data/chineseData';
 import { playClickSound, playSuccessSound } from '../utils/audio';
 
@@ -173,7 +176,22 @@ function isFakePartner(p) {
   return FAKE_PARTNERS.some(fake => name.includes(fake));
 }
 
-export default function CommunityPage({ user }) {
+export default function CommunityPage({ user, setActiveTab, initialView = 'feed' }) {
+  const [communityView, setCommunityView] = useState(() => {
+    if (initialView === 'leaderboard') return 'leaderboard';
+    try {
+      const hash = window.location.hash.toLowerCase();
+      if (hash.includes('leaderboard')) return 'leaderboard';
+    } catch {}
+    return 'feed';
+  });
+
+  useEffect(() => {
+    if (initialView === 'leaderboard') {
+      setCommunityView('leaderboard');
+    }
+  }, [initialView]);
+
   // Posts state initialized from localStorage with demo user purge and logo normalization
   const [posts, setPosts] = useState(() => {
     try {
@@ -739,11 +757,47 @@ export default function CommunityPage({ user }) {
           Cộng Đồng Người Học HanziGo
         </h1>
         <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8]">
-          Giao lưu hỏi đáp ngữ pháp, tìm bạn ghép đôi luyện khẩu ngữ và cùng nhau duy trì thử thách 21 ngày.
+          Giao lưu hỏi đáp ngữ pháp, vinh danh cao thủ XP và ghép đôi tìm bạn luyện khẩu ngữ.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* Community Sub-Navigation Switcher */}
+      <div className="flex items-center justify-center gap-2 p-1.5 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs max-w-md mx-auto">
+        <button
+          onClick={() => {
+            playClickSound();
+            setCommunityView('feed');
+          }}
+          className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            communityView === 'feed'
+              ? 'bg-[#E85D3F] text-white shadow-sm'
+              : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+          }`}
+        >
+          <MessageCircle size={14} />
+          <span>Diễn đàn</span>
+        </button>
+
+        <button
+          onClick={() => {
+            playClickSound();
+            setCommunityView('leaderboard');
+          }}
+          className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            communityView === 'leaderboard'
+              ? 'bg-gradient-to-r from-amber-500 to-[#E85D3F] text-white shadow-sm'
+              : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+          }`}
+        >
+          <Trophy size={14} className={communityView === 'leaderboard' ? 'text-white' : 'text-amber-500'} />
+          <span>Bảng Xếp Hạng XP</span>
+        </button>
+      </div>
+
+      {communityView === 'leaderboard' ? (
+        <LeaderboardView user={user} onNavigateTab={setActiveTab} />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Main Feed Column (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
@@ -1222,6 +1276,39 @@ export default function CommunityPage({ user }) {
             </div>
           </div>
 
+          {/* 1.5. Mini XP Leaderboard Teaser Widget */}
+          <div className="p-6 rounded-3xl bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E1B4B] text-white border border-white/10 shadow-sm space-y-3.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5 uppercase">
+                <Trophy size={14} className="text-amber-400" />
+                <span>Bảng Xếp Hạng XP</span>
+              </span>
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setCommunityView('leaderboard');
+                }}
+                className="text-[11px] font-bold text-amber-300 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <span>Xem Top 50</span>
+                <ArrowRight size={12} />
+              </button>
+            </div>
+            <p className="text-xs text-white/70 leading-relaxed">
+              Bạn đang có <span className="font-mono font-bold text-amber-300">{totalUserXp.toLocaleString()} XP</span>. Hãy thi đua cùng các học viên khác để ghi tên lên bục vinh quang!
+            </p>
+            <button
+              onClick={() => {
+                playClickSound();
+                setCommunityView('leaderboard');
+              }}
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#E85D3F] text-white font-bold text-xs shadow-md transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <Crown size={14} />
+              <span>Xem Bảng Xếp Hạng Chi Tiết</span>
+            </button>
+          </div>
+
           {/* 2. Interactive 21-Day Challenge Widget */}
           <div className="p-6 rounded-3xl bg-gradient-to-br from-[#FEF7E9] to-[#FFF9F2] dark:from-[#2D2619] dark:to-[#1E293B] border border-[#F4B942]/40 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
@@ -1461,6 +1548,7 @@ export default function CommunityPage({ user }) {
         </div>
 
       </div>
+      )}
 
       {/* Modal: Đăng tin tìm bạn học */}
       {isPartnerModalOpen && (

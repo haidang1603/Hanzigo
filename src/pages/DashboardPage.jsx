@@ -16,13 +16,15 @@ import {
   Compass,
   Check,
   Zap,
-  Clock
+  Clock,
+  Crown
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { playClickSound, playSuccessSound } from '../utils/audio';
 import { VOCABULARY_LIST, USER_ACHIEVEMENTS } from '../data/chineseData';
 import { getStoredCustomVocab } from '../utils/materialsStorage';
 import { triggerCloudSync } from '../supabase/services';
+import { getXpHonorificTitle } from '../services/leaderboardService';
 import { 
   calculateTotalXp, 
   getStreakStatus, 
@@ -734,6 +736,61 @@ export default function DashboardPage({ user, setActiveTab }) {
         {/* Right Column (4 cols): Achievements & Level Roadmap Progress */}
         <div className="lg:col-span-4 space-y-8">
           
+          {/* XP Leaderboard Widget */}
+          <div className="p-6 rounded-3xl bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E1B4B] text-white border border-white/10 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Trophy size={16} className="text-amber-400" />
+                <span>Bảng Xếp Hạng Cao Thủ</span>
+              </h3>
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setActiveTab('leaderboard');
+                }}
+                className="text-xs font-bold text-amber-300 hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span>Xem Top 50</span>
+                <ArrowRight size={13} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white/5 border border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-[#E85D3F] flex items-center justify-center font-bold text-white shadow-sm">
+                  <Crown size={20} />
+                </div>
+                <div>
+                  <div className="text-[10px] text-white/60 font-semibold uppercase tracking-wider">Điểm tích lũy của bạn</div>
+                  <div className="font-mono text-base font-black text-amber-300 flex items-center gap-1">
+                    <Zap size={14} className="fill-amber-300" />
+                    <span>{calculatedTotalXp.toLocaleString()} XP</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  {getXpHonorificTitle(calculatedTotalXp).title}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-white/70 leading-relaxed">
+              Thi đua cùng cộng đồng học viên HanziGo. Tích lũy điểm qua mỗi bài học để thăng hạng và ghi danh lên bục vinh quang!
+            </p>
+
+            <button
+              onClick={() => {
+                playClickSound();
+                setActiveTab('leaderboard');
+              }}
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#E85D3F] text-white font-bold text-xs shadow-md transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <span>Mở Bảng Xếp Hạng Chi Tiết</span>
+              <ArrowRight size={14} />
+            </button>
+          </div>
+
           {/* Unlocked Achievements */}
           <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
             <div className="flex items-center justify-between">

@@ -242,6 +242,7 @@ CREATE TABLE IF NOT EXISTS public.user_saved_materials (
 -- 3. CHỈ MỤC TỐI ƯU HIỆU NĂNG (INDEXES)
 -- =========================================================================
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+CREATE INDEX IF NOT EXISTS idx_profiles_xp_desc ON public.profiles(xp DESC);
 CREATE INDEX IF NOT EXISTS idx_materials_category ON public.materials(category);
 CREATE INDEX IF NOT EXISTS idx_materials_level ON public.materials(level);
 CREATE INDEX IF NOT EXISTS idx_lessons_level_id ON public.lessons(level_id);

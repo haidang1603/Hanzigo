@@ -19,7 +19,8 @@ import {
   FolderDown, 
   ShieldCheck,
   ChevronDown,
-  GraduationCap
+  GraduationCap,
+  Trophy
 } from 'lucide-react';
 import { playClickSound } from '../utils/audio';
 
@@ -265,13 +266,15 @@ export default function Navbar({
                   <span>{streak} ngày</span>
                 </div>
 
-                <div 
-                  title="Điểm kinh nghiệm"
-                  className="hidden md:flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border border-[#E85D3F]/20 text-[#E85D3F] text-xs font-bold whitespace-nowrap shrink-0"
+                <button 
+                  onClick={() => handleNavClick('leaderboard')}
+                  title="Bảng xếp hạng cao thủ XP (Leaderboard) - Nhấn để xem vị trí của bạn"
+                  className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border border-[#E85D3F]/20 text-[#E85D3F] hover:bg-[#E85D3F] hover:text-white text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer group shadow-xs"
                 >
-                  <Sparkles size={13} />
+                  <Sparkles size={13} className="group-hover:rotate-12 transition-transform" />
                   <span>{xp} XP</span>
-                </div>
+                  <Trophy size={12} className="text-amber-500 group-hover:text-amber-300 ml-0.5" />
+                </button>
               </>
             )}
 

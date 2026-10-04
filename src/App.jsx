@@ -27,7 +27,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage'));
 const VALID_TABS = [
   'home', 'dashboard', 'roadmap', 'lesson', 'vocabulary', 
   'pronunciation', 'writing', 'conversation', 'community', 
-  'materials', 'admin', 'profile'
+  'materials', 'admin', 'profile', 'leaderboard'
 ];
 
 function MainApp() {
@@ -257,8 +257,12 @@ function MainApp() {
             <ConversationPage />
           )}
 
-          {activeTab === 'community' && (
-            <CommunityPage user={user} />
+          {(activeTab === 'community' || activeTab === 'leaderboard') && (
+            <CommunityPage 
+              user={user} 
+              setActiveTab={setActiveTab}
+              initialView={activeTab === 'leaderboard' ? 'leaderboard' : 'feed'}
+            />
           )}
 
           {activeTab === 'materials' && (

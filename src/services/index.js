@@ -6,3 +6,4 @@ export * from './communityService.js';
 export * from './adminService.js';
 export * from './progressService.js';
 export * from './learningPathService.js';
+export * from './leaderboardService.js';
