@@ -273,7 +273,9 @@ CREATE OR REPLACE FUNCTION public.prevent_self_role_escalation()
 RETURNS TRIGGER AS $$
 BEGIN
   IF (NEW.role IS DISTINCT FROM OLD.role OR NEW.status IS DISTINCT FROM OLD.status) THEN
-    IF NOT public.is_admin() THEN
+    -- Chỉ chặn khi là yêu cầu từ client web (auth.uid() khác NULL) và không phải Admin
+    -- Thao tác trực tiếp từ Supabase SQL Editor / Backend migration (auth.uid() IS NULL) được phép
+    IF auth.uid() IS NOT NULL AND NOT public.is_admin() THEN
       RAISE EXCEPTION 'Quyền hạn bị từ chối: Chỉ Quản trị viên (Admin) mới có thể sửa đổi vai trò hoặc trạng thái.';
     END IF;
   END IF;

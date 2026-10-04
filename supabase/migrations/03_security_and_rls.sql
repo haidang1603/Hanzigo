@@ -21,8 +21,9 @@ RETURNS TRIGGER AS $$
 BEGIN
   -- Nếu role hoặc status bị thay đổi
   IF (NEW.role IS DISTINCT FROM OLD.role OR NEW.status IS DISTINCT FROM OLD.status) THEN
-    -- Nếu không phải Admin thực hiện thay đổi, chặn ngay lập tức
-    IF NOT public.is_admin() THEN
+    -- Chỉ chặn khi có session người dùng từ web client (auth.uid() IS NOT NULL) và không phải Admin
+    -- Khi chạy trực tiếp trong Supabase SQL Editor / Backend migration (auth.uid() IS NULL), cho phép thực thi
+    IF auth.uid() IS NOT NULL AND NOT public.is_admin() THEN
       RAISE EXCEPTION 'Quyền hạn bị từ chối: Chỉ Quản trị viên (Admin) mới có thể thay đổi vai trò (role) hoặc trạng thái (status).';
     END IF;
   END IF;

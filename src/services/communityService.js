@@ -114,15 +114,39 @@ export async function getStudyPartnersFromDb() {
 
     if (error) throw error;
 
-    return (data || []).map(row => ({
-      id: row.id,
-      name: row.name,
-      targetLevel: row.target_level || '',
-      dailyTime: row.daily_time || '',
-      contact: row.contact || '',
-      intro: row.intro || '',
-      time: row.created_at ? new Date(row.created_at).toLocaleDateString('vi-VN') : 'Vừa xong'
-    }));
+    return (data || []).map(row => {
+      let contactMethod = row.contact_method || 'Zalo';
+      let contactInfo = row.contact_info || row.contact || '';
+
+      if (!row.contact_info && row.contact && row.contact.includes(':')) {
+        const parts = row.contact.split(':');
+        const first = parts[0].trim();
+        const knownMethods = ['zalo', 'wechat', 'google meet', 'zoom', 'telegram', 'facebook', 'sđt', 'phone', 'email'];
+        if (knownMethods.some(m => first.toLowerCase().includes(m))) {
+          contactMethod = first;
+          contactInfo = parts.slice(1).join(':').trim();
+        }
+      }
+
+      const name = row.name || 'Học viên';
+      const level = row.target_level || row.level || 'HSK 1';
+      const goal = row.intro || row.goal || row.daily_time || 'Luyện phản xạ giao tiếp';
+
+      return {
+        id: row.id,
+        name,
+        initial: name.charAt(0).toUpperCase(),
+        level,
+        targetLevel: level,
+        goal,
+        intro: goal,
+        dailyTime: row.daily_time || '',
+        contactMethod,
+        contactInfo,
+        contact: row.contact || `${contactMethod}: ${contactInfo}`,
+        createdAt: row.created_at ? new Date(row.created_at).toLocaleDateString('vi-VN') : 'Hôm nay'
+      };
+    });
   } catch (err) {
     console.warn('Could not fetch Supabase study partners:', err);
     return null;
@@ -133,14 +157,23 @@ export async function addStudyPartnerToDb(partnerData) {
   if (!isSupabaseConfigured || !supabase) return null;
 
   try {
+    const contactMethod = partnerData.contactMethod || 'Zalo';
+    const rawContact = partnerData.contactInfo || partnerData.contact || '';
+    const formattedContact = rawContact.startsWith(contactMethod)
+      ? rawContact
+      : `${contactMethod}: ${rawContact}`;
+
+    const goal = partnerData.goal || partnerData.intro || 'Luyện phản xạ giao tiếp';
+    const level = partnerData.level || partnerData.targetLevel || 'HSK 1';
+
     const { data, error } = await supabase
       .from('study_partners')
       .insert([{
         name: partnerData.name,
-        target_level: partnerData.targetLevel || partnerData.level || '',
-        daily_time: partnerData.dailyTime || '',
-        contact: partnerData.contact || '',
-        intro: partnerData.intro || ''
+        target_level: level,
+        daily_time: partnerData.dailyTime || goal,
+        contact: formattedContact,
+        intro: goal
       }])
       .select('id')
       .single();

@@ -241,6 +241,8 @@ export default function CommunityPage({ user }) {
   // Post creation inputs
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostTag, setNewPostTag] = useState('#HoiDapNguPhap');
+  const [postContactMethod, setPostContactMethod] = useState('Zalo');
+  const [postContactInfo, setPostContactInfo] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('all');
 
@@ -337,6 +339,11 @@ export default function CommunityPage({ user }) {
     } catch {}
 
     const tempId = `post-${Date.now()}`;
+    let finalContent = newPostContent.trim();
+    if (postContactInfo.trim()) {
+      finalContent += `\n\n📌 Thông tin liên hệ (${postContactMethod}): ${postContactInfo.trim()}`;
+    }
+
     const newPost = {
       id: tempId,
       author: user?.name || 'Học viên HanziGo',
@@ -345,7 +352,7 @@ export default function CommunityPage({ user }) {
       level: user?.level || 'HSK 1',
       time: 'Vừa xong',
       tag: newPostTag,
-      content: newPostContent.trim(),
+      content: finalContent,
       likes: 0,
       liked: false,
       saved: false,
@@ -356,6 +363,7 @@ export default function CommunityPage({ user }) {
     const updated = [newPost, ...posts];
     persistPosts(updated);
     setNewPostContent('');
+    setPostContactInfo('');
     showToast('Đã đăng bài viết lên cộng đồng (+20 XP)!');
 
     // Asynchronously save to Supabase Cloud DB
@@ -727,6 +735,33 @@ export default function CommunityPage({ user }) {
                 onChange={(e) => setNewPostContent(e.target.value)}
                 className="w-full p-4 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] resize-none"
               />
+
+              {/* Thông tin liên hệ tùy chọn khi đăng bài tìm bạn hoặc thảo luận */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-2 border-t border-[#F1E5D8]/80 dark:border-[#2B3A4F]/80">
+                <span className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8] shrink-0">
+                  Thông tin liên hệ (tùy chọn):
+                </span>
+                <div className="flex items-center gap-2 flex-1">
+                  <select
+                    value={postContactMethod}
+                    onChange={(e) => setPostContactMethod(e.target.value)}
+                    className="text-xs px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-medium focus:outline-none focus:border-[#E85D3F] shrink-0"
+                  >
+                    <option value="Zalo">Zalo</option>
+                    <option value="SĐT">SĐT</option>
+                    <option value="WeChat">WeChat</option>
+                    <option value="Telegram">Telegram</option>
+                    <option value="Facebook">Facebook</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="SĐT / Zalo / ID để bạn bè liên hệ trực tiếp..."
+                    value={postContactInfo}
+                    onChange={(e) => setPostContactInfo(e.target.value)}
+                    className="w-full text-xs px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                  />
+                </div>
+              </div>
 
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
@@ -1249,17 +1284,38 @@ export default function CommunityPage({ user }) {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-1 border-t border-[#F1E5D8] dark:border-[#2B3A4F] text-[11px]">
-                      <span className="text-[#748092]">Qua: {partner.contactMethod}</span>
-                      <button 
-                        onClick={() => {
-                          playClickSound();
-                          setActiveContactModal(partner);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-[#45B97C] text-white text-[10px] font-bold hover:bg-[#3AA56E] transition-colors"
-                      >
-                        Xem liên hệ
-                      </button>
+                    {/* Hiển thị thông tin liên hệ rõ ràng trực tiếp trên thẻ */}
+                    <div className="pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2 shadow-xs">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#FFF9F2] dark:bg-[#131B24] text-[#E85D3F] border border-[#E85D3F]/25 uppercase shrink-0">
+                            {partner.contactMethod || 'Liên hệ'}
+                          </span>
+                          <span className="text-xs font-mono font-bold text-[#243447] dark:text-white truncate">
+                            {partner.contactInfo || partner.contact || 'Chưa cập nhật'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {(partner.contactInfo || partner.contact) && (
+                            <button
+                              onClick={() => handleCopyContact(partner.contactInfo || partner.contact)}
+                              className="p-1.5 rounded-lg bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] hover:text-[#E85D3F] transition-colors cursor-pointer"
+                              title="Sao chép thông tin liên hệ"
+                            >
+                              <Copy size={13} />
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => {
+                              playClickSound();
+                              setActiveContactModal(partner);
+                            }}
+                            className="px-2 py-1 rounded-lg bg-[#45B97C] text-white text-[10px] font-bold hover:bg-[#3AA56E] transition-colors cursor-pointer"
+                          >
+                            Chi tiết
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1398,18 +1454,22 @@ export default function CommunityPage({ user }) {
               <h3 className="text-base font-bold text-[#243447] dark:text-white">
                 {activeContactModal.name}
               </h3>
-              <p className="text-xs text-[#E85D3F] font-bold">Mục tiêu: {activeContactModal.level}</p>
-              <p className="text-xs text-[#748092] dark:text-[#94A3B8]">{activeContactModal.goal}</p>
+              <p className="text-xs text-[#E85D3F] font-bold">Mục tiêu: {activeContactModal.level || 'HSK 1'}</p>
+              <p className="text-xs text-[#748092] dark:text-[#94A3B8]">{activeContactModal.goal || 'Luyện phản xạ giao tiếp'}</p>
             </div>
 
             <div className="p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2">
-              <div className="text-left">
-                <span className="text-[10px] text-[#748092] block font-bold uppercase">{activeContactModal.contactMethod}</span>
-                <span className="text-xs font-mono font-bold text-[#243447] dark:text-white">{activeContactModal.contactInfo}</span>
+              <div className="text-left min-w-0">
+                <span className="text-[10px] text-[#748092] block font-bold uppercase">
+                  {activeContactModal.contactMethod || 'Kênh liên hệ'}
+                </span>
+                <span className="text-xs font-mono font-bold text-[#243447] dark:text-white truncate block">
+                  {activeContactModal.contactInfo || activeContactModal.contact || 'Chưa cung cấp'}
+                </span>
               </div>
               <button
-                onClick={() => handleCopyContact(activeContactModal.contactInfo)}
-                className="p-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#E85D3F] hover:bg-[#FDEEEB] transition-colors"
+                onClick={() => handleCopyContact(activeContactModal.contactInfo || activeContactModal.contact)}
+                className="p-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#E85D3F] hover:bg-[#FDEEEB] transition-colors cursor-pointer shrink-0"
                 title="Sao chép"
               >
                 <Copy size={14} />
