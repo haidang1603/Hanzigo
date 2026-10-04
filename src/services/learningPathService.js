@@ -268,15 +268,76 @@ export function getSkillMastery(user = null) {
     if (saved) return JSON.parse(saved);
   } catch {}
 
-  // Base radar profile
+  // Calculate purely from REAL user learning activity!
+  // If the user hasn't studied or tested yet, all skills start honestly at 0%.
+  let vocabCount = 0;
+  let pronounceCount = 0;
+  let writingCount = 0;
+  let completedLessonsCount = 0;
+
+  try {
+    const vKey = getUserStorageKey('hanzigo_vocab_remembered', user);
+    const vSaved = localStorage.getItem(vKey) || (user ? null : localStorage.getItem('hanzigo_vocab_remembered'));
+    if (vSaved) {
+      const arr = JSON.parse(vSaved);
+      if (Array.isArray(arr)) vocabCount = arr.length;
+    }
+
+    const pKey = getUserStorageKey('hanzigo_pronounce_history', user);
+    const pSaved = localStorage.getItem(pKey) || (user ? null : localStorage.getItem('hanzigo_pronounce_history'));
+    if (pSaved) {
+      const arr = JSON.parse(pSaved);
+      if (Array.isArray(arr)) pronounceCount = arr.length;
+    }
+
+    const wKey = getUserStorageKey('hanzigo_custom_writing_chars', user);
+    const wSaved = localStorage.getItem(wKey) || (user ? null : localStorage.getItem('hanzigo_custom_writing_chars'));
+    if (wSaved) {
+      const arr = JSON.parse(wSaved);
+      if (Array.isArray(arr)) writingCount = arr.length;
+    }
+
+    const jKey = getUserStorageKey(STORAGE_KEYS.JOURNEY_PROGRESS, user);
+    const jSaved = localStorage.getItem(jKey);
+    if (jSaved) {
+      const parsed = JSON.parse(jSaved);
+      completedLessonsCount = Object.keys(parsed.completedLessons || {}).length;
+    }
+
+    // If user completed diagnostic placement test, use their authentic test score
+    const ptKey = getUserStorageKey(STORAGE_KEYS.PLACEMENT_RESULT, user);
+    const ptSaved = localStorage.getItem(ptKey);
+    if (ptSaved) {
+      const ptResult = JSON.parse(ptSaved);
+      if (ptResult && typeof ptResult.percentage === 'number') {
+        const baseScore = Math.min(100, Math.round(ptResult.percentage));
+        return {
+          listening: baseScore,
+          speaking: baseScore,
+          reading: baseScore,
+          writing: Math.max(0, baseScore - 10),
+          vocabulary: baseScore,
+          hanzi: Math.max(0, baseScore - 5),
+          grammar: baseScore
+        };
+      }
+    }
+  } catch {}
+
+  // Compute real percentages based on authentic milestones
+  const vocabScore = Math.min(100, Math.round((vocabCount / 100) * 100));
+  const speakingScore = Math.min(100, Math.round((pronounceCount / 15) * 100));
+  const writingScore = Math.min(100, Math.round((writingCount / 10) * 100));
+  const lessonFactor = Math.min(100, Math.round((completedLessonsCount / 20) * 100));
+
   return {
-    listening: 68,
-    speaking: 55,
-    reading: 78,
-    writing: 62,
-    vocabulary: 80,
-    hanzi: 65,
-    grammar: 70
+    listening: lessonFactor > 0 ? lessonFactor : 0,
+    speaking: speakingScore > 0 ? speakingScore : (lessonFactor > 0 ? Math.round(lessonFactor * 0.9) : 0),
+    reading: lessonFactor > 0 ? lessonFactor : 0,
+    writing: writingScore > 0 ? writingScore : (lessonFactor > 0 ? Math.round(lessonFactor * 0.8) : 0),
+    vocabulary: vocabScore > 0 ? vocabScore : 0,
+    hanzi: writingScore > 0 ? writingScore : 0,
+    grammar: lessonFactor > 0 ? lessonFactor : 0
   };
 }
 

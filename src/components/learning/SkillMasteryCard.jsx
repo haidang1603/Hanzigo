@@ -46,6 +46,14 @@ export default function SkillMasteryCard({ user, onNavigateTab }) {
         </div>
       </div>
 
+      {/* Notice when user has 0% real activity */}
+      {skills.every(s => s.score === 0) && (
+        <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2.5">
+          <span className="text-base">💡</span>
+          <span>Chưa có dữ liệu học tập thực tế. Điểm số bắt đầu từ 0% và sẽ tăng dần khi bạn làm bài học, luyện phát âm, hoặc làm bài <strong>Kiểm tra trình độ</strong>!</span>
+        </div>
+      )}
+
       {/* Skills progress bars */}
       <div className="space-y-3.5">
         {skills.map(s => {
@@ -64,7 +72,7 @@ export default function SkillMasteryCard({ user, onNavigateTab }) {
               <div className="h-2 w-full rounded-full bg-[#F1E5D8] dark:bg-[#131B24] overflow-hidden">
                 <div 
                   className={`h-full rounded-full bg-gradient-to-r ${s.color} transition-all duration-500`}
-                  style={{ width: `${Math.min(100, Math.max(10, s.score))}%` }}
+                  style={{ width: `${Math.min(100, s.score)}%` }}
                 />
               </div>
             </div>
