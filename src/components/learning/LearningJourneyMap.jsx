@@ -13,7 +13,11 @@ import {
   RotateCcw,
   BarChart3,
   Calendar,
-  Gift
+  Gift,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  MapPin
 } from 'lucide-react';
 import { 
   getAllLevels, 
@@ -23,7 +27,8 @@ import {
   getLessonNodeStatus, 
   isBossUnlocked,
   getBossChallengeByChapter,
-  getLevelById
+  getLevelById,
+  getSkillMastery
 } from '../../services/learningPathService';
 import { playClickSound } from '../../utils/audio';
 
@@ -49,8 +54,199 @@ export default function LearningJourneyMap({
     ? Math.round((completedCount / allLevelLessons.length) * 100) 
     : 0;
 
+  const [showSyllabusDrawer, setShowSyllabusDrawer] = useState(false);
+  const skillMastery = getSkillMastery(user);
+
+  // Active next lesson to continue
+  const nextActiveLesson = allLevelLessons.find(l => !progress.completedLessons[l.id]) || allLevelLessons[0];
+
   return (
     <div className="space-y-6">
+      {/* 0. 🇨🇳 HSK JOURNEY MASTER DASHBOARD (HSK 3.0 Real-time Stats) */}
+      <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E1B4B] text-white shadow-xl border border-white/10 space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#E85D3F] text-white shadow-xs">
+                🇨🇳 HSK OFFICIAL JOURNEY
+              </span>
+              <span className="text-xs text-white/70 font-medium">
+                {selectedLevel.hskStage || 'Stage 1: HSK 1–3'}
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black flex items-center gap-2.5">
+              <span>{selectedLevel.icon}</span>
+              <span>{selectedLevel.code}: {selectedLevel.name}</span>
+              <span className="text-sm font-normal text-white/60 hidden sm:inline">
+                ({selectedLevel.chineseName})
+              </span>
+            </h2>
+            <p className="text-xs text-white/70 max-w-xl">
+              {selectedLevel.tagline}
+            </p>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              onClick={() => {
+                playClickSound();
+                setShowSyllabusDrawer(!showSyllabusDrawer);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <BookOpen size={15} />
+              <span>Khung HSK 3.0</span>
+              {showSyllabusDrawer ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+
+            {nextActiveLesson && (
+              <button
+                onClick={() => {
+                  playClickSound();
+                  onSelectLesson(nextActiveLesson);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#F4B942] hover:opacity-95 text-white text-xs font-bold shadow-lg shadow-[#E85D3F]/30 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+              >
+                <span>Học tiếp bài {nextActiveLesson.lessonNumber || 1}</span>
+                <ChevronRight size={15} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Level Progression Progress Bar */}
+        <div className="space-y-1.5 pt-1">
+          <div className="flex items-center justify-between text-xs font-semibold">
+            <span className="text-white/75">
+              Tiến độ cấp độ: {completedCount}/{allLevelLessons.length} bài học
+            </span>
+            <span className="font-mono text-amber-400 font-bold">
+              {levelProgressPercent}% HOÀN THÀNH
+            </span>
+          </div>
+          <div className="h-3 w-full rounded-full bg-white/15 overflow-hidden p-0.5">
+            <div 
+              className="h-full rounded-full bg-gradient-to-r from-[#45B97C] via-[#3B82F6] to-[#E85D3F] transition-all duration-700"
+              style={{ width: `${Math.max(4, levelProgressPercent)}%` }}
+            />
+          </div>
+        </div>
+
+        {/* 6 Skill Breakdown Bars according to HSK Test standard */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pt-2 border-t border-white/10">
+          <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5">
+            <div className="text-[10px] text-white/60 font-semibold">Từ vựng (Vocab)</div>
+            <div className="text-lg font-black text-amber-400">{skillMastery.vocabulary}%</div>
+            <div className="h-1.5 rounded-full bg-white/10 mt-1 overflow-hidden">
+              <div className="h-full bg-amber-400 rounded-full" style={{ width: `${skillMastery.vocabulary}%` }} />
+            </div>
+          </div>
+          <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5">
+            <div className="text-[10px] text-white/60 font-semibold">Ngữ pháp (Grammar)</div>
+            <div className="text-lg font-black text-blue-400">{skillMastery.grammar}%</div>
+            <div className="h-1.5 rounded-full bg-white/10 mt-1 overflow-hidden">
+              <div className="h-full bg-blue-400 rounded-full" style={{ width: `${skillMastery.grammar}%` }} />
+            </div>
+          </div>
+          <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5">
+            <div className="text-[10px] text-white/60 font-semibold">Nghe hiểu (Listening)</div>
+            <div className="text-lg font-black text-emerald-400">{skillMastery.listening}%</div>
+            <div className="h-1.5 rounded-full bg-white/10 mt-1 overflow-hidden">
+              <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${skillMastery.listening}%` }} />
+            </div>
+          </div>
+          <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5">
+            <div className="text-[10px] text-white/60 font-semibold">Đọc hiểu (Reading)</div>
+            <div className="text-lg font-black text-purple-400">{skillMastery.reading}%</div>
+            <div className="h-1.5 rounded-full bg-white/10 mt-1 overflow-hidden">
+              <div className="h-full bg-purple-400 rounded-full" style={{ width: `${skillMastery.reading}%` }} />
+            </div>
+          </div>
+          <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5">
+            <div className="text-[10px] text-white/60 font-semibold">Viết câu (Writing)</div>
+            <div className="text-lg font-black text-rose-400">{skillMastery.writing}%</div>
+            <div className="h-1.5 rounded-full bg-white/10 mt-1 overflow-hidden">
+              <div className="h-full bg-rose-400 rounded-full" style={{ width: `${skillMastery.writing}%` }} />
+            </div>
+          </div>
+          <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5">
+            <div className="text-[10px] text-white/60 font-semibold">Nói & Phản xạ (Speaking)</div>
+            <div className="text-lg font-black text-orange-400">{skillMastery.speaking}%</div>
+            <div className="h-1.5 rounded-full bg-white/10 mt-1 overflow-hidden">
+              <div className="h-full bg-orange-400 rounded-full" style={{ width: `${skillMastery.speaking}%` }} />
+            </div>
+          </div>
+        </div>
+
+        {/* 5-Pillar Syllabus Dropdown / Drawer */}
+        {showSyllabusDrawer && selectedLevel.syllabus5Pillars && (
+          <div className="p-5 rounded-2xl bg-white/10 border border-white/15 space-y-4 animate-in fade-in duration-300">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                <span>📚</span>
+                <span>Khung Đào Tạo HSK 3.0: 5 Thành Phần Cốt Lõi</span>
+              </div>
+              <div className="text-[11px] text-white/60">
+                {selectedLevel.code} • Chuẩn khảo thí Quốc gia Trung Quốc
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+              {/* Pillar 1: Tasks */}
+              <div className="p-3 rounded-xl bg-black/25 border border-white/10 space-y-1.5">
+                <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                  <span>🎯</span> Nhiệm vụ giao tiếp (Tasks)
+                </span>
+                <ul className="space-y-1 text-white/80 list-disc list-inside text-[11px]">
+                  {selectedLevel.syllabus5Pillars.tasks.map((task, i) => (
+                    <li key={i}>{task}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Pillar 2: Topics */}
+              <div className="p-3 rounded-xl bg-black/25 border border-white/10 space-y-1.5">
+                <span className="font-bold text-blue-400 flex items-center gap-1.5">
+                  <span>💬</span> Chủ đề đời sống (Topics)
+                </span>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {selectedLevel.syllabus5Pillars.topics.map((tp, i) => (
+                    <span key={i} className="px-2 py-0.5 rounded-md bg-white/10 text-white/90 text-[10px]">
+                      {tp}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pillar 3 & 4: Vocab, Grammar, Hanzi */}
+              <div className="p-3 rounded-xl bg-black/25 border border-white/10 space-y-2">
+                <span className="font-bold text-amber-400 flex items-center gap-1.5">
+                  <span>📐</span> Chỉ tiêu HSK 3.0
+                </span>
+                <div className="grid grid-cols-3 gap-1.5 text-center text-[10px]">
+                  <div className="p-1.5 rounded-lg bg-white/5">
+                    <div className="text-white/60">Từ vựng</div>
+                    <div className="font-black text-amber-400 text-sm">{selectedLevel.syllabus5Pillars.vocabularyTarget}</div>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-white/5">
+                    <div className="text-white/60">Ngữ pháp</div>
+                    <div className="font-black text-blue-400 text-sm">{selectedLevel.syllabus5Pillars.grammarTarget}</div>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-white/5">
+                    <div className="text-white/60">Hán tự</div>
+                    <div className="font-black text-rose-400 text-sm">{selectedLevel.syllabus5Pillars.hanziTarget}</div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-white/60 italic leading-tight">
+                  Tập trung kỹ năng: {selectedLevel.syllabus5Pillars.skillsFocus.listening}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* 1. Placement Test Banner (If not yet taken or want to reassess) */}
       <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#FFF9F2] via-[#FDEEEB] to-[#FEF8EA] dark:from-[#1E293B] dark:via-[#2D1E1B] dark:to-[#222B1E] border border-[#E85D3F]/25 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
@@ -329,13 +525,32 @@ export default function LearningJourneyMap({
                       )}
                     </button>
 
-                    <div className="mt-2 text-center max-w-56 p-2 rounded-xl bg-white/90 dark:bg-[#1E293B]/90 border border-red-500/30 shadow-xs">
-                      <p className="text-xs font-bold text-red-600 dark:text-red-400 truncate">
+                    <div className="mt-2 text-center max-w-64 p-2.5 rounded-xl bg-white/95 dark:bg-[#1E293B]/95 border border-red-500/30 shadow-xs space-y-1">
+                      <p className="text-xs font-bold text-red-600 dark:text-red-400">
                         {bossChallenge.title}
                       </p>
                       <p className="text-[10px] text-[#748092]">
-                        {bossUnlocked ? 'Sẵn sàng khiêu chiến (+200 XP)' : 'Hoàn thành các bài trên để mở khóa'}
+                        {bossUnlocked ? `Sẵn sàng khiêu chiến (+${bossChallenge.xpReward} XP)` : 'Hoàn thành các bài trên để mở khóa'}
                       </p>
+
+                      {bossChallenge.stages && bossChallenge.stages.length >= 5 && (
+                        <div className="pt-1 border-t border-red-100 dark:border-red-900/40">
+                          <span className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400 block pb-0.5">
+                            5 ẢI SINH TỒN THỰC CHIẾN:
+                          </span>
+                          <div className="flex flex-wrap items-center justify-center gap-1 text-[10px] font-semibold text-[#243447] dark:text-white">
+                            <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800">✈️ Sân bay</span>
+                            <span>➔</span>
+                            <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800">🏨 Khách sạn</span>
+                            <span>➔</span>
+                            <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800">🍜 Nhà hàng</span>
+                            <span>➔</span>
+                            <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800">🚇 Tàu điện</span>
+                            <span>➔</span>
+                            <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800">🛍️ Mua sắm</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

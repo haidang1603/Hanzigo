@@ -7,104 +7,268 @@ export const LEARNING_LEVELS = [
   {
     id: 'lvl-1',
     levelNumber: 1,
-    code: 'LVL 1',
-    name: 'Khởi động',
+    code: 'HSK 1',
+    hskLevel: 'HSK 1',
+    hskStage: 'Stage 1: HSK 1–3 (Sơ cấp & Giao tiếp)',
+    name: 'Khởi đầu & Nền tảng',
     chineseName: '中文启程',
-    tagline: 'Bắt đầu hành trình tiếng Trung',
-    description: 'Làm quen tiếng Trung, Pinyin, 23 thanh mẫu, 24 vận mẫu, 4 thanh điệu, thanh nhẹ, biến điệu và nét chữ Hán cơ bản.',
+    tagline: 'Xây dựng nền móng phát âm & giao tiếp sơ khởi',
+    description: 'Nắm vững Pinyin, 23 thanh mẫu, 24 vận mẫu, 4 thanh điệu, quy tắc biến điệu, Hán tự cơ bản và mẫu câu chào hỏi làm quen.',
     color: '#45B97C',
     lightColor: '#EBF8F2',
     darkBg: '#162B21',
     icon: '🌱',
-    targetAudience: 'Người chưa biết gì hoặc muốn chuẩn hóa phát âm',
+    targetAudience: 'Người mới bắt đầu từ con số 0 hoặc cần chuẩn hóa phát âm',
     totalChapters: 4,
     totalLessons: 20,
-    xpTotalReward: 1600
+    xpTotalReward: 1600,
+    syllabus5Pillars: {
+      tasks: [
+        'Chào hỏi, cảm ơn, xin lỗi và tạm biệt lịch sự',
+        'Giới thiệu bản thân: họ tên, quốc tịch, tuổi tác, nghề nghiệp',
+        'Đếm số 1-100, hỏi giá tiền và mua sắm đồ uống cơ bản',
+        'Nói về gia đình, người thân và lượng từ 口 (kǒu)',
+        'Hỏi và trả lời ngày tháng, thứ trong tuần, giờ giấc'
+      ],
+      topics: ['Ngữ âm Pinyin', 'Chào hỏi & Xưng hô', 'Bản thân & Gia đình', 'Số đếm & Mua sắm', 'Thời gian & Lịch sinh hoạt'],
+      vocabularyTarget: 500,
+      grammarTarget: 48,
+      hanziTarget: 300,
+      skillsFocus: {
+        listening: 'Nhận diện câu đơn giản, phân biệt âm tiết và thanh điệu',
+        speaking: 'Giới thiệu bản thân và trả lời câu hỏi trực tiếp',
+        reading: 'Đọc hiểu câu ngắn có Pinyin và biển báo quen thuộc',
+        writing: 'Viết đúng thứ tự nét bút các chữ Hán căn bản'
+      }
+    }
   },
   {
     id: 'lvl-2',
     levelNumber: 2,
-    code: 'LVL 2',
-    name: 'Sinh tồn',
+    code: 'HSK 2',
+    hskLevel: 'HSK 2',
+    hskStage: 'Stage 1: HSK 1–3 (Sơ cấp & Giao tiếp)',
+    name: 'Sinh hoạt & Tình huống quen thuộc',
     chineseName: '日常中文',
-    tagline: 'Tiếng Trung đời thường',
-    description: 'Giao tiếp sinh hoạt cơ bản: Chào hỏi, giới thiệu bản thân, số đếm, mua sắm, gọi món, thời gian, đi lại và hỏi đường.',
+    tagline: 'Xử lý trôi chảy các tình huống sinh hoạt thường nhật',
+    description: 'Mở rộng vốn từ vựng sinh hoạt: Ăn uống tại nhà hàng, đi lại, hỏi đường, mua sắm mặc cả, thời tiết và khám sức khỏe cơ bản.',
     color: '#F4B942',
     lightColor: '#FEF8EA',
     darkBg: '#2E230B',
     icon: '🌿',
-    targetAudience: 'Có thể tự tin xử lý mọi tình huống sinh hoạt hàng ngày',
+    targetAudience: 'Người học bắt đầu phản xạ trực tiếp, không dịch từng chữ trong đầu',
     totalChapters: 4,
     totalLessons: 20,
-    xpTotalReward: 1800
+    xpTotalReward: 1800,
+    syllabus5Pillars: {
+      tasks: [
+        'Gọi món tại quán ăn Trung Hoa và yêu cầu khẩu vị (ít cay, không hành)',
+        'Hỏi đường và chỉ đường (Đông Tây Nam Bắc, rẽ trái/phải, đi thẳng)',
+        'Mua sắm, hỏi size, màu sắc và thanh toán qua WeChat/Alipay',
+        'So sánh thời tiết hôm nay và hôm qua với câu chữ 比',
+        'Miêu tả triệu chứng sức khỏe đơn giản khi đi khám bệnh'
+      ],
+      topics: ['Nhà hàng & Ẩm thực', 'Phương tiện & Đi lại', 'Thời tiết & Bốn mùa', 'Mua sắm & Giá cả', 'Sức khỏe & Khám bệnh'],
+      vocabularyTarget: 1272,
+      grammarTarget: 96,
+      hanziTarget: 600,
+      skillsFocus: {
+        listening: 'Nghe hiểu đoạn đối thoại ngắn 2-3 lượt lời trong sinh hoạt',
+        speaking: 'Giao tiếp tình huống không cần dịch nhẩm sang tiếng Việt',
+        reading: 'Đọc hiểu mẩu thông báo, thực đơn món ăn, tin nhắn ngắn',
+        writing: 'Viết câu đơn hoàn chỉnh với trợ từ và lượng từ phù hợp'
+      }
+    }
   },
   {
     id: 'lvl-3',
     levelNumber: 3,
-    code: 'LVL 3',
-    name: 'Nền tảng',
-    chineseName: '中文基础',
-    tagline: 'Nền tảng tiếng Trung',
-    description: 'Từ vựng cốt lõi, ngữ pháp, lượng từ, so sánh, phủ định, câu chữ 把, bị động chữ 被, giúp người học tự tạo câu độc lập.',
+    code: 'HSK 3',
+    hskLevel: 'HSK 3',
+    hskStage: 'Stage 1: HSK 1–3 (Sơ cấp & Giao tiếp)',
+    name: 'Giao tiếp thực tế & Kể chuyện',
+    chineseName: '真实交流',
+    tagline: 'Mốc chuyển mình: Thực hiện các nhiệm vụ giao tiếp độc lập',
+    description: 'Theo chuẩn HSK 3.0: Nghe, Đọc, Viết toàn diện. Hội thoại dài, kể lại câu chuyện, đưa ra ý kiến cá nhân và viết đoạn văn mạch lạc.',
     color: '#3B82F6',
     lightColor: '#EFF6FF',
     darkBg: '#13233D',
     icon: '🌳',
-    targetAudience: 'Nắm chắc ngữ pháp để tự ghép câu thay vì học vẹt mẫu câu',
+    targetAudience: 'Tự tin du lịch tự túc, học tập và làm việc cơ bản tại Trung Quốc',
     totalChapters: 4,
     totalLessons: 20,
-    xpTotalReward: 2000
+    xpTotalReward: 2000,
+    syllabus5Pillars: {
+      tasks: [
+        'Tự xử lý trọn vẹn chuyến du lịch Trung Quốc 3 ngày (Sân bay -> Khách sạn -> Ăn uống -> Đi lại -> Mua sắm)',
+        'Sử dụng thành thạo câu chữ 把 và câu bị động chữ 被',
+        'Kể lại một trải nghiệm du lịch hoặc hoạt động cuối tuần',
+        'Trình bày ý kiến và giải thích nguyên nhân bằng liên từ 因为...所以...',
+        'Viết đoạn văn ngắn 80-100 chữ đúng ngữ pháp và chấm câu'
+      ],
+      topics: ['Du lịch tự túc', 'Trường học & Thi cử', 'Công việc văn phòng', 'Giao thông công cộng', 'Giải trí & Sở thích'],
+      vocabularyTarget: 2245,
+      grammarTarget: 144,
+      hanziTarget: 900,
+      skillsFocus: {
+        listening: 'Nghe hiểu hội thoại dài và nắm bắt chi tiết then chốt',
+        speaking: 'Phản xạ kể chuyện và đối đáp tự nhiên trong phỏng vấn ngắn',
+        reading: 'Đọc hiểu mẩu tin tức ngắn, câu chuyện ngụ ngôn, hướng dẫn sử dụng',
+        writing: 'Viết đoạn văn kết nối các câu bằng liên từ logic'
+      }
+    }
   },
   {
     id: 'lvl-4',
     levelNumber: 4,
-    code: 'LVL 4',
-    name: 'Giao tiếp',
-    chineseName: '真实交流',
-    tagline: 'Giao tiếp thực tế',
-    description: 'Listening, Speaking, Shadowing, phản xạ hội thoại: Đi du lịch, đặt phòng khách sạn, gọi điện thoại, mua sắm online Taobao/1688.',
+    code: 'HSK 4',
+    hskLevel: 'HSK 4',
+    hskStage: 'Stage 2: HSK 4–6 (Trung cấp & Độc lập)',
+    name: 'Sử dụng tiếng Trung độc lập',
+    chineseName: '独立应用',
+    tagline: 'Thảo luận đa chủ đề và giao tiếp tự nhiên với người bản xứ',
+    description: 'Thảo luận sâu về giáo dục, công việc, công nghệ số, môi trường, cảm xúc và xã hội; tăng tốc độ đọc và nghe hiểu chuyên đề.',
     color: '#E85D3F',
     lightColor: '#FDEEEB',
     darkBg: '#2D1E1B',
-    icon: '🎤',
-    targetAudience: 'Tăng tốc độ phản xạ nghe nói tự nhiên không cần dịch nhẩm',
+    icon: '🔥',
+    targetAudience: 'Ứng tuyển công ty Trung Quốc, du học đại học và giao tiếp công sở',
     totalChapters: 4,
     totalLessons: 20,
-    xpTotalReward: 2200
+    xpTotalReward: 2200,
+    syllabus5Pillars: {
+      tasks: [
+        'Tham gia phỏng vấn xin việc và trình bày thế mạnh, kinh nghiệm cá nhân',
+        'Viết CV tiếng Trung và soạn thảo email trao đổi công việc',
+        'Thảo luận về lối sống số: WeChat Pay, mua sắm online Taobao/1688',
+        'Bày tỏ quan điểm cá nhân về vấn đề xã hội và môi trường',
+        'Thuyết trình ngắn 2-3 phút về một đề tài quan tâm'
+      ],
+      topics: ['Giáo dục & Nghề nghiệp', 'Khoa học công nghệ', 'Môi trường sống', 'Xã hội hiện đại', 'Tâm lý & Cảm xúc'],
+      vocabularyTarget: 3245,
+      grammarTarget: 216,
+      hanziTarget: 1200,
+      skillsFocus: {
+        listening: 'Nghe hiểu bài giảng ngắn, phỏng vấn truyền thanh và tin tức phổ thông',
+        speaking: 'Thuyết trình mạch lạc, phản biện và trao đổi chuyên môn',
+        reading: 'Đọc hiểu bài luận, văn bản xã hội và phân tích cấu trúc câu phức',
+        writing: 'Viết bài luận ngắn 150-200 chữ có luận điểm và dẫn chứng rõ ràng'
+      }
+    }
   },
   {
     id: 'lvl-5',
     levelNumber: 5,
-    code: 'LVL 5',
-    name: 'Đời sống Trung Quốc',
-    chineseName: '中国生活',
-    tagline: 'Cuộc sống Trung Quốc',
-    description: 'Văn hóa, mạng xã hội Douyin/Weibo, ẩm thực 8 đại trường phái, internet slang, thành ngữ quen thuộc, giao tiếp chuẩn bản xứ.',
+    code: 'HSK 5',
+    hskLevel: 'HSK 5',
+    hskStage: 'Stage 2: HSK 4–6 (Trung cấp & Độc lập)',
+    name: 'Thành thạo & Tiếp nhận thông tin gốc',
+    chineseName: '流利自如',
+    tagline: 'Tiếng Trung trở thành công cụ tiếp nhận thông tin thực thụ',
+    description: 'Đọc báo, xem phim, nghe podcast, làm quen giải thích hoàn toàn bằng tiếng Trung (🇨🇳 → 🇨🇳) và thành ngữ quen thuộc.',
     color: '#8B5CF6',
     lightColor: '#F5F3FF',
     darkBg: '#231B38',
-    icon: '🌏',
-    targetAudience: 'Hiểu cách người bản xứ nói chuyện trong đời thực và trên mạng',
+    icon: '🚀',
+    targetAudience: 'Làm việc chuyên nghiệp tại doanh nghiệp đa quốc gia, du học thạc sĩ',
     totalChapters: 4,
     totalLessons: 20,
-    xpTotalReward: 2400
+    xpTotalReward: 2400,
+    syllabus5Pillars: {
+      tasks: [
+        'Đọc hiểu báo chí Nhân Dân Nhật Báo, Tân Hoa Xã không cần tra từ điển',
+        'Xem phim và video tài liệu không cần phụ đề tiếng Việt',
+        'Hiểu các câu nói lóng (slang), trào lưu mạng Douyin/Weibo',
+        'Sử dụng thành ngữ 4 chữ chính xác vào bài viết và giao tiếp',
+        'Viết bài văn nghị luận 250-400 chữ với phong cách văn bản chuẩn mực'
+      ],
+      topics: ['Tin tức & Thời sự', 'Kinh tế & Thị trường', 'Văn hóa & Lịch sử', 'Nghệ thuật & Điện ảnh', 'Công nghệ số'],
+      vocabularyTarget: 4316,
+      grammarTarget: 288,
+      hanziTarget: 1500,
+      skillsFocus: {
+        listening: 'Nghe hiểu tin tức truyền hình, tọa đàm bàn tròn và phim ảnh',
+        speaking: 'Phát biểu ý kiến trang trọng và sử dụng thành ngữ tự nhiên',
+        reading: 'Đọc báo chí, tác phẩm văn học ngắn với tốc độ nhanh',
+        writing: 'Viết văn phong thư từ thương mại và báo cáo tổng kết'
+      }
+    }
   },
   {
     id: 'lvl-6',
     levelNumber: 6,
-    code: 'LVL 6',
-    name: 'Chinese Master',
-    chineseName: '中文大师',
-    tagline: 'Bậc thầy tiếng Trung',
-    description: 'Thành ngữ kinh điển, đàm phán thương mại, phỏng vấn xin việc, đọc báo tài chính, chinh phục HSK 4-6 chuyên sâu.',
+    code: 'HSK 6',
+    hskLevel: 'HSK 6',
+    hskStage: 'Stage 2: HSK 4–6 (Trung cấp & Độc lập)',
+    name: 'Nâng cao & Bút pháp học thuật',
+    chineseName: '精深高阶',
+    tagline: 'Hiểu sâu và diễn đạt tinh tế trong mọi bối cảnh trừu tượng',
+    description: 'Chinh phục HSK 6: Đàm phán thương mại quốc tế, tranh luận học thuật, phân tích tác phẩm văn học, collocation và bút pháp cổ điển.',
     color: '#E11D48',
     lightColor: '#FFF1F2',
     darkBg: '#36131B',
     icon: '🐉',
-    targetAudience: 'Sử dụng tiếng Trung thành thạo trong học thuật và công việc',
+    targetAudience: 'Chuyên gia, dịch giả, nghiên cứu sinh và đàm phán cấp cao',
     totalChapters: 4,
     totalLessons: 20,
-    xpTotalReward: 2600
+    xpTotalReward: 2600,
+    syllabus5Pillars: {
+      tasks: [
+        'Đàm phán hợp đồng kinh tế và soạn thảo biên bản điều khoản pháp lý',
+        'Tranh luận và bảo vệ luận điểm trong hội thảo học thuật',
+        'Tóm tắt văn bản dài 1000 chữ thành bài tóm lược súc tích 400 chữ',
+        'Vận dụng linh hoạt các cặp từ đồng nghĩa, phản nghĩa và ngữ thái tinh tế',
+        'Cảm thụ văn phong cổ phong và thành ngữ điển cố Trung Hoa'
+      ],
+      topics: ['Học thuật chuyên sâu', 'Thương mại quốc tế', 'Triết học & Nhân văn', 'Luật pháp & Ngoại giao'],
+      vocabularyTarget: 5456,
+      grammarTarget: 360,
+      hanziTarget: 1800,
+      skillsFocus: {
+        listening: 'Nắm bắt các thông điệp ẩn ý, châm biếm và thuật ngữ chuyên ngành',
+        speaking: 'Diễn thuyết trước công chúng và ứng biến linh hoạt',
+        reading: 'Đọc hiểu báo cáo khoa học, văn kiện pháp lý và tác phẩm cổ văn',
+        writing: 'Soạn thảo luận án, báo cáo tài chính và thư từ ngoại giao'
+      }
+    }
+  },
+  {
+    id: 'lvl-7',
+    levelNumber: 7,
+    code: 'HSK 7-9',
+    hskLevel: 'HSK 7-9',
+    hskStage: 'Stage 3: HSK 7–9 (Cao cấp & Bậc thầy)',
+    name: 'Chinese Master & Phiên dịch',
+    chineseName: '中文大师',
+    tagline: 'Đỉnh cao HSK 3.0: Nghe, Nói, Đọc, Viết và Dịch thuật chuyên nghiệp',
+    description: 'Kiến trúc HSK 7-9 chuẩn mới: Đánh giá toàn diện 5 kỹ năng Nghe - Nói - Đọc - Viết - Dịch (Biên dịch & Phiên dịch đồng thời).',
+    color: '#0D9488',
+    lightColor: '#F0FDFA',
+    darkBg: '#132E2B',
+    icon: '👑',
+    targetAudience: 'Chuyên gia ngôn ngữ, dịch cabin, nhà ngoại giao và giảng viên cao cấp',
+    totalChapters: 4,
+    totalLessons: 20,
+    xpTotalReward: 3000,
+    syllabus5Pillars: {
+      tasks: [
+        'Biên dịch tài liệu chính luận, pháp luật, kỹ thuật Trung - Việt 2 chiều',
+        'Thực hành phiên dịch nối tiếp (consecutive) và mô phỏng dịch cabin',
+        'Phân tích tư liệu Hán ngữ cổ đại và đối sánh văn hóa Đông Á',
+        'Viết bài nghiên cứu chuyên môn đạt chuẩn học thuật quốc tế'
+      ],
+      topics: ['Ngoại giao & Chính sách', 'Biên phiên dịch chuyên nghiệp', 'Cổ thư & Điển tích', 'Nghiên cứu ngôn ngữ ứng dụng'],
+      vocabularyTarget: 11092,
+      grammarTarget: 572,
+      hanziTarget: 3000,
+      skillsFocus: {
+        listening: 'Hiểu các phương ngôn, khẩu âm vùng miền và phát biểu chính trị',
+        speaking: 'Hùng biện ngoại giao và đàm phán hiệp định đa phương',
+        reading: 'Phân tích văn bản cổ Hán văn và tài liệu nguyên bản',
+        writing: 'Viết bài nghiên cứu khoa học và văn kiện ngoại giao',
+        translation: 'Biên dịch chính xác và phiên dịch phản xạ tức thì'
+      }
+    }
   }
 ];
 
@@ -1339,6 +1503,154 @@ export const BOSS_CHALLENGES = [
         options: [
           { text: '好的，太感谢了！再见！', pinyin: 'Hǎo de, tài gǎnxiè le! Zàijiàn!', isCorrect: true, score: 25, feedback: 'Thắng lợi rực rỡ! Bạn đã vượt qua Boss Chapter 2!' },
           { text: '我是学生。', pinyin: 'Wǒ shì xuésheng.', isCorrect: false, score: 0, feedback: 'Không đúng tình huống.' }
+        ]
+      }
+    ]
+  },
+
+  // Boss Chapter 12 / HSK 3 Boss Exam: "Chuyến Du Lịch Tự Túc 3 Ngày Tại Trung Quốc"
+  {
+    id: 'boss-ch-12',
+    aliasId: 'boss-hsk-3',
+    chapterId: 'ch-12',
+    title: 'Đại Khảo Hạch HSK 3: Sinh Tồn Du Lịch Tự Túc 3 Ngày Tại Trung Quốc',
+    chineseTitle: 'HSK 3大考：中国三日游全境实战',
+    bossName: 'Hệ Thống Khảo Hạch Du Lịch Bản Xứ (Bắc Kinh - Thượng Hải)',
+    bossAvatar: '🇨🇳',
+    scenario: 'Bạn bắt đầu chuyến du lịch Trung Quốc 3 ngày một mình. Bạn phải tự mình vượt qua 5 ải sinh tồn liên hoàn: ✈️ Sân bay ➔ 🏨 Khách sạn ➔ 🍜 Nhà hàng ➔ 🚇 Tàu điện ngầm ➔ 🛍️ Mua sắm mà không dùng tiếng Anh hay Google Dịch!',
+    xpReward: 300,
+    requiredScoreToPass: 80,
+    stages: [
+      {
+        stageNumber: 1,
+        stageIcon: '✈️',
+        stageTitle: 'Trạm 1: Sân bay quốc tế Thủ đô Bắc Kinh (北京首都国际机场)',
+        bossDialogue: '您好，请出示您的护照和入境卡。请问您来中国做什么？计划停留几天？',
+        bossPinyin: 'Nín hǎo, qǐng chūshì nín de hùzhào hé rùjìng kǎ. Qǐngwèn nín lái Zhōngguó zuò shénme? Jìhuà tíngliú jǐ tiān?',
+        bossMeaning: 'Xin chào, vui lòng xuất trình hộ chiếu và tờ khai nhập cảnh. Xin hỏi bạn đến Trung Quốc làm gì? Dự định ở lại mấy ngày?',
+        prompt: 'Trả lời hải quan một cách tự tin rằng bạn đi du lịch và ở lại 3 ngày:',
+        options: [
+          { 
+            text: '您好！我是来旅游的，计划停留三天。这是我的护照和酒店预订单。', 
+            pinyin: 'Nín hǎo! Wǒ shì lái lǚyóu de, jìhuà tíngliú sān tiān. Zhè shì wǒ de hùzhào hé jiǔdiàn yùdìng dān.', 
+            isCorrect: true, 
+            score: 20, 
+            feedback: 'Xuất sắc! Câu trả lời mạch lạc, lễ phép và cung cấp giấy tờ kịp thời khiến nhân viên hải quan lập tức đóng dấu thông quan!' 
+          },
+          { 
+            text: '我不认识你，我要回家。', 
+            pinyin: 'Wǒ bú rènshi nǐ, wǒ yào huí jiā.', 
+            isCorrect: false, 
+            score: 0, 
+            feedback: 'Câu này sẽ khiến hải quan nghi ngờ và giữ bạn lại thẩm vấn đấy!' 
+          },
+          { 
+            text: '多少钱一杯？', 
+            pinyin: 'Duōshao qián yì bēi?', 
+            isCorrect: false, 
+            score: 0, 
+            feedback: 'Lạc đề, đây là quầy nhập cảnh không phải quán cà phê!' 
+          }
+        ]
+      },
+      {
+        stageNumber: 2,
+        stageIcon: '🏨',
+        stageTitle: 'Trạm 2: Quầy lễ tân khách sạn (酒店前台办理入住)',
+        bossDialogue: '欢迎光临！请问有预订吗？我们需要登记您的证件并收取押金。',
+        bossPinyin: 'Huānyíng guānglín! Qǐngwèn yǒu yùdìng ma? Wǒmen xūyào dēngjì nín de zhèngjiàn bìng shōuqǔ yājīn.',
+        bossMeaning: 'Kính chào quý khách! Xin hỏi quý khách có đặt phòng trước không? Chúng tôi cần đăng ký giấy tờ và thu tiền đặt cọc.',
+        prompt: 'Báo tên đặt phòng, xin phòng tầng cao yên tĩnh và hỏi mật khẩu Wi-Fi:',
+        options: [
+          { 
+            text: '您好，我预订了一间大床房。请问有高一点、安静一点的房间吗？还有WiFi密码是多少？', 
+            pinyin: 'Nín hǎo, wǒ yùdìng le yì jiān dàchuáng fáng. Qǐngwèn yǒu gāo yìdiǎn, ānjìng yìdiǎn de fángjiān ma? Hái yǒu WiFi mìmǎ shì duōshao?', 
+            isCorrect: true, 
+            score: 20, 
+            feedback: 'Rất ấn tượng! Sử dụng cấu trúc so sánh chữ 一点 (cao hơn một chút, yên tĩnh hơn một chút) cực kỳ tự nhiên.' 
+          },
+          { 
+            text: '明天见！', 
+            pinyin: 'Míngtiān jiàn!', 
+            isCorrect: false, 
+            score: 0, 
+            feedback: 'Vừa tới khách sạn chưa check-in mà đã chào tạm biệt?' 
+          }
+        ]
+      },
+      {
+        stageNumber: 3,
+        stageIcon: '🍜',
+        stageTitle: 'Trạm 3: Nhà hàng ẩm thực truyền thống (老字号餐厅点菜)',
+        bossDialogue: '您好几位？今天有招牌烤鸭和水煮牛肉，您看想吃点什么？',
+        bossPinyin: 'Nín hǎo jǐ wèi? Jīntiān yǒu zhāopái kǎoyā hé shuǐzhǔ niúròu, nín kàn xiǎng chī diǎn shénme?',
+        bossMeaning: 'Dạ xin hỏi mấy vị? Hôm nay có món vịt quay đặc sản và thịt bò cay, quý khách muốn dùng gì ạ?',
+        prompt: 'Gọi nửa con vịt quay, 1 bát canh, yêu cầu không cho ớt cay và thêm 1 ấm trà nóng:',
+        options: [
+          { 
+            text: '服务员，请来半只烤鸭、一碗青菜汤。我不能吃辣，请不要放辣椒！再来一壶热茶，谢谢！', 
+            pinyin: 'Fúwùyuán, qǐng lái bàn zhī kǎoyā, yì wǎn qīngcài tāng. Wǒ bù néng chī là, qǐng bú yào fàng làjiāo! Zài lái yì hú rè chá, xièxie!', 
+            isCorrect: true, 
+            score: 20, 
+            feedback: 'Tuyệt đỉnh! Dùng chuẩn các lượng từ 半只 (nửa con), 一碗 (một bát), 一壶 (một ấm) và cấu trúc dặn dò 不要放辣椒.' 
+          },
+          { 
+            text: '我不吃，我要看书。', 
+            pinyin: 'Wǒ bù chī, wǒ yào kàn shū.', 
+            isCorrect: false, 
+            score: 0, 
+            feedback: 'Vào quán ăn lại bảo muốn đọc sách thì nhân viên bối rối lắm đấy!' 
+          }
+        ]
+      },
+      {
+        stageNumber: 4,
+        stageIcon: '🚇',
+        stageTitle: 'Trạm 4: Ga tàu điện ngầm (地铁站买票与问路)',
+        bossDialogue: '请问你要去哪里？自动售票机只收微信、支付宝或现金硬币。',
+        bossPinyin: 'Qǐngwèn nǐ yào qù nǎlǐ? Zìdòng shòupiàojī zhǐ shōu Wēixìn, Zhīfùbǎo huò xiànjīn yìngbì.',
+        bossMeaning: 'Xin hỏi bạn muốn đi đâu? Máy bán vé tự động chỉ nhận WeChat, Alipay hoặc tiền xu mặt.',
+        prompt: 'Hỏi nhân viên cách đổi tuyến tàu điện ngầm đi Vạn Lý Trường Thành:',
+        options: [
+          { 
+            text: '请问去八达岭长城应该坐几号线？需要在哪里换乘？', 
+            pinyin: 'Qǐngwèn qù Bādálǐng Chángchéng yīnggāi zuò jǐ hào xiàn? Xūyào zài nǎlǐ huànchéng?', 
+            isCorrect: true, 
+            score: 20, 
+            feedback: 'Chính xác 100%! Cụm từ 几号线 (tuyến số mấy) và 换乘 (chuyển tuyến) chứng tỏ bạn đã làm chủ HSK 3 giao tiếp!' 
+          },
+          { 
+            text: '我不去学校。', 
+            pinyin: 'Wǒ bú qù xuéxiào.', 
+            isCorrect: false, 
+            score: 0, 
+            feedback: 'Chưa giải quyết được vấn đề tìm tuyến đường.' 
+          }
+        ]
+      },
+      {
+        stageNumber: 5,
+        stageIcon: '🛍️',
+        stageTitle: 'Trạm 5: Phố đi bộ Vương Phủ Tỉnh mua quà lưu niệm (王府井步行街购物)',
+        bossDialogue: '这个中国结和丝绸围巾做工都很精细！您想要哪一个？一共一百八十块。',
+        bossPinyin: 'Zhè ge Zhōngguójié hé sīchóu wéijīn zuògōng dōu hěn jīngxì! Nín xiǎng yào nǎ yí gè? Yígòng yì bǎi bāshí kuài.',
+        bossMeaning: 'Nút thắt may mắn Trung Hoa và khăn lụa này làm rất tinh xảo! Bạn muốn lấy cái nào? Tổng cộng 180 tệ ạ.',
+        prompt: 'Hỏi xem nếu mua cả hai món thì có thể bớt giá chút không và quét mã trả tiền:',
+        options: [
+          { 
+            text: '老板，如果这两个我都买，可以便宜一点吗？一百五十块可以吗？我扫码付钱！', 
+            pinyin: 'Lǎobǎn, rúguǒ zhè liǎng gè wǒ dōu mǎi, kěyǐ piányi yìdiǎn ma? Yì bǎi wǔshí kuài kěyǐ ma? Wǒ sǎo mǎ fù qián!', 
+            isCorrect: true, 
+            score: 20, 
+            feedback: 'Đỉnh cao giao tiếp bản xứ! Vừa lịch sự vừa mặc cả thành công và thanh toán thần tốc. BẠN ĐÃ XUẤT SẮC CHINH PHỤC HSK 3 BOSS EXAM!' 
+          },
+          { 
+            text: '太贵了，不买了！再见！', 
+            pinyin: 'Tài guì le, bù mǎi le! Zàijiàn!', 
+            isCorrect: false, 
+            score: 5, 
+            feedback: 'Bỏ đi vội vàng quá, chưa thử tài thương lượng bằng tiếng Trung!' 
+          }
         ]
       }
     ]

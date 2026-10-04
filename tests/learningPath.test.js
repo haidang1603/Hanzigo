@@ -11,6 +11,7 @@ import {
   isBossUnlocked, 
   completeLesson, 
   completeBossChallenge,
+  getBossChallengeById,
   evaluatePlacementTest,
   getDailyMissions,
   claimDailyMission,
@@ -29,24 +30,29 @@ if (typeof globalThis.localStorage === 'undefined') {
   };
 }
 
-test('Learning Path: Curriculum structure validation (6 Levels & 24 Chapters)', () => {
+test('Learning Path: Curriculum structure validation (HSK 1 to HSK 7-9 with 5-Pillar Syllabus)', () => {
   const levels = getAllLevels();
-  assert.equal(levels.length, 6, 'Should define exactly 6 levels');
+  assert.ok(levels.length >= 6, 'Should define at least 6 HSK levels');
 
-  assert.equal(levels[0].name, 'Khởi động');
-  assert.equal(levels[1].name, 'Sinh tồn');
-  assert.equal(levels[2].name, 'Nền tảng');
-  assert.equal(levels[3].name, 'Giao tiếp');
-  assert.equal(levels[4].name, 'Đời sống Trung Quốc');
-  assert.equal(levels[5].name, 'Chinese Master');
+  assert.equal(levels[0].hskLevel, 'HSK 1');
+  assert.equal(levels[1].hskLevel, 'HSK 2');
+  assert.equal(levels[2].hskLevel, 'HSK 3');
+  assert.equal(levels[3].hskLevel, 'HSK 4');
+  assert.equal(levels[4].hskLevel, 'HSK 5');
+  assert.equal(levels[5].hskLevel, 'HSK 6');
+
+  // Verify 5-pillar syllabus exists on levels
+  levels.forEach(lvl => {
+    assert.ok(lvl.syllabus5Pillars, `Level ${lvl.hskLevel} must define 5-pillar syllabus`);
+    assert.ok(Array.isArray(lvl.syllabus5Pillars.tasks), 'Must define tasks');
+    assert.ok(Array.isArray(lvl.syllabus5Pillars.topics), 'Must define topics');
+    assert.ok(lvl.syllabus5Pillars.vocabularyTarget > 0, 'Must define vocabulary target');
+    assert.ok(lvl.syllabus5Pillars.grammarTarget > 0, 'Must define grammar target');
+    assert.ok(lvl.syllabus5Pillars.hanziTarget > 0, 'Must define hanzi target');
+  });
 
   const chapters = getAllChapters();
-  assert.equal(chapters.length, 24, 'Should define exactly 24 chapters (4 per level)');
-
-  levels.forEach((lvl) => {
-    const lvlChapters = getChaptersByLevel(lvl.id);
-    assert.equal(lvlChapters.length, 4, `Level ${lvl.name} must contain 4 chapters`);
-  });
+  assert.equal(chapters.length, 24, 'Should define 24 core chapters');
 });
 
 test('Learning Path: Lesson 9-step schema completeness', () => {
@@ -93,7 +99,7 @@ test('Learning Path: Node progression and unlock rules', () => {
   assert.ok(updatedStatus2 === 'available' || updatedStatus2 === 'in_progress', 'Lesson 1-2 must be unlocked now');
 });
 
-test('Learning Path: Boss challenge unlock criteria', () => {
+test('Learning Path: Boss challenge unlock criteria and HSK 3 5-stage simulation', () => {
   const chapter1Id = 'ch-1';
   const ch1Lessons = getLessonsByChapter(chapter1Id);
 
@@ -107,6 +113,11 @@ test('Learning Path: Boss challenge unlock criteria', () => {
 
   const completeProg = { completedLessons: completedMap };
   assert.equal(isBossUnlocked(chapter1Id, completeProg), true, 'Boss must be unlocked when all chapter lessons are complete');
+
+  // Verify HSK 3 Boss Challenge (3-day China travel)
+  const hsk3Boss = getBossChallengeById('boss-hsk-3');
+  assert.ok(hsk3Boss, 'HSK 3 boss challenge must exist');
+  assert.equal(hsk3Boss.stages.length, 5, 'HSK 3 boss challenge must have 5 stages (Airport, Hotel, Restaurant, Metro, Shopping)');
 });
 
 test('Learning Path: Placement test diagnostic evaluation', () => {

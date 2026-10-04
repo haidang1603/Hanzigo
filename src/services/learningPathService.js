@@ -64,7 +64,7 @@ export function getBossChallengeByChapter(chapterId) {
 }
 
 export function getBossChallengeById(bossId) {
-  return BOSS_CHALLENGES.find(b => b.id === bossId);
+  return BOSS_CHALLENGES.find(b => b.id === bossId || b.aliasId === bossId);
 }
 
 // =========================================================================
