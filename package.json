@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "node --test tests/srsEngine.test.js tests/pronunciationEvaluator.test.js tests/securityRbac.test.js tests/learningPath.test.js",
-    "db:seed": "node scripts/seedSupabase.js"
+    "db:seed": "node scripts/seedSupabase.js",
+    "db:seed:learning": "node scripts/seedLearningPath.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
