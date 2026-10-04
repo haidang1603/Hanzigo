@@ -27,8 +27,7 @@ import {
   getLessonNodeStatus, 
   isBossUnlocked,
   getBossChallengeByChapter,
-  getLevelById,
-  getSkillMastery
+  getLevelById
 } from '../../services/learningPathService';
 import { playClickSound } from '../../utils/audio';
 
@@ -55,7 +54,6 @@ export default function LearningJourneyMap({
     : 0;
 
   const [showSyllabusDrawer, setShowSyllabusDrawer] = useState(false);
-  const skillMastery = getSkillMastery(user);
 
   // Active next lesson to continue
   const nextActiveLesson = allLevelLessons.find(l => !progress.completedLessons[l.id]) || allLevelLessons[0];
@@ -130,52 +128,6 @@ export default function LearningJourneyMap({
               className="h-full rounded-full bg-gradient-to-r from-[#45B97C] via-[#3B82F6] to-[#E85D3F] transition-all duration-700"
               style={{ width: `${Math.max(4, levelProgressPercent)}%` }}
             />
-          </div>
-        </div>
-
-        {/* 6 Skill Breakdown Bars according to HSK Test standard */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pt-2 border-t border-white/10">
-          <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5">
-            <div className="text-[10px] text-white/60 font-semibold">Từ vựng (Vocab)</div>
-            <div className="text-lg font-black text-amber-400">{skillMastery.vocabulary}%</div>
-            <div className="h-1.5 rounded-full bg-white/10 mt-1 overflow-hidden">
-              <div className="h-full bg-amber-400 rounded-full" style={{ width: `${skillMastery.vocabulary}%` }} />
-            </div>
-          </div>
-          <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5">
-            <div className="text-[10px] text-white/60 font-semibold">Ngữ pháp (Grammar)</div>
-            <div className="text-lg font-black text-blue-400">{skillMastery.grammar}%</div>
-            <div className="h-1.5 rounded-full bg-white/10 mt-1 overflow-hidden">
-              <div className="h-full bg-blue-400 rounded-full" style={{ width: `${skillMastery.grammar}%` }} />
-            </div>
-          </div>
-          <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5">
-            <div className="text-[10px] text-white/60 font-semibold">Nghe hiểu (Listening)</div>
-            <div className="text-lg font-black text-emerald-400">{skillMastery.listening}%</div>
-            <div className="h-1.5 rounded-full bg-white/10 mt-1 overflow-hidden">
-              <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${skillMastery.listening}%` }} />
-            </div>
-          </div>
-          <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5">
-            <div className="text-[10px] text-white/60 font-semibold">Đọc hiểu (Reading)</div>
-            <div className="text-lg font-black text-purple-400">{skillMastery.reading}%</div>
-            <div className="h-1.5 rounded-full bg-white/10 mt-1 overflow-hidden">
-              <div className="h-full bg-purple-400 rounded-full" style={{ width: `${skillMastery.reading}%` }} />
-            </div>
-          </div>
-          <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5">
-            <div className="text-[10px] text-white/60 font-semibold">Viết câu (Writing)</div>
-            <div className="text-lg font-black text-rose-400">{skillMastery.writing}%</div>
-            <div className="h-1.5 rounded-full bg-white/10 mt-1 overflow-hidden">
-              <div className="h-full bg-rose-400 rounded-full" style={{ width: `${skillMastery.writing}%` }} />
-            </div>
-          </div>
-          <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5">
-            <div className="text-[10px] text-white/60 font-semibold">Nói & Phản xạ (Speaking)</div>
-            <div className="text-lg font-black text-orange-400">{skillMastery.speaking}%</div>
-            <div className="h-1.5 rounded-full bg-white/10 mt-1 overflow-hidden">
-              <div className="h-full bg-orange-400 rounded-full" style={{ width: `${skillMastery.speaking}%` }} />
-            </div>
           </div>
         </div>
 

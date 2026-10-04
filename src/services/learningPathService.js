@@ -264,6 +264,21 @@ export function completeBossChallenge(bossId, score = 100, user = null) {
 export function getSkillMastery(user = null) {
   const key = getUserStorageKey(STORAGE_KEYS.SKILL_MASTERY, user);
   try {
+    // Purge legacy mock data cache from previous demo versions
+    if (typeof localStorage !== 'undefined') {
+      [key, 'hanzigo_skill_mastery'].forEach(k => {
+        const s = localStorage.getItem(k);
+        if (s) {
+          try {
+            const p = JSON.parse(s);
+            if (p && (p.vocabulary === 82 || p.grammar === 72 || p.listening === 70 || p.speaking === 55 || p.reading === 80 || p.writing === 62)) {
+              localStorage.removeItem(k);
+            }
+          } catch {}
+        }
+      });
+    }
+
     const saved = localStorage.getItem(key);
     if (saved) return JSON.parse(saved);
   } catch {}
