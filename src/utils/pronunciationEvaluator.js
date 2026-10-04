@@ -153,3 +153,22 @@ export function evaluateRealPronunciation({
     xpEarned: xp
   };
 }
+
+/**
+ * Universal adapter supporting both positional arguments and object parameters
+ */
+export function evaluatePronunciation(targetHanzi, targetPinyin = '', audioDurationMs = 1200, audioEnergyRms = 45, spokenTranscript = '') {
+  if (typeof targetHanzi === 'object' && targetHanzi !== null) {
+    const res = evaluateRealPronunciation(targetHanzi);
+    return { ...res, score: res.overall };
+  }
+  const transcript = spokenTranscript || targetHanzi;
+  const res = evaluateRealPronunciation({
+    targetHanzi,
+    targetPinyin,
+    spokenTranscript: transcript,
+    audioDurationMs,
+    audioEnergyRms
+  });
+  return { ...res, score: res.overall };
+}

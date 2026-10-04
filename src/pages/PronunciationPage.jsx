@@ -187,20 +187,6 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
     };
   }, [targetVocab]);
 
-  // Synchronize targetPracticeItem when user navigates from VocabularyPage
-  useEffect(() => {
-    if (targetPracticeItem) {
-      setActiveTab('record');
-      setPracticeList(prev => {
-        const withoutTarget = prev.filter(p => p.hanzi !== targetPracticeItem.hanzi);
-        return [targetPracticeItem, ...withoutTarget];
-      });
-      setSelectedItem(targetPracticeItem);
-      setRecordingScore(null);
-      setSpeechError(null);
-      setUserAudioUrl(null);
-    }
-  }, [targetPracticeItem]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all'); // 'all', 'hsk', 'communication', 'custom'
@@ -244,6 +230,21 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
   const [userAudioUrl, setUserAudioUrl] = useState(null);
   const [isPlayingUserAudio, setIsPlayingUserAudio] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
+
+  // Synchronize targetPracticeItem when user navigates from VocabularyPage
+  useEffect(() => {
+    if (targetPracticeItem) {
+      setActiveTab('record');
+      setPracticeList(prev => {
+        const withoutTarget = prev.filter(p => p.hanzi !== targetPracticeItem.hanzi);
+        return [targetPracticeItem, ...withoutTarget];
+      });
+      setSelectedItem(targetPracticeItem);
+      setRecordingScore(null);
+      setSpeechError(null);
+      setUserAudioUrl(null);
+    }
+  }, [targetPracticeItem]);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);

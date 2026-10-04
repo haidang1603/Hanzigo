@@ -4,20 +4,23 @@ import {
   Play, 
   Sparkles, 
   Target, 
-  Award,
-  ChevronDown,
-  ChevronUp,
-  ArrowRight,
-  Download,
-  Mic,
-  PenTool,
-  FolderDown,
-  Check,
-  Plus,
-  Trash2,
-  X,
-  BookOpen,
-  MessageCircle
+  Award, 
+  ChevronDown, 
+  ChevronUp, 
+  ArrowRight, 
+  Download, 
+  Mic, 
+  PenTool, 
+  FolderDown, 
+  Check, 
+  Plus, 
+  Trash2, 
+  X, 
+  BookOpen, 
+  MessageCircle,
+  Compass,
+  BarChart3,
+  Calendar
 } from 'lucide-react';
 import { ROADMAP_LEVELS } from '../data/chineseData';
 import { 
@@ -28,6 +31,13 @@ import {
 } from '../utils/materialsStorage';
 import { playClickSound, playSuccessSound } from '../utils/audio';
 import { triggerCloudSync } from '../supabase/services';
+import LearningJourneyMap from '../components/learning/LearningJourneyMap';
+import InteractiveLessonPlayer from '../components/learning/InteractiveLessonPlayer';
+import BossChallengeModal from '../components/learning/BossChallengeModal';
+import PlacementTestModal from '../components/learning/PlacementTestModal';
+import DailyMissionsModal from '../components/learning/DailyMissionsModal';
+import SkillMasteryCard from '../components/learning/SkillMasteryCard';
+import { getLessonById } from '../services/learningPathService';
 
 // Base curriculums for each roadmap level
 const BASE_LEVEL_LESSONS = {
@@ -102,7 +112,13 @@ const QUICK_LESSON_SUGGESTIONS = [
   }
 ];
 
-export default function RoadmapPage({ setActiveTab, onSelectLesson }) {
+export default function RoadmapPage({ user, setActiveTab, onSelectLesson, onAddXp }) {
+  const [roadmapView, setRoadmapView] = useState('journey'); // 'journey' | 'curriculum' | 'skills'
+  const [activeLessonToPlay, setActiveLessonToPlay] = useState(null);
+  const [activeBossChallenge, setActiveBossChallenge] = useState(null);
+  const [showPlacementTest, setShowPlacementTest] = useState(false);
+  const [showDailyMissions, setShowDailyMissions] = useState(false);
+
   const [stageFilter, setStageFilter] = useState('all'); // all | Sơ cấp | Trung cấp | Cao cấp | in-progress | completed
   const [expandedLevel, setExpandedLevel] = useState('intro');
 
@@ -134,6 +150,7 @@ export default function RoadmapPage({ setActiveTab, onSelectLesson }) {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
   };
+
 
   // Load all authentic materials
   const allMaterials = useMemo(() => getStoredMaterials(), []);
@@ -326,6 +343,28 @@ export default function RoadmapPage({ setActiveTab, onSelectLesson }) {
     }
   };
 
+  // If a lesson is being played in the 9-step Interactive Player
+  if (activeLessonToPlay) {
+    return (
+      <InteractiveLessonPlayer
+        lesson={activeLessonToPlay}
+        user={user}
+        onBack={() => setActiveLessonToPlay(null)}
+        onCompleteNext={() => {
+          const num = activeLessonToPlay.lessonNumber || 1;
+          const nextLessonId = `l-10${num + 1}`;
+          const nextLesson = getLessonById(nextLessonId);
+          if (nextLesson) {
+            setActiveLessonToPlay(nextLesson);
+          } else {
+            setActiveLessonToPlay(null);
+            showToast('🎉 Chúc mừng bạn đã hoàn thành chặng bài này!');
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8 animate-in fade-in duration-300">
       
@@ -401,8 +440,95 @@ export default function RoadmapPage({ setActiveTab, onSelectLesson }) {
         </div>
       </div>
 
-      {/* Visual Roadmap Stepper Route */}
-      <div className="bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm overflow-x-auto">
+      {/* 3 View Tabs Switcher */}
+      <div className="flex items-center justify-center p-1.5 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm max-w-lg mx-auto">
+        <button
+          type="button"
+          onClick={() => { playClickSound(); setRoadmapView('journey'); }}
+          className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            roadmapView === 'journey'
+              ? 'bg-[#E85D3F] text-white shadow-xs'
+              : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+          }`}
+        >
+          <Compass size={15} />
+          <span>Bản đồ hành trình</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => { playClickSound(); setRoadmapView('curriculum'); }}
+          className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            roadmapView === 'curriculum'
+              ? 'bg-[#E85D3F] text-white shadow-xs'
+              : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+          }`}
+        >
+          <BookOpen size={15} />
+          <span>Khung giáo trình HSK</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => { playClickSound(); setRoadmapView('skills'); }}
+          className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            roadmapView === 'skills'
+              ? 'bg-[#E85D3F] text-white shadow-xs'
+              : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+          }`}
+        >
+          <BarChart3 size={15} />
+          <span>Kỹ năng & Mục tiêu</span>
+        </button>
+      </div>
+
+      {/* VIEW 1: 🗺️ JOURNEY MAP (Default gamified view) */}
+      {roadmapView === 'journey' && (
+        <LearningJourneyMap
+          user={user}
+          onSelectLesson={(lesson) => setActiveLessonToPlay(lesson)}
+          onOpenBoss={(boss) => setActiveBossChallenge(boss)}
+          onOpenPlacementTest={() => setShowPlacementTest(true)}
+          onOpenDailyMissions={() => setShowDailyMissions(true)}
+          onOpenSkills={() => setRoadmapView('skills')}
+        />
+      )}
+
+      {/* VIEW 2: 📊 SKILL MASTERY & DAILY MISSIONS */}
+      {roadmapView === 'skills' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-200">
+          <div className="lg:col-span-2 space-y-6">
+            <SkillMasteryCard user={user} onNavigateTab={setActiveTab} />
+          </div>
+          <div className="space-y-4">
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-orange-100 dark:bg-orange-950/40 text-[#E85D3F] flex items-center justify-center mx-auto text-2xl">
+                🔥
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-[#243447] dark:text-white">
+                  Nhiệm vụ hàng ngày
+                </h3>
+                <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
+                  Duy trì streak và nhận rương hoàn thành ngày +100 XP
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { playClickSound(); setShowDailyMissions(true); }}
+                className="w-full py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Calendar size={14} />
+                <span>Mở bảng nhiệm vụ ngày</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW 3: 📚 CURRICULUM OVERVIEW */}
+      {roadmapView === 'curriculum' && (
+        <div className="space-y-8 animate-in fade-in duration-200">
+          {/* Visual Roadmap Stepper Route */}
+          <div className="bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm overflow-x-auto">
         <div className="flex items-center justify-between min-w-[620px] gap-2">
           {ROADMAP_LEVELS.map((lvl, idx) => {
             const { percent, status } = computeLevelProgress(lvl.id);
@@ -995,6 +1121,47 @@ export default function RoadmapPage({ setActiveTab, onSelectLesson }) {
 
           </div>
         </div>
+      )}
+
+      {/* Close VIEW 3: CURRICULUM OVERVIEW */}
+      </div>
+      )}
+
+      {/* Boss Challenge Modal */}
+      {activeBossChallenge && (
+        <BossChallengeModal
+          bossChallenge={activeBossChallenge}
+          user={user}
+          onClose={() => setActiveBossChallenge(null)}
+          onBossBeaten={() => {
+            showToast('🎉 Chúc mừng bạn đã đánh bại Boss (+200 XP)!');
+            if (onAddXp) onAddXp(200);
+          }}
+        />
+      )}
+
+      {/* Placement Test Modal */}
+      {showPlacementTest && (
+        <PlacementTestModal
+          user={user}
+          onClose={() => setShowPlacementTest(false)}
+          onTestCompleted={(res) => {
+            showToast(`🎉 Đã đánh giá trình độ: ${res.levelTitle}!`);
+            if (onAddXp) onAddXp(100);
+          }}
+        />
+      )}
+
+      {/* Daily Missions Modal */}
+      {showDailyMissions && (
+        <DailyMissionsModal
+          user={user}
+          onClose={() => setShowDailyMissions(false)}
+          onRewardClaimed={(xp) => {
+            showToast(`🎉 Nhận thành công +${xp} XP!`);
+            if (onAddXp) onAddXp(xp);
+          }}
+        />
       )}
 
     </div>

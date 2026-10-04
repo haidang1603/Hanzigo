@@ -443,3 +443,145 @@ BEGIN
   RETURN jsonb_build_object('success', true, 'message', 'Cập nhật thành công.');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =========================================================================
+-- 7. LEARNING PATH & GAMIFICATION SYSTEM (6 Levels, 24 Chapters, Boss Battles)
+-- =========================================================================
+
+-- 7.1. learning_levels: Định nghĩa 6 Level
+CREATE TABLE IF NOT EXISTS public.learning_levels (
+  id TEXT PRIMARY KEY,
+  level_number INT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  title_zh TEXT NOT NULL,
+  pinyin TEXT DEFAULT '',
+  badge TEXT DEFAULT '🌱',
+  color TEXT DEFAULT 'emerald',
+  description TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7.2. learning_chapters: Định nghĩa 24 Chapter
+CREATE TABLE IF NOT EXISTS public.learning_chapters (
+  id TEXT PRIMARY KEY,
+  level_id TEXT NOT NULL REFERENCES public.learning_levels(id) ON DELETE CASCADE,
+  chapter_number INT NOT NULL,
+  title TEXT NOT NULL,
+  title_zh TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  order_index INT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7.3. learning_lessons: Chi tiết bài học 9 bước (Learn, Vocab, Hanzi, Grammar, Listening, Speaking, Writing, Quiz, Challenge)
+CREATE TABLE IF NOT EXISTS public.learning_lessons (
+  id TEXT PRIMARY KEY,
+  chapter_id TEXT NOT NULL REFERENCES public.learning_chapters(id) ON DELETE CASCADE,
+  level_id TEXT NOT NULL REFERENCES public.learning_levels(id) ON DELETE CASCADE,
+  lesson_number INT NOT NULL,
+  title TEXT NOT NULL,
+  title_zh TEXT NOT NULL,
+  duration_minutes INT DEFAULT 15,
+  xp_reward INT DEFAULT 50,
+  description TEXT DEFAULT '',
+  content JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7.4. learning_boss_challenges: Thử thách Boss cuối mỗi Chapter
+CREATE TABLE IF NOT EXISTS public.learning_boss_challenges (
+  id TEXT PRIMARY KEY,
+  chapter_id TEXT NOT NULL UNIQUE REFERENCES public.learning_chapters(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  title_zh TEXT NOT NULL,
+  scenario TEXT NOT NULL,
+  xp_reward INT DEFAULT 200,
+  passing_score INT DEFAULT 70,
+  stages JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7.5. user_journey_progress: Lưu tiến độ node-by-node của từng học viên
+CREATE TABLE IF NOT EXISTS public.user_journey_progress (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  completed_lessons TEXT[] DEFAULT ARRAY[]::TEXT[],
+  completed_bosses TEXT[] DEFAULT ARRAY[]::TEXT[],
+  unlocked_levels INT DEFAULT 1,
+  active_lesson_id TEXT DEFAULT 'l-101',
+  streak_count INT DEFAULT 1,
+  last_study_date DATE DEFAULT CURRENT_DATE,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT uq_user_journey UNIQUE (user_id)
+);
+
+-- 7.6. user_skill_mastery: Điểm thông thạo 7 kỹ năng (Radar chart)
+CREATE TABLE IF NOT EXISTS public.user_skill_mastery (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  listening INT DEFAULT 40,
+  speaking INT DEFAULT 35,
+  reading INT DEFAULT 50,
+  writing INT DEFAULT 30,
+  vocabulary INT DEFAULT 45,
+  hanzi INT DEFAULT 38,
+  grammar INT DEFAULT 42,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT uq_user_skills UNIQUE (user_id)
+);
+
+-- 7.7. user_daily_missions: Nhiệm vụ hàng ngày & tiến độ thực hiện
+CREATE TABLE IF NOT EXISTS public.user_daily_missions (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  mission_date DATE DEFAULT CURRENT_DATE,
+  missions JSONB NOT NULL DEFAULT '[]'::jsonb,
+  all_completed BOOLEAN DEFAULT FALSE,
+  claimed_bonus BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT uq_user_daily_missions UNIQUE (user_id, mission_date)
+);
+
+-- Bật RLS
+ALTER TABLE public.learning_levels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.learning_chapters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.learning_lessons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.learning_boss_challenges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_journey_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_skill_mastery ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_daily_missions ENABLE ROW LEVEL SECURITY;
+
+-- Policies đọc công khai cho tài liệu lộ trình
+CREATE POLICY "learning_levels_select" ON public.learning_levels FOR SELECT USING (true);
+CREATE POLICY "learning_levels_admin" ON public.learning_levels FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY "learning_chapters_select" ON public.learning_chapters FOR SELECT USING (true);
+CREATE POLICY "learning_chapters_admin" ON public.learning_chapters FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY "learning_lessons_select" ON public.learning_lessons FOR SELECT USING (true);
+CREATE POLICY "learning_lessons_admin" ON public.learning_lessons FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY "learning_boss_select" ON public.learning_boss_challenges FOR SELECT USING (true);
+CREATE POLICY "learning_boss_admin" ON public.learning_boss_challenges FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+-- Policies cá nhân hóa cho học viên
+CREATE POLICY "user_journey_owner" ON public.user_journey_progress FOR ALL
+  USING (auth.uid() = user_id OR public.is_admin())
+  WITH CHECK (auth.uid() = user_id OR public.is_admin());
+
+CREATE POLICY "user_skills_owner" ON public.user_skill_mastery FOR ALL
+  USING (auth.uid() = user_id OR public.is_admin())
+  WITH CHECK (auth.uid() = user_id OR public.is_admin());
+
+CREATE POLICY "user_daily_missions_owner" ON public.user_daily_missions FOR ALL
+  USING (auth.uid() = user_id OR public.is_admin())
+  WITH CHECK (auth.uid() = user_id OR public.is_admin());
+
+-- Index tăng tốc truy vấn lộ trình
+CREATE INDEX IF NOT EXISTS idx_chapters_level ON public.learning_chapters(level_id, order_index);
+CREATE INDEX IF NOT EXISTS idx_lessons_chapter ON public.learning_lessons(chapter_id, lesson_number);
+CREATE INDEX IF NOT EXISTS idx_user_journey_uid ON public.user_journey_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_missions_uid_date ON public.user_daily_missions(user_id, mission_date);
+

@@ -216,8 +216,10 @@ function MainApp() {
 
           {activeTab === 'roadmap' && (
             <RoadmapPage 
+              user={user}
               setActiveTab={setActiveTab} 
               onSelectLesson={handleSelectLesson}
+              onAddXp={handleAddXp}
             />
           )}
 
