@@ -271,7 +271,10 @@ export function getSkillMastery(user = null) {
         if (s) {
           try {
             const p = JSON.parse(s);
-            if (p && (p.vocabulary === 82 || p.grammar === 72 || p.listening === 70 || p.speaking === 55 || p.reading === 80 || p.writing === 62)) {
+            if (p && (
+              p.vocabulary === 82 || p.grammar === 72 || p.listening === 70 || p.speaking === 55 || p.reading === 80 || p.writing === 62 ||
+              (p.listening === 50 && p.speaking === 50 && p.reading === 50 && p.writing === 40)
+            )) {
               localStorage.removeItem(k);
             }
           } catch {}
@@ -284,7 +287,7 @@ export function getSkillMastery(user = null) {
   } catch {}
 
   // Calculate purely from REAL user learning activity!
-  // If the user hasn't studied or tested yet, all skills start honestly at 0%.
+  // If the user hasn't studied yet, all skills start honestly at 0%.
   let vocabCount = 0;
   let pronounceCount = 0;
   let writingCount = 0;
@@ -318,28 +321,13 @@ export function getSkillMastery(user = null) {
       const parsed = JSON.parse(jSaved);
       completedLessonsCount = Object.keys(parsed.completedLessons || {}).length;
     }
-
-    // If user completed diagnostic placement test, use their authentic test score
-    const ptKey = getUserStorageKey(STORAGE_KEYS.PLACEMENT_RESULT, user);
-    const ptSaved = localStorage.getItem(ptKey);
-    if (ptSaved) {
-      const ptResult = JSON.parse(ptSaved);
-      if (ptResult && typeof ptResult.percentage === 'number') {
-        const baseScore = Math.min(100, Math.round(ptResult.percentage));
-        return {
-          listening: baseScore,
-          speaking: baseScore,
-          reading: baseScore,
-          writing: Math.max(0, baseScore - 10),
-          vocabulary: baseScore,
-          hanzi: Math.max(0, baseScore - 5),
-          grammar: baseScore
-        };
-      }
-    }
   } catch {}
 
-  // Compute real percentages based on authentic milestones
+  // Compute real percentages based strictly on authentic practice milestones:
+  // - Vocabulary: words marked remembered in SRS review (target 100 words)
+  // - Speaking: speech evaluation sessions completed with mic (target 15 phrases)
+  // - Writing: Chinese characters written in studio (target 10 characters)
+  // - Listening/Reading/Grammar: lessons passed in the journey (target 20 lessons)
   const vocabScore = Math.min(100, Math.round((vocabCount / 100) * 100));
   const speakingScore = Math.min(100, Math.round((pronounceCount / 15) * 100));
   const writingScore = Math.min(100, Math.round((writingCount / 10) * 100));
@@ -347,9 +335,9 @@ export function getSkillMastery(user = null) {
 
   return {
     listening: lessonFactor > 0 ? lessonFactor : 0,
-    speaking: speakingScore > 0 ? speakingScore : (lessonFactor > 0 ? Math.round(lessonFactor * 0.9) : 0),
+    speaking: speakingScore > 0 ? speakingScore : 0,
     reading: lessonFactor > 0 ? lessonFactor : 0,
-    writing: writingScore > 0 ? writingScore : (lessonFactor > 0 ? Math.round(lessonFactor * 0.8) : 0),
+    writing: writingScore > 0 ? writingScore : 0,
     vocabulary: vocabScore > 0 ? vocabScore : 0,
     hanzi: writingScore > 0 ? writingScore : 0,
     grammar: lessonFactor > 0 ? lessonFactor : 0

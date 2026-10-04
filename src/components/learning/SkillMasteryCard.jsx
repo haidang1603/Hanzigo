@@ -50,7 +50,7 @@ export default function SkillMasteryCard({ user, onNavigateTab }) {
       {skills.every(s => s.score === 0) && (
         <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2.5">
           <span className="text-base">💡</span>
-          <span>Chưa có dữ liệu học tập thực tế. Điểm số bắt đầu từ 0% và sẽ tăng dần khi bạn làm bài học, luyện phát âm, hoặc làm bài <strong>Kiểm tra trình độ</strong>!</span>
+          <span>Chưa có dữ liệu học tập thực tế. Điểm số bắt đầu từ 0% và sẽ tăng dần theo từng bài học, bài luyện phát âm, ôn từ vựng và tập viết chữ Hán thực tế của bạn!</span>
         </div>
       )}
 
