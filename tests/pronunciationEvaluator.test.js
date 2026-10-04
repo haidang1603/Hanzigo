@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateRealPronunciation, extractTone } from '../src/utils/pronunciationEvaluator.js';
+import { evaluateRealPronunciation, evaluatePronunciation, extractTone } from '../src/utils/pronunciationEvaluator.js';
 
 test('Tone extraction: extracts correct numerical tone from pinyin', () => {
   assert.equal(extractTone('māo'), 1);
@@ -53,4 +53,14 @@ test('Pronunciation evaluation: empty or unrecognized voice returns honest diagn
   assert.equal(result.xpEarned, 0);
   assert.equal(result.charBreakdown[0].status, 'unrecognized');
   assert.ok(result.feedback.includes('chưa thu được'));
+});
+
+test('Pronunciation evaluation: evaluatePronunciation adapter with no spoken voice returns 0 score (never fake 99)', () => {
+  const result1 = evaluatePronunciation('你好', 'nǐ hǎo', 1200, 45, '');
+  assert.equal(result1.score, 0);
+  assert.equal(result1.isValid, false);
+
+  const result2 = evaluatePronunciation('你好！很高兴认识你。', 'Nǐ hǎo! Hěn gāoxìng rènshi nǐ.', 1200, 45);
+  assert.equal(result2.score, 0);
+  assert.equal(result2.isValid, false);
 });

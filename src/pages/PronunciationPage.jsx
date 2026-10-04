@@ -30,6 +30,7 @@ import { PINYIN_DATA, VOCABULARY_LIST } from '../data/chineseData';
 import { triggerCloudSync, getPronunciationItemsFromDb, addPronunciationItemToDb } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
 import { evaluateRealPronunciation } from '../utils/pronunciationEvaluator';
+import { playClickSound, playSuccessSound, playErrorSound } from '../utils/audio';
 
 const STORAGE_CUSTOM_PRONOUNCE = 'hanzigo_custom_pronounce_list';
 const STORAGE_PRONOUNCE_HISTORY = 'hanzigo_pronounce_history';
@@ -256,6 +257,7 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
   const isRecordingRef = useRef(false);
   const recognitionRef = useRef(null);
   const recordingStartTimeRef = useRef(0);
+  const hasSpokenRef = useRef(false);
   
   const [historyList, setHistoryList] = useState(() => {
     try {
@@ -518,6 +520,8 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
       recognition.continuous = false;
       recognition.interimResults = false;
 
+      hasSpokenRef.current = false;
+
       recognition.onstart = () => {
         setIsRecording(true);
         isRecordingRef.current = true;
@@ -525,6 +529,7 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
       };
 
       recognition.onresult = (event) => {
+        hasSpokenRef.current = true;
         const spoken = event.results[0][0].transcript;
         const durationMs = Date.now() - (recordingStartTimeRef.current || Date.now());
         evaluatePronunciation(selectedItem.hanzi, selectedItem.pinyin, spoken, durationMs);
@@ -534,6 +539,8 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
       recognition.onerror = (event) => {
         console.warn('Speech recognition error:', event.error);
         cleanupAudioRecording();
+        playErrorSound();
+        setRecordingScore(null);
         if (event.error === 'not-allowed') {
           setSpeechError('Microphone bị chặn. Vui lòng cấp quyền Micro trên trình duyệt để luyện nói.');
         } else if (event.error === 'no-speech') {
@@ -544,6 +551,11 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
       };
 
       recognition.onend = () => {
+        if (!hasSpokenRef.current && isRecordingRef.current) {
+          playErrorSound();
+          setSpeechError('Không phát hiện được giọng nói rõ ràng. Hãy tiến gần microphone hơn và phát âm to, dứt khoát từng chữ nhé!');
+          setRecordingScore(null);
+        }
         cleanupAudioRecording();
       };
 
@@ -552,6 +564,7 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
     } catch (err) {
       console.warn('SpeechRecognition start failed', err);
       cleanupAudioRecording();
+      playErrorSound();
       setSpeechError('Không thể khởi động bộ nhận dạng giọng nói. Vui lòng kiểm tra micro hoặc tải lại trang.');
     }
   };
@@ -563,6 +576,11 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
       } catch (e) {
         console.warn(e);
       }
+    }
+    if (!hasSpokenRef.current) {
+      playErrorSound();
+      setSpeechError('Không phát hiện được giọng nói. Bạn hãy bấm micro và phát âm to, rõ ràng theo từ mẫu để được chấm điểm nhé!');
+      setRecordingScore(null);
     }
     cleanupAudioRecording();
   };

@@ -67,6 +67,10 @@ export default function InteractiveLessonPlayer({
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [recordedAudioUrl, setRecordedAudioUrl] = useState(null);
+  const recognitionRef = useRef(null);
+  const spokenTranscriptRef = useRef('');
+  const recordingStartTimeRef = useRef(null);
+  const streamRef = useRef(null);
 
   // Step 7: Writing reordering state
   const [reorderedWords, setReorderedWords] = useState([]);
@@ -95,6 +99,18 @@ export default function InteractiveLessonPlayer({
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
+    return () => {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        try { mediaRecorderRef.current.stop(); } catch (e) {}
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+      }
+    };
   }, [lesson?.id, currentStep]);
 
   if (!lesson) return null;
@@ -128,67 +144,100 @@ export default function InteractiveLessonPlayer({
     if (isRecording) {
       // Stop recording
       setIsRecording(false);
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+      }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
+        try { mediaRecorderRef.current.stop(); } catch (e) {}
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
       }
     } else {
       // Start recording
       setSpeakingFeedback(null);
       setRecordedAudioUrl(null);
       setStepWarning(null);
+      setSpeechTranscript('');
+      spokenTranscriptRef.current = '';
+      recordingStartTimeRef.current = Date.now();
       audioChunksRef.current = [];
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          const recognition = new SpeechRecognition();
+          recognition.lang = 'zh-CN';
+          recognition.continuous = false;
+          recognition.interimResults = true;
+          recognition.onresult = (evt) => {
+            const results = evt.results;
+            const transcript = results[results.length - 1][0].transcript || '';
+            spokenTranscriptRef.current = transcript;
+            setSpeechTranscript(transcript);
+          };
+          recognition.onerror = (e) => {
+            console.warn('Speaking recognition error:', e.error);
+          };
+          recognitionRef.current = recognition;
+          recognition.start();
+        } catch (recErr) {
+          console.warn('Recognition start error:', recErr);
+        }
+      }
 
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true })
           .then(stream => {
+            streamRef.current = stream;
             const mediaRecorder = new MediaRecorder(stream);
             mediaRecorderRef.current = mediaRecorder;
             mediaRecorder.ondataavailable = e => {
-              if (e.data.size > 0) audioChunksRef.current.push(e.data);
+              if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
             };
             mediaRecorder.onstop = () => {
-              const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-              const url = URL.createObjectURL(audioBlob);
-              setRecordedAudioUrl(url);
-
-              // Evaluate pronunciation against target
-              const target = lesson.step6_speaking?.targetSentence || '';
-              const targetPinyin = lesson.step6_speaking?.targetPinyin || '';
-              const evalResult = evaluatePronunciation(target, targetPinyin, 1200, 45);
-              setSpeakingFeedback(evalResult);
-
-              if (evalResult.score >= 50) {
-                playSuccessSound();
-                setStepWarning(null);
-              } else {
-                playErrorSound();
-                setStepWarning(`Điểm phát âm: ${evalResult.score}/100. Hãy bấm Mic và luyện nói lại to, rõ hơn để vượt qua nhé!`);
+              if (audioChunksRef.current.length > 0) {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                const url = URL.createObjectURL(audioBlob);
+                setRecordedAudioUrl(url);
               }
+
+              // Evaluate after brief timeout to let recognition finish delivering final transcript
+              setTimeout(() => {
+                const spoken = (spokenTranscriptRef.current || '').trim();
+                const durationMs = Date.now() - (recordingStartTimeRef.current || Date.now());
+                const target = lesson.step6_speaking?.targetSentence || '';
+                const targetPinyin = lesson.step6_speaking?.targetPinyin || '';
+
+                const evalResult = evaluatePronunciation(target, targetPinyin, durationMs, 45, spoken);
+                setSpeakingFeedback(evalResult);
+
+                if (evalResult.score >= 50 && evalResult.isValid) {
+                  playSuccessSound();
+                  setStepWarning(null);
+                } else {
+                  playErrorSound();
+                  if (!spoken) {
+                    setStepWarning('Không nhận diện được giọng nói. Bạn hãy bấm Micro và phát âm to, rõ ràng theo câu mẫu tiếng Trung để được chấm điểm nhé!');
+                  } else {
+                    setStepWarning(`Điểm phát âm: ${evalResult.score}/100. Máy nghe thấy: "${spoken}". Hãy luyện tập và phát âm lại rõ hơn để đạt từ 50 điểm nhé!`);
+                  }
+                }
+              }, 250);
             };
             mediaRecorder.start();
             setIsRecording(true);
-
-            // Web Speech Recognition if available in browser
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (SpeechRecognition) {
-              const recognition = new SpeechRecognition();
-              recognition.lang = 'zh-CN';
-              recognition.continuous = false;
-              recognition.onresult = (evt) => {
-                const transcript = evt.results[0][0].transcript;
-                setSpeechTranscript(transcript);
-              };
-              recognition.start();
-            }
           })
-          .catch(() => {
-            // Graceful fallback for devices without mic hardware
-            setSpeakingFeedback({ score: 80, feedback: 'Đã hoàn thành luyện nói theo mẫu âm thanh', passed: true });
-            playSuccessSound();
+          .catch(err => {
+            console.warn('Mic access error:', err);
+            setIsRecording(false);
+            playErrorSound();
+            setStepWarning('Không thể truy cập Microphone. Vui lòng kiểm tra quyền truy cập micro trên trình duyệt.');
           });
       } else {
-        setSpeakingFeedback({ score: 80, feedback: 'Đã hoàn thành luyện nói theo mẫu âm thanh', passed: true });
-        playSuccessSound();
+        setIsRecording(false);
+        setStepWarning('Trình duyệt không hỗ trợ thu âm Microphone.');
       }
     }
   };
@@ -852,16 +901,34 @@ export default function InteractiveLessonPlayer({
 
                 {/* Pronunciation Feedback */}
                 {speakingFeedback && (
-                  <div className="p-4 rounded-2xl bg-[#EBF8F2] dark:bg-[#162B21] border border-[#45B97C]/30 text-left space-y-2 text-xs animate-in zoom-in-95">
+                  <div className={`p-4 rounded-2xl border text-left space-y-2 text-xs animate-in zoom-in-95 ${
+                    speakingFeedback.score >= 50 && speakingFeedback.isValid
+                      ? 'bg-[#EBF8F2] dark:bg-[#162B21] border-[#45B97C]/30'
+                      : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700/50'
+                  }`}>
                     <div className="flex items-center justify-between font-bold">
-                      <span className="text-[#3AA56E] flex items-center gap-1.5">
-                        <CheckCircle2 size={16} />
-                        <span>Đánh giá phản xạ: {speakingFeedback.feedback}</span>
+                      <span className={`flex items-center gap-1.5 ${
+                        speakingFeedback.score >= 50 && speakingFeedback.isValid ? 'text-[#3AA56E]' : 'text-amber-700 dark:text-amber-300'
+                      }`}>
+                        {speakingFeedback.score >= 50 && speakingFeedback.isValid ? (
+                          <CheckCircle2 size={16} className="shrink-0" />
+                        ) : (
+                          <AlertCircle size={16} className="shrink-0 text-amber-600" />
+                        )}
+                        <span>{speakingFeedback.rankBadge || 'Đánh giá phản xạ'}: {speakingFeedback.feedback}</span>
                       </span>
-                      <span className="font-mono text-base font-black text-[#E85D3F]">
+                      <span className={`font-mono text-base font-black ${
+                        speakingFeedback.score >= 50 && speakingFeedback.isValid ? 'text-[#45B97C]' : 'text-rose-500'
+                      }`}>
                         {speakingFeedback.score} / 100 điểm
                       </span>
                     </div>
+
+                    {speechTranscript && (
+                      <div className="text-[11px] text-[#748092] dark:text-[#94A3B8]">
+                        Máy nhận diện được: <strong className="text-[#243447] dark:text-white">"{speechTranscript}"</strong>
+                      </div>
+                    )}
 
                     {recordedAudioUrl && (
                       <div className="pt-2 flex items-center gap-2">

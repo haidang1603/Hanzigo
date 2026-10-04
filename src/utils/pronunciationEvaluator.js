@@ -162,7 +162,7 @@ export function evaluatePronunciation(targetHanzi, targetPinyin = '', audioDurat
     const res = evaluateRealPronunciation(targetHanzi);
     return { ...res, score: res.overall };
   }
-  const transcript = spokenTranscript || targetHanzi;
+  const transcript = spokenTranscript ? String(spokenTranscript).trim() : '';
   const res = evaluateRealPronunciation({
     targetHanzi,
     targetPinyin,
