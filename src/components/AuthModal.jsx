@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { X, Mail, Lock, User, ArrowRight, GraduationCap } from 'lucide-react';
 import { playClickSound, playSuccessSound, playErrorSound } from '../utils/audio';
 import { isSupabaseConfigured } from '../supabase/config';
-import { loginWithEmail, registerWithEmail, loginWithGoogle, generateUuid } from '../supabase/services';
+import { loginWithEmail, registerWithEmail, loginWithGoogle, generateUuid, isEmailAdmin } from '../supabase/services';
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) {
   const [mode, setMode] = useState(initialMode); // 'login' or 'register'
+  const [selectedRole, setSelectedRole] = useState('student'); // 'student' | 'teacher'
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -46,29 +47,35 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
             formData.email,
             formData.password,
             formData.name,
-            formData.level
+            formData.level,
+            selectedRole
           );
         } else {
-          userData = await loginWithEmail(formData.email, formData.password);
+          userData = await loginWithEmail(formData.email, formData.password, selectedRole);
         }
         playSuccessSound();
         onLoginSuccess(userData);
         onClose();
       } else {
-        // Local Fallback simulation if Firebase env keys are not added yet
+        // Local Fallback simulation if Firebase/Supabase env keys are not added yet
         setTimeout(() => {
           playSuccessSound();
           const customAvatar = localStorage.getItem('hanzigo_custom_avatar');
           const generatedId = generateUuid();
+          const isSysAdmin = isEmailAdmin(formData.email);
+          const isTeacher = selectedRole === 'teacher';
+          const defaultName = isSysAdmin ? 'Admin HanziGo' : isTeacher ? 'Thầy cô HanziGo' : 'Học viên HanziGo';
+          const finalRole = isSysAdmin ? 'admin' : selectedRole;
           const userData = {
             uid: generatedId,
             id: generatedId,
-            name: mode === 'register' ? formData.name : (formData.email.split('@')[0] || 'Học viên HanziGo'),
+            name: mode === 'register' ? formData.name : (formData.email.split('@')[0] || defaultName),
             email: formData.email,
             level: formData.level,
+            role: finalRole,
             avatar: customAvatar || null,
             streak: 0,
-            xp: 0,
+            xp: 50,
             wordsLearned: 0
           };
           onLoginSuccess(userData);
@@ -111,6 +118,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
       if (!isSupabaseConfigured) {
         throw new Error('Supabase chưa được cấu hình. Vui lòng thiết lập biến môi trường VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY.');
       }
+      localStorage.setItem('hanzigo_oauth_intended_role', selectedRole);
       await loginWithGoogle();
       // Browser automatically redirects to accounts.google.com consent screen
     } catch (err) {
@@ -213,6 +221,45 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
                 </div>
               )}
 
+              {/* Tùy chọn chức vụ: Học sinh vs Giáo viên */}
+              <div>
+                <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
+                  Chức vụ ({mode === 'login' ? 'Đăng nhập với vai trò' : 'Đăng ký tài khoản'})
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setSelectedRole('student');
+                    }}
+                    className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer ${
+                      selectedRole === 'student'
+                        ? 'bg-[#FFF5F2] dark:bg-[#2C1D1A] border-[#E85D3F] text-[#E85D3F] shadow-sm ring-1 ring-[#E85D3F]/30'
+                        : 'bg-white dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                    }`}
+                  >
+                    <User size={15} />
+                    <span>Học sinh</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setSelectedRole('teacher');
+                    }}
+                    className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer ${
+                      selectedRole === 'teacher'
+                        ? 'bg-[#FFF5F2] dark:bg-[#2C1D1A] border-[#E85D3F] text-[#E85D3F] shadow-sm ring-1 ring-[#E85D3F]/30'
+                        : 'bg-white dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                    }`}
+                  >
+                    <GraduationCap size={15} />
+                    <span>Giáo viên</span>
+                  </button>
+                </div>
+              </div>
+
               {mode === 'register' && (
                 <div>
                   <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
@@ -245,6 +292,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                 </div>
+                {isEmailAdmin(formData.email) && (
+                  <p className="mt-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 animate-in fade-in">
+                    <span>🛡️</span>
+                    <span>Hệ thống nhận diện: Tài khoản Quản trị viên (Admin)</span>
+                  </p>
+                )}
               </div>
 
               <div>

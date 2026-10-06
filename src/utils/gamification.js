@@ -101,9 +101,13 @@ export function calculateTotalXp(user = null) {
     }
   } catch {}
 
-  // 7. Base profile XP (if user profile has higher baseline)
-  if (targetUser && typeof targetUser.xp === 'number' && targetUser.xp > xp) {
-    xp = targetUser.xp;
+  // 7. Base profile XP (if user profile has higher baseline, filter out 9999 artifact)
+  if (targetUser && typeof targetUser.xp === 'number') {
+    if (targetUser.xp === 9999) {
+      // 9999 was a temporary artifact, do not use it as real xp
+    } else if (targetUser.xp > xp) {
+      xp = targetUser.xp;
+    }
   }
 
   return xp;
@@ -197,13 +201,19 @@ export function recordStudyActivity(user = null) {
   const streakKey = getUserStorageKey('hanzigo_streak_count', targetUser);
 
   try {
-    const lastDate = localStorage.getItem(dateKey);
+    let lastDate = localStorage.getItem(dateKey);
+    if (!lastDate && (targetUser?.last_study_date || targetUser?.lastActiveDate)) {
+      lastDate = targetUser.last_study_date || targetUser.lastActiveDate;
+    }
+
     const rawStreak = localStorage.getItem(streakKey);
-    let currentStreak = rawStreak ? parseInt(rawStreak, 10) || 0 : (targetUser?.streak || 0);
+    let currentStreak = rawStreak ? parseInt(rawStreak, 10) || 0 : (typeof targetUser?.streak === 'number' ? targetUser.streak : 0);
 
     if (!lastDate) {
-      currentStreak = Math.max(1, currentStreak || 1);
+      // Lần đầu tiên học
+      currentStreak = 1;
     } else if (lastDate === today) {
+      // Đã học hôm nay rồi -> giữ nguyên chuỗi
       if (currentStreak < 1) currentStreak = 1;
     } else {
       const yesterday = new Date();
@@ -211,8 +221,10 @@ export function recordStudyActivity(user = null) {
       const yesterdayStr = getLocalDateString(yesterday);
 
       if (lastDate === yesterdayStr) {
-        currentStreak += 1;
+        // Hôm qua có học -> Chuỗi liên tiếp tăng thêm 1
+        currentStreak = (currentStreak > 0 ? currentStreak : 0) + 1;
       } else {
+        // Tài khoản đã off 1 ngày trở lên (hôm qua không học) -> Bắt đầu lại chuỗi mới từ 1
         currentStreak = 1;
       }
     }
@@ -226,7 +238,7 @@ export function recordStudyActivity(user = null) {
         const saved = localStorage.getItem('hanzigo_user');
         if (saved) {
           const u = JSON.parse(saved);
-          if (u && (u.uid === targetUser.uid || u.email === targetUser.email)) {
+          if (u && (u.uid === targetUser.uid || u.email === targetUser.email || u.id === targetUser.id)) {
             u.streak = currentStreak;
             u.lastActiveDate = today;
             localStorage.setItem('hanzigo_user', JSON.stringify(u));
@@ -244,7 +256,11 @@ export function recordStudyActivity(user = null) {
 }
 
 /**
- * Get current streak status based on calendar dates for a SPECIFIC user
+ * Get current streak status based on calendar dates for a SPECIFIC user.
+ * Quy tắc:
+ * - Nếu hôm nay đã học (lastDate === today): streak giữ nguyên (>= 1), hasStudiedToday = true.
+ * - Nếu hôm qua có học, hôm nay chưa học (lastDate === yesterday): streak giữ nguyên chờ học hôm nay, hasStudiedToday = false.
+ * - Nếu tài khoản OFF 1 ngày trở lên (hôm qua không học) hoặc chưa từng học: chuỗi QUAY VỀ 0, hasStudiedToday = false.
  */
 export function getStreakStatus(user = null) {
   let targetUser = user;
@@ -260,24 +276,48 @@ export function getStreakStatus(user = null) {
 
   try {
     const today = getLocalDateString();
-    const lastDate = localStorage.getItem(dateKey);
-    const rawStreak = localStorage.getItem(streakKey);
-    let streak = rawStreak ? parseInt(rawStreak, 10) || 0 : (targetUser?.streak || 0);
+    let lastDate = localStorage.getItem(dateKey);
+    if (!lastDate && (targetUser?.last_study_date || targetUser?.lastActiveDate)) {
+      lastDate = targetUser.last_study_date || targetUser.lastActiveDate;
+    }
 
+    // Nếu chưa từng có ngày học nào được ghi nhận
     if (!lastDate) {
-      return { streak: streak > 0 ? streak : 0, hasStudiedToday: false };
+      return { streak: 0, hasStudiedToday: false };
     }
 
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = getLocalDateString(yesterday);
 
+    const rawStreak = localStorage.getItem(streakKey);
+    let storedStreak = rawStreak ? parseInt(rawStreak, 10) || 0 : (typeof targetUser?.streak === 'number' ? targetUser.streak : 0);
+
+    // TH 1: Hôm nay đã học
     if (lastDate === today) {
-      return { streak: Math.max(1, streak), hasStudiedToday: true };
+      return { streak: Math.max(1, storedStreak), hasStudiedToday: true };
     }
 
+    // TH 2: Hôm qua có học, hôm nay chưa học (chưa off trọn vẹn cả ngày, giữ chuỗi chờ học hôm nay)
     if (lastDate === yesterdayStr) {
-      return { streak: Math.max(1, streak), hasStudiedToday: false };
+      return { streak: Math.max(1, storedStreak), hasStudiedToday: false };
+    }
+
+    // TH 3: Tài khoản đã off 1 ngày trở lên (hôm qua không học) -> Chuỗi quay về 0!
+    if (storedStreak !== 0 || localStorage.getItem(streakKey) !== '0') {
+      try {
+        localStorage.setItem(streakKey, '0');
+        if (targetUser) {
+          const saved = localStorage.getItem('hanzigo_user');
+          if (saved) {
+            const u = JSON.parse(saved);
+            if (u && (u.uid === targetUser.uid || u.email === targetUser.email || u.id === targetUser.id)) {
+              u.streak = 0;
+              localStorage.setItem('hanzigo_user', JSON.stringify(u));
+            }
+          }
+        }
+      } catch {}
     }
 
     return { streak: 0, hasStudiedToday: false };

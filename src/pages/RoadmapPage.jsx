@@ -78,92 +78,82 @@ export default function RoadmapPage({ user, setActiveTab, onSelectLesson, onAddX
         </div>
       )}
 
-      {/* Page Header Hero Banner */}
-      <div className="relative overflow-hidden p-6 sm:p-10 rounded-3xl bg-gradient-to-r from-[#243447] via-[#1E293B] to-[#0F172A] text-white shadow-xl">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E85D3F]/20 text-[#E85D3F] border border-[#E85D3F]/30 text-xs font-bold">
-              <Sparkles size={14} />
-              <span>Khung Chuẩn HSK 3.0 Quốc Tế (Chinese Test)</span>
-            </div>
-            <h1 className="text-2xl sm:text-4xl font-black text-white font-['Noto_Serif_SC'] tracking-tight">
-              Lộ Trình Học Tiếng Trung HSK 3.0
-            </h1>
-            <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-              Hành trình sư phạm 7 chặng từ HSK 1 đến HSK 6 (+ HSK 7-9) chuẩn hóa theo 5 trụ cột HSK 3.0: Nhiệm vụ giao tiếp thực tế, chủ đề sinh hoạt, từ vựng, ngữ pháp và chữ Hán.
-            </p>
-
-            {/* Real KPI stats from user's authentic progress */}
-            <div className="flex flex-wrap items-center gap-3 pt-2 text-xs">
-              <span className="px-3 py-1 rounded-xl bg-white/10 font-medium backdrop-blur-sm">
-                🎯 <strong>24</strong> Chương học & Boss thực chiến
-              </span>
-              <span className="px-3 py-1 rounded-xl bg-white/10 font-medium backdrop-blur-sm">
-                ✅ <strong>{totalCompletedLessons}</strong> bài học đã hoàn thành
-              </span>
-              <span className="px-3 py-1 rounded-xl bg-white/10 font-medium backdrop-blur-sm">
-                🏆 <strong>{totalCompletedBosses}</strong> Boss khảo hạch đã hạ gục
-              </span>
-            </div>
+      {/* Streamlined, Elegant Header Banner */}
+      <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#E85D3F]/10 text-[#E85D3F] text-[11px] font-bold">
+              <Sparkles size={12} />
+              <span>Khung Chuẩn HSK 3.0</span>
+            </span>
+            <span className="text-xs text-[#748092] dark:text-[#94A3B8]">
+              • 24 Chương học & Boss thực chiến
+            </span>
           </div>
 
-          {/* Quick Access Actions */}
-          <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-3 shrink-0">
-            <button
-              onClick={() => {
-                playClickSound();
-                setShowPlacementTest(true);
-              }}
-              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#F4B942] hover:opacity-95 text-white font-bold text-xs sm:text-sm shadow-lg hover:scale-105 active:scale-100 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
-            >
-              <Compass size={18} />
-              <span>Kiểm tra & Xếp lớp HSK</span>
-            </button>
-            <button
-              onClick={() => {
-                playClickSound();
-                setShowDailyMissions(true);
-              }}
-              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Calendar size={15} />
-              <span>Nhiệm vụ hàng ngày</span>
-            </button>
+          <h1 className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white tracking-tight">
+            Lộ Trình Học Tiếng Trung HSK 3.0
+          </h1>
+          
+          <div className="flex items-center gap-3 text-xs text-[#748092] dark:text-[#94A3B8]">
+            <span>✅ <strong>{totalCompletedLessons}</strong> bài hoàn thành</span>
+            <span>•</span>
+            <span>🏆 <strong>{totalCompletedBosses}</strong> Boss hạ gục</span>
           </div>
         </div>
 
-        {/* Decorative Chinese watermark */}
-        <div className="absolute right-4 -bottom-6 font-['Noto_Serif_SC'] text-9xl font-black text-white/5 select-none pointer-events-none">
-          登攀
-        </div>
-      </div>
+        {/* Action Buttons & Tab Switcher */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* View Tab Switcher */}
+          <div className="flex items-center p-1 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+            <button
+              type="button"
+              onClick={() => { playClickSound(); setRoadmapView('journey'); }}
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                roadmapView === 'journey'
+                  ? 'bg-[#E85D3F] text-white shadow-xs'
+                  : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+              }`}
+            >
+              <Compass size={14} />
+              <span>Bản đồ HSK</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { playClickSound(); setRoadmapView('skills'); }}
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                roadmapView === 'skills'
+                  ? 'bg-[#E85D3F] text-white shadow-xs'
+                  : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+              }`}
+            >
+              <BarChart3 size={14} />
+              <span>Kỹ năng</span>
+            </button>
+          </div>
 
-      {/* 2 Focused View Tabs Switcher */}
-      <div className="flex items-center justify-center p-1.5 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm max-w-md mx-auto">
-        <button
-          type="button"
-          onClick={() => { playClickSound(); setRoadmapView('journey'); }}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-            roadmapView === 'journey'
-              ? 'bg-[#E85D3F] text-white shadow-xs'
-              : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
-          }`}
-        >
-          <Compass size={15} />
-          <span>Bản đồ hành trình HSK</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => { playClickSound(); setRoadmapView('skills'); }}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-            roadmapView === 'skills'
-              ? 'bg-[#E85D3F] text-white shadow-xs'
-              : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
-          }`}
-        >
-          <BarChart3 size={15} />
-          <span>Phân tích kỹ năng thực tế</span>
-        </button>
+          <button
+            onClick={() => {
+              playClickSound();
+              setShowPlacementTest(true);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+          >
+            <Compass size={14} />
+            <span>Xếp lớp HSK</span>
+          </button>
+
+          <button
+            onClick={() => {
+              playClickSound();
+              setShowDailyMissions(true);
+            }}
+            className="px-3 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] hover:bg-[#F1E5D8] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+          >
+            <Calendar size={14} />
+            <span>Nhiệm vụ ngày</span>
+          </button>
+        </div>
       </div>
 
       {/* VIEW 1: 🗺️ JOURNEY MAP (Default interactive HSK roadmap) */}

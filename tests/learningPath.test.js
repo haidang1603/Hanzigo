@@ -19,6 +19,12 @@ import {
   getPersonalizedRecommendation,
   getUserJourneyProgress
 } from '../src/services/learningPathService.js';
+import {
+  getStreakStatus,
+  recordStudyActivity,
+  getLocalDateString,
+  getUserStorageKey
+} from '../src/utils/gamification.js';
 
 // Polyfill localStorage in Node test environment
 if (typeof globalThis.localStorage === 'undefined') {
@@ -181,5 +187,59 @@ test('Learning Path: Lesson replayability and progression gating', () => {
 
   const updatedProgress = getUserJourneyProgress(mockUser);
   assert.ok(updatedProgress.completedLessons['hsk1-c1-l1'], 'Completed lesson remains in completedLessons');
+});
+
+test('Streak: Resets to 0 when account is off 1 day or more', () => {
+  localStorage.clear();
+  const mockUser = { uid: 'streak_test_user' };
+
+  // 1. Brand new user who hasn't studied has streak = 0
+  const initialStatus = getStreakStatus(mockUser);
+  assert.equal(initialStatus.streak, 0, 'New user streak must be 0');
+  assert.equal(initialStatus.hasStudiedToday, false, 'hasStudiedToday must be false');
+
+  // 2. Study today -> streak becomes 1
+  const s1 = recordStudyActivity(mockUser);
+  assert.equal(s1, 1, 'First study day sets streak to 1');
+  const todayStatus = getStreakStatus(mockUser);
+  assert.equal(todayStatus.streak, 1, 'Streak is 1 after studying today');
+  assert.equal(todayStatus.hasStudiedToday, true, 'hasStudiedToday must be true');
+
+  // 3. User was active yesterday -> streak preserved pending today
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = getLocalDateString(yesterday);
+  const dateKey = getUserStorageKey('hanzigo_last_study_date', mockUser);
+  const streakKey = getUserStorageKey('hanzigo_streak_count', mockUser);
+
+  localStorage.setItem(dateKey, yesterdayStr);
+  localStorage.setItem(streakKey, '5');
+  const pendingStatus = getStreakStatus(mockUser);
+  assert.equal(pendingStatus.streak, 5, 'Streak is preserved from yesterday');
+  assert.equal(pendingStatus.hasStudiedToday, false, 'hasStudiedToday is false pending study');
+
+  // Studying today after yesterday advances streak: 5 + 1 = 6
+  const s2 = recordStudyActivity(mockUser);
+  assert.equal(s2, 6, 'Consecutive study advances streak');
+
+  // 4. CRITICAL: User is OFF 1 day (last study date was 2 days ago, missed yesterday)
+  const twoDaysAgo = new Date();
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+  const twoDaysAgoStr = getLocalDateString(twoDaysAgo);
+
+  localStorage.setItem(dateKey, twoDaysAgoStr);
+  localStorage.setItem(streakKey, '10');
+
+  // When account is off 1 day, streak MUST reset to 0!
+  const offStatus = getStreakStatus(mockUser);
+  assert.equal(offStatus.streak, 0, 'Streak MUST reset to 0 when account is off 1 day');
+  assert.equal(offStatus.hasStudiedToday, false, 'hasStudiedToday is false when off');
+
+  // Stored streak in localStorage must also be reset to 0
+  assert.equal(localStorage.getItem(streakKey), '0', 'Stored streak in localStorage must be reset to 0');
+
+  // Studying today after breaking streak starts fresh at 1
+  const s3 = recordStudyActivity(mockUser);
+  assert.equal(s3, 1, 'Studying after broken streak restarts streak at 1');
 });
 

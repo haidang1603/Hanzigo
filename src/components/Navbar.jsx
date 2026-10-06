@@ -20,7 +20,10 @@ import {
   ShieldCheck,
   ChevronDown,
   GraduationCap,
-  Trophy
+  Trophy,
+  LogOut,
+  Settings,
+  Shield
 } from 'lucide-react';
 import { playClickSound } from '../utils/audio';
 
@@ -39,21 +42,22 @@ export default function Navbar({
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [practiceOpen, setPracticeOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
   const practiceRef = useRef(null);
+  const moreRef = useRef(null);
+  const userDropdownRef = useRef(null);
 
   const ADMIN_EMAILS = ['lehaidang16032006@gmail.com', 'admin@hanzigo.com'];
   const isAdmin = Boolean(user && (ADMIN_EMAILS.includes((user.email || '').toLowerCase().trim()) || user.role === 'admin'));
+  const isTeacher = Boolean(user && (user.role === 'teacher' || isAdmin) && user.status !== 'blocked');
 
-  // Main high-level tabs
-  const primaryNavItems = [
+  // Primary navigation tabs (core flow)
+  const coreNavItems = [
     { id: 'home', label: 'Trang chủ', icon: BookOpen },
-    { id: 'dashboard', label: 'Dashboard', icon: Layers },
     { id: 'roadmap', label: 'Lộ trình', icon: Compass },
-  ];
-
-  const secondaryNavItems = [
-    { id: 'materials', label: 'Tài liệu', icon: FolderDown },
-    { id: 'community', label: 'Cộng đồng', icon: Users },
+    { id: 'classroom', label: 'Lớp học', icon: GraduationCap },
   ];
 
   // Specific skill training items grouped cleanly under "Luyện tập"
@@ -88,14 +92,30 @@ export default function Navbar({
     },
   ];
 
+  // Explore & Community items grouped under "Khám phá"
+  const moreItems = [
+    { id: 'dashboard', label: 'Dashboard', desc: 'Thống kê & phân tích cá nhân', icon: Layers },
+    { id: 'materials', label: 'Tài liệu', desc: 'Kho giáo trình PDF & Audio', icon: FolderDown },
+    { id: 'community', label: 'Cộng đồng', desc: 'Hỏi đáp & Ghép bạn học', icon: Users },
+  ];
+
   const isPracticeActive = practiceItems.some(item => item.id === activeTab);
   const activePractice = practiceItems.find(item => item.id === activeTab);
 
-  // Close dropdown on click outside
+  const isMoreActive = moreItems.some(item => item.id === activeTab);
+  const activeMore = moreItems.find(item => item.id === activeTab);
+
+  // Close dropdowns on click outside
   useEffect(() => {
     function handleClickOutside(e) {
       if (practiceRef.current && !practiceRef.current.contains(e.target)) {
         setPracticeOpen(false);
+      }
+      if (moreRef.current && !moreRef.current.contains(e.target)) {
+        setMoreOpen(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target)) {
+        setUserDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -107,12 +127,14 @@ export default function Navbar({
     setActiveTab(id);
     setMobileMenuOpen(false);
     setPracticeOpen(false);
+    setMoreOpen(false);
+    setUserDropdownOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <header className="sticky top-0 z-50 bg-[#FFF9F2]/95 dark:bg-[#131B24]/95 backdrop-blur-md border-b border-[#F1E5D8] dark:border-[#2B3A4F] transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20 gap-2">
           
           {/* Logo Brand */}
@@ -141,7 +163,7 @@ export default function Navbar({
 
           {/* Desktop Navigation Links - Compact, Neat & Never Wraps */}
           <nav className="hidden lg:flex items-center gap-1 shrink-0">
-            {primaryNavItems.map((item) => {
+            {coreNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
@@ -160,7 +182,7 @@ export default function Navbar({
               );
             })}
 
-            {/* Dropdown "Luyện tập" Grouping Practice Tools */}
+            {/* Dropdown "Luyện tập" */}
             <div 
               ref={practiceRef}
               className="relative"
@@ -183,7 +205,6 @@ export default function Navbar({
                 <ChevronDown size={14} className={`transition-transform duration-200 ${practiceOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Dropdown Popover */}
               {practiceOpen && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="w-72 p-2 rounded-2xl bg-white/95 dark:bg-[#1A2433]/95 backdrop-blur-xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl shadow-black/15 space-y-1">
@@ -232,30 +253,77 @@ export default function Navbar({
               )}
             </div>
 
-            {secondaryNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item.id)}
-                  className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-2 rounded-xl text-xs xl:text-sm font-bold whitespace-nowrap transition-all duration-150 cursor-pointer ${
-                    isActive
-                      ? 'bg-[#E85D3F] text-white shadow-sm shadow-[#E85D3F]/30'
+            {/* Dropdown "Khám phá" (Dashboard, Tài liệu, Cộng đồng) */}
+            <div 
+              ref={moreRef}
+              className="relative"
+              onMouseEnter={() => setMoreOpen(true)}
+              onMouseLeave={() => setMoreOpen(false)}
+            >
+              <button
+                type="button"
+                onClick={() => setMoreOpen(prev => !prev)}
+                className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-2 rounded-xl text-xs xl:text-sm font-bold whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                  isMoreActive
+                    ? 'bg-[#E85D3F] text-white shadow-sm shadow-[#E85D3F]/30'
+                    : moreOpen
+                      ? 'bg-white/90 dark:bg-[#1E293B] text-[#E85D3F] dark:text-white shadow-sm'
                       : 'text-[#243447] dark:text-[#CBD5E1] hover:text-[#E85D3F] dark:hover:text-white hover:bg-white/80 dark:hover:bg-[#1E293B]'
-                  }`}
-                >
-                  <Icon size={15} className={isActive ? 'text-white' : 'text-[#748092] dark:text-[#94A3B8]'} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+                }`}
+              >
+                <Layers size={15} className={isMoreActive ? 'text-white' : 'text-[#748092] dark:text-[#94A3B8]'} />
+                <span>{isMoreActive ? activeMore?.label : 'Khám phá'}</span>
+                <ChevronDown size={14} className={`transition-transform duration-200 ${moreOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {moreOpen && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="w-64 p-2 rounded-2xl bg-white/95 dark:bg-[#1A2433]/95 backdrop-blur-xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl shadow-black/15 space-y-1">
+                    <div className="px-3 py-1.5 pb-2 border-b border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
+                        Tính năng mở rộng
+                      </p>
+                    </div>
+                    {moreItems.map((item) => {
+                      const MIcon = item.icon;
+                      const isMActive = activeTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            handleNavClick(item.id);
+                            setMoreOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all text-left cursor-pointer group ${
+                            isMActive
+                              ? 'bg-[#FFF5F2] dark:bg-[#2C1D1A] border border-[#E85D3F]/25 shadow-sm'
+                              : 'hover:bg-[#FFF9F2] dark:hover:bg-[#243447]'
+                          }`}
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-orange-500/10 text-[#E85D3F] flex items-center justify-center shrink-0">
+                            <MIcon size={15} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-xs font-bold ${isMActive ? 'text-[#E85D3F]' : 'text-[#243447] dark:text-white group-hover:text-[#E85D3F]'}`}>
+                              {item.label}
+                            </p>
+                            <p className="text-[10px] text-[#748092] dark:text-[#94A3B8] truncate">
+                              {item.desc}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Right Action Tools & User Profile */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             
-            {/* Streak & EXP Badges (Only shown when user is logged in) */}
+            {/* Streak & EXP Badges */}
             {user && (
               <>
                 <div 
@@ -268,8 +336,8 @@ export default function Navbar({
 
                 <button 
                   onClick={() => handleNavClick('leaderboard')}
-                  title="Bảng xếp hạng cao thủ XP (Leaderboard) - Nhấn để xem vị trí của bạn"
-                  className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border border-[#E85D3F]/20 text-[#E85D3F] hover:bg-[#E85D3F] hover:text-white text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer group shadow-xs"
+                  title="Bảng xếp hạng cao thủ XP"
+                  className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border border-[#E85D3F]/20 text-[#E85D3F] hover:bg-[#E85D3F] hover:text-white text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer group shadow-xs"
                 >
                   <Sparkles size={13} className="group-hover:rotate-12 transition-transform" />
                   <span>{xp} XP</span>
@@ -285,7 +353,7 @@ export default function Navbar({
                 playClickSound();
               }}
               title={soundEnabled ? 'Âm thanh bật' : 'Âm thanh tắt'}
-              className="p-1.5 sm:p-2 rounded-xl text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] border border-transparent hover:border-[#F1E5D8] dark:hover:border-[#2B3A4F] transition-colors cursor-pointer shrink-0"
+              className="p-1.5 rounded-xl text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] border border-transparent hover:border-[#F1E5D8] dark:hover:border-[#2B3A4F] transition-colors cursor-pointer shrink-0"
             >
               {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} className="text-red-400" />}
             </button>
@@ -297,63 +365,155 @@ export default function Navbar({
                 playClickSound();
               }}
               title={darkMode ? 'Chế độ sáng' : 'Chế độ tối'}
-              className="p-1.5 sm:p-2 rounded-xl text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] border border-transparent hover:border-[#F1E5D8] dark:hover:border-[#2B3A4F] transition-colors cursor-pointer shrink-0"
+              className="p-1.5 rounded-xl text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] border border-transparent hover:border-[#F1E5D8] dark:hover:border-[#2B3A4F] transition-colors cursor-pointer shrink-0"
             >
               {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
             </button>
 
-            {/* Admin Portal Button - Only visible to Admin */}
+            {/* Teacher Portal Button (Teacher or Admin) */}
+            {isTeacher && (
+              <button
+                onClick={() => handleNavClick('teacher')}
+                title="Cổng Giáo viên (Teacher Dashboard)"
+                className={`px-2 xl:px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
+                  activeTab === 'teacher'
+                    ? 'bg-[#E85D3F] text-white border-[#E85D3F] shadow-sm shadow-[#E85D3F]/30'
+                    : 'bg-orange-500/10 text-[#E85D3F] dark:text-orange-400 border-orange-500/20 hover:bg-orange-500/20'
+                }`}
+              >
+                <GraduationCap size={15} />
+                <span className="hidden sm:inline">Giáo viên</span>
+              </button>
+            )}
+
+            {/* Admin Portal Button */}
             {isAdmin && (
               <button
                 onClick={() => handleNavClick('admin')}
                 title="Trang quản trị (Admin)"
-                className={`px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
+                className={`px-2 xl:px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
                   activeTab === 'admin'
                     ? 'bg-[#E85D3F] text-white border-[#E85D3F] shadow-sm shadow-[#E85D3F]/30'
                     : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
                 }`}
               >
-                <ShieldCheck size={14} />
-                <span>Admin</span>
+                <ShieldCheck size={15} />
+                <span className="hidden sm:inline">Admin</span>
               </button>
             )}
 
-            {/* User Profile or Login Button */}
+            {/* User Profile with Interactive Dropdown */}
             {user ? (
-              <div 
-                onClick={() => handleNavClick('profile')}
-                className="flex items-center gap-2 pl-1 cursor-pointer group shrink-0"
-                title="Xem hồ sơ cá nhân"
-              >
-                {(() => {
-                  const navAvatar = user.avatar || localStorage.getItem('hanzigo_custom_avatar');
-                  if (navAvatar) {
-                    return navAvatar.length <= 4 ? (
-                      <div className="w-8 h-8 rounded-full bg-[#FFF5F2] dark:bg-[#2C1D1A] border-2 border-[#E85D3F] flex items-center justify-center text-sm shadow-sm group-hover:ring-2 ring-[#E85D3F]/50 transition-all">
-                        {navAvatar}
+              <div ref={userDropdownRef} className="relative shrink-0">
+                <div 
+                  onClick={() => setUserDropdownOpen(prev => !prev)}
+                  className="flex items-center gap-1.5 pl-1 cursor-pointer group shrink-0"
+                  title="Nhấn để xem menu người dùng"
+                >
+                  {(() => {
+                    const navAvatar = user.avatar || localStorage.getItem('hanzigo_custom_avatar');
+                    if (navAvatar) {
+                      return navAvatar.length <= 4 ? (
+                        <div className="w-8 h-8 rounded-full bg-[#FFF5F2] dark:bg-[#2C1D1A] border-2 border-[#E85D3F] flex items-center justify-center text-sm shadow-sm group-hover:ring-2 ring-[#E85D3F]/50 transition-all shrink-0">
+                          {navAvatar}
+                        </div>
+                      ) : (
+                        <img 
+                          src={navAvatar} 
+                          alt={user.name} 
+                          className="w-8 h-8 rounded-full object-cover border-2 border-[#E85D3F] shadow-sm group-hover:ring-2 ring-[#E85D3F]/50 transition-all shrink-0"
+                        />
+                      );
+                    }
+                    return (
+                      <div className="w-8 h-8 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border-2 border-[#E85D3F] flex items-center justify-center text-[#E85D3F] font-bold text-xs shadow-sm group-hover:ring-2 ring-[#E85D3F]/50 transition-all shrink-0">
+                        {user.name ? user.name.charAt(0).toUpperCase() : <User size={14} />}
                       </div>
-                    ) : (
-                      <img 
-                        src={navAvatar} 
-                        alt={user.name} 
-                        className="w-8 h-8 rounded-full object-cover border-2 border-[#E85D3F] shadow-sm group-hover:ring-2 ring-[#E85D3F]/50 transition-all"
-                      />
                     );
-                  }
-                  return (
-                    <div className="w-8 h-8 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border-2 border-[#E85D3F] flex items-center justify-center text-[#E85D3F] font-bold text-xs shadow-sm group-hover:ring-2 ring-[#E85D3F]/50 transition-all">
-                      {user.name ? user.name.charAt(0).toUpperCase() : <User size={14} />}
-                    </div>
-                  );
-                })()}
-                <div className="hidden 2xl:block text-left whitespace-nowrap">
-                  <p className="text-xs font-bold text-[#243447] dark:text-white leading-tight truncate max-w-[100px]">
-                    {user.name}
-                  </p>
-                  <p className="text-[10px] text-[#45B97C] font-semibold">
-                    {user.level || 'HSK 1 - Sơ cấp'}
-                  </p>
+                  })()}
+
+                  <div className="hidden xl:block text-left whitespace-nowrap">
+                    <p className="text-xs font-bold text-[#243447] dark:text-white leading-tight truncate max-w-[85px]">
+                      {user.name}
+                    </p>
+                    <p className="text-[10px] text-[#45B97C] font-semibold">
+                      {isAdmin ? 'Quản trị viên' : user.role === 'teacher' ? 'Giáo viên' : user.level || 'HSK 1'}
+                    </p>
+                  </div>
+                  <ChevronDown size={12} className={`text-[#748092] transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>
+
+                {/* Profile Popover Menu */}
+                {userDropdownOpen && (
+                  <div className="absolute right-0 top-full pt-2 z-50 w-64 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="p-3 rounded-2xl bg-white/95 dark:bg-[#1A2433]/95 backdrop-blur-xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl shadow-black/20 space-y-2">
+                      <div className="pb-2 border-b border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70">
+                        <p className="text-xs font-bold text-[#243447] dark:text-white truncate">{user.name}</p>
+                        <p className="text-[10px] text-[#748092] truncate">{user.email}</p>
+                        <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                          isAdmin 
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800'
+                            : user.role === 'teacher'
+                            ? 'bg-[#FFF5F2] dark:bg-[#2C1D1A] text-[#E85D3F] border-[#E85D3F]/20'
+                            : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                        }`}>
+                          {isAdmin ? '🛡️ Quản trị viên (Admin)' : user.role === 'teacher' ? '🧑‍🏫 Giáo viên' : '🎓 Học viên'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1 text-xs font-semibold">
+                        <button
+                          onClick={() => handleNavClick('profile')}
+                          className="w-full flex items-center gap-2 p-2 rounded-xl text-left hover:bg-[#FFF9F2] dark:hover:bg-[#243447] text-[#243447] dark:text-white cursor-pointer"
+                        >
+                          <User size={15} className="text-[#E85D3F]" />
+                          <span>Hồ sơ cá nhân</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleNavClick('classroom')}
+                          className="w-full flex items-center gap-2 p-2 rounded-xl text-left hover:bg-[#FFF9F2] dark:hover:bg-[#243447] text-[#243447] dark:text-white cursor-pointer"
+                        >
+                          <GraduationCap size={15} className="text-blue-500" />
+                          <span>Lớp học của tôi</span>
+                        </button>
+
+                        {isTeacher && (
+                          <button
+                            onClick={() => handleNavClick('teacher')}
+                            className="w-full flex items-center gap-2 p-2 rounded-xl text-left hover:bg-[#FFF9F2] dark:hover:bg-[#243447] text-[#E85D3F] cursor-pointer"
+                          >
+                            <GraduationCap size={15} />
+                            <span>Quản lý lớp (Teacher Mode)</span>
+                          </button>
+                        )}
+
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleNavClick('admin')}
+                            className="w-full flex items-center gap-2 p-2 rounded-xl text-left hover:bg-[#FFF9F2] dark:hover:bg-[#243447] text-emerald-600 dark:text-emerald-400 cursor-pointer"
+                          >
+                            <ShieldCheck size={15} />
+                            <span>Trang quản trị (Admin)</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="pt-1 border-t border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70">
+                        <button
+                          onClick={() => {
+                            setUserDropdownOpen(false);
+                            onLogout();
+                          }}
+                          className="w-full flex items-center gap-2 p-1.5 rounded-xl text-left text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold cursor-pointer"
+                        >
+                          <LogOut size={14} />
+                          <span>Đăng xuất</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -365,7 +525,7 @@ export default function Navbar({
                 </button>
                 <button
                   onClick={() => handleNavClick('lesson')}
-                  className="px-3 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-md shadow-[#E85D3F]/25 hover:shadow-lg hover:shadow-[#E85D3F]/35 hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer whitespace-nowrap"
+                  className="px-3 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-md shadow-[#E85D3F]/25 hover:shadow-lg hover:shadow-[#E85D3F]/35 transition-all cursor-pointer whitespace-nowrap"
                 >
                   Bắt đầu học
                 </button>
@@ -383,19 +543,18 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Mobile Menu Drawer */}
+      {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#FFF9F2] dark:bg-[#131B24] border-b border-[#F1E5D8] dark:border-[#2B3A4F] px-4 pt-3 pb-6 space-y-4 shadow-xl animate-in slide-in-from-top-4 duration-200">
-          {/* Main quick links */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {[...primaryNavItems, ...secondaryNavItems].map((item) => {
+        <div className="lg:hidden px-4 pt-2 pb-6 bg-[#FFF9F2] dark:bg-[#131B24] border-b border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3 animate-in slide-in-from-top-2 duration-150">
+          <div className="grid grid-cols-2 gap-2">
+            {[...coreNavItems, ...moreItems].map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                  className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all text-left ${
                     isActive
                       ? 'bg-[#E85D3F] text-white shadow-sm'
                       : 'text-[#243447] dark:text-[#CBD5E1] bg-white dark:bg-[#1B2636] border border-[#F1E5D8]/60 dark:border-[#2B3A4F]/60'
@@ -439,19 +598,29 @@ export default function Navbar({
 
           {/* Bottom actions */}
           <div className="flex items-center justify-between pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => handleNavClick('profile')}
-                className="flex items-center gap-2 text-xs font-bold text-[#243447] dark:text-white"
+                className="flex items-center gap-1.5 text-xs font-bold text-[#243447] dark:text-white"
               >
-                <User size={16} className="text-[#E85D3F]" />
+                <User size={15} className="text-[#E85D3F]" />
                 <span>Hồ sơ</span>
               </button>
+
+              {isTeacher && (
+                <button
+                  onClick={() => handleNavClick('teacher')}
+                  className="flex items-center gap-1.5 text-xs font-bold text-[#E85D3F] bg-orange-500/10 px-2 py-1 rounded-lg border border-orange-500/20"
+                >
+                  <GraduationCap size={14} />
+                  <span>Giáo viên</span>
+                </button>
+              )}
 
               {isAdmin && (
                 <button
                   onClick={() => handleNavClick('admin')}
-                  className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20"
+                  className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20"
                 >
                   <ShieldCheck size={14} />
                   <span>Admin</span>
@@ -466,7 +635,7 @@ export default function Navbar({
                 }}
                 className="text-xs font-bold text-[#E85D3F]"
               >
-                Đăng nhập tài khoản
+                Đăng nhập
               </button>
             ) : (
               <button

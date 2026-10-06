@@ -71,7 +71,7 @@ export default function ProfilePage({
   const fileInputRef = useRef(null);
 
   const streakStatus = useMemo(() => getStreakStatus(user), [user]);
-  const streakCount = Math.max(streakStatus.streak, user?.streak || 0);
+  const streakCount = streakStatus.streak;
 
   // Dynamic learning stats from storage for this specific user
   const rememberedIds = useMemo(() => {
@@ -376,6 +376,19 @@ export default function ProfilePage({
               <h1 className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white">
                 {user?.name || 'Học viên HanziGo'}
               </h1>
+              {user?.role === 'teacher' ? (
+                <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FFF5F2] dark:bg-[#2C1D1A] text-[#E85D3F] text-[11px] font-bold border border-[#E85D3F]/30 w-fit mx-auto sm:mx-0">
+                  🧑‍🏫 Giáo viên
+                </span>
+              ) : user?.role === 'admin' ? (
+                <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold border border-emerald-300 dark:border-emerald-800 w-fit mx-auto sm:mx-0">
+                  🛡️ Quản trị viên
+                </span>
+              ) : (
+                <span className="inline-block px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold border border-blue-200 dark:border-blue-800 w-fit mx-auto sm:mx-0">
+                  🎓 Học viên
+                </span>
+              )}
               {user?.level && (
                 <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] text-[11px] font-bold border border-[#F4B942]/30 w-fit mx-auto sm:mx-0">
                   {user.level}

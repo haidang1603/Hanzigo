@@ -6,7 +6,9 @@ import {
   loginWithGoogle as apiLoginWithGoogle,
   logoutUser as apiLogoutUser,
   getUserProfile,
-  isValidUuid
+  isValidUuid,
+  isEmailAdmin,
+  ADMIN_EMAILS
 } from '../services';
 
 const AuthContext = createContext(null);
@@ -18,8 +20,12 @@ export function AuthProvider({ children }) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
+          const isSysAdmin = isEmailAdmin(parsed.email);
+          const safeXp = parsed.xp === 9999 ? 50 : (parsed.xp ?? 50);
           return {
             ...parsed,
+            role: isSysAdmin ? 'admin' : (parsed.role || 'student'),
+            xp: safeXp,
             uid: parsed.uid || parsed.id || 'user_guest',
             id: parsed.uid || parsed.id || 'user_guest'
           };
@@ -41,19 +47,22 @@ export function AuthProvider({ children }) {
       const dbProfile = await getUserProfile(authUser.id);
       const googleName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.user_metadata?.display_name;
       const googleAvatar = authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture;
+      const isSysAdmin = isEmailAdmin(authUser.email);
+      const effectiveRole = isSysAdmin || dbProfile?.role === 'admin' ? 'admin' : (dbProfile?.role || 'student');
+      const safeXp = dbProfile?.xp !== undefined && dbProfile.xp !== 9999 ? dbProfile.xp : 50;
 
       const mergedUser = {
         uid: authUser.id,
         id: authUser.id,
         email: authUser.email,
-        name: dbProfile?.name || googleName || authUser.email?.split('@')[0] || 'Học viên HanziGo',
+        name: dbProfile?.name || googleName || authUser.email?.split('@')[0] || (isSysAdmin ? 'Admin HanziGo' : 'Học viên HanziGo'),
         level: dbProfile?.level || authUser.user_metadata?.level || 'HSK 1 - Sơ cấp',
         avatar: dbProfile?.avatar || googleAvatar || null,
         bio: dbProfile?.bio || '',
-        role: dbProfile?.role || 'student',
+        role: effectiveRole,
         status: dbProfile?.status || 'active',
-        streak: dbProfile?.streak || 1,
-        xp: dbProfile?.xp || 50,
+        streak: typeof dbProfile?.streak === 'number' ? dbProfile.streak : 0,
+        xp: safeXp,
         wordsLearned: dbProfile?.words_learned || 0
       };
 
@@ -138,15 +147,15 @@ export function AuthProvider({ children }) {
     };
   }, [syncProfile]);
 
-  const loginWithEmail = async (email, password) => {
-    const userData = await apiLoginWithEmail(email, password);
+  const loginWithEmail = async (email, password, targetRole = 'student') => {
+    const userData = await apiLoginWithEmail(email, password, targetRole);
     setUser(userData);
     localStorage.setItem('hanzigo_user', JSON.stringify(userData));
     return userData;
   };
 
-  const registerWithEmail = async (email, password, name, level) => {
-    const userData = await apiRegisterWithEmail(email, password, name, level);
+  const registerWithEmail = async (email, password, name, level, role = 'student') => {
+    const userData = await apiRegisterWithEmail(email, password, name, level, role);
     setUser(userData);
     localStorage.setItem('hanzigo_user', JSON.stringify(userData));
     return userData;
@@ -176,7 +185,37 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
-  const isAdmin = Boolean(user && user.role === 'admin' && user.status !== 'blocked');
+  const isAdmin = Boolean(
+    user && 
+    (user.role === 'admin' || isEmailAdmin(user.email)) && 
+    user.status !== 'blocked'
+  );
+  const isTeacher = Boolean(
+    user && 
+    (user.role === 'teacher' || isAdmin) && 
+    user.status !== 'blocked'
+  );
+  const isStudent = Boolean(!user || (!isAdmin && user.role === 'student'));
+
+  const switchDemoRole = useCallback((newRole) => {
+    if (!['student', 'teacher', 'admin'].includes(newRole)) return;
+    setUser(prev => {
+      const updated = {
+        ...(prev || {
+          uid: 'user_guest',
+          id: 'user_guest',
+          email: 'demo@hanzigo.com',
+          name: newRole === 'teacher' ? 'Thầy Đặng (Giáo viên)' : newRole === 'admin' ? 'Admin HanziGo' : 'Học viên HanziGo',
+          level: 'HSK 3 - Trung cấp',
+          streak: 5,
+          xp: 450
+        }),
+        role: newRole
+      };
+      localStorage.setItem('hanzigo_user', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -186,6 +225,9 @@ export function AuthProvider({ children }) {
         loading,
         isAuthenticated: Boolean(user),
         isAdmin,
+        isTeacher,
+        isStudent,
+        switchDemoRole,
         loginWithEmail,
         registerWithEmail,
         loginWithGoogle,

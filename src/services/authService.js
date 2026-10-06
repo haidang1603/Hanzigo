@@ -16,13 +16,26 @@ export function isValidUuid(id) {
   return typeof id === 'string' && UUID_REGEX.test(id);
 }
 
+export const ADMIN_EMAILS = [
+  'lehaidang16032006@gmail.com',
+  'admin@hanzigo.com'
+];
+
+export function isEmailAdmin(email) {
+  if (!email || typeof email !== 'string') return false;
+  return ADMIN_EMAILS.includes(email.toLowerCase().trim());
+}
+
 /**
- * Register a new user with Email, Password, Name, and initial Level
+ * Register a new user with Email, Password, Name, initial Level, and Role (student | teacher)
  */
-export async function registerWithEmail(email, password, name, level = 'HSK 1 - Sơ cấp') {
+export async function registerWithEmail(email, password, name, level = 'HSK 1 - Sơ cấp', role = 'student') {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase chưa được cấu hình. Vui lòng thiết lập VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY.');
   }
+
+  const isSysAdmin = isEmailAdmin(email);
+  const cleanRole = isSysAdmin ? 'admin' : (role === 'teacher' ? 'teacher' : 'student');
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -30,7 +43,8 @@ export async function registerWithEmail(email, password, name, level = 'HSK 1 - 
     options: {
       data: {
         display_name: name,
-        level: level
+        level: level,
+        role: cleanRole
       }
     }
   });
@@ -44,9 +58,9 @@ export async function registerWithEmail(email, password, name, level = 'HSK 1 - 
     name: name,
     email: email,
     level: level,
-    role: 'student',
+    role: cleanRole,
     streak: 0,
-    xp: 0,
+    xp: cleanRole === 'teacher' ? 500 : 0,
     wordsLearned: 0
   };
 
@@ -58,9 +72,9 @@ export async function registerWithEmail(email, password, name, level = 'HSK 1 - 
         email: email,
         name: name,
         level: level,
-        role: 'student',
+        role: cleanRole,
         streak: 0,
-        xp: 0,
+        xp: cleanRole === 'teacher' ? 500 : 0,
         words_learned: 0,
         updated_at: new Date().toISOString()
       });
@@ -73,9 +87,9 @@ export async function registerWithEmail(email, password, name, level = 'HSK 1 - 
 }
 
 /**
- * Login with Email and Password
+ * Login with Email and Password with designated role (student | teacher)
  */
-export async function loginWithEmail(email, password) {
+export async function loginWithEmail(email, password, targetRole = 'student') {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase chưa được cấu hình. Vui lòng thiết lập VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY.');
   }
@@ -88,6 +102,19 @@ export async function loginWithEmail(email, password) {
   if (error) throw error;
 
   const user = data.user;
+  const isSysAdmin = isEmailAdmin(email);
+  const cleanTargetRole = isSysAdmin ? 'admin' : (targetRole === 'teacher' ? 'teacher' : 'student');
+
+  // Apply role if supported by RPC (never downgrade admin)
+  if (!isSysAdmin) {
+    try {
+      if (isValidUuid(user.id)) {
+        await supabase.rpc('set_user_role_on_login', { p_role: cleanTargetRole });
+      }
+    } catch (rpcErr) {
+      console.warn('Supabase set_user_role_on_login RPC notice:', rpcErr);
+    }
+  }
 
   // Fetch verified profile from `profiles`
   try {
@@ -98,6 +125,8 @@ export async function loginWithEmail(email, password) {
       .maybeSingle();
 
     if (profile) {
+      const finalRole = isSysAdmin || profile.role === 'admin' ? 'admin' : (profile.role || cleanTargetRole);
+      const safeXp = profile.xp === 9999 ? 50 : (profile.xp ?? 50);
       return {
         uid: user.id,
         id: user.id,
@@ -105,10 +134,10 @@ export async function loginWithEmail(email, password) {
         email: profile.email || user.email,
         level: profile.level || 'HSK 1 - Sơ cấp',
         avatar: profile.avatar || null,
-        role: profile.role || 'student',
+        role: finalRole,
         status: profile.status || 'active',
         streak: profile.streak || 0,
-        xp: profile.xp || 0,
+        xp: safeXp,
         wordsLearned: profile.words_learned || 0
       };
     }
@@ -122,10 +151,10 @@ export async function loginWithEmail(email, password) {
     name: user.user_metadata?.display_name || email.split('@')[0],
     email: user.email,
     level: user.user_metadata?.level || 'HSK 1 - Sơ cấp',
-    role: 'student',
+    role: isSysAdmin ? 'admin' : cleanTargetRole,
     status: 'active',
     streak: 0,
-    xp: 0,
+    xp: 50,
     wordsLearned: 0
   };
 }

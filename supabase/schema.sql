@@ -598,3 +598,457 @@ CREATE INDEX IF NOT EXISTS idx_lessons_chapter ON public.learning_lessons(chapte
 CREATE INDEX IF NOT EXISTS idx_user_journey_uid ON public.user_journey_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_missions_uid_date ON public.user_daily_missions(user_id, mission_date);
 
+-- =========================================================================
+-- 8. TEACHER MODE & CLASSROOM MVP SYSTEM
+-- =========================================================================
+
+-- 8.1. Kiểm tra quyền Teacher an toàn trên database
+CREATE OR REPLACE FUNCTION public.is_teacher()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role IN ('teacher', 'admin') AND status != 'blocked'
+  ) OR EXISTS (
+    SELECT 1 FROM public.classrooms
+    WHERE teacher_id = auth.uid()
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- 8.2. classrooms: Quản lý lớp học
+CREATE TABLE IF NOT EXISTS public.classrooms (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  hsk_level TEXT DEFAULT 'HSK 1',
+  class_code TEXT NOT NULL UNIQUE,
+  max_students INT DEFAULT 30 CHECK (max_students >= 1),
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'closed', 'archived')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 8.3. class_members: Thành viên học viên
+CREATE TABLE IF NOT EXISTS public.class_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  classroom_id UUID NOT NULL REFERENCES public.classrooms(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'removed')),
+  CONSTRAINT uq_class_member_pair UNIQUE (classroom_id, student_id)
+);
+
+-- 8.4. assignments: Bài tập giao cho lớp
+CREATE TABLE IF NOT EXISTS public.assignments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  classroom_id UUID NOT NULL REFERENCES public.classrooms(id) ON DELETE CASCADE,
+  teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  content_type TEXT NOT NULL DEFAULT 'Vocabulary',
+  content_id TEXT NULL,
+  content JSONB DEFAULT '{}'::jsonb,
+  due_date TIMESTAMPTZ NULL,
+  published BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 8.5. assignment_submissions: Bài nộp và chấm điểm
+CREATE TABLE IF NOT EXISTS public.assignment_submissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  assignment_id UUID NOT NULL REFERENCES public.assignments(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'submitted' CHECK (status IN ('pending', 'submitted', 'graded', 'late')),
+  submission_data JSONB DEFAULT '{}'::jsonb,
+  score NUMERIC(5,2) NULL,
+  feedback TEXT DEFAULT '',
+  submitted_at TIMESTAMPTZ DEFAULT NOW(),
+  graded_at TIMESTAMPTZ NULL,
+  graded_by UUID NULL REFERENCES public.profiles(id) ON DELETE SET NULL,
+  CONSTRAINT uq_assignment_student_submission UNIQUE (assignment_id, student_id)
+);
+
+-- 8.6. class_announcements: Bảng tin thông báo
+CREATE TABLE IF NOT EXISTS public.class_announcements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  classroom_id UUID NOT NULL REFERENCES public.classrooms(id) ON DELETE CASCADE,
+  teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  pinned BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 8.7. class_materials: Tài liệu học tập riêng của lớp
+CREATE TABLE IF NOT EXISTS public.class_materials (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  classroom_id UUID NOT NULL REFERENCES public.classrooms(id) ON DELETE CASCADE,
+  teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  file_url TEXT NOT NULL,
+  file_type TEXT NOT NULL DEFAULT 'pdf',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_classrooms_teacher ON public.classrooms(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_classrooms_code ON public.classrooms(class_code);
+CREATE INDEX IF NOT EXISTS idx_class_members_class ON public.class_members(classroom_id);
+CREATE INDEX IF NOT EXISTS idx_class_members_student ON public.class_members(student_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_class ON public.assignments(classroom_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_assign ON public.assignment_submissions(assignment_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_student ON public.assignment_submissions(student_id);
+
+-- RPC Function: Tham gia lớp học bằng code
+CREATE OR REPLACE FUNCTION public.join_class_by_code(p_class_code TEXT)
+RETURNS JSONB AS $$
+DECLARE
+  v_uid UUID;
+  v_user_role TEXT;
+  v_user_status TEXT;
+  v_classroom RECORD;
+  v_student_count INT;
+BEGIN
+  v_uid := auth.uid();
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Chưa xác thực: Vui lòng đăng nhập trước khi tham gia lớp học.';
+  END IF;
+
+  SELECT role, status INTO v_user_role, v_user_status
+  FROM public.profiles
+  WHERE id = v_uid;
+
+  IF v_user_status = 'blocked' THEN
+    RAISE EXCEPTION 'Tài khoản của bạn đang bị khóa, không thể tham gia lớp học.';
+  END IF;
+
+  SELECT * INTO v_classroom
+  FROM public.classrooms
+  WHERE UPPER(TRIM(class_code)) = UPPER(TRIM(p_class_code));
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Mã lớp không hợp lệ hoặc không tồn tại.';
+  END IF;
+
+  IF v_classroom.status != 'active' THEN
+    RAISE EXCEPTION 'Lớp học hiện tại đã đóng hoặc lưu trữ, không tiếp nhận học viên mới.';
+  END IF;
+
+  IF v_classroom.teacher_id = v_uid THEN
+    RAISE EXCEPTION 'Bạn là giáo viên phụ trách lớp này, không cần tham gia dưới vai trò học viên.';
+  END IF;
+
+  SELECT COUNT(*) INTO v_student_count
+  FROM public.class_members
+  WHERE classroom_id = v_classroom.id AND status = 'active';
+
+  IF v_student_count >= v_classroom.max_students THEN
+    RAISE EXCEPTION 'Lớp học đã đạt sĩ số tối đa (% học viên). Vui lòng liên hệ giáo viên.', v_classroom.max_students;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.class_members
+    WHERE classroom_id = v_classroom.id AND student_id = v_uid AND status = 'active'
+  ) THEN
+    RAISE EXCEPTION 'Bạn đã là thành viên của lớp học này.';
+  END IF;
+
+  INSERT INTO public.class_members (classroom_id, student_id, status, joined_at)
+  VALUES (v_classroom.id, v_uid, 'active', NOW())
+  ON CONFLICT (classroom_id, student_id)
+  DO UPDATE SET status = 'active', joined_at = NOW();
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'message', 'Tham gia lớp học thành công!',
+    'classroom_id', v_classroom.id,
+    'name', v_classroom.name,
+    'hsk_level', v_classroom.hsk_level
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- RLS
+ALTER TABLE public.classrooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.class_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assignment_submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.class_announcements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.class_materials ENABLE ROW LEVEL SECURITY;
+
+-- Helper functions with SECURITY DEFINER to break mutual RLS recursion
+CREATE OR REPLACE FUNCTION public.is_classroom_member(
+  p_classroom_id UUID,
+  p_user_id UUID DEFAULT auth.uid()
+)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.class_members
+    WHERE classroom_id = p_classroom_id
+      AND student_id = p_user_id
+      AND status = 'active'
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_classroom_teacher(
+  p_classroom_id UUID,
+  p_user_id UUID DEFAULT auth.uid()
+)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.classrooms
+    WHERE id = p_classroom_id
+      AND teacher_id = p_user_id
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_classroom_member(UUID, UUID) TO authenticated, service_role, anon;
+GRANT EXECUTE ON FUNCTION public.is_classroom_teacher(UUID, UUID) TO authenticated, service_role, anon;
+
+CREATE POLICY "classrooms_select_policy" ON public.classrooms
+  FOR SELECT USING (
+    teacher_id = auth.uid()
+    OR public.is_admin()
+    OR public.is_classroom_member(id, auth.uid())
+  );
+
+CREATE POLICY "classrooms_insert_policy" ON public.classrooms
+  FOR INSERT WITH CHECK (
+    auth.uid() = teacher_id
+    AND NOT EXISTS (
+      SELECT 1 FROM public.profiles WHERE id = auth.uid() AND status = 'blocked'
+    )
+  );
+
+-- Trigger: Tự động thăng cấp tài khoản tạo lớp thành 'teacher' nếu đang là 'student'
+CREATE OR REPLACE FUNCTION public.handle_new_classroom_teacher()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.profiles
+  SET role = 'teacher'
+  WHERE id = NEW.teacher_id AND (role IS NULL OR role = 'student');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_classroom_set_teacher ON public.classrooms;
+CREATE TRIGGER trg_classroom_set_teacher
+  AFTER INSERT ON public.classrooms
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_classroom_teacher();
+
+CREATE POLICY "classrooms_update_policy" ON public.classrooms
+  FOR UPDATE USING (
+    teacher_id = auth.uid() OR public.is_admin()
+  ) WITH CHECK (
+    teacher_id = auth.uid() OR public.is_admin()
+  );
+
+CREATE POLICY "classrooms_delete_policy" ON public.classrooms
+  FOR DELETE USING (
+    teacher_id = auth.uid() OR public.is_admin()
+  );
+
+CREATE POLICY "class_members_select_policy" ON public.class_members
+  FOR SELECT USING (
+    student_id = auth.uid()
+    OR public.is_admin()
+    OR public.is_classroom_teacher(classroom_id, auth.uid())
+    OR public.is_classroom_member(classroom_id, auth.uid())
+  );
+
+CREATE POLICY "class_members_insert_policy" ON public.class_members
+  FOR INSERT WITH CHECK (
+    public.is_admin()
+    OR public.is_classroom_teacher(classroom_id, auth.uid())
+  );
+
+CREATE POLICY "class_members_update_policy" ON public.class_members
+  FOR UPDATE USING (
+    public.is_admin()
+    OR public.is_classroom_teacher(classroom_id, auth.uid())
+  );
+
+CREATE POLICY "class_members_delete_policy" ON public.class_members
+  FOR DELETE USING (
+    public.is_admin()
+    OR public.is_classroom_teacher(classroom_id, auth.uid())
+  );
+
+CREATE POLICY "assignments_select_policy" ON public.assignments
+  FOR SELECT USING (
+    teacher_id = auth.uid()
+    OR public.is_admin()
+    OR (
+      published = true
+      AND public.is_classroom_member(classroom_id, auth.uid())
+    )
+  );
+
+CREATE POLICY "assignments_insert_policy" ON public.assignments
+  FOR INSERT WITH CHECK (
+    auth.uid() = teacher_id
+    AND (public.is_teacher() OR public.is_admin())
+    AND public.is_classroom_teacher(classroom_id, auth.uid())
+  );
+
+CREATE POLICY "assignments_update_policy" ON public.assignments
+  FOR UPDATE USING (
+    teacher_id = auth.uid() OR public.is_admin()
+  ) WITH CHECK (
+    teacher_id = auth.uid() OR public.is_admin()
+  );
+
+CREATE POLICY "assignments_delete_policy" ON public.assignments
+  FOR DELETE USING (
+    teacher_id = auth.uid() OR public.is_admin()
+  );
+
+CREATE POLICY "submissions_select_policy" ON public.assignment_submissions
+  FOR SELECT USING (
+    student_id = auth.uid()
+    OR public.is_admin()
+    OR EXISTS (
+      SELECT 1 FROM public.assignments a
+      JOIN public.classrooms c ON a.classroom_id = c.id
+      WHERE a.id = assignment_submissions.assignment_id
+        AND (c.teacher_id = auth.uid() OR public.is_admin())
+    )
+  );
+
+CREATE POLICY "submissions_insert_policy" ON public.assignment_submissions
+  FOR INSERT WITH CHECK (
+    student_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM public.assignments a
+      JOIN public.class_members m ON a.classroom_id = m.classroom_id
+      WHERE a.id = assignment_submissions.assignment_id
+        AND m.student_id = auth.uid()
+        AND m.status = 'active'
+    )
+  );
+
+CREATE POLICY "submissions_update_policy" ON public.assignment_submissions
+  FOR UPDATE USING (
+    student_id = auth.uid()
+    OR public.is_admin()
+    OR EXISTS (
+      SELECT 1 FROM public.assignments a
+      JOIN public.classrooms c ON a.classroom_id = c.id
+      WHERE a.id = assignment_submissions.assignment_id
+        AND (c.teacher_id = auth.uid() OR public.is_admin())
+    )
+  );
+
+CREATE POLICY "announcements_select_policy" ON public.class_announcements
+  FOR SELECT USING (
+    teacher_id = auth.uid()
+    OR public.is_admin()
+    OR EXISTS (
+      SELECT 1 FROM public.class_members
+      WHERE class_members.classroom_id = class_announcements.classroom_id
+        AND class_members.student_id = auth.uid()
+        AND class_members.status = 'active'
+    )
+  );
+
+CREATE POLICY "announcements_manage_policy" ON public.class_announcements
+  FOR ALL USING (
+    teacher_id = auth.uid() OR public.is_admin()
+  ) WITH CHECK (
+    teacher_id = auth.uid() OR public.is_admin()
+  );
+
+CREATE POLICY "class_materials_select_policy" ON public.class_materials
+  FOR SELECT USING (
+    teacher_id = auth.uid()
+    OR public.is_admin()
+    OR EXISTS (
+      SELECT 1 FROM public.class_members
+      WHERE class_members.classroom_id = class_materials.classroom_id
+        AND class_members.student_id = auth.uid()
+        AND class_members.status = 'active'
+    )
+  );
+
+CREATE POLICY "class_materials_manage_policy" ON public.class_materials
+  FOR ALL USING (
+    teacher_id = auth.uid() OR public.is_admin()
+  ) WITH CHECK (
+    teacher_id = auth.uid() OR public.is_admin()
+  );
+
+-- =========================================================================
+-- 7. LIVE CLASSROOM SESSIONS, PARTICIPANTS, AND CHAT
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS public.class_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  classroom_id UUID NOT NULL REFERENCES public.classrooms(id) ON DELETE CASCADE,
+  teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  ended_at TIMESTAMPTZ NULL,
+  status TEXT DEFAULT 'live' CHECK (status IN ('scheduled', 'live', 'ended')),
+  is_locked BOOLEAN DEFAULT false,
+  is_chat_muted BOOLEAN DEFAULT false,
+  max_capacity INT DEFAULT 50,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_classroom ON public.class_sessions(classroom_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_teacher ON public.class_sessions(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_status ON public.class_sessions(status);
+
+CREATE TABLE IF NOT EXISTS public.session_participants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID NOT NULL REFERENCES public.class_sessions(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('teacher', 'student')),
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  left_at TIMESTAMPTZ NULL,
+  total_duration_seconds INT DEFAULT 0,
+  mic_enabled BOOLEAN DEFAULT false,
+  camera_enabled BOOLEAN DEFAULT false,
+  hand_raised BOOLEAN DEFAULT false,
+  hand_raised_at TIMESTAMPTZ NULL,
+  is_mic_allowed BOOLEAN DEFAULT false,
+  attendance_status TEXT DEFAULT 'present' CHECK (attendance_status IN ('present', 'late', 'absent')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT uq_session_user_pair UNIQUE (session_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_part_session ON public.session_participants(session_id);
+CREATE INDEX IF NOT EXISTS idx_part_user ON public.session_participants(user_id);
+
+CREATE TABLE IF NOT EXISTS public.session_chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID NOT NULL REFERENCES public.class_sessions(id) ON DELETE CASCADE,
+  sender_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  sender_name TEXT NOT NULL,
+  sender_role TEXT NOT NULL CHECK (sender_role IN ('teacher', 'student')),
+  message TEXT NOT NULL,
+  is_deleted BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_session ON public.session_chat_messages(session_id);
+
+ALTER TABLE public.class_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.session_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.session_chat_messages ENABLE ROW LEVEL SECURITY;

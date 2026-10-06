@@ -7,3 +7,5 @@ export * from './adminService.js';
 export * from './progressService.js';
 export * from './learningPathService.js';
 export * from './leaderboardService.js';
+export * from './classroomService.js';
+export * from './liveClassroomService.js';

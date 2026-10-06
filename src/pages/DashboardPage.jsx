@@ -37,7 +37,7 @@ import {
 export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   const userName = user ? (user.name ? user.name.split(' ').pop() : 'Bạn') : 'Bạn';
   const streakStatus = useMemo(() => getStreakStatus(user), [user]);
-  const userStreak = Math.max(streakStatus.streak, user?.streak || 0);
+  const userStreak = streakStatus.streak;
 
   // Daily study goal state (persisted in localStorage per user)
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState(() => {

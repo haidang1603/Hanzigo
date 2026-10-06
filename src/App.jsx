@@ -23,22 +23,44 @@ const CommunityPage = lazy(() => import('./pages/CommunityPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const MaterialsPage = lazy(() => import('./pages/MaterialsPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
+const TeacherDashboardPage = lazy(() => import('./pages/TeacherDashboardPage'));
+const ClassroomPage = lazy(() => import('./pages/ClassroomPage'));
+const LiveClassroomPage = lazy(() => import('./pages/LiveClassroomPage'));
+import TeacherGuard from './components/TeacherGuard';
 
 const VALID_TABS = [
   'home', 'dashboard', 'roadmap', 'lesson', 'vocabulary', 
   'pronunciation', 'writing', 'conversation', 'community', 
-  'materials', 'admin', 'profile', 'leaderboard'
+  'materials', 'admin', 'profile', 'leaderboard',
+  'teacher', 'classroom'
 ];
 
 function MainApp() {
-  const { user, setUser, isAdmin, logout } = useAuth();
+  const { user, setUser, isAdmin, isTeacher, logout } = useAuth();
   const { darkMode, setDarkMode, soundEnabled, setSoundEnabled } = useTheme();
+
+  // Helper to parse detailed sub-routes for teacher and classroom
+  const parseCurrentRoute = () => {
+    try {
+      const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
+      const parts = hash.split('/').filter(Boolean);
+      const tab = parts[0] || 'home';
+      const sub = parts[1] || null;
+      const param = parts[2] || null;
+      const extra = parts[3] || null;
+      return { tab, sub, param, extra };
+    } catch {
+      return { tab: 'home', sub: null, param: null, extra: null };
+    }
+  };
+
+  const [routeInfo, setRouteInfo] = useState(parseCurrentRoute);
 
   // Navigation tab state with hash & localStorage sync
   const [activeTab, setActiveTab] = useState(() => {
     try {
-      const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
-      if (hash && VALID_TABS.includes(hash)) return hash;
+      const parsed = parseCurrentRoute();
+      if (parsed.tab && VALID_TABS.includes(parsed.tab)) return parsed.tab;
       const savedTab = localStorage.getItem('hanzigo_active_tab');
       if (savedTab && VALID_TABS.includes(savedTab)) return savedTab;
       return 'home';
@@ -51,7 +73,10 @@ function MainApp() {
     try {
       localStorage.setItem('hanzigo_active_tab', activeTab);
       if (!window.location.hash.includes('access_token=') && !window.location.hash.includes('error=')) {
-        window.location.hash = `#${activeTab}`;
+        const parsed = parseCurrentRoute();
+        if (parsed.tab !== activeTab) {
+          window.location.hash = `#${activeTab}`;
+        }
       }
     } catch {}
   }, [activeTab]);
@@ -59,9 +84,10 @@ function MainApp() {
   useEffect(() => {
     const handleHashChange = () => {
       try {
-        const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
-        if (hash && VALID_TABS.includes(hash)) {
-          setActiveTab(hash);
+        const parsed = parseCurrentRoute();
+        setRouteInfo(parsed);
+        if (parsed.tab && VALID_TABS.includes(parsed.tab)) {
+          setActiveTab(parsed.tab);
         }
       } catch {}
     };
@@ -69,12 +95,17 @@ function MainApp() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Gamification state
-  const [streak, setStreak] = useState(() => getStreakStatus(user).streak);
+  // Gamification state - synchronized across Navbar and Dashboard
+  const getEffectiveStreak = (u) => {
+    if (!u) return 0;
+    return getStreakStatus(u).streak;
+  };
+
+  const [streak, setStreak] = useState(() => getEffectiveStreak(user));
   const [xp, setXp] = useState(() => calculateTotalXp(user));
 
   useEffect(() => {
-    setStreak(getStreakStatus(user).streak);
+    setStreak(getEffectiveStreak(user));
     setXp(calculateTotalXp(user));
   }, [activeTab, user]);
 
@@ -97,7 +128,7 @@ function MainApp() {
         console.warn('DB sync error upon login:', err);
       }
     }
-    setStreak(getStreakStatus(userData).streak || userData.streak || 0);
+    setStreak(getStreakStatus(userData).streak);
     setXp(calculateTotalXp(userData));
   };
 
@@ -175,6 +206,23 @@ function MainApp() {
       sessionStorage.removeItem('hanzigo_pronounce_target');
     } catch {}
   };
+
+  // Full-screen Live Classroom mode
+  const isLiveRoom = activeTab === 'classroom' && routeInfo.param === 'live' && Boolean(routeInfo.extra);
+  if (isLiveRoom) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <LiveClassroomPage
+          user={user}
+          classId={routeInfo.sub}
+          sessionId={routeInfo.extra}
+          onNavigateBack={() => {
+            window.location.hash = `#classroom/${routeInfo.sub}`;
+          }}
+        />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] transition-colors duration-200">
@@ -283,6 +331,61 @@ function MainApp() {
                 setActiveTab={setActiveTab} 
               />
             </AdminGuard>
+          )}
+
+          {activeTab === 'teacher' && (
+            <TeacherGuard 
+              user={user} 
+              isTeacher={isTeacher} 
+              onGoHome={() => setActiveTab('home')}
+            >
+              <TeacherDashboardPage 
+                user={user}
+                setActiveTab={setActiveTab}
+                subRoute={
+                  routeInfo.sub === 'classes' && routeInfo.param ? 'class_detail' :
+                  routeInfo.sub === 'classes' ? 'classes' :
+                  routeInfo.sub === 'grading' ? 'grading' :
+                  'dashboard'
+                }
+                classId={routeInfo.sub === 'classes' ? routeInfo.param : null}
+                onNavigate={(route, id) => {
+                  if (route === 'dashboard') {
+                    window.location.hash = '#teacher';
+                  } else if (route === 'classes' && !id) {
+                    window.location.hash = '#teacher/classes';
+                  } else if (route === 'classes' && id) {
+                    window.location.hash = `#teacher/classes/${id}`;
+                  } else if (route === 'grading') {
+                    window.location.hash = '#teacher/grading';
+                  }
+                }}
+              />
+            </TeacherGuard>
+          )}
+
+          {activeTab === 'classroom' && (
+            <ClassroomPage 
+              user={user}
+              setActiveTab={setActiveTab}
+              subRoute={
+                routeInfo.sub === 'join' ? 'join' :
+                routeInfo.sub ? 'detail' :
+                'list'
+              }
+              classId={routeInfo.sub && routeInfo.sub !== 'join' ? routeInfo.sub : null}
+              onNavigate={(route, id) => {
+                if (route === 'list') {
+                  window.location.hash = '#classroom';
+                } else if (route === 'join') {
+                  window.location.hash = '#classroom/join';
+                } else if (route === 'detail' && id) {
+                  window.location.hash = `#classroom/${id}`;
+                } else if (route === 'assignments' && id) {
+                  window.location.hash = `#classroom/${id}/assignments`;
+                }
+              }}
+            />
           )}
 
           {activeTab === 'profile' && (

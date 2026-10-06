@@ -65,11 +65,25 @@ export async function triggerCloudSync(uid = null) {
       }
     }
 
+    // Check streak
+    let streakVal = null;
+    try {
+      const rawStreak = localStorage.getItem(`hanzigo_streak_count_${targetUid}`) || localStorage.getItem('hanzigo_streak_count');
+      if (rawStreak !== null && rawStreak !== undefined) {
+        streakVal = parseInt(rawStreak, 10);
+      }
+    } catch {}
+
     // Sync high-level stats to `profiles`
-    await supabase.from('profiles').update({
+    const profileUpdate = {
       words_learned: rememberedWords.length,
       updated_at: new Date().toISOString()
-    }).eq('id', targetUid);
+    };
+    if (typeof streakVal === 'number' && !isNaN(streakVal)) {
+      profileUpdate.streak = streakVal;
+    }
+
+    await supabase.from('profiles').update(profileUpdate).eq('id', targetUid);
 
     console.log('⚡ HanziGo Progress synced to Cloud DB for user', targetUid);
   } catch (err) {
