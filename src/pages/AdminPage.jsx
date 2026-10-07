@@ -678,11 +678,12 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   const userStats = useMemo(() => {
     const total = usersList.length;
     const admins = usersList.filter(u => u.role === 'admin').length;
+    const teachers = usersList.filter(u => u.role === 'teacher').length;
     const mods = usersList.filter(u => u.role === 'moderator').length;
     const active = usersList.filter(u => u.status === 'active').length;
     const blocked = usersList.filter(u => u.status === 'blocked').length;
     const totalXp = usersList.reduce((acc, cur) => acc + (cur.xp || 0), 0);
-    return { total, admins, mods, active, blocked, totalXp };
+    return { total, admins, teachers, mods, active, blocked, totalXp };
   }, [usersList]);
 
   // -------------------------------------------------------------
@@ -1021,6 +1022,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 {[
                   { id: 'all', label: 'Tất cả' },
                   { id: 'admin', label: 'Quản trị viên' },
+                  { id: 'teacher', label: 'Giáo viên' },
                   { id: 'moderator', label: 'Kiểm duyệt viên' },
                   { id: 'student', label: 'Học viên' }
                 ].map(r => (
@@ -1114,6 +1116,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   ) : (
                     filteredUsers.map((u) => {
                       const isAdmin = u.role === 'admin';
+                      const isTeacher = u.role === 'teacher';
                       const isMod = u.role === 'moderator';
                       const isBlocked = u.status === 'blocked';
 
@@ -1159,12 +1162,15 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                                 className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                                   isAdmin
                                     ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                                    : isTeacher
+                                    ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
                                     : isMod
                                     ? 'bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800'
                                     : 'bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
                                 }`}
                               >
                                 <option value="admin">👑 Admin (Quản trị)</option>
+                                <option value="teacher">👨‍🏫 Teacher (Giáo viên)</option>
                                 <option value="moderator">🛡️ Moderator (Kiểm duyệt)</option>
                                 <option value="student">🎓 Student (Học viên)</option>
                               </select>
@@ -1172,12 +1178,14 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                               <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border ${
                                 isAdmin
                                   ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                  : isTeacher
+                                  ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300'
                                   : isMod
                                   ? 'bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-300'
                                   : 'bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300'
                               }`}>
-                                {isAdmin ? <Crown size={12} /> : isMod ? <Shield size={12} /> : null}
-                                <span>{isAdmin ? 'Admin' : isMod ? 'Moderator' : 'Học viên'}</span>
+                                {isAdmin ? <Crown size={12} /> : isTeacher ? <Users size={12} /> : isMod ? <Shield size={12} /> : null}
+                                <span>{isAdmin ? 'Admin' : isTeacher ? 'Giáo viên' : isMod ? 'Moderator' : 'Học viên'}</span>
                               </span>
                             )}
                           </td>
@@ -1269,6 +1277,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 <span>🟢 {userStats.active} Đang hoạt động</span>
                 <span>🔴 {userStats.blocked} Bị khóa</span>
                 <span>👑 {userStats.admins} Quản trị viên</span>
+                <span>👨‍🏫 {userStats.teachers || 0} Giáo viên</span>
               </div>
             </div>
           </div>
@@ -1706,6 +1715,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   >
                     <option value="student">🎓 Học viên (Student)</option>
+                    <option value="teacher">👨‍🏫 Giáo viên (Teacher)</option>
                     <option value="moderator">🛡️ Kiểm duyệt (Moderator)</option>
                     <option value="admin">👑 Quản trị viên (Admin)</option>
                   </select>
@@ -1835,6 +1845,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   >
                     <option value="student">🎓 Học viên</option>
+                    <option value="teacher">👨‍🏫 Giáo viên</option>
                     <option value="moderator">🛡️ Kiểm duyệt</option>
                     <option value="admin">👑 Quản trị viên</option>
                   </select>

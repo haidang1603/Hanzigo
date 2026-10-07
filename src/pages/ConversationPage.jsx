@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Send, 
   Mic, 
@@ -129,7 +129,7 @@ export default function ConversationPage() {
   };
 
   // Send a message & trigger AI intelligent response
-  const handleSendMessage = async (userMessageObj) => {
+  const handleSendMessage = useCallback(async (userMessageObj) => {
     const userMsg = {
       speaker: 'user',
       hanzi: userMessageObj.hanzi,
@@ -185,7 +185,7 @@ export default function ConversationPage() {
     } finally {
       setIsAiTyping(false);
     }
-  };
+  }, [chatHistory, conversation]);
 
   // Handle custom input submission
   const handleCustomSend = (e) => {

@@ -3,21 +3,11 @@ import {
   Sparkles, 
   Lock, 
   Check, 
-  Star, 
-  Flame, 
-  Compass, 
-  Award, 
   ChevronRight, 
-  Trophy,
-  Play,
-  RotateCcw,
-  BarChart3,
-  Calendar,
-  Gift,
-  BookOpen,
-  ChevronDown,
+  BookOpen, 
+  ChevronDown, 
   ChevronUp,
-  MapPin
+  Compass
 } from 'lucide-react';
 import { 
   getAllLevels, 
@@ -36,8 +26,8 @@ export default function LearningJourneyMap({
   onSelectLesson, 
   onOpenBoss, 
   onOpenPlacementTest,
-  onOpenDailyMissions,
-  onOpenSkills,
+  onOpenDailyMissions: _onOpenDailyMissions,
+  onOpenSkills: _onOpenSkills,
   onLockedClick
 }) {
   const levels = getAllLevels();
@@ -245,7 +235,49 @@ export default function LearningJourneyMap({
 
       {/* 4. CHAPTER PATHWAYS & VERTICAL JOURNEY MAP */}
       <div className="space-y-10 py-4">
-        {chapters.map((chapter) => {
+        {chapters.length === 0 ? (
+          <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-[#1E293B] border-2 border-dashed border-[#F1E5D8] dark:border-[#2B3A4F] text-center space-y-5 max-w-xl mx-auto shadow-xs animate-in fade-in">
+            <div className="w-20 h-20 rounded-3xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto text-4xl shadow-inner">
+              👑
+            </div>
+            <div className="space-y-2">
+              <span className="text-[11px] font-black uppercase px-3 py-1 rounded-full bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300">
+                HSK 7–9 • Đỉnh cao Bậc thầy & Phiên dịch
+              </span>
+              <h3 className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white">
+                Chuyên Đề Cao Cấp & Phiên Dịch Cabin
+              </h3>
+              <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
+                Chuẩn HSK 7-9 mới tích hợp toàn diện 5 kỹ năng (Nghe, Nói, Đọc, Viết, Dịch thuật).
+                Hãy chinh phục trọn vẹn 24 chương học nền tảng từ HSK 1 đến HSK 6 hoặc làm bài Kiểm tra xếp lớp để sẵn sàng bứt phá!
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setSelectedLevelId('lvl-1');
+                }}
+                className="py-2.5 px-4 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] hover:text-[#243447] dark:hover:text-white cursor-pointer"
+              >
+                Về HSK 1 Căn bản
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  if (onOpenPlacementTest) onOpenPlacementTest();
+                }}
+                className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-teal-600 to-teal-700 hover:opacity-95 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Compass size={14} />
+                <span>Kiểm tra xếp lớp ngay</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          chapters.map((chapter) => {
           const chapterLessons = getLessonsByChapter(chapter.id);
           const bossChallenge = getBossChallengeByChapter(chapter.id);
           const bossUnlocked = isBossUnlocked(chapter.id, progress);
@@ -429,7 +461,7 @@ export default function LearningJourneyMap({
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
     </div>
   );

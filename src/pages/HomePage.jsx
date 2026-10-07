@@ -24,7 +24,8 @@ import {
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
-import { ROADMAP_LEVELS, LESSONS_DATA } from '../data/chineseData';
+import { ROADMAP_LEVELS } from '../data/chineseData';
+import { getLessonsByChapter } from '../services/learningPathService';
 
 // Mini Quick Reflex Quiz Dataset
 const QUICK_QUIZZES = [
@@ -955,15 +956,15 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {LESSONS_DATA.map((lesson, idx) => (
+          {getLessonsByChapter('ch-1').map((lesson) => (
             <div 
               key={lesson.id}
               onClick={() => {
                 playClickSound();
                 if (onSelectLesson) {
-                  onSelectLesson(idx);
+                  onSelectLesson(lesson.id);
                 } else {
-                  setActiveTab('lesson');
+                  setActiveTab('roadmap');
                 }
               }}
               className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-md hover:border-[#E85D3F] transition-all cursor-pointer group flex flex-col justify-between"
@@ -971,11 +972,11 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="px-2.5 py-1 rounded-lg bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] text-xs font-bold">
-                    Bài {lesson.number} • {lesson.level}
+                    Bài {lesson.lessonNumber || 1} • HSK 1
                   </span>
                   <span className="text-xs text-[#748092] dark:text-[#94A3B8] font-medium flex items-center gap-1">
                     <Clock size={12} />
-                    <span>{lesson.durationMinutes} phút</span>
+                    <span>{lesson.durationMinutes || 15} phút</span>
                   </span>
                 </div>
 
@@ -989,7 +990,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
 
               <div className="mt-6 pt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
                 <span className="text-xs font-bold text-[#45B97C]">
-                  +{lesson.xpReward} XP thưởng
+                  +{lesson.xpReward || 50} XP thưởng
                 </span>
                 <span className="text-xs font-bold text-[#E85D3F] group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
                   <span>Học thử ngay</span>

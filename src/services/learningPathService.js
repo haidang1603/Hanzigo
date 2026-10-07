@@ -150,6 +150,28 @@ export function getLessonById(lessonId) {
   return null;
 }
 
+export function getNextLessonId(lessonId) {
+  const direct = getLessonById(lessonId);
+  if (!direct) return null;
+
+  const chapterLessons = getLessonsByChapter(direct.chapterId);
+  const idx = chapterLessons.findIndex(l => l.id === lessonId);
+  if (idx >= 0 && idx < chapterLessons.length - 1) {
+    return chapterLessons[idx + 1].id;
+  }
+
+  // If last lesson in chapter, transition to first lesson of next chapter
+  const currentChapter = getChapterById(direct.chapterId);
+  if (currentChapter) {
+    const nextChapter = LEARNING_CHAPTERS.find(c => c.chapterNumber === currentChapter.chapterNumber + 1);
+    if (nextChapter && nextChapter.lessonIds && nextChapter.lessonIds.length > 0) {
+      return nextChapter.lessonIds[0];
+    }
+  }
+
+  return null;
+}
+
 export function getBossChallengeByChapter(chapterId) {
   return BOSS_CHALLENGES.find(b => b.chapterId === chapterId);
 }

@@ -19,11 +19,27 @@ import {
   Flame,
   Award,
   Layers,
-  AlertCircle
+  AlertCircle,
+  Lock,
+  Unlock,
+  Timer,
+  Zap
 } from 'lucide-react';
-import { completeLesson, getUserJourneyProgress } from '../../services/learningPathService';
+import { completeLesson, getUserJourneyProgress, getNextLessonId } from '../../services/learningPathService';
 import { evaluatePronunciation } from '../../utils/pronunciationEvaluator';
 import { playClickSound, playSuccessSound, playErrorSound, playLevelUpSound } from '../../utils/audio';
+
+// Helper: Extract target phrase or challenge text from lesson definition
+const getChallengeTarget = (lesson) => {
+  if (lesson?.step9_challenge?.targetPhrase) return lesson.step9_challenge.targetPhrase;
+  const desc = lesson?.step9_challenge?.taskDesc || '';
+  const colonMatch = desc.match(/:\s*([^.]+?)\s*(?:trong vòng|$)/i);
+  if (colonMatch && colonMatch[1]) return colonMatch[1].trim();
+  const quoteMatch = desc.match(/["“]([^"”]+)["”]/);
+  if (quoteMatch && quoteMatch[1]) return quoteMatch[1].trim();
+  if (lesson?.step6_speaking?.targetSentence) return lesson.step6_speaking.targetSentence;
+  return lesson?.step2_vocabulary?.[0]?.hanzi || '中文';
+};
 
 export default function InteractiveLessonPlayer({ 
   lesson, 
@@ -39,6 +55,7 @@ export default function InteractiveLessonPlayer({
   const [earnedStars, setEarnedStars] = useState(3);
   const [quizScore, setQuizScore] = useState(0);
   const [stepWarning, setStepWarning] = useState(null);
+  const [listeningFeedback, setListeningFeedback] = useState(null);
 
   const handleClose = () => {
     if (onBack) onBack();
@@ -46,8 +63,9 @@ export default function InteractiveLessonPlayer({
   };
 
   const handleNextLessonAction = () => {
-    if (onNextLesson && lesson?.nextLessonId) {
-      onNextLesson(lesson.nextLessonId);
+    const nextId = lesson?.nextLessonId || (lesson?.id ? getNextLessonId(lesson.id) : null);
+    if (onNextLesson && nextId) {
+      onNextLesson(nextId);
     } else if (onCompleteNext) {
       onCompleteNext();
     } else {
@@ -58,7 +76,7 @@ export default function InteractiveLessonPlayer({
   // Step 5: Listening speed & toggles
   const [isSlowAudio, setIsSlowAudio] = useState(false);
   const [showPinyin, setShowPinyin] = useState(true);
-  const [showTranslation, setShowTranslation] = useState(true);
+  const [showTranslation] = useState(true);
 
   // Step 6: Speaking state
   const [isRecording, setIsRecording] = useState(false);
@@ -87,6 +105,24 @@ export default function InteractiveLessonPlayer({
   const journeyProgress = getUserJourneyProgress(user);
   const isAlreadyCompleted = Boolean(journeyProgress.completedLessons?.[lesson?.id]);
 
+  // Step 9: Challenge execution states
+  const [challengeCompleted, setChallengeCompleted] = useState(false);
+  const [isChallengeRecording, setIsChallengeRecording] = useState(false);
+  const [challengeTranscript, setChallengeTranscript] = useState('');
+  const [challengeFeedback, setChallengeFeedback] = useState(null);
+  const [challengeCountdown, setChallengeCountdown] = useState(10);
+  const [isReflexRunning, setIsReflexRunning] = useState(false);
+  const [showReflexConfirm, setShowReflexConfirm] = useState(false);
+  const challengeMediaRecorderRef = useRef(null);
+  const challengeAudioChunksRef = useRef([]);
+  const challengeRecognitionRef = useRef(null);
+  const challengeStreamRef = useRef(null);
+  const challengeTimerRef = useRef(null);
+  const challengeStartTimeRef = useRef(null);
+
+  // Gated navigation progression (prevents jumping forward to uncompleted steps)
+  const [maxStepReached, setMaxStepReached] = useState(() => isAlreadyCompleted ? 8 : 0);
+
   useEffect(() => {
     if (lesson?.step7_writing?.words) {
       setAvailableWords([...lesson.step7_writing.words].sort(() => Math.random() - 0.5));
@@ -100,6 +136,17 @@ export default function InteractiveLessonPlayer({
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
     return () => {
+      if (challengeTimerRef.current) clearInterval(challengeTimerRef.current);
+      if (challengeRecognitionRef.current) {
+        try { challengeRecognitionRef.current.stop(); } catch (e) {}
+      }
+      if (challengeMediaRecorderRef.current && challengeMediaRecorderRef.current.state === 'recording') {
+        try { challengeMediaRecorderRef.current.stop(); } catch (e) {}
+      }
+      if (challengeStreamRef.current) {
+        challengeStreamRef.current.getTracks().forEach(t => t.stop());
+        challengeStreamRef.current = null;
+      }
       if (recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch (e) {}
       }
@@ -304,6 +351,16 @@ export default function InteractiveLessonPlayer({
 
   // Validation gating: check if learner meets requirements to advance
   const canProceedToNextStep = () => {
+    // Step 5: Listening comprehension question (Index 4)
+    if (currentStep === 4 && lesson.step5_listening?.question) {
+      if (!listeningFeedback?.isCorrect) {
+        return {
+          canProceed: false,
+          message: '🎧 Vui lòng nghe đoạn hội thoại và chọn đáp án chính xác cho câu hỏi nghe hiểu!'
+        };
+      }
+    }
+
     // Step 6: Speaking (Index 5)
     if (currentStep === 5) {
       if (!speakingFeedback) {
@@ -355,6 +412,16 @@ export default function InteractiveLessonPlayer({
       }
     }
 
+    // Step 9: Challenge (Index 8)
+    if (currentStep === 8 && lesson.step9_challenge) {
+      if (!challengeCompleted && !isAlreadyCompleted) {
+        return {
+          canProceed: false,
+          message: '🔥 Bạn cần thực hiện và hoàn thành thử thách thực chiến trước khi kết thúc bài học!'
+        };
+      }
+    }
+
     return { canProceed: true, message: null };
   };
 
@@ -367,11 +434,167 @@ export default function InteractiveLessonPlayer({
     }
     setStepWarning(null);
     playClickSound();
-    setCurrentStep(prev => Math.min(8, prev + 1));
+    const nextStep = Math.min(8, currentStep + 1);
+    setMaxStepReached(prev => Math.max(prev, nextStep));
+    setCurrentStep(nextStep);
+  };
+
+  // Step 9: Challenge Handlers
+  const handleStopChallengeRecording = () => {
+    if (challengeTimerRef.current) {
+      clearInterval(challengeTimerRef.current);
+      challengeTimerRef.current = null;
+    }
+    if (challengeRecognitionRef.current) {
+      try { challengeRecognitionRef.current.stop(); } catch (e) {}
+    }
+    if (challengeMediaRecorderRef.current && challengeMediaRecorderRef.current.state === 'recording') {
+      try { challengeMediaRecorderRef.current.stop(); } catch (e) {}
+    }
+    if (challengeStreamRef.current) {
+      challengeStreamRef.current.getTracks().forEach(t => t.stop());
+      challengeStreamRef.current = null;
+    }
+    setIsChallengeRecording(false);
+  };
+
+  const handleStartChallengeRecording = () => {
+    playClickSound();
+    setStepWarning(null);
+    setChallengeFeedback(null);
+    setChallengeTranscript('');
+    setIsReflexRunning(false);
+    setShowReflexConfirm(false);
+    setChallengeCountdown(10);
+    challengeAudioChunksRef.current = [];
+    challengeStartTimeRef.current = Date.now();
+
+    const targetPhrase = getChallengeTarget(lesson);
+
+    // Initialize speech recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let spokenText = '';
+    if (SpeechRecognition) {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'zh-CN';
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.onresult = (evt) => {
+          const results = evt.results;
+          spokenText = results[results.length - 1][0].transcript || '';
+          setChallengeTranscript(spokenText);
+        };
+        recognition.onerror = (e) => console.warn('Challenge recognition error:', e.error);
+        challengeRecognitionRef.current = recognition;
+        recognition.start();
+      } catch (recErr) {
+        console.warn('Challenge recognition start err:', recErr);
+      }
+    }
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          challengeStreamRef.current = stream;
+          const mediaRecorder = new MediaRecorder(stream);
+          challengeMediaRecorderRef.current = mediaRecorder;
+          mediaRecorder.ondataavailable = e => {
+            if (e.data && e.data.size > 0) challengeAudioChunksRef.current.push(e.data);
+          };
+          mediaRecorder.onstop = () => {
+            const durationMs = Date.now() - (challengeStartTimeRef.current || Date.now());
+            const finalSpoken = (spokenText || '').trim();
+
+            if (finalSpoken || durationMs >= 1800) {
+              const evalResult = evaluatePronunciation(targetPhrase, '', durationMs, 45, finalSpoken);
+              const score = Math.max(75, evalResult.score || 85);
+              setChallengeFeedback({
+                score,
+                spoken: finalSpoken || targetPhrase,
+                message: `🎉 Xuất sắc! Bạn đã vượt qua thử thách thực chiến với ${score} điểm!`
+              });
+              setChallengeCompleted(true);
+              playSuccessSound();
+              setStepWarning(null);
+              try {
+                confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+              } catch {}
+            } else {
+              playErrorSound();
+              setStepWarning('Không nhận diện được giọng nói trong thời gian thử thách. Hãy bấm Micro và đọc to, rõ ràng theo yêu cầu!');
+            }
+          };
+          mediaRecorder.start();
+          setIsChallengeRecording(true);
+
+          // 10-second live countdown
+          let seconds = 10;
+          if (challengeTimerRef.current) clearInterval(challengeTimerRef.current);
+          challengeTimerRef.current = setInterval(() => {
+            seconds -= 1;
+            setChallengeCountdown(seconds);
+            if (seconds <= 0) {
+              clearInterval(challengeTimerRef.current);
+              challengeTimerRef.current = null;
+              handleStopChallengeRecording();
+            }
+          }, 1000);
+        })
+        .catch(err => {
+          console.warn('Challenge mic error:', err);
+          setIsChallengeRecording(false);
+          playErrorSound();
+          setStepWarning('Không thể truy cập Microphone. Bạn hãy sử dụng chế độ "Thử thách Phản xạ 10s" bên cạnh để hoàn thành!');
+        });
+    } else {
+      setIsChallengeRecording(false);
+      setStepWarning('Trình duyệt không hỗ trợ thu âm Mic. Vui lòng bấm "Thử thách Phản xạ 10s".');
+    }
+  };
+
+  const handleStartReflexChallenge = () => {
+    playClickSound();
+    handleStopChallengeRecording();
+    setStepWarning(null);
+    setChallengeFeedback(null);
+    setIsReflexRunning(true);
+    setShowReflexConfirm(false);
+    setChallengeCountdown(10);
+
+    let seconds = 10;
+    if (challengeTimerRef.current) clearInterval(challengeTimerRef.current);
+    challengeTimerRef.current = setInterval(() => {
+      seconds -= 1;
+      setChallengeCountdown(seconds);
+      if (seconds <= 0) {
+        clearInterval(challengeTimerRef.current);
+        challengeTimerRef.current = null;
+        setIsReflexRunning(false);
+        setShowReflexConfirm(true);
+        playSuccessSound();
+      }
+    }, 1000);
+  };
+
+  const handleConfirmReflex = () => {
+    playSuccessSound();
+    setChallengeCompleted(true);
+    setShowReflexConfirm(false);
+    setChallengeFeedback({
+      score: 90,
+      spoken: getChallengeTarget(lesson),
+      message: '🎉 Tuyệt vời! Bạn đã hoàn thành bài thử thách phản xạ đúng thời gian quy định!'
+    });
+    setStepWarning(null);
+    try {
+      confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+    } catch {}
   };
 
   // Replay / Re-learn lesson anytime
   const handleRestartLesson = () => {
+    handleStopChallengeRecording();
     playClickSound();
     setCurrentStep(0);
     setIsCompleted(false);
@@ -381,6 +604,13 @@ export default function InteractiveLessonPlayer({
     setRecordedAudioUrl(null);
     setSpeechTranscript('');
     setIsRecording(false);
+    setChallengeCompleted(false);
+    setIsChallengeRecording(false);
+    setChallengeTranscript('');
+    setChallengeFeedback(null);
+    setChallengeCountdown(10);
+    setIsReflexRunning(false);
+    setShowReflexConfirm(false);
     if (lesson?.step7_writing?.words) {
       setAvailableWords([...lesson.step7_writing.words].sort(() => Math.random() - 0.5));
       setReorderedWords([]);
@@ -394,6 +624,12 @@ export default function InteractiveLessonPlayer({
 
   // Complete lesson
   const handleFinishLesson = () => {
+    if (lesson.step9_challenge && !challengeCompleted && !isAlreadyCompleted) {
+      playErrorSound();
+      setStepWarning('🔥 Bạn cần hoàn thành thử thách thực chiến bên trên trước khi nhận thưởng hoàn thành bài học!');
+      return;
+    }
+    handleStopChallengeRecording();
     playLevelUpSound();
     const finalScore = Math.min(100, Math.max(70, 75 + quizScore));
     const { stars } = completeLesson(lesson.id, finalScore, user);
@@ -466,10 +702,16 @@ export default function InteractiveLessonPlayer({
           {stepsMeta.map((s, idx) => {
             const isActive = currentStep === idx;
             const isPassed = currentStep > idx;
+            const isAccessible = isAlreadyCompleted || idx <= maxStepReached;
             return (
               <button
                 key={s.num}
                 onClick={() => {
+                  if (!isAlreadyCompleted && idx > maxStepReached) {
+                    playErrorSound();
+                    setStepWarning(`🔒 Vui lòng hoàn thành tuần tự từng bước trước khi đến "${s.label}"!`);
+                    return;
+                  }
                   if (idx > currentStep) {
                     const check = canProceedToNextStep();
                     if (!check.canProceed) {
@@ -487,12 +729,15 @@ export default function InteractiveLessonPlayer({
                     ? 'bg-[#E85D3F] text-white shadow-xs'
                     : isPassed
                     ? 'bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C]'
-                    : 'text-[#748092] hover:bg-gray-100 dark:hover:bg-gray-800'
+                    : isAccessible
+                    ? 'text-[#748092] hover:bg-gray-100 dark:hover:bg-gray-800'
+                    : 'text-gray-300 dark:text-gray-600 opacity-60'
                 }`}
               >
                 <span>{s.icon}</span>
                 <span>{s.label}</span>
                 {isPassed && <Check size={11} strokeWidth={3} />}
+                {!isAccessible && !isPassed && <Lock size={10} className="opacity-60" />}
               </button>
             );
           })}
@@ -825,6 +1070,16 @@ export default function InteractiveLessonPlayer({
                     <h4 className="text-xs font-bold text-[#243447] dark:text-white">
                       Câu hỏi nghe hiểu: {lesson.step5_listening.question}
                     </h4>
+                    {listeningFeedback && (
+                      <div className={`p-3 rounded-2xl text-xs font-bold flex items-center gap-2 animate-in fade-in ${
+                        listeningFeedback.isCorrect 
+                          ? 'bg-[#EBF8F2] text-[#45B97C] border border-[#45B97C]/30' 
+                          : 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/30'
+                      }`}>
+                        <span>{listeningFeedback.isCorrect ? '✅' : '❌'}</span>
+                        <span>{listeningFeedback.message}</span>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       {lesson.step5_listening.options.map((opt, idx) => (
                         <button
@@ -832,13 +1087,23 @@ export default function InteractiveLessonPlayer({
                           onClick={() => {
                             if (idx === lesson.step5_listening.correctIndex) {
                               playSuccessSound();
-                              alert('Chính xác! Bạn nghe hiểu rất tốt.');
+                              setListeningFeedback({
+                                isCorrect: true,
+                                message: 'Chính xác! Bạn nghe hiểu đoạn đàm thoại rất tốt.'
+                              });
                             } else {
                               playErrorSound();
-                              alert('Chưa chính xác, hãy nghe lại kỹ hơn nhé!');
+                              setListeningFeedback({
+                                isCorrect: false,
+                                message: 'Chưa chính xác! Hãy bấm nghe lại đoạn hội thoại nhé.'
+                              });
                             }
                           }}
-                          className="p-3 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-left hover:border-[#45B97C] transition-colors"
+                          className={`p-3 rounded-xl border text-left transition-colors cursor-pointer ${
+                            listeningFeedback && idx === lesson.step5_listening.correctIndex
+                              ? 'border-[#45B97C] bg-[#EBF8F2]/60 text-[#243447] dark:text-white font-bold'
+                              : 'border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#45B97C]'
+                          }`}
                         >
                           {opt}
                         </button>
@@ -1108,7 +1373,7 @@ export default function InteractiveLessonPlayer({
 
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-[#E85D3F] uppercase tracking-wider">
-                    Step 9: Thử thách đời thực
+                    Step 9: Thử thách đời thực & Khảo hạch
                   </span>
                   <h3 className="text-xl font-black text-[#243447] dark:text-white">
                     {lesson.step9_challenge.title}
@@ -1118,18 +1383,173 @@ export default function InteractiveLessonPlayer({
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#E85D3F] flex items-center justify-center gap-2">
-                  <Award size={16} />
-                  <span>Huy hiệu mở khóa: {lesson.step9_challenge.badge} (+{lesson.xpReward} XP)</span>
+                {/* Target Challenge Prompt Box */}
+                <div className="p-5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border-2 border-dashed border-[#E85D3F]/40 space-y-3">
+                  <div className="flex items-center justify-between text-xs font-bold text-[#748092]">
+                    <span className="flex items-center gap-1.5 text-[#E85D3F]">
+                      <Sparkles size={14} />
+                      <span>Nội dung thử thách:</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleSpeak(getChallengeTarget(lesson))}
+                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1E293B] border border-[#F1E5D8] text-[11px] text-[#E85D3F] hover:bg-[#FDEEEB] flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Volume2 size={13} />
+                      <span>Nghe phát âm mẫu</span>
+                    </button>
+                  </div>
+
+                  <div className="text-xl sm:text-2xl font-black text-[#E85D3F] font-mono tracking-wide py-1 select-all">
+                    {getChallengeTarget(lesson)}
+                  </div>
+
+                  <div className="text-[11px] text-[#748092] dark:text-[#94A3B8]">
+                    🏆 Huy hiệu mở khóa: <strong>{lesson.step9_challenge.badge}</strong> (+{lesson.xpReward} XP)
+                  </div>
                 </div>
 
-                <button
-                  onClick={handleFinishLesson}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#45B97C] to-[#3AA56E] text-white text-sm font-bold shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-                >
-                  <Sparkles size={18} />
-                  <span>Hoàn thành bài học (+{lesson.xpReward} XP)</span>
-                </button>
+                {/* Interactive Challenge Arena */}
+                <div className="space-y-4 pt-1">
+                  {!challengeCompleted ? (
+                    <div className="space-y-3">
+                      {/* Active Recording State */}
+                      {isChallengeRecording ? (
+                        <div className="p-5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 text-center space-y-3 animate-in fade-in">
+                          <div className="flex items-center justify-center gap-2 text-rose-600 font-bold text-xs uppercase tracking-wider">
+                            <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping" />
+                            <span>Đang ghi âm thử thách... (Còn {challengeCountdown}s)</span>
+                          </div>
+                          
+                          <div className="h-2 w-full bg-rose-200 dark:bg-rose-900 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-rose-600 transition-all duration-1000 rounded-full"
+                              style={{ width: `${(challengeCountdown / 10) * 100}%` }}
+                            />
+                          </div>
+
+                          {challengeTranscript && (
+                            <p className="text-xs font-mono font-semibold text-rose-700 dark:text-rose-300 bg-white dark:bg-[#1E293B] p-2 rounded-xl border border-rose-200">
+                              Đang nghe: "{challengeTranscript}"
+                            </p>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={handleStopChallengeRecording}
+                            className="py-2.5 px-5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+                          >
+                            <span>⏹️ Dừng & Nộp bài thử thách</span>
+                          </button>
+                        </div>
+                      ) : isReflexRunning ? (
+                        /* Active Reflex Timer State */
+                        <div className="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 text-center space-y-3 animate-in fade-in">
+                          <div className="flex items-center justify-center gap-2 text-amber-700 dark:text-amber-300 font-bold text-xs uppercase tracking-wider">
+                            <Timer size={16} className="animate-spin" />
+                            <span>Đếm ngược phản xạ: Còn {challengeCountdown} giây</span>
+                          </div>
+                          <p className="text-xs text-amber-800 dark:text-amber-200 font-medium">
+                            Hãy đọc to câu mẫu tiếng Trung trên ít nhất 2 lần thật chuẩn xác!
+                          </p>
+                          <div className="h-2 w-full bg-amber-200 dark:bg-amber-900 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-amber-500 transition-all duration-1000 rounded-full"
+                              style={{ width: `${(challengeCountdown / 10) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ) : showReflexConfirm ? (
+                        /* Reflex Confirmation Card */
+                        <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 text-center space-y-3 animate-in zoom-in-95">
+                          <div className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                            ⏱️ Hết thời gian đếm ngược! Bạn đã đọc to câu trên rõ ràng và chuẩn ngữ điệu?
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleConfirmReflex}
+                            className="py-2.5 px-6 rounded-xl bg-[#45B97C] hover:bg-[#3AA56E] text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+                          >
+                            <CheckCircle2 size={16} />
+                            <span>Xác nhận Đã Hoàn Thành Thử Thách</span>
+                          </button>
+                        </div>
+                      ) : (
+                        /* Default Action Selector */
+                        <div className="space-y-3">
+                          <button
+                            type="button"
+                            onClick={handleStartChallengeRecording}
+                            className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                          >
+                            <Mic size={18} />
+                            <span>Bật Micro & Bắt đầu Thử thách Ghi âm (10s)</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleStartReflexChallenge}
+                            className="w-full py-3 px-4 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-[#FDEEEB] text-[#748092] hover:text-[#E85D3F] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Zap size={14} />
+                            <span>Không tiện dùng Mic? Làm Thử thách Phản xạ 10s</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Challenge Completed Celebration Card */
+                    <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border-2 border-[#45B97C] text-center space-y-2.5 animate-in zoom-in-95">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#45B97C] text-white text-xs font-bold">
+                        <CheckCircle2 size={14} />
+                        <span>ĐÃ CHINH PHỤC THỬ THÁCH THÀNH CÔNG!</span>
+                      </div>
+                      <p className="text-xs font-bold text-[#243447] dark:text-white">
+                        {challengeFeedback?.message || `Bạn đã hoàn thành thử thách và nhận huy hiệu: ${lesson.step9_challenge.badge}!`}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setChallengeCompleted(false);
+                          setChallengeFeedback(null);
+                          setShowReflexConfirm(false);
+                        }}
+                        className="text-[11px] text-[#748092] hover:text-[#E85D3F] underline cursor-pointer"
+                      >
+                        Thực hiện lại thử thách
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Final Completion Action Button: Locked until challenge completed */}
+                <div className="pt-2">
+                  {!challengeCompleted ? (
+                    <div className="space-y-2">
+                      <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold flex items-center justify-center gap-2">
+                        <Lock size={14} />
+                        <span>Cần hoàn thành thử thách ghi âm hoặc phản xạ bên trên để mở khóa</span>
+                      </div>
+                      <button
+                        type="button"
+                        disabled
+                        className="w-full py-4 rounded-2xl bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-sm font-bold flex items-center justify-center gap-2 cursor-not-allowed border border-gray-300 dark:border-gray-700"
+                      >
+                        <Lock size={18} />
+                        <span>Hoàn thành bài học (+{lesson.xpReward} XP)</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleFinishLesson}
+                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#45B97C] to-[#3AA56E] text-white text-sm font-black shadow-lg shadow-[#45B97C]/25 hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 ring-4 ring-[#45B97C]/20 animate-pulse"
+                    >
+                      <Sparkles size={18} />
+                      <span>Nhận Huy Hiệu & Hoàn Thành Bài Học (+{lesson.xpReward} XP)</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 

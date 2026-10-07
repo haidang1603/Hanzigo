@@ -33,6 +33,7 @@ import {
   getUserStorageKey,
   getLocalDateString 
 } from '../utils/gamification';
+import { getUserJourneyProgress, getLessonById } from '../services/learningPathService';
 
 export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   const userName = user ? (user.name ? user.name.split(' ').pop() : 'Bạn') : 'Bạn';
@@ -312,45 +313,26 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
 
   // Next recommended lesson calculation
   const nextLessonInfo = useMemo(() => {
-    if (completedLessonIds.length === 0) {
-      return {
-        number: 1,
-        title: 'Bài 1: Chào hỏi cơ bản (你好 - Xin chào, Cảm ơn)',
-        desc: 'Học cách chào hỏi lịch sự, cảm ơn, xin lỗi và làm quen quy tắc biến điệu thanh 3.',
-        duration: 15,
-        xp: 50,
-        level: 'HSK 1',
-        stepIndex: 0
-      };
-    }
-    if (completedLessonIds.includes('lesson-1') && !completedLessonIds.includes('lesson-2')) {
-      return {
-        number: 2,
-        title: 'Bài 2: Giới thiệu bản thân & Quốc tịch (我是越南人)',
-        desc: 'Học cấu trúc câu chữ 是, xưng hô tên tuổi, quốc tịch và nghề nghiệp trôi chảy.',
-        duration: 18,
-        xp: 60,
-        level: 'HSK 1',
-        stepIndex: 1
-      };
-    }
+    const journey = getUserJourneyProgress(user);
+    const activeId = journey.activeLessonId || 'l-101';
+    const activeLesson = getLessonById(activeId) || getLessonById('l-101');
     return {
-      number: 3,
-      title: 'Bài 3: Con số, Giá cả & Mua sắm (多少钱 - Bao nhiêu tiền)',
-      desc: 'Nắm chắc số đếm 1-100, hỏi giá tiền và các loại hoa quả đồ uống quen thuộc.',
-      duration: 20,
-      xp: 65,
-      level: 'HSK 1',
-      stepIndex: 2
+      id: activeLesson?.id || 'l-101',
+      number: activeLesson?.lessonNumber || 1,
+      title: activeLesson?.title || 'Bài 1: Pinyin & 4 Thanh điệu căn bản',
+      desc: activeLesson?.subtitle || activeLesson?.step1_learn?.summary || 'Nắm vững kiến thức trọng tâm và mẫu câu thực tế.',
+      duration: activeLesson?.durationMinutes || 15,
+      xp: activeLesson?.xpReward || 50,
+      level: 'HSK 1'
     };
-  }, [completedLessonIds]);
+  }, [user]);
 
   const handleContinueLesson = () => {
     playClickSound();
     if (onSelectLesson && nextLessonInfo) {
-      onSelectLesson(nextLessonInfo.stepIndex);
+      onSelectLesson(nextLessonInfo.id);
     } else {
-      setActiveTab('lesson');
+      setActiveTab('roadmap');
     }
   };
 

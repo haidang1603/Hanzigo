@@ -213,3 +213,50 @@ export async function getCurrentUser() {
     return null;
   }
 }
+
+/**
+ * Refresh current user auth session and retrieve updated JWT token
+ */
+export async function refreshUserSession() {
+  if (!isSupabaseConfigured || !supabase) {
+    return { success: false, error: 'Supabase unconfigured' };
+  }
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error) throw error;
+    return {
+      success: true,
+      session: data.session,
+      accessToken: data.session?.access_token || null,
+      user: data.session?.user || null
+    };
+  } catch (err) {
+    console.warn('Supabase refreshSession notice:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Get valid session token, auto-refreshing if expired or near expiration
+ */
+export async function getValidSessionToken() {
+  if (!isSupabaseConfigured || !supabase) return null;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+
+    // Check if token expires within 60 seconds
+    const expiresAt = session.expires_at;
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (expiresAt && (expiresAt - nowSec) < 60) {
+      const refreshed = await refreshUserSession();
+      if (refreshed.success && refreshed.accessToken) {
+        return refreshed.accessToken;
+      }
+    }
+    return session.access_token;
+  } catch {
+    return null;
+  }
+}
+

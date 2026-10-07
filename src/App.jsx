@@ -14,7 +14,6 @@ import { loadAllUserDataFromDb, triggerCloudSync, saveUserProgress } from './ser
 const HomePage = lazy(() => import('./pages/HomePage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const RoadmapPage = lazy(() => import('./pages/RoadmapPage'));
-const LessonPage = lazy(() => import('./pages/LessonPage'));
 const VocabularyPage = lazy(() => import('./pages/VocabularyPage'));
 const PronunciationPage = lazy(() => import('./pages/PronunciationPage'));
 const WritingPage = lazy(() => import('./pages/WritingPage'));
@@ -150,7 +149,7 @@ function MainApp() {
   };
 
   // Cross-page navigation and target selection
-  const [selectedLessonIndex, setSelectedLessonIndex] = useState(0);
+  const [targetRoadmapLessonId, setTargetRoadmapLessonId] = useState(null);
 
   const [writingTarget, setWritingTarget] = useState(() => {
     try {
@@ -170,9 +169,18 @@ function MainApp() {
     }
   });
 
-  const handleSelectLesson = (index) => {
-    setSelectedLessonIndex(index);
-    setActiveTab('lesson');
+  const handleSelectLesson = (lessonIdOrObj) => {
+    let id = 'l-101';
+    if (typeof lessonIdOrObj === 'string') {
+      id = lessonIdOrObj;
+    } else if (lessonIdOrObj && typeof lessonIdOrObj === 'object') {
+      id = lessonIdOrObj.id || 'l-101';
+    } else if (typeof lessonIdOrObj === 'number') {
+      const indexMap = ['l-101', 'l-102', 'l-103', 'l-104', 'l-105', 'l-106'];
+      id = indexMap[lessonIdOrObj] || 'l-101';
+    }
+    setTargetRoadmapLessonId(id);
+    setActiveTab('roadmap');
   };
 
   const handleSelectWriting = (vocabItem) => {
@@ -264,20 +272,13 @@ function MainApp() {
             />
           )}
 
-          {activeTab === 'roadmap' && (
+          {(activeTab === 'roadmap' || activeTab === 'lesson') && (
             <RoadmapPage 
               user={user}
               setActiveTab={setActiveTab} 
-              onSelectLesson={handleSelectLesson}
+              initialLessonId={targetRoadmapLessonId}
+              onClearInitialLesson={() => setTargetRoadmapLessonId(null)}
               onAddXp={handleAddXp}
-            />
-          )}
-
-          {activeTab === 'lesson' && (
-            <LessonPage 
-              setActiveTab={setActiveTab} 
-              onAddXp={handleAddXp} 
-              initialLessonIndex={selectedLessonIndex}
             />
           )}
 
@@ -345,7 +346,10 @@ function MainApp() {
                 subRoute={
                   routeInfo.sub === 'classes' && routeInfo.param ? 'class_detail' :
                   routeInfo.sub === 'classes' ? 'classes' :
+                  routeInfo.sub === 'students' ? 'students' :
                   routeInfo.sub === 'grading' ? 'grading' :
+                  routeInfo.sub === 'analytics' ? 'analytics' :
+                  routeInfo.sub === 'ai_studio' || routeInfo.sub === 'ai-studio' ? 'ai_studio' :
                   'dashboard'
                 }
                 classId={routeInfo.sub === 'classes' ? routeInfo.param : null}
@@ -356,8 +360,14 @@ function MainApp() {
                     window.location.hash = '#teacher/classes';
                   } else if (route === 'classes' && id) {
                     window.location.hash = `#teacher/classes/${id}`;
+                  } else if (route === 'students') {
+                    window.location.hash = '#teacher/students';
                   } else if (route === 'grading') {
                     window.location.hash = '#teacher/grading';
+                  } else if (route === 'analytics') {
+                    window.location.hash = '#teacher/analytics';
+                  } else if (route === 'ai_studio' || route === 'ai-studio') {
+                    window.location.hash = '#teacher/ai-studio';
                   }
                 }}
               />

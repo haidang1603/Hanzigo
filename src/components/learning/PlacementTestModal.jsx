@@ -13,7 +13,7 @@ import {
 import { getPlacementQuestions, evaluatePlacementTest } from '../../services/learningPathService';
 import { playClickSound, playSuccessSound, playLevelUpSound } from '../../utils/audio';
 
-export default function PlacementTestModal({ user, onClose, onTestCompleted }) {
+export default function PlacementTestModal({ user, onClose, onTestCompleted, onComplete }) {
   const questions = getPlacementQuestions();
   const [currentStep, setCurrentStep] = useState('intro'); // 'intro' | 'testing' | 'result'
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -57,8 +57,9 @@ export default function PlacementTestModal({ user, onClose, onTestCompleted }) {
 
   const handleApplyResult = () => {
     playSuccessSound();
-    if (onTestCompleted) {
-      onTestCompleted(result);
+    const completeCb = onComplete || onTestCompleted;
+    if (completeCb) {
+      completeCb(result);
     }
     onClose();
   };

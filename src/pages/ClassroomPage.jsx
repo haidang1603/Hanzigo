@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   BookOpen, 
-  Users, 
   FileText, 
   FolderDown, 
   MessageSquare, 
@@ -30,7 +29,8 @@ import {
   submitAssignment, 
   getAnnouncementsForClassroom, 
   getMaterialsForClassroom,
-  getClassMembers
+  getClassMembers,
+  removeStudentFromClass
 } from '../services/classroomService';
 import { getActiveSessionForClass } from '../services/liveClassroomService';
 import { playClickSound, playSuccessSound } from '../utils/audio';
@@ -110,12 +110,13 @@ export default function ClassroomPage({
         setPeers(peerList || []);
         setActiveLiveSession(liveSes || null);
 
-        // Load submissions for all assignments in this class
+        // Load submissions for all assignments in parallel
         const subMap = {};
-        for (const asg of (asgList || [])) {
-          const sub = await getStudentSubmission(asg.id, studentId);
-          if (sub) subMap[asg.id] = sub;
-        }
+        const asgs = asgList || [];
+        const subs = await Promise.all(asgs.map(asg => getStudentSubmission(asg.id, studentId)));
+        asgs.forEach((asg, idx) => {
+          if (subs[idx]) subMap[asg.id] = subs[idx];
+        });
         setSubmissionsMap(subMap);
       }
     } catch (err) {
@@ -164,6 +165,7 @@ export default function ClassroomPage({
       if (res.success) {
         playSuccessSound();
         showToast(`🎉 Chúc mừng! Bạn đã tham gia lớp "${res.name}"!`);
+        await loadStudentData();
         // Navigate to the joined classroom
         navigateTo('detail', res.classroom_id);
       } else {
@@ -210,12 +212,29 @@ export default function ClassroomPage({
         setWritingNotes('');
         loadStudentData();
       } else {
-        alert(res.error || 'Lỗi khi nộp bài.');
+        showToast(res.error || 'Lỗi khi nộp bài.');
       }
     } catch (err) {
       console.error('Submit error:', err);
+      showToast('Có lỗi xảy ra trong quá trình nộp bài.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Handle student leaving classroom
+  const handleLeaveClass = async () => {
+    if (!currentClass) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn rời khỏi lớp học "${currentClass.name}"?`)) return;
+    const studentId = user?.uid || user?.id || 'user_guest';
+    const res = await removeStudentFromClass(currentClass.id, studentId);
+    if (res.success) {
+      playSuccessSound();
+      showToast(`Đã rời khỏi lớp "${currentClass.name}".`);
+      navigateTo('list');
+      loadStudentData();
+    } else {
+      showToast(res.error || 'Lỗi khi rời lớp học.');
     }
   };
 
@@ -264,6 +283,16 @@ export default function ClassroomPage({
               </button>
             )}
 
+            {subRoute === 'detail' && currentClass && (
+              <button
+                onClick={handleLeaveClass}
+                className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold cursor-pointer transition-all"
+                title="Rời khỏi lớp học này"
+              >
+                <span>Rời lớp</span>
+              </button>
+            )}
+
             {subRoute !== 'join' && (
               <button
                 onClick={() => navigateTo('join')}
@@ -290,7 +319,7 @@ export default function ClassroomPage({
                   Nhập Mã Lớp Học
                 </h2>
                 <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-                  Nhận mã mời gồm 5 ký tự từ giáo viên của bạn (ví dụ: <span className="font-mono font-bold text-[#E85D3F]">HZG-7K2P9</span>)
+                  Nhận mã mời từ giáo viên của bạn (ví dụ: <span className="font-mono font-bold text-[#E85D3F]">HZG-7K2P9</span> hoặc chỉ cần nhập <span className="font-mono font-bold text-[#E85D3F]">7K2P9</span>)
                 </p>
               </div>
 
@@ -299,7 +328,7 @@ export default function ClassroomPage({
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="HZG-XXXXX"
+                    placeholder="HZG-XXXXX hoặc XXXXX"
                     value={inputCode}
                     onChange={e => setInputCode(e.target.value.toUpperCase())}
                     onKeyDown={e => e.key === 'Enter' && handleLookupCode()}

@@ -1099,7 +1099,7 @@ export default function PronunciationPage({ targetVocab, onClearTargetVocab }) {
                 {isRecording && (
                   <div className="flex items-center justify-center gap-1.5 h-9 py-1 animate-in fade-in duration-200">
                     {[0.35, 0.7, 1.0, 0.85, 0.45, 0.9, 0.6, 0.3].map((factor, i) => {
-                      const dynamicH = Math.max(6, Math.min(34, (audioLevel / 255) * 45 * factor + (Math.sin(Date.now() / 140 + i) * 6 + 10)));
+                      const dynamicH = Math.max(6, Math.min(34, (audioLevel / 255) * 45 * factor + (Math.sin(audioLevel / 10 + i) * 6 + 10)));
                       return (
                         <span
                           key={i}

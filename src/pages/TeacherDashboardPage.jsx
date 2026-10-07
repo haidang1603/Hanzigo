@@ -8,30 +8,16 @@ import {
   Plus, 
   Copy, 
   RefreshCw, 
-  QrCode, 
   Search, 
-  Filter, 
   FileText, 
   MessageSquare, 
-  FolderDown, 
-  Settings, 
   AlertTriangle, 
   Trash2, 
-  Edit3, 
   ExternalLink, 
-  ArrowLeft, 
-  Check, 
   Sparkles, 
-  Send, 
-  Upload, 
-  File, 
-  Eye, 
-  Calendar,
-  X,
-  Award,
+  Upload,
   ChevronRight,
-  TrendingUp,
-  ShieldCheck
+  BarChart3
 } from 'lucide-react';
 import { 
   getClassroomsForTeacher, 
@@ -54,17 +40,34 @@ import {
   getMaterialsForClassroom, 
   uploadClassMaterial, 
   deleteClassMaterial,
-  calculateStudentHealthStatus
+  calculateStudentHealthStatus,
+  getAllStudentsForTeacher,
+  addDemoStudent,
+  clearDemoStudents
 } from '../services/classroomService';
 import { 
   createClassSession, 
   getActiveSessionForClass 
 } from '../services/liveClassroomService';
+import { 
+  computeClassAnalytics, 
+  computeStudentDetailedAnalytics, 
+  getAtRiskStudents 
+} from '../services/teacherAnalyticsService';
+import ClassAnalyticsDashboard from '../components/teacher/ClassAnalyticsDashboard';
+import StudentAnalyticsModal from '../components/teacher/StudentAnalyticsModal';
+import AiTeacherStudioModal from '../components/teacher/AiTeacherStudioModal';
+import CreateClassModal from '../components/teacher/CreateClassModal';
+import CreateAssignmentModal from '../components/teacher/CreateAssignmentModal';
+import CreateAnnouncementModal from '../components/teacher/CreateAnnouncementModal';
+import UploadMaterialModal from '../components/teacher/UploadMaterialModal';
+import GradingDrawerModal from '../components/teacher/GradingDrawerModal';
+import StudentDetailModal from '../components/teacher/StudentDetailModal';
 import { playClickSound, playSuccessSound } from '../utils/audio';
 
 export default function TeacherDashboardPage({
   user,
-  setActiveTab,
+  _setActiveTab,
   subRoute = 'dashboard',
   classId = null,
   onNavigate = null
@@ -87,6 +90,9 @@ export default function TeacherDashboardPage({
     setTimeout(() => setToast(null), 3000);
   }, []);
 
+  // Timestamp for pure date computations during render
+  const [currentTimestamp] = useState(() => Date.now());
+
   // Primary data states
   const [loading, setLoading] = useState(true);
   const [classrooms, setClassrooms] = useState([]);
@@ -96,18 +102,140 @@ export default function TeacherDashboardPage({
   const [submissions, setSubmissions] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentFilterClass, setStudentFilterClass] = useState('all');
 
   // Sub-tab for class detail
   const [classDetailTab, setClassDetailTab] = useState('overview');
 
   // Modals state
   const [createClassModalOpen, setCreateClassModalOpen] = useState(false);
-  const [qrModalClass, setQrModalClass] = useState(null);
   const [createAsgModalOpen, setCreateAsgModalOpen] = useState(false);
   const [createAnnModalOpen, setCreateAnnModalOpen] = useState(false);
   const [uploadMatModalOpen, setUploadMatModalOpen] = useState(false);
   const [gradingModalSub, setGradingModalSub] = useState(null);
   const [studentDetailModal, setStudentDetailModal] = useState(null);
+
+  // AI Teacher Studio & Pedagogical Analytics State
+  const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
+  const [aiStudioInitialTab, setAiStudioInitialTab] = useState('analysis');
+  const [studentAnalyticsModalData, setStudentAnalyticsModalData] = useState(null);
+  const [filterOnlyAtRisk, setFilterOnlyAtRisk] = useState(false);
+  const [analyticsClassId, setAnalyticsClassId] = useState('all');
+
+  // Memoized Pedagogical Analytics & Deterministic At-Risk Detection
+  const classAnalyticsData = useMemo(() => {
+    const targetCid = analyticsClassId === 'all' ? (classId || null) : analyticsClassId;
+    return computeClassAnalytics(targetCid, allStudents, assignments, submissions);
+  }, [analyticsClassId, classId, allStudents, assignments, submissions]);
+
+  const atRiskSummary = useMemo(() => {
+    return getAtRiskStudents(allStudents);
+  }, [allStudents]);
+
+  // Open detailed student pedagogical analytics
+  const handleOpenStudentAnalytics = useCallback((student) => {
+    const detailed = computeStudentDetailedAnalytics(student, classId, submissions);
+    setStudentAnalyticsModalData(detailed);
+  }, [classId, submissions]);
+
+  // Load teacher overview data
+  const loadTeacherData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const teacherId = user?.uid || user?.id || 'user_teacher_demo';
+      const [clsList, subsList, allStuList] = await Promise.all([
+        getClassroomsForTeacher(teacherId),
+        getAllSubmissionsForTeacher(teacherId),
+        getAllStudentsForTeacher(teacherId)
+      ]);
+      setClassrooms(clsList || []);
+      setSubmissions(subsList || []);
+      setAllStudents(allStuList || []);
+
+      // If viewing a specific class detail
+      if (classId) {
+        const [clsDetail, memList, asgList, annList, matList] = await Promise.all([
+          getClassroomById(classId),
+          getClassMembers(classId),
+          getAssignmentsForClassroom(classId, true),
+          getAnnouncementsForClassroom(classId),
+          getMaterialsForClassroom(classId)
+        ]);
+        setCurrentClass(clsDetail);
+        setMembers(memList || []);
+        setAssignments(asgList || []);
+        setAnnouncements(annList || []);
+        setMaterials(matList || []);
+      }
+    } catch (err) {
+      console.warn('Teacher data load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, classId]);
+
+  useEffect(() => {
+    loadTeacherData();
+  }, [loadTeacherData]);
+
+  // Publish assignment generated by AI (after mandatory teacher review)
+  const handlePublishAiAssignment = useCallback(async (payload) => {
+    const teacherId = user?.uid || user?.id || 'user_teacher_demo';
+    const targetClassId = payload.classroomId || classId || classrooms[0]?.id;
+    if (!targetClassId) {
+      showToast('Vui lòng tạo hoặc chọn lớp học trước khi giao bài.');
+      return;
+    }
+
+    const contentPayload = {
+      questions: payload.questions || []
+    };
+
+    const res = await createAssignment({
+      classroomId: targetClassId,
+      teacherId,
+      title: payload.title,
+      description: payload.description,
+      contentType: payload.contentType || 'Quiz',
+      contentPayload,
+      dueDate: new Date(currentTimestamp + 7 * 86400000).toISOString().split('T')[0],
+      published: true
+    });
+
+    if (res.success) {
+      playSuccessSound();
+      showToast(`Đã xuất bản bài tập "${payload.title}" thành công!`);
+      loadTeacherData();
+      setAiStudioModalOpen(false);
+    } else {
+      showToast(res.error || 'Lỗi khi giao bài tập');
+    }
+  }, [user, classId, classrooms, currentTimestamp, showToast, loadTeacherData]);
+
+  // Save lesson plan generated by AI to classroom materials
+  const handleSaveLessonPlanToMaterials = async ({ classroomId, title, content }) => {
+    const targetClassId = classroomId || classId || classrooms[0]?.id;
+    const teacherId = user?.uid || user?.id || 'user_teacher_demo';
+    if (!targetClassId) return;
+
+    await uploadClassMaterial({
+      classroomId: targetClassId,
+      teacherId,
+      title: `[Giáo án AI] ${title}`,
+      description: 'Giáo án 7 bước do AI hỗ trợ và Giáo viên hiệu chỉnh',
+      fileUrl: 'data:text/plain;charset=utf-8,' + encodeURIComponent(content),
+      fileType: 'doc'
+    });
+    loadTeacherData();
+  };
+
+  // Send encouragement / study reminder to student
+  const handleSendStudentReminder = (studentData) => {
+    playSuccessSound();
+    showToast(`Đã gửi lời nhắc ôn tập & động viên tới học viên "${studentData?.name}"!`);
+  };
 
   // Form states
   const [newClassForm, setNewClassForm] = useState({
@@ -142,43 +270,57 @@ export default function TeacherDashboardPage({
 
   const [gradeInput, setGradeInput] = useState({ score: '', feedback: '' });
 
-  // Load teacher overview data
-  const loadTeacherData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const teacherId = user?.uid || user?.id || 'user_teacher_demo';
-      const [clsList, subsList] = await Promise.all([
-        getClassroomsForTeacher(teacherId),
-        getAllSubmissionsForTeacher(teacherId)
-      ]);
-      setClassrooms(clsList || []);
-      setSubmissions(subsList || []);
-
-      // If viewing a specific class detail
-      if (classId) {
-        const [clsDetail, memList, asgList, annList, matList] = await Promise.all([
-          getClassroomById(classId),
-          getClassMembers(classId),
-          getAssignmentsForClassroom(classId, true),
-          getAnnouncementsForClassroom(classId),
-          getMaterialsForClassroom(classId)
-        ]);
-        setCurrentClass(clsDetail);
-        setMembers(memList || []);
-        setAssignments(asgList || []);
-        setAnnouncements(annList || []);
-        setMaterials(matList || []);
-      }
-    } catch (err) {
-      console.warn('Teacher data load error:', err);
-    } finally {
-      setLoading(false);
+  // Add demo student helper
+  const handleAddDemoStudent = async (targetClassId) => {
+    const cid = targetClassId || classId || classrooms[0]?.id;
+    if (!cid) {
+      showToast('Vui lòng tạo lớp học trước khi thêm học viên thử nghiệm.');
+      return;
     }
-  }, [user, classId]);
+    const res = await addDemoStudent(cid);
+    if (res.success) {
+      playSuccessSound();
+      showToast('🎉 Đã thêm học viên thử nghiệm vào lớp thành công!');
+      loadTeacherData();
+    } else {
+      showToast(res.error || 'Lỗi khi thêm học viên');
+    }
+  };
 
-  useEffect(() => {
-    loadTeacherData();
-  }, [loadTeacherData]);
+  // Remove single student from class
+  const handleRemoveStudent = async (studentId, studentName, targetClassId) => {
+    const cid = targetClassId || classId;
+    if (!cid || !studentId) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa học viên "${studentName || 'này'}" khỏi lớp học?`)) {
+      return;
+    }
+    const res = await removeStudentFromClass(cid, studentId);
+    if (res.success) {
+      playSuccessSound();
+      showToast(`Đã xóa học viên "${studentName || ''}" khỏi lớp!`);
+      loadTeacherData();
+    } else {
+      showToast(res.error || 'Lỗi khi xóa học viên');
+    }
+  };
+
+  // Clear all demo students
+  const handleClearDemoStudents = async (targetClassId = null) => {
+    const cid = targetClassId || (classId && currentClass ? currentClass.id : null);
+    const msg = cid 
+      ? 'Bạn có chắc chắn muốn xóa tất cả học viên thử nghiệm trong lớp này?' 
+      : 'Bạn có chắc chắn muốn xóa tất cả học viên thử nghiệm trong toàn bộ các lớp học?';
+    if (!window.confirm(msg)) return;
+
+    const res = await clearDemoStudents(cid);
+    if (res.success) {
+      playSuccessSound();
+      showToast('Đã xóa tất cả học viên thử nghiệm thành công!');
+      loadTeacherData();
+    } else {
+      showToast(res.error || 'Lỗi khi xóa học viên thử nghiệm');
+    }
+  };
 
   // Copy code helper
   const handleCopyCode = (code) => {
@@ -214,7 +356,7 @@ export default function TeacherDashboardPage({
         loadTeacherData();
       }
     } else {
-      alert(res.error || 'Lỗi khi xóa lớp học.');
+      showToast(res.error || 'Lỗi khi xóa lớp học.');
     }
   };
 
@@ -222,12 +364,12 @@ export default function TeacherDashboardPage({
   const handleCreateClass = async (e) => {
     e.preventDefault();
     if (!newClassForm.name.trim()) {
-      alert('Vui lòng nhập tên lớp học');
+      showToast('Vui lòng nhập tên lớp học');
       return;
     }
     const maxStudentsNum = Number(newClassForm.maxStudents);
     if (isNaN(maxStudentsNum) || maxStudentsNum < 1) {
-      alert('Sĩ số học sinh của lớp phải từ 1 học viên trở lên.');
+      showToast('Sĩ số học sinh của lớp phải từ 1 học viên trở lên.');
       return;
     }
 
@@ -250,7 +392,7 @@ export default function TeacherDashboardPage({
       }
       loadTeacherData();
     } else {
-      alert(res.error || 'Lỗi khi tạo lớp.');
+      showToast(res.error || 'Lỗi khi tạo lớp.');
     }
   };
 
@@ -258,14 +400,14 @@ export default function TeacherDashboardPage({
   const handleCreateAssignment = async (e) => {
     e.preventDefault();
     if (!newAsgForm.title.trim()) {
-      alert('Vui lòng nhập tiêu đề bài tập');
+      showToast('Vui lòng nhập tiêu đề bài tập');
       return;
     }
 
     const teacherId = user?.uid || user?.id || 'user_teacher_demo';
     const targetClassId = classId || classrooms[0]?.id;
     if (!targetClassId) {
-      alert('Vui lòng chọn hoặc tạo lớp học trước khi giao bài tập.');
+      showToast('Vui lòng chọn hoặc tạo lớp học trước khi giao bài tập.');
       return;
     }
 
@@ -313,7 +455,7 @@ export default function TeacherDashboardPage({
   const handleCreateAnnouncement = async (e) => {
     e.preventDefault();
     if (!newAnnForm.title.trim() || !newAnnForm.content.trim()) {
-      alert('Vui lòng nhập đầy đủ tiêu đề và nội dung.');
+      showToast('Vui lòng nhập đầy đủ tiêu đề và nội dung.');
       return;
     }
     const targetClassId = classId || classrooms[0]?.id;
@@ -336,11 +478,24 @@ export default function TeacherDashboardPage({
     }
   };
 
+  // Delete announcement
+  const handleDeleteAnnouncement = async (annId, title) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa thông báo "${title || 'này'}"?`)) return;
+    const res = await deleteAnnouncement(annId);
+    if (res.success) {
+      playSuccessSound();
+      showToast('Đã xóa thông báo thành công!');
+      loadTeacherData();
+    } else {
+      showToast(res.error || 'Lỗi khi xóa thông báo');
+    }
+  };
+
   // Upload Material submit
   const handleUploadMaterial = async (e) => {
     e.preventDefault();
     if (!newMatForm.title.trim() || !newMatForm.fileUrl.trim()) {
-      alert('Vui lòng nhập tên tài liệu và đường dẫn URL.');
+      showToast('Vui lòng nhập tên tài liệu và đường dẫn URL.');
       return;
     }
     const targetClassId = classId || classrooms[0]?.id;
@@ -361,6 +516,19 @@ export default function TeacherDashboardPage({
       setUploadMatModalOpen(false);
       setNewMatForm({ title: '', description: '', fileUrl: '', fileType: 'pdf' });
       loadTeacherData();
+    }
+  };
+
+  // Delete material
+  const handleDeleteMaterial = async (matId, title) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa tài liệu "${title || 'này'}"?`)) return;
+    const res = await deleteClassMaterial(matId);
+    if (res.success) {
+      playSuccessSound();
+      showToast('Đã xóa tài liệu thành công!');
+      loadTeacherData();
+    } else {
+      showToast(res.error || 'Lỗi khi xóa tài liệu');
     }
   };
 
@@ -385,16 +553,6 @@ export default function TeacherDashboardPage({
     }
   };
 
-  // Remove student handler
-  const handleRemoveStudent = async (studentId, studentName) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa học viên "${studentName}" khỏi lớp học này?`)) return;
-    const res = await removeStudentFromClass(classId, studentId);
-    if (res.success) {
-      playSuccessSound();
-      showToast(`Đã xóa học viên ${studentName} khỏi lớp.`);
-      loadTeacherData();
-    }
-  };
 
   // Delete assignment handler
   const handleDeleteAssignment = async (asgId, title) => {
@@ -493,12 +651,18 @@ export default function TeacherDashboardPage({
             <h1 className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white tracking-tight">
               {subRoute === 'classes' ? 'Quản lý Lớp học' :
                subRoute === 'grading' ? 'Trung tâm Chấm điểm' :
+               subRoute === 'analytics' ? 'Phân tích Học tập & Thống kê' :
+               subRoute === 'ai_studio' ? 'AI Sư phạm & Soạn bài' :
                subRoute === 'class_detail' ? currentClass?.name || 'Chi tiết Lớp học' :
                'Bảng điều khiển Giáo viên'}
             </h1>
             <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-1">
               {subRoute === 'class_detail' 
                 ? `Mã lớp: ${currentClass?.class_code} • Trình độ: ${currentClass?.hsk_level}`
+                : subRoute === 'analytics'
+                ? 'Theo dõi 8 chỉ số học tập, 4 biểu đồ trực quan và phát hiện học viên cần chú ý'
+                : subRoute === 'ai_studio'
+                ? 'Trợ lý AI hỗ trợ giáo viên phân tích lớp, sinh đề bài và thiết kế giáo án chuẩn HSK'
                 : 'Theo dõi tiến độ học viên, quản lý bài tập và kết quả chấm điểm'}
             </p>
           </div>
@@ -524,6 +688,40 @@ export default function TeacherDashboardPage({
               }`}
             >
               Lớp học ({totalClasses})
+            </button>
+            <button
+              onClick={() => navigateTo('students')}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                subRoute === 'students'
+                  ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
+                  : 'bg-white dark:bg-[#1A2433] text-[#243447] dark:text-white border border-[#F1E5D8] dark:border-[#2B3A4F] hover:bg-[#FFF5F2]'
+              }`}
+            >
+              Học viên ({allStudents.length || totalStudents})
+            </button>
+            <button
+              onClick={() => navigateTo('analytics')}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                subRoute === 'analytics'
+                  ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
+                  : 'bg-white dark:bg-[#1A2433] text-[#243447] dark:text-white border border-[#F1E5D8] dark:border-[#2B3A4F] hover:bg-[#FFF5F2]'
+              }`}
+            >
+              <BarChart3 size={13} />
+              <span>Phân tích</span>
+              {atRiskSummary.totalAtRisk > 0 && (
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setAiStudioInitialTab('analysis');
+                setAiStudioModalOpen(true);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-white text-xs font-bold shadow-md shadow-purple-600/25 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <Sparkles size={13} />
+              <span>AI Sư phạm</span>
             </button>
             <button
               onClick={() => navigateTo('grading')}
@@ -633,14 +831,14 @@ export default function TeacherDashboardPage({
                 </button>
 
                 <button
-                  onClick={() => navigateTo('classes')}
+                  onClick={() => navigateTo('students')}
                   className="p-3 sm:p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#243447] hover:bg-[#FFF5F2] dark:hover:bg-[#2B3A4F] border border-[#F1E5D8] dark:border-[#2B3A4F] text-left transition-all cursor-pointer group"
                 >
                   <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                     <Users size={16} />
                   </div>
                   <p className="text-xs sm:text-sm font-bold text-[#243447] dark:text-white">Xem học sinh</p>
-                  <p className="text-[10px] text-[#748092] dark:text-[#94A3B8] truncate">Theo dõi sức khỏe học tập</p>
+                  <p className="text-[10px] text-[#748092] dark:text-[#94A3B8] truncate">Danh sách & tiến độ</p>
                 </button>
 
                 <button
@@ -718,13 +916,6 @@ export default function TeacherDashboardPage({
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            onClick={() => setQrModalClass(cls)}
-                            title="Xem mã QR"
-                            className="p-1.5 rounded-xl text-[#748092] hover:text-[#E85D3F] hover:bg-[#FFF5F2] dark:hover:bg-[#243447] transition-colors cursor-pointer"
-                          >
-                            <QrCode size={16} />
-                          </button>
                           <button
                             onClick={() => handleRegenerateCode(cls.id)}
                             title="Làm mới mã lớp"
@@ -859,13 +1050,6 @@ export default function TeacherDashboardPage({
                           Xem chi tiết
                         </button>
                         <button
-                          onClick={() => setQrModalClass(cls)}
-                          className="p-1.5 rounded-xl text-[#748092] hover:text-[#243447] dark:hover:text-white cursor-pointer"
-                          title="QR Code"
-                        >
-                          <QrCode size={15} />
-                        </button>
-                        <button
                           onClick={() => handleDeleteClass(cls.id, cls.name)}
                           className="p-1.5 rounded-xl text-[#748092] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
                           title="Xóa lớp học"
@@ -878,6 +1062,346 @@ export default function TeacherDashboardPage({
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* ========================================================== */}
+        {/* VIEW 2.1: PEDAGOGICAL & CLASS ANALYTICS (/teacher/analytics) */}
+        {/* ========================================================== */}
+        {subRoute === 'analytics' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Class filter & Action toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">Phạm vi phân tích:</span>
+                <select
+                  value={analyticsClassId}
+                  onChange={(e) => setAnalyticsClassId(e.target.value)}
+                  className="px-3.5 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-white focus:outline-none"
+                >
+                  <option value="all">Toàn bộ lớp học ({classrooms.length} lớp)</option>
+                  {classrooms.map(c => (
+                    <option key={c.id} value={c.id}>{c.name} ({c.hsk_level})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => {
+                    setAiStudioInitialTab('analysis');
+                    setAiStudioModalOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold shadow-md shadow-purple-600/20 hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Sparkles size={14} />
+                  <span>AI Phân tích lớp học</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setAiStudioInitialTab('assignment');
+                    setAiStudioModalOpen(true);
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-white dark:bg-[#243447] text-[#243447] dark:text-white border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold hover:bg-[#FFF9F2] transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <BookOpen size={14} />
+                  <span>AI Tạo bài tập</span>
+                </button>
+              </div>
+            </div>
+
+            <ClassAnalyticsDashboard
+              classAnalytics={classAnalyticsData}
+              classrooms={classrooms}
+              selectedClassId={analyticsClassId}
+              onSelectClassId={setAnalyticsClassId}
+              onOpenAiStudio={(tab) => {
+                setAiStudioInitialTab(tab || 'analysis');
+                setAiStudioModalOpen(true);
+              }}
+              onSelectStudent={handleOpenStudentAnalytics}
+            />
+          </div>
+        )}
+
+        {/* ========================================================== */}
+        {/* VIEW 2.2: AI TEACHER STUDIO (/teacher/ai-studio) */}
+        {/* ========================================================== */}
+        {subRoute === 'ai_studio' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <div className="p-8 rounded-3xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border border-purple-200 dark:border-purple-800 text-center space-y-4">
+              <div className="w-16 h-16 mx-auto rounded-3xl bg-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-600/30">
+                <Sparkles size={32} />
+              </div>
+              <div className="max-w-lg mx-auto">
+                <h2 className="text-xl font-black text-[#243447] dark:text-white">HanziGo AI Teacher Studio</h2>
+                <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1.5">
+                  Trợ lý sư phạm thông minh hỗ trợ giáo viên phân tích học lực, sinh bài tập phân hóa theo HSK và thiết kế giáo án 7 bước chuẩn sư phạm. Giáo viên luôn có toàn quyền duyệt và chỉnh sửa trước khi xuất bản.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setAiStudioInitialTab('analysis');
+                    setAiStudioModalOpen(true);
+                  }}
+                  className="px-5 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-md shadow-purple-600/25 flex items-center gap-2 cursor-pointer"
+                >
+                  <BarChart3 size={15} />
+                  <span>Mở Phân tích AI</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setAiStudioInitialTab('assignment');
+                    setAiStudioModalOpen(true);
+                  }}
+                  className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/25 flex items-center gap-2 cursor-pointer"
+                >
+                  <BookOpen size={15} />
+                  <span>Tạo bài tập AI</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setAiStudioInitialTab('lesson_plan');
+                    setAiStudioModalOpen(true);
+                  }}
+                  className="px-5 py-2.5 rounded-2xl bg-white dark:bg-[#1A2433] text-[#243447] dark:text-white border border-purple-200 dark:border-purple-800 hover:bg-purple-50 text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                >
+                  <FileText size={15} />
+                  <span>Soạn giáo án 7 bước</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Embedded Class Analytics Overview under AI studio */}
+            <ClassAnalyticsDashboard
+              classAnalytics={classAnalyticsData}
+              classrooms={classrooms}
+              selectedClassId={analyticsClassId}
+              onSelectClassId={setAnalyticsClassId}
+              onOpenAiStudio={(tab) => {
+                setAiStudioInitialTab(tab || 'analysis');
+                setAiStudioModalOpen(true);
+              }}
+              onSelectStudent={handleOpenStudentAnalytics}
+            />
+          </div>
+        )}
+
+        {/* ========================================================== */}
+        {/* VIEW 2.5: ALL STUDENTS OVERVIEW (/teacher/students) */}
+        {/* ========================================================== */}
+        {subRoute === 'students' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Filter & Action bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative">
+                  <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
+                  <input
+                    type="text"
+                    placeholder="Tìm tên hoặc email học viên..."
+                    value={studentSearch}
+                    onChange={e => setStudentSearch(e.target.value)}
+                    className="pl-9 pr-4 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs text-[#243447] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#E85D3F] w-56 sm:w-64"
+                  />
+                </div>
+
+                <select
+                  value={studentFilterClass}
+                  onChange={e => setStudentFilterClass(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-white focus:outline-none"
+                >
+                  <option value="all">Tất cả lớp học ({classrooms.length})</option>
+                  {classrooms.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => setFilterOnlyAtRisk(prev => !prev)}
+                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                    filterOnlyAtRisk
+                      ? 'bg-rose-500 text-white border-rose-500 shadow-sm shadow-rose-500/25'
+                      : 'bg-[#FFF9F2] dark:bg-[#243447] text-[#748092] dark:text-[#94A3B8] border-[#F1E5D8] dark:border-[#2B3A4F] hover:text-rose-500'
+                  }`}
+                  title="Chỉ hiển thị học viên có nguy cơ bỏ học hoặc cần chú ý"
+                >
+                  <AlertTriangle size={13} className={filterOnlyAtRisk ? 'text-white' : 'text-rose-500'} />
+                  <span>Cần chú ý ({atRiskSummary.totalAtRisk})</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                {allStudents.some(s => String(s.student_id).startsWith('demo-stu-') || s.student_name?.includes('thử nghiệm')) && (
+                  <button
+                    onClick={() => handleClearDemoStudents()}
+                    className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+                    title="Xóa tất cả tài khoản học viên thử nghiệm đã tạo"
+                  >
+                    <Trash2 size={13} />
+                    <span>Xóa học viên thử nghiệm</span>
+                  </button>
+                )}
+
+                {classrooms.length > 0 && (
+                  <button
+                    onClick={() => handleAddDemoStudent()}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#45B97C] to-[#2E8B57] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-sm shadow-[#45B97C]/25 flex items-center gap-1.5 whitespace-nowrap"
+                  >
+                    <Plus size={14} />
+                    <span>Thêm học viên thử nghiệm</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Students Table */}
+            {(() => {
+              const filtered = allStudents.filter(s => {
+                const matchesClass = studentFilterClass === 'all' || s.classroom_id === studentFilterClass;
+                const matchesQuery = !studentSearch.trim() || 
+                  (s.student_name && s.student_name.toLowerCase().includes(studentSearch.toLowerCase())) ||
+                  (s.student_email && s.student_email.toLowerCase().includes(studentSearch.toLowerCase()));
+                const matchesAtRisk = !filterOnlyAtRisk || 
+                  atRiskSummary.atRisk.some(ar => (ar.student_id && ar.student_id === s.student_id) || (ar.id && ar.id === s.id)) ||
+                  atRiskSummary.needsAttention.some(na => (na.student_id && na.student_id === s.student_id) || (na.id && na.id === s.id));
+                return matchesClass && matchesQuery && matchesAtRisk;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="p-12 rounded-3xl bg-white dark:bg-[#1A2433] border border-dashed border-[#F1E5D8] dark:border-[#2B3A4F] text-center space-y-4">
+                    <div className="w-14 h-14 mx-auto rounded-3xl bg-[#FFF5F2] dark:bg-[#2C1D1A] text-[#E85D3F] flex items-center justify-center">
+                      <Users size={28} />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-[#243447] dark:text-white">Chưa có học viên nào tham gia lớp</h3>
+                      <p className="text-xs text-[#748092] mt-1 max-w-md mx-auto">
+                        Học viên có thể nhập mã mời để vào lớp. Bạn cũng có thể bấm nút bên dưới để tạo học viên thử nghiệm và kiểm tra tính năng quản lý lớp.
+                      </p>
+                    </div>
+                    {classrooms.length > 0 ? (
+                      <button
+                        onClick={() => handleAddDemoStudent()}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#45B97C] to-[#2E8B57] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md shadow-[#45B97C]/25"
+                      >
+                        + Thêm học viên thử nghiệm vào lớp
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setCreateClassModalOpen(true)}
+                        className="px-5 py-2.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md"
+                      >
+                        Tạo lớp học trước
+                      </button>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <div className="overflow-x-auto rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2]/70 dark:bg-[#243447]/50 text-[11px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
+                        <th className="p-4 pl-6">Học viên</th>
+                        <th className="p-4">Lớp học</th>
+                        <th className="p-4">Ngày tham gia</th>
+                        <th className="p-4">Tiến độ XP & Streak</th>
+                        <th className="p-4">Trạng thái sức khỏe</th>
+                        <th className="p-4 pr-6 text-right">Hành động</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#F1E5D8]/60 dark:divide-[#2B3A4F]/60 text-xs">
+                      {filtered.map(mem => {
+                        const daysInactive = mem.last_active 
+                          ? Math.floor((currentTimestamp - new Date(mem.last_active)) / 86400000)
+                          : 1;
+                        const health = calculateStudentHealthStatus({
+                          daysInactive,
+                          completionRate: mem.lessons_completed ? Math.min(100, mem.lessons_completed * 10) : 70,
+                          overdueCount: 0,
+                          avgScore: 85
+                        });
+
+                        const isDemo = String(mem.student_id).startsWith('demo-stu-') || mem.student_name?.includes('thử nghiệm');
+
+                        return (
+                          <tr key={`${mem.id}_${mem.classroom_id}`} className="hover:bg-[#FFF9F2]/40 dark:hover:bg-[#243447]/30 transition-colors">
+                            <td className="p-4 pl-6">
+                              <div 
+                                onClick={() => handleOpenStudentAnalytics(mem)}
+                                className="flex items-center gap-3 cursor-pointer group"
+                                title="Xem phân tích chi tiết học viên"
+                              >
+                                <div className="w-8 h-8 rounded-full bg-[#E85D3F] text-white flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-105 transition-transform">
+                                  {mem.student_name ? mem.student_name.charAt(0).toUpperCase() : 'H'}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">{mem.student_name}</p>
+                                    {isDemo && (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                        Thử nghiệm
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[11px] text-[#748092]">{mem.student_email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <p className="font-bold text-[#243447] dark:text-white">{mem.classroom_name || 'Lớp học'}</p>
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#FFF5F2] text-[#E85D3F] border border-[#E85D3F]/20">
+                                {mem.classroom_hsk || mem.hsk_level || 'HSK 1'}
+                              </span>
+                            </td>
+                            <td className="p-4 text-[#748092]">
+                              {new Date(mem.joined_at).toLocaleDateString('vi-VN')}
+                            </td>
+                            <td className="p-4">
+                              <div className="font-bold text-[#E85D3F]">{mem.xp || 0} XP</div>
+                              <div className="text-[10px] text-[#748092]">Chuỗi {mem.streak || 0} ngày</div>
+                            </td>
+                            <td className="p-4">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${health.badgeClass}`}>
+                                {health.status}
+                              </span>
+                            </td>
+                            <td className="p-4 pr-6 text-right space-x-1.5">
+                              <button
+                                onClick={() => handleOpenStudentAnalytics(mem)}
+                                className="px-2.5 py-1.5 rounded-xl bg-[#FFF5F2] dark:bg-[#2C1D1A] text-[#E85D3F] font-bold text-xs hover:bg-[#E85D3F] hover:text-white transition-all cursor-pointer inline-flex items-center gap-1"
+                                title="Xem đầy đủ 11 chỉ số chi tiết của học viên"
+                              >
+                                <BarChart3 size={12} />
+                                <span>Phân tích</span>
+                              </button>
+                              <button
+                                onClick={() => navigateTo('classes', mem.classroom_id)}
+                                className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#243447] text-[#243447] dark:text-white border border-[#F1E5D8] font-bold text-xs hover:bg-[#FFF9F2] cursor-pointer"
+                              >
+                                Vào lớp
+                              </button>
+                              <button
+                                onClick={() => handleRemoveStudent(mem.student_id, mem.student_name, mem.classroom_id)}
+                                className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
+                                title="Xóa học viên khỏi lớp này"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -918,13 +1442,6 @@ export default function TeacherDashboardPage({
                   <Copy size={12} />
                   <span>Copy</span>
                 </button>
-                <button
-                  onClick={() => setQrModalClass(currentClass)}
-                  className="p-1.5 rounded-xl bg-white dark:bg-[#1A2433] text-[#748092] hover:text-[#E85D3F] border border-[#F1E5D8] dark:border-[#2B3A4F] cursor-pointer"
-                  title="Xem mã QR"
-                >
-                  <QrCode size={14} />
-                </button>
 
                 <button
                   onClick={() => handleStartLiveSession(currentClass)}
@@ -942,6 +1459,7 @@ export default function TeacherDashboardPage({
               {[
                 { id: 'overview', label: 'Tổng quan' },
                 { id: 'students', label: `Học sinh (${members.length})` },
+                { id: 'analytics', label: 'Phân tích học tập' },
                 { id: 'assignments', label: `Bài tập (${assignments.length})` },
                 { id: 'materials', label: `Tài liệu (${materials.length})` },
                 { id: 'announcements', label: `Thông báo (${announcements.length})` },
@@ -1037,16 +1555,47 @@ export default function TeacherDashboardPage({
             {/* TAB: STUDENTS */}
             {classDetailTab === 'students' && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <p className="text-xs text-[#748092]">Danh sách {members.length} học viên đang theo học</p>
-                  <button
-                    onClick={() => setCreateAnnModalOpen(true)}
-                    className="text-xs font-bold text-[#E85D3F] hover:underline cursor-pointer"
-                  >
-                    Gửi thông báo tới lớp
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {members.some(m => String(m.student_id).startsWith('demo-stu-') || m.student_name?.includes('thử nghiệm')) && (
+                      <button
+                        onClick={() => handleClearDemoStudents(currentClass.id)}
+                        className="text-xs font-bold text-rose-600 hover:underline cursor-pointer flex items-center gap-1"
+                        title="Xóa tất cả học viên thử nghiệm trong lớp này"
+                      >
+                        <Trash2 size={12} />
+                        <span>Xóa học viên thử nghiệm</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setCreateAnnModalOpen(true)}
+                      className="text-xs font-bold text-[#E85D3F] hover:underline cursor-pointer"
+                    >
+                      Gửi thông báo tới lớp
+                    </button>
+                  </div>
                 </div>
 
+                {members.length === 0 ? (
+                  <div className="p-10 rounded-3xl bg-white dark:bg-[#1A2433] border border-dashed border-[#F1E5D8] dark:border-[#2B3A4F] text-center space-y-4">
+                    <div className="w-12 h-12 mx-auto rounded-2xl bg-[#FFF5F2] dark:bg-[#2C1D1A] text-[#E85D3F] flex items-center justify-center">
+                      <Users size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[#243447] dark:text-white">Chưa có học viên nào trong lớp này</h3>
+                      <p className="text-xs text-[#748092] mt-1 max-w-md mx-auto">
+                        Cung cấp mã mời <strong className="font-mono text-[#E85D3F]">{currentClass.class_code}</strong> cho học viên để tham gia, hoặc thêm học viên thử nghiệm để kiểm tra tính năng.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleAddDemoStudent(currentClass.id)}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#45B97C] to-[#2E8B57] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md shadow-[#45B97C]/25"
+                    >
+                      + Thêm học viên thử nghiệm vào lớp
+                    </button>
+                  </div>
+                ) : (
                 <div className="overflow-x-auto rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -1062,7 +1611,7 @@ export default function TeacherDashboardPage({
                     <tbody className="divide-y divide-[#F1E5D8]/60 dark:divide-[#2B3A4F]/60 text-xs">
                       {members.map((mem) => {
                         const daysInactive = mem.last_active 
-                          ? Math.floor((Date.now() - new Date(mem.last_active)) / 86400000)
+                          ? Math.floor((currentTimestamp - new Date(mem.last_active)) / 86400000)
                           : 1;
                         const health = calculateStudentHealthStatus({
                           daysInactive,
@@ -1070,6 +1619,8 @@ export default function TeacherDashboardPage({
                           overdueCount: 0,
                           avgScore: 85
                         });
+
+                        const isClassDemo = String(mem.student_id).startsWith('demo-stu-') || mem.student_name?.includes('thử nghiệm');
 
                         return (
                           <tr key={mem.id} className="hover:bg-[#FFF9F2]/40 dark:hover:bg-[#243447]/30 transition-colors">
@@ -1079,7 +1630,14 @@ export default function TeacherDashboardPage({
                                   {mem.student_name ? mem.student_name.charAt(0).toUpperCase() : 'H'}
                                 </div>
                                 <div>
-                                  <p className="font-bold text-[#243447] dark:text-white">{mem.student_name}</p>
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="font-bold text-[#243447] dark:text-white">{mem.student_name}</p>
+                                    {isClassDemo && (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                        Thử nghiệm
+                                      </span>
+                                    )}
+                                  </div>
                                   <p className="text-[11px] text-[#748092]">{mem.student_email}</p>
                                 </div>
                               </div>
@@ -1120,6 +1678,24 @@ export default function TeacherDashboardPage({
                     </tbody>
                   </table>
                 </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB: ANALYTICS */}
+            {classDetailTab === 'analytics' && (
+              <div className="space-y-4 animate-in fade-in duration-150">
+                <ClassAnalyticsDashboard
+                  classAnalytics={classAnalyticsData}
+                  classrooms={classrooms}
+                  selectedClassId={currentClass.id}
+                  onSelectClassId={() => {}}
+                  onOpenAiStudio={(tab) => {
+                    setAiStudioInitialTab(tab || 'analysis');
+                    setAiStudioModalOpen(true);
+                  }}
+                  onSelectStudent={handleOpenStudentAnalytics}
+                />
               </div>
             )}
 
@@ -1205,14 +1781,24 @@ export default function TeacherDashboardPage({
                             <p className="text-[11px] text-[#748092] line-clamp-1">{mat.description || mat.file_url}</p>
                           </div>
                         </div>
-                        <a 
-                          href={mat.file_url} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="p-2 rounded-xl text-[#748092] hover:text-[#E85D3F] hover:bg-[#FFF5F2] cursor-pointer"
-                        >
-                          <ExternalLink size={16} />
-                        </a>
+                        <div className="flex items-center gap-1">
+                          <a 
+                            href={mat.file_url} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="p-2 rounded-xl text-[#748092] hover:text-[#E85D3F] hover:bg-[#FFF5F2] cursor-pointer"
+                            title="Mở tài liệu"
+                          >
+                            <ExternalLink size={16} />
+                          </a>
+                          <button
+                            onClick={() => handleDeleteMaterial(mat.id, mat.title)}
+                            className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
+                            title="Xóa tài liệu này"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1243,9 +1829,18 @@ export default function TeacherDashboardPage({
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">Đã ghim</span>
                         )}
                       </div>
-                      <span className="text-[11px] text-[#748092]">
-                        {new Date(ann.created_at).toLocaleDateString('vi-VN')}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-[#748092]">
+                          {new Date(ann.created_at).toLocaleDateString('vi-VN')}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteAnnouncement(ann.id, ann.title)}
+                          className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
+                          title="Xóa thông báo này"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                     <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed whitespace-pre-line">{ann.content}</p>
                   </div>
@@ -1263,7 +1858,7 @@ export default function TeacherDashboardPage({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {members.map(mem => {
                     const daysInactive = mem.last_active 
-                      ? Math.floor((Date.now() - new Date(mem.last_active)) / 86400000)
+                      ? Math.floor((currentTimestamp - new Date(mem.last_active)) / 86400000)
                       : 1;
                     const health = calculateStudentHealthStatus({
                       daysInactive,
@@ -1471,557 +2066,90 @@ export default function TeacherDashboardPage({
       {/* ========================================================== */}
       {/* MODAL 1: CREATE CLASS */}
       {/* ========================================================== */}
-      {createClassModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="max-w-md w-full bg-white dark:bg-[#1A2433] rounded-3xl p-6 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#F1E5D8] pb-3">
-              <h3 className="text-base font-bold text-[#243447] dark:text-white">Tạo Lớp học mới</h3>
-              <button 
-                onClick={() => setCreateClassModalOpen(false)}
-                className="text-[#748092] hover:text-[#243447] cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateClass} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-[#748092] mb-1">Tên lớp học *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: HSK 1 - Khóa Buổi tối 2-4-6"
-                  value={newClassForm.name}
-                  onChange={e => setNewClassForm({ ...newClassForm, name: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-[#748092] mb-1">Mô tả mục tiêu lớp</label>
-                <textarea
-                  placeholder="Giới thiệu về mục tiêu, lịch học, yêu cầu..."
-                  value={newClassForm.description}
-                  onChange={e => setNewClassForm({ ...newClassForm, description: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
-                  rows={2}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-[#748092] mb-1">Trình độ HSK</label>
-                  <select
-                    value={newClassForm.hskLevel}
-                    onChange={e => setNewClassForm({ ...newClassForm, hskLevel: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold"
-                  >
-                    <option value="HSK 1">HSK 1</option>
-                    <option value="HSK 2">HSK 2</option>
-                    <option value="HSK 3">HSK 3</option>
-                    <option value="HSK 4">HSK 4</option>
-                    <option value="HSK 5">HSK 5</option>
-                    <option value="HSK 6">HSK 6</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-bold text-[#748092] mb-1">Sĩ số tối đa</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    placeholder="Tối thiểu 1 học viên"
-                    value={newClassForm.maxStudents}
-                    onChange={e => setNewClassForm({ ...newClassForm, maxStudents: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold"
-                  />
-                  <p className="text-[10px] text-[#748092] mt-1">Từ 1 học viên trở lên (hỗ trợ kèm 1-1 hoặc lớp nhóm)</p>
-                </div>
-              </div>
-
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCreateClassModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#748092] hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md"
-                >
-                  Tạo lớp & Nhận mã
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================== */}
-      {/* MODAL 2: QR CODE PREVIEW */}
-      {/* ========================================================== */}
-      {qrModalClass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="max-w-sm w-full bg-white dark:bg-[#1A2433] rounded-3xl p-6 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl text-center space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-[#F1E5D8]">
-              <h3 className="text-sm font-bold text-[#243447] dark:text-white">Mã QR Lớp học</h3>
-              <button 
-                onClick={() => setQrModalClass(null)}
-                className="text-[#748092] hover:text-[#243447] cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-4 bg-white rounded-2xl border-2 border-dashed border-[#E85D3F]/40 inline-block shadow-inner">
-              {/* Minimal SVG QR Code representation */}
-              <svg className="w-48 h-48 mx-auto" viewBox="0 0 100 100" fill="currentColor">
-                <path d="M10 10h30v30h-30z M15 15h20v20h-20z M20 20h10v10h-10z M60 10h30v30h-30z M65 15h20v20h-20z M70 20h10v10h-10z M10 60h30v30h-30z M15 65h20v20h-20z M20 70h10v10h-10z M45 15h10v10h-10z M45 45h10v10h-10z M65 45h10v10h-10z M75 55h15v10h-15z M45 75h10v15h-10z M65 65h10v25h-10z M80 80h10v10h-10z" className="text-[#243447]" />
-              </svg>
-            </div>
-
-            <div>
-              <p className="text-base font-black text-[#E85D3F] tracking-widest">{qrModalClass.class_code}</p>
-              <p className="text-xs font-bold text-[#243447] dark:text-white mt-1">{qrModalClass.name}</p>
-              <p className="text-[11px] text-[#748092] mt-0.5">Học viên quét hoặc nhập mã trên tại mục "Tham gia lớp"</p>
-            </div>
-
-            <button
-              onClick={() => handleCopyCode(qrModalClass.class_code)}
-              className="w-full py-2.5 rounded-xl bg-[#FFF5F2] text-[#E85D3F] font-bold text-xs hover:bg-[#E85D3F] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-1.5"
-            >
-              <Copy size={14} />
-              <span>Sao chép mã lớp ({qrModalClass.class_code})</span>
-            </button>
-          </div>
-        </div>
-      )}
+      <CreateClassModal
+        isOpen={createClassModalOpen}
+        onClose={() => setCreateClassModalOpen(false)}
+        onSubmit={handleCreateClass}
+        formData={newClassForm}
+        setFormData={setNewClassForm}
+      />
 
       {/* ========================================================== */}
       {/* MODAL 3: CREATE ASSIGNMENT */}
       {/* ========================================================== */}
-      {createAsgModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="max-w-md w-full bg-white dark:bg-[#1A2433] rounded-3xl p-6 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#F1E5D8] pb-3">
-              <h3 className="text-base font-bold text-[#243447] dark:text-white">Giao Bài tập mới</h3>
-              <button 
-                onClick={() => setCreateAsgModalOpen(false)}
-                className="text-[#748092] hover:text-[#243447] cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateAssignment} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-[#748092] mb-1">Tiêu đề bài tập *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Ôn tập 20 Từ vựng Bài 3"
-                  value={newAsgForm.title}
-                  onChange={e => setNewAsgForm({ ...newAsgForm, title: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-[#748092] mb-1">Loại bài tập</label>
-                <select
-                  value={newAsgForm.contentType}
-                  onChange={e => setNewAsgForm({ ...newAsgForm, contentType: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold"
-                >
-                  <option value="Vocabulary">Từ vựng (Vocabulary)</option>
-                  <option value="Grammar">Ngữ pháp (Grammar)</option>
-                  <option value="Listening">Luyện nghe (Listening)</option>
-                  <option value="Speaking">Luyện nói (Speaking)</option>
-                  <option value="Reading">Đọc hiểu (Reading)</option>
-                  <option value="Writing">Viết chữ (Writing)</option>
-                  <option value="Quiz">Trắc nghiệm (Quiz - Tự động chấm)</option>
-                </select>
-              </div>
-
-              {newAsgForm.contentType === 'Quiz' && (
-                <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 space-y-2">
-                  <p className="font-bold text-blue-700 dark:text-blue-300">Câu hỏi mẫu (Tự động chấm điểm)</p>
-                  <input
-                    type="text"
-                    placeholder="Câu hỏi trắc nghiệm..."
-                    value={newAsgForm.quizQuestion1}
-                    onChange={e => setNewAsgForm({ ...newAsgForm, quizQuestion1: e.target.value })}
-                    className="w-full p-2 rounded-xl bg-white dark:bg-[#1A2433] border text-xs"
-                  />
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-[#748092]">Đáp án đúng:</span>
-                    <select
-                      value={newAsgForm.quizCorrect}
-                      onChange={e => setNewAsgForm({ ...newAsgForm, quizCorrect: Number(e.target.value) })}
-                      className="p-1 rounded bg-white text-xs"
-                    >
-                      <option value={0}>Đáp án A</option>
-                      <option value={1}>Đáp án B</option>
-                      <option value={2}>Đáp án C</option>
-                      <option value={3}>Đáp án D</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block font-bold text-[#748092] mb-1">Mô tả & Hướng dẫn làm bài</label>
-                <textarea
-                  placeholder="Ghi chú thêm cho học viên..."
-                  value={newAsgForm.description}
-                  onChange={e => setNewAsgForm({ ...newAsgForm, description: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
-                  rows={2}
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-[#748092] mb-1">Hạn nộp (Deadline)</label>
-                <input
-                  type="datetime-local"
-                  value={newAsgForm.dueDate}
-                  onChange={e => setNewAsgForm({ ...newAsgForm, dueDate: e.target.value })}
-                  className="w-full p-2 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border text-xs"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="asgPub"
-                  checked={newAsgForm.published}
-                  onChange={e => setNewAsgForm({ ...newAsgForm, published: e.target.checked })}
-                  className="rounded text-[#E85D3F]"
-                />
-                <label htmlFor="asgPub" className="font-bold text-[#243447] dark:text-white">Công bố ngay cho học viên</label>
-              </div>
-
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCreateAsgModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#748092] hover:bg-gray-100 cursor-pointer"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md"
-                >
-                  Giao bài ngay
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CreateAssignmentModal
+        isOpen={createAsgModalOpen}
+        onClose={() => setCreateAsgModalOpen(false)}
+        onSubmit={handleCreateAssignment}
+        formData={newAsgForm}
+        setFormData={setNewAsgForm}
+      />
 
       {/* ========================================================== */}
       {/* MODAL 4: CREATE ANNOUNCEMENT */}
       {/* ========================================================== */}
-      {createAnnModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="max-w-md w-full bg-white dark:bg-[#1A2433] rounded-3xl p-6 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#F1E5D8] pb-3">
-              <h3 className="text-base font-bold text-[#243447] dark:text-white">Đăng thông báo lớp</h3>
-              <button 
-                onClick={() => setCreateAnnModalOpen(false)}
-                className="text-[#748092] hover:text-[#243447] cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateAnnouncement} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-[#748092] mb-1">Tiêu đề thông báo *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Nhắc nhở lịch kiểm tra định kỳ"
-                  value={newAnnForm.title}
-                  onChange={e => setNewAnnForm({ ...newAnnForm, title: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] text-xs font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-[#748092] mb-1">Nội dung thông báo *</label>
-                <textarea
-                  required
-                  placeholder="Nhập nội dung chi tiết gửi tới toàn bộ học viên..."
-                  value={newAnnForm.content}
-                  onChange={e => setNewAnnForm({ ...newAnnForm, content: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] text-xs"
-                  rows={4}
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="annPin"
-                  checked={newAnnForm.pinned}
-                  onChange={e => setNewAnnForm({ ...newAnnForm, pinned: e.target.checked })}
-                  className="rounded text-[#E85D3F]"
-                />
-                <label htmlFor="annPin" className="font-bold text-[#243447] dark:text-white">Ghim lên đầu bảng tin lớp</label>
-              </div>
-
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCreateAnnModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#748092] cursor-pointer"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#E85D3F] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md"
-                >
-                  Đăng thông báo
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CreateAnnouncementModal
+        isOpen={createAnnModalOpen}
+        onClose={() => setCreateAnnModalOpen(false)}
+        onSubmit={handleCreateAnnouncement}
+        formData={newAnnForm}
+        setFormData={setNewAnnForm}
+      />
 
       {/* ========================================================== */}
       {/* MODAL 5: UPLOAD MATERIAL */}
       {/* ========================================================== */}
-      {uploadMatModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="max-w-md w-full bg-white dark:bg-[#1A2433] rounded-3xl p-6 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#F1E5D8] pb-3">
-              <h3 className="text-base font-bold text-[#243447] dark:text-white">Thêm Tài liệu cho Lớp</h3>
-              <button 
-                onClick={() => setUploadMatModalOpen(false)}
-                className="text-[#748092] hover:text-[#243447] cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleUploadMaterial} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-[#748092] mb-1">Tên tài liệu *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Sách Giáo trình HSK 1 PDF"
-                  value={newMatForm.title}
-                  onChange={e => setNewMatForm({ ...newMatForm, title: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] font-bold text-xs"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-[#748092] mb-1">Loại tệp</label>
-                  <select
-                    value={newMatForm.fileType}
-                    onChange={e => setNewMatForm({ ...newMatForm, fileType: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] font-bold text-xs"
-                  >
-                    <option value="pdf">Tài liệu PDF</option>
-                    <option value="audio">Âm thanh (Audio/MP3)</option>
-                    <option value="image">Hình ảnh (Image)</option>
-                    <option value="video">Video bài giảng</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-bold text-[#748092] mb-1">Đường dẫn tệp (URL) *</label>
-                  <input
-                    type="url"
-                    required
-                    placeholder="https://..."
-                    value={newMatForm.fileUrl}
-                    onChange={e => setNewMatForm({ ...newMatForm, fileUrl: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-[#748092] mb-1">Ghi chú thêm</label>
-                <textarea
-                  placeholder="Mô tả nội dung tài liệu..."
-                  value={newMatForm.description}
-                  onChange={e => setNewMatForm({ ...newMatForm, description: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] text-xs"
-                  rows={2}
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setUploadMatModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#748092] cursor-pointer"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#E85D3F] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md"
-                >
-                  Lưu tài liệu
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <UploadMaterialModal
+        isOpen={uploadMatModalOpen}
+        onClose={() => setUploadMatModalOpen(false)}
+        onSubmit={handleUploadMaterial}
+        formData={newMatForm}
+        setFormData={setNewMatForm}
+      />
 
       {/* ========================================================== */}
       {/* MODAL 6: GRADING DRAWER */}
       {/* ========================================================== */}
-      {gradingModalSub && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="max-w-md w-full bg-white dark:bg-[#1A2433] rounded-3xl p-6 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#F1E5D8] pb-3">
-              <div>
-                <h3 className="text-base font-bold text-[#243447] dark:text-white">Chấm điểm Bài nộp</h3>
-                <p className="text-xs text-[#748092]">Học viên: {gradingModalSub.student_name}</p>
-              </div>
-              <button 
-                onClick={() => setGradingModalSub(null)}
-                className="text-[#748092] hover:text-[#243447] cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Submission preview */}
-            <div className="p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs space-y-2">
-              <p className="font-bold text-[#243447] dark:text-white">{gradingModalSub.assignment_title}</p>
-              <div className="text-[#748092] dark:text-[#94A3B8] max-h-36 overflow-y-auto whitespace-pre-wrap">
-                {gradingModalSub.submission_data?.notes 
-                  ? gradingModalSub.submission_data.notes 
-                  : JSON.stringify(gradingModalSub.submission_data, null, 2)}
-              </div>
-            </div>
-
-            <form onSubmit={handleGradeSubmit} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-[#748092] mb-1">Điểm số (0 - 100) *</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  required
-                  placeholder="Ví dụ: 95"
-                  value={gradeInput.score}
-                  onChange={e => setGradeInput({ ...gradeInput, score: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-white dark:bg-[#243447] border border-[#F1E5D8] font-bold text-sm text-[#E85D3F]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-[#748092] mb-1">Nhận xét & Feedback của Giáo viên</label>
-                <textarea
-                  placeholder="Ghi nhận xét chi tiết, khen ngợi hoặc lỗi cần khắc phục..."
-                  value={gradeInput.feedback}
-                  onChange={e => setGradeInput({ ...gradeInput, feedback: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-white dark:bg-[#243447] border border-[#F1E5D8] text-xs"
-                  rows={3}
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setGradingModalSub(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#748092] cursor-pointer"
-                >
-                  Đóng
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#45B97C] to-[#2E8B57] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md"
-                >
-                  Xác nhận Chấm điểm
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <GradingDrawerModal
+        submission={gradingModalSub}
+        onClose={() => setGradingModalSub(null)}
+        onSubmit={handleGradeSubmit}
+        gradeInput={gradeInput}
+        setGradeInput={setGradeInput}
+      />
 
       {/* ========================================================== */}
       {/* MODAL 7: STUDENT DETAIL DIAGNOSTIC */}
       {/* ========================================================== */}
-      {studentDetailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="max-w-md w-full bg-white dark:bg-[#1A2433] rounded-3xl p-6 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#F1E5D8] pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#E85D3F] text-white flex items-center justify-center font-bold text-xs">
-                  {studentDetailModal.student_name?.charAt(0)}
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-[#243447] dark:text-white">{studentDetailModal.student_name}</h3>
-                  <p className="text-[10px] text-[#748092]">{studentDetailModal.student_email}</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setStudentDetailModal(null)}
-                className="text-[#748092] hover:text-[#243447] cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
+      <StudentDetailModal
+        student={studentDetailModal}
+        onClose={() => setStudentDetailModal(null)}
+      />
 
-            <div className="space-y-3 text-xs">
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#243447]">
-                <span className="font-bold text-[#748092]">Đánh giá học thuật:</span>
-                <span className={`px-2.5 py-0.5 rounded-full font-bold border ${studentDetailModal.health?.badgeClass}`}>
-                  {studentDetailModal.health?.status}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-center">
-                <div className="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200">
-                  <p className="text-[10px] text-[#748092]">Kinh nghiệm (XP)</p>
-                  <p className="text-base font-black text-[#E85D3F]">{studentDetailModal.xp || 0}</p>
-                </div>
-                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200">
-                  <p className="text-[10px] text-[#748092]">Chuỗi học tập</p>
-                  <p className="text-base font-black text-amber-600">{studentDetailModal.streak || 0} ngày</p>
-                </div>
-                <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200">
-                  <p className="text-[10px] text-[#748092]">Từ vựng đã học</p>
-                  <p className="text-base font-black text-emerald-600">{studentDetailModal.words_learned || 0}</p>
-                </div>
-                <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200">
-                  <p className="text-[10px] text-[#748092]">Thời gian tích lũy</p>
-                  <p className="text-base font-black text-blue-600">{studentDetailModal.study_hours || 1.5} giờ</p>
-                </div>
-              </div>
-
-              <p className="text-[11px] text-[#748092] italic pt-1 text-center">
-                Chẩn đoán: {studentDetailModal.health?.reason}
-              </p>
-            </div>
-
-            <button
-              onClick={() => setStudentDetailModal(null)}
-              className="w-full py-2.5 rounded-xl bg-[#FFF9F2] text-[#243447] dark:text-white font-bold text-xs hover:bg-[#F1E5D8] transition-all cursor-pointer border border-[#F1E5D8]"
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
+      {/* ========================================================== */}
+      {/* MODAL 8: ADVANCED STUDENT DETAILED ANALYTICS (SPEC 2) */}
+      {/* ========================================================== */}
+      {studentAnalyticsModalData && (
+        <StudentAnalyticsModal
+          student={studentAnalyticsModalData}
+          onClose={() => setStudentAnalyticsModalData(null)}
+          onSendReminder={handleSendStudentReminder}
+        />
       )}
+
+      {/* ========================================================== */}
+      {/* MODAL 9: AI TEACHER STUDIO (SPEC 4, 5, 6, 7, 8, 9) */}
+      {/* ========================================================== */}
+      <AiTeacherStudioModal
+        isOpen={aiStudioModalOpen}
+        onClose={() => setAiStudioModalOpen(false)}
+        classrooms={classrooms}
+        initialClassId={analyticsClassId === 'all' ? (classId || classrooms[0]?.id) : analyticsClassId}
+        classAnalytics={classAnalyticsData}
+        initialTab={aiStudioInitialTab}
+        onPublishAssignment={handlePublishAiAssignment}
+        onSaveLessonPlan={handleSaveLessonPlanToMaterials}
+      />
 
     </div>
   );

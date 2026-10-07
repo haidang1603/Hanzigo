@@ -3,11 +3,8 @@ import {
   Mic, 
   Square, 
   Volume2, 
-  Sparkles, 
   Award, 
   ArrowUpDown, 
-  CheckCircle2, 
-  AlertCircle, 
   Activity,
   Plus
 } from 'lucide-react';

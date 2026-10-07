@@ -43,10 +43,10 @@ export function extractTone(pinyinStr = '') {
  */
 export function evaluateRealPronunciation({
   targetHanzi = '',
-  targetPinyin = '',
+  targetPinyin: _targetPinyin = '',
   spokenTranscript = '',
   audioDurationMs = 0,
-  audioEnergyRms = 0
+  audioEnergyRms: _audioEnergyRms = 0
 }) {
   const cleanTarget = targetHanzi.replace(/[\s\p{P}]/gu, '');
   const cleanSpoken = (spokenTranscript || '').replace(/[\s\p{P}]/gu, '');

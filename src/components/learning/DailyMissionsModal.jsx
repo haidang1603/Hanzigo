@@ -4,16 +4,12 @@ import {
   Flame, 
   Check, 
   X, 
-  Sparkles, 
-  Award, 
-  Gift, 
-  ArrowRight,
-  CheckCircle2
+  Gift
 } from 'lucide-react';
 import { getDailyMissions, claimDailyMission } from '../../services/learningPathService';
-import { playClickSound, playSuccessSound, playLevelUpSound } from '../../utils/audio';
+import { playSuccessSound, playLevelUpSound } from '../../utils/audio';
 
-export default function DailyMissionsModal({ user, onClose, onRewardClaimed }) {
+export default function DailyMissionsModal({ user, onClose, onRewardClaimed, onAddXp }) {
   const [missions, setMissions] = useState(() => getDailyMissions(user));
   const [claimedChest, setClaimedChest] = useState(() => {
     try {
@@ -27,11 +23,13 @@ export default function DailyMissionsModal({ user, onClose, onRewardClaimed }) {
   const allCompleted = missions.every(m => m.isCompleted);
   const completedCount = missions.filter(m => m.isCompleted).length;
 
+  const rewardCallback = onRewardClaimed || onAddXp;
+
   const handleClaim = (missionId) => {
     playSuccessSound();
     const { missions: updated, xpAwarded } = claimDailyMission(missionId, user);
     setMissions(updated);
-    if (onRewardClaimed) onRewardClaimed(xpAwarded);
+    if (rewardCallback) rewardCallback(xpAwarded);
 
     try {
       confetti({
@@ -50,7 +48,7 @@ export default function DailyMissionsModal({ user, onClose, onRewardClaimed }) {
       localStorage.setItem(`hanzigo_chest_${today}`, 'true');
     } catch {}
     setClaimedChest(true);
-    if (onRewardClaimed) onRewardClaimed(100);
+    if (rewardCallback) rewardCallback(100);
 
     try {
       confetti({

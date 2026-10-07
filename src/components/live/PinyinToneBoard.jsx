@@ -1,11 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Volume2, 
   RotateCcw, 
   Mic, 
   Square, 
-  Play, 
-  Sparkles, 
   Check, 
   Edit3,
   Layers,

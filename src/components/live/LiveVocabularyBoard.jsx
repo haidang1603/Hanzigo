@@ -4,9 +4,6 @@ import {
   Bookmark, 
   BookmarkCheck, 
   Volume2, 
-  Sparkles, 
-  Check, 
-  PenTool, 
   Search,
   BookOpen
 } from 'lucide-react';

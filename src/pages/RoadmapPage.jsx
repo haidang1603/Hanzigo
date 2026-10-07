@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   Compass, 
@@ -15,12 +15,32 @@ import DailyMissionsModal from '../components/learning/DailyMissionsModal';
 import SkillMasteryCard from '../components/learning/SkillMasteryCard';
 import { getLessonById, getUserJourneyProgress } from '../services/learningPathService';
 
-export default function RoadmapPage({ user, setActiveTab, onSelectLesson, onAddXp }) {
+export default function RoadmapPage({ 
+  user, 
+  setActiveTab, 
+  initialLessonId = null, 
+  onClearInitialLesson = null, 
+  onAddXp 
+}) {
   const [roadmapView, setRoadmapView] = useState('journey'); // 'journey' | 'skills'
   const [activeLessonToPlay, setActiveLessonToPlay] = useState(null);
   const [activeBossChallenge, setActiveBossChallenge] = useState(null);
   const [showPlacementTest, setShowPlacementTest] = useState(false);
   const [showDailyMissions, setShowDailyMissions] = useState(false);
+  const [journeyVersion, setJourneyVersion] = useState(0);
+
+  // If navigated from Home or Dashboard with a specific lesson id, open it directly
+  useEffect(() => {
+    if (initialLessonId) {
+      const target = getLessonById(initialLessonId);
+      if (target) {
+        setActiveLessonToPlay(target);
+      }
+      if (onClearInitialLesson) {
+        onClearInitialLesson();
+      }
+    }
+  }, [initialLessonId, onClearInitialLesson]);
 
   // Toast notification
   const [toast, setToast] = useState(null);
@@ -43,16 +63,19 @@ export default function RoadmapPage({ user, setActiveTab, onSelectLesson, onAddX
           user={user}
           onClose={() => {
             setActiveLessonToPlay(null);
+            setJourneyVersion(v => v + 1);
             window.scrollTo({ top: 0, behavior: 'instant' });
           }}
           onBack={() => {
             setActiveLessonToPlay(null);
+            setJourneyVersion(v => v + 1);
             window.scrollTo({ top: 0, behavior: 'instant' });
           }}
           onCompleteLesson={(score, stars) => {
             playSuccessSound();
             showToast(`🎉 Xuất sắc! Bạn đã hoàn thành bài học với ${score} điểm (${stars} sao)`);
             if (onAddXp) onAddXp(activeLessonToPlay.xpReward || 50);
+            setJourneyVersion(v => v + 1);
           }}
           onNextLesson={(nextId) => {
             const next = getLessonById(nextId);
@@ -159,8 +182,11 @@ export default function RoadmapPage({ user, setActiveTab, onSelectLesson, onAddX
       {/* VIEW 1: 🗺️ JOURNEY MAP (Default interactive HSK roadmap) */}
       {roadmapView === 'journey' && (
         <LearningJourneyMap
+          key={journeyVersion}
           user={user}
-          onSelectLesson={(lesson) => setActiveLessonToPlay(lesson)}
+          onSelectLesson={(lesson) => {
+            setActiveLessonToPlay(lesson);
+          }}
           onOpenBoss={(boss) => setActiveBossChallenge(boss)}
           onOpenPlacementTest={() => setShowPlacementTest(true)}
           onOpenDailyMissions={() => setShowDailyMissions(true)}
@@ -214,6 +240,7 @@ export default function RoadmapPage({ user, setActiveTab, onSelectLesson, onAddX
             playSuccessSound();
             showToast(`🐉 Chiến thắng vang dội! Bạn đã hạ gục Boss với ${score} điểm!`);
             if (onAddXp) onAddXp(activeBossChallenge.xpReward || 200);
+            setJourneyVersion(v => v + 1);
           }}
         />
       )}
@@ -226,6 +253,7 @@ export default function RoadmapPage({ user, setActiveTab, onSelectLesson, onAddX
           onComplete={(result) => {
             playSuccessSound();
             showToast(`🎉 Xếp lớp thành công! Trình độ đề xuất: ${result.badge}`);
+            setJourneyVersion(v => v + 1);
           }}
         />
       )}

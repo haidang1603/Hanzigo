@@ -13,14 +13,11 @@ import {
   Unlock, 
   VolumeX, 
   UserX, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Clock, 
-  Trash2, 
+  AlertTriangle,
+  ArrowLeft,
+  Trash2,
   Send, 
   X, 
-  ChevronRight, 
-  ArrowLeft, 
   Sparkles, 
   Copy
 } from 'lucide-react';
@@ -101,6 +98,7 @@ export default function LiveClassroomPage({
 
   // Layout & Tabs state (for mobile / responsive)
   const [activeSideTab, setActiveSideTab] = useState('chat'); // 'chat' | 'participants' | 'hanziBoard'
+  const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [attendanceReport, setAttendanceReport] = useState(null);
 
@@ -234,8 +232,10 @@ export default function LiveClassroomPage({
     }
   }, [classId, onNavigateBack, sessionId, user]);
 
-  // 4. REALTIME EVENT BUS LISTENER
+  // 4. REALTIME EVENT BUS LISTENER (Chỉ subscribe khi đã xác thực quyền truy cập phòng)
   useEffect(() => {
+    if (!sessionData || accessDeniedReason || authChecking) return;
+
     const unsubscribe = liveEventBus.subscribe(sessionId, (event) => {
       switch (event.type) {
         case 'USER_JOINED':
@@ -380,7 +380,7 @@ export default function LiveClassroomPage({
     });
 
     return unsubscribe;
-  }, [sessionId, user, myRole]);
+  }, [sessionId, user, myRole, handleLeave, sessionData, accessDeniedReason, authChecking]);
 
   // Raise hand queue computation (FIFO)
   const raiseHandQueue = useMemo(() => {
@@ -1020,12 +1020,19 @@ export default function LiveClassroomPage({
             </div>
 
             {/* Right Controls: Tab Switchers */}
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10">
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10 shrink-0">
               <button
-                onClick={() => setActiveSideTab('chat')}
+                onClick={() => {
+                  if (activeSideTab === 'chat' && isMobilePanelOpen) {
+                    setIsMobilePanelOpen(false);
+                  } else {
+                    setActiveSideTab('chat');
+                    setIsMobilePanelOpen(true);
+                  }
+                }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeSideTab === 'chat'
-                    ? 'bg-[#E85D3F] text-white'
+                    ? 'bg-[#E85D3F] text-white shadow-sm'
                     : 'text-white/60 hover:text-white'
                 }`}
               >
@@ -1034,10 +1041,17 @@ export default function LiveClassroomPage({
               </button>
 
               <button
-                onClick={() => setActiveSideTab('participants')}
+                onClick={() => {
+                  if (activeSideTab === 'participants' && isMobilePanelOpen) {
+                    setIsMobilePanelOpen(false);
+                  } else {
+                    setActiveSideTab('participants');
+                    setIsMobilePanelOpen(true);
+                  }
+                }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 relative cursor-pointer ${
                   activeSideTab === 'participants'
-                    ? 'bg-[#E85D3F] text-white'
+                    ? 'bg-[#E85D3F] text-white shadow-sm'
                     : 'text-white/60 hover:text-white'
                 }`}
               >
@@ -1049,10 +1063,17 @@ export default function LiveClassroomPage({
               </button>
 
               <button
-                onClick={() => setActiveSideTab('hanziBoard')}
+                onClick={() => {
+                  if (activeSideTab === 'hanziBoard' && isMobilePanelOpen) {
+                    setIsMobilePanelOpen(false);
+                  } else {
+                    setActiveSideTab('hanziBoard');
+                    setIsMobilePanelOpen(true);
+                  }
+                }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeSideTab === 'hanziBoard'
-                    ? 'bg-[#E85D3F] text-white'
+                    ? 'bg-[#E85D3F] text-white shadow-sm'
                     : 'text-white/60 hover:text-white'
                 }`}
               >
@@ -1064,7 +1085,9 @@ export default function LiveClassroomPage({
         </div>
 
         {/* 2.2. SIDE PANEL (CHAT | PARTICIPANTS | HANZI BOARD) */}
-        <aside className="w-full lg:w-96 bg-[#0F172A] border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col shrink-0 h-80 lg:h-auto">
+        <aside className={`w-full lg:w-96 bg-[#0F172A] border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col shrink-0 ${
+          isMobilePanelOpen ? 'h-80 sm:h-96' : 'hidden lg:flex lg:h-auto'
+        }`}>
           
           {/* TAB 1: REALTIME CHAT */}
           {activeSideTab === 'chat' && (
@@ -1074,14 +1097,23 @@ export default function LiveClassroomPage({
                   <MessageSquare size={16} className="text-[#E85D3F]" />
                   <h3 className="text-xs font-bold uppercase tracking-wider text-white">Tin nhắn lớp học</h3>
                 </div>
-                {myRole === 'teacher' && (
+                <div className="flex items-center gap-2">
+                  {myRole === 'teacher' && (
+                    <button
+                      onClick={handleToggleChatMute}
+                      className="text-[11px] text-white/60 hover:text-white font-medium cursor-pointer"
+                    >
+                      {isChatMuted ? 'Mở lại chat' : 'Khóa chat'}
+                    </button>
+                  )}
                   <button
-                    onClick={handleToggleChatMute}
-                    className="text-[11px] text-white/60 hover:text-white font-medium cursor-pointer"
+                    onClick={() => setIsMobilePanelOpen(false)}
+                    className="lg:hidden p-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 cursor-pointer"
+                    title="Đóng bảng"
                   >
-                    {isChatMuted ? 'Mở lại chat' : 'Khóa chat'}
+                    <X size={16} />
                   </button>
-                )}
+                </div>
               </div>
 
               {/* Message Feed */}
@@ -1176,6 +1208,13 @@ export default function LiveClassroomPage({
                     Học viên ({activeStudents.length})
                   </h3>
                 </div>
+                <button
+                  onClick={() => setIsMobilePanelOpen(false)}
+                  className="lg:hidden p-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 cursor-pointer"
+                  title="Đóng bảng"
+                >
+                  <X size={16} />
+                </button>
               </div>
 
               {/* RAISE HAND FIFO QUEUE SECTION */}
@@ -1292,12 +1331,21 @@ export default function LiveClassroomPage({
           {/* TAB 3: HANZI QUICK WHITEBOARD & TEACHING TOOL */}
           {activeSideTab === 'hanziBoard' && (
             <div className="flex-1 flex flex-col p-4 space-y-4 overflow-y-auto">
-              <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase text-[#E85D3F]">CÔNG CỤ GIẢNG DẠY</span>
-                <h3 className="text-sm font-bold text-white">Bảng phụ trợ Hán tự & Pinyin</h3>
-                <p className="text-xs text-white/60">
-                  Hiển thị mẫu chữ Hán, phiên âm và nghĩa trực tiếp cho học viên theo dõi khi giảng.
-                </p>
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-black uppercase text-[#E85D3F]">CÔNG CỤ GIẢNG DẠY</span>
+                  <h3 className="text-sm font-bold text-white">Bảng phụ trợ Hán tự & Pinyin</h3>
+                  <p className="text-xs text-white/60">
+                    Hiển thị mẫu chữ Hán, phiên âm và nghĩa trực tiếp cho học viên theo dõi khi giảng.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsMobilePanelOpen(false)}
+                  className="lg:hidden p-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 cursor-pointer shrink-0"
+                  title="Đóng bảng"
+                >
+                  <X size={16} />
+                </button>
               </div>
 
               {/* Large Hanzi Presentation Card */}

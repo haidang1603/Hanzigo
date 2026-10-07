@@ -1,5 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { isValidUuid } from './authService.js';
+import { sanitizeUserErrorMessage } from '../utils/errorSanitizer.js';
+import { recordAuditLog, AUDIT_CATEGORIES, AUDIT_SEVERITY } from './auditLogService.js';
 
 // Keys for local simulation storage fallback
 const STORAGE_KEYS = {
@@ -23,6 +25,19 @@ export function generateClassCode() {
     randomPart += chars[idx];
   }
   return `HZG-${randomPart}`;
+}
+
+/**
+ * Normalizes input class codes to handle:
+ * - With or without 'HZG-' prefix (e.g. '7K2P9' vs 'HZG-7K2P9')
+ * - Spaces and casing (e.g. ' hzg - 7k2p9 ')
+ */
+export function normalizeClassCode(code) {
+  if (!code) return { raw: '', codeWithPrefix: '', codeWithoutPrefix: '' };
+  const raw = String(code).trim().toUpperCase().replace(/\s+/g, '');
+  const codeWithoutPrefix = raw.replace(/^HZG-?/, '');
+  const codeWithPrefix = codeWithoutPrefix ? `HZG-${codeWithoutPrefix}` : '';
+  return { raw, codeWithPrefix, codeWithoutPrefix };
 }
 
 /**
@@ -322,6 +337,7 @@ export async function getClassroomsForTeacher(teacherId) {
 
   // Always merge local classrooms (ensures newly created or simulation classrooms are never lost)
   const localList = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
+  const allLocalMembers = getLocalItem(STORAGE_KEYS.MEMBERS, []);
   const merged = [...dbClasses];
   
   for (const lc of localList) {
@@ -330,11 +346,17 @@ export async function getClassroomsForTeacher(teacherId) {
                     lc.teacher_id === 'user_teacher_demo' ||
                     teacherId === 'user_teacher_demo';
     if (isOwner && !merged.some(m => m.id === lc.id || m.class_code === lc.class_code)) {
-      merged.push({
-        ...lc,
-        student_count: lc.student_count || 0
-      });
+      merged.push({ ...lc });
     }
+  }
+
+  // Synchronize dynamic student_count for all classrooms from local members and DB
+  for (const c of merged) {
+    const localMemberCount = allLocalMembers.filter(m => 
+      (m.classroom_id === c.id || String(m.classroom_id) === String(c.id)) && 
+      m.status === 'active'
+    ).length;
+    c.student_count = Math.max(c.student_count || 0, localMemberCount);
   }
 
   return merged;
@@ -371,47 +393,77 @@ export async function getClassroomById(classroomId) {
  */
 export async function lookupClassroomByCode(classCode) {
   ensureSimulationSeed();
-  const cleanCode = (classCode || '').trim().toUpperCase();
-  if (!cleanCode) return null;
+  const { raw, codeWithPrefix, codeWithoutPrefix } = normalizeClassCode(classCode);
+  if (!raw && !codeWithPrefix && !codeWithoutPrefix) return null;
 
-  if (!isSupabaseConfigured || !supabase) {
-    const list = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
-    const found = list.find(c => c.class_code.toUpperCase() === cleanCode);
-    if (!found) return null;
+  const targetCodes = Array.from(new Set([codeWithPrefix, raw, codeWithoutPrefix].filter(Boolean)));
+
+  // 1. Try Supabase RPC first if configured (SECURITY DEFINER bypasses RLS)
+  if (isSupabaseConfigured && supabase) {
+    try {
+      for (const testCode of targetCodes) {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('lookup_classroom_by_code', {
+          p_class_code: testCode
+        });
+        if (!rpcError && rpcData && rpcData.id) {
+          return rpcData;
+        }
+      }
+    } catch (rpcErr) {
+      console.warn('lookup_classroom_by_code RPC notice:', rpcErr);
+    }
+
+    // 2. Direct Supabase query fallback (works when RLS allows active classes)
+    try {
+      const orFilter = targetCodes.map(c => `class_code.ilike.${c}`).join(',');
+      const { data, error } = await supabase
+        .from('classrooms')
+        .select('id, name, description, hsk_level, class_code, max_students, status, teacher_id, teacher:teacher_id(name, avatar), class_members(count)')
+        .or(orFilter)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (!error && data) {
+        return {
+          id: data.id,
+          name: data.name,
+          description: data.description,
+          hsk_level: data.hsk_level,
+          class_code: data.class_code,
+          max_students: data.max_students,
+          status: data.status,
+          teacher_name: data.teacher?.name || 'Giáo viên HanziGo',
+          teacher_avatar: data.teacher?.avatar || null,
+          student_count: data.class_members?.[0]?.count || 0
+        };
+      }
+    } catch (selErr) {
+      console.warn('Supabase direct classroom select notice:', selErr);
+    }
+  }
+
+  // 3. Fallback to local storage (for offline, local simulation mode, or locally created classes)
+  const list = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
+  const found = list.find(c => {
+    const cNorm = normalizeClassCode(c.class_code);
+    return targetCodes.some(tc => 
+      tc === cNorm.raw || 
+      tc === cNorm.codeWithPrefix || 
+      tc === cNorm.codeWithoutPrefix
+    );
+  });
+
+  if (found) {
     const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
     const memberCount = members.filter(m => m.classroom_id === found.id && m.status === 'active').length;
     return {
       ...found,
-      teacher_name: 'Giáo viên HanziGo',
-      student_count: memberCount
+      teacher_name: found.teacher_name || 'Giáo viên HanziGo',
+      student_count: found.student_count ?? memberCount
     };
   }
 
-  try {
-    const { data, error } = await supabase
-      .from('classrooms')
-      .select('id, name, description, hsk_level, class_code, max_students, status, teacher:teacher_id(name, avatar), class_members(count)')
-      .ilike('class_code', cleanCode)
-      .maybeSingle();
-
-    if (error || !data) return null;
-    return {
-      id: data.id,
-      name: data.name,
-      description: data.description,
-      hsk_level: data.hsk_level,
-      class_code: data.class_code,
-      max_students: data.max_students,
-      status: data.status,
-      teacher_name: data.teacher?.name || 'Giáo viên HanziGo',
-      teacher_avatar: data.teacher?.avatar || null,
-      student_count: data.class_members?.[0]?.count || 0
-    };
-  } catch (err) {
-    console.warn('Supabase lookupClassroomByCode notice:', err);
-    const list = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
-    return list.find(c => c.class_code.toUpperCase() === cleanCode) || null;
-  }
+  return null;
 }
 
 /**
@@ -559,7 +611,16 @@ export async function updateClassroom(classroomId, updates) {
  */
 export async function regenerateClassCode(classroomId) {
   const newCode = generateClassCode();
-  return await updateClassroom(classroomId, { class_code: newCode });
+  const res = await updateClassroom(classroomId, { class_code: newCode });
+  if (res.success) {
+    recordAuditLog({
+      action: 'CLASS_CODE_REGENERATED',
+      category: AUDIT_CATEGORIES.CLASSROOM,
+      targetId: classroomId,
+      metadata: { newCode }
+    });
+  }
+  return res;
 }
 
 /**
@@ -603,6 +664,13 @@ export async function deleteClassroom(classroomId) {
     }
   }
 
+  recordAuditLog({
+    action: 'CLASSROOM_DELETED',
+    category: AUDIT_CATEGORIES.CLASSROOM,
+    severity: AUDIT_SEVERITY.WARN,
+    targetId: classroomId
+  });
+
   return { success: true };
 }
 
@@ -616,9 +684,10 @@ export async function deleteClassroom(classroomId) {
  */
 export async function joinClassByCode(classCode, currentUser) {
   ensureSimulationSeed();
-  const cleanCode = (classCode || '').trim().toUpperCase();
+  const { raw, codeWithPrefix, codeWithoutPrefix } = normalizeClassCode(classCode);
+  const primaryCode = codeWithPrefix || raw;
 
-  if (!cleanCode) {
+  if (!primaryCode) {
     return { success: false, error: 'Vui lòng nhập mã lớp học.' };
   }
 
@@ -626,27 +695,62 @@ export async function joinClassByCode(classCode, currentUser) {
     return { success: false, error: 'Vui lòng đăng nhập để tham gia lớp học.' };
   }
 
+  const targetCodes = Array.from(new Set([codeWithPrefix, raw, codeWithoutPrefix].filter(Boolean)));
+
   // Supabase RPC implementation
   if (isSupabaseConfigured && supabase && isValidUuid(currentUser.uid || currentUser.id)) {
     try {
       const { data, error } = await supabase.rpc('join_class_by_code', {
-        p_class_code: cleanCode
+        p_class_code: primaryCode
       });
 
-      if (error) {
-        return { success: false, error: error.message };
+      if (!error && data?.success) {
+        // Also cache membership in local store so teacher & student see it immediately
+        const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
+        const targetCId = data.classroom_id;
+        const exists = members.some(m => m.classroom_id === targetCId && m.student_id === currentUser.uid);
+        if (!exists) {
+          const newMember = {
+            id: `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+            classroom_id: targetCId,
+            student_id: currentUser.uid || currentUser.id,
+            student_name: currentUser.name || 'Học viên HanziGo',
+            student_avatar: currentUser.avatar || null,
+            student_email: currentUser.email || 'student@hanzigo.com',
+            hsk_level: currentUser.level || data.hsk_level || 'HSK 1',
+            joined_at: new Date().toISOString(),
+            status: 'active',
+            last_active: new Date().toISOString(),
+            xp: currentUser.xp || 50,
+            streak: currentUser.streak || 1,
+            words_learned: currentUser.wordsLearned || 0,
+            lessons_completed: 1,
+            study_hours: 1.0
+          };
+          setLocalItem(STORAGE_KEYS.MEMBERS, [newMember, ...members]);
+        }
+        return data;
       }
 
-      return data;
+      // If error is about already joined or max students reached, return that specific error
+      if (error && !error.message?.includes('không hợp lệ hoặc không tồn tại')) {
+        return { success: false, error: error.message };
+      }
     } catch (err) {
       console.warn('RPC join_class_by_code error, evaluating local mode:', err);
-      // Fallback to local evaluation if network or offline
     }
   }
 
-  // Local simulation implementation
+  // Local simulation fallback
   const classes = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
-  const targetClass = classes.find(c => (c.class_code || '').toUpperCase() === cleanCode);
+  const targetClass = classes.find(c => {
+    const cNorm = normalizeClassCode(c.class_code);
+    return targetCodes.some(tc => 
+      tc === cNorm.raw || 
+      tc === cNorm.codeWithPrefix || 
+      tc === cNorm.codeWithoutPrefix
+    );
+  });
 
   if (!targetClass) {
     return { success: false, error: 'Mã lớp không hợp lệ hoặc không tồn tại.' };
@@ -706,39 +810,118 @@ export async function joinClassByCode(classCode, currentUser) {
  */
 export async function getClassMembers(classroomId) {
   ensureSimulationSeed();
+  if (!classroomId) return [];
+
+  const localMembers = getLocalItem(STORAGE_KEYS.MEMBERS, [])
+    .filter(m => (m.classroom_id === classroomId || String(m.classroom_id) === String(classroomId)) && m.status === 'active');
+
   if (!isSupabaseConfigured || !supabase || !isValidUuid(classroomId)) {
-    const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
-    return members.filter(m => m.classroom_id === classroomId && m.status === 'active');
+    return localMembers;
   }
 
   try {
     const { data, error } = await supabase
       .from('class_members')
-      .select('*, student:student_id(id, name, email, avatar, level, xp, streak, words_learned)')
+      .select('*, student:student_id(id, name, email, avatar, level, xp, streak, words_learned), profiles:student_id(id, name, email, avatar, level, xp, streak, words_learned)')
       .eq('classroom_id', classroomId)
       .eq('status', 'active')
       .order('joined_at', { ascending: false });
 
-    if (error) throw error;
-    return (data || []).map(m => ({
-      id: m.id,
-      classroom_id: m.classroom_id,
-      student_id: m.student_id,
-      student_name: m.student?.name || 'Học viên',
-      student_email: m.student?.email || '',
-      student_avatar: m.student?.avatar || null,
-      hsk_level: m.student?.level || 'HSK 1',
-      joined_at: m.joined_at,
-      status: m.status,
-      xp: m.student?.xp || 0,
-      streak: m.student?.streak || 0,
-      words_learned: m.student?.words_learned || 0
-    }));
+    let dbMembers = [];
+    if (!error && Array.isArray(data)) {
+      dbMembers = data.map(m => {
+        const prof = m.profiles || m.student || {};
+        return {
+          id: m.id,
+          classroom_id: m.classroom_id,
+          student_id: m.student_id,
+          student_name: prof.name || m.student_name || 'Học viên',
+          student_email: prof.email || m.student_email || '',
+          student_avatar: prof.avatar || m.student_avatar || null,
+          hsk_level: prof.level || m.hsk_level || 'HSK 1',
+          joined_at: m.joined_at,
+          status: m.status,
+          xp: prof.xp ?? m.xp ?? 0,
+          streak: prof.streak ?? m.streak ?? 0,
+          words_learned: prof.words_learned ?? m.words_learned ?? 0
+        };
+      });
+    }
+
+    // Merge Supabase and local simulation members
+    const merged = [...dbMembers];
+    for (const lm of localMembers) {
+      if (!merged.some(m => m.student_id === lm.student_id || m.id === lm.id)) {
+        merged.push(lm);
+      }
+    }
+    return merged;
   } catch (err) {
     console.warn('Supabase getClassMembers notice, fallback:', err);
-    const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
-    return members.filter(m => m.classroom_id === classroomId && m.status === 'active');
+    return localMembers;
   }
+}
+
+/**
+ * Fetch all students across all classrooms taught by a teacher
+ */
+export async function getAllStudentsForTeacher(teacherId) {
+  const classrooms = await getClassroomsForTeacher(teacherId);
+  if (!classrooms || classrooms.length === 0) return [];
+
+  const memberPromises = classrooms.map(c => getClassMembers(c.id));
+  const memberLists = await Promise.all(memberPromises);
+
+  const studentMap = new Map();
+  memberLists.forEach((list, idx) => {
+    const cls = classrooms[idx];
+    (list || []).forEach(m => {
+      const key = `${m.student_id}_${cls.id}`;
+      if (!studentMap.has(key)) {
+        studentMap.set(key, {
+          ...m,
+          classroom_id: cls.id,
+          classroom_name: cls.name,
+          classroom_code: cls.class_code,
+          classroom_hsk: cls.hsk_level
+        });
+      }
+    });
+  });
+
+  return Array.from(studentMap.values());
+}
+
+/**
+ * Add a demo student to a classroom for testing & preview
+ */
+export async function addDemoStudent(classroomId, studentName = 'Nguyễn Minh Tuấn (Học viên thử nghiệm)') {
+  ensureSimulationSeed();
+  if (!classroomId) return { success: false, error: 'Thiếu mã lớp học' };
+
+  const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
+  const studentId = `demo-stu-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+  
+  const newMember = {
+    id: `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    classroom_id: classroomId,
+    student_id: studentId,
+    student_name: studentName,
+    student_avatar: null,
+    student_email: `student_${Math.floor(Math.random() * 900 + 100)}@test.hanzigo.com`,
+    hsk_level: 'HSK 2',
+    joined_at: new Date().toISOString(),
+    status: 'active',
+    last_active: new Date().toISOString(),
+    xp: 120,
+    streak: 3,
+    words_learned: 28,
+    lessons_completed: 4,
+    study_hours: 2.5
+  };
+
+  setLocalItem(STORAGE_KEYS.MEMBERS, [newMember, ...members]);
+  return { success: true, member: newMember };
 }
 
 /**
@@ -762,7 +945,20 @@ export async function getClassroomsForStudent(studentId) {
       .eq('status', 'active');
 
     if (error) throw error;
-    return (data || []).map(item => item.classroom).filter(Boolean);
+    const dbClasses = (data || []).map(item => item.classroom).filter(Boolean);
+
+    // Merge with local simulation memberships
+    const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
+    const studentMemberships = members.filter(m => (m.student_id === studentId || studentId === 'user_guest') && m.status === 'active');
+    const localClasses = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
+    const localJoinedIds = new Set(studentMemberships.map(m => m.classroom_id));
+    const merged = [...dbClasses];
+    for (const lc of localClasses) {
+      if (localJoinedIds.has(lc.id) && !merged.some(m => m.id === lc.id || m.class_code === lc.class_code)) {
+        merged.push(lc);
+      }
+    }
+    return merged;
   } catch (err) {
     console.warn('Supabase getClassroomsForStudent notice, fallback:', err);
     const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
@@ -778,15 +974,21 @@ export async function getClassroomsForStudent(studentId) {
  */
 export async function removeStudentFromClass(classroomId, studentId) {
   ensureSimulationSeed();
+  if (!classroomId || !studentId) return { success: false, error: 'Thiếu thông tin học viên hoặc lớp' };
+
+  // Always update in local simulation cache
+  const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
+  const updated = members.map(m => {
+    const matchClass = m.classroom_id === classroomId || String(m.classroom_id) === String(classroomId);
+    const matchStudent = m.student_id === studentId || m.id === studentId;
+    if (matchClass && matchStudent) {
+      return { ...m, status: 'removed' };
+    }
+    return m;
+  });
+  setLocalItem(STORAGE_KEYS.MEMBERS, updated);
+
   if (!isSupabaseConfigured || !supabase || !isValidUuid(classroomId)) {
-    const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
-    const updated = members.map(m => {
-      if (m.classroom_id === classroomId && m.student_id === studentId) {
-        return { ...m, status: 'removed' };
-      }
-      return m;
-    });
-    setLocalItem(STORAGE_KEYS.MEMBERS, updated);
     return { success: true };
   }
 
@@ -797,12 +999,48 @@ export async function removeStudentFromClass(classroomId, studentId) {
       .eq('classroom_id', classroomId)
       .eq('student_id', studentId);
 
-    if (error) throw error;
+    if (error) {
+      console.warn('Supabase removeStudentFromClass notice:', error);
+    }
+
+    recordAuditLog({
+      action: 'STUDENT_REMOVED_FROM_CLASS',
+      category: AUDIT_CATEGORIES.CLASSROOM,
+      severity: AUDIT_SEVERITY.WARN,
+      targetId: studentId,
+      metadata: { classroomId }
+    });
+
     return { success: true };
   } catch (err) {
-    console.error('Supabase removeStudentFromClass error:', err);
-    return { success: false, error: err.message };
+    console.warn('Supabase removeStudentFromClass catch:', err);
+
+    recordAuditLog({
+      action: 'STUDENT_REMOVED_FROM_CLASS',
+      category: AUDIT_CATEGORIES.CLASSROOM,
+      severity: AUDIT_SEVERITY.WARN,
+      targetId: studentId,
+      metadata: { classroomId }
+    });
+
+    return { success: true };
   }
+}
+
+/**
+ * Remove all demo/test students from a classroom or all classrooms
+ */
+export async function clearDemoStudents(classroomId = null) {
+  ensureSimulationSeed();
+  const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
+  const updated = members.filter(m => {
+    const isDemo = String(m.student_id).startsWith('demo-stu-') || (m.student_name && m.student_name.includes('thử nghiệm'));
+    if (!isDemo) return true;
+    if (classroomId && m.classroom_id !== classroomId && String(m.classroom_id) !== String(classroomId)) return true;
+    return false; // delete demo student
+  });
+  setLocalItem(STORAGE_KEYS.MEMBERS, updated);
+  return { success: true };
 }
 
 // ==========================================
@@ -859,8 +1097,20 @@ export async function createAssignment({
   dueDate = null,
   published = true
 }) {
-  ensureSimulationSeed();
+  if (!teacherId) {
+    return { success: false, error: 'Chỉ giáo viên phụ trách mới có quyền giao bài tập.' };
+  }
+
   if (!isSupabaseConfigured || !supabase || !isValidUuid(classroomId)) {
+    const classrooms = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
+    const targetClass = classrooms.find(c => c.id === classroomId);
+    if (!targetClass && !classroomId?.startsWith('cls-demo-')) {
+      return { success: false, error: 'Không tìm thấy lớp học.' };
+    }
+    if (targetClass && teacherId && targetClass.teacher_id && targetClass.teacher_id !== teacherId && teacherId !== 'admin') {
+      return { success: false, error: 'Bạn không có quyền giao bài tập cho lớp học này.' };
+    }
+
     const newAsg = {
       id: `asg-${Date.now()}`,
       classroom_id: classroomId,
@@ -899,17 +1149,24 @@ export async function createAssignment({
     return { success: true, assignment: data };
   } catch (err) {
     console.error('Supabase createAssignment error:', err);
-    return { success: false, error: err.message };
+    return { success: false, error: sanitizeUserErrorMessage(err, 'Lỗi khi giao bài tập cho lớp học.') };
   }
 }
 
 /**
  * Delete assignment
  */
-export async function deleteAssignment(assignmentId) {
+export async function deleteAssignment(assignmentId, teacherId) {
   ensureSimulationSeed();
   if (!isSupabaseConfigured || !supabase || !isValidUuid(assignmentId)) {
     const list = getLocalItem(STORAGE_KEYS.ASSIGNMENTS, []);
+    const targetAsg = list.find(a => a.id === assignmentId);
+    if (!targetAsg) {
+      return { success: false, error: 'Không tìm thấy bài tập cần xóa.' };
+    }
+    if (teacherId && targetAsg.teacher_id && targetAsg.teacher_id !== teacherId && teacherId !== 'admin') {
+      return { success: false, error: 'Bạn không có quyền xóa bài tập của lớp học khác.' };
+    }
     setLocalItem(STORAGE_KEYS.ASSIGNMENTS, list.filter(a => a.id !== assignmentId));
     return { success: true };
   }
@@ -924,7 +1181,7 @@ export async function deleteAssignment(assignmentId) {
     return { success: true };
   } catch (err) {
     console.error('Supabase deleteAssignment error:', err);
-    return { success: false, error: err.message };
+    return { success: false, error: sanitizeUserErrorMessage(err, 'Lỗi khi xóa bài tập.') };
   }
 }
 
@@ -1186,6 +1443,22 @@ export async function gradeSubmission({
 
   if (!isSupabaseConfigured || !supabase || !isValidUuid(submissionId)) {
     const list = getLocalItem(STORAGE_KEYS.SUBMISSIONS, []);
+    const targetSub = list.find(s => s.id === submissionId);
+    if (!targetSub) {
+      return { success: false, error: 'Không tìm thấy bài nộp cần chấm điểm.' };
+    }
+
+    // Authorization check: verify teacher owns this classroom
+    const assignments = getLocalItem(STORAGE_KEYS.ASSIGNMENTS, []);
+    const asg = assignments.find(a => a.id === targetSub.assignment_id);
+    if (asg) {
+      const classrooms = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
+      const cls = classrooms.find(c => c.id === asg.classroom_id);
+      if (cls && teacherId && cls.teacher_id && cls.teacher_id !== teacherId && teacherId !== 'admin') {
+        return { success: false, error: 'Bạn không có quyền chấm điểm bài tập của lớp học khác.' };
+      }
+    }
+
     const updated = list.map(s => {
       if (s.id === submissionId) {
         return {
@@ -1200,7 +1473,8 @@ export async function gradeSubmission({
       return s;
     });
     setLocalItem(STORAGE_KEYS.SUBMISSIONS, updated);
-    return { success: true };
+    const gradedItem = updated.find(s => s.id === submissionId);
+    return { success: true, submission: gradedItem };
   }
 
   try {
@@ -1221,7 +1495,7 @@ export async function gradeSubmission({
     return { success: true, submission: data };
   } catch (err) {
     console.error('Supabase gradeSubmission error:', err);
-    return { success: false, error: err.message };
+    return { success: false, error: sanitizeUserErrorMessage(err, 'Lỗi khi chấm điểm bài nộp.') };
   }
 }
 

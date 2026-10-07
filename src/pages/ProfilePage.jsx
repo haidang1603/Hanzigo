@@ -15,9 +15,7 @@ import {
   Upload,
   X,
   Check,
-  Sparkles,
-  Shield,
-  BookOpen
+  Shield
 } from 'lucide-react';
 import { USER_ACHIEVEMENTS } from '../data/chineseData';
 import { playClickSound, playSuccessSound } from '../utils/audio';

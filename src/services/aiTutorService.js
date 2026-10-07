@@ -19,9 +19,26 @@ import { isValidUuid } from './authService.js';
  * GEMINI_API_KEY được bảo mật 100% trên server-side, không bao giờ lộ ra Client Bundle.
  */
 async function callBackendAiTutor(userText, hskLevel = 'HSK 1', conversationHistory = []) {
+  let authToken = '';
+  let authUid = '';
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const rawUser = localStorage.getItem('hanzigo_user');
+      if (rawUser) {
+        const u = JSON.parse(rawUser);
+        authUid = u.uid || u.id || '';
+        authToken = u.token || u.access_token || '';
+      }
+    }
+  } catch {}
+
   const response = await fetch('/api/ai/chat', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+      ...(authUid ? { 'x-user-id': authUid } : {})
+    },
     body: JSON.stringify({
       userText,
       hskLevel,

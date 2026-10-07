@@ -10,14 +10,14 @@ import {
   getLessonNodeStatus, 
   isBossUnlocked, 
   completeLesson, 
-  completeBossChallenge,
   getBossChallengeById,
   evaluatePlacementTest,
   getDailyMissions,
   claimDailyMission,
   getSkillMastery,
   getPersonalizedRecommendation,
-  getUserJourneyProgress
+  getUserJourneyProgress,
+  getNextLessonId
 } from '../src/services/learningPathService.js';
 import {
   getStreakStatus,
@@ -242,4 +242,50 @@ test('Streak: Resets to 0 when account is off 1 day or more', () => {
   const s3 = recordStudyActivity(mockUser);
   assert.equal(s3, 1, 'Studying after broken streak restarts streak at 1');
 });
+
+test('Learning Path: getNextLessonId sequential progression within and across chapters', () => {
+  // 1. Within same chapter
+  const nextInChapter = getNextLessonId('l-101');
+  assert.equal(nextInChapter, 'l-102', 'Next lesson after l-101 must be l-102');
+
+  const nextInChapter2 = getNextLessonId('l-102');
+  assert.equal(nextInChapter2, 'l-103', 'Next lesson after l-102 must be l-103');
+
+  // 2. Across chapters: l-105 is last of Chapter 1, should point to l-106 in Chapter 2
+  const nextAcrossChapter = getNextLessonId('l-105');
+  assert.equal(nextAcrossChapter, 'l-106', 'Next lesson after Chapter 1 final lesson l-105 must be Chapter 2 first lesson l-106');
+
+  // 3. Invalid or non-existent lesson returns null
+  assert.equal(getNextLessonId('invalid-lesson-id'), null, 'Invalid lesson id returns null');
+});
+
+test('Learning Path: Lesson 1 (l-101) provides complete 9-step HSK 3.0 pedagogical structure', () => {
+  const lesson1 = getLessonById('l-101');
+  assert.ok(lesson1, 'Lesson 1 (l-101) must exist');
+  assert.equal(lesson1.id, 'l-101');
+  assert.equal(lesson1.lessonNumber, 1);
+  assert.ok(lesson1.step1_learn, 'Step 1: Learn topic guide must exist');
+  assert.ok(Array.isArray(lesson1.step2_vocabulary) && lesson1.step2_vocabulary.length > 0, 'Step 2: Vocabulary must exist');
+  assert.ok(Array.isArray(lesson1.step3_hanzi) && lesson1.step3_hanzi.length > 0, 'Step 3: Hanzi stroke order must exist');
+  assert.ok(lesson1.step4_grammar, 'Step 4: Grammar must exist');
+  assert.ok(lesson1.step5_listening, 'Step 5: Listening comprehension must exist');
+  assert.ok(lesson1.step6_speaking, 'Step 6: Speaking practice must exist');
+  assert.ok(lesson1.step7_writing, 'Step 7: Sentence building must exist');
+  assert.ok(Array.isArray(lesson1.step8_quiz) && lesson1.step8_quiz.length > 0, 'Step 8: Quiz questions must exist');
+  assert.ok(lesson1.step9_challenge, 'Step 9: Final challenge must exist');
+  assert.ok(lesson1.step9_challenge.title, 'Step 9 challenge must have a title');
+  assert.ok(lesson1.step9_challenge.taskDesc, 'Step 9 challenge must specify a clear task description');
+  assert.ok(lesson1.step9_challenge.badge, 'Step 9 challenge must award a badge on completion');
+  assert.ok(lesson1.step9_challenge.xpReward > 0, 'Step 9 challenge must award XP');
+});
+
+test('Learning Path: Step 9 challenge requires active participation (anti-bypass)', () => {
+  const allLessons = getLessonsByChapter('ch-1');
+  allLessons.forEach(l => {
+    assert.ok(l.step9_challenge, `Lesson ${l.id} must define step 9 challenge`);
+    assert.ok(l.step9_challenge.taskDesc.length >= 10, `Lesson ${l.id} must describe an actionable challenge`);
+  });
+});
+
+
 

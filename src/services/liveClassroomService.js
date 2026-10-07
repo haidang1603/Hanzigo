@@ -214,10 +214,10 @@ export async function verifySessionAccess(sessionId, user) {
     return { allowed: false, reason: 'Lớp học trực tuyến này đã kết thúc.', session };
   }
 
-  const userId = user.uid || user.id;
+  const userId = user.uid || user.id || user.userId;
 
-  // 1. If user is the Teacher of the session
-  if (session.teacher_id === userId || user.role === 'admin' || user.isTeacher) {
+  // 1. If user is the designated Teacher of the session or System Admin
+  if (session.teacher_id === userId || user.role === 'admin') {
     return { allowed: true, role: 'teacher', session };
   }
 
@@ -254,7 +254,7 @@ export async function joinLiveSession(sessionId, user) {
     return { success: false, error: authCheck.reason, session: authCheck.session };
   }
 
-  const userId = user.uid || user.id;
+  const userId = user.uid || user.id || user.userId;
   const role = authCheck.role;
   const session = authCheck.session;
 
@@ -280,6 +280,7 @@ export async function joinLiveSession(sessionId, user) {
     hand_raised: false,
     hand_raised_at: null,
     is_mic_allowed: role === 'teacher', // Teacher always has mic allowed
+    can_speak: role === 'teacher',
     attendance_status: 'present'
   };
 
@@ -395,7 +396,11 @@ export async function endLiveSession(sessionId, teacherId) {
     console.warn('Auto lesson summary generation error:', err);
   }
 
-  return { success: true, endedAt };
+  return { 
+    success: true, 
+    endedAt, 
+    session: { id: sessionId, status: 'ended', ended_at: endedAt } 
+  };
 }
 
 /**
@@ -497,15 +502,19 @@ export async function lowerHand(sessionId, userId) {
  * Teacher allows student microphone (grants permission)
  */
 export async function allowStudentMic(sessionId, teacherId, studentId) {
+  const targetStudentId = studentId !== undefined ? studentId : teacherId;
   const list = getLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, []);
+  let updatedStudent = null;
   const updated = list.map(p => {
-    if (p.session_id === sessionId && p.user_id === studentId) {
-      return { 
+    if (p.session_id === sessionId && p.user_id === targetStudentId) {
+      updatedStudent = { 
         ...p, 
         is_mic_allowed: true, 
+        can_speak: true,
         hand_raised: false,
         hand_raised_at: null 
       };
+      return updatedStudent;
     }
     return p;
   });
@@ -513,10 +522,10 @@ export async function allowStudentMic(sessionId, teacherId, studentId) {
 
   liveEventBus.broadcast(sessionId, {
     type: 'MIC_PERMISSION_GRANTED',
-    studentId
+    studentId: targetStudentId
   });
 
-  return { success: true };
+  return { success: true, participant: updatedStudent };
 }
 
 /**
@@ -641,7 +650,19 @@ export async function getSessionChatMessages(sessionId) {
 /**
  * Send chat message
  */
-export async function sendSessionChatMessage(sessionId, user, messageText) {
+export async function sendSessionChatMessage(sessionId, userOrPayload, optionalMessageText) {
+  let user = userOrPayload;
+  let messageText = optionalMessageText;
+
+  if (typeof userOrPayload === 'object' && userOrPayload !== null && !optionalMessageText && userOrPayload.message) {
+    messageText = userOrPayload.message;
+    user = {
+      uid: userOrPayload.senderId || userOrPayload.userId || userOrPayload.uid || userOrPayload.id,
+      name: userOrPayload.senderName || userOrPayload.name,
+      role: userOrPayload.senderRole || userOrPayload.role
+    };
+  }
+
   const cleanMsg = (messageText || '').trim();
   if (!cleanMsg) return { success: false, error: 'Tin nhắn không được để trống.' };
 
@@ -673,7 +694,7 @@ export async function sendSessionChatMessage(sessionId, user, messageText) {
     message: newMsg
   });
 
-  return { success: true, message: newMsg };
+  return { success: true, message: newMsg, chatMessage: newMsg };
 }
 
 /**
@@ -780,8 +801,87 @@ export async function getSessionAttendanceReport(sessionId, teacherId) {
 }
 
 // =========================================================================
-// 5. SFU MEDIA & DEVICE HARDWARE MANAGER (WebRTC Selective Forwarding)
+// 5. SFU MEDIA & DEVICE HARDWARE MANAGER (WebRTC Selective Forwarding & TURN)
 // =========================================================================
+
+export const DEFAULT_ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' }
+];
+
+/**
+ * Resolves WebRTC ICE servers configuration including STUN and optional TURN relay servers
+ * for traversing restrictive corporate NATs/firewalls.
+ */
+export function getIceServers(customConfig = null) {
+  if (Array.isArray(customConfig) && customConfig.length > 0) {
+    return customConfig;
+  }
+
+  const env = (typeof import.meta !== 'undefined' && import.meta.env) 
+    ? import.meta.env 
+    : (typeof process !== 'undefined' && process.env ? process.env : {});
+
+  const servers = [...DEFAULT_ICE_SERVERS];
+
+  // 1. Check for complete JSON ICE servers array
+  if (env.VITE_WEBRTC_ICE_SERVERS) {
+    try {
+      const parsed = typeof env.VITE_WEBRTC_ICE_SERVERS === 'string' 
+        ? JSON.parse(env.VITE_WEBRTC_ICE_SERVERS) 
+        : env.VITE_WEBRTC_ICE_SERVERS;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to parse VITE_WEBRTC_ICE_SERVERS:', e);
+    }
+  }
+
+  // 2. Check for explicit TURN server credentials
+  const turnUrl = env.VITE_TURN_SERVER_URL || env.TURN_SERVER_URL;
+  if (turnUrl) {
+    const turnEntry = { urls: turnUrl };
+    const username = env.VITE_TURN_USERNAME || env.TURN_USERNAME;
+    const credential = env.VITE_TURN_CREDENTIAL || env.TURN_CREDENTIAL;
+    if (username) turnEntry.username = username;
+    if (credential) turnEntry.credential = credential;
+    servers.push(turnEntry);
+  }
+
+  return servers;
+}
+
+/**
+ * Creates and configures an RTCPeerConnection instance with resolved STUN/TURN ICE servers
+ */
+export function createPeerConnection(options = {}) {
+  const iceServers = getIceServers(options.iceServers);
+  const rtcConfig = {
+    iceServers,
+    iceTransportPolicy: options.iceTransportPolicy || 'all',
+    bundlePolicy: options.bundlePolicy || 'max-bundle',
+    rtcpMuxPolicy: 'require',
+    ...(options.rtcConfig || {})
+  };
+
+  const RTCPC = typeof window !== 'undefined' ? (window.RTCPeerConnection || window.webkitRTCPeerConnection) : null;
+  if (!RTCPC) {
+    return {
+      success: false,
+      error: 'RTCPeerConnection không được hỗ trợ trong môi trường này.',
+      config: rtcConfig
+    };
+  }
+
+  try {
+    const pc = new RTCPC(rtcConfig);
+    return { success: true, peerConnection: pc, config: rtcConfig };
+  } catch (err) {
+    return { success: false, error: err.message, config: rtcConfig };
+  }
+}
 
 /**
  * Robust SFU Media Manager:
@@ -797,6 +897,13 @@ export class LiveRoomMediaManager {
     this.isScreenSharing = false;
     this.onStreamUpdate = null;
     this.onError = null;
+  }
+
+  getIceConfiguration() {
+    return {
+      iceServers: getIceServers(),
+      iceTransportPolicy: 'all'
+    };
   }
 
   /**

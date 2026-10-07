@@ -2,9 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { 
   generateClassCode, 
+  normalizeClassCode,
+  lookupClassroomByCode,
   calculateStudentHealthStatus,
   autoEvaluateQuiz,
   createClassroom,
+  getClassMembers,
+  getAllStudentsForTeacher,
+  addDemoStudent,
   joinClassByCode,
   submitAssignment,
   gradeSubmission,
@@ -176,5 +181,96 @@ test('Classroom: deleteClassroom purges classroom successfully', async () => {
   const invalidDel = await deleteClassroom('');
   assert.equal(invalidDel.success, false);
 });
+
+test('Classroom: normalizeClassCode handles full code, short code, lowercase, and spaces', () => {
+  const c1 = normalizeClassCode('HZG-7K2P9');
+  assert.equal(c1.raw, 'HZG-7K2P9');
+  assert.equal(c1.codeWithPrefix, 'HZG-7K2P9');
+  assert.equal(c1.codeWithoutPrefix, '7K2P9');
+
+  const c2 = normalizeClassCode('7k2p9');
+  assert.equal(c2.raw, '7K2P9');
+  assert.equal(c2.codeWithPrefix, 'HZG-7K2P9');
+  assert.equal(c2.codeWithoutPrefix, '7K2P9');
+
+  const c3 = normalizeClassCode('  hzg - 7k2p9  ');
+  assert.equal(c3.raw, 'HZG-7K2P9');
+  assert.equal(c3.codeWithPrefix, 'HZG-7K2P9');
+  assert.equal(c3.codeWithoutPrefix, '7K2P9');
+
+  const c4 = normalizeClassCode('');
+  assert.equal(c4.raw, '');
+  assert.equal(c4.codeWithPrefix, '');
+});
+
+test('Classroom: lookupClassroomByCode finds class with full code, prefix-omitted code, lowercase, and spaces', async () => {
+  const created = await createClassroom({
+    teacherId: 'teacher-lookup-test',
+    name: 'Lớp Test Tra Cứu Mã',
+    hskLevel: 'HSK 2',
+    maxStudents: 20
+  });
+  assert.equal(created.success, true);
+  const code = created.classroom.class_code; // e.g. HZG-ABCDE
+  const shortCode = code.replace(/^HZG-/, '');
+
+  // 1. Full code exact
+  const foundExact = await lookupClassroomByCode(code);
+  assert.ok(foundExact, 'Should find class with exact code');
+  assert.equal(foundExact.name, 'Lớp Test Tra Cứu Mã');
+
+  // 2. Short code (omitted HZG-)
+  const foundShort = await lookupClassroomByCode(shortCode);
+  assert.ok(foundShort, 'Should find class with short code without prefix');
+  assert.equal(foundShort.id, created.classroom.id);
+
+  // 3. Lowercase short code
+  const foundLower = await lookupClassroomByCode(shortCode.toLowerCase());
+  assert.ok(foundLower, 'Should find class with lowercase short code');
+  assert.equal(foundLower.id, created.classroom.id);
+
+  // 4. Code with spaces
+  const foundSpaces = await lookupClassroomByCode(`  ${shortCode.toLowerCase()}  `);
+  assert.ok(foundSpaces, 'Should find class with spaces around code');
+  assert.equal(foundSpaces.id, created.classroom.id);
+
+  // 5. Non-existent code returns null
+  const notFound = await lookupClassroomByCode('NONEXISTENT999');
+  assert.equal(notFound, null);
+});
+
+test('Classroom: Teacher student management and demo student creation', async () => {
+  const teacherId = 'teacher-member-test';
+  const created = await createClassroom({
+    teacherId,
+    name: 'Lớp Kiểm Tra Học Viên',
+    hskLevel: 'HSK 1',
+    maxStudents: 30
+  });
+  assert.equal(created.success, true);
+  const classId = created.classroom.id;
+
+  // Initial members empty
+  const initialMembers = await getClassMembers(classId);
+  assert.equal(initialMembers.length, 0);
+
+  // Add demo student
+  const addRes = await addDemoStudent(classId, 'Học viên A');
+  assert.equal(addRes.success, true);
+  assert.ok(addRes.member.id);
+
+  // getClassMembers should reflect the newly added student
+  const updatedMembers = await getClassMembers(classId);
+  assert.equal(updatedMembers.length, 1);
+  assert.equal(updatedMembers[0].student_name, 'Học viên A');
+
+  // getAllStudentsForTeacher should reflect across classrooms
+  const allStudents = await getAllStudentsForTeacher(teacherId);
+  const foundStudent = allStudents.find(s => s.classroom_id === classId);
+  assert.ok(foundStudent, 'Should find student under teacher');
+  assert.equal(foundStudent.student_name, 'Học viên A');
+});
+
+
 
 

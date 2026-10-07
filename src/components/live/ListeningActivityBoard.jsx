@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { 
-  Headphones, 
   Volume2, 
   Play, 
   Square, 
   CheckCircle2, 
-  XCircle, 
   BarChart2, 
   Users,
   RotateCcw

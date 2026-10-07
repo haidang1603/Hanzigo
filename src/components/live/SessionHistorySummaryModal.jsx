@@ -6,7 +6,6 @@ import {
   Users, 
   Layers, 
   Award, 
-  BookOpen, 
   AlertTriangle, 
   CheckCircle2, 
   Download
