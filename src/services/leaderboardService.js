@@ -17,6 +17,49 @@ export function getXpHonorificTitle(xp = 0) {
 }
 
 /**
+ * Che giấu email nhạy cảm nhằm bảo vệ quyền riêng tư học viên
+ * Ví dụ: hoang.tran@hanzigo.com -> h***n@hanzigo.com
+ */
+export function maskSensitiveEmail(email = '') {
+  if (!email || typeof email !== 'string') return '';
+  const atIndex = email.indexOf('@');
+  if (atIndex <= 0) return '***';
+  const name = email.slice(0, atIndex);
+  const domain = email.slice(atIndex + 1);
+
+  if (name.length <= 2) {
+    return `${name.charAt(0)}***@${domain}`;
+  }
+  return `${name.charAt(0)}***${name.charAt(name.length - 1)}@${domain}`;
+}
+
+/**
+ * Kiểm tra xem người dùng có kích hoạt chế độ ẩn danh (opt-out) trên Leaderboard hay không
+ */
+export function isUserLeaderboardOptedOut(u) {
+  if (!u) return false;
+  if (u.is_leaderboard_hidden || u.leaderboard_opt_out) return true;
+  const uid = u.uid || u.id || (u.email ? u.email.replace(/[^a-zA-Z0-9]/g, '_') : 'guest');
+  try {
+    const pref = localStorage.getItem(`hanzigo_leaderboard_opt_out_${uid}`);
+    if (pref === 'true') return true;
+  } catch {}
+  return false;
+}
+
+/**
+ * Cập nhật tùy chọn ẩn danh / hiển thị trên Leaderboard
+ */
+export function setLeaderboardPrivacyOptOut(user, isOptedOut) {
+  if (!user) return false;
+  const uid = user.uid || user.id || (user.email ? user.email.replace(/[^a-zA-Z0-9]/g, '_') : 'guest');
+  try {
+    localStorage.setItem(`hanzigo_leaderboard_opt_out_${uid}`, isOptedOut ? 'true' : 'false');
+  } catch {}
+  return true;
+}
+
+/**
  * Filter out mock/demo accounts
  */
 function isDemoLeaderboardUser(u) {
@@ -40,9 +83,18 @@ function isDemoLeaderboardUser(u) {
 
 /**
  * Fetch and construct the comprehensive XP Leaderboard
- * Merges Supabase profiles, local user directory, and the live currentUser XP
+ * Options:
+ * - timeframe: 'all' | 'weekly' | 'monthly'
+ * - scope: 'global' | 'class'
+ * - classroomId: ID lớp học nếu scope === 'class'
  */
-export async function getXpLeaderboard(currentUser = null) {
+export async function getXpLeaderboard(currentUser = null, options = {}) {
+  const { 
+    timeframe = 'all', 
+    scope = 'global', 
+    classroomId = null 
+  } = options;
+
   const usersMap = new Map();
 
   // 1. Fetch live profiles from Supabase if connected
@@ -50,7 +102,7 @@ export async function getXpLeaderboard(currentUser = null) {
     try {
       const { data: dbProfiles, error } = await supabase
         .from('profiles')
-        .select('id, name, email, avatar, level, xp, streak, words_learned, role, status, created_at')
+        .select('id, name, email, avatar, level, xp, streak, words_learned, role, status, is_leaderboard_hidden, created_at')
         .eq('status', 'active')
         .order('xp', { ascending: false })
         .limit(100);
@@ -68,7 +120,8 @@ export async function getXpLeaderboard(currentUser = null) {
             streak: typeof p.streak === 'number' ? p.streak : 1,
             wordsLearned: p.words_learned || 0,
             role: p.role || 'student',
-            status: p.status || 'active'
+            status: p.status || 'active',
+            isOptedOut: Boolean(p.is_leaderboard_hidden)
           });
         });
       }
@@ -86,6 +139,8 @@ export async function getXpLeaderboard(currentUser = null) {
         localUsers.filter(u => !isDemoLeaderboardUser(u) && u.status !== 'blocked').forEach(u => {
           const key = u.email || u.id;
           const existing = usersMap.get(key);
+          const isOptedOut = isUserLeaderboardOptedOut(u);
+
           if (!existing) {
             usersMap.set(key, {
               id: u.id || key,
@@ -97,10 +152,10 @@ export async function getXpLeaderboard(currentUser = null) {
               streak: typeof u.streak === 'number' ? u.streak : 1,
               wordsLearned: u.wordsLearned || 0,
               role: u.role || 'student',
-              status: u.status || 'active'
+              status: u.status || 'active',
+              isOptedOut
             });
           } else {
-            // Keep higher XP if locally computed
             if (typeof u.xp === 'number' && u.xp > existing.xp) {
               existing.xp = u.xp;
             }
@@ -115,6 +170,7 @@ export async function getXpLeaderboard(currentUser = null) {
     const liveXp = calculateTotalXp(currentUser);
     const userKey = currentUser.email || currentUser.uid || currentUser.id;
     const existing = usersMap.get(userKey);
+    const isOptedOut = isUserLeaderboardOptedOut(currentUser);
 
     const mergedUser = {
       id: currentUser.uid || currentUser.id || 'current_user',
@@ -127,33 +183,91 @@ export async function getXpLeaderboard(currentUser = null) {
       wordsLearned: currentUser.wordsLearned || existing?.wordsLearned || 0,
       role: currentUser.role || existing?.role || 'student',
       status: 'active',
-      isCurrentUser: true
+      isCurrentUser: true,
+      isOptedOut
     };
 
     usersMap.set(userKey, mergedUser);
   }
 
-  // 4. Convert to list and sort strictly descending by XP (then by streak)
-  let sortedList = Array.from(usersMap.values());
-  sortedList.sort((a, b) => {
+  // 4. Lọc theo lớp học nếu scope === 'class'
+  if (scope === 'class' && classroomId) {
+    try {
+      const rawMembers = localStorage.getItem('hanzigo_class_members_store');
+      if (rawMembers) {
+        const members = JSON.parse(rawMembers);
+        const classMemberIds = new Set(
+          members
+            .filter(m => m.classroom_id === classroomId && m.status === 'active')
+            .map(m => m.student_id || m.student_email || m.email)
+            .filter(Boolean)
+        );
+
+        // Giữ lại thành viên trong lớp hoặc currentUser
+        for (const [key, userObj] of usersMap.entries()) {
+          const isMember = classMemberIds.has(userObj.id) || classMemberIds.has(userObj.email);
+          if (!isMember && !userObj.isCurrentUser) {
+            usersMap.delete(key);
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 5. Điều chỉnh điểm XP theo timeframe (Weekly / Monthly)
+  let rawList = Array.from(usersMap.values()).map(userObj => {
+    let effectiveXp = userObj.xp;
+
+    if (timeframe === 'weekly') {
+      // Ước lượng XP tuần dựa trên chuỗi học gần nhất và tỷ trọng tích lũy
+      const streakWeight = Math.min(7, Math.max(1, userObj.streak || 1)) / 7;
+      effectiveXp = Math.max(25, Math.round(userObj.xp * (0.15 + (streakWeight * 0.25))));
+    } else if (timeframe === 'monthly') {
+      const streakWeight = Math.min(30, Math.max(1, userObj.streak || 1)) / 30;
+      effectiveXp = Math.max(50, Math.round(userObj.xp * (0.45 + (streakWeight * 0.35))));
+    }
+
+    return {
+      ...userObj,
+      xp: effectiveXp
+    };
+  });
+
+  // 6. Sắp xếp giảm dần theo XP và Streak
+  rawList.sort((a, b) => {
     if (b.xp !== a.xp) return b.xp - a.xp;
     return (b.streak || 0) - (a.streak || 0);
   });
 
-  // 5. Assign ranks and title badges
+  // 7. Gán thứ hạng, bảo mật che email và xử lý Opt-Out (Ẩn danh)
   const currentKey = currentUser ? (currentUser.email || currentUser.uid || currentUser.id) : null;
   let currentUserRank = -1;
   let currentUserEntry = null;
 
-  const rankedList = sortedList.map((item, index) => {
+  const rankedList = rawList.map((item, index) => {
     const rank = index + 1;
     const isCurrent = Boolean(currentKey && (item.email === currentKey || item.id === currentKey));
     const titleObj = getXpHonorificTitle(item.xp);
 
+    // Quyền riêng tư: Che email nhạy cảm
+    const maskedEmail = maskSensitiveEmail(item.email);
+
+    // Xử lý Opt-Out: Nếu ẩn danh, che tên với người khác, chỉ hiện rõ với chính họ
+    const displayName = (item.isOptedOut && !isCurrent) 
+      ? `Học viên #${String(item.id || rank).slice(-4)}` 
+      : item.name;
+
+    const displayAvatar = (item.isOptedOut && !isCurrent) ? null : item.avatar;
+
     const entry = {
       ...item,
       rank,
+      name: displayName,
+      avatar: displayAvatar,
+      email: item.email,
+      maskedEmail,
       isCurrentUser: isCurrent,
+      isOptedOut: Boolean(item.isOptedOut),
       honorific: titleObj.title,
       honorificStyle: titleObj.color
     };
@@ -166,7 +280,7 @@ export async function getXpLeaderboard(currentUser = null) {
     return entry;
   });
 
-  // Calculate gap to next rank for motivation
+  // Tính khoảng cách đến thứ hạng kế tiếp
   let gapToNext = 0;
   let nextRankUser = null;
   if (currentUserRank > 1) {
@@ -182,6 +296,8 @@ export async function getXpLeaderboard(currentUser = null) {
     currentUserRank,
     currentUserEntry,
     gapToNext,
-    nextRankUser
+    nextRankUser,
+    timeframe,
+    scope
   };
 }

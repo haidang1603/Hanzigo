@@ -20,12 +20,17 @@ import {
   Zap,
   Check,
   RotateCcw,
-  UserPlus
+  UserPlus,
+  GraduationCap,
+  Compass,
+  Star,
+  Target
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
 import { ROADMAP_LEVELS } from '../data/chineseData';
 import { getLessonsByChapter } from '../services/learningPathService';
+import { PRACTICE_LEVELS } from '../data/practiceLevelData';
 
 // Mini Quick Reflex Quiz Dataset
 const QUICK_QUIZZES = [
@@ -71,6 +76,16 @@ const QUICK_QUIZZES = [
     correctIndex: 1,
     explanation: '高兴 (gāoxìng): Phấn chấn, vui mừng. Hán-Việt: "Cao Hứng".'
   }
+];
+
+// Sino-Vietnamese Bridge Word Dataset
+const SINO_VIETNAMESE_WORDS = [
+  { hanzi: '幸福', pinyin: 'xìngfú', hanViet: 'Hạnh Phúc', meaning: 'Hạnh phúc, viên mãn' },
+  { hanzi: '成功', pinyin: 'chénggōng', hanViet: 'Thành Công', meaning: 'Đạt được mục tiêu' },
+  { hanzi: '国家', pinyin: 'guójiā', hanViet: 'Quốc Gia', meaning: 'Đất nước, tổ quốc' },
+  { hanzi: '准备', pinyin: 'zhǔnbèi', hanViet: 'Chuẩn Bị', meaning: 'Sẵn sàng trước' },
+  { hanzi: '态度', pinyin: 'tàidu', hanViet: 'Thái Độ', meaning: 'Cách ứng xử, tinh thần' },
+  { hanzi: '经济', pinyin: 'jīngjì', hanViet: 'Kinh Tế', meaning: 'Tài chính, mậu dịch' }
 ];
 
 // Showcase Tabs Data
@@ -166,12 +181,12 @@ const FAQS = [
     a: 'Tiếng Việt có hơn 70% từ ngữ bắt nguồn từ gốc Hán (từ Hán-Việt). Nhờ sự tương đồng kỳ diệu này, người Việt khi học tiếng Trung chỉ cần nắm được quy luật chuyển âm là có thể đoán đúng nghĩa và ghi nhớ hàng ngàn từ vựng mà không phải học vẹt.'
   },
   {
-    q: 'Tôi có thể luyện phát âm và giao tiếp một mình như thế nào?',
-    a: 'Bạn có thể sử dụng tính năng "Luyện phát âm AI" để chấm điểm âm lượng, cao độ từng thanh điệu, hoặc trò chuyện 24/7 với Trợ lý ảo "Tiểu Hàm" qua các kịch bản thực tế như mua sắm Taobao, gọi món nhà hàng hay hỏi đường du lịch.'
+    q: 'Tôi có thể luyện phát âm và viết chữ Hán trên máy tính hoặc điện thoại không?',
+    a: 'Có! HanziGo trang bị công nghệ nhận diện giọng nói AI Web Speech để chẩn đoán ngữ điệu, đồng thời cung cấp bảng vẽ Mễ Tự Cách (米字格) tương tác trực tiếp bằng ngón tay hoặc chuột cảm ứng.'
   },
   {
     q: 'Các bài học và tài liệu in ấn trên trang web có miễn phí không?',
-    a: 'Tất cả các bài học cơ bản, flashcard từ vựng, hệ thống tra cứu chiết tự, phòng luyện viết chữ Hán và kho tài liệu PDF A4 (Mẫu ô mễ tự, bảng 214 bộ thủ) đều được cung cấp hoàn toàn miễn phí.'
+    a: 'Tất cả các bài học cơ bản, flashcard từ vựng, hệ thống tra cứu chiết tự, phòng luyện viết chữ Hán và kho tài liệu PDF A4 (Mẫu ô mễ tự, bảng 214 bộ thủ, đề thi HSK) đều được cung cấp hoàn toàn miễn phí.'
   }
 ];
 
@@ -186,6 +201,12 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
 
   // FAQ Expand State
   const [expandedFaqIndex, setExpandedFaqIndex] = useState(0);
+
+  // Selected Sino-Vietnamese word for live preview
+  const [activeSinoWord, setActiveSinoWord] = useState(SINO_VIETNAMESE_WORDS[0]);
+
+  // Selected Practice Level (highlighted)
+  const [activeLevelId, setActiveLevelId] = useState('level-1');
 
   // Get actual completed lessons from localStorage
   const completedLessonCount = useMemo(() => {
@@ -231,14 +252,20 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
     setActiveTab('roadmap');
   };
 
+  const handleGoToPractice = () => {
+    playClickSound();
+    setActiveTab('practice');
+  };
+
   return (
-    <div className="space-y-20 pb-20">
+    <div className="space-y-20 pb-20 animate-in fade-in duration-300">
       
       {/* 1. HERO SECTION */}
       <section className="relative overflow-hidden pt-6 pb-12 sm:pt-12 sm:pb-20">
         {/* Ambient background glows */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-gradient-to-tr from-[#E85D3F]/15 via-[#F4B942]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-[#E85D3F]/15 via-[#F4B942]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -top-20 -right-20 w-96 h-96 bg-[#45B97C]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-10 w-80 h-80 bg-[#3B82F6]/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
@@ -266,7 +293,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
               ) : (
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border border-[#E85D3F]/30 text-[#E85D3F] text-xs font-bold shadow-sm">
                   <span className="flex h-2 w-2 rounded-full bg-[#E85D3F] animate-ping" />
-                  <span>Nền tảng học tiếng Trung tối ưu cho người Việt</span>
+                  <span>🏮 Nền tảng học tiếng Trung tối ưu độc quyền cho người Việt</span>
                 </div>
               )}
 
@@ -280,7 +307,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
 
               {/* Subtitle */}
               <p className="text-base sm:text-lg text-[#748092] dark:text-[#94A3B8] font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Phương pháp liên tưởng <strong className="text-[#243447] dark:text-white">Hán-Việt</strong>, hiểu sâu bản chất chiết tự và luyện phản xạ giao tiếp cùng AI thông minh.
+                Phương pháp liên tưởng <strong className="text-[#243447] dark:text-white">Hán-Việt 70%</strong>, hiểu sâu bản chất chiết tự và luyện phản xạ giao tiếp cùng AI thông minh.
                 <span className="block mt-1 font-semibold text-[#E85D3F]">
                   “Học 15 phút mỗi ngày – Tự tin giao tiếp tiếng Trung sau 30 ngày.”
                 </span>
@@ -295,7 +322,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                         playClickSound();
                         setActiveTab('dashboard');
                       }}
-                      className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-base shadow-lg shadow-[#E85D3F]/30 hover:shadow-xl hover:shadow-[#E85D3F]/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group"
+                      className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-base shadow-lg shadow-[#E85D3F]/30 hover:shadow-xl hover:shadow-[#E85D3F]/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group cursor-pointer"
                     >
                       <Trophy size={18} />
                       <span>Xem Bảng điều khiển</span>
@@ -303,7 +330,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                     </button>
                     <button
                       onClick={handleStartLearning}
-                      className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold text-base hover:bg-[#FFF9F2] dark:hover:bg-[#131B24] transition-all flex items-center justify-center gap-2 shadow-sm"
+                      className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold text-base hover:bg-[#FFF9F2] dark:hover:bg-[#131B24] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                     >
                       <BookOpen size={18} className="text-[#F4B942]" />
                       <span>Tiếp tục học lộ trình</span>
@@ -313,7 +340,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                   <>
                     <button
                       onClick={handleStartLearning}
-                      className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-base shadow-lg shadow-[#E85D3F]/30 hover:shadow-xl hover:shadow-[#E85D3F]/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group"
+                      className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-base shadow-lg shadow-[#E85D3F]/30 hover:shadow-xl hover:shadow-[#E85D3F]/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group cursor-pointer"
                     >
                       <Sparkles size={18} />
                       <span>Bắt đầu học miễn phí</span>
@@ -321,7 +348,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                     </button>
                     <button
                       onClick={() => openAuthModal && openAuthModal('login')}
-                      className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold text-base hover:bg-[#FFF9F2] dark:hover:bg-[#131B24] transition-all flex items-center justify-center gap-2 shadow-sm"
+                      className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold text-base hover:bg-[#FFF9F2] dark:hover:bg-[#131B24] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                     >
                       <span>Đăng nhập tài khoản</span>
                     </button>
@@ -333,7 +360,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
               <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-[#748092] dark:text-[#94A3B8]">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-[#45B97C]" />
-                  <span>100% Miễn phí bài học cơ bản</span>
+                  <span>100% Khung chuẩn HSK 3.0</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-[#45B97C]" />
@@ -341,7 +368,11 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-[#45B97C]" />
-                  <span>Luyện viết ô mễ tự A4</span>
+                  <span>Ô mễ tự A4 in ấn chuẩn</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-[#45B97C]" />
+                  <span>Thuật toán SM-2 chống quên</span>
                 </div>
               </div>
             </div>
@@ -350,18 +381,14 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
             <div className="lg:col-span-5 relative pt-4 pb-2">
               <div className="relative mx-auto max-w-md lg:max-w-none">
                 
-                {/* Ambient glow decorative background */}
-                <div className="absolute -top-8 -right-8 w-60 h-60 bg-gradient-to-br from-[#E85D3F]/15 via-[#F4B942]/10 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
-                <div className="absolute -bottom-8 -left-8 w-60 h-60 bg-gradient-to-tr from-[#45B97C]/15 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
-
-                {/* Floating Achievement badge - Repositioned cleanly to top-left so it NEVER collides with bottom interactive controls */}
+                {/* Floating Achievement badge */}
                 <div className="absolute -top-4 -left-3 sm:-left-5 z-20 bg-white/95 dark:bg-[#1E293B]/95 backdrop-blur-md py-2 px-3.5 rounded-2xl shadow-xl border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#FEF7E9] to-[#FDE8BF] dark:from-[#2D2619] dark:to-[#382E19] flex items-center justify-center text-base shadow-xs">
                     ⚡
                   </div>
                   <div>
-                    <p className="text-xs font-black text-[#243447] dark:text-white leading-tight">Lộ trình HSK 1 – HSK 6</p>
-                    <p className="text-[10px] text-[#45B97C] font-bold">Tự tin giao tiếp thực tế</p>
+                    <p className="text-xs font-black text-[#243447] dark:text-white leading-tight">Lộ trình HSK 1 – HSK 4</p>
+                    <p className="text-[10px] text-[#45B97C] font-bold">60 bài học có kiểm chứng</p>
                   </div>
                 </div>
 
@@ -413,7 +440,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                     </div>
 
                     <span className="text-[11px] font-bold text-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-[#45B97C]/20 shadow-xs">
-                      <Sparkles size={12} className="animate-spin-slow" />
+                      <Sparkles size={12} />
                       <span>Trực quan</span>
                     </span>
                   </div>
@@ -426,7 +453,6 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                         className="p-3 sm:p-3.5 rounded-2xl bg-[#FFFDF9] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between group hover:border-[#E85D3F]/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                       >
                         {showcaseTab === 'phrases' ? (
-                          /* Layout for Phrases (Mẫu câu) - Displays full sentence gracefully */
                           <div className="flex items-center gap-3 sm:gap-3.5 flex-1 min-w-0 pr-2">
                             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-[#FEF7E9] to-[#FDE8BF] dark:from-[#2D2619] dark:to-[#382E19] flex items-center justify-center text-lg shrink-0 border border-[#F4B942]/30 shadow-xs">
                               💬
@@ -457,7 +483,6 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                             </div>
                           </div>
                         ) : (
-                          /* Layout for Từ vựng & Chiết tự (1-2 characters in the character box) */
                           <div className="flex items-center gap-3 sm:gap-3.5 flex-1 min-w-0 pr-2">
                             <div 
                               className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-white dark:bg-[#1E293B] shadow-sm flex items-center justify-center font-['Noto_Serif_SC'] text-lg sm:text-xl font-black border border-[#F1E5D8] dark:border-[#2B3A4F] shrink-0 group-hover:scale-105 transition-transform"
@@ -491,7 +516,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                     ))}
                   </div>
 
-                  {/* Interactive Buttons at Bottom - Clean and 100% Unobstructed */}
+                  {/* Interactive Button at Bottom */}
                   <div className="mt-5 pt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <span className="relative flex h-2.5 w-2.5">
@@ -509,7 +534,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                       }}
                       className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white text-xs font-bold transition-all shadow-md shadow-[#E85D3F]/25 hover:shadow-lg hover:shadow-[#E85D3F]/35 flex items-center gap-1.5 group cursor-pointer"
                     >
-                      <span>Thử ngay</span>
+                      <span>Luyện tập ngay</span>
                       <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
                     </button>
                   </div>
@@ -523,7 +548,95 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
         </div>
       </section>
 
-      {/* 2. MINI REFLEX GAME (Thử tài phản xạ tiếng Trung trong 1 phút) */}
+      {/* 2. PRACTICE HUB SHOWCASE (4 MỨC ĐỘ SƯ PHẠM CHUẨN HSK) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto mb-10">
+          <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Khung năng lực phân hóa</span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
+            Trung Tâm Luyện Tập 4 Cấp Độ Sư Phạm
+          </h2>
+          <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-2">
+            Hệ thống bài tập phân chia rõ ràng: Nghe hiểu, Ghép câu ngữ pháp và Từ vựng ứng dụng thực chiến.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {PRACTICE_LEVELS.map((tier) => {
+            const isHighlighted = activeLevelId === tier.id;
+            return (
+              <div
+                key={tier.id}
+                onMouseEnter={() => setActiveLevelId(tier.id)}
+                onClick={() => {
+                  playClickSound();
+                  setActiveTab('practice');
+                }}
+                className={`p-5 rounded-3xl bg-white dark:bg-[#1E293B] border transition-all cursor-pointer flex flex-col justify-between group ${
+                  isHighlighted 
+                    ? 'border-2 border-[#E85D3F] shadow-lg shadow-[#E85D3F]/15 -translate-y-1' 
+                    : 'border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:border-[#E85D3F]/50 hover:shadow-md'
+                }`}
+              >
+                <div className="space-y-3">
+                  {/* Badges row */}
+                  <div className="flex items-center justify-between">
+                    <span 
+                      className="px-2.5 py-0.5 rounded-full text-[11px] font-black"
+                      style={{ 
+                        backgroundColor: `${tier.color}20`,
+                        color: tier.color 
+                      }}
+                    >
+                      {tier.code}
+                    </span>
+                    <span className="text-xs font-bold flex items-center gap-1" style={{ color: tier.color }}>
+                      {tier.badge}
+                    </span>
+                  </div>
+
+                  {/* Title & subtitle */}
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors leading-snug">
+                      {tier.name}
+                    </h3>
+                    <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1.5 leading-relaxed line-clamp-2">
+                      {tier.subtitle}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Footer action */}
+                <div className="pt-4 mt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-xs font-semibold">
+                  <span className="text-[#748092] dark:text-[#94A3B8]">
+                    {tier.stats?.pronounceItems || 8} bài phát âm
+                  </span>
+                  <span 
+                    className="font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform"
+                    style={{ color: tier.color }}
+                  >
+                    <span>Luyện ngay</span>
+                    <ArrowRight size={13} />
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Quick Link to Full Practice Hub */}
+        <div className="mt-6 text-center">
+          <button
+            onClick={handleGoToPractice}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-[#E85D3F]/30 text-[#E85D3F] font-bold text-xs hover:bg-[#E85D3F] hover:text-white transition-all cursor-pointer shadow-xs"
+          >
+            <Target size={14} />
+            <span>Mở đầy đủ Trung tâm Luyện tập 4 mức độ</span>
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      </section>
+
+      {/* 3. MINI REFLEX GAME (THỬ TÀI PHẢN XẠ HÁN NGỮ 1 PHÚT) */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#FFF9F2] via-white to-[#FEF7E9] dark:from-[#1E293B] dark:via-[#1B2636] dark:to-[#131B24] border-2 border-[#F4B942]/40 shadow-xl relative overflow-hidden">
           
@@ -573,7 +686,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
               </p>
               <button
                 onClick={() => speakChinese(currentQuiz.hanzi)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FFF9F2] dark:bg-[#1E293B] text-[#E85D3F] text-xs font-bold hover:bg-[#FDEEEB] transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FFF9F2] dark:bg-[#1E293B] text-[#E85D3F] text-xs font-bold hover:bg-[#FDEEEB] transition-colors cursor-pointer"
               >
                 <Volume2 size={14} />
                 <span>Nghe đọc</span>
@@ -607,7 +720,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                       key={oIdx}
                       disabled={selectedAnswer !== null}
                       onClick={() => handleSelectQuizOption(oIdx)}
-                      className={`p-3.5 rounded-xl border text-left text-sm font-semibold transition-all flex items-center justify-between ${btnStyle}`}
+                      className={`p-3.5 rounded-xl border text-left text-sm font-semibold transition-all flex items-center justify-between cursor-pointer ${btnStyle}`}
                     >
                       <span>{opt}</span>
                       {selectedAnswer !== null && isCorrect && (
@@ -626,7 +739,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                   </p>
                   <button
                     onClick={handleNextQuiz}
-                    className="self-end sm:self-auto px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+                    className="self-end sm:self-auto px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
                   >
                     <span>Câu tiếp</span>
                     <ArrowRight size={14} />
@@ -640,161 +753,101 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
         </div>
       </section>
 
-      {/* 3. FOUR PILLARS FOR VIETNAMESE LEARNERS */}
+      {/* 4. SINO-VIETNAMESE BRIDGING COGNATES (LỢI THẾ HÁN-VIỆT 70%) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Lợi thế độc quyền</span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
-            Tại sao người Việt học tiếng Trung tại <span className="text-[#E85D3F]">HanziGo</span> nhanh gấp đôi?
-          </h2>
-          <p className="text-sm text-[#748092] dark:text-[#94A3B8] mt-2">
-            Phương pháp học tập thiết kế riêng biệt dựa trên mối liên hệ mật thiết giữa kho tàng từ Hán-Việt và văn hóa Á Đông.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          
-          {/* Pillar 1 */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-md transition-all group">
-            <div className="w-12 h-12 rounded-2xl bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Zap size={24} />
+        <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-6">
+            <div>
+              <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Bí mật phương pháp</span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
+                Lợi Thế Hán - Việt: Học 1 Đoán 10
+              </h2>
+              <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-1 max-w-xl">
+                Hơn 70% từ vựng tiếng Việt có gốc Hán. Chỉ cần nắm vững quy tắc chuyển thanh mẫu và vận mẫu, bạn sẽ nhớ hàng ngàn từ vựng tự nhiên mà không cần học vẹt.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-[#243447] dark:text-white mb-2">
-              Tận dụng 70% từ Hán-Việt
-            </h3>
-            <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
-              Biết một hiểu mười. Bạn đã sở hữu sẵn vốn từ khổng lồ: 幸福 (Hạnh phúc), 国家 (Quốc gia), 成功 (Thành công)... chỉ cần chuyển âm là đọc chuẩn.
-            </p>
-          </div>
-
-          {/* Pillar 2 */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-md transition-all group">
-            <div className="w-12 h-12 rounded-2xl bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <PenTool size={24} />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] text-xs font-bold shrink-0">
+              <Zap size={14} />
+              <span>Tiết kiệm 50% thời gian ghi nhớ</span>
             </div>
-            <h3 className="text-base font-bold text-[#243447] dark:text-white mb-2">
-              Kể chuyện chiết tự chữ Hán
-            </h3>
-            <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
-              Giải mã từng con chữ qua các bộ thủ và hình tượng sống động. Chữ Hán không còn là những nét vẽ vô hồn mà là câu chuyện triết lý sâu sắc.
-            </p>
           </div>
 
-          {/* Pillar 3 */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-md transition-all group">
-            <div className="w-12 h-12 rounded-2xl bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Mic size={24} />
-            </div>
-            <h3 className="text-base font-bold text-[#243447] dark:text-white mb-2">
-              Chỉnh âm chuẩn Bắc Kinh
-            </h3>
-            <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
-              Chỉ điểm trực diện các lỗi người Việt hay mắc: uốn lưỡi zh/ch/sh, bật hơi j/q/x và biến điệu hai thanh 3. Có thu âm so sánh trực tiếp.
-            </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            {SINO_VIETNAMESE_WORDS.map((w) => {
+              const isActive = activeSinoWord.hanzi === w.hanzi;
+              return (
+                <div
+                  key={w.hanzi}
+                  onClick={() => {
+                    playClickSound();
+                    setActiveSinoWord(w);
+                    speakChinese(w.hanzi);
+                  }}
+                  className={`p-4 rounded-2xl border text-center transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-gradient-to-b from-[#FFF9F2] to-white dark:from-[#2D1E1B] dark:to-[#1E293B] border-[#E85D3F] shadow-md -translate-y-1'
+                      : 'bg-[#FFFDF9] dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]/50'
+                  }`}
+                >
+                  <span className="font-['Noto_Serif_SC'] text-2xl sm:text-3xl font-black text-[#E85D3F] block mb-1">
+                    {w.hanzi}
+                  </span>
+                  <p className="text-xs font-bold text-[#243447] dark:text-white">{w.pinyin}</p>
+                  <p className="text-[11px] font-black text-[#D97706] mt-0.5">{w.hanViet}</p>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Pillar 4 */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-md transition-all group">
-            <div className="w-12 h-12 rounded-2xl bg-[#EFF6FF] dark:bg-[#1E293B] text-[#3B82F6] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <RotateCcw size={24} />
-            </div>
-            <h3 className="text-base font-bold text-[#243447] dark:text-white mb-2">
-              Spaced Repetition (SRS)
-            </h3>
-            <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
-              Thuật toán lặp lại ngắt quãng thông minh tự động xếp lịch từ khó cần ôn tập hôm nay, đánh bại đường cong quên lãng não bộ.
-            </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* 4. ROADMAP PREVIEW WITH REAL COMPLETED TRACKING */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
-          <div>
-            <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">
-              Khung chuẩn quốc tế HSK 3.0
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
-              Lộ trình bài bản từ con số 0 đến thành thạo
-            </h2>
-            <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-1">
-              Bạn đã hoàn thành <strong className="text-[#E85D3F]">{completedLessonCount}</strong> bài học trên hệ thống.
-            </p>
-          </div>
-          <button
-            onClick={handleExploreRoadmap}
-            className="text-xs sm:text-sm font-bold text-[#E85D3F] hover:text-[#CB4529] flex items-center gap-1 self-start md:self-auto"
-          >
-            <span>Khám phá toàn bộ 6 cấp độ</span>
-            <ChevronRight size={16} />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {ROADMAP_LEVELS.slice(0, 3).map((item) => (
-            <div 
-              key={item.id}
-              onClick={handleExploreRoadmap}
-              className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:border-[#E85D3F] hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer group flex flex-col justify-between"
-            >
+          {/* Active Word Detail Box */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F4B942]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#E85D3F] text-white font-['Noto_Serif_SC'] text-2xl font-black flex items-center justify-center shrink-0 shadow-sm">
+                {activeSinoWord.hanzi}
+              </div>
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm" style={{ backgroundColor: item.color }}>
-                    {item.code}
-                  </span>
-                  <span className="text-xs font-semibold text-[#748092] dark:text-[#94A3B8]">
-                    {item.vocabCount} từ vựng mục tiêu
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-black text-[#243447] dark:text-white">
+                    {activeSinoWord.hanzi} ({activeSinoWord.pinyin})
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-md bg-[#E85D3F]/10 text-[#E85D3F] text-xs font-bold">
+                    Hán-Việt: {activeSinoWord.hanViet}
                   </span>
                 </div>
-
-                <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                  {item.title}
-                </h3>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 line-clamp-2 leading-relaxed">
-                  {item.description}
+                <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-0.5">
+                  Ý nghĩa thực tế: <strong>{activeSinoWord.meaning}</strong>
                 </p>
-
-                {/* Grammar highlight */}
-                <div className="mt-4 pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] space-y-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
-                    Điểm nổi bật:
-                  </span>
-                  {item.grammarPoints && item.grammarPoints.slice(0, 2).map((gp, gIdx) => (
-                    <div key={gIdx} className="flex items-center gap-1.5 text-[11px] text-[#243447] dark:text-[#CBD5E1]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#E85D3F]" />
-                      <span className="truncate">{gp}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
-                <div className="flex items-center justify-between text-xs mb-1.5 font-bold">
-                  <span className="text-[#243447] dark:text-white">Mục tiêu cấp độ</span>
-                  <span className="text-[#E85D3F] group-hover:translate-x-1 transition-transform inline-flex items-center gap-0.5">
-                    <span>Xem bài học</span>
-                    <ArrowRight size={13} />
-                  </span>
-                </div>
               </div>
             </div>
-          ))}
+
+            <div className="flex items-center gap-2 self-end sm:self-center">
+              <AudioButton text={activeSinoWord.hanzi} size="md" />
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setActiveTab('vocabulary');
+                }}
+                className="px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+              >
+                <span>Học từ này trong Flashcard</span>
+                <ArrowRight size={13} />
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* 5. ALL CORE FEATURES GRID */}
+      {/* 5. ALL CORE FEATURES GRID (HỆ SINH THÁI 6 TRONG 1) */}
       <section className="bg-gradient-to-b from-[#FFF9F2] via-white to-[#FFF9F2] dark:from-[#131B24] dark:via-[#1E293B] dark:to-[#131B24] py-16 border-y border-[#F1E5D8] dark:border-[#2B3A4F]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-2xl mx-auto mb-14">
             <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Hệ sinh thái toàn diện</span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
-              Bộ công cụ học tập thông minh 6 trong 1
+              Bộ Công Cụ Học Tiếng Trung Đầy Đủ Nhất
             </h2>
             <p className="text-sm text-[#748092] dark:text-[#94A3B8] mt-2">
-              Tích hợp mọi kỹ năng Nghe - Nói - Đọc - Viết trong cùng một nền tảng duy nhất.
+              Tích hợp mọi kỹ năng Nghe - Nói - Đọc - Viết - Ngữ Pháp và Ôn tập ngắt quãng trong cùng một tài khoản duy nhất.
             </p>
           </div>
 
@@ -804,21 +857,21 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
             <div 
               onClick={() => {
                 playClickSound();
-                setActiveTab('vocabulary');
+                setActiveTab('roadmap');
               }}
               className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
             >
               <div className="w-12 h-12 rounded-2xl bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Layers size={24} />
+                <Compass size={24} />
               </div>
               <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                Flashcard 3D & Thêm từ tự do
+                Lộ trình 60 bài HSK 1 - HSK 4
               </h3>
               <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Lật thẻ 3D mượt mà, phân loại từ theo Spaced Repetition SRS. Tự do thêm bất kỳ từ vựng nào bạn muốn học vào kho cá nhân.
+                Từng bước chinh phục từ phát âm Pinyin đến đàm thoại chuyên sâu. Mở khóa bài học theo cơ chế tuần tự khoa học và kiểm tra đầu vào Placement Test.
               </p>
               <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#E85D3F]">
-                <span>Trải nghiệm Flashcard</span>
+                <span>Mở bản đồ lộ trình</span>
                 <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
@@ -827,21 +880,21 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
             <div 
               onClick={() => {
                 playClickSound();
-                setActiveTab('pronunciation');
+                setActiveTab('vocabulary');
               }}
               className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
             >
               <div className="w-12 h-12 rounded-2xl bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Mic size={24} />
+                <Layers size={24} />
               </div>
               <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                Luyện phát âm & Nhận diện giọng nói
+                Flashcard 3D & Ôn tập SRS SM-2
               </h3>
               <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Hệ thống nhận diện giọng nói Web Speech API chấm điểm tức thì. Tự thêm câu giao tiếp bất kỳ để AI phân tích khẩu hình chuẩn.
+                Lật thẻ mượt mà, tự động chuyển từ đã học vào chu kỳ lặp lại ngắt quãng SM-2 để đánh bại đường cong quên lãng não bộ.
               </p>
               <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#D97706]">
-                <span>Luyện phát âm ngay</span>
+                <span>Trải nghiệm Flashcard</span>
                 <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
@@ -850,21 +903,21 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
             <div 
               onClick={() => {
                 playClickSound();
-                setActiveTab('writing');
+                setActiveTab('pronunciation');
               }}
               className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
             >
               <div className="w-12 h-12 rounded-2xl bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <PenTool size={24} />
+                <Mic size={24} />
               </div>
               <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                Tập viết chữ Hán mễ tự cách
+                AI Speaking Lab Chấm Điểm Giọng Nói
               </h3>
               <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Khung canvas mô phỏng nét bút lông mực mài. Xem hoạt họa thứ tự thuận bút và tự gõ thêm chữ Hán bất kỳ để tập viết.
+                Nhận diện giọng nói Web Speech tức thì, chỉ điểm lỗi ngọng thanh 3, thanh 4 và biến điệu ngữ âm tiếng Trung bản ngữ.
               </p>
               <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#45B97C]">
-                <span>Mở bàn viết chữ</span>
+                <span>Luyện phát âm ngay</span>
                 <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
@@ -873,21 +926,21 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
             <div 
               onClick={() => {
                 playClickSound();
-                setActiveTab('conversation');
+                setActiveTab('writing');
               }}
               className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
             >
               <div className="w-12 h-12 rounded-2xl bg-[#EFF6FF] dark:bg-[#1E293B] text-[#3B82F6] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <MessageSquare size={24} />
+                <PenTool size={24} />
               </div>
               <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                Hội thoại AI Tiểu Hàm thực chiến
+                Tập viết Ô Mễ Tự (米字格) Chuẩn A4
               </h3>
               <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Nhập vai đối thoại trực tiếp theo các tình huống đời sống (mua sắm Taobao, ăn lẩu Haidilao, hỏi đường). Lưu lại lịch sử trò chuyện.
+                Mô phỏng nét bút lông mực mài, xem chi tiết hoạt họa thứ tự thuận bút và xuất file in A4 kẻ ô mễ tự 8 hướng.
               </p>
               <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#3B82F6]">
-                <span>Trò chuyện cùng AI</span>
+                <span>Mở bàn tập viết</span>
                 <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
@@ -896,21 +949,21 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
             <div 
               onClick={() => {
                 playClickSound();
-                setActiveTab('materials');
+                setActiveTab('classroom');
               }}
               className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
             >
               <div className="w-12 h-12 rounded-2xl bg-[#F5F3FF] dark:bg-[#201B2E] text-[#8B5CF6] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <FolderDown size={24} />
+                <GraduationCap size={24} />
               </div>
               <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                Thư viện tài liệu in ấn A4
+                Lớp Học Trực Tuyến & Bài Tập Về Nhà
               </h3>
               <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Xem và in trực tiếp mẫu giấy kẻ ô Mễ Tự A4, sổ tay 214 bộ thủ, giáo trình ngữ pháp HSK. Hỗ trợ tự upload tài liệu học cá nhân.
+                Tham gia lớp bằng mã HZG-XXXXX, nhận bài tập từ giáo viên, nộp bài thu âm, nhận lời phê và điểm số trực tiếp.
               </p>
               <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#8B5CF6]">
-                <span>Tải tài liệu PDF</span>
+                <span>Vào không gian lớp học</span>
                 <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
@@ -919,21 +972,21 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
             <div 
               onClick={() => {
                 playClickSound();
-                setActiveTab('community');
+                setActiveTab('materials');
               }}
               className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
             >
               <div className="w-12 h-12 rounded-2xl bg-[#FFF7ED] dark:bg-[#2A1D15] text-[#EA580C] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Users size={24} />
+                <FolderDown size={24} />
               </div>
               <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                Cộng đồng hỏi đáp & Bảng vàng
+                Thư Viện Giáo Trình Chuẩn CTI & OER
               </h3>
               <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Giao lưu cùng bạn học khắp cả nước, đăng câu hỏi xin trợ giúp, chia sẻ bài viết hay và đua top bảng vàng vinh danh hàng tuần.
+                20+ bộ tài liệu học thuật thẩm định sẵn: đề thi HSK có file nghe MP3, bách khoa ngữ pháp Wiki và cẩm nang 214 bộ thủ.
               </p>
               <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#EA580C]">
-                <span>Tham gia cộng đồng</span>
+                <span>Khám phá kho học liệu</span>
                 <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
@@ -948,10 +1001,10 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
         <div className="text-center max-w-2xl mx-auto mb-10">
           <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Bài học nổi bật</span>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
-            Khởi đầu ngay với các chủ đề thông dụng nhất
+            Khởi Đầu Ngay Với Các Bài Học Nền Tảng
           </h2>
           <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-2">
-            Mỗi bài học chỉ mất từ 10 đến 15 phút, giải thích rõ ràng từng từ vựng và câu đàm thoại.
+            Mỗi bài học được cấu trúc 7 bước chuẩn sư phạm: Nghe đối thoại, Từ vựng, Chữ Hán, Ngữ pháp và Trắc nghiệm.
           </p>
         </div>
 
@@ -993,7 +1046,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                   +{lesson.xpReward || 50} XP thưởng
                 </span>
                 <span className="text-xs font-bold text-[#E85D3F] group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-                  <span>Học thử ngay</span>
+                  <span>Vào bài học ngay</span>
                   <ArrowRight size={14} />
                 </span>
               </div>
@@ -1007,7 +1060,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
         <div className="text-center max-w-xl mx-auto mb-10">
           <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Hỏi đáp thường gặp</span>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
-            Bạn có thắc mắc về phương pháp học?
+            Bạn Có Thắc Mắc Về Phương Pháp Học?
           </h2>
         </div>
 
@@ -1024,7 +1077,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                     playClickSound();
                     setExpandedFaqIndex(isExpanded ? -1 : fIdx);
                   }}
-                  className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-[#243447] dark:text-white hover:text-[#E85D3F] transition-colors"
+                  className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-[#243447] dark:text-white hover:text-[#E85D3F] transition-colors cursor-pointer"
                 >
                   <span className="flex items-center gap-3">
                     <HelpCircle size={18} className="text-[#E85D3F] shrink-0" />
@@ -1047,27 +1100,30 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
         </div>
       </section>
 
-      {/* 9. CALL TO ACTION SECTION */}
+      {/* 8. CALL TO ACTION SECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="p-8 sm:p-14 rounded-3xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#992E17] text-white text-center shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 font-['Noto_Serif_SC'] text-8xl font-black text-white/5 select-none pointer-events-none">
+          <div className="absolute top-0 right-0 font-['Noto_Serif_SC'] text-8xl sm:text-9xl font-black text-white/5 select-none pointer-events-none">
             加油
+          </div>
+          <div className="absolute bottom-0 left-0 font-['Noto_Serif_SC'] text-8xl sm:text-9xl font-black text-white/5 select-none pointer-events-none">
+            汉语
           </div>
 
           <div className="max-w-2xl mx-auto space-y-6 relative z-10">
-            <span className="px-3.5 py-1.5 rounded-full bg-white/20 text-xs font-bold">
-              Đồng hành cùng 10.000+ học viên Việt Nam
+            <span className="px-3.5 py-1.5 rounded-full bg-white/20 text-xs font-bold backdrop-blur-xs">
+              Đồng hành cùng cộng đồng người học tiếng Trung tại Việt Nam
             </span>
             <h2 className="text-3xl sm:text-4xl font-black">
               Sẵn sàng bắt đầu hành trình học tiếng Trung ngay hôm nay?
             </h2>
             <p className="text-sm sm:text-base text-white/90 leading-relaxed">
-              Không cần tốn hàng chục triệu đi trung tâm. Chỉ cần 15 phút mỗi ngày với phương pháp Hán-Việt khoa học, bạn sẽ thấy sự khác biệt sau 2 tuần!
+              Không cần học vẹt hàng ngàn chữ Hán một cách thụ động. Chỉ 15 phút mỗi ngày với phương pháp Hán-Việt khoa học, bạn sẽ thấy sự khác biệt sau 2 tuần!
             </p>
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 onClick={handleStartLearning}
-                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-[#E85D3F] hover:bg-[#FFF9F2] font-black text-base shadow-xl hover:scale-105 transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-[#E85D3F] hover:bg-[#FFF9F2] font-black text-base shadow-xl hover:scale-105 active:scale-100 transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
               >
                 {!user ? (
                   <>

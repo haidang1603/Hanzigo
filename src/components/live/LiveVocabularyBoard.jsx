@@ -5,7 +5,10 @@ import {
   BookmarkCheck, 
   Volume2, 
   Search,
-  BookOpen
+  BookOpen,
+  Sparkles,
+  HelpCircle,
+  Layers
 } from 'lucide-react';
 import { speakChinese, playClickSound, playSuccessSound } from '../../utils/audio';
 import { addVocabToTodayLesson } from '../../services/liveClassroomService';
@@ -83,7 +86,9 @@ export default function LiveVocabularyBoard({
   user,
   sessionId,
   vocabState = {},
-  onUpdateState: _onUpdateState
+  onUpdateState: _onUpdateState,
+  onLinkToQuiz,
+  onLinkToGrammar
 }) {
   const currentVocab = vocabState?.currentVocab || PRESET_VOCAB_LIST[0];
   const todayLessonVocab = vocabState?.todayLessonVocab || [];
@@ -218,28 +223,55 @@ export default function LiveVocabularyBoard({
           </div>
 
           {/* Action Row */}
-          <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/10 flex-wrap">
-            {isTeacher ? (
-              <button
-                onClick={handleAddToTodayLesson}
-                className="px-4 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#D44C2E] text-white font-bold text-xs shadow-lg shadow-[#E85D3F]/30 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-              >
-                <Plus size={16} />
-                <span>Add to Today's Lesson (Thêm vào bài học)</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => handleSaveToPersonalNotebook(currentVocab)}
-                className={`px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
-                  savedLocally[currentVocab.hanzi]
-                    ? 'bg-emerald-600 text-white shadow-md'
-                    : 'bg-white/10 hover:bg-white/20 text-white'
-                }`}
-              >
-                {savedLocally[currentVocab.hanzi] ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
-                <span>{savedLocally[currentVocab.hanzi] ? 'Đã lưu vào sổ tay' : 'Lưu vào sổ từ vựng (Save)'}</span>
-              </button>
-            )}
+          <div className="flex items-center justify-between gap-2.5 pt-3 border-t border-white/10 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              {isTeacher ? (
+                <>
+                  <button
+                    onClick={handleAddToTodayLesson}
+                    className="px-3.5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#D44C2E] text-white font-bold text-xs shadow-lg shadow-[#E85D3F]/30 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    title="Thêm từ này vào danh sách từ vựng bài giảng hôm nay"
+                  >
+                    <Plus size={15} />
+                    <span>Thêm vào bài học</span>
+                  </button>
+
+                  {onLinkToQuiz && (
+                    <button
+                      onClick={() => onLinkToQuiz(currentVocab)}
+                      className="px-3.5 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                      title="Tạo nhanh câu hỏi trắc nghiệm từ vựng cho cả lớp"
+                    >
+                      <HelpCircle size={15} />
+                      <span>Tạo Quiz ➔</span>
+                    </button>
+                  )}
+
+                  {onLinkToGrammar && (
+                    <button
+                      onClick={() => onLinkToGrammar(currentVocab)}
+                      className="px-3.5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                      title="Đưa từ này vào phân tích mẫu câu ngữ pháp"
+                    >
+                      <Layers size={15} />
+                      <span>Đưa vào Ngữ pháp ➔</span>
+                    </button>
+                  )}
+                </>
+              ) : (
+                <button
+                  onClick={() => handleSaveToPersonalNotebook(currentVocab)}
+                  className={`px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+                    savedLocally[currentVocab.hanzi]
+                      ? 'bg-emerald-600 text-white shadow-md'
+                      : 'bg-white/10 hover:bg-white/20 text-white'
+                  }`}
+                >
+                  {savedLocally[currentVocab.hanzi] ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+                  <span>{savedLocally[currentVocab.hanzi] ? 'Đã lưu vào sổ tay' : 'Lưu vào sổ từ vựng (Save)'}</span>
+                </button>
+              )}
+            </div>
 
             <button
               onClick={() => speakChinese(currentVocab.hanzi)}

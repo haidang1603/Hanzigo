@@ -150,6 +150,14 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     format: 'PDF',
     fileSize: '10 MB',
     author: 'HanziGo Biên soạn',
+    publisher: 'BLCU Press / CTI',
+    sourceUrl: '',
+    skills: 'Từ vựng, Ngữ pháp',
+    language: 'Song ngữ Trung - Việt',
+    license: 'Bản quyền Giáo trình (Trích dẫn học thuật)',
+    verificationStatus: 'verified_official',
+    relatedLessonId: 'Module 1.1',
+    verificationNotes: '',
     description: '',
     downloadUrl: '',
     tags: '',
@@ -461,6 +469,14 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       format: 'PDF',
       fileSize: '15 MB',
       author: 'HanziGo Biên soạn',
+      publisher: 'Đại học Ngôn ngữ Bắc Kinh (BLCU)',
+      sourceUrl: '',
+      skills: 'Từ vựng, Ngữ pháp',
+      language: 'Song ngữ Trung - Việt',
+      license: 'Bản quyền Giáo trình (Trích dẫn học thuật)',
+      verificationStatus: 'verified_official',
+      relatedLessonId: 'Module 1.1',
+      verificationNotes: 'Tài liệu chuẩn mực phục vụ đào tạo.',
       description: '',
       downloadUrl: '',
       tags: '',
@@ -480,6 +496,14 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       format: mat.format,
       fileSize: mat.fileSize || '10 MB',
       author: mat.author || 'HanziGo Biên soạn',
+      publisher: mat.publisher || mat.author || 'HanziGo',
+      sourceUrl: mat.sourceUrl || mat.downloadUrl || '',
+      skills: Array.isArray(mat.skills) ? mat.skills.join(', ') : (mat.skills || 'Từ vựng, Ngữ pháp'),
+      language: mat.language || 'Song ngữ Trung - Việt',
+      license: mat.license || 'Trích dẫn học thuật',
+      verificationStatus: mat.verificationStatus || 'curated',
+      relatedLessonId: mat.relatedLessonId || '',
+      verificationNotes: mat.verificationNotes || '',
       description: mat.description || '',
       downloadUrl: mat.downloadUrl || '',
       tags: Array.isArray(mat.tags) ? mat.tags.join(', ') : (mat.tags || ''),
@@ -491,7 +515,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
 
   const handleSaveMaterial = async (e) => {
     e.preventDefault();
-    if (!matForm.title.trim() || !matForm.downloadUrl.trim()) {
+    if (!matForm.title.trim() || (!matForm.downloadUrl.trim() && !matForm.sourceUrl.trim())) {
       alert('Vui lòng điền tiêu đề tài liệu và đường dẫn tải / xem!');
       return;
     }
@@ -500,21 +524,28 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       ? matForm.tags.split(',').map((t) => t.trim()).filter(Boolean)
       : [matForm.level, matForm.format];
 
+    const skillsArray = matForm.skills
+      ? matForm.skills.split(/[,，]/).map((s) => s.trim()).filter(Boolean)
+      : ['Từ vựng', 'Ngữ pháp'];
+
+    const payload = {
+      ...matForm,
+      publisher: matForm.publisher.trim() || matForm.author.trim(),
+      sourceUrl: matForm.sourceUrl.trim() || matForm.downloadUrl.trim(),
+      downloadUrl: matForm.downloadUrl.trim() || matForm.sourceUrl.trim(),
+      skills: skillsArray,
+      tags: tagsArray
+    };
+
     if (editingMatId) {
-      const updated = updateMaterial(editingMatId, {
-        ...matForm,
-        tags: tagsArray
-      });
+      const updated = updateMaterial(editingMatId, payload);
       setMaterials(updated);
-      await updateMaterialInDb(editingMatId, { ...matForm, tags: tagsArray });
+      await updateMaterialInDb(editingMatId, payload);
       showToast('Cập nhật tài liệu thành công!');
     } else {
-      const updated = saveMaterial({
-        ...matForm,
-        tags: tagsArray
-      });
+      const updated = saveMaterial(payload);
       setMaterials(updated);
-      await addMaterialToDb({ ...matForm, tags: tagsArray });
+      await addMaterialToDb(payload);
       showToast('Thêm tài liệu mới vào hệ thống thành công!');
     }
 
@@ -1389,7 +1420,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                           m.isHidden ? 'opacity-50' : ''
                         }`}
                       >
-                        {/* Title and Author */}
+                        {/* Title, Publisher & License */}
                         <td className="p-4 pl-6 max-w-sm">
                           <div className="space-y-1">
                             <p className="font-bold text-[#243447] dark:text-white flex items-center gap-1.5">
@@ -1398,8 +1429,18 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                               )}
                               <span>{m.title}</span>
                             </p>
+                            <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+                              <span className="font-semibold text-[#E85D3F]">
+                                🏛️ {m.publisher || m.author || 'HanziGo'}
+                              </span>
+                              {m.license && (
+                                <span className="text-[#748092] dark:text-[#94A3B8]">
+                                  • 📜 {m.license}
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-[#748092] dark:text-[#94A3B8] line-clamp-1">
-                              {m.description || m.author || 'Tài liệu chuẩn'}
+                              {m.description || 'Tài liệu chuẩn'}
                             </p>
                           </div>
                         </td>
@@ -2010,42 +2051,142 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Tác giả / Nhà xuất bản
+                    Tác giả biên soạn
                   </label>
                   <input 
                     type="text"
                     value={matForm.author}
                     onChange={(e) => setMatForm({ ...matForm, author: e.target.value })}
-                    placeholder="Đại học Ngôn ngữ Bắc Kinh / BLCU"
+                    placeholder="Khoa Ngôn ngữ BLCU / HanziGo"
                     className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Dung lượng file
+                    Nhà xuất bản / Tổ chức phát hành
+                  </label>
+                  <input 
+                    type="text"
+                    value={matForm.publisher}
+                    onChange={(e) => setMatForm({ ...matForm, publisher: e.target.value })}
+                    placeholder="BLCU Press / CTI Chinesetest / Khổng Tử Học Viện"
+                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
+                    Kỹ năng trọng tâm (phân cách bởi dấu phẩy)
+                  </label>
+                  <input 
+                    type="text"
+                    value={matForm.skills}
+                    onChange={(e) => setMatForm({ ...matForm, skills: e.target.value })}
+                    placeholder="Nghe hiểu, Đọc hiểu, Ngữ pháp, Luyện thi HSK"
+                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
+                    Dung lượng / Quy mô tài liệu
                   </label>
                   <input 
                     type="text"
                     value={matForm.fileSize}
                     onChange={(e) => setMatForm({ ...matForm, fileSize: e.target.value })}
-                    placeholder="Ví dụ: 25 MB hoặc 150 trang"
+                    placeholder="Ví dụ: 150 trang, 25 MB hoặc 5 bộ đề"
                     className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
+                    Trạng thái kiểm định nguồn gốc
+                  </label>
+                  <select
+                    value={matForm.verificationStatus}
+                    onChange={(e) => setMatForm({ ...matForm, verificationStatus: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                  >
+                    <option value="verified_official">🛡️ Chính thức CTI / Bộ GD</option>
+                    <option value="verified_oer">✅ Giáo dục Mở OER / CC</option>
+                    <option value="academic_reference">🏛️ Đại học BLCU / Học thuật</option>
+                    <option value="curated">⭐ Tuyển chọn nội bộ</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
+                    Giấy phép / Bản quyền
+                  </label>
+                  <input 
+                    type="text"
+                    value={matForm.license}
+                    onChange={(e) => setMatForm({ ...matForm, license: e.target.value })}
+                    placeholder="CC BY-NC-SA, Trích dẫn học thuật..."
+                    className="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
+                    Module Lộ trình liên kết
+                  </label>
+                  <input 
+                    type="text"
+                    value={matForm.relatedLessonId}
+                    onChange={(e) => setMatForm({ ...matForm, relatedLessonId: e.target.value })}
+                    placeholder="Module 1.1 (Bài 101-105)"
+                    className="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
+                    Đường dẫn nguồn gốc phát hành (Source URL) *
+                  </label>
+                  <input 
+                    type="url"
+                    required
+                    value={matForm.sourceUrl}
+                    onChange={(e) => setMatForm({ ...matForm, sourceUrl: e.target.value })}
+                    placeholder="https://chinesetest.cn... hoặc link trang gốc"
+                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
+                    Đường dẫn tải xuống / Xem file trực tiếp
+                  </label>
+                  <input 
+                    type="url"
+                    value={matForm.downloadUrl}
+                    onChange={(e) => setMatForm({ ...matForm, downloadUrl: e.target.value })}
+                    placeholder="https://drive.google.com/file/... hoặc link tải"
+                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                  Đường dẫn tải xuống / Link Google Drive trực tiếp *
+                  Ghi chú thẩm định học thuật & Kiểm tra nguồn
                 </label>
                 <input 
-                  type="url"
-                  required
-                  value={matForm.downloadUrl}
-                  onChange={(e) => setMatForm({ ...matForm, downloadUrl: e.target.value })}
-                  placeholder="https://drive.google.com/file/... hoặc https://..."
-                  className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  type="text"
+                  value={matForm.verificationNotes}
+                  onChange={(e) => setMatForm({ ...matForm, verificationNotes: e.target.value })}
+                  placeholder="Đã đối chiếu với khung HSK và tài liệu chuẩn của Hanban / CTI..."
+                  className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                 />
               </div>
 
@@ -2062,17 +2203,32 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                  Thẻ phân loại (Tags, cách nhau bởi dấu phẩy)
-                </label>
-                <input 
-                  type="text"
-                  value={matForm.tags}
-                  onChange={(e) => setMatForm({ ...matForm, tags: e.target.value })}
-                  placeholder="Giáo trình, Đàm thoại, Có Audio, Luyện thi"
-                  className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
+                    Ngôn ngữ thể hiện
+                  </label>
+                  <input 
+                    type="text"
+                    value={matForm.language}
+                    onChange={(e) => setMatForm({ ...matForm, language: e.target.value })}
+                    placeholder="Song ngữ Trung - Việt / Tiếng Trung Giản thể"
+                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
+                    Thẻ phân loại (Tags, cách nhau bởi dấu phẩy)
+                  </label>
+                  <input 
+                    type="text"
+                    value={matForm.tags}
+                    onChange={(e) => setMatForm({ ...matForm, tags: e.target.value })}
+                    placeholder="Giáo trình, Đàm thoại, Có Audio, Luyện thi"
+                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  />
+                </div>
               </div>
 
               {/* Toggles */}

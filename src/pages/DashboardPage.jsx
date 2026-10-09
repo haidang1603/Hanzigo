@@ -16,15 +16,23 @@ import {
   Compass,
   Check,
   Zap,
+  Crown,
+  GraduationCap,
   Clock,
-  Crown
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { playClickSound, playSuccessSound } from '../utils/audio';
-import { VOCABULARY_LIST, USER_ACHIEVEMENTS } from '../data/chineseData';
+import { VOCABULARY_LIST } from '../data/chineseData';
 import { getStoredCustomVocab } from '../utils/materialsStorage';
 import { triggerCloudSync } from '../supabase/services';
 import { getXpHonorificTitle } from '../services/leaderboardService';
+import { 
+  getClassroomsForStudent, 
+  getAssignmentsForClassroom, 
+  getStudentSubmission 
+} from '../services/classroomService';
 import { 
   calculateTotalXp, 
   getStreakStatus, 
@@ -33,7 +41,13 @@ import {
   getUserStorageKey,
   getLocalDateString 
 } from '../utils/gamification';
-import { getUserJourneyProgress, getLessonById } from '../services/learningPathService';
+import { 
+  getUserJourneyProgress, 
+  getLessonById,
+  getRecommendedNextLesson 
+} from '../services/learningPathService';
+import AiLearningCoachWidget from '../components/learning/AiLearningCoachWidget';
+import { evaluateUserAchievements } from '../services/gamificationService';
 
 export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   const userName = user ? (user.name ? user.name.split(' ').pop() : 'Bạn') : 'Bạn';
@@ -104,16 +118,6 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
     }
   }, [user]);
 
-  const aiChatHistory = useMemo(() => {
-    try {
-      const key = getUserStorageKey('hanzigo_ai_chat_history', user);
-      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_ai_chat_history'));
-      return s ? JSON.parse(s) : {};
-    } catch {
-      return {};
-    }
-  }, [user]);
-
   // Actual words learned count
   const actualWordsLearned = rememberedIds.length > 0 ? rememberedIds.length : (user?.wordsLearned || 0);
 
@@ -171,6 +175,52 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
     } catch {}
     return {};
   });
+
+  // Classroom & Assignments State
+  const [studentClassrooms, setStudentClassrooms] = useState([]);
+  const [studentAssignments, setStudentAssignments] = useState([]);
+  const [loadingClassroomData, setLoadingClassroomData] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadClassroomAssignments() {
+      setLoadingClassroomData(true);
+      try {
+        const studentId = user?.uid || user?.id || 'user_guest';
+        const classrooms = await getClassroomsForStudent(studentId);
+        if (!isMounted) return;
+        setStudentClassrooms(classrooms || []);
+
+        if (classrooms && classrooms.length > 0) {
+          const allAssignments = [];
+          for (const cls of classrooms) {
+            const assigns = await getAssignmentsForClassroom(cls.id);
+            for (const a of assigns) {
+              const submission = await getStudentSubmission(a.id, studentId);
+              allAssignments.push({
+                ...a,
+                classroom_name: cls.name,
+                classroom_id: cls.id,
+                submission
+              });
+            }
+          }
+          if (isMounted) {
+            setStudentAssignments(allAssignments);
+          }
+        } else {
+          if (isMounted) setStudentAssignments([]);
+        }
+      } catch (err) {
+        console.warn('Dashboard loadClassroomAssignments error:', err);
+      } finally {
+        if (isMounted) setLoadingClassroomData(false);
+      }
+    }
+
+    loadClassroomAssignments();
+    return () => { isMounted = false; };
+  }, [user]);
 
   // Real-time active study tracker: increments study time while learner is active on the app
   useEffect(() => {
@@ -289,43 +339,28 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
     return weeklyStudyMinutes.find(d => d.isToday) || weeklyStudyMinutes[0];
   }, [weeklyStudyMinutes]);
 
-  // Dynamic real achievements based on actual learner actions
+  // Dynamic real event-based achievements verified against actual learning history
   const dynamicAchievements = useMemo(() => {
-    const hasFinishedLesson = completedLessonIds.length > 0;
-    const hasLearnedVocab = rememberedIds.length >= 5;
-    const hasPracticedPronounce = pronounceHistory.length > 0;
-    const hasWrittenChar = customWritingChars.length > 0;
-    const hasChattedAI = Object.keys(aiChatHistory).length > 0;
-
-    return USER_ACHIEVEMENTS.map(ach => {
-      let isUnlocked = ach.unlocked;
-      if (ach.id === 'first-step' && hasFinishedLesson) isUnlocked = true;
-      if (ach.id === 'vocab-100' && hasLearnedVocab) isUnlocked = true;
-      if (ach.id === 'pinyin-master' && hasPracticedPronounce) isUnlocked = true;
-      if (ach.id === 'calligraphy' && hasWrittenChar) isUnlocked = true;
-      if (ach.id === 'conversation-star' && hasChattedAI) isUnlocked = true;
-      if (ach.id === 'streak-7' && userStreak >= 7) isUnlocked = true;
-      return { ...ach, unlocked: isUnlocked };
-    });
-  }, [completedLessonIds, rememberedIds, pronounceHistory, customWritingChars, aiChatHistory, userStreak]);
+    return evaluateUserAchievements(user);
+  }, [user, completedLessonIds.length, rememberedIds.length, pronounceHistory.length, customWritingChars.length, userStreak]);
 
   const unlockedAchievementsCount = dynamicAchievements.filter(a => a.unlocked).length;
 
-  // Next recommended lesson calculation
+  // Next recommended lesson calculation powered by personalization engine
   const nextLessonInfo = useMemo(() => {
-    const journey = getUserJourneyProgress(user);
-    const activeId = journey.activeLessonId || 'l-101';
-    const activeLesson = getLessonById(activeId) || getLessonById('l-101');
+    const rec = getRecommendedNextLesson(user);
+    const activeLesson = rec?.lesson || getLessonById('l-101');
     return {
-      id: activeLesson?.id || 'l-101',
-      number: activeLesson?.lessonNumber || 1,
-      title: activeLesson?.title || 'Bài 1: Pinyin & 4 Thanh điệu căn bản',
-      desc: activeLesson?.subtitle || activeLesson?.step1_learn?.summary || 'Nắm vững kiến thức trọng tâm và mẫu câu thực tế.',
+      id: rec?.lessonId || activeLesson?.id || 'l-101',
+      number: rec?.lessonNumber || activeLesson?.lessonNumber || 1,
+      title: rec?.title || activeLesson?.title || 'Bài 1: Pinyin & 4 Thanh điệu căn bản',
+      desc: rec?.reason || activeLesson?.subtitle || activeLesson?.step1_learn?.summary || 'Nắm vững kiến thức trọng tâm và mẫu câu thực tế.',
       duration: activeLesson?.durationMinutes || 15,
       xp: activeLesson?.xpReward || 50,
-      level: 'HSK 1'
+      level: rec?.levelName || 'HSK 1',
+      reason: rec?.reason
     };
-  }, [user]);
+  }, [user, completedLessonIds.length]);
 
   const handleContinueLesson = () => {
     playClickSound();
@@ -496,6 +531,13 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
 
       </div>
 
+      {/* 2.5 AI Learning Coach & Personalized Learning Engine */}
+      <AiLearningCoachWidget
+        user={user}
+        setActiveTab={setActiveTab}
+        onSelectLesson={onSelectLesson}
+      />
+
       {/* 3. Main Dashboard Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
@@ -652,6 +694,145 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
             </div>
           </div>
 
+          {/* Classroom & Assigned Tasks Section */}
+          <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-[#243447] dark:text-white flex items-center gap-2">
+                  <GraduationCap size={20} className="text-[#3B82F6]" />
+                  <span>Lớp học & Bài tập được giao</span>
+                </h3>
+                <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-0.5">
+                  Theo dõi bài tập về nhà, thời hạn nộp và nhận xét trực tiếp từ giáo viên phụ trách.
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  playClickSound();
+                  window.location.hash = '#classroom';
+                  setActiveTab('classroom');
+                }}
+                className="text-xs font-bold text-[#3B82F6] hover:underline flex items-center gap-1"
+              >
+                <span>Vào Lớp học</span>
+                <ArrowRight size={13} />
+              </button>
+            </div>
+
+            {loadingClassroomData ? (
+              <div className="py-6 text-center text-xs text-[#748092] dark:text-[#94A3B8]">
+                Đang cập nhật bài tập lớp học...
+              </div>
+            ) : studentAssignments.length > 0 ? (
+              <div className="divide-y divide-[#F1E5D8] dark:divide-[#2B3A4F]">
+                {studentAssignments.slice(0, 4).map((item) => {
+                  const isSubmitted = Boolean(item.submission);
+                  const isGraded = Boolean(item.submission?.graded);
+                  const isOverdue = item.due_date && !isSubmitted && new Date(item.due_date).getTime() < Date.now();
+
+                  return (
+                    <div key={item.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[10px] font-bold">
+                            {item.classroom_name}
+                          </span>
+                          <h4 className="text-sm font-bold text-[#243447] dark:text-white truncate">
+                            {item.title}
+                          </h4>
+                        </div>
+
+                        <div className="flex items-center gap-3 text-xs text-[#748092] dark:text-[#94A3B8]">
+                          {item.due_date && (
+                            <span className="flex items-center gap-1 text-[11px]">
+                              <Clock size={12} className={isOverdue ? 'text-rose-500' : 'text-[#748092]'} />
+                              <span className={isOverdue ? 'text-rose-500 font-bold' : ''}>
+                                Hạn: {new Date(item.due_date).toLocaleDateString('vi-VN')}
+                              </span>
+                            </span>
+                          )}
+
+                          {isGraded && (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[11px] flex items-center gap-1">
+                              <CheckCircle2 size={12} />
+                              Điểm: {item.submission.score}/100 đ
+                            </span>
+                          )}
+                        </div>
+
+                        {isGraded && item.submission?.feedback && (
+                          <p className="text-[11px] text-[#243447] dark:text-gray-300 bg-amber-50/70 dark:bg-amber-950/30 p-2 rounded-xl border border-amber-200 dark:border-amber-900 mt-1">
+                            💬 <strong>Lời phê:</strong> "{item.submission.feedback}"
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        {isGraded ? (
+                          <span className="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-xs font-bold">
+                            Đã chấm
+                          </span>
+                        ) : isSubmitted ? (
+                          <span className="px-2.5 py-1 rounded-xl bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 text-xs font-bold">
+                            Đã nộp bài
+                          </span>
+                        ) : isOverdue ? (
+                          <span className="px-2.5 py-1 rounded-xl bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 text-xs font-bold flex items-center gap-1">
+                            <AlertTriangle size={12} />
+                            Quá hạn
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-xs font-bold">
+                            Cần làm
+                          </span>
+                        )}
+
+                        <button
+                          onClick={() => {
+                            playClickSound();
+                            window.location.hash = `#classroom/${item.classroom_id}/assignments`;
+                            setActiveTab('classroom');
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold transition-all shadow-xs"
+                        >
+                          {isSubmitted ? 'Xem bài' : 'Làm bài'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : studentClassrooms.length > 0 ? (
+              <div className="py-6 text-center text-xs text-[#748092] dark:text-[#94A3B8] space-y-2">
+                <p>🎉 Bạn đã tham gia <strong>{studentClassrooms.length}</strong> lớp học. Hiện tại không có bài tập nào cần nộp gấp.</p>
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    window.location.hash = '#classroom';
+                    setActiveTab('classroom');
+                  }}
+                  className="text-[#3B82F6] font-bold hover:underline"
+                >
+                  Vào không gian lớp học để xem tài liệu & thông báo ➔
+                </button>
+              </div>
+            ) : (
+              <div className="py-6 text-center text-xs text-[#748092] dark:text-[#94A3B8] space-y-2">
+                <p>Bạn chưa tham gia lớp học nào trên HanziGo.</p>
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    window.location.hash = '#classroom/join';
+                    setActiveTab('classroom');
+                  }}
+                  className="px-4 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-[#3B82F6] font-bold hover:bg-blue-100 transition-colors inline-block"
+                >
+                  + Nhập mã tham gia lớp học ngay
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Spaced Repetition Review List */}
           <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
             <div className="flex items-center justify-between">
@@ -777,6 +958,32 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
             </button>
           </div>
 
+          {/* Daily & Weekly Challenge Quick Teaser */}
+          <div className="p-5 rounded-3xl bg-gradient-to-br from-[#FEF7E9] to-[#FFF9F2] dark:from-[#1E293B] dark:to-[#131B24] border border-[#F4B942]/50 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#D97706] flex items-center gap-1.5 uppercase tracking-wide">
+                <Flame size={14} className="fill-[#F4B942]" />
+                <span>Thử thách Hán ngữ hôm nay</span>
+              </span>
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300">
+                +50 XP
+              </span>
+            </div>
+            <p className="text-xs text-[#243447] dark:text-white font-semibold">
+              Đặt câu với cặp liên từ Vì... Nên... (因为...所以...)
+            </p>
+            <button
+              onClick={() => {
+                playClickSound();
+                setActiveTab('community');
+              }}
+              className="w-full py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer active:scale-95"
+            >
+              <span>Vào Nộp Bài Thử Thách</span>
+              <ArrowRight size={13} />
+            </button>
+          </div>
+
           {/* Unlocked Achievements */}
           <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
             <div className="flex items-center justify-between">
@@ -827,6 +1034,26 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
             <h3 className="text-xs font-bold text-[#748092] dark:text-[#94A3B8] uppercase tracking-wider mb-2">
               Lối tắt luyện tập nhanh
             </h3>
+
+            {/* Practice Hub by Levels Shortcut */}
+            <button
+              onClick={() => {
+                playClickSound();
+                setActiveTab('practice');
+              }}
+              className="w-full p-3 rounded-2xl bg-gradient-to-r from-[#FDEEEB] to-[#FEF7E9] dark:from-[#2D1E1B] dark:to-[#2D2619] hover:border-[#E85D3F] border border-[#E85D3F]/30 flex items-center justify-between text-left transition-all group shadow-2xs"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#E85D3F] text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  <Sparkles size={17} />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-[#243447] dark:text-white">Trung tâm Luyện tập 4 mức độ</p>
+                  <p className="text-[10px] text-[#E85D3F] font-bold">Cơ bản ➔ Sơ cấp ➔ Trung cấp ➔ Thử thách</p>
+                </div>
+              </div>
+              <ArrowRight size={14} className="text-[#E85D3F] group-hover:translate-x-1 transition-transform" />
+            </button>
 
             {/* Pronunciation Shortcut */}
             <button

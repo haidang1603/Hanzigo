@@ -38,6 +38,14 @@ CREATE TABLE IF NOT EXISTS public.materials (
   author TEXT DEFAULT 'HanziGo Biên soạn',
   description TEXT DEFAULT '',
   download_url TEXT NOT NULL,
+  source_url TEXT,
+  publisher TEXT,
+  skills TEXT DEFAULT 'Tổng hợp đa kỹ năng',
+  language TEXT DEFAULT 'Song ngữ Trung - Việt',
+  license TEXT DEFAULT 'Tài liệu giáo dục công cộng',
+  verification_status TEXT DEFAULT 'verified',
+  related_lesson_id TEXT,
+  verification_notes TEXT,
   tags TEXT DEFAULT '',
   is_featured BOOLEAN DEFAULT false,
   is_hidden BOOLEAN DEFAULT false,
@@ -350,53 +358,118 @@ ALTER TABLE public.ai_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_saved_materials ENABLE ROW LEVEL SECURITY;
 
 -- 5.1 Profiles
+DROP POLICY IF EXISTS "profiles_select_public" ON public.profiles;
 CREATE POLICY "profiles_select_public" ON public.profiles FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "profiles_update_owner_or_admin" ON public.profiles;
 CREATE POLICY "profiles_update_owner_or_admin" ON public.profiles FOR UPDATE USING (auth.uid() = id OR public.is_admin()) WITH CHECK (auth.uid() = id OR public.is_admin());
+
+DROP POLICY IF EXISTS "profiles_delete_admin_only" ON public.profiles;
 CREATE POLICY "profiles_delete_admin_only" ON public.profiles FOR DELETE USING (public.is_admin());
 
--- 5.2 Content (Public read, Admin manage)
-CREATE POLICY "materials_select_public" ON public.materials FOR SELECT USING (true);
+-- 5.2 Content (Public read for unhidden, Admin manage)
+DROP POLICY IF EXISTS "materials_select_public" ON public.materials;
+CREATE POLICY "materials_select_public" ON public.materials FOR SELECT USING (is_hidden = false OR public.is_admin());
+
+DROP POLICY IF EXISTS "materials_admin_insert" ON public.materials;
 CREATE POLICY "materials_admin_insert" ON public.materials FOR INSERT WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "materials_admin_update" ON public.materials;
 CREATE POLICY "materials_admin_update" ON public.materials FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "materials_admin_delete" ON public.materials;
 CREATE POLICY "materials_admin_delete" ON public.materials FOR DELETE USING (public.is_admin());
 
+DROP POLICY IF EXISTS "lessons_select_public" ON public.lessons;
 CREATE POLICY "lessons_select_public" ON public.lessons FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "lessons_admin_insert" ON public.lessons;
 CREATE POLICY "lessons_admin_insert" ON public.lessons FOR INSERT WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "lessons_admin_update" ON public.lessons;
 CREATE POLICY "lessons_admin_update" ON public.lessons FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "lessons_admin_delete" ON public.lessons;
 CREATE POLICY "lessons_admin_delete" ON public.lessons FOR DELETE USING (public.is_admin());
 
+DROP POLICY IF EXISTS "vocabulary_select_public" ON public.vocabulary;
 CREATE POLICY "vocabulary_select_public" ON public.vocabulary FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "vocabulary_admin_insert" ON public.vocabulary;
 CREATE POLICY "vocabulary_admin_insert" ON public.vocabulary FOR INSERT WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "vocabulary_admin_update" ON public.vocabulary;
 CREATE POLICY "vocabulary_admin_update" ON public.vocabulary FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "vocabulary_admin_delete" ON public.vocabulary;
 CREATE POLICY "vocabulary_admin_delete" ON public.vocabulary FOR DELETE USING (public.is_admin());
 
+DROP POLICY IF EXISTS "writing_select_public" ON public.writing_characters;
 CREATE POLICY "writing_select_public" ON public.writing_characters FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "writing_admin_insert" ON public.writing_characters;
 CREATE POLICY "writing_admin_insert" ON public.writing_characters FOR INSERT WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "writing_admin_update" ON public.writing_characters;
 CREATE POLICY "writing_admin_update" ON public.writing_characters FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "writing_admin_delete" ON public.writing_characters;
 CREATE POLICY "writing_admin_delete" ON public.writing_characters FOR DELETE USING (public.is_admin());
 
+DROP POLICY IF EXISTS "pronunciation_select_public" ON public.pronunciation_items;
 CREATE POLICY "pronunciation_select_public" ON public.pronunciation_items FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "pronunciation_admin_insert" ON public.pronunciation_items;
 CREATE POLICY "pronunciation_admin_insert" ON public.pronunciation_items FOR INSERT WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "pronunciation_admin_update" ON public.pronunciation_items;
 CREATE POLICY "pronunciation_admin_update" ON public.pronunciation_items FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "pronunciation_admin_delete" ON public.pronunciation_items;
 CREATE POLICY "pronunciation_admin_delete" ON public.pronunciation_items FOR DELETE USING (public.is_admin());
 
 -- 5.3 Student Progress & Logs
+DROP POLICY IF EXISTS "user_vocab_srs_owner_all" ON public.user_vocab_srs;
 CREATE POLICY "user_vocab_srs_owner_all" ON public.user_vocab_srs FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
+
+DROP POLICY IF EXISTS "user_lesson_progress_owner_all" ON public.user_lesson_progress;
 CREATE POLICY "user_lesson_progress_owner_all" ON public.user_lesson_progress FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
+
+DROP POLICY IF EXISTS "user_study_logs_owner_all" ON public.user_study_logs;
 CREATE POLICY "user_study_logs_owner_all" ON public.user_study_logs FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
+
+DROP POLICY IF EXISTS "ai_conversations_owner_all" ON public.ai_conversations;
 CREATE POLICY "ai_conversations_owner_all" ON public.ai_conversations FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
+
+DROP POLICY IF EXISTS "ai_messages_owner_all" ON public.ai_messages;
 CREATE POLICY "ai_messages_owner_all" ON public.ai_messages FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
+
+DROP POLICY IF EXISTS "user_saved_materials_owner_all" ON public.user_saved_materials;
 CREATE POLICY "user_saved_materials_owner_all" ON public.user_saved_materials FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
 
 -- 5.4 Community
+DROP POLICY IF EXISTS "community_posts_select" ON public.community_posts;
 CREATE POLICY "community_posts_select" ON public.community_posts FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "community_posts_insert" ON public.community_posts;
 CREATE POLICY "community_posts_insert" ON public.community_posts FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+DROP POLICY IF EXISTS "community_posts_update" ON public.community_posts;
 CREATE POLICY "community_posts_update" ON public.community_posts FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
+
+DROP POLICY IF EXISTS "community_posts_delete" ON public.community_posts;
 CREATE POLICY "community_posts_delete" ON public.community_posts FOR DELETE USING (auth.uid() = author_id OR public.is_admin());
 
+DROP POLICY IF EXISTS "study_partners_select" ON public.study_partners;
 CREATE POLICY "study_partners_select" ON public.study_partners FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "study_partners_insert" ON public.study_partners;
 CREATE POLICY "study_partners_insert" ON public.study_partners FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+DROP POLICY IF EXISTS "study_partners_update" ON public.study_partners;
 CREATE POLICY "study_partners_update" ON public.study_partners FOR UPDATE USING (auth.uid() = user_id OR public.is_admin());
+
+DROP POLICY IF EXISTS "study_partners_delete" ON public.study_partners;
 CREATE POLICY "study_partners_delete" ON public.study_partners FOR DELETE USING (auth.uid() = user_id OR public.is_admin());
 
 -- =========================================================================
@@ -567,27 +640,42 @@ ALTER TABLE public.user_skill_mastery ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_daily_missions ENABLE ROW LEVEL SECURITY;
 
 -- Policies đọc công khai cho tài liệu lộ trình
+DROP POLICY IF EXISTS "learning_levels_select" ON public.learning_levels;
 CREATE POLICY "learning_levels_select" ON public.learning_levels FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "learning_levels_admin" ON public.learning_levels;
 CREATE POLICY "learning_levels_admin" ON public.learning_levels FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "learning_chapters_select" ON public.learning_chapters;
 CREATE POLICY "learning_chapters_select" ON public.learning_chapters FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "learning_chapters_admin" ON public.learning_chapters;
 CREATE POLICY "learning_chapters_admin" ON public.learning_chapters FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "learning_lessons_select" ON public.learning_lessons;
 CREATE POLICY "learning_lessons_select" ON public.learning_lessons FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "learning_lessons_admin" ON public.learning_lessons;
 CREATE POLICY "learning_lessons_admin" ON public.learning_lessons FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "learning_boss_select" ON public.learning_boss_challenges;
 CREATE POLICY "learning_boss_select" ON public.learning_boss_challenges FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "learning_boss_admin" ON public.learning_boss_challenges;
 CREATE POLICY "learning_boss_admin" ON public.learning_boss_challenges FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- Policies cá nhân hóa cho học viên
+DROP POLICY IF EXISTS "user_journey_owner" ON public.user_journey_progress;
 CREATE POLICY "user_journey_owner" ON public.user_journey_progress FOR ALL
   USING (auth.uid() = user_id OR public.is_admin())
   WITH CHECK (auth.uid() = user_id OR public.is_admin());
 
+DROP POLICY IF EXISTS "user_skills_owner" ON public.user_skill_mastery;
 CREATE POLICY "user_skills_owner" ON public.user_skill_mastery FOR ALL
   USING (auth.uid() = user_id OR public.is_admin())
   WITH CHECK (auth.uid() = user_id OR public.is_admin());
 
+DROP POLICY IF EXISTS "user_daily_missions_owner" ON public.user_daily_missions;
 CREATE POLICY "user_daily_missions_owner" ON public.user_daily_missions FOR ALL
   USING (auth.uid() = user_id OR public.is_admin())
   WITH CHECK (auth.uid() = user_id OR public.is_admin());
@@ -602,19 +690,18 @@ CREATE INDEX IF NOT EXISTS idx_user_missions_uid_date ON public.user_daily_missi
 -- 8. TEACHER MODE & CLASSROOM MVP SYSTEM
 -- =========================================================================
 
--- 8.1. Kiểm tra quyền Teacher an toàn trên database
+-- 8.1. Kiểm tra quyền Teacher an toàn trên database (Migration 12 Hardened)
 CREATE OR REPLACE FUNCTION public.is_teacher()
 RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.profiles
     WHERE id = auth.uid() AND role IN ('teacher', 'admin') AND status != 'blocked'
-  ) OR EXISTS (
-    SELECT 1 FROM public.classrooms
-    WHERE teacher_id = auth.uid()
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+GRANT EXECUTE ON FUNCTION public.is_teacher() TO authenticated, service_role, anon;
 
 -- 8.2. classrooms: Quản lý lớp học
 CREATE TABLE IF NOT EXISTS public.classrooms (
@@ -705,6 +792,60 @@ CREATE INDEX IF NOT EXISTS idx_submissions_assign ON public.assignment_submissio
 CREATE INDEX IF NOT EXISTS idx_submissions_student ON public.assignment_submissions(student_id);
 
 -- RPC Function: Tham gia lớp học bằng code
+-- RPC Function: Tra cứu lớp học bằng mã (Migration 10)
+CREATE OR REPLACE FUNCTION public.lookup_classroom_by_code(p_class_code TEXT)
+RETURNS JSONB AS $$
+DECLARE
+  v_clean_code TEXT;
+  v_without_prefix TEXT;
+  v_classroom RECORD;
+  v_student_count INT;
+BEGIN
+  IF p_class_code IS NULL OR TRIM(p_class_code) = '' THEN
+    RETURN NULL;
+  END IF;
+
+  v_clean_code := UPPER(REGEXP_REPLACE(TRIM(p_class_code), '\s+', '', 'g'));
+  v_without_prefix := REGEXP_REPLACE(v_clean_code, '^HZG-?', '');
+
+  SELECT c.*, p.name AS teacher_name, p.avatar AS teacher_avatar
+  INTO v_classroom
+  FROM public.classrooms c
+  LEFT JOIN public.profiles p ON p.id = c.teacher_id
+  WHERE (
+    UPPER(REGEXP_REPLACE(c.class_code, '\s+', '', 'g')) = v_clean_code
+    OR UPPER(REGEXP_REPLACE(c.class_code, '\s+', '', 'g')) = 'HZG-' || v_without_prefix
+    OR UPPER(REGEXP_REPLACE(REGEXP_REPLACE(c.class_code, '\s+', '', 'g'), '^HZG-?', '')) = v_without_prefix
+  )
+  AND c.status = 'active'
+  LIMIT 1;
+
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT COUNT(*) INTO v_student_count
+  FROM public.class_members
+  WHERE classroom_id = v_classroom.id AND status = 'active';
+
+  RETURN jsonb_build_object(
+    'id', v_classroom.id,
+    'name', v_classroom.name,
+    'description', v_classroom.description,
+    'hsk_level', v_classroom.hsk_level,
+    'class_code', v_classroom.class_code,
+    'max_students', v_classroom.max_students,
+    'status', v_classroom.status,
+    'teacher_name', COALESCE(v_classroom.teacher_name, 'Giáo viên HanziGo'),
+    'teacher_avatar', v_classroom.teacher_avatar,
+    'student_count', v_student_count
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.lookup_classroom_by_code(TEXT) TO authenticated, anon, service_role;
+
+-- RPC Function: Tham gia lớp học bằng code (Migration 10 Hardened)
 CREATE OR REPLACE FUNCTION public.join_class_by_code(p_class_code TEXT)
 RETURNS JSONB AS $$
 DECLARE
@@ -712,6 +853,8 @@ DECLARE
   v_user_role TEXT;
   v_user_status TEXT;
   v_classroom RECORD;
+  v_clean_code TEXT;
+  v_without_prefix TEXT;
   v_student_count INT;
 BEGIN
   v_uid := auth.uid();
@@ -727,9 +870,17 @@ BEGIN
     RAISE EXCEPTION 'Tài khoản của bạn đang bị khóa, không thể tham gia lớp học.';
   END IF;
 
+  v_clean_code := UPPER(REGEXP_REPLACE(TRIM(p_class_code), '\s+', '', 'g'));
+  v_without_prefix := REGEXP_REPLACE(v_clean_code, '^HZG-?', '');
+
   SELECT * INTO v_classroom
   FROM public.classrooms
-  WHERE UPPER(TRIM(class_code)) = UPPER(TRIM(p_class_code));
+  WHERE (
+    UPPER(REGEXP_REPLACE(class_code, '\s+', '', 'g')) = v_clean_code
+    OR UPPER(REGEXP_REPLACE(class_code, '\s+', '', 'g')) = 'HZG-' || v_without_prefix
+    OR UPPER(REGEXP_REPLACE(REGEXP_REPLACE(class_code, '\s+', '', 'g'), '^HZG-?', '')) = v_without_prefix
+  )
+  LIMIT 1;
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Mã lớp không hợp lệ hoặc không tồn tại.';
@@ -772,6 +923,8 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.join_class_by_code(TEXT) TO authenticated, anon, service_role;
 
 -- RLS
 ALTER TABLE public.classrooms ENABLE ROW LEVEL SECURITY;
@@ -820,6 +973,7 @@ $$;
 GRANT EXECUTE ON FUNCTION public.is_classroom_member(UUID, UUID) TO authenticated, service_role, anon;
 GRANT EXECUTE ON FUNCTION public.is_classroom_teacher(UUID, UUID) TO authenticated, service_role, anon;
 
+DROP POLICY IF EXISTS "classrooms_select_policy" ON public.classrooms;
 CREATE POLICY "classrooms_select_policy" ON public.classrooms
   FOR SELECT USING (
     teacher_id = auth.uid()
@@ -827,31 +981,20 @@ CREATE POLICY "classrooms_select_policy" ON public.classrooms
     OR public.is_classroom_member(id, auth.uid())
   );
 
+-- Chỉ tài khoản đã có role 'teacher' hoặc 'admin' mới được phép tạo lớp học (Migration 12)
+DROP POLICY IF EXISTS "classrooms_insert_policy" ON public.classrooms;
 CREATE POLICY "classrooms_insert_policy" ON public.classrooms
   FOR INSERT WITH CHECK (
     auth.uid() = teacher_id
-    AND NOT EXISTS (
-      SELECT 1 FROM public.profiles WHERE id = auth.uid() AND status = 'blocked'
+    AND EXISTS (
+      SELECT 1 FROM public.profiles 
+      WHERE id = auth.uid() 
+        AND role IN ('teacher', 'admin') 
+        AND status != 'blocked'
     )
   );
 
--- Trigger: Tự động thăng cấp tài khoản tạo lớp thành 'teacher' nếu đang là 'student'
-CREATE OR REPLACE FUNCTION public.handle_new_classroom_teacher()
-RETURNS TRIGGER AS $$
-BEGIN
-  UPDATE public.profiles
-  SET role = 'teacher'
-  WHERE id = NEW.teacher_id AND (role IS NULL OR role = 'student');
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS trg_classroom_set_teacher ON public.classrooms;
-CREATE TRIGGER trg_classroom_set_teacher
-  AFTER INSERT ON public.classrooms
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_new_classroom_teacher();
-
+DROP POLICY IF EXISTS "classrooms_update_policy" ON public.classrooms;
 CREATE POLICY "classrooms_update_policy" ON public.classrooms
   FOR UPDATE USING (
     teacher_id = auth.uid() OR public.is_admin()
@@ -859,11 +1002,13 @@ CREATE POLICY "classrooms_update_policy" ON public.classrooms
     teacher_id = auth.uid() OR public.is_admin()
   );
 
+DROP POLICY IF EXISTS "classrooms_delete_policy" ON public.classrooms;
 CREATE POLICY "classrooms_delete_policy" ON public.classrooms
   FOR DELETE USING (
     teacher_id = auth.uid() OR public.is_admin()
   );
 
+DROP POLICY IF EXISTS "class_members_select_policy" ON public.class_members;
 CREATE POLICY "class_members_select_policy" ON public.class_members
   FOR SELECT USING (
     student_id = auth.uid()
@@ -872,24 +1017,28 @@ CREATE POLICY "class_members_select_policy" ON public.class_members
     OR public.is_classroom_member(classroom_id, auth.uid())
   );
 
+DROP POLICY IF EXISTS "class_members_insert_policy" ON public.class_members;
 CREATE POLICY "class_members_insert_policy" ON public.class_members
   FOR INSERT WITH CHECK (
     public.is_admin()
     OR public.is_classroom_teacher(classroom_id, auth.uid())
   );
 
+DROP POLICY IF EXISTS "class_members_update_policy" ON public.class_members;
 CREATE POLICY "class_members_update_policy" ON public.class_members
   FOR UPDATE USING (
     public.is_admin()
     OR public.is_classroom_teacher(classroom_id, auth.uid())
   );
 
+DROP POLICY IF EXISTS "class_members_delete_policy" ON public.class_members;
 CREATE POLICY "class_members_delete_policy" ON public.class_members
   FOR DELETE USING (
     public.is_admin()
     OR public.is_classroom_teacher(classroom_id, auth.uid())
   );
 
+DROP POLICY IF EXISTS "assignments_select_policy" ON public.assignments;
 CREATE POLICY "assignments_select_policy" ON public.assignments
   FOR SELECT USING (
     teacher_id = auth.uid()
@@ -900,6 +1049,7 @@ CREATE POLICY "assignments_select_policy" ON public.assignments
     )
   );
 
+DROP POLICY IF EXISTS "assignments_insert_policy" ON public.assignments;
 CREATE POLICY "assignments_insert_policy" ON public.assignments
   FOR INSERT WITH CHECK (
     auth.uid() = teacher_id
@@ -907,6 +1057,7 @@ CREATE POLICY "assignments_insert_policy" ON public.assignments
     AND public.is_classroom_teacher(classroom_id, auth.uid())
   );
 
+DROP POLICY IF EXISTS "assignments_update_policy" ON public.assignments;
 CREATE POLICY "assignments_update_policy" ON public.assignments
   FOR UPDATE USING (
     teacher_id = auth.uid() OR public.is_admin()
@@ -914,11 +1065,13 @@ CREATE POLICY "assignments_update_policy" ON public.assignments
     teacher_id = auth.uid() OR public.is_admin()
   );
 
+DROP POLICY IF EXISTS "assignments_delete_policy" ON public.assignments;
 CREATE POLICY "assignments_delete_policy" ON public.assignments
   FOR DELETE USING (
     teacher_id = auth.uid() OR public.is_admin()
   );
 
+DROP POLICY IF EXISTS "submissions_select_policy" ON public.assignment_submissions;
 CREATE POLICY "submissions_select_policy" ON public.assignment_submissions
   FOR SELECT USING (
     student_id = auth.uid()
@@ -931,6 +1084,7 @@ CREATE POLICY "submissions_select_policy" ON public.assignment_submissions
     )
   );
 
+DROP POLICY IF EXISTS "submissions_insert_policy" ON public.assignment_submissions;
 CREATE POLICY "submissions_insert_policy" ON public.assignment_submissions
   FOR INSERT WITH CHECK (
     student_id = auth.uid()
@@ -943,6 +1097,7 @@ CREATE POLICY "submissions_insert_policy" ON public.assignment_submissions
     )
   );
 
+DROP POLICY IF EXISTS "submissions_update_policy" ON public.assignment_submissions;
 CREATE POLICY "submissions_update_policy" ON public.assignment_submissions
   FOR UPDATE USING (
     student_id = auth.uid()
@@ -955,6 +1110,7 @@ CREATE POLICY "submissions_update_policy" ON public.assignment_submissions
     )
   );
 
+DROP POLICY IF EXISTS "announcements_select_policy" ON public.class_announcements;
 CREATE POLICY "announcements_select_policy" ON public.class_announcements
   FOR SELECT USING (
     teacher_id = auth.uid()
@@ -967,6 +1123,7 @@ CREATE POLICY "announcements_select_policy" ON public.class_announcements
     )
   );
 
+DROP POLICY IF EXISTS "announcements_manage_policy" ON public.class_announcements;
 CREATE POLICY "announcements_manage_policy" ON public.class_announcements
   FOR ALL USING (
     teacher_id = auth.uid() OR public.is_admin()
@@ -974,6 +1131,7 @@ CREATE POLICY "announcements_manage_policy" ON public.class_announcements
     teacher_id = auth.uid() OR public.is_admin()
   );
 
+DROP POLICY IF EXISTS "class_materials_select_policy" ON public.class_materials;
 CREATE POLICY "class_materials_select_policy" ON public.class_materials
   FOR SELECT USING (
     teacher_id = auth.uid()
@@ -986,6 +1144,7 @@ CREATE POLICY "class_materials_select_policy" ON public.class_materials
     )
   );
 
+DROP POLICY IF EXISTS "class_materials_manage_policy" ON public.class_materials;
 CREATE POLICY "class_materials_manage_policy" ON public.class_materials
   FOR ALL USING (
     teacher_id = auth.uid() OR public.is_admin()
@@ -1052,3 +1211,257 @@ CREATE INDEX IF NOT EXISTS idx_chat_session ON public.session_chat_messages(sess
 ALTER TABLE public.class_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.session_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.session_chat_messages ENABLE ROW LEVEL SECURITY;
+
+-- Policies for class_sessions
+DROP POLICY IF EXISTS "Members can view class sessions" ON public.class_sessions;
+CREATE POLICY "Members can view class sessions"
+  ON public.class_sessions FOR SELECT
+  USING (
+    teacher_id = auth.uid() OR
+    public.is_classroom_member(classroom_id, auth.uid())
+  );
+
+DROP POLICY IF EXISTS "Teacher can create session" ON public.class_sessions;
+CREATE POLICY "Teacher can create session"
+  ON public.class_sessions FOR INSERT
+  WITH CHECK (
+    teacher_id = auth.uid() AND
+    public.is_classroom_teacher(classroom_id, auth.uid())
+  );
+
+DROP POLICY IF EXISTS "Teacher can update session" ON public.class_sessions;
+CREATE POLICY "Teacher can update session"
+  ON public.class_sessions FOR UPDATE
+  USING (teacher_id = auth.uid());
+
+-- Policies for session_participants
+DROP POLICY IF EXISTS "Session members can view participants" ON public.session_participants;
+CREATE POLICY "Session members can view participants"
+  ON public.session_participants FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.class_sessions s
+      WHERE s.id = session_id AND (
+        s.teacher_id = auth.uid() OR
+        public.is_classroom_member(s.classroom_id, auth.uid())
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Authorized users can join session" ON public.session_participants;
+CREATE POLICY "Authorized users can join session"
+  ON public.session_participants FOR INSERT
+  WITH CHECK (
+    user_id = auth.uid() AND
+    EXISTS (
+      SELECT 1 FROM public.class_sessions s
+      WHERE s.id = session_id AND (
+        s.teacher_id = auth.uid() OR
+        public.is_classroom_member(s.classroom_id, auth.uid())
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Users or Teacher can update participant" ON public.session_participants;
+CREATE POLICY "Users or Teacher can update participant"
+  ON public.session_participants FOR UPDATE
+  USING (
+    user_id = auth.uid() OR
+    EXISTS (
+      SELECT 1 FROM public.class_sessions s
+      WHERE s.id = session_id AND (s.teacher_id = auth.uid() OR public.is_admin())
+    )
+  )
+  WITH CHECK (
+    user_id = auth.uid() OR
+    EXISTS (
+      SELECT 1 FROM public.class_sessions s
+      WHERE s.id = session_id AND (s.teacher_id = auth.uid() OR public.is_admin())
+    )
+  );
+
+-- Trigger: Prevent participant self privilege escalation (Migration 15)
+CREATE OR REPLACE FUNCTION public.prevent_participant_privilege_escalation()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_is_teacher BOOLEAN := false;
+BEGIN
+  IF auth.uid() IS NOT NULL THEN
+    v_is_teacher := public.is_admin() OR EXISTS (
+      SELECT 1 FROM public.class_sessions s
+      WHERE s.id = OLD.session_id AND s.teacher_id = auth.uid()
+    );
+  END IF;
+
+  IF NOT v_is_teacher THEN
+    IF (NEW.is_mic_allowed IS DISTINCT FROM OLD.is_mic_allowed) THEN
+      RAISE EXCEPTION 'Quyền hạn bị từ chối: Chỉ giáo viên phụ trách phòng mới có quyền cấp quyền Micro.';
+    END IF;
+    IF (NEW.role IS DISTINCT FROM OLD.role) THEN
+      RAISE EXCEPTION 'Quyền hạn bị từ chối: Học viên không được phép tự thay đổi vai trò trong phòng học.';
+    END IF;
+    IF (NEW.attendance_status IS DISTINCT FROM OLD.attendance_status) THEN
+      RAISE EXCEPTION 'Quyền hạn bị từ chối: Học viên không được phép tự sửa trạng thái điểm danh.';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_prevent_participant_privilege_escalation ON public.session_participants;
+CREATE TRIGGER trg_prevent_participant_privilege_escalation
+  BEFORE UPDATE ON public.session_participants
+  FOR EACH ROW
+  EXECUTE FUNCTION public.prevent_participant_privilege_escalation();
+
+-- Policies for session_chat_messages
+DROP POLICY IF EXISTS "Participants can view chat messages" ON public.session_chat_messages;
+CREATE POLICY "Participants can view chat messages"
+  ON public.session_chat_messages FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.class_sessions s
+      WHERE s.id = session_id AND (
+        s.teacher_id = auth.uid() OR
+        public.is_classroom_member(s.classroom_id, auth.uid())
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Participants can send chat message" ON public.session_chat_messages;
+CREATE POLICY "Participants can send chat message"
+  ON public.session_chat_messages FOR INSERT
+  WITH CHECK (
+    sender_id = auth.uid() AND
+    EXISTS (
+      SELECT 1 FROM public.class_sessions s
+      WHERE s.id = session_id AND (
+        s.teacher_id = auth.uid() OR
+        (
+          s.is_chat_muted = false AND
+          public.is_classroom_member(s.classroom_id, auth.uid())
+        )
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Teacher can delete chat message" ON public.session_chat_messages;
+CREATE POLICY "Teacher can delete chat message"
+  ON public.session_chat_messages FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.class_sessions s
+      WHERE s.id = session_id AND s.teacher_id = auth.uid()
+    )
+  );
+
+-- =========================================================================
+-- 9. AUDIT LOGGING & ANTI-TAMPERING CONTROLS (PRODUCTION SECURITY HARDENING)
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  action TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'CLASSROOM',
+  severity TEXT NOT NULL DEFAULT 'INFO',
+  actor_id TEXT NOT NULL,
+  target_id TEXT NULL,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON public.audit_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_category ON public.audit_logs (category);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_id ON public.audit_logs (actor_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_target_id ON public.audit_logs (target_id);
+
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "audit_logs_insert_policy" ON public.audit_logs;
+CREATE POLICY "audit_logs_insert_policy" ON public.audit_logs
+  FOR INSERT WITH CHECK (
+    auth.uid() IS NOT NULL OR actor_id = 'anonymous' OR public.is_admin()
+  );
+
+DROP POLICY IF EXISTS "audit_logs_select_policy" ON public.audit_logs;
+CREATE POLICY "audit_logs_select_policy" ON public.audit_logs
+  FOR SELECT USING (
+    public.is_admin()
+    OR (
+      public.is_teacher() 
+      AND (
+        actor_id = auth.uid()::text
+        OR target_id IN (
+          SELECT id::text FROM public.classrooms WHERE teacher_id = auth.uid()
+        )
+      )
+    )
+  );
+
+-- Trigger: Prevent students from altering scores on assignment_submissions
+CREATE OR REPLACE FUNCTION public.prevent_student_self_grading()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (NEW.score IS DISTINCT FROM OLD.score 
+      OR NEW.graded_at IS DISTINCT FROM OLD.graded_at 
+      OR NEW.graded_by IS DISTINCT FROM OLD.graded_by
+      OR NEW.feedback IS DISTINCT FROM OLD.feedback) THEN
+    
+    IF auth.uid() IS NOT NULL AND NOT (
+      public.is_admin() OR EXISTS (
+        SELECT 1 
+        FROM public.assignments a
+        JOIN public.classrooms c ON a.classroom_id = c.id
+        WHERE a.id = NEW.assignment_id 
+          AND c.teacher_id = auth.uid()
+      )
+    ) THEN
+      RAISE EXCEPTION 'Quyền hạn bị từ chối: Học viên không được phép tự chấm điểm hoặc chỉnh sửa điểm bài nộp.';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_prevent_student_self_grading ON public.assignment_submissions;
+CREATE TRIGGER trg_prevent_student_self_grading
+  BEFORE UPDATE ON public.assignment_submissions
+  FOR EACH ROW
+  EXECUTE FUNCTION public.prevent_student_self_grading();
+
+-- =========================================================================
+-- 10. SUPABASE REALTIME REPLICATION CONFIGURATION
+-- =========================================================================
+
+-- Set REPLICA IDENTITY FULL to ensure UPDATE and DELETE events include old record values
+ALTER TABLE public.class_sessions REPLICA IDENTITY FULL;
+ALTER TABLE public.session_participants REPLICA IDENTITY FULL;
+ALTER TABLE public.session_chat_messages REPLICA IDENTITY FULL;
+ALTER TABLE public.community_posts REPLICA IDENTITY FULL;
+ALTER TABLE public.study_partners REPLICA IDENTITY FULL;
+ALTER TABLE public.classrooms REPLICA IDENTITY FULL;
+ALTER TABLE public.class_members REPLICA IDENTITY FULL;
+ALTER TABLE public.assignments REPLICA IDENTITY FULL;
+ALTER TABLE public.assignment_submissions REPLICA IDENTITY FULL;
+ALTER TABLE public.class_announcements REPLICA IDENTITY FULL;
+ALTER TABLE public.class_materials REPLICA IDENTITY FULL;
+
+-- Ensure tables are published to supabase_realtime
+DO $$
+BEGIN
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.class_sessions; EXCEPTION WHEN duplicate_object THEN END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.session_participants; EXCEPTION WHEN duplicate_object THEN END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.session_chat_messages; EXCEPTION WHEN duplicate_object THEN END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.community_posts; EXCEPTION WHEN duplicate_object THEN END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.study_partners; EXCEPTION WHEN duplicate_object THEN END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.classrooms; EXCEPTION WHEN duplicate_object THEN END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.class_members; EXCEPTION WHEN duplicate_object THEN END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.assignments; EXCEPTION WHEN duplicate_object THEN END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.assignment_submissions; EXCEPTION WHEN duplicate_object THEN END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.class_announcements; EXCEPTION WHEN duplicate_object THEN END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.class_materials; EXCEPTION WHEN duplicate_object THEN END;
+END $$;
+
+

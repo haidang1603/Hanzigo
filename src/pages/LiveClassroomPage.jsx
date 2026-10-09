@@ -44,6 +44,14 @@ import {
   setSessionActiveTool,
   updateLiveTeachingToolState,
   getSessionHistoryAndSummary,
+  setHanziViewMode as setLiveHanziViewMode,
+  updateSideHanziBoard,
+  toggleWhiteboardStudentDrawing,
+  linkHanziToStrokeBoard,
+  linkVocabToQuiz,
+  linkPinyinToPronunciationChallenge,
+  linkVocabToGrammar,
+  linkListeningToGrammar,
   LiveRoomMediaManager,
   liveEventBus
 } from '../services/liveClassroomService';
@@ -145,6 +153,8 @@ export default function LiveClassroomPage({
     };
   }, []);
 
+  const currentUserId = user?.uid || user?.id;
+
   // 2. VERIFY ACCESS & JOIN SESSION
   const initSession = useCallback(async () => {
     setAuthChecking(true);
@@ -181,6 +191,14 @@ export default function LiveClassroomPage({
     setParticipants(partList);
     setChatMessages(msgList);
     setTeachingState(tState);
+    if (tState?.hanzi_view_mode) {
+      setHanziViewMode(tState.hanzi_view_mode);
+    }
+    if (tState?.side_board_state) {
+      setHanziBoardInput(tState.side_board_state.char || '你好');
+      setHanziPinyin(tState.side_board_state.pinyin || 'nǐ hǎo');
+      setHanziMeaning(tState.side_board_state.meaning || 'Xin chào');
+    }
 
     setAuthChecking(false);
 
@@ -188,18 +206,29 @@ export default function LiveClassroomPage({
     if (check.role === 'teacher') {
       mediaManagerRef.current?.startMedia({ video: true, audio: true });
     }
-  }, [sessionId, user]);
+  }, [sessionId, currentUserId]);
 
   useEffect(() => {
     initSession();
 
-    // Cleanup on unmount (Leave room)
-    return () => {
-      if (user) {
-        leaveLiveSession(sessionId, user.uid || user.id);
+    const handleBeforeUnload = () => {
+      mediaManagerRef.current?.stopAll();
+      if (currentUserId) {
+        leaveLiveSession(sessionId, currentUserId);
       }
     };
-  }, [initSession, sessionId, user]);
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup on unmount (Leave room & release camera/mic)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      mediaManagerRef.current?.stopAll();
+      if (currentUserId) {
+        leaveLiveSession(sessionId, currentUserId);
+      }
+    };
+  }, [initSession, sessionId, currentUserId]);
 
   // 3. ATTACH MEDIA STREAMS TO VIDEO TAGS
   useEffect(() => {
@@ -219,18 +248,31 @@ export default function LiveClassroomPage({
   }, [mediaState.localStream, myRole]);
 
   // Leave room action
-  const handleLeave = useCallback(() => {
+  const handleLeave = useCallback(async () => {
     playClickSound();
     mediaManagerRef.current?.stopAll();
+
+    if (myRole === 'teacher') {
+      const confirmEnd = window.confirm(
+        'Bạn là giáo viên phụ trách phòng học.\n\nNhấn "OK" để KẾT THÚC buổi học cho tất cả học viên (lưu điểm danh & tổng kết).\nNhấn "Cancel" để chỉ rời phòng tạm thời.'
+      );
+      if (confirmEnd) {
+        await endLiveSession(sessionId, user?.uid || user?.id);
+        if (onNavigateBack) onNavigateBack();
+        else window.location.hash = `#classroom/${classId}`;
+        return;
+      }
+    }
+
     if (user) {
-      leaveLiveSession(sessionId, user.uid || user.id);
+      await leaveLiveSession(sessionId, user.uid || user.id);
     }
     if (onNavigateBack) {
       onNavigateBack();
     } else {
       window.location.hash = `#classroom/${classId}`;
     }
-  }, [classId, onNavigateBack, sessionId, user]);
+  }, [classId, myRole, onNavigateBack, sessionId, user]);
 
   // 4. REALTIME EVENT BUS LISTENER (Chỉ subscribe khi đã xác thực quyền truy cập phòng)
   useEffect(() => {
@@ -366,6 +408,25 @@ export default function LiveClassroomPage({
           setTeachingState(prev => ({
             ...(prev || {}),
             whiteboard_state: { operations: [] }
+          }));
+          break;
+
+        case 'HANZI_VIEW_MODE_CHANGED':
+          setHanziViewMode(event.viewMode);
+          break;
+
+        case 'SIDE_HANZI_UPDATED':
+          if (event.sideBoard) {
+            setHanziBoardInput(event.sideBoard.char || '');
+            setHanziPinyin(event.sideBoard.pinyin || '');
+            setHanziMeaning(event.sideBoard.meaning || '');
+          }
+          break;
+
+        case 'WHITEBOARD_PERMISSION_CHANGED':
+          setTeachingState(prev => ({
+            ...(prev || {}),
+            whiteboard_permissions: event.permissions
           }));
           break;
 
@@ -530,6 +591,32 @@ export default function LiveClassroomPage({
         }
       }));
     }
+  };
+
+  const handleToggleHanziMode = async (mode) => {
+    playClickSound();
+    setHanziViewMode(mode);
+    if (myRole === 'teacher') {
+      await setLiveHanziViewMode(sessionId, user?.uid || user?.id, mode);
+    }
+  };
+
+  const handleApplySideHanzi = async () => {
+    playClickSound();
+    if (myRole !== 'teacher') return;
+    await updateSideHanziBoard(sessionId, user?.uid || user?.id, {
+      char: hanziBoardInput,
+      pinyin: hanziPinyin,
+      meaning: hanziMeaning
+    });
+    showToast('✨ Đã đồng bộ bảng phụ trợ Hán tự cho toàn lớp!');
+  };
+
+  const handleToggleWhiteboardDrawing = async (allowed) => {
+    playClickSound();
+    if (myRole !== 'teacher') return;
+    await toggleWhiteboardStudentDrawing(sessionId, user?.uid || user?.id, allowed);
+    showToast(allowed ? '✏️ Đã cho phép học viên vẽ trên bảng trắng.' : '🔒 Đã khóa quyền vẽ bảng trắng của học viên.');
   };
 
   const handleOpenSummaryModal = async () => {
@@ -710,7 +797,7 @@ export default function LiveClassroomPage({
                   <span className="text-[11px] font-bold text-white/60">Chế độ hiển thị:</span>
                   <div className="flex items-center gap-1 p-0.5 rounded-xl bg-white/5 border border-white/10">
                     <button
-                      onClick={() => setHanziViewMode('board')}
+                      onClick={() => handleToggleHanziMode('board')}
                       className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
                         hanziViewMode === 'board' ? 'bg-[#E85D3F] text-white shadow-sm' : 'text-white/60 hover:text-white'
                       }`}
@@ -718,7 +805,7 @@ export default function LiveClassroomPage({
                       🀄 Phân tích chữ Hán (Board)
                     </button>
                     <button
-                      onClick={() => setHanziViewMode('stroke')}
+                      onClick={() => handleToggleHanziMode('stroke')}
                       className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
                         hanziViewMode === 'stroke' ? 'bg-[#E85D3F] text-white shadow-sm' : 'text-white/60 hover:text-white'
                       }`}
@@ -755,14 +842,22 @@ export default function LiveClassroomPage({
                   hanziViewMode === 'board' ? (
                     <InteractiveHanziBoard
                       isTeacher={myRole === 'teacher'}
+                      user={user}
+                      sessionId={sessionId}
                       hanziState={teachingState?.hanzi_state}
                       onUpdateState={(st) => handleUpdateToolState('hanzi', st)}
+                      onLinkToStroke={(ch) => linkHanziToStrokeBoard(sessionId, user?.uid || user?.id, ch)}
+                      onSendToSideBoard={(char, pinyin, meaning) => updateSideHanziBoard(sessionId, user?.uid || user?.id, { char, pinyin, meaning })}
+                      onLinkToVocab={() => handleSwitchTool('vocabulary')}
                     />
                   ) : (
                     <HanziStrokeOrderBoard
                       isTeacher={myRole === 'teacher'}
+                      user={user}
+                      sessionId={sessionId}
                       strokeState={teachingState?.stroke_state}
                       onUpdateState={(st) => handleUpdateToolState('stroke', st)}
+                      onBackToHanziBoard={() => handleToggleHanziMode('board')}
                     />
                   )
                 )}
@@ -770,8 +865,11 @@ export default function LiveClassroomPage({
                 {teachingState?.active_tool === 'pinyin' && (
                   <PinyinToneBoard
                     isTeacher={myRole === 'teacher'}
+                    user={user}
+                    sessionId={sessionId}
                     pinyinState={teachingState?.pinyin_state}
                     onUpdateState={(st) => handleUpdateToolState('pinyin', st)}
+                    onLinkToPronunciation={(pData) => linkPinyinToPronunciationChallenge(sessionId, user?.uid || user?.id, pData)}
                   />
                 )}
 
@@ -782,6 +880,8 @@ export default function LiveClassroomPage({
                     sessionId={sessionId}
                     vocabState={teachingState?.vocabulary_state}
                     onUpdateState={(st) => handleUpdateToolState('vocabulary', st)}
+                    onLinkToQuiz={(v) => linkVocabToQuiz(sessionId, user?.uid || user?.id, v)}
+                    onLinkToGrammar={(v) => linkVocabToGrammar(sessionId, user?.uid || user?.id, v)}
                   />
                 )}
 
@@ -802,6 +902,7 @@ export default function LiveClassroomPage({
                     sessionId={sessionId}
                     quizState={teachingState?.quiz_state}
                     onUpdateState={(st) => handleUpdateToolState('quiz', st)}
+                    onBackToVocab={() => handleSwitchTool('vocabulary')}
                   />
                 )}
 
@@ -812,6 +913,7 @@ export default function LiveClassroomPage({
                     sessionId={sessionId}
                     listeningState={teachingState?.listening_state}
                     onUpdateState={(st) => handleUpdateToolState('listening', st)}
+                    onLinkToGrammar={(lData) => linkListeningToGrammar(sessionId, user?.uid || user?.id, lData)}
                   />
                 )}
 
@@ -831,6 +933,8 @@ export default function LiveClassroomPage({
                     user={user}
                     sessionId={sessionId}
                     whiteboardState={teachingState?.whiteboard_state}
+                    whiteboardPermissions={teachingState?.whiteboard_permissions}
+                    onToggleStudentDrawing={handleToggleWhiteboardDrawing}
                     onUpdateState={(st) => handleUpdateToolState('whiteboard', st)}
                   />
                 )}
@@ -1366,28 +1470,41 @@ export default function LiveClassroomPage({
               {/* Quick Input (Teacher can change character on the fly) */}
               {myRole === 'teacher' && (
                 <div className="space-y-2 pt-2">
-                  <span className="text-[11px] font-bold text-white/70">Thay đổi chữ hiển thị:</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-white/70">Thay đổi chữ hiển thị:</span>
+                    <button
+                      onClick={handleApplySideHanzi}
+                      className="px-2.5 py-1 rounded-lg bg-[#E85D3F] hover:bg-[#D44C2E] text-white font-bold text-[11px] transition-all flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
+                      title="Phát sóng chữ này đến tất cả học viên trong phòng"
+                    >
+                      <Sparkles size={11} />
+                      <span>Đồng bộ lớp</span>
+                    </button>
+                  </div>
                   <div className="grid grid-cols-3 gap-2">
                     <input
                       type="text"
                       value={hanziBoardInput}
                       onChange={(e) => setHanziBoardInput(e.target.value)}
+                      onBlur={handleApplySideHanzi}
                       placeholder="Chữ Hán"
-                      className="px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/15 text-xs text-white text-center"
+                      className="px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/15 text-xs text-white text-center focus:outline-hidden focus:border-[#E85D3F]"
                     />
                     <input
                       type="text"
                       value={hanziPinyin}
                       onChange={(e) => setHanziPinyin(e.target.value)}
+                      onBlur={handleApplySideHanzi}
                       placeholder="Pinyin"
-                      className="px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/15 text-xs text-white text-center"
+                      className="px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/15 text-xs text-white text-center focus:outline-hidden focus:border-[#E85D3F]"
                     />
                     <input
                       type="text"
                       value={hanziMeaning}
                       onChange={(e) => setHanziMeaning(e.target.value)}
+                      onBlur={handleApplySideHanzi}
                       placeholder="Nghĩa"
-                      className="px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/15 text-xs text-white text-center"
+                      className="px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/15 text-xs text-white text-center focus:outline-hidden focus:border-[#E85D3F]"
                     />
                   </div>
                 </div>

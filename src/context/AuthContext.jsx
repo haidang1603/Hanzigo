@@ -8,7 +8,8 @@ import {
   getUserProfile,
   isValidUuid,
   isEmailAdmin,
-  ADMIN_EMAILS
+  ADMIN_EMAILS,
+  flushPendingAuditLogs
 } from '../services';
 
 const AuthContext = createContext(null);
@@ -141,9 +142,31 @@ export function AuthProvider({ children }) {
 
     initAuth();
 
+    const handleOnline = async () => {
+      try {
+        await flushPendingAuditLogs();
+      } catch {}
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user && isMounted) {
+            await syncProfile(session.user);
+          }
+        } catch {}
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleOnline);
+    }
+
     return () => {
       isMounted = false;
       if (subscription) subscription.unsubscribe();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', handleOnline);
+      }
     };
   }, [syncProfile]);
 

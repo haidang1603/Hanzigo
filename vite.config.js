@@ -34,7 +34,14 @@ function localAiTutorDevPlugin() {
                 return;
               }
 
-              const body = JSON.parse(bodyStr || '{}');
+              let body;
+              try {
+                body = JSON.parse(bodyStr || '{}');
+              } catch {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Dữ liệu JSON không hợp lệ.' }));
+                return;
+              }
               const { userText, hskLevel = 'HSK 1', conversationHistory = [] } = body;
 
               if (!userText || typeof userText !== 'string' || !userText.trim()) {
@@ -100,9 +107,8 @@ Chỉ trả về chuỗi JSON thuần túy.`;
               });
 
               if (!gRes.ok) {
-                const errData = await gRes.json().catch(() => ({}));
-                res.statusCode = gRes.status;
-                res.end(JSON.stringify({ error: errData?.error?.message || 'Gemini error' }));
+                res.statusCode = 502;
+                res.end(JSON.stringify({ error: 'Dịch vụ AI phản hồi không thành công. Vui lòng thử lại sau.' }));
                 return;
               }
 
@@ -111,8 +117,9 @@ Chỉ trả về chuỗi JSON thuần túy.`;
               res.statusCode = 200;
               res.end(rawText || '{}');
             } catch (err) {
+              console.error('Local dev chat error:', err.message);
               res.statusCode = 500;
-              res.end(JSON.stringify({ error: err.message }));
+              res.end(JSON.stringify({ error: 'Đã xảy ra lỗi nội bộ khi xử lý hội thoại AI.' }));
             }
           });
           return;
@@ -145,7 +152,14 @@ Chỉ trả về chuỗi JSON thuần túy.`;
                 return;
               }
 
-              const body = JSON.parse(bodyStr || '{}');
+              let body;
+              try {
+                body = JSON.parse(bodyStr || '{}');
+              } catch {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Dữ liệu JSON không hợp lệ.' }));
+                return;
+              }
               const { action, payload } = body;
 
               if (!action || !payload) {
@@ -196,9 +210,8 @@ Chỉ trả về chuỗi JSON thuần túy.`;
               });
 
               if (!gRes.ok) {
-                const errData = await gRes.json().catch(() => ({}));
-                res.statusCode = gRes.status;
-                res.end(JSON.stringify({ error: errData?.error?.message || 'Gemini error' }));
+                res.statusCode = 502;
+                res.end(JSON.stringify({ error: 'Dịch vụ AI phản hồi không thành công. Vui lòng thử lại sau.' }));
                 return;
               }
 
@@ -207,10 +220,122 @@ Chỉ trả về chuỗi JSON thuần túy.`;
               res.statusCode = 200;
               res.end(rawText || '{}');
             } catch (err) {
+              console.error('Local dev teacher error:', err.message);
               res.statusCode = 500;
-              res.end(JSON.stringify({ error: err.message }));
+              res.end(JSON.stringify({ error: 'Đã xảy ra lỗi nội bộ khi xử lý yêu cầu AI Giáo viên.' }));
             }
           });
+          return;
+        }
+
+        if (req.url === '/api/ai/coach' && req.method === 'POST') {
+          const env = loadEnv('', process.cwd(), '');
+          const apiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+
+          res.setHeader('Content-Type', 'application/json');
+
+          let bodyStr = '';
+          req.on('data', chunk => { bodyStr += chunk; });
+          req.on('end', async () => {
+            try {
+              // Auth validation
+              const authHeader = req.headers['authorization'] || req.headers['x-authorization'];
+              const userIdHeader = req.headers['x-user-id'] || req.headers['x-auth-uid'];
+              if (!authHeader && !userIdHeader) {
+                res.statusCode = 401;
+                res.end(JSON.stringify({ error: 'Yêu cầu chưa được xác thực. Vui lòng đăng nhập.' }));
+                return;
+              }
+
+              let body;
+              try {
+                body = JSON.parse(bodyStr || '{}');
+              } catch {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Dữ liệu JSON không hợp lệ.' }));
+                return;
+              }
+
+              const { action, payload } = body;
+              if (!action || !payload || typeof payload !== 'object') {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Missing action or payload in request body.' }));
+                return;
+              }
+
+              if (payload.password || payload.token) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Payload must not contain credentials.' }));
+                return;
+              }
+
+              const payloadStr = JSON.stringify(payload);
+              const isAbusive = /ignore\s+(all\s+)?(previous|prior)\s+instructions|system\s+prompt\s+override|drop\s+table/i.test(payloadStr);
+              if (isAbusive) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Nội dung chứa cú pháp không hợp lệ.' }));
+                return;
+              }
+
+              if (!apiKey) {
+                res.statusCode = 503;
+                res.end(JSON.stringify({
+                  error: 'GEMINI_API_KEY is not configured in local environment.'
+                }));
+                return;
+              }
+
+              const SYSTEM_PROMPT_COACH = `Bạn là Lão Sư HanziGo — Cố vấn Học tập AI Sư phạm cho người Việt học tiếng Trung HSK 3.0. BẮT BUỘC trả về JSON với các trường: summary, weaknesses, recommendedLessons, dailyPlan, reasoning.`;
+              const userPrompt = `Phân tích hồ sơ: HSK ${payload.hskLevel || 'HSK 1'}, streak ${payload.streak || 0}, srsDue ${payload.srsDueCount || 0}. Tạo kế hoạch học ${payload.durationMinutes || 15} phút.`;
+
+              const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+              const gRes = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{ role: 'user', parts: [{ text: `${SYSTEM_PROMPT_COACH}\n${userPrompt}` }] }],
+                  generationConfig: { temperature: 0.6, maxOutputTokens: 1200, responseMimeType: 'application/json' }
+                })
+              });
+
+              if (!gRes.ok) {
+                res.statusCode = 502;
+                res.end(JSON.stringify({ error: 'Dịch vụ AI phản hồi không thành công.' }));
+                return;
+              }
+
+              const data = await gRes.json();
+              const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+              res.statusCode = 200;
+              res.end(rawText || '{}');
+            } catch (err) {
+              console.error('Local dev coach error:', err.message);
+              res.statusCode = 500;
+              res.end(JSON.stringify({ error: 'Lỗi nội bộ máy chủ khi xử lý AI Coach.' }));
+            }
+          });
+          return;
+        }
+
+        if (req.url === '/api/webrtc/ice-servers') {
+          res.setHeader('Content-Type', 'application/json');
+          const authHeader = req.headers['authorization'] || req.headers['x-authorization'];
+          const userIdHeader = req.headers['x-user-id'] || req.headers['x-auth-uid'];
+          if (!authHeader && !userIdHeader) {
+            res.statusCode = 401;
+            res.end(JSON.stringify({ error: 'Yêu cầu chưa được xác thực. Vui lòng đăng nhập.' }));
+            return;
+          }
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun2.l.google.com:19302' }
+            ],
+            ttl: 86400,
+            type: 'stun_only'
+          }));
           return;
         }
         next();
@@ -244,6 +369,15 @@ export default defineConfig({
               return 'vendor-confetti';
             }
             return 'vendor-deps';
+          }
+          if (id.includes('curriculumLessons')) {
+            return 'data-curriculum';
+          }
+          if (id.includes('chineseData')) {
+            return 'data-chinese';
+          }
+          if (id.includes('learningPathData')) {
+            return 'data-learning-path';
           }
         }
       }

@@ -19,7 +19,8 @@ export default function LiveQuizBoard({
   user,
   sessionId,
   quizState = {},
-  onUpdateState: _onUpdateState
+  onUpdateState: _onUpdateState,
+  onBackToVocab
 }) {
   const quiz = quizState || {
     id: 'quiz-1',
@@ -110,9 +111,19 @@ export default function LiveQuizBoard({
           </p>
         </div>
 
-        {/* Teacher Controls: Start / End Quiz */}
+        {/* Teacher Controls: Start / End Quiz & Bridge Back */}
         {isTeacher && (
           <div className="flex items-center gap-2">
+            {onBackToVocab && (
+              <button
+                onClick={onBackToVocab}
+                className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer border border-white/10"
+                title="Chữa bài hoặc quay lại Bảng từ vựng"
+              >
+                <span>← Trở lại Từ vựng</span>
+              </button>
+            )}
+
             {quiz.status !== 'active' ? (
               <button
                 onClick={handleStartQuiz}

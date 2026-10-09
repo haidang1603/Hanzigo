@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { isValidUuid } from './authService.js';
 import { getClassroomById, getClassMembers } from './classroomService.js';
 import { evaluateRealPronunciation } from '../utils/pronunciationEvaluator.js';
+import { recordAuditLog, AUDIT_CATEGORIES, AUDIT_SEVERITY } from './auditLogService.js';
 
 // Keys for local simulation fallback
 const LIVE_STORAGE_KEYS = {
@@ -9,7 +10,8 @@ const LIVE_STORAGE_KEYS = {
   PARTICIPANTS: 'hanzigo_session_participants_store',
   CHAT: 'hanzigo_session_chat_store',
   TEACHING_STATE: 'hanzigo_session_teaching_state_store',
-  SESSION_HISTORY: 'hanzigo_session_history_store'
+  SESSION_HISTORY: 'hanzigo_session_history_store',
+  OUTCOMES: 'hanzigo_session_learning_outcomes_store'
 };
 
 // In-memory store fallback for test environments
@@ -34,33 +36,221 @@ function setLiveItem(key, data) {
   liveMemoryStore.set(key, data);
 }
 
-// Global In-app Event Bus for Realtime Simulation (Fallback when Supabase Realtime is offline)
+// Global Event Bus supporting local in-memory listeners and cross-device Supabase Realtime Channels
 class LiveEventBus {
   constructor() {
     this.listeners = new Map();
+    this.channels = new Map();
+  }
+
+  getOrCreateChannel(sessionId) {
+    if (!isSupabaseConfigured || !supabase || !sessionId) return null;
+    let ch = this.channels.get(sessionId);
+    if (!ch) {
+      try {
+        ch = supabase.channel(`classroom_live_${sessionId}`, {
+          config: { broadcast: { self: false } }
+        });
+
+        // 1. Broadcast peer events (low-latency whiteboard, actions)
+        ch.on('broadcast', { event: 'live_event' }, (envelope) => {
+          const payload = envelope?.payload;
+          if (!payload) return;
+          const subs = this.listeners.get(sessionId);
+          if (subs) {
+            subs.forEach(cb => {
+              try { cb(payload); } catch (e) { console.error('LiveEventBus realtime listener error:', e); }
+            });
+          }
+        });
+
+        // 2. Realtime Database changes: session_chat_messages
+        ch.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'session_chat_messages', filter: `session_id=eq.${sessionId}` },
+          (payload) => {
+            const subs = this.listeners.get(sessionId);
+            if (!subs) return;
+            if (payload.eventType === 'INSERT' && payload.new) {
+              const msg = payload.new;
+              const event = {
+                type: 'NEW_CHAT_MESSAGE',
+                message: {
+                  id: msg.id,
+                  session_id: msg.session_id,
+                  sender_id: msg.sender_id,
+                  sender_name: msg.sender_name || 'Người dùng',
+                  sender_role: msg.sender_role || 'student',
+                  message: msg.content || msg.message,
+                  created_at: msg.created_at
+                }
+              };
+              subs.forEach(cb => { try { cb(event); } catch (e) { console.error(e); } });
+            } else if (payload.eventType === 'UPDATE' && payload.new) {
+              if (payload.new.is_deleted) {
+                const event = { type: 'CHAT_MESSAGE_DELETED', messageId: payload.new.id };
+                subs.forEach(cb => { try { cb(event); } catch (e) { console.error(e); } });
+              }
+            }
+          }
+        );
+
+        // 3. Realtime Database changes: session_participants (hand raises, mic permissions, attendance)
+        ch.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'session_participants', filter: `session_id=eq.${sessionId}` },
+          (payload) => {
+            const subs = this.listeners.get(sessionId);
+            if (!subs) return;
+            const newRow = payload.new;
+            const oldRow = payload.old;
+
+            if (payload.eventType === 'INSERT' && newRow) {
+              subs.forEach(cb => {
+                try { cb({ type: 'USER_JOINED', user: newRow }); } catch (e) { console.error(e); }
+              });
+            } else if (payload.eventType === 'DELETE') {
+              subs.forEach(cb => {
+                try { cb({ type: 'USER_LEFT', userId: oldRow?.user_id }); } catch (e) { console.error(e); }
+              });
+            } else if (payload.eventType === 'UPDATE' && newRow) {
+              if (newRow.hand_raised && (!oldRow || !oldRow.hand_raised)) {
+                subs.forEach(cb => {
+                  try { cb({ type: 'HAND_RAISED', userId: newRow.user_id, timestamp: newRow.hand_raised_at }); } catch (e) { console.error(e); }
+                });
+              } else if (!newRow.hand_raised && oldRow?.hand_raised) {
+                subs.forEach(cb => {
+                  try { cb({ type: 'HAND_LOWERED', userId: newRow.user_id }); } catch (e) { console.error(e); }
+                });
+              }
+
+              if (newRow.is_mic_allowed && (!oldRow || !oldRow.is_mic_allowed)) {
+                subs.forEach(cb => {
+                  try { cb({ type: 'MIC_PERMISSION_GRANTED', studentId: newRow.user_id }); } catch (e) { console.error(e); }
+                });
+              } else if (!newRow.is_mic_allowed && oldRow?.is_mic_allowed) {
+                subs.forEach(cb => {
+                  try { cb({ type: 'MIC_PERMISSION_REVOKED', studentId: newRow.user_id }); } catch (e) { console.error(e); }
+                });
+              }
+
+              subs.forEach(cb => {
+                try { cb({ type: 'MEDIA_STATE_CHANGED', participant: newRow }); } catch (e) { console.error(e); }
+              });
+            }
+          }
+        );
+
+        // 4. Realtime Database changes: class_sessions (session ended, room locked, chat mute)
+        ch.on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'class_sessions', filter: `id=eq.${sessionId}` },
+          (payload) => {
+            const subs = this.listeners.get(sessionId);
+            if (!subs || !payload.new) return;
+            const newRow = payload.new;
+            const oldRow = payload.old;
+
+            if (newRow.status === 'ended') {
+              subs.forEach(cb => {
+                try { cb({ type: 'SESSION_ENDED' }); } catch (e) { console.error(e); }
+              });
+            }
+
+            if (oldRow && newRow.is_locked !== oldRow.is_locked) {
+              subs.forEach(cb => {
+                try { cb({ type: 'ROOM_LOCK_CHANGED', isLocked: newRow.is_locked }); } catch (e) { console.error(e); }
+              });
+            }
+
+            if (oldRow && newRow.is_chat_muted !== oldRow.is_chat_muted) {
+              subs.forEach(cb => {
+                try { cb({ type: 'CHAT_MUTE_CHANGED', isChatMuted: newRow.is_chat_muted }); } catch (e) { console.error(e); }
+              });
+            }
+          }
+        );
+
+        ch.subscribe((status, err) => {
+          if (err) {
+            console.warn(`Supabase Realtime channel status error [${sessionId}]:`, err);
+          }
+        });
+        this.channels.set(sessionId, ch);
+      } catch (err) {
+        console.warn('Failed to initialize Supabase Realtime channel:', err);
+      }
+    }
+    return ch;
   }
 
   subscribe(sessionId, callback) {
+    if (!sessionId || typeof callback !== 'function') return () => {};
     if (!this.listeners.has(sessionId)) {
       this.listeners.set(sessionId, new Set());
     }
     this.listeners.get(sessionId).add(callback);
+
+    this.getOrCreateChannel(sessionId);
+
     return () => {
-      this.listeners.get(sessionId)?.delete(callback);
+      const set = this.listeners.get(sessionId);
+      if (set) {
+        set.delete(callback);
+        if (set.size === 0) {
+          this.listeners.delete(sessionId);
+          const ch = this.channels.get(sessionId);
+          if (ch && isSupabaseConfigured && supabase) {
+            try {
+              supabase.removeChannel(ch);
+            } catch (e) {
+              console.warn('Error removing Supabase realtime channel:', e);
+            }
+            this.channels.delete(sessionId);
+          }
+        }
+      }
     };
   }
 
   broadcast(sessionId, event) {
+    if (!sessionId || !event) return;
+
+    // 1. Local subscribers dispatch (instant UI update in current tab)
     const subs = this.listeners.get(sessionId);
     if (subs) {
       subs.forEach(cb => {
         try { cb(event); } catch (e) { console.error('LiveEventBus listener error:', e); }
       });
     }
+
+    // 2. Realtime broadcast across remote devices/sessions
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const ch = this.getOrCreateChannel(sessionId);
+        if (ch) {
+          ch.send({
+            type: 'broadcast',
+            event: 'live_event',
+            payload: event
+          });
+        }
+      } catch (err) {
+        console.warn('Supabase Realtime broadcast send error:', err);
+      }
+    }
   }
 }
 
 export const liveEventBus = new LiveEventBus();
+
+export function subscribeToLiveRoom(sessionId, callback) {
+  return liveEventBus.subscribe(sessionId, callback);
+}
+
+export function broadcastLiveEvent(sessionId, event) {
+  return liveEventBus.broadcast(sessionId, event);
+}
 
 // =========================================================================
 // 1. CLASS SESSIONS (LIFECYCLE & ACCESS CONTROL)
@@ -102,8 +292,16 @@ export async function createClassSession({ classroomId, teacherId, title }) {
   };
 
   // Supabase implementation
+  let createdSession = null;
   if (isSupabaseConfigured && supabase && isValidUuid(classroomId) && isValidUuid(teacherId)) {
     try {
+      // Mark any prior live sessions for this classroom as ended in Supabase
+      await supabase
+        .from('class_sessions')
+        .update({ status: 'ended', ended_at: new Date().toISOString() })
+        .eq('classroom_id', classroomId)
+        .eq('status', 'live');
+
       const { data, error } = await supabase
         .from('class_sessions')
         .insert({
@@ -116,32 +314,38 @@ export async function createClassSession({ classroomId, teacherId, title }) {
         .select()
         .single();
 
-      if (error) throw error;
-      return { success: true, session: data };
+      if (!error && data) {
+        createdSession = { ...newSession, ...data, id: data.id };
+      }
     } catch (err) {
       console.warn('Supabase createClassSession notice, using local store:', err);
     }
   }
 
-  // Local fallback
+  const sessionToSave = createdSession || newSession;
+
+  // Always mirror in local storage for instant sync and offline resilience
   const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
-  // End any previously live sessions for this classroom
   const updatedSessions = sessions.map(s => 
     s.classroom_id === classroomId && s.status === 'live' 
       ? { ...s, status: 'ended', ended_at: new Date().toISOString() } 
       : s
   );
-  updatedSessions.unshift(newSession);
+  updatedSessions.unshift(sessionToSave);
   setLiveItem(LIVE_STORAGE_KEYS.SESSIONS, updatedSessions);
 
-  return { success: true, session: newSession };
+  return { success: true, session: sessionToSave };
 }
 
 /**
  * Get active live session for a classroom
+ * Features stale duration timeout & presence verification
  */
 export async function getActiveSessionForClass(classroomId) {
   if (!classroomId) return null;
+
+  const now = Date.now();
+  const MAX_SESSION_DURATION_MS = 2.5 * 60 * 60 * 1000; // 2.5 hours max session lifetime
 
   if (isSupabaseConfigured && supabase && isValidUuid(classroomId)) {
     try {
@@ -154,12 +358,34 @@ export async function getActiveSessionForClass(classroomId) {
         .limit(1)
         .maybeSingle();
 
-      if (!error && data) return data;
+      if (!error && data) {
+        const sessionAgeMs = now - new Date(data.created_at || data.started_at || 0).getTime();
+        if (sessionAgeMs > MAX_SESSION_DURATION_MS) {
+          try {
+            await supabase
+              .from('class_sessions')
+              .update({ status: 'ended', ended_at: new Date().toISOString() })
+              .eq('id', data.id);
+          } catch {}
+          return null;
+        }
+        return data;
+      }
     } catch {}
   }
 
   const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
-  return sessions.find(s => s.classroom_id === classroomId && s.status === 'live') || null;
+  const liveSession = sessions.find(s => s.classroom_id === classroomId && s.status === 'live');
+  if (!liveSession) return null;
+
+  // Stale duration validation (> 2.5 hours auto-ended)
+  const startTime = new Date(liveSession.started_at || liveSession.created_at || 0).getTime();
+  if (now - startTime > MAX_SESSION_DURATION_MS) {
+    endLiveSession(liveSession.id, 'system_cleanup');
+    return null;
+  }
+
+  return liveSession;
 }
 
 /**
@@ -172,20 +398,29 @@ export async function getSessionById(sessionId) {
     try {
       const { data, error } = await supabase
         .from('class_sessions')
-        .select(`
-          *,
-          classroom:classroom_id(id, name, teacher_id, hsk_level)
-        `)
+        .select('*')
         .eq('id', sessionId)
-        .single();
+        .maybeSingle();
 
       if (!error && data) {
+        // Cache in local store for resilience
+        const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
+        const idx = sessions.findIndex(s => s.id === sessionId);
+        if (idx >= 0) {
+          sessions[idx] = { ...sessions[idx], ...data };
+        } else {
+          sessions.unshift(data);
+        }
+        setLiveItem(LIVE_STORAGE_KEYS.SESSIONS, sessions);
+
         return {
           ...data,
-          classroom_name: data.classroom?.name || 'Lớp học'
+          classroom_name: data.classroom_name || data.title || 'Lớp học'
         };
       }
-    } catch {}
+    } catch (err) {
+      console.warn('Supabase getSessionById fallback to local store:', err);
+    }
   }
 
   const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
@@ -210,14 +445,39 @@ export async function verifySessionAccess(sessionId, user) {
     return { allowed: false, reason: 'Phiên học không tồn tại hoặc đã kết thúc.' };
   }
 
+  const userId = user.uid || user.id || user.userId;
+  const isTeacherUser = session.teacher_id === userId || user.role === 'admin' || session.teacher_id === 'user_teacher_demo';
+
   if (session.status === 'ended') {
+    // If user is the designated Teacher of the session or System Admin,
+    // and session was created/active recently (< 2.5 hours), let teacher resume or reopen it!
+    const sessionAge = Date.now() - new Date(session.created_at || session.started_at || 0).getTime();
+    if (isTeacherUser && sessionAge < 2.5 * 60 * 60 * 1000) {
+      session.status = 'live';
+      session.ended_at = null;
+      // Mirror update to local store
+      const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
+      const idx = sessions.findIndex(s => s.id === sessionId);
+      if (idx >= 0) {
+        sessions[idx] = { ...sessions[idx], status: 'live', ended_at: null };
+        setLiveItem(LIVE_STORAGE_KEYS.SESSIONS, sessions);
+      }
+      if (isSupabaseConfigured && supabase && isValidUuid(sessionId)) {
+        supabase
+          .from('class_sessions')
+          .update({ status: 'live', ended_at: null })
+          .eq('id', sessionId)
+          .then(() => {})
+          .catch(() => {});
+      }
+      return { allowed: true, role: 'teacher', session };
+    }
+
     return { allowed: false, reason: 'Lớp học trực tuyến này đã kết thúc.', session };
   }
 
-  const userId = user.uid || user.id || user.userId;
-
   // 1. If user is the designated Teacher of the session or System Admin
-  if (session.teacher_id === userId || user.role === 'admin') {
+  if (isTeacherUser) {
     return { allowed: true, role: 'teacher', session };
   }
 
@@ -226,6 +486,14 @@ export async function verifySessionAccess(sessionId, user) {
   const isEnrolled = members.some(m => m.student_id === userId && m.status === 'active');
 
   if (!isEnrolled) {
+    recordAuditLog({
+      action: 'SECURITY_UNAUTHORIZED_CLASSROOM_ACCESS',
+      category: AUDIT_CATEGORIES.SECURITY,
+      severity: AUDIT_SEVERITY.WARN,
+      actorId: userId,
+      targetId: session.classroom_id,
+      metadata: { sessionId, reason: 'Non-enrolled user attempted to join live session' }
+    });
     return { 
       allowed: false, 
       reason: 'Bạn chưa tham gia lớp học này nên không thể vào phòng học trực tuyến.',
@@ -265,30 +533,66 @@ export async function joinLiveSession(sessionId, user) {
     return { success: false, error: 'Phòng học đã đạt sĩ số tối đa (50 người).' };
   }
 
-  const participantData = {
-    id: `part-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-    session_id: sessionId,
-    user_id: userId,
-    user_name: user.name || (role === 'teacher' ? 'Giáo viên' : 'Học viên'),
-    user_avatar: user.avatar || user.name?.[0] || 'U',
-    role: role,
-    joined_at: new Date().toISOString(),
-    left_at: null,
-    total_duration_seconds: 0,
-    mic_enabled: false,
-    camera_enabled: false,
-    hand_raised: false,
-    hand_raised_at: null,
-    is_mic_allowed: role === 'teacher', // Teacher always has mic allowed
-    can_speak: role === 'teacher',
-    attendance_status: 'present'
-  };
+  // Reconnection resilience: Check if participant previously existed in this session
+  const participants = getLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, []);
+  const existing = participants.find(p => p.session_id === sessionId && p.user_id === userId);
+
+  let participantData;
+  if (existing) {
+    // Student reconnecting: preserve initial joined_at and cumulative duration!
+    participantData = {
+      ...existing,
+      user_name: user.name || existing.user_name,
+      user_avatar: user.avatar || existing.user_avatar,
+      left_at: null,
+      reconnected_at: new Date().toISOString()
+    };
+  } else {
+    // New participant joining
+    participantData = {
+      id: `part-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      session_id: sessionId,
+      user_id: userId,
+      user_name: user.name || (role === 'teacher' ? 'Giáo viên' : 'Học viên'),
+      user_avatar: user.avatar || user.name?.[0] || 'U',
+      role: role,
+      joined_at: new Date().toISOString(),
+      left_at: null,
+      total_duration_seconds: 0,
+      mic_enabled: false,
+      camera_enabled: false,
+      hand_raised: false,
+      hand_raised_at: null,
+      is_mic_allowed: role === 'teacher', // Teacher always has mic allowed
+      can_speak: role === 'teacher',
+      attendance_status: 'present'
+    };
+  }
 
   // Local storage save
-  const participants = getLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, []);
   const filtered = participants.filter(p => !(p.session_id === sessionId && p.user_id === userId));
   filtered.push(participantData);
   setLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, filtered);
+
+  // Sync to Supabase database if configured
+  if (isSupabaseConfigured && supabase && isValidUuid(sessionId) && isValidUuid(userId)) {
+    try {
+      await supabase
+        .from('session_participants')
+        .upsert({
+          session_id: sessionId,
+          user_id: userId,
+          role: role,
+          joined_at: participantData.joined_at,
+          left_at: null,
+          total_duration_seconds: participantData.total_duration_seconds,
+          is_mic_allowed: participantData.is_mic_allowed,
+          attendance_status: participantData.attendance_status
+        }, { onConflict: 'session_id,user_id' });
+    } catch (e) {
+      console.warn('Supabase session_participants upsert notice:', e);
+    }
+  }
 
   // Broadcast join event
   liveEventBus.broadcast(sessionId, {
@@ -312,15 +616,17 @@ export async function leaveLiveSession(sessionId, userId) {
 
   const participants = getLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, []);
   let target = null;
+  const now = new Date();
 
   const updated = participants.map(p => {
     if (p.session_id === sessionId && p.user_id === userId && !p.left_at) {
-      const leftAt = new Date().toISOString();
-      const durationSeconds = Math.max(0, Math.floor((new Date(leftAt) - new Date(p.joined_at)) / 1000));
+      const leftAt = now.toISOString();
+      const lastSessionStart = p.reconnected_at ? new Date(p.reconnected_at) : new Date(p.joined_at);
+      const segmentSeconds = Math.max(0, Math.floor((now - lastSessionStart) / 1000));
       target = {
         ...p,
         left_at: leftAt,
-        total_duration_seconds: (p.total_duration_seconds || 0) + durationSeconds,
+        total_duration_seconds: (p.total_duration_seconds || 0) + segmentSeconds,
         mic_enabled: false,
         camera_enabled: false,
         hand_raised: false
@@ -332,6 +638,23 @@ export async function leaveLiveSession(sessionId, userId) {
 
   setLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, updated);
 
+  if (target && isSupabaseConfigured && supabase && isValidUuid(sessionId) && isValidUuid(userId)) {
+    try {
+      await supabase
+        .from('session_participants')
+        .update({
+          left_at: target.left_at,
+          total_duration_seconds: target.total_duration_seconds,
+          mic_enabled: false,
+          camera_enabled: false,
+          hand_raised: false
+        })
+        .match({ session_id: sessionId, user_id: userId });
+    } catch (e) {
+      console.warn('Supabase leaveLiveSession update notice:', e);
+    }
+  }
+
   liveEventBus.broadcast(sessionId, {
     type: 'USER_LEFT',
     userId,
@@ -342,13 +665,18 @@ export async function leaveLiveSession(sessionId, userId) {
 }
 
 /**
- * End live class session (Teacher only)
+ * End live class session (Teacher only or Automated Cleanup)
  */
 export async function endLiveSession(sessionId, teacherId) {
   const session = await getSessionById(sessionId);
   if (!session) return { success: false, error: 'Phiên học không tồn tại.' };
 
-  if (session.teacher_id !== teacherId && teacherId !== 'user_teacher_demo') {
+  if (
+    teacherId &&
+    session.teacher_id !== teacherId && 
+    teacherId !== 'user_teacher_demo' && 
+    teacherId !== 'system_cleanup'
+  ) {
     return { success: false, error: 'Chỉ giáo viên mới có quyền kết thúc lớp học.' };
   }
 
@@ -365,11 +693,12 @@ export async function endLiveSession(sessionId, teacherId) {
   const participants = getLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, []);
   const updatedParticipants = participants.map(p => {
     if (p.session_id === sessionId && !p.left_at) {
-      const duration = Math.max(0, Math.floor((new Date(endedAt) - new Date(p.joined_at)) / 1000));
+      const lastSessionStart = p.reconnected_at ? new Date(p.reconnected_at) : new Date(p.joined_at);
+      const segmentSeconds = Math.max(0, Math.floor((new Date(endedAt) - lastSessionStart) / 1000));
       return {
         ...p,
         left_at: endedAt,
-        total_duration_seconds: (p.total_duration_seconds || 0) + duration,
+        total_duration_seconds: (p.total_duration_seconds || 0) + segmentSeconds,
         mic_enabled: false,
         camera_enabled: false,
         hand_raised: false
@@ -378,6 +707,28 @@ export async function endLiveSession(sessionId, teacherId) {
     return p;
   });
   setLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, updatedParticipants);
+
+  // Sync to Supabase if configured
+  if (isSupabaseConfigured && supabase && isValidUuid(sessionId)) {
+    try {
+      await supabase
+        .from('class_sessions')
+        .update({ status: 'ended', ended_at: endedAt })
+        .eq('id', sessionId);
+
+      await supabase
+        .from('session_participants')
+        .update({
+          left_at: endedAt,
+          mic_enabled: false,
+          camera_enabled: false,
+          hand_raised: false
+        })
+        .match({ session_id: sessionId, left_at: null });
+    } catch (e) {
+      console.warn('Supabase endLiveSession notice:', e);
+    }
+  }
 
   // Broadcast SESSION_ENDED
   liveEventBus.broadcast(sessionId, {
@@ -395,6 +746,15 @@ export async function endLiveSession(sessionId, teacherId) {
   } catch (err) {
     console.warn('Auto lesson summary generation error:', err);
   }
+
+  recordAuditLog({
+    action: 'LIVE_ROOM_ENDED',
+    category: AUDIT_CATEGORIES.LIVE_ROOM,
+    severity: AUDIT_SEVERITY.INFO,
+    actorId: teacherId,
+    targetId: sessionId,
+    metadata: { classroomId: session.classroom_id, endedAt }
+  });
 
   return { 
     success: true, 
@@ -603,6 +963,15 @@ export async function removeParticipant(sessionId, teacherId, targetUserId) {
   liveEventBus.broadcast(sessionId, {
     type: 'USER_KICKED',
     targetUserId
+  });
+
+  recordAuditLog({
+    action: 'STUDENT_KICKED_FROM_LIVE_ROOM',
+    category: AUDIT_CATEGORIES.LIVE_ROOM,
+    severity: AUDIT_SEVERITY.WARN,
+    actorId: teacherId,
+    targetId: targetUserId,
+    metadata: { sessionId }
   });
 
   return { success: true };
@@ -851,6 +1220,51 @@ export function getIceServers(customConfig = null) {
   }
 
   return servers;
+}
+
+let cachedEphemeralIce = null;
+let cachedEphemeralExpiry = 0;
+
+/**
+ * Fetches time-limited, ephemeral TURN credentials from backend /api/webrtc/ice-servers
+ * without exposing persistent secrets in client bundles.
+ */
+export async function fetchEphemeralIceServers({ authToken = null, userId = null } = {}) {
+  const now = Date.now();
+  if (cachedEphemeralIce && now < cachedEphemeralExpiry) {
+    return cachedEphemeralIce;
+  }
+
+  if (typeof fetch === 'function') {
+    try {
+      let token = authToken;
+      if (!token && isSupabaseConfigured && supabase) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          token = session?.access_token || '';
+        } catch {}
+      }
+
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (userId) headers['x-user-id'] = userId;
+
+      const res = await fetch('/api/webrtc/ice-servers', { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.iceServers) && data.iceServers.length > 0) {
+          cachedEphemeralIce = data.iceServers;
+          const ttlSec = Number(data.ttl) || 3600;
+          cachedEphemeralExpiry = now + Math.max(60, ttlSec - 300) * 1000;
+          return cachedEphemeralIce;
+        }
+      }
+    } catch (err) {
+      console.warn('Ephemeral ICE servers fetch notice, using fallback:', err.message);
+    }
+  }
+
+  return getIceServers();
 }
 
 /**
@@ -1238,8 +1652,19 @@ export const HANZI_BOARD_DICTIONARY = {
  */
 export function createDefaultTeachingState() {
   return {
+    session_version: 1,
     active_tool: 'hanzi',
+    hanzi_view_mode: 'board', // 'board' (analysis) | 'stroke' (stroke order demo & writing)
     tools_used: ['hanzi'],
+    side_board_state: {
+      char: '你好',
+      pinyin: 'nǐ hǎo',
+      meaning: 'Xin chào',
+      visible: true
+    },
+    whiteboard_permissions: {
+      studentDrawingAllowed: false
+    },
     hanzi_state: {
       sentence: '我喜欢学习中文。',
       activeChar: '学',
@@ -1365,6 +1790,7 @@ export async function setSessionActiveTool(sessionId, teacherId, toolName) {
   const currentState = store[sessionId] || createDefaultTeachingState();
 
   currentState.active_tool = toolName;
+  currentState.session_version = (currentState.session_version || 1) + 1;
   if (!currentState.tools_used.includes(toolName)) {
     currentState.tools_used.push(toolName);
   }
@@ -1374,10 +1800,310 @@ export async function setSessionActiveTool(sessionId, teacherId, toolName) {
   liveEventBus.broadcast(sessionId, {
     type: 'TEACHING_TOOL_CHANGED',
     active_tool: toolName,
-    state: currentState
+    state: currentState,
+    session_version: currentState.session_version
   });
 
   return { success: true, active_tool: toolName, state: currentState };
+}
+
+/**
+ * Giáo viên đổi chế độ xem Hanzi (Phân tích chiết tự vs Thuận bút vẽ nét)
+ */
+export async function setHanziViewMode(sessionId, teacherId, mode) {
+  const validModes = ['board', 'stroke'];
+  if (!validModes.includes(mode)) return { success: false };
+
+  const store = getLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, {});
+  const currentState = store[sessionId] || createDefaultTeachingState();
+
+  currentState.hanzi_view_mode = mode;
+  store[sessionId] = currentState;
+  setLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, store);
+
+  liveEventBus.broadcast(sessionId, {
+    type: 'HANZI_VIEW_MODE_CHANGED',
+    viewMode: mode
+  });
+
+  return { success: true, viewMode: mode };
+}
+
+/**
+ * Cập nhật bảng phụ trợ chữ Hán bên phải (Side Hanzi Board)
+ */
+export async function updateSideHanziBoard(sessionId, teacherId, { char, pinyin, meaning }) {
+  const store = getLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, {});
+  const currentState = store[sessionId] || createDefaultTeachingState();
+
+  currentState.side_board_state = {
+    char: (char || '汉字').trim(),
+    pinyin: (pinyin || 'hàn zì').trim(),
+    meaning: (meaning || 'Chữ Hán').trim(),
+    visible: true
+  };
+
+  store[sessionId] = currentState;
+  setLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, store);
+
+  liveEventBus.broadcast(sessionId, {
+    type: 'SIDE_HANZI_UPDATED',
+    sideBoard: currentState.side_board_state
+  });
+
+  return { success: true, sideBoard: currentState.side_board_state };
+}
+
+/**
+ * Smart Bridge: Chuyển một chữ Hán từ Bảng phân tích sang Bảng Thuận bút
+ */
+export async function linkHanziToStrokeBoard(sessionId, teacherId, char) {
+  if (!char) return { success: false };
+
+  const store = getLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, {});
+  const currentState = store[sessionId] || createDefaultTeachingState();
+
+  const charDetails = HANZI_BOARD_DICTIONARY[char] || {
+    char,
+    pinyin: 'zì',
+    strokesCount: 6,
+    strokeOrder: ['Nét phẩy (丿)', 'Nét ngang (一)', 'Nét sổ (丨)', 'Nét mác (乀)']
+  };
+
+  currentState.active_tool = 'hanzi';
+  currentState.hanzi_view_mode = 'stroke';
+  currentState.stroke_state = {
+    ...currentState.stroke_state,
+    char: charDetails.char,
+    pinyin: charDetails.pinyin,
+    strokesCount: charDetails.strokesCount,
+    strokeOrder: charDetails.strokeOrder,
+    isAnimating: false,
+    activeStrokeIndex: -1
+  };
+
+  store[sessionId] = currentState;
+  setLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, store);
+
+  liveEventBus.broadcast(sessionId, {
+    type: 'HANZI_VIEW_MODE_CHANGED',
+    viewMode: 'stroke'
+  });
+
+  liveEventBus.broadcast(sessionId, {
+    type: 'TEACHING_STATE_UPDATED',
+    toolName: 'stroke',
+    state: currentState.stroke_state,
+    fullState: currentState
+  });
+
+  return { success: true, strokeState: currentState.stroke_state };
+}
+
+/**
+ * Smart Bridge: Tạo ngay một câu hỏi trắc nghiệm từ từ vựng đang giảng
+ */
+export async function linkVocabToQuiz(sessionId, teacherId, vocabItem) {
+  if (!vocabItem || !vocabItem.hanzi) return { success: false };
+
+  const distractorsPool = [
+    'Tạm biệt, hẹn gặp lại',
+    'Cảm ơn bạn nhiều',
+    'Thầy giáo, cô giáo',
+    'Bạn bè thân thiết',
+    'Gia đình hạnh phúc',
+    'Học sinh chăm chỉ'
+  ].filter(d => d !== vocabItem.meaning);
+
+  const wrong1 = distractorsPool[0] || 'Cảm ơn';
+  const wrong2 = distractorsPool[1] || 'Tạm biệt';
+  const wrong3 = distractorsPool[2] || 'Bạn bè';
+
+  const options = [wrong1, vocabItem.meaning, wrong2, wrong3];
+  const correctAnswer = 1;
+
+  const newQuiz = {
+    id: `quiz-${Date.now()}`,
+    question: `Từ "${vocabItem.hanzi}" (${vocabItem.pinyin}) có nghĩa là gì?`,
+    options,
+    correctAnswer,
+    status: 'active',
+    submissions: {},
+    sourceVocab: vocabItem
+  };
+
+  const store = getLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, {});
+  const currentState = store[sessionId] || createDefaultTeachingState();
+
+  currentState.active_tool = 'quiz';
+  currentState.quiz_state = newQuiz;
+  if (!currentState.tools_used.includes('quiz')) currentState.tools_used.push('quiz');
+
+  store[sessionId] = currentState;
+  setLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, store);
+
+  liveEventBus.broadcast(sessionId, {
+    type: 'TEACHING_TOOL_CHANGED',
+    active_tool: 'quiz',
+    state: currentState
+  });
+
+  liveEventBus.broadcast(sessionId, {
+    type: 'QUIZ_STARTED',
+    quiz: newQuiz
+  });
+
+  return { success: true, quiz: newQuiz };
+}
+
+/**
+ * Smart Bridge: Chuyển mẫu câu Pinyin sang thử thách phát âm giọng nói AI
+ */
+export async function linkPinyinToPronunciationChallenge(sessionId, teacherId, phoneticData) {
+  if (!phoneticData || !phoneticData.text) return { success: false };
+
+  const newChallenge = {
+    id: `chal-${Date.now()}`,
+    prompt: `请读：${phoneticData.text}`,
+    targetHanzi: phoneticData.text,
+    targetPinyin: phoneticData.pinyin || 'pīn yīn',
+    status: 'active',
+    submissions: []
+  };
+
+  const store = getLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, {});
+  const currentState = store[sessionId] || createDefaultTeachingState();
+
+  currentState.active_tool = 'pronunciation';
+  currentState.pronunciation_state = {
+    ...currentState.pronunciation_state,
+    targetHanzi: phoneticData.text,
+    targetPinyin: phoneticData.pinyin || 'pīn yīn',
+    prompt: `请读：${phoneticData.text}`,
+    activeChallenge: newChallenge
+  };
+  if (!currentState.tools_used.includes('pronunciation')) currentState.tools_used.push('pronunciation');
+
+  store[sessionId] = currentState;
+  setLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, store);
+
+  liveEventBus.broadcast(sessionId, {
+    type: 'TEACHING_TOOL_CHANGED',
+    active_tool: 'pronunciation',
+    state: currentState
+  });
+
+  liveEventBus.broadcast(sessionId, {
+    type: 'PRONUNCIATION_CHALLENGE_CREATED',
+    challenge: newChallenge
+  });
+
+  return { success: true, challenge: newChallenge };
+}
+
+/**
+ * Smart Bridge: Đưa từ vựng đang giảng vào phân tích cấu trúc ngữ pháp
+ */
+export async function linkVocabToGrammar(sessionId, teacherId, vocabItem) {
+  if (!vocabItem || !vocabItem.hanzi) return { success: false };
+
+  const store = getLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, {});
+  const currentState = store[sessionId] || createDefaultTeachingState();
+
+  currentState.active_tool = 'grammar';
+  currentState.grammar_state = {
+    ...currentState.grammar_state,
+    components: [
+      { id: 'g1', text: '我', role: 'Chủ ngữ (Subject)', tag: 'S', color: 'blue' },
+      { id: 'g2', text: '在', role: 'Giới từ (Preposition)', tag: 'Prep', color: 'sky' },
+      { id: 'g3', text: vocabItem.hanzi, role: `Từ vựng mới: ${vocabItem.meaning}`, tag: 'Focus', color: 'amber' }
+    ],
+    miniExercise: {
+      prompt: `Sắp xếp các từ có chứa từ vựng "${vocabItem.hanzi}" thành câu hoàn chỉnh:`,
+      scrambled: ['我', vocabItem.hanzi, '喜欢'],
+      correct: ['我', '喜欢', vocabItem.hanzi],
+      submissions: {}
+    }
+  };
+  if (!currentState.tools_used.includes('grammar')) currentState.tools_used.push('grammar');
+
+  store[sessionId] = currentState;
+  setLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, store);
+
+  liveEventBus.broadcast(sessionId, {
+    type: 'TEACHING_TOOL_CHANGED',
+    active_tool: 'grammar',
+    state: currentState
+  });
+
+  return { success: true, grammarState: currentState.grammar_state };
+}
+
+/**
+ * Smart Bridge: Chuyển câu bài nghe sang phân tích cú pháp ngữ pháp để chữa bài
+ */
+export async function linkListeningToGrammar(sessionId, teacherId, listeningData) {
+  if (!listeningData || !listeningData.audioText) return { success: false };
+
+  const store = getLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, {});
+  const currentState = store[sessionId] || createDefaultTeachingState();
+
+  const sentence = listeningData.audioText;
+  const words = sentence.split(/([，。！？\s]+)/).filter(Boolean);
+
+  currentState.active_tool = 'grammar';
+  currentState.grammar_state = {
+    pattern: 'Chữa bài luyện nghe: Trật tự ngữ pháp câu',
+    explanation: `Phân tích mẫu câu luyện nghe: "${sentence}" (${listeningData.audioPinyin || ''})`,
+    components: words.map((w, idx) => ({
+      id: `gw-${idx}`,
+      text: w,
+      role: idx === 0 ? 'Chủ ngữ / Trạng ngữ' : idx === 1 ? 'Vị ngữ' : 'Tân ngữ bổ ngữ',
+      tag: `W${idx + 1}`,
+      color: idx % 2 === 0 ? 'blue' : 'emerald'
+    })),
+    miniExercise: {
+      prompt: `Sắp xếp lại câu luyện nghe vừa học:`,
+      scrambled: [...words].reverse(),
+      correct: words,
+      submissions: {}
+    }
+  };
+  if (!currentState.tools_used.includes('grammar')) currentState.tools_used.push('grammar');
+
+  store[sessionId] = currentState;
+  setLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, store);
+
+  liveEventBus.broadcast(sessionId, {
+    type: 'TEACHING_TOOL_CHANGED',
+    active_tool: 'grammar',
+    state: currentState
+  });
+
+  return { success: true, grammarState: currentState.grammar_state };
+}
+
+/**
+ * Phân quyền vẽ trên bảng trắng (Giáo viên cho phép/chặn học viên vẽ)
+ */
+export async function toggleWhiteboardStudentDrawing(sessionId, teacherId, allowed) {
+  const store = getLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, {});
+  const currentState = store[sessionId] || createDefaultTeachingState();
+
+  currentState.whiteboard_permissions = {
+    ...currentState.whiteboard_permissions,
+    studentDrawingAllowed: Boolean(allowed)
+  };
+
+  store[sessionId] = currentState;
+  setLiveItem(LIVE_STORAGE_KEYS.TEACHING_STATE, store);
+
+  liveEventBus.broadcast(sessionId, {
+    type: 'WHITEBOARD_PERMISSION_CHANGED',
+    permissions: currentState.whiteboard_permissions
+  });
+
+  return { success: true, permissions: currentState.whiteboard_permissions };
 }
 
 /**
@@ -1455,6 +2181,18 @@ export async function submitQuizAnswer(sessionId, user, quizId, optionIndex) {
     isCorrect,
     submittedAt: new Date().toISOString()
   };
+
+  // Persist learning outcome
+  const session = await getSessionById(sessionId);
+  await recordStudentLearningOutcome(sessionId, {
+    classId: session?.classroom_id || null,
+    studentId: userId,
+    activityType: 'quiz',
+    activityId: quizId,
+    score: isCorrect ? 100 : 0,
+    maxScore: 100,
+    details: { optionIndex, isCorrect, question: quiz.question }
+  });
 
   // Tính toán phổ điểm real-time
   const distribution = [0, 0, 0, 0];
@@ -1565,6 +2303,18 @@ export async function submitListeningAnswer(sessionId, user, listeningId, option
     isCorrect,
     submittedAt: new Date().toISOString()
   };
+
+  // Persist learning outcome
+  const session = await getSessionById(sessionId);
+  await recordStudentLearningOutcome(sessionId, {
+    classId: session?.classroom_id || null,
+    studentId: userId,
+    activityType: 'listening',
+    activityId: listeningId,
+    score: isCorrect ? 100 : 0,
+    maxScore: 100,
+    details: { optionIndex, isCorrect, question: listening.question }
+  });
 
   const distribution = [0, 0, 0, 0];
   Object.values(listening.submissions).forEach(sub => {
@@ -1686,6 +2436,24 @@ export async function submitPronunciationRecording(sessionId, user, challengeId,
   updatedSubmissions.sort((a, b) => b.overallScore - a.overallScore);
 
   challenge.submissions = updatedSubmissions;
+
+  // Persist learning outcome
+  const session = await getSessionById(sessionId);
+  await recordStudentLearningOutcome(sessionId, {
+    classId: session?.classroom_id || null,
+    studentId: userId,
+    activityType: 'pronunciation',
+    activityId: challengeId,
+    score: diagnostic.overall,
+    maxScore: 100,
+    details: {
+      targetHanzi,
+      targetPinyin,
+      accuracyScore: diagnostic.accuracyScore,
+      fluencyScore: diagnostic.fluencyScore,
+      feedback: diagnostic.feedback
+    }
+  });
 
   await updateLiveTeachingToolState(sessionId, null, 'pronunciation', {
     activeChallenge: challenge
@@ -1812,6 +2580,18 @@ export async function submitGrammarAnswer(sessionId, user, arrangedTokens = []) 
     submittedAt: new Date().toISOString()
   };
 
+  // Persist learning outcome
+  const session = await getSessionById(sessionId);
+  await recordStudentLearningOutcome(sessionId, {
+    classId: session?.classroom_id || null,
+    studentId: userId,
+    activityType: 'grammar',
+    activityId: 'grammar-syntax',
+    score: isCorrect ? 100 : 0,
+    maxScore: 100,
+    details: { arranged: arrangedTokens, isCorrect }
+  });
+
   await updateLiveTeachingToolState(sessionId, null, 'grammar', {
     miniExercise: exercise
   });
@@ -1909,4 +2689,50 @@ export async function getSessionHistoryAndSummary(sessionId) {
   }
   const gen = await generateAILessonSummary(sessionId);
   return gen.summary;
+}
+
+/**
+ * =========================================================================
+ * 7. PERSISTENT LEARNING OUTCOMES (PHASE 6 & 8)
+ * Links quiz, listening, pronunciation, grammar outcomes to session, class, student
+ * =========================================================================
+ */
+export async function recordStudentLearningOutcome(sessionId, {
+  classId,
+  studentId,
+  activityType,
+  activityId,
+  score,
+  maxScore = 100,
+  details = {}
+}) {
+  if (!sessionId || !studentId || !activityType) {
+    return { success: false, error: 'Thiếu thông tin kết quả học tập.' };
+  }
+
+  const store = getLiveItem(LIVE_STORAGE_KEYS.OUTCOMES, []);
+  const outcome = {
+    id: `out-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+    session_id: sessionId,
+    class_id: classId || null,
+    student_id: studentId,
+    activity_type: activityType,
+    activity_id: activityId || null,
+    score: typeof score === 'number' ? score : 0,
+    max_score: maxScore,
+    status: score >= (maxScore * 0.7) ? 'passed' : 'needs_review',
+    details,
+    recorded_at: new Date().toISOString()
+  };
+
+  store.push(outcome);
+  setLiveItem(LIVE_STORAGE_KEYS.OUTCOMES, store);
+
+  return { success: true, outcome };
+}
+
+export async function getSessionLearningOutcomes(sessionId, studentId = null) {
+  if (!sessionId) return [];
+  const store = getLiveItem(LIVE_STORAGE_KEYS.OUTCOMES, []);
+  return store.filter(o => o.session_id === sessionId && (!studentId || o.student_id === studentId));
 }

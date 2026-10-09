@@ -88,7 +88,7 @@ export default function PronunciationPracticeBoard({
         }
       };
 
-      recognition.onerror = async (event) => {
+      recognition.onerror = async (_event) => {
         setIsRecording(false);
         setIsEvaluating(false);
         // Record attempt even on silence

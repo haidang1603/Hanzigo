@@ -15,7 +15,10 @@ import { HANZI_BOARD_DICTIONARY } from '../../services/liveClassroomService';
 export default function InteractiveHanziBoard({
   isTeacher = false,
   hanziState = {},
-  onUpdateState
+  onUpdateState,
+  onLinkToStroke,
+  onSendToSideBoard,
+  onLinkToVocab
 }) {
   const [customSentenceInput, setCustomSentenceInput] = useState('');
   const [isEditingSentence, setIsEditingSentence] = useState(false);
@@ -238,14 +241,42 @@ export default function InteractiveHanziBoard({
             </div>
           </div>
 
-          {/* Quick Voice Audio Trigger */}
-          <button
-            onClick={() => speakChinese(charData.audioText || charData.char)}
-            className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-          >
-            <Volume2 size={16} />
-            <span>Phát âm: {charData.pinyin}</span>
-          </button>
+          {/* Quick Voice Audio Trigger & Bridge Actions */}
+          <div className="flex flex-col gap-2 w-full px-1">
+            <button
+              onClick={() => speakChinese(charData.audioText || charData.char)}
+              className="w-full px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              <Volume2 size={16} />
+              <span>Phát âm: {charData.pinyin}</span>
+            </button>
+
+            {isTeacher && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                {onLinkToStroke && (
+                  <button
+                    onClick={() => onLinkToStroke(charData.char)}
+                    className="px-3 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#D44C2E] text-white font-bold text-[11px] shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                    title="Mở bảng tập viết thuận bút với chữ này"
+                  >
+                    <span>Luyện viết nét</span>
+                    <ArrowRight size={13} />
+                  </button>
+                )}
+
+                {onSendToSideBoard && (
+                  <button
+                    onClick={() => onSendToSideBoard(charData.char, charData.pinyin, charData.meaning)}
+                    className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] border border-white/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                    title="Đưa chữ này sang Bảng phụ trợ bên phải cho học sinh theo dõi"
+                  >
+                    <Sparkles size={13} className="text-[#F4B942]" />
+                    <span>Sang Bảng phụ</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right: Linguistic Breakdown & Example Sentence */}

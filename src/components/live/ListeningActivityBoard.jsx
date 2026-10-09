@@ -16,7 +16,8 @@ export default function ListeningActivityBoard({
   user,
   sessionId,
   listeningState = {},
-  onUpdateState: _onUpdateState
+  onUpdateState: _onUpdateState,
+  onLinkToGrammar
 }) {
   const listening = listeningState || {
     id: 'list-1',
@@ -110,6 +111,16 @@ export default function ListeningActivityBoard({
         {/* Teacher Controls */}
         {isTeacher && (
           <div className="flex items-center gap-2">
+            {onLinkToGrammar && (
+              <button
+                onClick={() => onLinkToGrammar({ audioText: listening.audioText, audioPinyin: listening.audioPinyin })}
+                className="px-3 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                title="Chuyển câu đoạn nghe sang phân tích cấu trúc ngữ pháp để chữa bài"
+              >
+                <span>Phân tích ngữ pháp ➔</span>
+              </button>
+            )}
+
             {listening.status !== 'active' ? (
               <button
                 onClick={handleStartActivity}

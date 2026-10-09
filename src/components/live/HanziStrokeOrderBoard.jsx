@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import HanziWriter from 'hanzi-writer';
 import { 
   Play, 
   RotateCcw, 
@@ -17,7 +18,8 @@ import { HANZI_BOARD_DICTIONARY } from '../../services/liveClassroomService';
 export default function HanziStrokeOrderBoard({
   isTeacher = false,
   strokeState = {},
-  onUpdateState
+  onUpdateState,
+  onBackToHanziBoard
 }) {
   const selectedChar = strokeState?.char || '你';
   const charDetails = HANZI_BOARD_DICTIONARY[selectedChar] || {
@@ -31,6 +33,11 @@ export default function HanziStrokeOrderBoard({
   const [isAnimating, setIsAnimating] = useState(false);
   const [animatedStrokeIndex, setAnimatedStrokeIndex] = useState(-1);
   const [showWatermarkGuide, setShowWatermarkGuide] = useState(true);
+
+  // HanziWriter interactive stroke engine refs & state
+  const writerBoxRef = useRef(null);
+  const writerInstanceRef = useRef(null);
+  const [writerLoaded, setWriterLoaded] = useState(false);
 
   // Student Writing Canvas state
   const canvasRef = useRef(null);
@@ -52,6 +59,41 @@ export default function HanziStrokeOrderBoard({
     setStrokeCount(0);
   }, []);
 
+  // Initialize HanziWriter on character change
+  useEffect(() => {
+    if (!writerBoxRef.current) return;
+    writerBoxRef.current.innerHTML = '';
+    writerInstanceRef.current = null;
+    setWriterLoaded(false);
+
+    try {
+      const writer = HanziWriter.create(writerBoxRef.current, selectedChar, {
+        width: 224,
+        height: 224,
+        padding: 16,
+        showOutline: showWatermarkGuide,
+        strokeAnimationSpeed: 1.25,
+        delayBetweenStrokes: 180,
+        strokeColor: '#F4B942',
+        outlineColor: '#374151',
+        showCharacter: false,
+        onLoadCharDataSuccess: () => {
+          setWriterLoaded(true);
+        },
+        onLoadCharDataError: () => {
+          setWriterLoaded(false);
+        }
+      });
+      writerInstanceRef.current = writer;
+    } catch {
+      setWriterLoaded(false);
+    }
+
+    return () => {
+      writerInstanceRef.current = null;
+    };
+  }, [selectedChar, showWatermarkGuide]);
+
   // Initialize canvas
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -61,7 +103,7 @@ export default function HanziStrokeOrderBoard({
     clearCanvas();
   }, [selectedChar, clearCanvas]);
 
-  // Stroke Order Animation simulation
+  // Stroke Order Animation
   const handlePlayAnimation = () => {
     playClickSound();
     setIsAnimating(true);
@@ -74,12 +116,35 @@ export default function HanziStrokeOrderBoard({
       step++;
       if (step >= totalStrokes) {
         clearInterval(interval);
-        setTimeout(() => {
-          setIsAnimating(false);
-          setAnimatedStrokeIndex(-1);
-        }, 1200);
       }
-    }, 650);
+    }, 450);
+
+    if (writerInstanceRef.current && writerLoaded) {
+      try {
+        writerInstanceRef.current.animateCharacter({
+          onComplete: () => {
+            clearInterval(interval);
+            setTimeout(() => {
+              setIsAnimating(false);
+              setAnimatedStrokeIndex(-1);
+              if (writerInstanceRef.current) {
+                writerInstanceRef.current.hideCharacter();
+                if (showWatermarkGuide) writerInstanceRef.current.showOutline();
+              }
+            }, 1000);
+          }
+        });
+        return;
+      } catch (err) {
+        console.warn('HanziWriter live board animation error:', err);
+      }
+    }
+
+    setTimeout(() => {
+      clearInterval(interval);
+      setIsAnimating(false);
+      setAnimatedStrokeIndex(-1);
+    }, totalStrokes * 650 + 500);
   };
 
   // Canvas drawing handlers
@@ -186,9 +251,20 @@ export default function HanziStrokeOrderBoard({
           </p>
         </div>
 
-        {/* Character Pickers (Teacher) */}
-        {isTeacher && (
-          <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          {onBackToHanziBoard && (
+            <button
+              onClick={onBackToHanziBoard}
+              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 hover:text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer border border-white/10"
+              title="Quay lại Bảng phân tích chiết tự chữ Hán"
+            >
+              <span>← Xem chiết tự (Hanzi Board)</span>
+            </button>
+          )}
+
+          {/* Character Pickers (Teacher) */}
+          {isTeacher && (
+            <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[11px] font-bold text-white/60 mr-1">Chọn chữ:</span>
             {POPULAR_CHARS.map(ch => (
               <button
@@ -203,8 +279,9 @@ export default function HanziStrokeOrderBoard({
                 {ch}
               </button>
             ))}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Main Grid: Left Animation & Right Practice Canvas */}
@@ -235,12 +312,20 @@ export default function HanziStrokeOrderBoard({
                 <div className="h-full w-px bg-white border-dashed border-l border-white absolute" />
               </div>
 
-              {/* Character display */}
-              <span className={`text-9xl font-black font-serif select-none transition-all duration-300 ${
-                isAnimating ? 'text-[#E85D3F] scale-105' : 'text-[#F4B942]'
-              }`}>
-                {selectedChar}
-              </span>
+              {/* HanziWriter animated vector stroke container */}
+              <div
+                ref={writerBoxRef}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10"
+              />
+
+              {/* Character display fallback if writer not loaded */}
+              {!writerLoaded && (
+                <span className={`text-9xl font-black font-serif select-none transition-all duration-300 z-0 ${
+                  isAnimating ? 'text-[#E85D3F] scale-105' : 'text-[#F4B942]'
+                }`}>
+                  {selectedChar}
+                </span>
+              )}
 
               {/* Step indicator pill */}
               {isAnimating && (

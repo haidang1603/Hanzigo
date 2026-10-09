@@ -238,3 +238,46 @@ export async function deleteStudyPartnerFromDb(partnerId) {
     return false;
   }
 }
+
+/**
+ * Subscribe to realtime community feed updates (posts & study partners)
+ */
+export function subscribeToCommunityRealtime(onEvent) {
+  if (!isSupabaseConfigured || !supabase || typeof onEvent !== 'function') {
+    return () => {};
+  }
+
+  try {
+    const channel = supabase
+      .channel('community_realtime_feed')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'community_posts' },
+        (payload) => {
+          onEvent({ type: 'POST_CHANGE', payload });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'study_partners' },
+        (payload) => {
+          onEvent({ type: 'PARTNER_CHANGE', payload });
+        }
+      )
+      .subscribe((status, err) => {
+        if (err) console.warn('Community Realtime status error:', err);
+      });
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {
+        console.warn('Error removing community realtime channel:', e);
+      }
+    };
+  } catch (err) {
+    console.warn('subscribeToCommunityRealtime init error:', err);
+    return () => {};
+  }
+}
+

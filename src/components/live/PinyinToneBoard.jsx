@@ -7,14 +7,16 @@ import {
   Check, 
   Edit3,
   Layers,
-  Info
+  Info,
+  Sparkles
 } from 'lucide-react';
 import { speakChinese, playClickSound, playSuccessSound } from '../../utils/audio';
 
 export default function PinyinToneBoard({
   isTeacher = false,
   pinyinState = {},
-  onUpdateState
+  onUpdateState,
+  onLinkToPronunciation
 }) {
   const text = pinyinState?.text || '你好';
   const pinyin = pinyinState?.pinyin || 'nǐ hǎo';
@@ -231,6 +233,18 @@ export default function PinyinToneBoard({
             >
               <Square size={16} />
               <span>Dừng thu âm</span>
+            </button>
+          )}
+
+          {/* 4. Bridge: Create Pronunciation Challenge (Teacher only) */}
+          {isTeacher && onLinkToPronunciation && (
+            <button
+              onClick={() => onLinkToPronunciation({ text, pinyin, tones })}
+              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-xs shadow-lg shadow-orange-500/30 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              title="Chuyển câu này sang bục luyện đọc Pronunciation Challenge để chấm điểm phát âm học viên"
+            >
+              <Sparkles size={16} />
+              <span>Luyện phát âm cả lớp ➔</span>
             </button>
           )}
         </div>

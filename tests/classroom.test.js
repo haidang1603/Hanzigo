@@ -13,7 +13,9 @@ import {
   joinClassByCode,
   submitAssignment,
   gradeSubmission,
-  deleteClassroom
+  deleteClassroom,
+  getClassroomById,
+  getClassroomsForTeacher
 } from '../src/services/classroomService.js';
 
 test('Classroom: Class code generation follows HZG-XXXXX pattern', () => {
@@ -176,6 +178,14 @@ test('Classroom: deleteClassroom purges classroom successfully', async () => {
 
   const delRes = await deleteClassroom(classId);
   assert.equal(delRes.success, true);
+
+  // Deleted classroom must return null on direct lookup
+  const lookedUp = await getClassroomById(classId);
+  assert.equal(lookedUp, null);
+
+  // Teacher classrooms list must NOT contain deleted class
+  const teacherClasses = await getClassroomsForTeacher('teacher-del-test');
+  assert.equal(teacherClasses.some(c => c.id === classId), false);
 
   // Deleting invalid id returns error
   const invalidDel = await deleteClassroom('');

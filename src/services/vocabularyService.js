@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { isValidUuid } from './authService.js';
+import { getUserStorageKey } from '../utils/gamification.js';
 
 /**
  * Fetch Vocabulary from Database
@@ -89,6 +90,79 @@ export async function saveUserVocabSrsCard(userId, srsCard) {
     console.warn('Could not save user vocab SRS card:', err);
     return false;
   }
+}
+
+/**
+ * Synchronize words learned in a lesson into user's remembered list & SRS queue
+ * Prevents duplicates and maintains consistency between local & cloud storage.
+ */
+export async function syncLessonVocabToSrs(vocabList = [], user = null) {
+  if (!Array.isArray(vocabList) || vocabList.length === 0) return { addedCount: 0 };
+
+  let existingRemembered = [];
+  const remKey = getUserStorageKey('hanzigo_vocab_remembered', user);
+  try {
+    const raw = localStorage.getItem(remKey) || (user ? null : localStorage.getItem('hanzigo_vocab_remembered'));
+    if (raw) existingRemembered = JSON.parse(raw) || [];
+  } catch {}
+
+  const srsKey = getUserStorageKey('hanzigo_vocab_srs_state', user);
+  let srsMap = {};
+  try {
+    const rawSrs = localStorage.getItem(srsKey) || (user ? null : localStorage.getItem('hanzigo_vocab_srs_state'));
+    if (rawSrs) srsMap = JSON.parse(rawSrs) || {};
+  } catch {}
+
+  let addedCount = 0;
+  const updatedRemembered = [...existingRemembered];
+  const tomorrowIso = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+  for (const item of vocabList) {
+    const wordId = item.id || item.hanzi;
+    const hanzi = item.hanzi || item.char;
+    if (!hanzi) continue;
+
+    // 1. Add to remembered words if not present
+    if (!updatedRemembered.includes(wordId)) {
+      updatedRemembered.push(wordId);
+      addedCount++;
+    }
+
+    // 2. Initialize or update SRS card state
+    if (!srsMap[hanzi]) {
+      srsMap[hanzi] = {
+        repetitions: 1,
+        intervalDays: 1,
+        easeFactor: 2.50,
+        stage: 1,
+        lastReviewedAt: new Date().toISOString(),
+        nextReviewAt: tomorrowIso
+      };
+
+      // Sync to cloud if user has uuid
+      if (user?.uid) {
+        saveUserVocabSrsCard(user.uid, {
+          hanzi,
+          pinyin: item.pinyin || '',
+          meaning: item.meaning || '',
+          level: item.level || 'HSK 1',
+          stage: 1,
+          repetitions: 1,
+          intervalDays: 1,
+          easeFactor: 2.50,
+          nextReviewAt: tomorrowIso
+        }).catch(() => {});
+      }
+    }
+  }
+
+  // Save back to local storage
+  try {
+    localStorage.setItem(remKey, JSON.stringify(updatedRemembered));
+    localStorage.setItem(srsKey, JSON.stringify(srsMap));
+  } catch {}
+
+  return { addedCount, totalRememberedCount: updatedRemembered.length };
 }
 
 /**

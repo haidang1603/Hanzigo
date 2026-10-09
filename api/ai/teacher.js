@@ -5,6 +5,8 @@
  * Vercel Serverless Function (Node.js runtime):
  * - Keeps GEMINI_API_KEY securely on server-side environment variables.
  * - Enforces authentication, rate limiting, payload validation, and output bounds.
+ * - Enforces Prompt Injection and Abuse Protection.
+ * - Sanitizes all error messages (never leaks API keys, database details, or raw stack traces).
  * - Handles:
  *    1. analyze_class: Aggregated anonymized metrics -> strengths, weaknesses, reviews, exercises
  *    2. generate_assignment: Topic & HSK -> draft questions (requires teacher review)
@@ -12,14 +14,30 @@
  */
 
 import { checkRateLimitAndQuota } from './distributedRateLimiter.js';
+import { verifyRequestAuth } from './verifyAuth.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
 const DAILY_QUOTA_MAX_REQUESTS = 150;
 
+// Prompt injection & abuse detection patterns
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?(previous|prior)\s+(instructions|prompts)/i,
+  /system\s+prompt\s+override/i,
+  /you\s+are\s+now\s+(an\s+unrestricted|DAN|jailbreak)/i,
+  /reveal\s+(your\s+)?(api[_\s]?key|secret|system\s+prompt)/i,
+  /drop\s+table\s+/i,
+  /<script\b[^>]*>/i
+];
+
+function detectAbuseOrInjection(text) {
+  if (!text || typeof text !== 'string') return false;
+  return INJECTION_PATTERNS.some(pattern => pattern.test(text));
+}
+
 const SYSTEM_PROMPT_ANALYZE_CLASS = `
 Bạn là Cố vấn Sư phạm AI Cao cấp chuyên sâu về giảng dạy tiếng Trung Quốc cho học sinh Việt Nam theo khung HSK 3.0.
-Nhiệm vụ: Phân tích số liệu học tập tổng hợp của lớp học (hoàn toàn ẩn danh) và đưa ra báo cáo chẩn đoán sư phạm chính xác.
+Nhiệm vụ: Phân tích số liệu học tập tổng hợp của lớp học (hoàn toàn ẩn danh, không có PII) và đưa ra báo cáo chẩn đoán sư phạm chính xác.
 
 Yêu cầu trả về BẮT BUỘC theo định dạng JSON với cấu trúc sau:
 {
@@ -31,16 +49,33 @@ Yêu cầu trả về BẮT BUỘC theo định dạng JSON với cấu trúc sa
     "Điểm yếu/lỗ hổng kiến thức 1 cần khắc phục",
     "Điểm yếu/lỗ hổng 2"
   ],
+  "recommendedTeachingTopics": [
+    "Chủ đề giảng dạy/ôn tập trọng tâm 1",
+    "Chủ đề giảng dạy/ôn tập trọng tâm 2"
+  ],
   "recommendedReview": [
-    "Nội dung trọng tâm 1 cần ôn tập ngay",
-    "Nội dung trọng tâm 2"
+    "Nội dung ôn tập 1",
+    "Nội dung ôn tập 2"
+  ],
+  "studentsNeedingAttention": [
+    "Mô tả nhóm học viên cần lưu ý 1 (dựa trên số liệu tổng hợp, không nêu tên)",
+    "Mô tả nhóm học viên cần lưu ý 2"
+  ],
+  "suggestedActivities": [
+    {
+      "title": "Tên hoạt động đề xuất",
+      "hskLevel": "HSK 1 - HSK 6",
+      "type": "Quiz | Listening | Grammar | Reading | Speaking",
+      "focus": "Mục tiêu trọng tâm rèn luyện",
+      "suggestedTopic": "Chủ đề gợi ý"
+    }
   ],
   "recommendedExercises": [
     {
       "title": "Tên bài tập đề xuất",
       "hskLevel": "HSK 1 - HSK 6",
       "type": "Quiz | Listening | Grammar | Reading",
-      "focus": "Mục tiêu trọng tâm rèn luyện",
+      "focus": "Mục tiêu trọng tâm",
       "suggestedTopic": "Chủ đề gợi ý"
     }
   ]
@@ -50,15 +85,22 @@ Chỉ trả về chuỗi JSON thuần túy, không có văn bản thừa.
 
 const SYSTEM_PROMPT_GENERATE_ASSIGNMENT = `
 Bạn là Trợ lý Soạn Đề thi & Bài tập Tiếng Trung cho giáo viên.
-Tạo bộ câu hỏi trắc nghiệm hoặc bài tập phù hợp chuẩn khung HSK, bám sát chủ đề được yêu cầu.
+Tạo bộ câu hỏi đa kỹ năng bao gồm đủ 5 kỹ năng: Vocabulary, Grammar, Listening, Reading, Speaking bám sát chủ đề và chuẩn khung HSK.
+Chú ý: Bộ đề do AI soạn là bản nháp chờ giáo viên duyệt (DRAFT_REQUIRES_TEACHER_REVIEW), không được tự động xuất bản (published: false).
 
 Yêu cầu trả về BẮT BUỘC theo định dạng JSON với cấu trúc sau:
 {
+  "title": "Tiêu đề bài tập",
   "topic": "Chủ đề bài tập",
   "hskLevel": "Cấp độ HSK",
+  "skillsCovered": ["Vocabulary", "Grammar", "Listening", "Reading", "Speaking"],
+  "status": "DRAFT_REQUIRES_TEACHER_REVIEW",
+  "published": false,
+  "reviewedByTeacher": false,
   "questions": [
     {
       "id": "q1",
+      "skill": "Vocabulary | Grammar | Listening | Reading | Speaking",
       "question": "Câu hỏi (gồm chữ Hán + Pinyin + Dịch/Hướng dẫn)",
       "options": ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"],
       "correctAnswer": 0,
@@ -72,7 +114,7 @@ Chỉ trả về chuỗi JSON thuần túy.
 
 const SYSTEM_PROMPT_GENERATE_LESSON_PLAN = `
 Bạn là Chuyên gia Soạn Giáo án Tiếng Trung cho giáo viên.
-Hãy thiết kế một giáo án 7 bước thực chiến, cuốn hút, lấy học viên làm trung tâm.
+Hãy thiết kế một giáo án chuẩn sư phạm, cuốn hút, bao gồm mục tiêu bài học, từ vựng, ngữ pháp, ví dụ, luyện tập và câu hỏi kiểm tra nhanh.
 
 Yêu cầu trả về BẮT BUỘC theo định dạng JSON với cấu trúc sau:
 {
@@ -80,6 +122,26 @@ Yêu cầu trả về BẮT BUỘC theo định dạng JSON với cấu trúc sa
   "hskLevel": "Cấp độ HSK",
   "topic": "Chủ đề",
   "duration": 45,
+  "learningObjective": [
+    "Mục tiêu bài học 1",
+    "Mục tiêu bài học 2"
+  ],
+  "vocabulary": [
+    { "hanzi": "Chữ Hán", "pinyin": "Pinyin", "meaning": "Nghĩa tiếng Việt", "example": "Câu ví dụ" }
+  ],
+  "grammar": [
+    { "pattern": "Cấu trúc ngữ pháp", "explanation": "Giải thích", "example": "Ví dụ" }
+  ],
+  "examples": [
+    { "chinese": "Câu tiếng Trung mẫu", "pinyin": "Pinyin", "vietnamese": "Nghĩa tiếng Việt" }
+  ],
+  "practice": [
+    "Hoạt động luyện tập 1",
+    "Hoạt động luyện tập 2"
+  ],
+  "quiz": [
+    { "prompt": "Câu hỏi trắc nghiệm nhanh", "answer": "Đáp án đúng" }
+  ],
   "sections": {
     "warmUp": {
       "durationMinutes": 5,
@@ -133,20 +195,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed. Use POST.' });
   }
 
-  // Client Authentication Validation (Bearer token or user header)
-  const authHeader = req.headers['authorization'] || req.headers['x-authorization'];
-  const userIdHeader = req.headers['x-user-id'] || req.headers['x-auth-uid'];
-  const clientToken = authHeader ? authHeader.replace(/^Bearer\s+/i, '').trim() : '';
-
-  if (!clientToken && !userIdHeader) {
+  // Client Authentication & JWT Validation
+  const auth = await verifyRequestAuth(req);
+  if (!auth.authenticated) {
     return res.status(401).json({
-      error: 'Yêu cầu chưa được xác thực. Vui lòng đăng nhập để sử dụng tính năng AI Giáo viên.'
+      error: auth.error || 'Yêu cầu chưa được xác thực. Vui lòng đăng nhập để sử dụng tính năng AI Giáo viên.'
     });
   }
 
-  // Rate Limiting & Daily Quota check (Distributed with In-Memory fallback)
-  const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'client_unknown';
-  const clientKey = userIdHeader ? `user:${userIdHeader}` : `ip:${clientIp}`;
+  // Rate Limiting & Daily Quota check (bound to verified user ID)
+  const clientKey = `user:${auth.user.id}`;
   const limitCheck = await checkRateLimitAndQuota({
     clientKey,
     windowMs: RATE_LIMIT_WINDOW_MS,
@@ -158,20 +216,25 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: limitCheck.reason });
   }
 
-  // GEMINI_API_KEY verification on server
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(503).json({
-      error: 'GEMINI_API_KEY is not configured on the server. Sẽ sử dụng bộ mô phỏng sư phạm ngoại tuyến.'
-    });
-  }
-
   // Payload Validation
   const body = req.body || {};
   const { action, payload } = body;
 
   if (!action || !payload || typeof payload !== 'object') {
     return res.status(400).json({ error: 'Missing or invalid action or payload in request body.' });
+  }
+
+  // Anti-abuse & Prompt injection protection
+  if (payload.topic && detectAbuseOrInjection(String(payload.topic))) {
+    return res.status(400).json({
+      error: 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.'
+    });
+  }
+
+  if (payload.targetOutcomes && detectAbuseOrInjection(String(payload.targetOutcomes))) {
+    return res.status(400).json({
+      error: 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.'
+    });
   }
 
   let systemPrompt = '';
@@ -207,6 +270,14 @@ Hãy phân tích điểm mạnh, điểm yếu và đưa ra khuyến nghị bài
     return res.status(400).json({ error: `Unknown action: ${action}` });
   }
 
+  // GEMINI_API_KEY verification on server
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(503).json({
+      error: 'GEMINI_API_KEY is not configured on the server. Sẽ sử dụng bộ mô phỏng sư phạm ngoại tuyến.'
+    });
+  }
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   const contents = [
@@ -224,28 +295,37 @@ Hãy phân tích điểm mạnh, điểm yếu và đưa ra khuyến nghị bài
         contents,
         generationConfig: {
           temperature: 0.6,
+          maxOutputTokens: 1000,
           responseMimeType: 'application/json'
         }
       })
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return res.status(response.status).json({
-        error: errorData?.error?.message || `Gemini API error: ${response.statusText}`
+      console.error('Gemini API call failed with status:', response.status);
+      return res.status(502).json({
+        error: 'Dịch vụ AI phản hồi không thành công. Vui lòng thử lại sau.'
       });
     }
 
     const data = await response.json();
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!rawText) {
-      return res.status(502).json({ error: 'Empty response returned from Gemini API.' });
+      return res.status(502).json({ error: 'Không nhận được dữ liệu phản hồi từ AI.' });
     }
 
     const parsed = JSON.parse(rawText);
+    if (action === 'generate_assignment') {
+      parsed.status = 'DRAFT_REQUIRES_TEACHER_REVIEW';
+      parsed.published = false;
+      parsed.reviewedByTeacher = false;
+    } else if (action === 'generate_lesson_plan') {
+      parsed.status = 'DRAFT_REQUIRES_TEACHER_REVIEW';
+      parsed.published = false;
+    }
     return res.status(200).json(parsed);
   } catch (err) {
-    console.error('Serverless Teacher AI error:', err);
-    return res.status(500).json({ error: err.message || 'Internal Server Error' });
+    console.error('Serverless Teacher AI error:', err.message);
+    return res.status(500).json({ error: 'Đã xảy ra lỗi nội bộ khi xử lý yêu cầu AI Giáo viên.' });
   }
 }

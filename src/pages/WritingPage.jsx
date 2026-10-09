@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import confetti from 'canvas-confetti';
+import HanziWriter from 'hanzi-writer';
 import { 
   Trash2, 
   Check, 
@@ -19,13 +20,19 @@ import {
   Target,
   Scale,
   PenTool,
-  Info
+  Info,
+  Repeat,
+  Search,
+  Mic,
+  BookOpen
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { CHARACTERS_WRITING, VOCABULARY_LIST } from '../data/chineseData';
 import { playSuccessSound, playClickSound } from '../utils/audio';
 import { triggerCloudSync, getWritingCharactersFromDb } from '../supabase/services';
-import { awardXp } from '../utils/gamification';
+import { awardXp, getUserStorageKey, getLocalDateString } from '../utils/gamification';
+import { updateDailyMissionProgress } from '../services';
+import { getHanziMasteryItem, syncHanziToSrs } from '../services/hanziMasteryService';
 
 const STORAGE_CUSTOM_CHARS = 'hanzigo_custom_writing_chars';
 
@@ -57,11 +64,12 @@ const BRUSH_COLORS = [
   { id: 'blue', label: 'Mực lam', color: '#2563EB', bg: 'bg-[#2563EB]' }
 ];
 
-export default function WritingPage({ targetVocab, onClearTargetVocab }) {
-  // Stored custom characters
+export default function WritingPage({ user, targetVocab, onClearTargetVocab, setActiveTab, onSelectPronounce }) {
+  // Stored custom characters per user
   const [customChars, setCustomChars] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_CUSTOM_CHARS);
+      const key = getUserStorageKey(STORAGE_CUSTOM_CHARS, user);
+      const saved = localStorage.getItem(key) || (user ? null : localStorage.getItem(STORAGE_CUSTOM_CHARS));
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -81,12 +89,45 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
     return () => { isMounted = false; };
   }, []);
 
-  // Combined base characters (static + DB + custom)
+  // Combined base characters (static + full VOCABULARY_LIST synchronization + DB + custom)
   const baseCharacters = useMemo(() => {
     const map = new Map();
-    CHARACTERS_WRITING.forEach(c => map.set(c.char, c));
-    dbChars.forEach(c => map.set(c.char, c));
-    customChars.forEach(c => map.set(c.char, c));
+
+    // 1. Static curated characters with explicit stroke breakdowns
+    CHARACTERS_WRITING.forEach(c => map.set(c.char, { ...c, hskLevel: 'HSK 1' }));
+
+    // 2. Synchronize all 515 unique characters from VOCABULARY_LIST across all HSK levels
+    VOCABULARY_LIST.forEach(v => {
+      const chars = Array.from(v.hanzi).filter(ch => /\p{Script=Han}/u.test(ch));
+      const pinyinParts = (v.pinyin || '').trim().split(/\s+/);
+      chars.forEach((ch, idx) => {
+        if (!map.has(ch)) {
+          const pop = POPULAR_CHARS_DICT[ch];
+          map.set(ch, {
+            char: ch,
+            pinyin: (pop && pop.pinyin) || pinyinParts[idx] || v.pinyin || '',
+            hanviet: (pop && pop.hanviet) || v.hanviet || '',
+            meaning: (pop && pop.meaning) || v.meaning || '',
+            hskLevel: v.level || 'HSK 1',
+            strokesCount: (pop && pop.strokesCount) || Number(v.strokes) || 6,
+            radical: (pop && pop.radical) || v.radical || 'Bộ thủ',
+            strokeOrder: (pop && pop.strokeOrder) || ['Phẩy (丿)', 'Ngang (一)', 'Sổ (丨)', 'Mác (乀)'],
+            components: (pop && pop.radical) || `Chữ trong từ "${v.hanzi}"`,
+            mnemonic: (pop && pop.mnemonic) || v.mnemonic || `Chữ "${ch}" trong từ vựng "${v.hanzi}" (${v.meaning}).`,
+            tip: (pop && pop.tip) || 'Viết cân xứng quanh tâm mễ tự, giữ nét bút dứt khoát.',
+            parentVocab: v
+          });
+        } else {
+          const existing = map.get(ch);
+          if (!existing.parentVocab) existing.parentVocab = v;
+          if (!existing.hskLevel) existing.hskLevel = v.level || 'HSK 1';
+        }
+      });
+    });
+
+    // 3. Supabase and custom characters
+    dbChars.forEach(c => map.set(c.char, { ...c, hskLevel: c.hskLevel || 'Tự thêm' }));
+    customChars.forEach(c => map.set(c.char, { ...c, hskLevel: 'Tự thêm' }));
     return Array.from(map.values());
   }, [dbChars, customChars]);
 
@@ -177,6 +218,47 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
     }
   });
 
+  const [writingHskFilter, setWritingHskFilter] = useState('all'); // 'all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5-6', 'custom'
+  const [writingSearchQuery, setWritingSearchQuery] = useState('');
+  const [writingLevelFilter, setWritingLevelFilter] = useState('all'); // 'all', '1', '2', '3', '4'
+
+  const displayedCharacters = useMemo(() => {
+    return allCharacters.filter(c => {
+      // 1. Search filter
+      if (writingSearchQuery.trim()) {
+        const q = writingSearchQuery.trim().toLowerCase();
+        const matches = 
+          c.char.toLowerCase().includes(q) ||
+          (c.pinyin && c.pinyin.toLowerCase().includes(q)) ||
+          (c.hanviet && c.hanviet.toLowerCase().includes(q)) ||
+          (c.meaning && c.meaning.toLowerCase().includes(q)) ||
+          (c.parentVocab && c.parentVocab.hanzi.toLowerCase().includes(q));
+        if (!matches) return false;
+      }
+
+      // 2. HSK Filter
+      if (writingHskFilter !== 'all') {
+        if (writingHskFilter === 'custom') {
+          if (!c.isCustom && c.hskLevel !== 'Tự thêm') return false;
+        } else {
+          const itemHsk = c.hskLevel || (c.parentVocab && c.parentVocab.level);
+          if (itemHsk !== writingHskFilter) return false;
+        }
+      }
+
+      // 3. Stroke Count Filter
+      if (writingLevelFilter !== 'all') {
+        const strokes = Number(c.strokesCount) || (c.strokeOrder ? c.strokeOrder.length : 4);
+        if (writingLevelFilter === '1' && strokes > 4) return false;
+        if (writingLevelFilter === '2' && (strokes < 5 || strokes > 8)) return false;
+        if (writingLevelFilter === '3' && (strokes < 9 || strokes > 12)) return false;
+        if (writingLevelFilter === '4' && strokes < 13) return false;
+      }
+
+      return true;
+    });
+  }, [allCharacters, writingHskFilter, writingSearchQuery, writingLevelFilter]);
+
   // Modal to add custom character
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newCharForm, setNewCharForm] = useState({
@@ -204,6 +286,11 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
 
+  // HanziWriter interactive stroke engine refs & state
+  const writerContainerRef = useRef(null);
+  const writerInstanceRef = useRef(null);
+  const [writerLoaded, setWriterLoaded] = useState(false);
+
   // Clear Canvas helper
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -215,6 +302,58 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
     setStrokeCount(0);
     setEvaluationResult(null);
   }, []);
+
+  // Initialize HanziWriter whenever character, guide, or color changes
+  useEffect(() => {
+    if (!writerContainerRef.current) return;
+    writerContainerRef.current.innerHTML = '';
+    writerInstanceRef.current = null;
+    setWriterLoaded(false);
+
+    if (!currentChar?.char) return;
+
+    try {
+      const writer = HanziWriter.create(writerContainerRef.current, currentChar.char, {
+        width: 320,
+        height: 320,
+        padding: 24,
+        showOutline: showGuide,
+        strokeAnimationSpeed: 1.25,
+        delayBetweenStrokes: 180,
+        strokeColor: brushColor === '#243447' ? '#E85D3F' : brushColor,
+        outlineColor: '#CBD5E1',
+        showCharacter: false,
+        onLoadCharDataSuccess: () => {
+          setWriterLoaded(true);
+        },
+        onLoadCharDataError: (err) => {
+          console.warn('HanziWriter data load notice, using canvas fallback:', err);
+          setWriterLoaded(false);
+        }
+      });
+      writerInstanceRef.current = writer;
+    } catch (err) {
+      console.warn('HanziWriter init error:', err);
+      setWriterLoaded(false);
+    }
+
+    return () => {
+      writerInstanceRef.current = null;
+    };
+  }, [currentChar?.char, showGuide, brushColor]);
+
+  // Sync guide outline toggle with HanziWriter
+  useEffect(() => {
+    if (writerInstanceRef.current && writerLoaded) {
+      try {
+        if (showGuide) {
+          writerInstanceRef.current.showOutline();
+        } else {
+          writerInstanceRef.current.hideOutline();
+        }
+      } catch {}
+    }
+  }, [showGuide, writerLoaded]);
 
   // Initialize Canvas on character switch
   useEffect(() => {
@@ -342,11 +481,71 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
     showToast('Đã tải hình ảnh bài viết về máy!');
   };
 
-  // Play animated stroke order demonstration
+  // Fallback animated stroke drawing simulation directly on Canvas 2D
+  const runCanvasStrokeAnimation = (savedDrawing, timerInterval) => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      setIsAnimatingStroke(false);
+      return;
+    }
+    const ctx = canvas.getContext('2d');
+    const totalStrokes = (currentChar.strokeOrder && currentChar.strokeOrder.length > 0)
+      ? currentChar.strokeOrder.length
+      : (currentChar.strokesCount || 4);
+
+    let currentStep = 0;
+    const stepDuration = 550;
+
+    const animInterval = setInterval(() => {
+      currentStep++;
+      setAnimatedStrokeIndex(currentStep - 1);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Faint background watermark guide
+      ctx.save();
+      ctx.font = 'bold 210px "Noto Serif SC", serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(203, 213, 225, 0.4)';
+      ctx.fillText(currentChar.char, canvas.width / 2, canvas.height / 2 - 8);
+
+      // Progressive animated ink layer
+      ctx.fillStyle = brushColor === '#243447' ? '#E85D3F' : brushColor;
+      ctx.globalAlpha = Math.min(1, currentStep / totalStrokes);
+      ctx.fillText(currentChar.char, canvas.width / 2, canvas.height / 2 - 8);
+      ctx.restore();
+
+      if (currentStep >= totalStrokes) {
+        clearInterval(animInterval);
+        if (timerInterval) clearInterval(timerInterval);
+        setTimeout(() => {
+          setIsAnimatingStroke(false);
+          setAnimatedStrokeIndex(-1);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          if (savedDrawing) {
+            ctx.putImageData(savedDrawing, 0, 0);
+          }
+        }, 1200);
+      }
+    }, stepDuration);
+  };
+
+  // Play animated stroke order demonstration directly on the grid
   const handlePlayStrokeAnimation = () => {
     playClickSound();
     setIsAnimatingStroke(true);
     setAnimatedStrokeIndex(-1);
+
+    const canvas = canvasRef.current;
+    let savedDrawing = null;
+    if (canvas && hasDrawn) {
+      const ctx = canvas.getContext('2d');
+      try {
+        savedDrawing = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      } catch {}
+    }
 
     const totalStrokes = (currentChar.strokeOrder && currentChar.strokeOrder.length > 0)
       ? currentChar.strokeOrder.length
@@ -358,12 +557,35 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
       step++;
       if (step >= totalStrokes) {
         clearInterval(interval);
-        setTimeout(() => {
-          setIsAnimatingStroke(false);
-          setAnimatedStrokeIndex(-1);
-        }, 1000);
       }
-    }, 700);
+    }, 450);
+
+    if (writerInstanceRef.current && writerLoaded) {
+      try {
+        writerInstanceRef.current.animateCharacter({
+          onComplete: () => {
+            clearInterval(interval);
+            setTimeout(() => {
+              setIsAnimatingStroke(false);
+              setAnimatedStrokeIndex(-1);
+              if (writerInstanceRef.current) {
+                writerInstanceRef.current.hideCharacter();
+                if (showGuide) writerInstanceRef.current.showOutline();
+              }
+              if (savedDrawing && canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.putImageData(savedDrawing, 0, 0);
+              }
+            }, 1000);
+          }
+        });
+        return;
+      } catch (err) {
+        console.warn('HanziWriter animate error, running canvas fallback:', err);
+      }
+    }
+
+    runCanvasStrokeAnimation(savedDrawing, interval);
   };
 
   // Evaluate drawing accuracy, balance and stroke count
@@ -590,7 +812,8 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
     }
 
     playSuccessSound();
-    awardXp(xpEarned);
+    awardXp(xpEarned, user, `writing_${currentChar.char}_${getLocalDateString()}`);
+    updateDailyMissionProgress('writing', 1, user);
 
     const newResult = {
       score: totalScore,
@@ -608,7 +831,7 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
 
     setEvaluationResult(newResult);
 
-    // Save best score to state and localStorage
+    // Save best score to state and localStorage per user
     setSavedScores(prev => {
       const prevBest = prev[currentChar.char] || 0;
       const updated = {
@@ -616,14 +839,15 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
         [currentChar.char]: Math.max(prevBest, totalScore)
       };
       try {
-        localStorage.setItem('hanzigo_writing_scores', JSON.stringify(updated));
+        const scoresKey = getUserStorageKey('hanzigo_writing_scores', user);
+        localStorage.setItem(scoresKey, JSON.stringify(updated));
       } catch (e) {
         console.warn('Writing scores storage error:', e);
       }
       return updated;
     });
 
-    triggerCloudSync();
+    triggerCloudSync(user?.uid || user?.id);
     showToast(`Đã hoàn thành chấm điểm: ${totalScore}/100 (+${xpEarned} XP)`);
   };
 
@@ -829,19 +1053,118 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
         </div>
       )}
 
+      {/* Comprehensive Filter & Search Bar for Writing Characters */}
+      <div className="bg-white/80 dark:bg-[#1E293B]/80 p-4 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-3">
+        {/* Row 1: Search Bar & Count Badge */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
+            <input
+              type="text"
+              value={writingSearchQuery}
+              onChange={(e) => setWritingSearchQuery(e.target.value)}
+              placeholder="Tìm chữ Hán, Pinyin, Hán-Việt hoặc nghĩa..."
+              className="w-full pl-9 pr-8 py-2 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+            />
+            {writingSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setWritingSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#748092] hover:text-[#243447] text-xs p-1"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-medium text-[#748092] dark:text-[#94A3B8]">
+            <span>Đồng bộ từ vựng HSK:</span>
+            <span className="font-bold text-[#E85D3F] bg-[#FDEEEB] dark:bg-[#2D1E1B] px-2.5 py-0.5 rounded-lg border border-orange-200 dark:border-orange-900/50">
+              {displayedCharacters.length} / {allCharacters.length} chữ
+            </span>
+          </div>
+        </div>
+
+        {/* Row 2: HSK Level Filter Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 text-xs">
+          <span className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8] shrink-0">
+            Cấp độ HSK:
+          </span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {[
+              { id: 'all', label: 'Tất cả HSK' },
+              { id: 'HSK 1', label: 'HSK 1' },
+              { id: 'HSK 2', label: 'HSK 2' },
+              { id: 'HSK 3', label: 'HSK 3' },
+              { id: 'HSK 4', label: 'HSK 4' },
+              { id: 'HSK 5-6', label: 'HSK 5-6' },
+              { id: 'custom', label: 'Tự thêm' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  playClickSound();
+                  setWritingHskFilter(tab.id);
+                }}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  writingHskFilter === tab.id
+                    ? 'bg-[#E85D3F] text-white shadow-xs'
+                    : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Row 3: Stroke Count Difficulty Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto text-xs pt-1 border-t border-black/5 dark:border-white/5">
+          <span className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8] shrink-0">
+            Số nét bút:
+          </span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {[
+              { id: 'all', label: 'Tất cả nét' },
+              { id: '1', label: '≤ 4 nét' },
+              { id: '2', label: '5 - 8 nét' },
+              { id: '3', label: '9 - 12 nét' },
+              { id: '4', label: '≥ 13 nét' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  playClickSound();
+                  setWritingLevelFilter(tab.id);
+                }}
+                className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  writingLevelFilter === tab.id
+                    ? 'bg-[#243447] text-white dark:bg-white dark:text-[#131B24]'
+                    : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Character Selector Pills with Add Badge & Saved Score */}
       <div className="flex items-center gap-2.5 overflow-x-auto pb-2 pt-1">
-        {allCharacters.map((c, idx) => {
+        {displayedCharacters.map((c, idx) => {
           const charScore = savedScores[c.char];
+          const isSelected = currentChar.char === c.char;
           return (
             <button
               key={`${c.char}-${idx}`}
               onClick={() => {
                 playClickSound();
-                setSelectedCharIndex(idx);
+                const targetIdx = allCharacters.findIndex(item => item.char === c.char);
+                setSelectedCharIndex(targetIdx !== -1 ? targetIdx : 0);
               }}
               className={`relative w-12 h-12 shrink-0 rounded-2xl font-['Noto_Serif_SC'] text-2xl font-bold transition-all flex items-center justify-center ${
-                selectedCharIndex === idx
+                isSelected
                   ? 'bg-[#E85D3F] text-white shadow-lg shadow-[#E85D3F]/30 scale-105'
                   : 'bg-white dark:bg-[#1E293B] text-[#243447] dark:text-white border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]'
               }`}
@@ -924,10 +1247,11 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
               <button
                 onClick={handlePlayStrokeAnimation}
                 disabled={isAnimatingStroke}
-                className="px-3 py-1.5 rounded-xl bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] text-xs font-bold hover:bg-[#FDEED3] flex items-center gap-1.5 transition-colors"
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold hover:bg-amber-500/25 flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-60"
+                title="Tự động vẽ từng nét trên ô Mễ tự cách"
               >
-                <Play size={14} className={isAnimatingStroke ? 'animate-spin' : ''} />
-                <span>Xem thứ tự nét</span>
+                <Play size={14} className={isAnimatingStroke ? 'animate-spin text-[#E85D3F]' : 'text-amber-600 fill-amber-600'} />
+                <span>{isAnimatingStroke ? 'Đang chạy nét...' : 'Xem thứ tự nét'}</span>
               </button>
             </div>
           </div>
@@ -935,9 +1259,15 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
           {/* Canvas Box with Tianzige / Mizige Grid */}
           <div className={`relative mx-auto w-[320px] h-[320px] rounded-2xl border-2 border-[#E85D3F]/60 overflow-hidden shadow-inner tianzige-grid ${gridMode === 'mizige' ? 'tianzige-cross' : ''}`}>
             
+            {/* HanziWriter animated vector stroke layer */}
+            <div 
+              ref={writerContainerRef} 
+              className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10"
+            />
+
             {/* Background character watermark guide */}
-            {showGuide && (
-              <div className="absolute inset-0 flex items-center justify-center font-['Noto_Serif_SC'] text-[210px] font-bold text-gray-200 dark:text-gray-700/40 select-none pointer-events-none leading-none -translate-y-2">
+            {showGuide && !writerLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center font-['Noto_Serif_SC'] text-[210px] font-bold text-gray-200 dark:text-gray-700/40 select-none pointer-events-none leading-none -translate-y-2 z-0">
                 {currentChar.char}
               </div>
             )}
@@ -952,7 +1282,7 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
               onTouchStart={startDrawing}
               onTouchEnd={stopDrawing}
               onTouchMove={draw}
-              className="absolute inset-0 cursor-crosshair touch-none"
+              className="absolute inset-0 cursor-crosshair touch-none z-20"
             />
           </div>
 
@@ -1172,31 +1502,46 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
               )}
 
               {/* Quick Actions */}
-              <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                 <button
-                  onClick={clearCanvas}
-                  className="px-4 py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-black/10 dark:border-white/10 text-xs font-bold text-[#243447] dark:text-white hover:bg-gray-50 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                  onClick={async () => {
+                    playClickSound();
+                    const mastery = getHanziMasteryItem(currentChar.char);
+                    await syncHanziToSrs(null, mastery);
+                    showToast(`Đã đưa chữ "${currentChar.char}" vào hàng đợi ôn tập ngắt quãng SRS!`);
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold flex items-center gap-1.5 hover:bg-purple-100 transition-colors cursor-pointer"
                 >
-                  <RotateCcw size={14} />
-                  <span>Viết lại chữ này</span>
+                  <Repeat size={14} />
+                  <span>Đưa vào SRS ôn tập</span>
                 </button>
 
-                {selectedCharIndex < allCharacters.length - 1 && (
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => {
-                      playClickSound();
-                      setSelectedCharIndex(prev => prev + 1);
-                      clearCanvas();
-                    }}
-                    className="px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md shadow-[#E85D3F]/25 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    onClick={clearCanvas}
+                    className="px-4 py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-black/10 dark:border-white/10 text-xs font-bold text-[#243447] dark:text-white hover:bg-gray-50 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
                   >
-                    <span>Luyện chữ tiếp theo</span>
-                    <ArrowRight size={14} />
+                    <RotateCcw size={14} />
+                    <span>Viết lại chữ này</span>
                   </button>
-                )}
+
+                    {selectedCharIndex < allCharacters.length - 1 && (
+                      <button
+                        onClick={() => {
+                          playClickSound();
+                          setSelectedCharIndex(prev => prev + 1);
+                          clearCanvas();
+                        }}
+                        className="px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md shadow-[#E85D3F]/25 flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <span>Luyện chữ tiếp theo</span>
+                        <ArrowRight size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
         </div>
 
@@ -1207,7 +1552,12 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
           <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-3">
               <div>
-                <span className="text-xs text-[#748092] dark:text-[#94A3B8]">Chữ Hán mẫu:</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs text-[#748092] dark:text-[#94A3B8]">Chữ Hán mẫu:</span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    {currentChar.hskLevel || currentChar.parentVocab?.level || 'HSK 1'}
+                  </span>
+                </div>
                 <div className="flex items-center gap-3">
                   <span className="font-['Noto_Serif_SC'] text-4xl font-bold text-[#243447] dark:text-white">
                     {currentChar.char}
@@ -1231,6 +1581,92 @@ export default function WritingPage({ targetVocab, onClearTargetVocab }) {
                 <span className="text-[#748092]">Bộ thủ & cấu tạo:</span> {currentChar.components || currentChar.radical}
               </p>
             </div>
+
+            {/* Synchronized Parent Vocabulary & Contextual Sentence */}
+            {currentChar.parentVocab && (() => {
+              const pv = currentChar.parentVocab;
+              const exHanzi = typeof pv.example === 'object' ? pv.example?.hanzi : (pv.example || '');
+              const exPinyin = typeof pv.example === 'object' ? pv.example?.pinyin : (pv.pinyinSentence || '');
+              const exMeaning = typeof pv.example === 'object' ? pv.example?.meaning : (pv.exampleMeaning || '');
+              return (
+                <div className="pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-[#E85D3F] flex items-center gap-1">
+                      <BookOpen size={13} />
+                      <span>Từ vựng HSK đồng bộ:</span>
+                    </span>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                      {pv.level || currentChar.hskLevel || 'HSK 1'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-['Noto_Serif_SC'] text-lg font-black text-[#243447] dark:text-white">
+                          {pv.hanzi}
+                        </span>
+                        <span className="text-xs font-bold text-[#E85D3F] ml-2">
+                          {pv.pinyin}
+                        </span>
+                      </div>
+                      <AudioButton text={pv.hanzi} size="sm" />
+                    </div>
+                    <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
+                      Nghĩa: <strong className="text-emerald-600 dark:text-emerald-400">{pv.meaning}</strong>
+                    </p>
+
+                    {exHanzi && (
+                      <div className="pt-2 border-t border-black/5 dark:border-white/5 space-y-0.5">
+                        <p className="font-['Noto_Serif_SC'] text-xs font-bold text-[#243447] dark:text-white">
+                          {exHanzi}
+                        </p>
+                        <p className="text-[11px] text-[#E85D3F]">
+                          {exPinyin}
+                        </p>
+                        <p className="text-[11px] text-[#748092] dark:text-[#94A3B8]">
+                          {exMeaning}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quick Cross-skill Action Buttons */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        if (onSelectPronounce) {
+                          onSelectPronounce(pv);
+                        } else if (setActiveTab) {
+                          setActiveTab('pronunciation');
+                        }
+                      }}
+                      className="flex-1 py-2 px-3 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] border border-orange-200 dark:border-orange-800 text-xs font-bold hover:bg-orange-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      title="Chuyển sang Studio phát âm để luyện nói từ này"
+                    >
+                      <Mic size={13} />
+                      <span>Luyện phát âm từ này</span>
+                    </button>
+
+                    {setActiveTab && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClickSound();
+                          setActiveTab('practice');
+                        }}
+                        className="py-2 px-3 rounded-xl bg-gray-50 dark:bg-[#131B24] text-[#748092] hover:text-[#243447] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold transition-colors cursor-pointer"
+                        title="Quay lại luyện từ vựng"
+                      >
+                        Luyện tập
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Stroke by Stroke Order List */}

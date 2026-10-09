@@ -8,13 +8,16 @@ import {
 } from 'lucide-react';
 import { getDailyMissions, claimDailyMission } from '../../services/learningPathService';
 import { playSuccessSound, playLevelUpSound } from '../../utils/audio';
+import { getUserStorageKey, awardXp, getLocalDateString } from '../../utils/gamification';
 
-export default function DailyMissionsModal({ user, onClose, onRewardClaimed, onAddXp }) {
+export default function DailyMissionsModal({ user, onClose, onRewardClaimed }) {
   const [missions, setMissions] = useState(() => getDailyMissions(user));
+  const today = getLocalDateString();
+  const chestKey = getUserStorageKey(`hanzigo_chest_${today}`, user);
+  
   const [claimedChest, setClaimedChest] = useState(() => {
     try {
-      const today = new Date().toISOString().slice(0, 10);
-      return localStorage.getItem(`hanzigo_chest_${today}`) === 'true';
+      return localStorage.getItem(chestKey) === 'true';
     } catch {
       return false;
     }
@@ -23,13 +26,11 @@ export default function DailyMissionsModal({ user, onClose, onRewardClaimed, onA
   const allCompleted = missions.every(m => m.isCompleted);
   const completedCount = missions.filter(m => m.isCompleted).length;
 
-  const rewardCallback = onRewardClaimed || onAddXp;
-
   const handleClaim = (missionId) => {
     playSuccessSound();
     const { missions: updated, xpAwarded } = claimDailyMission(missionId, user);
     setMissions(updated);
-    if (rewardCallback) rewardCallback(xpAwarded);
+    if (onRewardClaimed) onRewardClaimed(xpAwarded);
 
     try {
       confetti({
@@ -43,12 +44,12 @@ export default function DailyMissionsModal({ user, onClose, onRewardClaimed, onA
   const handleClaimGrandChest = () => {
     if (!allCompleted || claimedChest) return;
     playLevelUpSound();
-    const today = new Date().toISOString().slice(0, 10);
     try {
-      localStorage.setItem(`hanzigo_chest_${today}`, 'true');
+      localStorage.setItem(chestKey, 'true');
     } catch {}
     setClaimedChest(true);
-    if (rewardCallback) rewardCallback(100);
+    awardXp(100, user, `grand_chest_${today}`);
+    if (onRewardClaimed) onRewardClaimed(100);
 
     try {
       confetti({
@@ -140,6 +141,11 @@ export default function DailyMissionsModal({ user, onClose, onRewardClaimed, onA
                   <h4 className="text-xs font-bold text-[#243447] dark:text-white truncate">
                     {m.title}
                   </h4>
+                  {m.reason && (
+                    <span className="inline-block text-[9px] font-medium text-[#E85D3F] bg-orange-50 dark:bg-orange-950/40 px-1.5 py-0.5 rounded-md my-0.5 max-w-full truncate">
+                      🎯 {m.reason}
+                    </span>
+                  )}
                   <p className="text-[10px] text-[#748092] dark:text-[#94A3B8]">
                     Tiến độ: <span className="font-mono font-bold text-[#E85D3F]">{m.current}/{m.target}</span> • +{m.xp} XP
                   </p>

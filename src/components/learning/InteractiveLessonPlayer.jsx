@@ -23,9 +23,20 @@ import {
   Lock,
   Unlock,
   Timer,
-  Zap
+  Zap,
+  Target,
+  ExternalLink,
+  FileText,
+  PenTool,
+  X
 } from 'lucide-react';
-import { completeLesson, getUserJourneyProgress, getNextLessonId } from '../../services/learningPathService';
+import { 
+  completeLesson, 
+  getUserJourneyProgress, 
+  getNextLessonId, 
+  getLessonMaterials 
+} from '../../services/learningPathService';
+import { generatePostLessonAiFeedback, recordLearningLoopStep } from '../../services/aiLearningCoachService';
 import { evaluatePronunciation } from '../../utils/pronunciationEvaluator';
 import { playClickSound, playSuccessSound, playErrorSound, playLevelUpSound } from '../../utils/audio';
 
@@ -48,7 +59,9 @@ export default function InteractiveLessonPlayer({
   onClose, 
   onCompleteNext, 
   onNextLesson, 
-  onCompleteLesson 
+  onCompleteLesson,
+  onSelectWriting = null,
+  onSelectPronounce = null
 }) {
   const [currentStep, setCurrentStep] = useState(0); // 0 to 8 (9 steps)
   const [isCompleted, setIsCompleted] = useState(false);
@@ -56,6 +69,9 @@ export default function InteractiveLessonPlayer({
   const [quizScore, setQuizScore] = useState(0);
   const [stepWarning, setStepWarning] = useState(null);
   const [listeningFeedback, setListeningFeedback] = useState(null);
+  const [aiFeedback, setAiFeedback] = useState(null);
+  const [showMaterialsModal, setShowMaterialsModal] = useState(false);
+  const lessonMaterials = lesson?.id ? getLessonMaterials(lesson.id) : [];
 
   const handleClose = () => {
     if (onBack) onBack();
@@ -630,10 +646,35 @@ export default function InteractiveLessonPlayer({
       return;
     }
     handleStopChallengeRecording();
-    playLevelUpSound();
+    
     const finalScore = Math.min(100, Math.max(70, 75 + quizScore));
-    const { stars } = completeLesson(lesson.id, finalScore, user);
+    const result = completeLesson(lesson.id, finalScore, user);
+
+    if (result.success === false || result.passed === false) {
+      playErrorSound();
+      setStepWarning(result.message || 'Điểm số chưa đạt chuẩn đầu ra (tối thiểu 70%). Hãy ôn tập kiến thức và thử lại!');
+      return;
+    }
+
+    playLevelUpSound();
+    const stars = result.stars || (finalScore >= 90 ? 3 : (finalScore >= 80 ? 2 : 1));
     setEarnedStars(stars);
+
+    // AI Pedagogical Feedback & Learning Loop Tracking
+    try {
+      const feedback = generatePostLessonAiFeedback({
+        lesson,
+        score: finalScore,
+        earnedStars: stars,
+        speakingScore: speakingFeedback?.overall || null,
+        user
+      });
+      setAiFeedback(feedback);
+      recordLearningLoopStep('COMPLETE_LESSON', { lessonId: lesson.id, score: finalScore }, user);
+    } catch (e) {
+      console.warn('AI Feedback error:', e);
+    }
+
     setIsCompleted(true);
     if (onCompleteLesson) onCompleteLesson(finalScore, stars);
 
@@ -679,6 +720,18 @@ export default function InteractiveLessonPlayer({
           </div>
 
           <div className="flex items-center gap-2">
+            {lessonMaterials.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowMaterialsModal(true)}
+                title="Xem tài liệu học tập & giáo trình bổ trợ"
+                className="p-2 rounded-xl text-[#748092] hover:text-[#243447] dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+              >
+                <BookOpen size={14} className="text-[#E85D3F]" />
+                <span className="hidden lg:inline">Tài liệu ({lessonMaterials.length})</span>
+              </button>
+            )}
+
             <button
               onClick={handleRestartLesson}
               title="Học lại bài này từ đầu"
@@ -762,6 +815,61 @@ export default function InteractiveLessonPlayer({
                     {lesson.step1_learn.summary}
                   </p>
                 </div>
+
+                {/* Pedagogical Framework: Objectives, Prerequisites, Passing Criteria */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase text-[#45B97C] flex items-center gap-1">
+                      <Target size={11} /> Mục tiêu bài học
+                    </span>
+                    <p className="text-[#243447] dark:text-slate-300 text-[11px] font-medium leading-snug">
+                      {lesson.objective || 'Làm chủ kiến thức cốt lõi và mẫu câu giao tiếp.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase text-[#3B82F6] flex items-center gap-1">
+                      <Layers size={11} /> Điều kiện tiên quyết
+                    </span>
+                    <p className="text-[#243447] dark:text-slate-300 text-[11px] font-medium leading-snug">
+                      {lesson.prerequisite || 'Đã hoàn thành các bài học trước.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase text-[#E85D3F] flex items-center gap-1">
+                      <Award size={11} /> Chuẩn đầu ra (≥ 70%)
+                    </span>
+                    <p className="text-[#243447] dark:text-slate-300 text-[11px] font-medium leading-snug">
+                      {lesson.completionCriteria || 'Đạt tối thiểu 70% bài tập trắc nghiệm và thử thách.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Linked Materials Quick Action */}
+                {lessonMaterials.length > 0 && (
+                  <div className="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-base">📚</span>
+                      <div>
+                        <span className="font-bold text-[#243447] dark:text-white">
+                          Tài liệu bổ trợ:
+                        </span>
+                        <span className="text-[#748092] dark:text-slate-300 ml-1">
+                          {lessonMaterials[0].title}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowMaterialsModal(true)}
+                      className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#1E293B] hover:bg-amber-100 dark:hover:bg-[#2B3A4F] text-[#E85D3F] text-xs font-bold border border-amber-300 dark:border-amber-700 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <BookOpen size={12} />
+                      <span>Xem giáo trình ({lessonMaterials.length})</span>
+                    </button>
+                  </div>
+                )}
 
                 {/* Tone / Initial Guides */}
                 {lesson.step1_learn.toneGuide && (
@@ -871,6 +979,32 @@ export default function InteractiveLessonPlayer({
                           <div className="text-[#748092] text-[11px]">{v.example.meaning}</div>
                         </div>
                       )}
+
+                      {/* Cohesive Cross-action links: Luyện viết & Luyện phát âm */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F] text-xs">
+                        {onSelectWriting && (
+                          <button
+                            type="button"
+                            onClick={() => onSelectWriting(v)}
+                            title="Luyện viết chữ Hán trên ô mễ tự"
+                            className="px-2.5 py-1 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-[#E85D3F] font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <PenTool size={11} />
+                            <span>Tập viết</span>
+                          </button>
+                        )}
+                        {onSelectPronounce && (
+                          <button
+                            type="button"
+                            onClick={() => onSelectPronounce(v)}
+                            title="Luyện nói phản xạ & chấm điểm phát âm bằng AI"
+                            className="px-2.5 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Mic size={11} />
+                            <span>Luyện phát âm</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -920,6 +1054,29 @@ export default function InteractiveLessonPlayer({
                             <span>Mẹo ghi nhớ nhanh:</span>
                           </span>
                           <p className="text-[#243447] dark:text-[#CBD5E1] leading-relaxed">{h.mnemonic}</p>
+                        </div>
+                      )}
+
+                      {onSelectWriting && (
+                        <div className="pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
+                          <button
+                            type="button"
+                            onClick={() => onSelectWriting({
+                              char: h.hanzi,
+                              hanzi: h.hanzi,
+                              pinyin: h.pinyin,
+                              meaning: h.meaning,
+                              strokes: h.strokesCount,
+                              strokesCount: h.strokesCount,
+                              strokeOrder: h.strokeOrderText,
+                              components: h.components,
+                              tip: h.mnemonic
+                            })}
+                            className="px-3 py-1.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-[#E85D3F] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <PenTool size={13} />
+                            <span>Tập viết chữ "{h.hanzi}" trên ô mễ tự</span>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -1627,6 +1784,46 @@ export default function InteractiveLessonPlayer({
               </div>
             </div>
 
+            {/* AI Pedagogical Feedback Card */}
+            {aiFeedback && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-left space-y-3 shadow-xs">
+                <div className="flex items-center gap-2 text-xs font-black text-[#E85D3F]">
+                  <Sparkles size={15} />
+                  <span>Cố vấn Sư phạm AI HanziGo nhận xét:</span>
+                </div>
+                {aiFeedback.whatUserDidWell?.length > 0 && (
+                  <div className="text-xs space-y-1">
+                    <span className="font-bold text-[#45B97C]">✓ Điểm làm tốt:</span>
+                    <ul className="list-disc pl-4 text-[#748092] dark:text-gray-300 space-y-0.5">
+                      {aiFeedback.whatUserDidWell.map((w, idx) => (
+                        <li key={idx}>{w}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiFeedback.mistakes?.length > 0 && (
+                  <div className="text-xs space-y-1">
+                    <span className="font-bold text-[#E85D3F]">! Cần lưu ý:</span>
+                    <ul className="list-disc pl-4 text-[#748092] dark:text-gray-300 space-y-0.5">
+                      {aiFeedback.mistakes.map((m, idx) => (
+                        <li key={idx}>{m}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiFeedback.recommendedPractice?.length > 0 && (
+                  <div className="text-xs space-y-1">
+                    <span className="font-bold text-blue-500">👉 Khuyến nghị bước tiếp theo:</span>
+                    <ul className="list-disc pl-4 text-[#748092] dark:text-gray-300 space-y-0.5">
+                      {aiFeedback.recommendedPractice.map((p, idx) => (
+                        <li key={idx}>{p}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
               <button
                 onClick={handleClose}
@@ -1654,6 +1851,82 @@ export default function InteractiveLessonPlayer({
           </div>
         )}
       </div>
+
+      {/* VERIFIED MATERIALS MODAL */}
+      {showMaterialsModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md bg-[#FFF9F2] dark:bg-[#131B24] text-[#E85D3F] border border-[#E85D3F]/20">
+                  Tài liệu học tập liên kết • Bài {lesson.lessonNumber}
+                </span>
+                <h3 className="text-base font-bold text-[#243447] dark:text-white">
+                  Tài liệu học tập & Giáo trình bổ trợ
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMaterialsModal(false)}
+                className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-[#748092] cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {lessonMaterials.map(mat => (
+                <div key={mat.id} className="p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white dark:bg-[#1E293B] text-[#E85D3F]">
+                      {mat.category || 'Giáo trình'}
+                    </span>
+                    <span className="text-[10px] text-[#748092]">{mat.author}</span>
+                  </div>
+                  <h4 className="text-xs font-bold text-[#243447] dark:text-white">
+                    {mat.title}
+                  </h4>
+                  <p className="text-[11px] text-[#748092] dark:text-[#94A3B8] line-clamp-2">
+                    {mat.description}
+                  </p>
+                  {mat.verificationNotes && (
+                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                      ✓ {mat.verificationNotes}
+                    </p>
+                  )}
+                  {mat.downloadUrl || mat.sourceUrl ? (
+                    <div className="pt-1">
+                      <a
+                        href={mat.downloadUrl || mat.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white text-[11px] font-bold shadow-xs hover:opacity-95 transition-all"
+                      >
+                        <span>Mở tài liệu (Tab mới)</span>
+                        <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+
+            <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 text-[11px] text-blue-700 dark:text-blue-300">
+              💡 <em>Lưu ý an toàn:</em> Mở tài liệu ngoài sẽ mở trong tab mới độc lập và không ảnh hưởng đến tiến độ bài học của bạn.
+            </div>
+
+            <div className="flex items-center justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setShowMaterialsModal(false)}
+                className="px-4 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

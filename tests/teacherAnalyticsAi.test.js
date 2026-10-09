@@ -4,8 +4,14 @@ import assert from 'node:assert/strict';
 import {
   computeClassAnalytics,
   computeStudentDetailedAnalytics,
-  getAtRiskStudents
+  getAtRiskStudents,
+  sanitizeStudentDataForTeacher
 } from '../src/services/teacherAnalyticsService.js';
+
+import {
+  createClassroom,
+  getClassMembers
+} from '../src/services/classroomService.js';
 
 import {
   analyzeClassWithAi,
@@ -220,4 +226,269 @@ test('AI Lesson Plan: generates 7-step pedagogical structure for teacher customi
   assert.ok(plan.speaking);
   assert.ok(plan.quiz);
   assert.ok(plan.homework);
+});
+
+// =========================================================================
+// PHASE 4 SPECIFIC VERIFICATION TESTS
+// =========================================================================
+
+test('PHASE 4: Student Privacy - Sanitization strictly purges credentials, tokens and secrets', () => {
+  const dirtyStudent = {
+    id: 'stu-123',
+    student_name: 'Nguyen Van Test',
+    email: 'test@hanzigo.com',
+    password: 'SuperSecretPassword123!',
+    password_hash: '$2b$12$e80yqjV...',
+    token: 'eyJhbGciOiJIUzI1Ni...',
+    access_token: 'acc_token_secret',
+    refresh_token: 'ref_token_secret',
+    auth_token: 'auth_jwt_value',
+    secret: 'hidden_client_secret',
+    raw_user_meta_data: { phone: '0901234567' },
+    private_account_info: { ssn: '999-99-9999' },
+    xp: 450,
+    streak: 5
+  };
+
+  const safe = sanitizeStudentDataForTeacher(dirtyStudent);
+
+  assert.equal(safe.student_name, 'Nguyen Van Test');
+  assert.equal(safe.xp, 450);
+  assert.equal(safe.password, undefined);
+  assert.equal(safe.password_hash, undefined);
+  assert.equal(safe.token, undefined);
+  assert.equal(safe.access_token, undefined);
+  assert.equal(safe.refresh_token, undefined);
+  assert.equal(safe.auth_token, undefined);
+  assert.equal(safe.secret, undefined);
+  assert.equal(safe.raw_user_meta_data, undefined);
+  assert.equal(safe.private_account_info, undefined);
+});
+
+test('PHASE 4: Student Privacy - Teacher A cannot access Class B members', async () => {
+  // Create Class B owned by Teacher B
+  const teacherBId = 'teacher-owner-b';
+  const teacherAId = 'teacher-intruder-a';
+
+  const classCreateRes = await createClassroom({
+    name: 'Lớp HSK 3 - Thầy B',
+    description: 'Chỉ học viên lớp B được truy cập',
+    hskLevel: 'HSK 3',
+    teacherId: teacherBId
+  });
+
+  assert.ok(classCreateRes.success);
+  const classBId = classCreateRes.classroom.id;
+
+  // Teacher A tries to fetch members of Class B
+  const intruderAccess = await getClassMembers(classBId, teacherAId);
+  assert.deepEqual(intruderAccess, [], 'Teacher A must be blocked from accessing Class B');
+
+  // Teacher B fetches members of Class B (authorized)
+  const ownerAccess = await getClassMembers(classBId, teacherBId);
+  assert.ok(Array.isArray(ownerAccess));
+});
+
+test('PHASE 4: Deterministic 7-factor Risk Detection (🔴 High Risk, 🟡 Needs Attention, 🟢 On Track)', () => {
+  const now = Date.now();
+  const dayMs = 86400000;
+
+  const mockStudents = [
+    // 1. High risk due to inactivity >= 7 days
+    {
+      id: 's-inact',
+      student_id: 's-inact',
+      last_active: new Date(now - 10 * dayMs).toISOString(),
+      assignment_score: 80,
+      assignment_completion: 80
+    },
+    // 2. High risk due to critical low score (< 50)
+    {
+      id: 's-lowscore',
+      student_id: 's-lowscore',
+      last_active: new Date(now - 1 * dayMs).toISOString(),
+      assignment_score: 42,
+      assignment_completion: 70
+    },
+    // 3. High risk due to critical low completion (< 35)
+    {
+      id: 's-lowcomp',
+      student_id: 's-lowcomp',
+      last_active: new Date(now - 1 * dayMs).toISOString(),
+      assignment_score: 75,
+      assignment_completion: 25
+    },
+    // 4. Needs attention due to repeated mistakes (>= 5)
+    {
+      id: 's-mistakes',
+      student_id: 's-mistakes',
+      last_active: new Date(now - 1 * dayMs).toISOString(),
+      assignment_score: 75,
+      assignment_completion: 80,
+      repeated_mistakes: 7
+    },
+    // 5. Needs attention due to weak listening (< 50)
+    {
+      id: 's-listening',
+      student_id: 's-listening',
+      last_active: new Date(now - 1 * dayMs).toISOString(),
+      assignment_score: 75,
+      assignment_completion: 80,
+      listening: 40
+    },
+    // 6. Needs attention due to weak speaking (< 50)
+    {
+      id: 's-speaking',
+      student_id: 's-speaking',
+      last_active: new Date(now - 1 * dayMs).toISOString(),
+      assignment_score: 75,
+      assignment_completion: 80,
+      speaking: 42
+    },
+    // 7. Needs attention due to weak vocabulary (< 30)
+    {
+      id: 's-vocab',
+      student_id: 's-vocab',
+      last_active: new Date(now - 1 * dayMs).toISOString(),
+      assignment_score: 75,
+      assignment_completion: 80,
+      words_learned: 18
+    },
+    // 8. On Track (Healthy)
+    {
+      id: 's-healthy',
+      student_id: 's-healthy',
+      last_active: new Date(now - 1 * dayMs).toISOString(),
+      assignment_score: 92,
+      assignment_completion: 95,
+      listening: 90,
+      speaking: 88,
+      words_learned: 120
+    }
+  ];
+
+  const result = getAtRiskStudents(mockStudents);
+
+  // Check 3 tiers
+  assert.equal(result.highRisk.length, 3, 'Must detect 3 High Risk students');
+  assert.equal(result.needsAttention.length, 4, 'Must detect 4 Needs Attention students');
+  assert.equal(result.onTrack.length, 1, 'Must detect 1 On Track student');
+
+  // Verify Badges
+  result.highRisk.forEach(s => assert.equal(s.riskBadge, '🔴 High Risk'));
+  result.needsAttention.forEach(s => assert.equal(s.riskBadge, '🟡 Needs Attention'));
+  result.onTrack.forEach(s => assert.equal(s.riskBadge, '🟢 On Track'));
+
+  // Verify Risk Breakdown captures all 7 dimensions
+  assert.ok(result.riskBreakdown.inactiveCount > 0);
+  assert.ok(result.riskBreakdown.lowScoreCount > 0);
+  assert.ok(result.riskBreakdown.lowCompletionCount > 0);
+  assert.ok(result.riskBreakdown.repeatedMistakesCount > 0);
+  assert.ok(result.riskBreakdown.weakListeningCount > 0);
+  assert.ok(result.riskBreakdown.weakSpeakingCount > 0);
+  assert.ok(result.riskBreakdown.weakVocabularyCount > 0);
+});
+
+test('PHASE 4: Empty Classroom - Returns meaningful empty state without crashing or fake stats', () => {
+  const emptyAnalytics = computeClassAnalytics('empty-class-id', [], [], []);
+
+  assert.equal(emptyAnalytics.isEmptyClass, true);
+  assert.equal(emptyAnalytics.totalStudents, 0);
+  assert.equal(emptyAnalytics.activeStudents, 0);
+  assert.equal(emptyAnalytics.averageScore, 0);
+  assert.equal(emptyAnalytics.completionRate, 0);
+  assert.equal(emptyAnalytics.classProgress, 0);
+  assert.ok(typeof emptyAnalytics.emptyStateMessage === 'string');
+  assert.ok(emptyAnalytics.emptyStateMessage.includes('chưa có học viên'));
+});
+
+test('PHASE 4: AI Class Insights - Returns the 5 mandated pedagogical categories', async () => {
+  const aggregatedInput = {
+    totalStudents: 20,
+    hskLevel: 'HSK 3',
+    averageScore: 72,
+    assignmentCompletion: 68,
+    attendanceRate: 85,
+    skillBreakdown: { listening: 60, speaking: 65, reading: 80, writing: 70 },
+    inactiveCount: 2
+  };
+
+  const insights = await analyzeClassWithAi(aggregatedInput);
+
+  assert.ok(insights.success);
+  // 1. class strengths
+  assert.ok(Array.isArray(insights.data.classStrengths) && insights.data.classStrengths.length > 0);
+  // 2. class weaknesses
+  assert.ok(Array.isArray(insights.data.classWeaknesses) && insights.data.classWeaknesses.length > 0);
+  // 3. recommended teaching topics
+  assert.ok(Array.isArray(insights.data.recommendedTeachingTopics) && insights.data.recommendedTeachingTopics.length > 0);
+  // 4. students needing attention (anonymized cohort)
+  assert.ok(Array.isArray(insights.data.studentsNeedingAttention) && insights.data.studentsNeedingAttention.length > 0);
+  // 5. suggested activities
+  assert.ok(Array.isArray(insights.data.suggestedActivities) && insights.data.suggestedActivities.length > 0);
+});
+
+test('PHASE 4: AI Assignment Generator - Covers 5 skills and CANNOT auto-publish', async () => {
+  const res = await generateAssignmentWithAi({
+    hskLevel: 'HSK 3',
+    topic: 'Du lịch và Đặt vé tàu',
+    questionCount: 5,
+    assignmentType: 'Quiz'
+  });
+
+  assert.ok(res.success);
+  // AI KHÔNG được tự động publish
+  assert.equal(res.status, 'DRAFT_REQUIRES_TEACHER_REVIEW');
+  assert.equal(res.published, false);
+  assert.equal(res.reviewedByTeacher, false);
+
+  // Covers 5 skills
+  const skills = res.data.questions.map(q => q.skill);
+  assert.ok(skills.includes('Vocabulary'), 'Must include Vocabulary');
+  assert.ok(skills.includes('Grammar'), 'Must include Grammar');
+  assert.ok(skills.includes('Listening'), 'Must include Listening');
+  assert.ok(skills.includes('Reading'), 'Must include Reading');
+  assert.ok(skills.includes('Speaking'), 'Must include Speaking');
+  assert.equal(res.data.skillsCovered.length, 5);
+});
+
+test('PHASE 4: AI Lesson Generator - Generates all 6 lesson elements in draft state', async () => {
+  const res = await generateLessonPlanWithAi({
+    hskLevel: 'HSK 3',
+    topic: 'Đi mua sắm tại chợ Bắc Kinh',
+    duration: 45
+  });
+
+  assert.ok(res.success);
+  assert.equal(res.status, 'DRAFT_REQUIRES_TEACHER_REVIEW');
+  assert.equal(res.published, false);
+
+  const lesson = res.data;
+  // 1. Learning objective
+  assert.ok(lesson.learningObjective && lesson.learningObjective.length > 0);
+  // 2. Vocabulary
+  assert.ok(Array.isArray(lesson.vocabulary) && lesson.vocabulary.length > 0);
+  // 3. Grammar
+  assert.ok(Array.isArray(lesson.grammar) && lesson.grammar.length > 0);
+  // 4. Examples
+  assert.ok(Array.isArray(lesson.examples) && lesson.examples.length > 0);
+  // 5. Practice
+  assert.ok(Array.isArray(lesson.practice) && lesson.practice.length > 0);
+  // 6. Quiz
+  assert.ok(Array.isArray(lesson.quiz) && lesson.quiz.length > 0);
+});
+
+test('PHASE 4: Fault Tolerance - Invalid AI output triggers graceful fallback without throwing', async () => {
+  // Pass unexpected payload
+  const fallbackAssignment = await generateAssignmentWithAi({
+    hskLevel: 'UNKNOWN',
+    topic: '',
+    questionCount: -1
+  });
+
+  assert.ok(fallbackAssignment.success);
+  assert.equal(fallbackAssignment.status, 'DRAFT_REQUIRES_TEACHER_REVIEW');
+  assert.equal(fallbackAssignment.published, false);
+  assert.ok(Array.isArray(fallbackAssignment.data.questions));
+  assert.ok(fallbackAssignment.data.questions.length >= 1);
 });

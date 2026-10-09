@@ -11,7 +11,10 @@ import {
   Lightbulb,
   History,
   X,
-  Bot
+  Bot,
+  Headphones,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { CONVERSATIONS_DATA } from '../data/chineseData';
@@ -19,10 +22,13 @@ import { speakChinese, playSuccessSound, playClickSound } from '../utils/audio';
 import { triggerCloudSync } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
 import { sendTutorMessage } from '../services/aiTutorService';
+import ListeningPracticeView from '../components/depth/ListeningPracticeView';
+import GrammarEngineView from '../components/depth/GrammarEngineView';
 
 const STORAGE_KEY = 'hanzigo_ai_chat_history';
 
 export default function ConversationPage() {
+  const [activeDepthTab, setActiveDepthTab] = useState('conversation'); // 'conversation' | 'listening' | 'grammar'
   const [selectedConvIndex, setSelectedConvIndex] = useState(0);
   const conversation = CONVERSATIONS_DATA[selectedConvIndex];
 
@@ -373,35 +379,72 @@ export default function ConversationPage() {
         </div>
       </div>
 
-      {/* Scenarios Carousel Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        {CONVERSATIONS_DATA.map((conv, idx) => {
-          const savedCount = allChatHistory[conv.id]?.length;
-          return (
-            <button
-              key={conv.id}
-              onClick={() => handleSelectConversation(idx)}
-              className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
-                selectedConvIndex === idx
-                  ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
-                  : 'bg-white dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:bg-[#FFF9F2]'
-              }`}
-            >
-              <span>{conv.title}</span>
-              {savedCount > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  selectedConvIndex === idx ? 'bg-white/20 text-white' : 'bg-[#FFF9F2] text-[#E85D3F]'
-                }`}>
-                  {savedCount}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      {/* Segmented Mode Switcher */}
+      <div className="flex flex-wrap items-center justify-center gap-2 bg-white dark:bg-[#1E293B] p-2 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm max-w-2xl mx-auto">
+        {[
+          { id: 'conversation', label: '💬 Hội Thoại AI Tiểu Hàm' },
+          { id: 'listening', label: '🎧 Listening Practice' },
+          { id: 'grammar', label: '🧱 Grammar Engine' }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => {
+              playClickSound();
+              setActiveDepthTab(tab.id);
+            }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeDepthTab === tab.id
+                ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/30 scale-[1.02]'
+                : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Main Dialogue Box */}
-      <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl overflow-hidden flex flex-col h-[600px]">
+      {/* MODE: LISTENING PRACTICE */}
+      {activeDepthTab === 'listening' && (
+        <ListeningPracticeView />
+      )}
+
+      {/* MODE: GRAMMAR ENGINE */}
+      {activeDepthTab === 'grammar' && (
+        <GrammarEngineView />
+      )}
+
+      {/* MODE: CONVERSATION AI */}
+      {activeDepthTab === 'conversation' && (
+        <>
+          {/* Scenarios Carousel Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            {CONVERSATIONS_DATA.map((conv, idx) => {
+              const savedCount = allChatHistory[conv.id]?.length;
+              return (
+                <button
+                  key={conv.id}
+                  onClick={() => handleSelectConversation(idx)}
+                  className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+                    selectedConvIndex === idx
+                      ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
+                      : 'bg-white dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:bg-[#FFF9F2]'
+                  }`}
+                >
+                  <span>{conv.title}</span>
+                  {savedCount > 0 && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      selectedConvIndex === idx ? 'bg-white/20 text-white' : 'bg-[#FFF9F2] text-[#E85D3F]'
+                    }`}>
+                      {savedCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Main Dialogue Box */}
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl overflow-hidden flex flex-col h-[600px]">
         
         {/* Scenario Header Bar */}
         <div className="p-4 sm:p-5 bg-gradient-to-r from-[#FFF9F2] to-white dark:from-[#131B24] dark:to-[#1E293B] border-b border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
@@ -631,6 +674,8 @@ export default function ConversationPage() {
         </form>
 
       </div>
+        </>
+      )}
 
       {/* History Manager Modal */}
       {isHistoryModalOpen && (

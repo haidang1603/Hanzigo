@@ -27,9 +27,9 @@ import { playClickSound, playSuccessSound, playErrorSound } from '../utils/audio
 import { VOCABULARY_LIST, TOPIC_FILTERS } from '../data/chineseData';
 import { getStoredCustomVocab, saveCustomVocab, deleteCustomVocab } from '../utils/materialsStorage';
 import { triggerCloudSync, getVocabularyFromDb, addVocabularyToDb } from '../supabase/services';
-import { awardXp } from '../utils/gamification';
+import { awardXp, getUserStorageKey, getLocalDateString } from '../utils/gamification';
 import { calculateNextSrsReview, SRS_QUALITY } from '../utils/srsEngine';
-import { saveUserVocabSrsCard } from '../services';
+import { saveUserVocabSrsCard, updateDailyMissionProgress } from '../services';
 
 const STORAGE_REMEMBERED = 'hanzigo_vocab_remembered';
 const STORAGE_REVIEW = 'hanzigo_vocab_review';
@@ -160,7 +160,7 @@ function normalizeVocab(item) {
   };
 }
 
-export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelectPronounce }) {
+export default function VocabularyPage({ user, setActiveTab, onSelectWriting, onSelectPronounce }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('Tất cả');
   const [selectedHsk, setSelectedHsk] = useState('all');
@@ -211,10 +211,11 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  // Spaced Repetition status tracking (persisted in localStorage)
+  // Spaced Repetition status tracking (persisted in localStorage per user)
   const [rememberedIds, setRememberedIds] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_REMEMBERED);
+      const key = getUserStorageKey(STORAGE_REMEMBERED, user);
+      const saved = localStorage.getItem(key) || (user ? null : localStorage.getItem(STORAGE_REMEMBERED));
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
@@ -227,7 +228,8 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
 
   const [reviewIds, setReviewIds] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_REVIEW);
+      const key = getUserStorageKey(STORAGE_REVIEW, user);
+      const saved = localStorage.getItem(key) || (user ? null : localStorage.getItem(STORAGE_REVIEW));
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
@@ -238,10 +240,11 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
     return [];
   });
 
-  // SM-2 Spaced Repetition State Map
+  // SM-2 Spaced Repetition State Map (persisted per user)
   const [srsMap, setSrsMap] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_SRS_STATE);
+      const key = getUserStorageKey(STORAGE_SRS_STATE, user);
+      const saved = localStorage.getItem(key) || (user ? null : localStorage.getItem(STORAGE_SRS_STATE));
       return saved ? JSON.parse(saved) : {};
     } catch {
       return {};
@@ -276,6 +279,22 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
   const [quizAnswered, setQuizAnswered] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
 
+  // Dynamic counts per HSK Level
+  const hskCounts = useMemo(() => {
+    const counts = { 'HSK 1': 0, 'HSK 2': 0, 'HSK 3': 0, 'HSK 4': 0, 'HSK 5-6': 0 };
+    allVocabList.forEach(v => {
+      const lvl = v.level || 'HSK 1';
+      if (lvl === 'HSK 5-6' || lvl === 'HSK 5' || lvl === 'HSK 6') {
+        counts['HSK 5-6'] = (counts['HSK 5-6'] || 0) + 1;
+      } else if (counts[lvl] !== undefined) {
+        counts[lvl] = (counts[lvl] || 0) + 1;
+      } else {
+        counts[lvl] = 1;
+      }
+    });
+    return counts;
+  }, [allVocabList]);
+
   // Filtered vocabularies
   const filteredVocab = useMemo(() => {
     return allVocabList.filter((item) => {
@@ -286,7 +305,11 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
         item.hanviet.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesTopic = selectedTopic === 'Tất cả' || item.topic === selectedTopic;
-      const matchesHsk = selectedHsk === 'all' || item.level === selectedHsk;
+      const matchesHsk = selectedHsk === 'all'
+        ? true
+        : selectedHsk === 'HSK 5-6'
+          ? (item.level === 'HSK 5-6' || item.level === 'HSK 5' || item.level === 'HSK 6')
+          : item.level === selectedHsk;
 
       let matchesStatus = true;
       if (statusFilter === 'remembered') {
@@ -338,28 +361,62 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
     setSrsMap(prev => {
       const updated = { ...prev, [card.hanzi]: nextSrs };
       try {
-        localStorage.setItem(STORAGE_SRS_STATE, JSON.stringify(updated));
+        const key = getUserStorageKey(STORAGE_SRS_STATE, user);
+        localStorage.setItem(key, JSON.stringify(updated));
       } catch {}
       return updated;
     });
 
     if (quality >= SRS_QUALITY.GOOD) {
       playSuccessSound();
-      awardXp(10, null, `vocab_srs_${card.hanzi}`);
-      setRememberedIds(prev => (prev.includes(card.id) ? prev : [...prev, card.id]));
-      setReviewIds(prev => prev.filter(item => item !== card.id));
+      awardXp(10, user, `vocab_srs_${card.hanzi}_${getLocalDateString()}`);
+      updateDailyMissionProgress('vocab_review', 1, user);
+      
+      setRememberedIds(prev => {
+        const next = prev.includes(card.id) ? prev : [...prev, card.id];
+        try {
+          const key = getUserStorageKey(STORAGE_REMEMBERED, user);
+          localStorage.setItem(key, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      setReviewIds(prev => {
+        const next = prev.filter(item => item !== card.id);
+        try {
+          const key = getUserStorageKey(STORAGE_REVIEW, user);
+          localStorage.setItem(key, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
     } else {
       playClickSound();
-      setReviewIds(prev => (prev.includes(card.id) ? prev : [...prev, card.id]));
-      setRememberedIds(prev => prev.filter(item => item !== card.id));
+      updateDailyMissionProgress('vocab_review', 1, user);
+
+      setReviewIds(prev => {
+        const next = prev.includes(card.id) ? prev : [...prev, card.id];
+        try {
+          const key = getUserStorageKey(STORAGE_REVIEW, user);
+          localStorage.setItem(key, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      setRememberedIds(prev => {
+        const next = prev.filter(item => item !== card.id);
+        try {
+          const key = getUserStorageKey(STORAGE_REMEMBERED, user);
+          localStorage.setItem(key, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
     }
 
     // Sync to Supabase user_vocab_srs table
     try {
-      const userStr = localStorage.getItem('hanzigo_user');
-      const userObj = userStr ? JSON.parse(userStr) : null;
-      if (userObj?.uid) {
-        saveUserVocabSrsCard(userObj.uid, {
+      const targetUid = user?.uid || user?.id;
+      if (targetUid) {
+        saveUserVocabSrsCard(targetUid, {
           hanzi: card.hanzi,
           pinyin: card.pinyin,
           meaning: card.meaning,
@@ -371,9 +428,9 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
       console.warn('SRS DB sync notice:', e);
     }
 
-    triggerCloudSync();
+    triggerCloudSync(user?.uid || user?.id);
     handleNextCard();
-  }, [srsMap, handleNextCard]);
+  }, [srsMap, user, handleNextCard]);
 
   // Backward-compatible triggers
   const handleMarkRemembered = useCallback((id) => {
@@ -692,6 +749,49 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
       {/* Search, Filter Toolbar & View Mode Switcher */}
       <div className="space-y-4 bg-white dark:bg-[#1E293B] p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
         
+        {/* Prominent HSK Level Filter Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8] shrink-0">
+            Cấp độ HSK:
+          </span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {[
+              { id: 'all', label: 'Tất cả HSK', count: allVocabList.length },
+              { id: 'HSK 1', label: 'HSK 1', count: hskCounts['HSK 1'] || 0 },
+              { id: 'HSK 2', label: 'HSK 2', count: hskCounts['HSK 2'] || 0 },
+              { id: 'HSK 3', label: 'HSK 3', count: hskCounts['HSK 3'] || 0 },
+              { id: 'HSK 4', label: 'HSK 4', count: hskCounts['HSK 4'] || 0 },
+              { id: 'HSK 5-6', label: 'HSK 5-6 (Thành ngữ)', count: hskCounts['HSK 5-6'] || 0 }
+            ].map((tab) => {
+              const isActive = selectedHsk === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    playClickSound();
+                    setSelectedHsk(tab.id);
+                    setCurrentIndex(0);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                    isActive
+                      ? 'bg-[#E85D3F] text-white shadow-xs scale-[1.02]'
+                      : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] hover:text-[#243447] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F]'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : 'bg-black/5 dark:bg-white/10 text-[#748092]'
+                  }`}>
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="flex flex-col md:flex-row items-center gap-3">
           
           {/* Search Bar */}
@@ -709,22 +809,18 @@ export default function VocabularyPage({ setActiveTab, onSelectWriting, onSelect
             />
           </div>
 
-          {/* HSK Level Filter */}
+          {/* Topic Filter Select */}
           <select
-            value={selectedHsk}
+            value={selectedTopic}
             onChange={(e) => {
-              setSelectedHsk(e.target.value);
+              setSelectedTopic(e.target.value);
               setCurrentIndex(0);
             }}
             className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-semibold text-[#243447] dark:text-white focus:outline-none"
           >
-            <option value="all">Tất cả HSK</option>
-            <option value="HSK 1">HSK 1</option>
-            <option value="HSK 2">HSK 2</option>
-            <option value="HSK 3">HSK 3</option>
-            <option value="HSK 4">HSK 4</option>
-            <option value="HSK 5">HSK 5</option>
-            <option value="HSK 6">HSK 6</option>
+            {TOPIC_FILTERS.map(t => (
+              <option key={t} value={t}>{t === 'Tất cả' ? 'Tất cả chủ đề' : t}</option>
+            ))}
           </select>
 
           {/* Learning Status Filter */}

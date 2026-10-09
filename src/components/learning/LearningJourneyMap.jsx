@@ -7,7 +7,14 @@ import {
   BookOpen, 
   ChevronDown, 
   ChevronUp,
-  Compass
+  Compass,
+  Play,
+  FileText,
+  ExternalLink,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Volume2
 } from 'lucide-react';
 import { 
   getAllLevels, 
@@ -17,9 +24,12 @@ import {
   getLessonNodeStatus, 
   isBossUnlocked,
   getBossChallengeByChapter,
-  getLevelById
+  getLevelById,
+  getResumeLesson,
+  getChapterMaterials,
+  getLessonMaterials
 } from '../../services/learningPathService';
-import { playClickSound, playErrorSound } from '../../utils/audio';
+import { playClickSound, playErrorSound, speakChinese } from '../../utils/audio';
 
 export default function LearningJourneyMap({ 
   user, 
@@ -32,7 +42,9 @@ export default function LearningJourneyMap({
 }) {
   const levels = getAllLevels();
   const [selectedLevelId, setSelectedLevelId] = useState('lvl-1');
+  const [selectedMaterialModal, setSelectedMaterialModal] = useState(null);
   const progress = getUserJourneyProgress(user);
+  const resumeInfo = getResumeLesson(progress);
 
   const selectedLevel = getLevelById(selectedLevelId);
   const chapters = getChaptersByLevel(selectedLevelId);
@@ -51,6 +63,68 @@ export default function LearningJourneyMap({
 
   return (
     <div className="space-y-6">
+      {/* 0. HERO RESUME BANNER ("TIẾP TỤC BÀI HỌC") */}
+      {resumeInfo?.lesson && (
+        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#243447] via-[#1E293B] to-[#131B24] text-white border border-[#E85D3F]/30 shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#E85D3F]/20 to-transparent rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-[#E85D3F] text-white tracking-wider flex items-center gap-1">
+                  <Play size={10} fill="currentColor" />
+                  Tiếp tục bài học
+                </span>
+                <span className="text-xs font-bold text-amber-300">
+                  {resumeInfo.level?.code || 'HSK 1'} • Module {resumeInfo.chapter?.moduleCode || '1.1'}
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                  resumeInfo.status === 'in_progress' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' :
+                  resumeInfo.status === 'mastered' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                  resumeInfo.status === 'completed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                  'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                }`}>
+                  {resumeInfo.status === 'in_progress' ? 'Đang học dở' :
+                   resumeInfo.status === 'mastered' ? 'Đã thành thạo (3★)' :
+                   resumeInfo.status === 'completed' ? 'Đã hoàn thành' : 'Sẵn sàng học'}
+                </span>
+              </div>
+
+              <div>
+                <h3 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+                  <span>Bài {resumeInfo.lesson.lessonNumber}:</span>
+                  <span>{resumeInfo.lesson.title}</span>
+                </h3>
+                <p className="text-xs text-slate-300 mt-1 max-w-xl line-clamp-2">
+                  {resumeInfo.lesson.objective || resumeInfo.lesson.subtitle}
+                </p>
+              </div>
+
+              {resumeInfo.lesson.completionCriteria && (
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                  <CheckCircle2 size={12} className="text-[#45B97C]" />
+                  <span>Tiêu chuẩn qua bài: {resumeInfo.lesson.completionCriteria}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  onSelectLesson(resumeInfo.lesson);
+                }}
+                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#f06e52] hover:to-[#db4f33] text-white text-sm font-black shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              >
+                <Play size={16} fill="currentColor" />
+                <span>Vào học ngay</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1. COMPACT LEVEL SELECTOR & STATUS BAR */}
       <div className="space-y-3">
         {/* Level Selector Pills */}
@@ -285,22 +359,74 @@ export default function LearningJourneyMap({
 
           return (
             <div key={chapter.id} className="relative space-y-6">
-              {/* Chapter Header Banner */}
-              <div className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md bg-[#FFF9F2] dark:bg-[#131B24] text-[#E85D3F] border border-[#E85D3F]/20">
-                      CHƯƠNG {chapter.chapterNumber}
-                    </span>
-                    <span className="text-xs font-bold text-[#748092]">{chapter.chineseTitle}</span>
+              {/* Chapter Header Banner with Full Hierarchy & Materials */}
+              <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-3">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md bg-[#FFF9F2] dark:bg-[#131B24] text-[#E85D3F] border border-[#E85D3F]/20">
+                        {chapter.moduleCode ? `MODULE ${chapter.moduleCode}` : `CHƯƠNG ${chapter.chapterNumber}`}
+                      </span>
+                      {chapter.unitTitle && (
+                        <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                          Unit: {chapter.unitTitle}
+                        </span>
+                      )}
+                      <span className="text-xs font-bold text-[#748092]">{chapter.chineseTitle}</span>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-black text-[#243447] dark:text-white">
+                      {chapter.title}
+                    </h3>
+                    <p className="text-xs text-[#748092] dark:text-[#94A3B8] max-w-2xl leading-relaxed">
+                      {chapter.desc}
+                    </p>
                   </div>
-                  <h3 className="text-base font-bold text-[#243447] dark:text-white">
-                    {chapter.title}
-                  </h3>
-                  <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-                    {chapter.desc}
-                  </p>
+
+                  {/* Prerequisites & Review Badges */}
+                  <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end gap-1.5 text-[11px] shrink-0">
+                    {chapter.prerequisite && (
+                      <span className="px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1 font-medium">
+                        <AlertCircle size={12} />
+                        <span>Tiên quyết: {chapter.prerequisite}</span>
+                      </span>
+                    )}
+                    {chapter.reviewLessonId && (
+                      <span className="px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1 font-medium">
+                        <BookOpen size={12} />
+                        <span>Ôn tập: Bài {chapter.reviewLessonId.replace('l-', '')}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
+
+                {/* Related Materials Linked Chips */}
+                {(() => {
+                  const chapterMaterials = getChapterMaterials(chapter.id);
+                  if (chapterMaterials.length === 0) return null;
+                  return (
+                    <div className="pt-2.5 border-t border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70 flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-bold text-[#748092] flex items-center gap-1">
+                        <FileText size={12} className="text-[#E85D3F]" />
+                        <span>Tài liệu thẩm định:</span>
+                      </span>
+                      {chapterMaterials.map(mat => (
+                        <button
+                          key={mat.id}
+                          type="button"
+                          onClick={() => {
+                            playClickSound();
+                            setSelectedMaterialModal(mat);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-[#F1E5D8] dark:hover:bg-[#2B3A4F] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>📖</span>
+                          <span className="max-w-[180px] truncate">{mat.title}</span>
+                          <ExternalLink size={10} className="text-[#E85D3F]" />
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Vertical Interactive Node Pathway */}
@@ -312,7 +438,8 @@ export default function LearningJourneyMap({
                 {chapterLessons.map((lesson, idx) => {
                   const status = getLessonNodeStatus(lesson.id, progress);
                   const isLocked = status === 'locked';
-                  const isCompleted = status === 'completed' || status === 'mastered';
+                  const isMastered = status === 'mastered';
+                  const isCompleted = status === 'completed' || isMastered;
                   const isInProgress = status === 'in_progress';
                   const isAvailable = status === 'available';
 
@@ -340,7 +467,9 @@ export default function LearningJourneyMap({
                           onSelectLesson(lesson);
                         }}
                         className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex flex-col items-center justify-center relative shadow-lg transition-all active:scale-95 cursor-pointer group ${
-                          isCompleted
+                          isMastered
+                            ? 'bg-gradient-to-tr from-amber-500 to-yellow-400 text-white shadow-amber-500/30 ring-4 ring-amber-400/40'
+                            : isCompleted
                             ? 'bg-[#45B97C] text-white shadow-[#45B97C]/25 ring-4 ring-[#45B97C]/20'
                             : isInProgress
                             ? 'bg-[#E85D3F] text-white shadow-[#E85D3F]/30 ring-4 ring-[#E85D3F]/30 animate-pulse'
@@ -364,35 +493,59 @@ export default function LearningJourneyMap({
 
                         {/* Star Rating Badge */}
                         {isCompleted && (
-                          <div className="absolute -bottom-2 flex items-center gap-0.5 bg-white dark:bg-[#1E293B] px-1.5 py-0.5 rounded-full border border-[#F1E5D8] shadow-xs text-amber-400 text-[10px]">
-                            ★
+                          <div className={`absolute -bottom-2 flex items-center gap-0.5 px-2 py-0.5 rounded-full border shadow-xs text-[10px] ${
+                            isMastered
+                              ? 'bg-amber-400 text-amber-950 border-amber-300 font-black'
+                              : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] text-amber-400 font-bold'
+                          }`}>
+                            {isMastered ? '★★★' : (progress.completedLessons[lesson.id]?.stars === 2 ? '★★' : '★')}
                           </div>
                         )}
                       </button>
 
                       {/* Tooltip Label */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isLocked) {
-                            playErrorSound();
-                            if (onLockedClick) {
-                              onLockedClick(lesson);
-                            } else if (onOpenPlacementTest) {
-                              onOpenPlacementTest();
-                            }
-                            return;
-                          }
-                          playClickSound();
-                          onSelectLesson(lesson);
-                        }}
-                        className="mt-2 text-center max-w-44 px-2 py-1 rounded-xl bg-white/90 dark:bg-[#1E293B]/90 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs hover:border-[#E85D3F] transition-all cursor-pointer"
-                      >
-                        <p className="text-xs font-bold text-[#243447] dark:text-white truncate">
-                          {lesson.title}
-                        </p>
-                        <p className="text-[10px] text-[#748092]">+{lesson.xpReward} XP</p>
-                      </button>
+                      <div className="mt-2 text-center max-w-48 px-2.5 py-1.5 rounded-xl bg-white/95 dark:bg-[#1E293B]/95 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs hover:border-[#E85D3F] transition-all">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isLocked) {
+                                playErrorSound();
+                                if (onLockedClick) {
+                                  onLockedClick(lesson);
+                                } else if (onOpenPlacementTest) {
+                                  onOpenPlacementTest();
+                                }
+                                return;
+                              }
+                              playClickSound();
+                              onSelectLesson(lesson);
+                            }}
+                            className="text-xs font-bold text-[#243447] dark:text-white truncate cursor-pointer hover:text-[#E85D3F] transition-colors"
+                          >
+                            {lesson.title}
+                          </button>
+                          {lesson.chineseTitle && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                speakChinese(lesson.chineseTitle);
+                              }}
+                              className="text-[#E85D3F] hover:scale-125 transition-transform cursor-pointer shrink-0"
+                              title={`Nghe phát âm: ${lesson.chineseTitle}`}
+                            >
+                              <Volume2 size={12} />
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#748092] mt-0.5">
+                          <span>+{lesson.xpReward} XP</span>
+                          {lesson.relatedMaterialIds?.length > 0 && (
+                            <span className="text-[#E85D3F] font-bold">● Giáo trình</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
@@ -463,6 +616,69 @@ export default function LearningJourneyMap({
           );
         }))}
       </div>
+
+      {/* 5. VERIFIED MATERIAL PREVIEW MODAL */}
+      {selectedMaterialModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md bg-[#FFF9F2] dark:bg-[#131B24] text-[#E85D3F] border border-[#E85D3F]/20">
+                  {selectedMaterialModal.category || 'Tài liệu chuẩn'} • {selectedMaterialModal.level || 'HSK'}
+                </span>
+                <h3 className="text-base font-bold text-[#243447] dark:text-white">
+                  {selectedMaterialModal.title}
+                </h3>
+                <p className="text-xs text-[#748092]">
+                  {selectedMaterialModal.author} ({selectedMaterialModal.publisher})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedMaterialModal(null)}
+                className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-[#748092] cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
+              {selectedMaterialModal.description || 'Tài liệu giáo dục trích dẫn học thuật phục vụ người học HanziGo.'}
+            </p>
+
+            {selectedMaterialModal.verificationNotes && (
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-800 dark:text-emerald-300">
+                ✓ <strong>Thẩm định:</strong> {selectedMaterialModal.verificationNotes}
+              </div>
+            )}
+
+            <div className="p-3 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[11px] text-[#748092] space-y-1">
+              <p>💡 <em>Lưu ý an toàn:</em> Mở tài liệu ngoài sẽ mở trong tab mới và KHÔNG tự động hoàn thành bài học của bạn.</p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedMaterialModal(null)}
+                className="px-4 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] cursor-pointer"
+              >
+                Đóng
+              </button>
+              {selectedMaterialModal.downloadUrl || selectedMaterialModal.sourceUrl ? (
+                <a
+                  href={selectedMaterialModal.downloadUrl || selectedMaterialModal.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white text-xs font-bold shadow-md hover:opacity-95 transition-all flex items-center gap-1.5"
+                >
+                  <span>Mở tài liệu (Tab mới)</span>
+                  <ExternalLink size={14} />
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

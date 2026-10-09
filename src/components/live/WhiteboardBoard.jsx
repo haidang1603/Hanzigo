@@ -10,7 +10,9 @@ import {
   ArrowUpRight, 
   Trash2, 
   Palette,
-  Undo2
+  Undo2,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { playClickSound } from '../../utils/audio';
 import { broadcastWhiteboardOperation, clearWhiteboard } from '../../services/liveClassroomService';
@@ -20,9 +22,12 @@ export default function WhiteboardBoard({
   user,
   sessionId,
   whiteboardState = {},
+  whiteboardPermissions = {},
+  onToggleStudentDrawing,
   onUpdateState: _onUpdateState
 }) {
   const operations = whiteboardState?.operations || [];
+  const canDraw = isTeacher || Boolean(whiteboardPermissions?.studentDrawingAllowed);
 
   const [activeTool, setActiveTool] = useState('pen'); // 'pen' | 'eraser' | 'highlighter' | 'text' | 'line' | 'rectangle' | 'circle' | 'arrow'
   const [activeColor, setActiveColor] = useState('#F4B942');
@@ -156,6 +161,7 @@ export default function WhiteboardBoard({
   };
 
   const handleMouseDown = (e) => {
+    if (!canDraw) return;
     const { x, y } = getCanvasCoords(e);
     isDrawingRef.current = true;
     startPointRef.current = { x, y };
@@ -326,6 +332,22 @@ export default function WhiteboardBoard({
             />
           </div>
 
+          {/* Teacher permission toggle */}
+          {isTeacher && onToggleStudentDrawing && (
+            <button
+              onClick={() => onToggleStudentDrawing(!whiteboardPermissions?.studentDrawingAllowed)}
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer border ${
+                whiteboardPermissions?.studentDrawingAllowed
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                  : 'bg-white/10 text-white/70 border-white/15 hover:bg-white/15'
+              }`}
+              title={whiteboardPermissions?.studentDrawingAllowed ? 'Khóa vẽ bảng trắng của học sinh' : 'Cho phép học sinh cùng vẽ trên bảng trắng'}
+            >
+              {whiteboardPermissions?.studentDrawingAllowed ? <Unlock size={13} /> : <Lock size={13} />}
+              <span>{whiteboardPermissions?.studentDrawingAllowed ? 'HS được vẽ' : 'Khóa HS vẽ'}</span>
+            </button>
+          )}
+
           <button
             onClick={handleClear}
             className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold text-xs transition-all flex items-center gap-1 cursor-pointer"
@@ -351,11 +373,17 @@ export default function WhiteboardBoard({
           onTouchStart={handleMouseDown}
           onTouchMove={handleMouseMove}
           onTouchEnd={handleMouseUp}
-          className="w-full h-full relative z-10 cursor-crosshair touch-none select-none"
+          className={`w-full h-full relative z-10 touch-none select-none ${canDraw ? 'cursor-crosshair' : 'cursor-default'}`}
         />
 
-        <div className="absolute bottom-3 left-4 px-3 py-1 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white/60 pointer-events-none">
-          ⚡ Đồng bộ vector realtime ({operations.length} nét vẽ)
+        <div className="absolute bottom-3 left-4 px-3 py-1 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white/60 pointer-events-none flex items-center gap-2">
+          <span>⚡ Đồng bộ vector realtime ({operations.length} nét vẽ)</span>
+          {!canDraw && (
+            <span className="text-amber-400 font-bold flex items-center gap-1">
+              <Lock size={11} />
+              <span>Chế độ chỉ xem (Giáo viên đã khóa vẽ)</span>
+            </span>
+          )}
         </div>
       </div>
     </div>

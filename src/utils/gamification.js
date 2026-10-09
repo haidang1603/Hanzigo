@@ -128,9 +128,10 @@ export function awardXp(amount, user = null, idempotencyKey = null) {
     } catch {}
   }
 
+  const today = getLocalDateString();
+
   // Idempotency check: prevent duplicate awarding for the exact same action today
   if (idempotencyKey) {
-    const today = getLocalDateString();
     const actionHistoryKey = getUserStorageKey('hanzigo_awarded_actions', targetUser);
     try {
       const rawActions = localStorage.getItem(actionHistoryKey);
@@ -147,12 +148,33 @@ export function awardXp(amount, user = null, idempotencyKey = null) {
     }
   }
 
+  // Anti-abuse: Enforce daily bonus XP cap (max 1,500 XP/day to prevent spam scripts)
+  const dailyXpCapKey = getUserStorageKey(`hanzigo_daily_bonus_cap_${today}`, targetUser);
+  let dailyGranted = 0;
+  try {
+    const rawDaily = localStorage.getItem(dailyXpCapKey);
+    if (rawDaily) dailyGranted = parseInt(rawDaily, 10) || 0;
+  } catch {}
+
+  const MAX_DAILY_CAP = 1500;
+  if (dailyGranted >= MAX_DAILY_CAP) {
+    // Already hit daily cap, do not add more bonus XP
+    return calculateTotalXp(targetUser);
+  }
+
+  const effectiveAmount = Math.min(amount, MAX_DAILY_CAP - dailyGranted);
+  if (effectiveAmount <= 0) return calculateTotalXp(targetUser);
+
+  try {
+    localStorage.setItem(dailyXpCapKey, String(dailyGranted + effectiveAmount));
+  } catch {}
+
   const bonusKey = getUserStorageKey('hanzigo_bonus_xp', targetUser);
 
   try {
     const rawBonus = localStorage.getItem(bonusKey);
     const current = rawBonus ? parseInt(rawBonus, 10) || 0 : 0;
-    const nextBonus = current + amount;
+    const nextBonus = current + effectiveAmount;
     localStorage.setItem(bonusKey, String(nextBonus));
   } catch (err) {
     console.error('Error awarding XP:', err);
@@ -326,26 +348,50 @@ export function getStreakStatus(user = null) {
   }
 }
 
-/**
- * Level & Rank information calculated from XP
- */
+export const LEVEL_SYSTEM = [
+  { level: 1, minXp: 0, maxXp: 150, title: 'Tân Thủ (Beginner)', badge: '🌱', hskEquivalent: 'Nhập Môn' },
+  { level: 2, minXp: 150, maxXp: 350, title: 'Đồng Môn Nhập Môn', badge: '📘', hskEquivalent: 'HSK 1-' },
+  { level: 3, minXp: 350, maxXp: 600, title: 'Người Học Chăm Chỉ', badge: '🔥', hskEquivalent: 'HSK 1' },
+  { level: 4, minXp: 600, maxXp: 950, title: 'Học Giả Khởi Động', badge: '⭐', hskEquivalent: 'HSK 1+' },
+  { level: 5, minXp: 950, maxXp: 1400, title: 'Kỵ Sĩ Pinyin', badge: '🗣️', hskEquivalent: 'HSK 2-' },
+  { level: 6, minXp: 1400, maxXp: 1950, title: 'Thám Hiểm Từ Vựng', badge: '📚', hskEquivalent: 'HSK 2' },
+  { level: 7, minXp: 1950, maxXp: 2600, title: 'Cao Đồ Khẩu Ngữ', badge: '💬', hskEquivalent: 'HSK 2+' },
+  { level: 8, minXp: 2600, maxXp: 3350, title: 'Kiện Tướng Bút Thuận', badge: '🖌️', hskEquivalent: 'HSK 3-' },
+  { level: 9, minXp: 3350, maxXp: 4200, title: 'Chiến Binh Ngữ Pháp', badge: '⚡', hskEquivalent: 'HSK 3' },
+  { level: 10, minXp: 4200, maxXp: 5200, title: 'Người Khám Phá Hán Ngữ (Chinese Explorer)', badge: '🧭', hskEquivalent: 'HSK 3+' },
+  { level: 11, minXp: 5200, maxXp: 6350, title: 'Cao Thủ Nghe Hiểu', badge: '🎧', hskEquivalent: 'HSK 4-' },
+  { level: 12, minXp: 6350, maxXp: 7650, title: 'Độc Giả Hán Tự', badge: '📖', hskEquivalent: 'HSK 4' },
+  { level: 13, minXp: 7650, maxXp: 9100, title: 'Tinh Anh Khẩu Ngữ', badge: '🎙️', hskEquivalent: 'HSK 4+' },
+  { level: 14, minXp: 9100, maxXp: 10700, title: 'Hiệp Sĩ Hán Ngữ', badge: '🛡️', hskEquivalent: 'HSK 5-' },
+  { level: 15, minXp: 10700, maxXp: 12500, title: 'Chuyên Gia Thành Ngữ', badge: '📜', hskEquivalent: 'HSK 5' },
+  { level: 16, minXp: 12500, maxXp: 14500, title: 'Bậc Thầy Đối Thoại', badge: '💎', hskEquivalent: 'HSK 5' },
+  { level: 17, minXp: 14500, maxXp: 16700, title: 'Học Giả Uyên Bác', badge: '🏛️', hskEquivalent: 'HSK 5+' },
+  { level: 18, minXp: 16700, maxXp: 19100, title: 'Thủ Lĩnh Phản Xạ', badge: '🐅', hskEquivalent: 'HSK 5+' },
+  { level: 19, minXp: 19100, maxXp: 21800, title: 'Tiên Phong Học Thuật', badge: '🦅', hskEquivalent: 'HSK 6-' },
+  { level: 20, minXp: 21800, maxXp: 25000, title: 'Chiến Binh HSK (HSK Challenger)', badge: '⚔️', hskEquivalent: 'HSK 6' },
+  { level: 21, minXp: 25000, maxXp: 28500, title: 'Bậc Thầy Dịch Thuật', badge: '🌐', hskEquivalent: 'HSK 6' },
+  { level: 22, minXp: 28500, maxXp: 32500, title: 'Thần Bút Thư Pháp', badge: '🖋️', hskEquivalent: 'HSK 6+' },
+  { level: 23, minXp: 32500, maxXp: 37000, title: 'Sứ Giả Văn Hóa', badge: '🏮', hskEquivalent: 'HSK 6+' },
+  { level: 24, minXp: 37000, maxXp: 42000, title: 'Kình Ngư Ngôn Ngữ', badge: '🌊', hskEquivalent: 'Cao cấp' },
+  { level: 25, minXp: 42000, maxXp: 47500, title: 'Bậc Thầy Phản Xạ Siêu Cấp', badge: '⚡', hskEquivalent: 'Cao cấp' },
+  { level: 26, minXp: 47500, maxXp: 53500, title: 'Trí Tuệ Đông Phương', badge: '🐉', hskEquivalent: 'Bản ngữ' },
+  { level: 27, minXp: 53500, maxXp: 60000, title: 'Huyền Thoại Hán Học', badge: '✨', hskEquivalent: 'Bản ngữ' },
+  { level: 28, minXp: 60000, maxXp: 67500, title: 'Đỉnh Cao Tri Thức', badge: '👑', hskEquivalent: 'Bản ngữ' },
+  { level: 29, minXp: 67500, maxXp: 76000, title: 'Thái Sơn Bắc Đẩu', badge: '🏔️', hskEquivalent: 'Tông sư' },
+  { level: 30, minXp: 76000, maxXp: 999999, title: 'Đại Tông Sư Hán Ngữ (Chinese Polymath)', badge: '🏆', hskEquivalent: 'Vĩnh cửu' }
+];
+
 export function getUserLevelInfo(xp) {
-  const levels = [
-    { level: 1, minXp: 0, maxXp: 150, title: 'Tân Thủ Nhập Môn', badge: '🌱', hskEquivalent: 'Nhập Môn' },
-    { level: 2, minXp: 150, maxXp: 400, title: 'Đồng Môn Chăm Chỉ', badge: '📘', hskEquivalent: 'HSK 1' },
-    { level: 3, minXp: 400, maxXp: 850, title: 'Học Giả Tiến Bộ', badge: '🔥', hskEquivalent: 'HSK 2' },
-    { level: 4, minXp: 850, maxXp: 1600, title: 'Cao Đồ Khẩu Ngữ', badge: '⭐', hskEquivalent: 'HSK 3' },
-    { level: 5, minXp: 1600, maxXp: 3000, title: 'Đại Sư Hán Tự', badge: '👑', hskEquivalent: 'HSK 4' },
-    { level: 6, minXp: 3000, maxXp: 6000, title: 'Tông Sư Hán Ngữ', badge: '🏆', hskEquivalent: 'HSK 5-6' }
-  ];
+  const safeXp = Math.max(0, typeof xp === 'number' ? xp : 0);
+  const levels = LEVEL_SYSTEM;
 
   for (let i = 0; i < levels.length; i++) {
     const l = levels[i];
-    if (xp < l.maxXp || i === levels.length - 1) {
+    if (safeXp < l.maxXp || i === levels.length - 1) {
       const range = l.maxXp - l.minXp;
-      const current = Math.max(0, xp - l.minXp);
+      const current = Math.max(0, safeXp - l.minXp);
       const percent = Math.min(100, Math.round((current / range) * 100));
-      const nextXp = Math.max(0, l.maxXp - xp);
+      const nextXp = Math.max(0, l.maxXp - safeXp);
 
       return {
         ...l,
@@ -355,13 +401,9 @@ export function getUserLevelInfo(xp) {
     }
   }
 
+  const maxL = levels[levels.length - 1];
   return {
-    level: 6,
-    minXp: 3000,
-    maxXp: 99999,
-    title: 'Tông Sư Hán Ngữ',
-    badge: '🏆',
-    hskEquivalent: 'HSK 6',
+    ...maxL,
     currentProgressPercent: 100,
     xpToNextLevel: 0
   };

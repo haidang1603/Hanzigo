@@ -4807,8 +4807,3019 @@ export const VOCABULARY_LIST = [
       "pinyin": "Dōngtiān duī xuěrén hé huáxuě shì yí jiàn hěn yǒuqù de shì.",
       "meaning": "Mùa đông đắp người tuyết và trượt tuyết là điều vô cùng thú vị."
     }
+  },
+  {
+    "id": 279,
+    "hanzi": "女",
+    "pinyin": "nǚ",
+    "hanviet": "Nữ",
+    "meaning": "Nữ, phụ nữ, con gái",
+    "level": "HSK 1",
+    "topic": "Vận mẫu đơn a, o, e, i, u, ü",
+    "radical": "女 (Nữ)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 2: Vận mẫu đơn a, o, e, i, u, ü & 8 Nét chữ Hán cơ bản",
+    "example": {
+      "hanzi": "她是女人。",
+      "pinyin": "Tā shì nǚrén.",
+      "meaning": "Cô ấy là phụ nữ."
+    }
+  },
+  {
+    "id": 280,
+    "hanzi": "口",
+    "pinyin": "kǒu",
+    "hanviet": "Khẩu",
+    "meaning": "Miệng, lượng từ người trong gia đình",
+    "level": "HSK 1",
+    "topic": "Vận mẫu đơn a, o, e, i, u, ü",
+    "radical": "口 (Khẩu)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 2: Vận mẫu đơn a, o, e, i, u, ü & 8 Nét chữ Hán cơ bản",
+    "example": {
+      "hanzi": "三口人。",
+      "pinyin": "Sān kǒu rén.",
+      "meaning": "Ba người trong nhà."
+    }
+  },
+  {
+    "id": 281,
+    "hanzi": "火",
+    "pinyin": "huǒ",
+    "hanviet": "Hỏa",
+    "meaning": "Lửa",
+    "level": "HSK 1",
+    "topic": "Vận mẫu kép",
+    "radical": "火 (Hỏa)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 4: Vận mẫu kép & 10 Bộ thủ thông dụng nhất (Phần 1)",
+    "example": {
+      "hanzi": "大火。",
+      "pinyin": "Dà huǒ.",
+      "meaning": "Lửa lớn."
+    }
+  },
+  {
+    "id": 282,
+    "hanzi": "木",
+    "pinyin": "mù",
+    "hanviet": "Mộc",
+    "meaning": "Gỗ, cây cối",
+    "level": "HSK 1",
+    "topic": "Vận mẫu kép",
+    "radical": "木 (Mộc)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 4: Vận mẫu kép & 10 Bộ thủ thông dụng nhất (Phần 1)",
+    "example": {
+      "hanzi": "树木。",
+      "pinyin": "Shùmù.",
+      "meaning": "Cây cối."
+    }
+  },
+  {
+    "id": 283,
+    "hanzi": "不是",
+    "pinyin": "bú shì",
+    "hanviet": "Bất thị",
+    "meaning": "Không phải là",
+    "level": "HSK 1",
+    "topic": "Quy tắc biến điệu thực chiến",
+    "radical": "日 (Nhật)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 5: Quy tắc biến điệu thực chiến & Ôn tập Module 1.1",
+    "example": {
+      "hanzi": "我不是老师。",
+      "pinyin": "Wǒ bú shì lǎoshī.",
+      "meaning": "Tôi không phải là giáo viên."
+    }
+  },
+  {
+    "id": 284,
+    "hanzi": "一个",
+    "pinyin": "yí gè",
+    "hanviet": "Nhất cá",
+    "meaning": "Một cái / một người",
+    "level": "HSK 1",
+    "topic": "Quy tắc biến điệu thực chiến",
+    "radical": "人 (Nhân)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 5: Quy tắc biến điệu thực chiến & Ôn tập Module 1.1",
+    "example": {
+      "hanzi": "一个人。",
+      "pinyin": "Yí gè rén.",
+      "meaning": "Một người."
+    }
+  },
+  {
+    "id": 285,
+    "hanzi": "一起",
+    "pinyin": "yìqǐ",
+    "hanviet": "Nhất khởi",
+    "meaning": "Cùng nhau",
+    "level": "HSK 1",
+    "topic": "Quy tắc biến điệu thực chiến",
+    "radical": "走 (Tẩu)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 5: Quy tắc biến điệu thực chiến & Ôn tập Module 1.1",
+    "example": {
+      "hanzi": "我们一起去。",
+      "pinyin": "Wǒmen yìqǐ qù.",
+      "meaning": "Chúng ta cùng đi."
+    }
+  },
+  {
+    "id": 286,
+    "hanzi": "您",
+    "pinyin": "nín",
+    "hanviet": "Nhẫm",
+    "meaning": "Ngài, ông, thầy (ngôi 2 tôn kính)",
+    "level": "HSK 1",
+    "topic": "Chào hỏi lịch sự, cảm ơn",
+    "radical": "心 (Tâm)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 6: Chào hỏi lịch sự, cảm ơn & tạm biệt",
+    "example": {
+      "hanzi": "老师，您好！",
+      "pinyin": "Lǎoshī, nín hǎo!",
+      "meaning": "Em chào thầy ạ!"
+    }
+  },
+  {
+    "id": 287,
+    "hanzi": "吗",
+    "pinyin": "ma",
+    "hanviet": "Ma",
+    "meaning": "...phải không? (trợ từ nghi vấn)",
+    "level": "HSK 1",
+    "topic": "Câu chữ 是",
+    "radical": "口 (Khẩu)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 7: Câu chữ 是 & Trợ từ nghi vấn 吗",
+    "example": {
+      "hanzi": "你是老师吗？",
+      "pinyin": "Nǐ shì lǎoshī ma?",
+      "meaning": "Bạn là giáo viên phải không?"
+    }
+  },
+  {
+    "id": 288,
+    "hanzi": "越南",
+    "pinyin": "Yuènán",
+    "hanviet": "Việt Nam",
+    "meaning": "Việt Nam",
+    "level": "HSK 1",
+    "topic": "Họ tên",
+    "radical": "走 (Tẩu)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 8: Họ tên & Quốc tịch với đại từ 什么, 哪",
+    "example": {
+      "hanzi": "我是越南人。",
+      "pinyin": "Wǒ shì Yuènán rén.",
+      "meaning": "Tôi là người Việt Nam."
+    }
+  },
+  {
+    "id": 289,
+    "hanzi": "岁",
+    "pinyin": "suì",
+    "hanviet": "Tuế",
+    "meaning": "Tuổi",
+    "level": "HSK 1",
+    "topic": "Số đếm 1–99",
+    "radical": "山 (Sơn)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 9: Số đếm 1–99 & Hỏi tuổi tác với 几, 多大",
+    "example": {
+      "hanzi": "我二十岁。",
+      "pinyin": "Wǒ èrshí suì.",
+      "meaning": "Tôi 20 tuổi."
+    }
+  },
+  {
+    "id": 290,
+    "hanzi": "多大",
+    "pinyin": "duō dà",
+    "hanviet": "Đa đại",
+    "meaning": "Bao nhiêu tuổi, lớn chừng nào",
+    "level": "HSK 1",
+    "topic": "Số đếm 1–99",
+    "radical": "夕 (Tịch)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 9: Số đếm 1–99 & Hỏi tuổi tác với 几, 多大",
+    "example": {
+      "hanzi": "你多大？",
+      "pinyin": "Nǐ duō dà?",
+      "meaning": "Bạn bao nhiêu tuổi?"
+    }
+  },
+  {
+    "id": 291,
+    "hanzi": "二十",
+    "pinyin": "èrshí",
+    "hanviet": "Nhị thập",
+    "meaning": "Số 20",
+    "level": "HSK 1",
+    "topic": "Số đếm 1–99",
+    "radical": "二 (Nhị)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 9: Số đếm 1–99 & Hỏi tuổi tác với 几, 多大",
+    "example": {
+      "hanzi": "二十岁。",
+      "pinyin": "Èrshí suì.",
+      "meaning": "Hai mươi tuổi."
+    }
+  },
+  {
+    "id": 292,
+    "hanzi": "没有",
+    "pinyin": "méiyǒu",
+    "hanviet": "Một hữu",
+    "meaning": "Không có",
+    "level": "HSK 1",
+    "topic": "Gia đình",
+    "radical": "氵 (Thủy)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 11: Gia đình & Động từ sở hữu 有 / 没有",
+    "example": {
+      "hanzi": "我没有哥哥。",
+      "pinyin": "Wǒ méiyǒu gēge.",
+      "meaning": "Tôi không có anh trai."
+    }
+  },
+  {
+    "id": 293,
+    "hanzi": "和",
+    "pinyin": "hé",
+    "hanviet": "Hòa",
+    "meaning": "Và, cùng với",
+    "level": "HSK 1",
+    "topic": "Gia đình",
+    "radical": "口 (Khẩu)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 11: Gia đình & Động từ sở hữu 有 / 没有",
+    "example": {
+      "hanzi": "爸爸和我。",
+      "pinyin": "Bàba hé wǒ.",
+      "meaning": "Bố và tôi."
+    }
+  },
+  {
+    "id": 294,
+    "hanzi": "分",
+    "pinyin": "fēn",
+    "hanviet": "Phân",
+    "meaning": "Phút",
+    "level": "HSK 1",
+    "topic": "Giờ giấc",
+    "radical": "刀 (Đao)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 13: Giờ giấc & Hoạt động thường nhật",
+    "example": {
+      "hanzi": "十分。",
+      "pinyin": "Shí fēn.",
+      "meaning": "10 phút."
+    }
+  },
+  {
+    "id": 295,
+    "hanzi": "半",
+    "pinyin": "bàn",
+    "hanviet": "Bán",
+    "meaning": "Rưỡi, nửa",
+    "level": "HSK 1",
+    "topic": "Giờ giấc",
+    "radical": "十 (Thập)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 13: Giờ giấc & Hoạt động thường nhật",
+    "example": {
+      "hanzi": "八点半。",
+      "pinyin": "Bā diǎn bàn.",
+      "meaning": "8 giờ rưỡi."
+    }
+  },
+  {
+    "id": 296,
+    "hanzi": "在",
+    "pinyin": "zài",
+    "hanviet": "Tại",
+    "meaning": "Ở, tại",
+    "level": "HSK 1",
+    "topic": "Địa điểm",
+    "radical": "土 (Thổ)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 14: Địa điểm & Động từ chỉ nơi chốn 在, 去",
+    "example": {
+      "hanzi": "你在哪儿？",
+      "pinyin": "Nǐ zài nǎr?",
+      "meaning": "Bạn đang ở đâu?"
+    }
+  },
+  {
+    "id": 297,
+    "hanzi": "哪儿",
+    "pinyin": "nǎr",
+    "hanviet": "Na nhi",
+    "meaning": "Ở đâu, chỗ nào",
+    "level": "HSK 1",
+    "topic": "Địa điểm",
+    "radical": "口 (Khẩu)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 14: Địa điểm & Động từ chỉ nơi chốn 在, 去",
+    "example": {
+      "hanzi": "你去哪儿？",
+      "pinyin": "Nǐ qù nǎr?",
+      "meaning": "Bạn đi đâu đấy?"
+    }
+  },
+  {
+    "id": 298,
+    "hanzi": "饭馆",
+    "pinyin": "fànguǎn",
+    "hanviet": "Phạn quán",
+    "meaning": "Quán ăn, nhà hàng",
+    "level": "HSK 1",
+    "topic": "Địa điểm",
+    "radical": "饣 (Thực)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 14: Địa điểm & Động từ chỉ nơi chốn 在, 去",
+    "example": {
+      "hanzi": "去饭馆吃饭。",
+      "pinyin": "Qù fànguǎn chīfàn.",
+      "meaning": "Đi quán ăn cơm."
+    }
+  },
+  {
+    "id": 299,
+    "hanzi": "多少",
+    "pinyin": "duōshao",
+    "hanviet": "Đa thiểu",
+    "meaning": "Bao nhiêu",
+    "level": "HSK 1",
+    "topic": "Mua sắm cơ bản",
+    "radical": "夕 (Tịch)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 15: Mua sắm cơ bản & Hỏi giá tiền 多少钱",
+    "example": {
+      "hanzi": "多少钱？",
+      "pinyin": "Duōshao qián?",
+      "meaning": "Bao nhiêu tiền?"
+    }
+  },
+  {
+    "id": 300,
+    "hanzi": "块",
+    "pinyin": "kuài",
+    "hanviet": "Khối",
+    "meaning": "Đồng tệ (khẩu ngữ)",
+    "level": "HSK 1",
+    "topic": "Mua sắm cơ bản",
+    "radical": "土 (Thổ)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 15: Mua sắm cơ bản & Hỏi giá tiền 多少钱",
+    "example": {
+      "hanzi": "五块钱。",
+      "pinyin": "Wǔ kuài qián.",
+      "meaning": "5 đồng tệ."
+    }
+  },
+  {
+    "id": 301,
+    "hanzi": "汉字",
+    "pinyin": "hànzì",
+    "hanviet": "Hán tự",
+    "meaning": "Chữ Hán",
+    "level": "HSK 1",
+    "topic": "Khả năng",
+    "radical": "宀 (Miên)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 17: Khả năng & Nguyện vọng với 会, 想",
+    "example": {
+      "hanzi": "汉字很有意思。",
+      "pinyin": "Hànzì hěn yǒu yìsi.",
+      "meaning": "Chữ Hán rất thú vị."
+    }
+  },
+  {
+    "id": 302,
+    "hanzi": "看电影",
+    "pinyin": "kàn diànyǐng",
+    "hanviet": "Khán điện ảnh",
+    "meaning": "Xem phim",
+    "level": "HSK 1",
+    "topic": "Giải trí",
+    "radical": "目 (Mục)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 18: Giải trí & Thời tiết sơ cấp (看书, 看电影, 冷, 热)",
+    "example": {
+      "hanzi": "周末看电影。",
+      "pinyin": "Zhōumò kàn diànyǐng.",
+      "meaning": "Cuối tuần đi xem phim."
+    }
+  },
+  {
+    "id": 303,
+    "hanzi": "一点儿",
+    "pinyin": "yìdiǎnr",
+    "hanviet": "Nhất điểm nhi",
+    "meaning": "Một chút, một ít",
+    "level": "HSK 1",
+    "topic": "Tổng ôn tập toàn diện ngữ pháp",
+    "radical": "一 (Nhất)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 19: Tổng ôn tập toàn diện ngữ pháp & 150 từ vựng HSK 1",
+    "example": {
+      "hanzi": "我会说一点儿。",
+      "pinyin": "Wǒ huì shuō yìdiǎnr.",
+      "meaning": "Tôi biết nói một chút."
+    }
+  },
+  {
+    "id": 304,
+    "hanzi": "问题",
+    "pinyin": "wèntí",
+    "hanviet": "Vấn đề",
+    "meaning": "Câu hỏi, vấn đề",
+    "level": "HSK 1",
+    "topic": "Checkpoint Test HSK 1 (Thi thử mô phỏng chuẩn CTI)",
+    "radical": "门 (Môn)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 20: Checkpoint Test HSK 1 (Thi thử mô phỏng chuẩn CTI)",
+    "example": {
+      "hanzi": "没问题！",
+      "pinyin": "Méi wèntí!",
+      "meaning": "Không vấn đề gì cả!"
+    }
+  },
+  {
+    "id": 305,
+    "hanzi": "起床",
+    "pinyin": "qǐchuáng",
+    "hanviet": "Khởi sàng",
+    "meaning": "Thức dậy, rời giường",
+    "level": "HSK 2",
+    "topic": "Giờ giấc chi tiết, thói quen thức dậy",
+    "radical": "走 (Tẩu)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 1: Giờ giấc chi tiết, thói quen thức dậy & đi ngủ",
+    "example": {
+      "hanzi": "我早上六点起床。",
+      "pinyin": "Wǒ zǎoshang liù diǎn qǐchuáng.",
+      "meaning": "Tôi thức dậy lúc 6 giờ sáng."
+    }
+  },
+  {
+    "id": 306,
+    "hanzi": "差",
+    "pinyin": "chà",
+    "hanviet": "Sai",
+    "meaning": "Kém, thiếu",
+    "level": "HSK 2",
+    "topic": "Giờ giấc chi tiết, thói quen thức dậy",
+    "radical": "工 (Công)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 1: Giờ giấc chi tiết, thói quen thức dậy & đi ngủ",
+    "example": {
+      "hanzi": "差五分九点。",
+      "pinyin": "Chà wǔ fēn jiǔ diǎn.",
+      "meaning": "9 giờ kém 5 phút."
+    }
+  },
+  {
+    "id": 307,
+    "hanzi": "刻",
+    "pinyin": "kè",
+    "hanviet": "Khắc",
+    "meaning": "15 phút, khắc",
+    "level": "HSK 2",
+    "topic": "Giờ giấc chi tiết, thói quen thức dậy",
+    "radical": "刂 (Đao)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 1: Giờ giấc chi tiết, thói quen thức dậy & đi ngủ",
+    "example": {
+      "hanzi": "七点一刻。",
+      "pinyin": "Qī diǎn yí kè.",
+      "meaning": "7 giờ 15 phút."
+    }
+  },
+  {
+    "id": 308,
+    "hanzi": "每天",
+    "pinyin": "měitiān",
+    "hanviet": "Mỗi thiên",
+    "meaning": "Mỗi ngày, hàng ngày",
+    "level": "HSK 2",
+    "topic": "Giờ giấc chi tiết, thói quen thức dậy",
+    "radical": "人 (Nhân)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 1: Giờ giấc chi tiết, thói quen thức dậy & đi ngủ",
+    "example": {
+      "hanzi": "我每天跑步。",
+      "pinyin": "Wǒ měitiān pǎobù.",
+      "meaning": "Mỗi ngày tôi đều chạy bộ."
+    }
+  },
+  {
+    "id": 309,
+    "hanzi": "早饭",
+    "pinyin": "zǎofàn",
+    "hanviet": "Tảo phạn",
+    "meaning": "Bữa sáng",
+    "level": "HSK 2",
+    "topic": "Giờ giấc chi tiết, thói quen thức dậy",
+    "radical": "日 (Nhật)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 1: Giờ giấc chi tiết, thói quen thức dậy & đi ngủ",
+    "example": {
+      "hanzi": "吃了早饭。",
+      "pinyin": "Chī le zǎofàn.",
+      "meaning": "Ăn bữa sáng rồi."
+    }
+  },
+  {
+    "id": 310,
+    "hanzi": "地铁",
+    "pinyin": "dìtiě",
+    "hanviet": "Địa thiết",
+    "meaning": "Tàu điện ngầm",
+    "level": "HSK 2",
+    "topic": "Phương tiện giao thông công cộng",
+    "radical": "土 (Thổ)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 2: Phương tiện giao thông công cộng & Động từ di chuyển",
+    "example": {
+      "hanzi": "北京地铁很方便。",
+      "pinyin": "Běijīng dìtiě hěn fāngbiàn.",
+      "meaning": "Tàu điện ngầm Bắc Kinh rất tiện lợi."
+    }
+  },
+  {
+    "id": 311,
+    "hanzi": "骑",
+    "pinyin": "qí",
+    "hanviet": "Kỵ",
+    "meaning": "Cưỡi, đi (xe đạp, xe máy)",
+    "level": "HSK 2",
+    "topic": "Phương tiện giao thông công cộng",
+    "radical": "马 (Mã)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 2: Phương tiện giao thông công cộng & Động từ di chuyển",
+    "example": {
+      "hanzi": "骑自行车。",
+      "pinyin": "Qí zìxíngchē.",
+      "meaning": "Đi xe đạp."
+    }
+  },
+  {
+    "id": 312,
+    "hanzi": "自行车",
+    "pinyin": "zìxíngchē",
+    "hanviet": "Tự hành xa",
+    "meaning": "Xe đạp",
+    "level": "HSK 2",
+    "topic": "Phương tiện giao thông công cộng",
+    "radical": "自 (Tự)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 2: Phương tiện giao thông công cộng & Động từ di chuyển",
+    "example": {
+      "hanzi": "买一辆自行车。",
+      "pinyin": "Mǎi yí liàng zìxíngchē.",
+      "meaning": "Mua một chiếc xe đạp."
+    }
+  },
+  {
+    "id": 313,
+    "hanzi": "离",
+    "pinyin": "lí",
+    "hanviet": "Ly",
+    "meaning": "Cách, rời khỏi",
+    "level": "HSK 2",
+    "topic": "Diễn đạt khoảng cách không gian với giới từ 离 (lí)",
+    "radical": "亠 (Đầu)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 3: Diễn đạt khoảng cách không gian với giới từ 离 (lí)",
+    "example": {
+      "hanzi": "学校离这里不远。",
+      "pinyin": "Xuéxiào lí zhèlǐ bù yuǎn.",
+      "meaning": "Trường học cách đây không xa."
+    }
+  },
+  {
+    "id": 314,
+    "hanzi": "公里",
+    "pinyin": "gōnglǐ",
+    "hanviet": "Công lý",
+    "meaning": "Ki-lô-mét (km)",
+    "level": "HSK 2",
+    "topic": "Diễn đạt khoảng cách không gian với giới từ 离 (lí)",
+    "radical": "八 (Bát)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 3: Diễn đạt khoảng cách không gian với giới từ 离 (lí)",
+    "example": {
+      "hanzi": "有五公里。",
+      "pinyin": "Yǒu wǔ gōnglǐ.",
+      "meaning": "Cách 5 km."
+    }
+  },
+  {
+    "id": 315,
+    "hanzi": "走路",
+    "pinyin": "zǒulù",
+    "hanviet": "Tẩu lộ",
+    "meaning": "Đi bộ",
+    "level": "HSK 2",
+    "topic": "Diễn đạt khoảng cách không gian với giới từ 离 (lí)",
+    "radical": "走 (Tẩu)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 3: Diễn đạt khoảng cách không gian với giới từ 离 (lí)",
+    "example": {
+      "hanzi": "走路去十分钟。",
+      "pinyin": "Zǒulù qù shí fēnzhōng.",
+      "meaning": "Đi bộ mất 10 phút."
+    }
+  },
+  {
+    "id": 316,
+    "hanzi": "往",
+    "pinyin": "wǎng",
+    "hanviet": "Vãng",
+    "meaning": "Về hướng, hướng tới",
+    "level": "HSK 2",
+    "topic": "Hỏi đường",
+    "radical": "彳 (Xích)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 4: Hỏi đường & Chỉ hướng với giới từ 往 (wǎng)",
+    "example": {
+      "hanzi": "往前走。",
+      "pinyin": "Wǎng qián zǒu.",
+      "meaning": "Đi thẳng về phía trước."
+    }
+  },
+  {
+    "id": 317,
+    "hanzi": "左",
+    "pinyin": "zuǒ",
+    "hanviet": "Tả",
+    "meaning": "Bên trái",
+    "level": "HSK 2",
+    "topic": "Hỏi đường",
+    "radical": "工 (Công)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 4: Hỏi đường & Chỉ hướng với giới từ 往 (wǎng)",
+    "example": {
+      "hanzi": "往左拐。",
+      "pinyin": "Wǎng zuǒ guǎi.",
+      "meaning": "Rẽ sang bên trái."
+    }
+  },
+  {
+    "id": 318,
+    "hanzi": "右",
+    "pinyin": "yòu",
+    "hanviet": "Hữu",
+    "meaning": "Bên phải",
+    "level": "HSK 2",
+    "topic": "Hỏi đường",
+    "radical": "口 (Khẩu)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 4: Hỏi đường & Chỉ hướng với giới từ 往 (wǎng)",
+    "example": {
+      "hanzi": "往右拐。",
+      "pinyin": "Wǎng yòu guǎi.",
+      "meaning": "Rẽ sang bên phải."
+    }
+  },
+  {
+    "id": 319,
+    "hanzi": "拐",
+    "pinyin": "guǎi",
+    "hanviet": "Quải",
+    "meaning": "Rẽ, quẹo",
+    "level": "HSK 2",
+    "topic": "Hỏi đường",
+    "radical": "扌 (Thủ)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 4: Hỏi đường & Chỉ hướng với giới từ 往 (wǎng)",
+    "example": {
+      "hanzi": "在路口拐弯。",
+      "pinyin": "Zài lùkǒu guǎi wān.",
+      "meaning": "Rẽ tại ngã rẽ."
+    }
+  },
+  {
+    "id": 320,
+    "hanzi": "路口",
+    "pinyin": "lùkǒu",
+    "hanviet": "Lộ khẩu",
+    "meaning": "Ngã tư, ngã rẽ đường",
+    "level": "HSK 2",
+    "topic": "Hỏi đường",
+    "radical": "足 (Túc)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 4: Hỏi đường & Chỉ hướng với giới từ 往 (wǎng)",
+    "example": {
+      "hanzi": "前面的十字路口。",
+      "pinyin": "Qiánmiàn de shízì lùkǒu.",
+      "meaning": "Ngã tư đường phía trước."
+    }
+  },
+  {
+    "id": 321,
+    "hanzi": "红绿灯",
+    "pinyin": "hónglǜdēng",
+    "hanviet": "Hồng lục đăng",
+    "meaning": "Đèn giao thông (xanh đỏ)",
+    "level": "HSK 2",
+    "topic": "Hỏi đường",
+    "radical": "糸 (Mịch)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 4: Hỏi đường & Chỉ hướng với giới từ 往 (wǎng)",
+    "example": {
+      "hanzi": "看红绿灯。",
+      "pinyin": "Kàn hónglǜdēng.",
+      "meaning": "Nhìn đèn tín hiệu giao thông."
+    }
+  },
+  {
+    "id": 322,
+    "hanzi": "师傅",
+    "pinyin": "shīfu",
+    "hanviet": "Sư phó",
+    "meaning": "Bác tài, chú (xưng hô tài xế, thợ)",
+    "level": "HSK 2",
+    "topic": "Ôn tập Module 2.1",
+    "radical": "巾 (Cân)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 5: Ôn tập Module 2.1 & Thử thách bắt taxi, chỉ đường thực tế",
+    "example": {
+      "hanzi": "师傅，请问去机场多少钱？",
+      "pinyin": "Shīfu, qǐngwèn qù jīchǎng duōshao qián?",
+      "meaning": "Bác tài ơi, đi sân bay bao nhiêu tiền ạ?"
+    }
+  },
+  {
+    "id": 323,
+    "hanzi": "大概",
+    "pinyin": "dàgài",
+    "hanviet": "Đại khái",
+    "meaning": "Khoảng chừng, đại khái",
+    "level": "HSK 2",
+    "topic": "Ôn tập Module 2.1",
+    "radical": "木 (Mộc)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 5: Ôn tập Module 2.1 & Thử thách bắt taxi, chỉ đường thực tế",
+    "example": {
+      "hanzi": "大概半个小时。",
+      "pinyin": "Dàgài bàn gè xiǎoshí.",
+      "meaning": "Khoảng nửa tiếng đồng hồ."
+    }
+  },
+  {
+    "id": 324,
+    "hanzi": "停车",
+    "pinyin": "tíngchē",
+    "hanviet": "Đình xa",
+    "meaning": "Dừng xe, đỗ xe",
+    "level": "HSK 2",
+    "topic": "Ôn tập Module 2.1",
+    "radical": "亻 (Nhân)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 5: Ôn tập Module 2.1 & Thử thách bắt taxi, chỉ đường thực tế",
+    "example": {
+      "hanzi": "在这里停车。",
+      "pinyin": "Zài zhèlǐ tíngchē.",
+      "meaning": "Đỗ xe ở đây."
+    }
+  },
+  {
+    "id": 325,
+    "hanzi": "服务员",
+    "pinyin": "fúwùyuán",
+    "hanviet": "Phục vụ viên",
+    "meaning": "Nhân viên phục vụ",
+    "level": "HSK 2",
+    "topic": "Đi nhà hàng",
+    "radical": "亻 (Nhân)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 6: Đi nhà hàng & Gọi món quen thuộc (点菜与菜单)",
+    "example": {
+      "hanzi": "服务员，买单！",
+      "pinyin": "Fúwùyuán, mǎidān!",
+      "meaning": "Phục vụ ơi, tính tiền!"
+    }
+  },
+  {
+    "id": 326,
+    "hanzi": "菜单",
+    "pinyin": "càidān",
+    "hanviet": "Thái đơn",
+    "meaning": "Thực đơn",
+    "level": "HSK 2",
+    "topic": "Đi nhà hàng",
+    "radical": "艹 (Thảo)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 6: Đi nhà hàng & Gọi món quen thuộc (点菜与菜单)",
+    "example": {
+      "hanzi": "请看菜单。",
+      "pinyin": "Qǐng kàn càidān.",
+      "meaning": "Mời xem thực đơn."
+    }
+  },
+  {
+    "id": 327,
+    "hanzi": "点菜",
+    "pinyin": "diǎncài",
+    "hanviet": "Điểm thái",
+    "meaning": "Gọi món, gọi thức ăn",
+    "level": "HSK 2",
+    "topic": "Đi nhà hàng",
+    "radical": "灬 (Hỏa)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 6: Đi nhà hàng & Gọi món quen thuộc (点菜与菜单)",
+    "example": {
+      "hanzi": "可以点菜了吗？",
+      "pinyin": "Kěyǐ diǎncài le ma?",
+      "meaning": "Đã có thể gọi món chưa ạ?"
+    }
+  },
+  {
+    "id": 328,
+    "hanzi": "饺子",
+    "pinyin": "jiǎozi",
+    "hanviet": "Sủi cảo",
+    "meaning": "Sủi cảo, bánh chẻo",
+    "level": "HSK 2",
+    "topic": "Đi nhà hàng",
+    "radical": "饣 (Thực)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 6: Đi nhà hàng & Gọi món quen thuộc (点菜与菜单)",
+    "example": {
+      "hanzi": "中国饺子很好吃。",
+      "pinyin": "Zhōngguó jiǎozi hěn hǎochī.",
+      "meaning": "Sủi cảo Trung Quốc rất ngon."
+    }
+  },
+  {
+    "id": 329,
+    "hanzi": "好吃",
+    "pinyin": "hǎochī",
+    "hanviet": "Hảo cật",
+    "meaning": "Ngon miệng",
+    "level": "HSK 2",
+    "topic": "Đi nhà hàng",
+    "radical": "女 (Nữ)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 6: Đi nhà hàng & Gọi món quen thuộc (点菜与菜单)",
+    "example": {
+      "hanzi": "这个菜真好吃！",
+      "pinyin": "Zhège cài zhēn hǎochī!",
+      "meaning": "Món này ngon thật!"
+    }
+  },
+  {
+    "id": 330,
+    "hanzi": "烤鸭",
+    "pinyin": "kǎoyā",
+    "hanviet": "Khảo áp",
+    "meaning": "Vịt quay",
+    "level": "HSK 2",
+    "topic": "Đi nhà hàng",
+    "radical": "火 (Hỏa)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 6: Đi nhà hàng & Gọi món quen thuộc (点菜与菜单)",
+    "example": {
+      "hanzi": "北京烤鸭。",
+      "pinyin": "Běijīng kǎoyā.",
+      "meaning": "Vịt quay Bắc Kinh."
+    }
+  },
+  {
+    "id": 331,
+    "hanzi": "辣",
+    "pinyin": "là",
+    "hanviet": "Lạt",
+    "meaning": "Cay",
+    "level": "HSK 2",
+    "topic": "Khẩu vị",
+    "radical": "辛 (Tân)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 7: Khẩu vị & Dặn dò nhà bếp (不要放辣椒)",
+    "example": {
+      "hanzi": "四川菜很辣。",
+      "pinyin": "Sìchuān cài hěn là.",
+      "meaning": "Món ăn Tứ Xuyên rất cay."
+    }
+  },
+  {
+    "id": 332,
+    "hanzi": "甜",
+    "pinyin": "tián",
+    "hanviet": "Điềm",
+    "meaning": "Ngọt",
+    "level": "HSK 2",
+    "topic": "Khẩu vị",
+    "radical": "甘 (Cam)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 7: Khẩu vị & Dặn dò nhà bếp (不要放辣椒)",
+    "example": {
+      "hanzi": "这个西瓜很甜。",
+      "pinyin": "Zhège xīguā hěn tián.",
+      "meaning": "Quả dưa hấu này rất ngọt."
+    }
+  },
+  {
+    "id": 333,
+    "hanzi": "酸",
+    "pinyin": "suān",
+    "hanviet": "Toan",
+    "meaning": "Chua",
+    "level": "HSK 2",
+    "topic": "Khẩu vị",
+    "radical": "酉 (Dậu)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 7: Khẩu vị & Dặn dò nhà bếp (不要放辣椒)",
+    "example": {
+      "hanzi": "有点儿酸。",
+      "pinyin": "Yǒudiǎnr suān.",
+      "meaning": "Hơi chua một chút."
+    }
+  },
+  {
+    "id": 334,
+    "hanzi": "放",
+    "pinyin": "fàng",
+    "hanviet": "Phóng",
+    "meaning": "Bỏ vào, để, đặt",
+    "level": "HSK 2",
+    "topic": "Khẩu vị",
+    "radical": "攵 (Phác)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 7: Khẩu vị & Dặn dò nhà bếp (不要放辣椒)",
+    "example": {
+      "hanzi": "不要放糖。",
+      "pinyin": "Bú yào fàng táng.",
+      "meaning": "Đừng bỏ đường."
+    }
+  },
+  {
+    "id": 335,
+    "hanzi": "辣椒",
+    "pinyin": "làjiāo",
+    "hanviet": "Lạt tiêu",
+    "meaning": "Quả ớt",
+    "level": "HSK 2",
+    "topic": "Khẩu vị",
+    "radical": "辛 (Tân)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 7: Khẩu vị & Dặn dò nhà bếp (不要放辣椒)",
+    "example": {
+      "hanzi": "我不吃辣椒。",
+      "pinyin": "Wǒ bù chī làjiāo.",
+      "meaning": "Tôi không ăn ớt."
+    }
+  },
+  {
+    "id": 336,
+    "hanzi": "试",
+    "pinyin": "shì",
+    "hanviet": "Thí",
+    "meaning": "Thử (thử đồ, thi)",
+    "level": "HSK 2",
+    "topic": "Mua sắm quần áo, màu sắc",
+    "radical": "讠 (Ngôn)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 8: Mua sắm quần áo, màu sắc & Size (试衣服)",
+    "example": {
+      "hanzi": "我可以试一下吗？",
+      "pinyin": "Wǒ kěyǐ shì yíxià ma?",
+      "meaning": "Tôi có thể thử một chút không?"
+    }
+  },
+  {
+    "id": 337,
+    "hanzi": "打折",
+    "pinyin": "dǎzhé",
+    "hanviet": "Đả chiết",
+    "meaning": "Chiết khấu, giảm giá",
+    "level": "HSK 2",
+    "topic": "Thanh toán số",
+    "radical": "扌 (Thủ)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 9: Thanh toán số & Mặc cả (微信支付与打折)",
+    "example": {
+      "hanzi": "今天打八折。",
+      "pinyin": "Jīntiān dǎ bā zhé.",
+      "meaning": "Hôm nay giảm 20% (bán giá 80%)."
+    }
+  },
+  {
+    "id": 338,
+    "hanzi": "微信",
+    "pinyin": "Wēixìn",
+    "hanviet": "Vi tín",
+    "meaning": "WeChat (ứng dụng nhắn tin/thanh toán)",
+    "level": "HSK 2",
+    "topic": "Thanh toán số",
+    "radical": "亻 (Nhân)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 9: Thanh toán số & Mặc cả (微信支付与打折)",
+    "example": {
+      "hanzi": "我用微信付钱。",
+      "pinyin": "Wǒ yòng Wēixìn fùqián.",
+      "meaning": "Tôi dùng WeChat trả tiền."
+    }
+  },
+  {
+    "id": 339,
+    "hanzi": "支付宝",
+    "pinyin": "Zhīfùbǎo",
+    "hanviet": "Chi phó bảo",
+    "meaning": "Alipay (ví điện tử)",
+    "level": "HSK 2",
+    "topic": "Thanh toán số",
+    "radical": "十 (Thập)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 9: Thanh toán số & Mặc cả (微信支付与打折)",
+    "example": {
+      "hanzi": "支持支付宝。",
+      "pinyin": "Zhīchí Zhīfùbǎo.",
+      "meaning": "Hỗ trợ thanh toán Alipay."
+    }
+  },
+  {
+    "id": 340,
+    "hanzi": "扫码",
+    "pinyin": "sǎomǎ",
+    "hanviet": "Tảo mã",
+    "meaning": "Quét mã QR",
+    "level": "HSK 2",
+    "topic": "Thanh toán số",
+    "radical": "扌 (Thủ)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 9: Thanh toán số & Mặc cả (微信支付与打折)",
+    "example": {
+      "hanzi": "请扫这里。",
+      "pinyin": "Qǐng sǎo zhèlǐ.",
+      "meaning": "Xin quét ở đây."
+    }
+  },
+  {
+    "id": 341,
+    "hanzi": "现金",
+    "pinyin": "xiànjīn",
+    "hanviet": "Hiện kim",
+    "meaning": "Tiền mặt",
+    "level": "HSK 2",
+    "topic": "Thanh toán số",
+    "radical": "王 (Vương)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 9: Thanh toán số & Mặc cả (微信支付与打折)",
+    "example": {
+      "hanzi": "我有现金。",
+      "pinyin": "Wǒ yǒu xiànjīn.",
+      "meaning": "Tôi có tiền mặt."
+    }
+  },
+  {
+    "id": 342,
+    "hanzi": "夜市",
+    "pinyin": "yèshì",
+    "hanviet": "Dạ thị",
+    "meaning": "Chợ đêm",
+    "level": "HSK 2",
+    "topic": "Ôn tập Module 2.2",
+    "radical": "夕 (Tịch)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 10: Ôn tập Module 2.2 & Thử thách đi chợ đêm mua sắm",
+    "example": {
+      "hanzi": "逛夜市。",
+      "pinyin": "Guàng yèshì.",
+      "meaning": "Dạo chợ đêm."
+    }
+  },
+  {
+    "id": 343,
+    "hanzi": "热闹",
+    "pinyin": "rènao",
+    "hanviet": "Nhiệt náo",
+    "meaning": "Náo nhiệt, sôi động",
+    "level": "HSK 2",
+    "topic": "Ôn tập Module 2.2",
+    "radical": "灬 (Hỏa)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 10: Ôn tập Module 2.2 & Thử thách đi chợ đêm mua sắm",
+    "example": {
+      "hanzi": "这里真热闹！",
+      "pinyin": "Zhèlǐ zhēn rènao!",
+      "meaning": "Ở đây náo nhiệt thật!"
+    }
+  },
+  {
+    "id": 344,
+    "hanzi": "一共",
+    "pinyin": "yígòng",
+    "hanviet": "Nhất cộng",
+    "meaning": "Tổng cộng",
+    "level": "HSK 2",
+    "topic": "Ôn tập Module 2.2",
+    "radical": "八 (Bát)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 10: Ôn tập Module 2.2 & Thử thách đi chợ đêm mua sắm",
+    "example": {
+      "hanzi": "一共五十块。",
+      "pinyin": "Yígòng wǔshí kuài.",
+      "meaning": "Tổng cộng 50 tệ."
+    }
+  },
+  {
+    "id": 345,
+    "hanzi": "刮风",
+    "pinyin": "guā fēng",
+    "hanviet": "Quát phong",
+    "meaning": "Gió thổi, có gió",
+    "level": "HSK 2",
+    "topic": "Bốn mùa",
+    "radical": "舌 (Thiệt)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 11: Bốn mùa & Hiện tượng thời tiết (刮风, 下雪, 晴天)",
+    "example": {
+      "hanzi": "刮大风。",
+      "pinyin": "Guā dà fēng.",
+      "meaning": "Gió thổi lớn."
+    }
+  },
+  {
+    "id": 346,
+    "hanzi": "比",
+    "pinyin": "bǐ",
+    "hanviet": "Tỷ",
+    "meaning": "So với, hơn",
+    "level": "HSK 2",
+    "topic": "Câu so sánh hơn với chữ 比 (A 比 B + Tính từ)",
+    "radical": "比 (Tỷ)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 12: Câu so sánh hơn với chữ 比 (A 比 B + Tính từ)",
+    "example": {
+      "hanzi": "他比我大两岁。",
+      "pinyin": "Tā bǐ wǒ dà liǎng suì.",
+      "meaning": "Anh ấy lớn hơn tôi 2 tuổi."
+    }
+  },
+  {
+    "id": 347,
+    "hanzi": "高",
+    "pinyin": "gāo",
+    "hanviet": "Cao",
+    "meaning": "Cao",
+    "level": "HSK 2",
+    "topic": "Câu so sánh hơn với chữ 比 (A 比 B + Tính từ)",
+    "radical": "高 (Cao)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 12: Câu so sánh hơn với chữ 比 (A 比 B + Tính từ)",
+    "example": {
+      "hanzi": "姚明很高。",
+      "pinyin": "Yáo Míng hěn gāo.",
+      "meaning": "Diêu Minh rất cao."
+    }
+  },
+  {
+    "id": 348,
+    "hanzi": "矮",
+    "pinyin": "ǎi",
+    "hanviet": "Ải",
+    "meaning": "Thấp, lùn",
+    "level": "HSK 2",
+    "topic": "Câu so sánh hơn với chữ 比 (A 比 B + Tính từ)",
+    "radical": "矢 (Thỉ)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 12: Câu so sánh hơn với chữ 比 (A 比 B + Tính từ)",
+    "example": {
+      "hanzi": "弟弟比我矮。",
+      "pinyin": "Dìdi bǐ wǒ ǎi.",
+      "meaning": "Em trai thấp hơn tôi."
+    }
+  },
+  {
+    "id": 349,
+    "hanzi": "长",
+    "pinyin": "cháng",
+    "hanviet": "Trường",
+    "meaning": "Dài",
+    "level": "HSK 2",
+    "topic": "Câu so sánh hơn với chữ 比 (A 比 B + Tính từ)",
+    "radical": "长 (Trường)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 12: Câu so sánh hơn với chữ 比 (A 比 B + Tính từ)",
+    "example": {
+      "hanzi": "这件衣服比较长。",
+      "pinyin": "Zhè jiàn yīfu bǐjiào cháng.",
+      "meaning": "Chiếc áo này tương đối dài."
+    }
+  },
+  {
+    "id": 350,
+    "hanzi": "短",
+    "pinyin": "duǎn",
+    "hanviet": "Đoản",
+    "meaning": "Ngắn",
+    "level": "HSK 2",
+    "topic": "Câu so sánh hơn với chữ 比 (A 比 B + Tính từ)",
+    "radical": "矢 (Thỉ)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 12: Câu so sánh hơn với chữ 比 (A 比 B + Tính từ)",
+    "example": {
+      "hanzi": "头发很短。",
+      "pinyin": "Tóufa hěn duǎn.",
+      "meaning": "Tóc rất ngắn."
+    }
+  },
+  {
+    "id": 351,
+    "hanzi": "更",
+    "pinyin": "gèng",
+    "hanviet": "Canh",
+    "meaning": "Càng, hơn nữa",
+    "level": "HSK 2",
+    "topic": "So sánh mức độ nâng cao với 更, 最 (Càng",
+    "radical": "曰 (Viết)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 13: So sánh mức độ nâng cao với 更, 最 (Càng & Nhất)",
+    "example": {
+      "hanzi": "明天会更冷。",
+      "pinyin": "Míngtiān huì gèng lěng.",
+      "meaning": "Ngày mai sẽ càng lạnh hơn."
+    }
+  },
+  {
+    "id": 352,
+    "hanzi": "感冒",
+    "pinyin": "gǎnmào",
+    "hanviet": "Cảm mạo",
+    "meaning": "Cảm cúm",
+    "level": "HSK 2",
+    "topic": "Sức khỏe",
+    "radical": "心 (Tâm)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 14: Sức khỏe & Đi khám bệnh (生病, 感冒, 发烧, 吃药)",
+    "example": {
+      "hanzi": "我感冒了。",
+      "pinyin": "Wǒ gǎnmào le.",
+      "meaning": "Tôi bị cảm cúm rồi."
+    }
+  },
+  {
+    "id": 353,
+    "hanzi": "发烧",
+    "pinyin": "fāshāo",
+    "hanviet": "Phát thiêu",
+    "meaning": "Sốt, phát sốt",
+    "level": "HSK 2",
+    "topic": "Sức khỏe",
+    "radical": "火 (Hỏa)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 14: Sức khỏe & Đi khám bệnh (生病, 感冒, 发烧, 吃药)",
+    "example": {
+      "hanzi": "三十八度，发烧了。",
+      "pinyin": "Sānshíbā dù, fāshāo le.",
+      "meaning": "38 độ, sốt rồi."
+    }
+  },
+  {
+    "id": 354,
+    "hanzi": "药",
+    "pinyin": "yào",
+    "hanviet": "Dược",
+    "meaning": "Thuốc",
+    "level": "HSK 2",
+    "topic": "Sức khỏe",
+    "radical": "艹 (Thảo)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 14: Sức khỏe & Đi khám bệnh (生病, 感冒, 发烧, 吃药)",
+    "example": {
+      "hanzi": "记得按时吃药。",
+      "pinyin": "Jìde ànshí chī yào.",
+      "meaning": "Nhớ uống thuốc đúng giờ."
+    }
+  },
+  {
+    "id": 355,
+    "hanzi": "请假",
+    "pinyin": "qǐngjià",
+    "hanviet": "Thỉnh giả",
+    "meaning": "Xin nghỉ phép",
+    "level": "HSK 2",
+    "topic": "Xin nghỉ phép",
+    "radical": "讠 (Ngôn)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 15: Xin nghỉ phép & Lời khuyên ân cần (请假, 休息, 多喝水)",
+    "example": {
+      "hanzi": "我想请假两天。",
+      "pinyin": "Wǒ xiǎng qǐngjià liǎng tiān.",
+      "meaning": "Tôi muốn xin nghỉ phép 2 ngày."
+    }
+  },
+  {
+    "id": 356,
+    "hanzi": "休息",
+    "pinyin": "xiūxi",
+    "hanviet": "Hưu tức",
+    "meaning": "Nghỉ ngơi",
+    "level": "HSK 2",
+    "topic": "Xin nghỉ phép",
+    "radical": "亻 (Nhân)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 15: Xin nghỉ phép & Lời khuyên ân cần (请假, 休息, 多喝水)",
+    "example": {
+      "hanzi": "好好休息。",
+      "pinyin": "Hǎohāo xiūxi.",
+      "meaning": "Nghỉ ngơi thật tốt nhé."
+    }
+  },
+  {
+    "id": 357,
+    "hanzi": "能不能",
+    "pinyin": "néng bu néng",
+    "hanviet": "Năng bất năng",
+    "meaning": "Có thể...hay không",
+    "level": "HSK 2",
+    "topic": "Xin nghỉ phép",
+    "radical": "月 (Nguyệt)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 15: Xin nghỉ phép & Lời khuyên ân cần (请假, 休息, 多喝水)",
+    "example": {
+      "hanzi": "能不能帮我？",
+      "pinyin": "Néng bu néng bāng wǒ?",
+      "meaning": "Có thể giúp tôi được không?"
+    }
+  },
+  {
+    "id": 358,
+    "hanzi": "着",
+    "pinyin": "zhe",
+    "hanviet": "Trước",
+    "meaning": "Đang (trợ từ trạng thái)",
+    "level": "HSK 2",
+    "topic": "Trợ từ động thái 着 diễn đạt trạng thái duy trì (门开着呢)",
+    "radical": "目 (Mục)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 16: Trợ từ động thái 着 diễn đạt trạng thái duy trì (门开着呢)",
+    "example": {
+      "hanzi": "门开着呢。",
+      "pinyin": "Mén kāi zhe ne.",
+      "meaning": "Cửa đang mở đấy."
+    }
+  },
+  {
+    "id": 359,
+    "hanzi": "开",
+    "pinyin": "kāi",
+    "hanviet": "Khai",
+    "meaning": "Mở, lái xe",
+    "level": "HSK 2",
+    "topic": "Trợ từ động thái 着 diễn đạt trạng thái duy trì (门开着呢)",
+    "radical": "廾 (Củng)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 16: Trợ từ động thái 着 diễn đạt trạng thái duy trì (门开着呢)",
+    "example": {
+      "hanzi": "请开门。",
+      "pinyin": "Qǐng kāi mén.",
+      "meaning": "Xin mở cửa."
+    }
+  },
+  {
+    "id": 360,
+    "hanzi": "关",
+    "pinyin": "guān",
+    "hanviet": "Quan",
+    "meaning": "Đóng, tắt",
+    "level": "HSK 2",
+    "topic": "Trợ từ động thái 着 diễn đạt trạng thái duy trì (门开着呢)",
+    "radical": "丷 (Bát)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 16: Trợ từ động thái 着 diễn đạt trạng thái duy trì (门开着呢)",
+    "example": {
+      "hanzi": "窗户关着。",
+      "pinyin": "Chuānghu guān zhe.",
+      "meaning": "Cửa sổ đang đóng."
+    }
+  },
+  {
+    "id": 361,
+    "hanzi": "拿",
+    "pinyin": "ná",
+    "hanviet": "Nã",
+    "meaning": "Cầm, nắm, lấy",
+    "level": "HSK 2",
+    "topic": "Trợ từ động thái 着 diễn đạt trạng thái duy trì (门开着呢)",
+    "radical": "手 (Thủ)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 16: Trợ từ động thái 着 diễn đạt trạng thái duy trì (门开着呢)",
+    "example": {
+      "hanzi": "手里拿着手机。",
+      "pinyin": "Shǒu lǐ ná zhe shǒujī.",
+      "meaning": "Trong tay đang cầm điện thoại."
+    }
+  },
+  {
+    "id": 362,
+    "hanzi": "站",
+    "pinyin": "zhàn",
+    "hanviet": "Trạm",
+    "meaning": "Đứng, bến trạm",
+    "level": "HSK 2",
+    "topic": "Trợ từ động thái 着 diễn đạt trạng thái duy trì (门开着呢)",
+    "radical": "立 (Lập)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 16: Trợ từ động thái 着 diễn đạt trạng thái duy trì (门开着呢)",
+    "example": {
+      "hanzi": "外面站着一个人。",
+      "pinyin": "Wàimiàn zhàn zhe yí gè rén.",
+      "meaning": "Bên ngoài đang đứng một người."
+    }
+  },
+  {
+    "id": 363,
+    "hanzi": "过",
+    "pinyin": "guo",
+    "hanviet": "Quá",
+    "meaning": "Đã từng (trợ từ kinh nghiệm)",
+    "level": "HSK 2",
+    "topic": "Trợ từ động thái 过 diễn đạt trải nghiệm quá khứ (我去过北京)",
+    "radical": "辶 (Sước)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 17: Trợ từ động thái 过 diễn đạt trải nghiệm quá khứ (我去过北京)",
+    "example": {
+      "hanzi": "你去过中国吗？",
+      "pinyin": "Nǐ qù guo Zhōngguó ma?",
+      "meaning": "Bạn từng đi Trung Quốc chưa?"
+    }
+  },
+  {
+    "id": 364,
+    "hanzi": "次",
+    "pinyin": "cì",
+    "hanviet": "Thứ",
+    "meaning": "Lần (lượng từ số lần)",
+    "level": "HSK 2",
+    "topic": "Trợ từ động thái 过 diễn đạt trải nghiệm quá khứ (我去过北京)",
+    "radical": "欠 (Khiếm)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 17: Trợ từ động thái 过 diễn đạt trải nghiệm quá khứ (我去过北京)",
+    "example": {
+      "hanzi": "我去过两次。",
+      "pinyin": "Wǒ qù guo liǎng cì.",
+      "meaning": "Tôi từng đi 2 lần rồi."
+    }
+  },
+  {
+    "id": 365,
+    "hanzi": "以前",
+    "pinyin": "yǐqián",
+    "hanviet": "Dĩ tiền",
+    "meaning": "Trước đây, trước kia",
+    "level": "HSK 2",
+    "topic": "Trợ từ động thái 过 diễn đạt trải nghiệm quá khứ (我去过北京)",
+    "radical": "刀 (Đao)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 17: Trợ từ động thái 过 diễn đạt trải nghiệm quá khứ (我去过北京)",
+    "example": {
+      "hanzi": "以前我没吃过。",
+      "pinyin": "Yǐqián wǒ méi chī guo.",
+      "meaning": "Trước đây tôi chưa từng ăn."
+    }
+  },
+  {
+    "id": 366,
+    "hanzi": "还是",
+    "pinyin": "háishi",
+    "hanviet": "Hoàn thị",
+    "meaning": "Hay là, vẫn là",
+    "level": "HSK 2",
+    "topic": "Cặp liên từ logic 因为...所以...",
+    "radical": "辶 (Sước)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 18: Cặp liên từ logic 因为...所以... & 虽然...但是...",
+    "example": {
+      "hanzi": "喝茶还是喝咖啡？",
+      "pinyin": "Hē chá háishi hē kāfēi?",
+      "meaning": "Uống trà hay là uống cà phê?"
+    }
+  },
+  {
+    "id": 367,
+    "hanzi": "成绩",
+    "pinyin": "chéngjì",
+    "hanviet": "Thành tích",
+    "meaning": "Thành tích, điểm số",
+    "level": "HSK 2",
+    "topic": "Checkpoint Test HSK 2 (Thi thử mô phỏng đề chuẩn CTI 35 câu)",
+    "radical": "禾 (Hòa)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 20: Checkpoint Test HSK 2 (Thi thử mô phỏng đề chuẩn CTI 35 câu)",
+    "example": {
+      "hanzi": "考试成绩很好。",
+      "pinyin": "Kǎoshì chéngjì hěn hǎo.",
+      "meaning": "Điểm thi rất tốt."
+    }
+  },
+  {
+    "id": 368,
+    "hanzi": "通过",
+    "pinyin": "tōngguò",
+    "hanviet": "Thông qua",
+    "meaning": "Đậu, vượt qua bài thi",
+    "level": "HSK 2",
+    "topic": "Checkpoint Test HSK 2 (Thi thử mô phỏng đề chuẩn CTI 35 câu)",
+    "radical": "辶 (Sước)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 20: Checkpoint Test HSK 2 (Thi thử mô phỏng đề chuẩn CTI 35 câu)",
+    "example": {
+      "hanzi": "通过考试了！",
+      "pinyin": "Tōngguò kǎoshì le!",
+      "meaning": "Thi đậu rồi!"
+    }
+  },
+  {
+    "id": 369,
+    "hanzi": "祝贺",
+    "pinyin": "zhùhè",
+    "hanviet": "Chúc hạ",
+    "meaning": "Chúc mừng",
+    "level": "HSK 2",
+    "topic": "Checkpoint Test HSK 2 (Thi thử mô phỏng đề chuẩn CTI 35 câu)",
+    "radical": "礻 (Thị)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 20: Checkpoint Test HSK 2 (Thi thử mô phỏng đề chuẩn CTI 35 câu)",
+    "example": {
+      "hanzi": "祝贺你！",
+      "pinyin": "Zhùhè nǐ!",
+      "meaning": "Chúc mừng bạn nhé!"
+    }
+  },
+  {
+    "id": 370,
+    "hanzi": "预订",
+    "pinyin": "yùdìng",
+    "hanviet": "Dự đính",
+    "meaning": "Đặt trước (phòng, vé)",
+    "level": "HSK 3",
+    "topic": "Đặt phòng khách sạn",
+    "radical": "页 (Hiệp)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 1: Đặt phòng khách sạn & Làm thủ tục check-in (预订酒店)",
+    "example": {
+      "hanzi": "预订两晚房间。",
+      "pinyin": "Yùdìng liǎng wǎn fángjiān.",
+      "meaning": "Đặt phòng 2 đêm."
+    }
+  },
+  {
+    "id": 371,
+    "hanzi": "押金",
+    "pinyin": "yājīn",
+    "hanviet": "Áp kim",
+    "meaning": "Tiền đặt cọc",
+    "level": "HSK 3",
+    "topic": "Đặt phòng khách sạn",
+    "radical": "扌 (Thủ)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 1: Đặt phòng khách sạn & Làm thủ tục check-in (预订酒店)",
+    "example": {
+      "hanzi": "押金两百元。",
+      "pinyin": "Yājīn liǎng bǎi yuán.",
+      "meaning": "Tiền đặt cọc 200 tệ."
+    }
+  },
+  {
+    "id": 372,
+    "hanzi": "退房",
+    "pinyin": "tuìfáng",
+    "hanviet": "Thoái phòng",
+    "meaning": "Trả phòng, check-out",
+    "level": "HSK 3",
+    "topic": "Đặt phòng khách sạn",
+    "radical": "辶 (Sước)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 1: Đặt phòng khách sạn & Làm thủ tục check-in (预订酒店)",
+    "example": {
+      "hanzi": "明天中午退房。",
+      "pinyin": "Míngtiān zhōngwǔ tuìfáng.",
+      "meaning": "Trưa mai trả phòng."
+    }
+  },
+  {
+    "id": 373,
+    "hanzi": "单人房",
+    "pinyin": "dānrénfáng",
+    "hanviet": "Đơn nhân phòng",
+    "meaning": "Phòng đơn",
+    "level": "HSK 3",
+    "topic": "Đặt phòng khách sạn",
+    "radical": "十 (Thập)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 1: Đặt phòng khách sạn & Làm thủ tục check-in (预订酒店)",
+    "example": {
+      "hanzi": "一间单人房。",
+      "pinyin": "Yì jiān dānrénfáng.",
+      "meaning": "Một phòng đơn."
+    }
+  },
+  {
+    "id": 374,
+    "hanzi": "网络",
+    "pinyin": "wǎnglùo",
+    "hanviet": "Võng lạc",
+    "meaning": "Mạng internet, Wifi",
+    "level": "HSK 3",
+    "topic": "Đặt phòng khách sạn",
+    "radical": "糸 (Mịch)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 1: Đặt phòng khách sạn & Làm thủ tục check-in (预订酒店)",
+    "example": {
+      "hanzi": "房间有无线网络吗？",
+      "pinyin": "Fángjiān yǒu wúxiàn wǎnglùo ma?",
+      "meaning": "Phòng có wifi không?"
+    }
+  },
+  {
+    "id": 375,
+    "hanzi": "行李",
+    "pinyin": "xíngli",
+    "hanviet": "Hành lý",
+    "meaning": "Hành lý, vali",
+    "level": "HSK 3",
+    "topic": "Tại sân bay",
+    "radical": "行 (Hành)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 2: Tại sân bay & Thủ tục hành lý (机场办理登机与行李托运)",
+    "example": {
+      "hanzi": "托运行李。",
+      "pinyin": "Tuōyùn xíngli.",
+      "meaning": "Ký gửi hành lý."
+    }
+  },
+  {
+    "id": 376,
+    "hanzi": "准时",
+    "pinyin": "zhǔnshí",
+    "hanviet": "Chuẩn thời",
+    "meaning": "Đúng giờ",
+    "level": "HSK 3",
+    "topic": "Tại sân bay",
+    "radical": "冫 (Băng)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 2: Tại sân bay & Thủ tục hành lý (机场办理登机与行李托运)",
+    "example": {
+      "hanzi": "飞机准时起飞。",
+      "pinyin": "Fēijī zhǔnshí qǐfēi.",
+      "meaning": "Máy bay cất cánh đúng giờ."
+    }
+  },
+  {
+    "id": 377,
+    "hanzi": "起飞",
+    "pinyin": "qǐfēi",
+    "hanviet": "Khởi phi",
+    "meaning": "Cất cánh",
+    "level": "HSK 3",
+    "topic": "Tại sân bay",
+    "radical": "走 (Tẩu)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 2: Tại sân bay & Thủ tục hành lý (机场办理登机与行李托运)",
+    "example": {
+      "hanzi": "飞机要起飞了。",
+      "pinyin": "Fēijī yào qǐfēi le.",
+      "meaning": "Máy bay sắp cất cánh rồi."
+    }
+  },
+  {
+    "id": 378,
+    "hanzi": "登机牌",
+    "pinyin": "dēngjīpái",
+    "hanviet": "Đăng cơ bài",
+    "meaning": "Thẻ lên máy bay",
+    "level": "HSK 3",
+    "topic": "Tại sân bay",
+    "radical": "癶 (Bát)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 2: Tại sân bay & Thủ tục hành lý (机场办理登机与行李托运)",
+    "example": {
+      "hanzi": "这是您的登机牌。",
+      "pinyin": "Zhè shì nín de dēngjīpái.",
+      "meaning": "Đây là thẻ lên tàu bay của quý khách."
+    }
+  },
+  {
+    "id": 379,
+    "hanzi": "进来",
+    "pinyin": "jìnlái",
+    "hanviet": "Tiến lai",
+    "meaning": "Vào đây (hướng về phía người nói)",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Xu hướng Đơn với 来 và 去 (进来, 出去, 上来, 下去)",
+    "radical": "辶 (Sước)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 3: Bổ ngữ Xu hướng Đơn với 来 và 去 (进来, 出去, 上来, 下去)",
+    "example": {
+      "hanzi": "请进来坐！",
+      "pinyin": "Qǐng jìnlái zuò!",
+      "meaning": "Mời vào đây ngồi!"
+    }
+  },
+  {
+    "id": 380,
+    "hanzi": "出去",
+    "pinyin": "chūqù",
+    "hanviet": "Xuất khứ",
+    "meaning": "Ra ngoài (xa người nói)",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Xu hướng Đơn với 来 và 去 (进来, 出去, 上来, 下去)",
+    "radical": "出 (Xuất)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 3: Bổ ngữ Xu hướng Đơn với 来 và 去 (进来, 出去, 上来, 下去)",
+    "example": {
+      "hanzi": "他出去了。",
+      "pinyin": "Tā chūqù le.",
+      "meaning": "Anh ấy ra ngoài rồi."
+    }
+  },
+  {
+    "id": 381,
+    "hanzi": "上来",
+    "pinyin": "shànglái",
+    "hanviet": "Thượng lai",
+    "meaning": "Lên đây",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Xu hướng Đơn với 来 và 去 (进来, 出去, 上来, 下去)",
+    "radical": "一 (Nhất)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 3: Bổ ngữ Xu hướng Đơn với 来 và 去 (进来, 出去, 上来, 下去)",
+    "example": {
+      "hanzi": "快上来！",
+      "pinyin": "Kuài shànglái!",
+      "meaning": "Mau lên đây!"
+    }
+  },
+  {
+    "id": 382,
+    "hanzi": "下去",
+    "pinyin": "xiàqù",
+    "hanviet": "Hạ khứ",
+    "meaning": "Xuống dưới kia",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Xu hướng Đơn với 来 và 去 (进来, 出去, 上来, 下去)",
+    "radical": "一 (Nhất)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 3: Bổ ngữ Xu hướng Đơn với 来 và 去 (进来, 出去, 上来, 下去)",
+    "example": {
+      "hanzi": "走下去。",
+      "pinyin": "Zǒu xiàqù.",
+      "meaning": "Đi bộ xuống dưới kia."
+    }
+  },
+  {
+    "id": 383,
+    "hanzi": "回来",
+    "pinyin": "huílái",
+    "hanviet": "Hồi lai",
+    "meaning": "Trở về đây",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Xu hướng Đơn với 来 và 去 (进来, 出去, 上来, 下去)",
+    "radical": "囗 (Vi)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 3: Bổ ngữ Xu hướng Đơn với 来 và 去 (进来, 出去, 上来, 下去)",
+    "example": {
+      "hanzi": "爸爸回来了。",
+      "pinyin": "Bàba huílái le.",
+      "meaning": "Bố đã về rồi."
+    }
+  },
+  {
+    "id": 384,
+    "hanzi": "过去",
+    "pinyin": "guòqù",
+    "hanviet": "Quá khứ",
+    "meaning": "Đi qua đằng kia, quá khứ",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Xu hướng Đơn với 来 và 去 (进来, 出去, 上来, 下去)",
+    "radical": "辶 (Sước)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 3: Bổ ngữ Xu hướng Đơn với 来 và 去 (进来, 出去, 上来, 下去)",
+    "example": {
+      "hanzi": "走过去看看。",
+      "pinyin": "Zǒu guòqù kànkan.",
+      "meaning": "Đi qua bên kia xem thử."
+    }
+  },
+  {
+    "id": 385,
+    "hanzi": "跑",
+    "pinyin": "pǎo",
+    "hanviet": "Bào",
+    "meaning": "Chạy",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Xu hướng Kép (跑出来, 走过去, 拿出来)",
+    "radical": "足 (Túc)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 4: Bổ ngữ Xu hướng Kép (跑出来, 走过去, 拿出来)",
+    "example": {
+      "hanzi": "跑得很快。",
+      "pinyin": "Pǎo de hěn kuài.",
+      "meaning": "Chạy rất nhanh."
+    }
+  },
+  {
+    "id": 386,
+    "hanzi": "跑出来",
+    "pinyin": "pǎo chūlái",
+    "hanviet": "Bào xuất lai",
+    "meaning": "Chạy vọt ra ngoài này",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Xu hướng Kép (跑出来, 走过去, 拿出来)",
+    "radical": "足 (Túc)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 4: Bổ ngữ Xu hướng Kép (跑出来, 走过去, 拿出来)",
+    "example": {
+      "hanzi": "小狗跑出来了。",
+      "pinyin": "Xiǎogǒu pǎo chūlái le.",
+      "meaning": "Chú chó con chạy vọt ra ngoài rồi."
+    }
+  },
+  {
+    "id": 387,
+    "hanzi": "拿出来",
+    "pinyin": "ná chūlái",
+    "hanviet": "Nã xuất lai",
+    "meaning": "Lấy ra, rút ra",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Xu hướng Kép (跑出来, 走过去, 拿出来)",
+    "radical": "手 (Thủ)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 4: Bổ ngữ Xu hướng Kép (跑出来, 走过去, 拿出来)",
+    "example": {
+      "hanzi": "把护照拿出来。",
+      "pinyin": "Bǎ hùzhào ná chūlái.",
+      "meaning": "Lấy cuốn hộ chiếu ra."
+    }
+  },
+  {
+    "id": 388,
+    "hanzi": "站起来",
+    "pinyin": "zhàn qǐlái",
+    "hanviet": "Trạm khởi lai",
+    "meaning": "Đứng dậy",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Xu hướng Kép (跑出来, 走过去, 拿出来)",
+    "radical": "立 (Lập)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 4: Bổ ngữ Xu hướng Kép (跑出来, 走过去, 拿出来)",
+    "example": {
+      "hanzi": "请大家站起来。",
+      "pinyin": "Qǐng dàjiā zhàn qǐlái.",
+      "meaning": "Mời mọi người đứng dậy."
+    }
+  },
+  {
+    "id": 389,
+    "hanzi": "带回去",
+    "pinyin": "dài huíqù",
+    "hanviet": "Đái hồi khứ",
+    "meaning": "Mang về lại bên đó",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Xu hướng Kép (跑出来, 走过去, 拿出来)",
+    "radical": "巾 (Cân)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 4: Bổ ngữ Xu hướng Kép (跑出来, 走过去, 拿出来)",
+    "example": {
+      "hanzi": "把礼物带回去。",
+      "pinyin": "Bǎ lǐwù dài huíqù.",
+      "meaning": "Mang món quà về lại."
+    }
+  },
+  {
+    "id": 390,
+    "hanzi": "自由行",
+    "pinyin": "zìyóuxíng",
+    "hanviet": "Tự do hành",
+    "meaning": "Du lịch tự túc",
+    "level": "HSK 3",
+    "topic": "Ôn tập Module 3.1",
+    "radical": "自 (Tự)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 5: Ôn tập Module 3.1 & Xử lý tình huống du lịch tự túc",
+    "example": {
+      "hanzi": "我喜欢自由行。",
+      "pinyin": "Wǒ xǐhuan zìyóuxíng.",
+      "meaning": "Tôi thích du lịch tự túc."
+    }
+  },
+  {
+    "id": 391,
+    "hanzi": "独立",
+    "pinyin": "dúlì",
+    "hanviet": "Độc lập",
+    "meaning": "Độc lập, tự chủ",
+    "level": "HSK 3",
+    "topic": "Ôn tập Module 3.1",
+    "radical": "犭 (Khuyển)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 5: Ôn tập Module 3.1 & Xử lý tình huống du lịch tự túc",
+    "example": {
+      "hanzi": "独立生活。",
+      "pinyin": "Dúlì shēnghuó.",
+      "meaning": "Cuộc sống độc lập."
+    }
+  },
+  {
+    "id": 392,
+    "hanzi": "完",
+    "pinyin": "wán",
+    "hanviet": "Hoàn",
+    "meaning": "Xong, hết",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Kết quả cơ bản (做完, 学好, 听懂, 看见, 找到)",
+    "radical": "宀 (Miên)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 6: Bổ ngữ Kết quả cơ bản (做完, 学好, 听懂, 看见, 找到)",
+    "example": {
+      "hanzi": "做完练习。",
+      "pinyin": "Zuò wán liànxí.",
+      "meaning": "Làm xong bài tập."
+    }
+  },
+  {
+    "id": 393,
+    "hanzi": "看见",
+    "pinyin": "kànjiàn",
+    "hanviet": "Khán kiến",
+    "meaning": "Nhìn thấy",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Kết quả cơ bản (做完, 学好, 听懂, 看见, 找到)",
+    "radical": "目 (Mục)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 6: Bổ ngữ Kết quả cơ bản (做完, 学好, 听懂, 看见, 找到)",
+    "example": {
+      "hanzi": "看见他了吗？",
+      "pinyin": "Kànjiàn tā le ma?",
+      "meaning": "Nhìn thấy anh ấy chưa?"
+    }
+  },
+  {
+    "id": 394,
+    "hanzi": "找到",
+    "pinyin": "zhǎodào",
+    "hanviet": "Trảo đáo",
+    "meaning": "Tìm thấy, kiếm được",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Kết quả cơ bản (做完, 学好, 听懂, 看见, 找到)",
+    "radical": "扌 (Thủ)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 6: Bổ ngữ Kết quả cơ bản (做完, 学好, 听懂, 看见, 找到)",
+    "example": {
+      "hanzi": "找到了钱包。",
+      "pinyin": "Zhǎodào le qiánbāo.",
+      "meaning": "Đã tìm thấy ví tiền."
+    }
+  },
+  {
+    "id": 395,
+    "hanzi": "看得懂",
+    "pinyin": "kàn de dǒng",
+    "hanviet": "Khán đắc đổng",
+    "meaning": "Xem/đọc hiểu được",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Khả năng (看得懂, 听不清楚, 买不起)",
+    "radical": "目 (Mục)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 7: Bổ ngữ Khả năng (看得懂, 听不清楚, 买不起)",
+    "example": {
+      "hanzi": "你看得懂中文报纸吗？",
+      "pinyin": "Nǐ kàn de dǒng Zhōngwén bàozhǐ ma?",
+      "meaning": "Bạn đọc hiểu được báo tiếng Trung không?"
+    }
+  },
+  {
+    "id": 396,
+    "hanzi": "听不懂",
+    "pinyin": "tīng bu dǒng",
+    "hanviet": "Thính bất đổng",
+    "meaning": "Nghe không hiểu",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Khả năng (看得懂, 听不清楚, 买不起)",
+    "radical": "口 (Khẩu)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 7: Bổ ngữ Khả năng (看得懂, 听不清楚, 买不起)",
+    "example": {
+      "hanzi": "说太快我听不懂。",
+      "pinyin": "Shuō tài kuài wǒ tīng bu dǒng.",
+      "meaning": "Nói nhanh quá tôi nghe không hiểu."
+    }
+  },
+  {
+    "id": 397,
+    "hanzi": "买得起",
+    "pinyin": "mǎi de qǐ",
+    "hanviet": "Mãi đắc khởi",
+    "meaning": "Mua nổi, đủ tiền mua",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Khả năng (看得懂, 听不清楚, 买不起)",
+    "radical": "乙 (Ất)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 7: Bổ ngữ Khả năng (看得懂, 听不清楚, 买不起)",
+    "example": {
+      "hanzi": "太贵了买不起。",
+      "pinyin": "Tài guì le mǎi bu qǐ.",
+      "meaning": "Đắt quá mua không nổi."
+    }
+  },
+  {
+    "id": 398,
+    "hanzi": "做不完",
+    "pinyin": "zuò bu wán",
+    "hanviet": "Tác bất hoàn",
+    "meaning": "Làm không hết, không xong xuể",
+    "level": "HSK 3",
+    "topic": "Bổ ngữ Khả năng (看得懂, 听不清楚, 买不起)",
+    "radical": "亻 (Nhân)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 7: Bổ ngữ Khả năng (看得懂, 听不清楚, 买不起)",
+    "example": {
+      "hanzi": "作业太多做不完。",
+      "pinyin": "Zuòyè tài duō zuò bu wán.",
+      "meaning": "Bài tập nhiều quá làm không hết."
+    }
+  },
+  {
+    "id": 399,
+    "hanzi": "把",
+    "pinyin": "bǎ",
+    "hanviet": "Bả",
+    "meaning": "Đem, lấy (giới từ câu chữ 把)",
+    "level": "HSK 3",
+    "topic": "Linh hồn ngữ pháp: Câu chữ 把 căn bản (S + 把 + O + V + khác)",
+    "radical": "扌 (Thủ)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 8: Linh hồn ngữ pháp: Câu chữ 把 căn bản (S + 把 + O + V + khác)",
+    "example": {
+      "hanzi": "把书给我。",
+      "pinyin": "Bǎ shū gěi wǒ.",
+      "meaning": "Đưa sách cho tôi."
+    }
+  },
+  {
+    "id": 400,
+    "hanzi": "关上",
+    "pinyin": "guānshàng",
+    "hanviet": "Quan thượng",
+    "meaning": "Đóng lại",
+    "level": "HSK 3",
+    "topic": "Linh hồn ngữ pháp: Câu chữ 把 căn bản (S + 把 + O + V + khác)",
+    "radical": "丷 (Bát)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 8: Linh hồn ngữ pháp: Câu chữ 把 căn bản (S + 把 + O + V + khác)",
+    "example": {
+      "hanzi": "把门关上。",
+      "pinyin": "Bǎ mén guānshàng.",
+      "meaning": "Đóng cửa lại."
+    }
+  },
+  {
+    "id": 401,
+    "hanzi": "洗",
+    "pinyin": "xǐ",
+    "hanviet": "Tẩy",
+    "meaning": "Rửa, giặt",
+    "level": "HSK 3",
+    "topic": "Linh hồn ngữ pháp: Câu chữ 把 căn bản (S + 把 + O + V + khác)",
+    "radical": "氵 (Thủy)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 8: Linh hồn ngữ pháp: Câu chữ 把 căn bản (S + 把 + O + V + khác)",
+    "example": {
+      "hanzi": "把衣服洗干净。",
+      "pinyin": "Bǎ yīfu xǐ gānjìng.",
+      "meaning": "Giặt quần áo sạch sẽ."
+    }
+  },
+  {
+    "id": 402,
+    "hanzi": "干净",
+    "pinyin": "gānjìng",
+    "hanviet": "Can tịnh",
+    "meaning": "Sạch sẽ",
+    "level": "HSK 3",
+    "topic": "Linh hồn ngữ pháp: Câu chữ 把 căn bản (S + 把 + O + V + khác)",
+    "radical": "干 (Can)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 8: Linh hồn ngữ pháp: Câu chữ 把 căn bản (S + 把 + O + V + khác)",
+    "example": {
+      "hanzi": "房间很干净。",
+      "pinyin": "Fángjiān hěn gānjìng.",
+      "meaning": "Căn phòng rất sạch sẽ."
+    }
+  },
+  {
+    "id": 403,
+    "hanzi": "交",
+    "pinyin": "jiāo",
+    "hanviet": "Giao",
+    "meaning": "Giao nộp, kết bạn",
+    "level": "HSK 3",
+    "topic": "Câu chữ 把 nâng cao kết hợp Bổ ngữ kết quả",
+    "radical": "亠 (Đầu)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 9: Câu chữ 把 nâng cao kết hợp Bổ ngữ kết quả & Xu hướng",
+    "example": {
+      "hanzi": "交作业。",
+      "pinyin": "Jiāo zuòyè.",
+      "meaning": "Nộp bài tập."
+    }
+  },
+  {
+    "id": 404,
+    "hanzi": "发",
+    "pinyin": "fā",
+    "hanviet": "Phát",
+    "meaning": "Gửi, phát ra (tin nhắn, mail)",
+    "level": "HSK 3",
+    "topic": "Câu chữ 把 nâng cao kết hợp Bổ ngữ kết quả",
+    "radical": "又 (Hựu)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 9: Câu chữ 把 nâng cao kết hợp Bổ ngữ kết quả & Xu hướng",
+    "example": {
+      "hanzi": "把照片发给我。",
+      "pinyin": "Bǎ zhàopiàn fā gěi wǒ.",
+      "meaning": "Gửi ảnh cho tôi."
+    }
+  },
+  {
+    "id": 405,
+    "hanzi": "搬",
+    "pinyin": "bān",
+    "hanviet": "Bàn",
+    "meaning": "Chuyển, dọn (nhà, đồ nặng)",
+    "level": "HSK 3",
+    "topic": "Câu chữ 把 nâng cao kết hợp Bổ ngữ kết quả",
+    "radical": "扌 (Thủ)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 9: Câu chữ 把 nâng cao kết hợp Bổ ngữ kết quả & Xu hướng",
+    "example": {
+      "hanzi": "把桌子搬进去。",
+      "pinyin": "Bǎ zhuōzi bān jìnqù.",
+      "meaning": "Dọn bàn vào trong."
+    }
+  },
+  {
+    "id": 406,
+    "hanzi": "被",
+    "pinyin": "bèi",
+    "hanviet": "Bị",
+    "meaning": "Bị, được (giới từ bị động)",
+    "level": "HSK 3",
+    "topic": "Câu bị động chữ 被 (S + 被 + Tác nhân + V + khác)",
+    "radical": "衤 (Y)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 10: Câu bị động chữ 被 (S + 被 + Tác nhân + V + khác)",
+    "example": {
+      "hanzi": "被发现了。",
+      "pinyin": "Bèi fāxiàn le.",
+      "meaning": "Bị phát hiện rồi."
+    }
+  },
+  {
+    "id": 407,
+    "hanzi": "偷",
+    "pinyin": "tōu",
+    "hanviet": "Thâu",
+    "meaning": "Trộm, cắp",
+    "level": "HSK 3",
+    "topic": "Câu bị động chữ 被 (S + 被 + Tác nhân + V + khác)",
+    "radical": "亻 (Nhân)",
+    "strokes": 4,
+    "mnemonic": "Trích từ Bài 10: Câu bị động chữ 被 (S + 被 + Tác nhân + V + khác)",
+    "example": {
+      "hanzi": "自行车被偷了。",
+      "pinyin": "Zìxíngchē bèi tōu le.",
+      "meaning": "Xe đạp bị trộm mất rồi."
+    }
+  },
+  {
+    "id": 408,
+    "hanzi": "打碎",
+    "pinyin": "dǎsuì",
+    "hanviet": "Đả toái",
+    "meaning": "Đánh vỡ, làm bể",
+    "level": "HSK 3",
+    "topic": "Câu bị động chữ 被 (S + 被 + Tác nhân + V + khác)",
+    "radical": "扌 (Thủ)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 10: Câu bị động chữ 被 (S + 被 + Tác nhân + V + khác)",
+    "example": {
+      "hanzi": "杯子被打碎了。",
+      "pinyin": "Bēizi bèi dǎsuì le.",
+      "meaning": "Cái ly bị làm vỡ rồi."
+    }
+  },
+  {
+    "id": 409,
+    "hanzi": "经理",
+    "pinyin": "jīnglǐ",
+    "hanviet": "Kinh lý",
+    "meaning": "Giám đốc, quản lý",
+    "level": "HSK 3",
+    "topic": "Môi trường văn phòng",
+    "radical": "纟 (Mịch)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 11: Môi trường văn phòng & Đồng nghiệp (公司, 经理, 同事, 开会)",
+    "example": {
+      "hanzi": "王经理在开会。",
+      "pinyin": "Wáng jīnglǐ zài kāihuì.",
+      "meaning": "Giám đốc Vương đang họp."
+    }
+  },
+  {
+    "id": 410,
+    "hanzi": "同事",
+    "pinyin": "tóngshì",
+    "hanviet": "Đồng sự",
+    "meaning": "Đồng nghiệp",
+    "level": "HSK 3",
+    "topic": "Môi trường văn phòng",
+    "radical": "口 (Khẩu)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 11: Môi trường văn phòng & Đồng nghiệp (公司, 经理, 同事, 开会)",
+    "example": {
+      "hanzi": "我和同事们一起吃午饭。",
+      "pinyin": "Wǒ hé tóngshìmen yìqǐ chī wǔfàn.",
+      "meaning": "Tôi cùng các đồng nghiệp ăn cơm trưa."
+    }
+  },
+  {
+    "id": 411,
+    "hanzi": "开会",
+    "pinyin": "kāihuì",
+    "hanviet": "Khai hội",
+    "meaning": "Họp, mở cuộc họp",
+    "level": "HSK 3",
+    "topic": "Môi trường văn phòng",
+    "radical": "廾 (Củng)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 11: Môi trường văn phòng & Đồng nghiệp (公司, 经理, 同事, 开会)",
+    "example": {
+      "hanzi": "下午三点开会。",
+      "pinyin": "Xiàwǔ sān diǎn kāihuì.",
+      "meaning": "3 giờ chiều họp."
+    }
+  },
+  {
+    "id": 412,
+    "hanzi": "办公室",
+    "pinyin": "bàngōngshì",
+    "hanviet": "Biện công thất",
+    "meaning": "Văn phòng làm việc",
+    "level": "HSK 3",
+    "topic": "Môi trường văn phòng",
+    "radical": "力 (Lực)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 11: Môi trường văn phòng & Đồng nghiệp (公司, 经理, 同事, 开会)",
+    "example": {
+      "hanzi": "去办公室找我。",
+      "pinyin": "Qù bàngōngshì zhǎo wǒ.",
+      "meaning": "Đến văn phòng tìm tôi."
+    }
+  },
+  {
+    "id": 413,
+    "hanzi": "通知",
+    "pinyin": "tōngzhī",
+    "hanviet": "Thông tri",
+    "meaning": "Thông báo",
+    "level": "HSK 3",
+    "topic": "Môi trường văn phòng",
+    "radical": "辶 (Sước)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 11: Môi trường văn phòng & Đồng nghiệp (公司, 经理, 同事, 开会)",
+    "example": {
+      "hanzi": "经理发通知了。",
+      "pinyin": "Jīnglǐ fā tōngzhī le.",
+      "meaning": "Giám đốc gửi thông báo rồi."
+    }
+  },
+  {
+    "id": 414,
+    "hanzi": "计划",
+    "pinyin": "jìhuà",
+    "hanviet": "Kế hoạch",
+    "meaning": "Kế hoạch, dự định",
+    "level": "HSK 3",
+    "topic": "Giải quyết vấn đề",
+    "radical": "讠 (Ngôn)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 12: Giải quyết vấn đề & Kế hoạch làm việc (解决, 问题, 认真, 完成)",
+    "example": {
+      "hanzi": "下个月的工作计划。",
+      "pinyin": "Xià gè yuè de gōngzuò jìhuà.",
+      "meaning": "Kế hoạch làm việc tháng tới."
+    }
+  },
+  {
+    "id": 415,
+    "hanzi": "按时",
+    "pinyin": "ànshí",
+    "hanviet": "Án thời",
+    "meaning": "Đúng giờ, đúng hẹn",
+    "level": "HSK 3",
+    "topic": "Giải quyết vấn đề",
+    "radical": "扌 (Thủ)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 12: Giải quyết vấn đề & Kế hoạch làm việc (解决, 问题, 认真, 完成)",
+    "example": {
+      "hanzi": "按时上班。",
+      "pinyin": "Ànshí shàngbān.",
+      "meaning": "Đi làm đúng giờ."
+    }
+  },
+  {
+    "id": 416,
+    "hanzi": "大学",
+    "pinyin": "dàxué",
+    "hanviet": "Đại học",
+    "meaning": "Trường đại học",
+    "level": "HSK 3",
+    "topic": "Môi trường đại học, thi cử",
+    "radical": "大 (Đại)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 13: Môi trường đại học, thi cử & Điểm số (大学, 考试, 成绩, 努力)",
+    "example": {
+      "hanzi": "他在北京大学读书。",
+      "pinyin": "Tā zài Běijīng Dàxué dúshū.",
+      "meaning": "Anh ấy học ở Đại học Bắc Kinh."
+    }
+  },
+  {
+    "id": 417,
+    "hanzi": "复习",
+    "pinyin": "fùxí",
+    "hanviet": "Phức tập",
+    "meaning": " n tập, xem lại bài",
+    "level": "HSK 3",
+    "topic": "Môi trường đại học, thi cử",
+    "radical": "夂 (Tri)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 13: Môi trường đại học, thi cử & Điểm số (大学, 考试, 成绩, 努力)",
+    "example": {
+      "hanzi": "复习旧课。",
+      "pinyin": "Fùxí jiù kè.",
+      "meaning": " n tập bài cũ."
+    }
+  },
+  {
+    "id": 418,
+    "hanzi": "难过",
+    "pinyin": "nánguò",
+    "hanviet": "Nan quá",
+    "meaning": "Buồn bã, đau lòng",
+    "level": "HSK 3",
+    "topic": "Cảm xúc, tính cách",
+    "radical": "隹 (Chuy)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 14: Cảm xúc, tính cách & Mối quan hệ (难过, 生气, 聪明, 热情)",
+    "example": {
+      "hanzi": "别难过了。",
+      "pinyin": "Bié nánguò le.",
+      "meaning": "Đừng buồn nữa nhé."
+    }
+  },
+  {
+    "id": 419,
+    "hanzi": "生气",
+    "pinyin": "shēngqì",
+    "hanviet": "Sinh khí",
+    "meaning": "Tức giận, giận hờn",
+    "level": "HSK 3",
+    "topic": "Cảm xúc, tính cách",
+    "radical": "生 (Sinh)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 14: Cảm xúc, tính cách & Mối quan hệ (难过, 生气, 聪明, 热情)",
+    "example": {
+      "hanzi": "他生我的气了。",
+      "pinyin": "Tā shēng wǒ de qì le.",
+      "meaning": "Anh ấy giận tôi rồi."
+    }
+  },
+  {
+    "id": 420,
+    "hanzi": "满意",
+    "pinyin": "mǎnyì",
+    "hanviet": "Mãn ý",
+    "meaning": "Hài lòng",
+    "level": "HSK 3",
+    "topic": "Cảm xúc, tính cách",
+    "radical": "氵 (Thủy)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 14: Cảm xúc, tính cách & Mối quan hệ (难过, 生气, 聪明, 热情)",
+    "example": {
+      "hanzi": "我很满意。",
+      "pinyin": "Wǒ hěn mǎnyì.",
+      "meaning": "Tôi rất hài lòng."
+    }
+  },
+  {
+    "id": 421,
+    "hanzi": "跑得快",
+    "pinyin": "pǎo de kuài",
+    "hanviet": "Bào đắc khoái",
+    "meaning": "Chạy rất nhanh",
+    "level": "HSK 3",
+    "topic": "Phân biệt triệt để 3 trợ từ kết cấu 的, 地, 得 (3 chữ Đích)",
+    "radical": "足 (Túc)",
+    "strokes": 12,
+    "mnemonic": "Trích từ Bài 15: Phân biệt triệt để 3 trợ từ kết cấu 的, 地, 得 (3 chữ Đích)",
+    "example": {
+      "hanzi": "他跑得真快！",
+      "pinyin": "Tā pǎo de zhēn kuài!",
+      "meaning": "Anh ấy chạy thật nhanh!"
+    }
+  },
+  {
+    "id": 422,
+    "hanzi": "高兴地说",
+    "pinyin": "gāoxìng de shuō",
+    "hanviet": "Cao hưng địa thuyết",
+    "meaning": "Vui vẻ nói",
+    "level": "HSK 3",
+    "topic": "Phân biệt triệt để 3 trợ từ kết cấu 的, 地, 得 (3 chữ Đích)",
+    "radical": "高 (Cao)",
+    "strokes": 16,
+    "mnemonic": "Trích từ Bài 15: Phân biệt triệt để 3 trợ từ kết cấu 的, 地, 得 (3 chữ Đích)",
+    "example": {
+      "hanzi": "他高兴地笑了。",
+      "pinyin": "Tā gāoxìng de xiào le.",
+      "meaning": "Anh ấy vui mừng cười tươi."
+    }
+  },
+  {
+    "id": 423,
+    "hanzi": "美丽的花",
+    "pinyin": "měilì de huā",
+    "hanviet": "Mỹ lệ đích hoa",
+    "meaning": "Bông hoa xinh đẹp",
+    "level": "HSK 3",
+    "topic": "Phân biệt triệt để 3 trợ từ kết cấu 的, 地, 得 (3 chữ Đích)",
+    "radical": "羊 (Dương)",
+    "strokes": 16,
+    "mnemonic": "Trích từ Bài 15: Phân biệt triệt để 3 trợ từ kết cấu 的, 地, 得 (3 chữ Đích)",
+    "example": {
+      "hanzi": "红色的美丽的花。",
+      "pinyin": "Hóngsè de měilì de huā.",
+      "meaning": "Bông hoa màu đỏ xinh đẹp."
+    }
+  },
+  {
+    "id": 424,
+    "hanzi": "入乡随俗",
+    "pinyin": "rù xiāng suí sú",
+    "hanviet": "Nhập hương tùy tục",
+    "meaning": "Nhập gia tùy tục",
+    "level": "HSK 3",
+    "topic": "Thành ngữ 4 chữ thông dụng trong đời sống (成语入门)",
+    "radical": "入 (Nhập)",
+    "strokes": 16,
+    "mnemonic": "Trích từ Bài 16: Thành ngữ 4 chữ thông dụng trong đời sống (成语入门)",
+    "example": {
+      "hanzi": "去中国要入乡随俗。",
+      "pinyin": "Qù Zhōngguó yào rù xiāng suí sú.",
+      "meaning": "Đến Trung Quốc phải nhập gia tùy tục."
+    }
+  },
+  {
+    "id": 425,
+    "hanzi": "马马虎虎",
+    "pinyin": "mǎmǎhūhū",
+    "hanviet": "Mã mã hổ hổ",
+    "meaning": "Tàm tạm, qua loa",
+    "level": "HSK 3",
+    "topic": "Thành ngữ 4 chữ thông dụng trong đời sống (成语入门)",
+    "radical": "马 (Mã)",
+    "strokes": 16,
+    "mnemonic": "Trích từ Bài 16: Thành ngữ 4 chữ thông dụng trong đời sống (成语入门)",
+    "example": {
+      "hanzi": "水平马马虎虎。",
+      "pinyin": "Shuǐpíng mǎmǎhūhū.",
+      "meaning": "Trình độ tàm tạm thôi."
+    }
+  },
+  {
+    "id": 426,
+    "hanzi": "一心一意",
+    "pinyin": "yì xīn yí yì",
+    "hanviet": "Nhất tâm nhất ý",
+    "meaning": "Toàn tâm toàn ý, hết lòng",
+    "level": "HSK 3",
+    "topic": "Thành ngữ 4 chữ thông dụng trong đời sống (成语入门)",
+    "radical": "一 (Nhất)",
+    "strokes": 16,
+    "mnemonic": "Trích từ Bài 16: Thành ngữ 4 chữ thông dụng trong đời sống (成语入门)",
+    "example": {
+      "hanzi": "一心一意学汉语。",
+      "pinyin": "Yì xīn yí yì xué Hànyǔ.",
+      "meaning": "Hết lòng hết dạ học tiếng Trung."
+    }
+  },
+  {
+    "id": 427,
+    "hanzi": "文化",
+    "pinyin": "wénhuà",
+    "hanviet": "Văn hóa",
+    "meaning": "Văn hóa",
+    "level": "HSK 3",
+    "topic": "Thành ngữ 4 chữ thông dụng trong đời sống (成语入门)",
+    "radical": "文 (Văn)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 16: Thành ngữ 4 chữ thông dụng trong đời sống (成语入门)",
+    "example": {
+      "hanzi": "中国传统文化。",
+      "pinyin": "Zhōngguó chuántǒng wénhuà.",
+      "meaning": "Văn hóa truyền thống Trung Hoa."
+    }
+  },
+  {
+    "id": 428,
+    "hanzi": "首先",
+    "pinyin": "shǒuxiān",
+    "hanviet": "Thủ tiên",
+    "meaning": "Đầu tiên, trước hết",
+    "level": "HSK 3",
+    "topic": "Kể chuyện",
+    "radical": "首 (Thủ)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 17: Kể chuyện & Tự thuật (首先, 然后, 最后)",
+    "example": {
+      "hanzi": "首先要准时。",
+      "pinyin": "Shǒuxiān yào zhǔnshí.",
+      "meaning": "Trước hết phải đúng giờ."
+    }
+  },
+  {
+    "id": 429,
+    "hanzi": "然后",
+    "pinyin": "ránhòu",
+    "hanviet": "Nhiên hậu",
+    "meaning": "Sau đó, tiếp theo",
+    "level": "HSK 3",
+    "topic": "Kể chuyện",
+    "radical": "灬 (Hỏa)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 17: Kể chuyện & Tự thuật (首先, 然后, 最后)",
+    "example": {
+      "hanzi": "然后去吃饭。",
+      "pinyin": "Ránhòu qù chīfàn.",
+      "meaning": "Sau đó đi ăn cơm."
+    }
+  },
+  {
+    "id": 430,
+    "hanzi": "最后",
+    "pinyin": "zuìhòu",
+    "hanviet": "Tối hậu",
+    "meaning": "Cuối cùng",
+    "level": "HSK 3",
+    "topic": "Kể chuyện",
+    "radical": "日 (Nhật)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 17: Kể chuyện & Tự thuật (首先, 然后, 最后)",
+    "example": {
+      "hanzi": "最后回家。",
+      "pinyin": "Zuìhòu huí jiā.",
+      "meaning": "Cuối cùng về nhà."
+    }
+  },
+  {
+    "id": 431,
+    "hanzi": "故事",
+    "pinyin": "gùshi",
+    "hanviet": "Cố sự",
+    "meaning": "Câu chuyện",
+    "level": "HSK 3",
+    "topic": "Kể chuyện",
+    "radical": "攵 (Phác)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 17: Kể chuyện & Tự thuật (首先, 然后, 最后)",
+    "example": {
+      "hanzi": "讲一个故事。",
+      "pinyin": "Jiǎng yí gè gùshi.",
+      "meaning": "Kể một câu chuyện."
+    }
+  },
+  {
+    "id": 432,
+    "hanzi": "阅读",
+    "pinyin": "yuèdú",
+    "hanviet": "Duyệt độc",
+    "meaning": "Đọc hiểu",
+    "level": "HSK 3",
+    "topic": "Đọc hiểu đoạn văn phân cấp HSK 3",
+    "radical": "门 (Môn)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 18: Đọc hiểu đoạn văn phân cấp HSK 3 & Chiến thuật thi cử",
+    "example": {
+      "hanzi": "阅读理解。",
+      "pinyin": "Yuèdú lǐjiě.",
+      "meaning": "Đọc hiểu văn bản."
+    }
+  },
+  {
+    "id": 433,
+    "hanzi": "水平",
+    "pinyin": "shuǐpíng",
+    "hanviet": "Thủy bình",
+    "meaning": "Trình độ",
+    "level": "HSK 3",
+    "topic": "Tổng ôn tập toàn diện 600 từ vựng",
+    "radical": "水 (Thủy)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 19: Tổng ôn tập toàn diện 600 từ vựng & Ngữ pháp HSK 1–3",
+    "example": {
+      "hanzi": "汉语水平很高。",
+      "pinyin": "Hànyǔ shuǐpíng hěn gāo.",
+      "meaning": "Trình độ tiếng Trung rất cao."
+    }
+  },
+  {
+    "id": 434,
+    "hanzi": "成功",
+    "pinyin": "chénggōng",
+    "hanviet": "Thành công",
+    "meaning": "Thành công",
+    "level": "HSK 3",
+    "topic": "Tổng ôn tập toàn diện 600 từ vựng",
+    "radical": "戈 (Qua)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 19: Tổng ôn tập toàn diện 600 từ vựng & Ngữ pháp HSK 1–3",
+    "example": {
+      "hanzi": "祝你成功！",
+      "pinyin": "Zhù nǐ chénggōng!",
+      "meaning": "Chúc bạn thành công!"
+    }
+  },
+  {
+    "id": 435,
+    "hanzi": "坚持",
+    "pinyin": "jiānchí",
+    "hanviet": "Kiên trì",
+    "meaning": "Kiên trì",
+    "level": "HSK 3",
+    "topic": "Tổng ôn tập toàn diện 600 từ vựng",
+    "radical": "土 (Thổ)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 19: Tổng ôn tập toàn diện 600 từ vựng & Ngữ pháp HSK 1–3",
+    "example": {
+      "hanzi": "坚持到底。",
+      "pinyin": "Jiānchí dào dǐ.",
+      "meaning": "Kiên trì đến cùng."
+    }
+  },
+  {
+    "id": 436,
+    "hanzi": "自信",
+    "pinyin": "zìxìn",
+    "hanviet": "Tự tín",
+    "meaning": "Tự tin",
+    "level": "HSK 3",
+    "topic": "Tổng ôn tập toàn diện 600 từ vựng",
+    "radical": "自 (Tự)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 19: Tổng ôn tập toàn diện 600 từ vựng & Ngữ pháp HSK 1–3",
+    "example": {
+      "hanzi": "充满自信。",
+      "pinyin": "Chōngmǎn zìxìn.",
+      "meaning": "Tràn đầy tự tin."
+    }
+  },
+  {
+    "id": 437,
+    "hanzi": "毕业",
+    "pinyin": "bìyè",
+    "hanviet": "Tất nghiệp",
+    "meaning": "Tốt nghiệp",
+    "level": "HSK 3",
+    "topic": "Boss Challenge HSK 3 (Đề thi thử 80 câu CTI",
+    "radical": "十 (Thập)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 20: Boss Challenge HSK 3 (Đề thi thử 80 câu CTI & Thi nói HSKK)",
+    "example": {
+      "hanzi": "大学毕业了。",
+      "pinyin": "Dàxué bìyè le.",
+      "meaning": "Tốt nghiệp đại học rồi."
+    }
+  },
+  {
+    "id": 438,
+    "hanzi": "梦想",
+    "pinyin": "mèngxiǎng",
+    "hanviet": "Mộng tưởng",
+    "meaning": "Ước mơ, hoài bão",
+    "level": "HSK 3",
+    "topic": "Boss Challenge HSK 3 (Đề thi thử 80 câu CTI",
+    "radical": "夕 (Tịch)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 20: Boss Challenge HSK 3 (Đề thi thử 80 câu CTI & Thi nói HSKK)",
+    "example": {
+      "hanzi": "实现梦想。",
+      "pinyin": "Shíxiàn mèngxiǎng.",
+      "meaning": "Thực hiện ước mơ."
+    }
+  },
+  {
+    "id": 439,
+    "hanzi": "未来",
+    "pinyin": "wèilái",
+    "hanviet": "Vị lai",
+    "meaning": "Tương lai",
+    "level": "HSK 3",
+    "topic": "Boss Challenge HSK 3 (Đề thi thử 80 câu CTI",
+    "radical": "木 (Mộc)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 20: Boss Challenge HSK 3 (Đề thi thử 80 câu CTI & Thi nói HSKK)",
+    "example": {
+      "hanzi": "美好的未来。",
+      "pinyin": "Měihǎo de wèilái.",
+      "meaning": "Tương lai tốt đẹp."
+    }
+  },
+  {
+    "id": 440,
+    "hanzi": "加油",
+    "pinyin": "jiāyóu",
+    "hanviet": "Gia du",
+    "meaning": "Cố lên, nỗ lực lên",
+    "level": "HSK 3",
+    "topic": "Boss Challenge HSK 3 (Đề thi thử 80 câu CTI",
+    "radical": "力 (Lực)",
+    "strokes": 8,
+    "mnemonic": "Trích từ Bài 20: Boss Challenge HSK 3 (Đề thi thử 80 câu CTI & Thi nói HSKK)",
+    "example": {
+      "hanzi": "一起加油！",
+      "pinyin": "Yìqǐ jiāyóu!",
+      "meaning": "Cùng nhau cố lên!"
+    }
+  },
+  {
+    "id": 441,
+    "hanzi": "半途而废",
+    "pinyin": "bàn tú ér fèi",
+    "hanviet": "Bán đồ nhi phế",
+    "meaning": "Bỏ dở nửa chừng, đứt gánh giữa đường",
+    "level": "HSK 5-6",
+    "topic": "Thành ngữ",
+    "radical": "十 (Thập)",
+    "strokes": 15,
+    "mnemonic": "Đi được nửa đường (半途) mà bỏ cuộc phế bỏ (废), không tới được đích.",
+    "example": {
+      "hanzi": "学外语贵在坚持，绝不能半途而废。",
+      "pinyin": "Xué wàiyǔ guì zài jiānchí, jué bù néng bàn tú ér fèi.",
+      "meaning": "Học ngoại ngữ quý ở sự kiên trì, tuyệt đối không được bỏ dở nửa chừng."
+    }
+  },
+  {
+    "id": 442,
+    "hanzi": "画蛇添足",
+    "pinyin": "huà shé tiān zú",
+    "hanviet": "Họa xà thiêm túc",
+    "meaning": "Vẽ rắn thêm chân (làm chuyện thừa thãi hỏng việc)",
+    "level": "HSK 5-6",
+    "topic": "Thành ngữ",
+    "radical": "一 (Nhất)",
+    "strokes": 28,
+    "mnemonic": "Vẽ rắn vốn không chân lại tự ý vẽ thêm chân thành ra trò cười.",
+    "example": {
+      "hanzi": "这段话已经很完整了，再解释就是画蛇添足。",
+      "pinyin": "Zhè duàn huà yǐjīng hěn wánzhěng le, zài jiěshì jiù shì huà shé tiān zú.",
+      "meaning": "Đoạn này đã rất hoàn chỉnh rồi, giải thích thêm chỉ là vẽ rắn thêm chân."
+    }
+  },
+  {
+    "id": 443,
+    "hanzi": "守株待兔",
+    "pinyin": "shǒu zhū dài tù",
+    "hanviet": "Thủ chu đãi thố",
+    "meaning": "Ôm cây đợi thỏ (trông chờ may mắn, lười biếng)",
+    "level": "HSK 5-6",
+    "topic": "Thành ngữ",
+    "radical": "寸 (Thốn)",
+    "strokes": 25,
+    "mnemonic": "Ngồi canh gốc cây (株) mong thỏ (兔) tự đâm đầu vào, không chịu làm lụng.",
+    "example": {
+      "hanzi": "成功需要脚踏实地，不能守株待兔。",
+      "pinyin": "Chénggōng xūyào jiǎotàshídì, bù néng shǒu zhū dài tù.",
+      "meaning": "Thành công cần thực tế nỗ lực, không thể ôm cây đợi thỏ."
+    }
+  },
+  {
+    "id": 444,
+    "hanzi": "温故知新",
+    "pinyin": "wēn gù zhī xīn",
+    "hanviet": "Ôn cố tri tân",
+    "meaning": "Ôn lại điều cũ để hiểu sâu điều mới",
+    "level": "HSK 5-6",
+    "topic": "Thành ngữ",
+    "radical": "氵(Thủy)",
+    "strokes": 32,
+    "mnemonic": "Ôn lại điều đã học (故) thì sẽ lĩnh hội thêm những tri thức mới mẻ (新).",
+    "example": {
+      "hanzi": "每天复习生词就是温故知新的好方法。",
+      "pinyin": "Měitiān fùxí shēngcí jiù shì wēn gù zhī xīn de hǎo fāngfǎ.",
+      "meaning": "Mỗi ngày ôn tập từ mới chính là phương pháp ôn cố tri tân tuyệt vời."
+    }
+  },
+  {
+    "id": 445,
+    "hanzi": "千里之行",
+    "pinyin": "qiānlǐ zhī xíng",
+    "hanviet": "Thiên lý chi hành",
+    "meaning": "Chuyến đi ngàn dặm (bắt đầu từ bước chân đầu tiên)",
+    "level": "HSK 5-6",
+    "topic": "Danh ngôn",
+    "radical": "十 (Thập)",
+    "strokes": 16,
+    "mnemonic": "Đường xa nghìn dặm (千里) đều bắt đầu từ một bước đi nhỏ dưới chân.",
+    "example": {
+      "hanzi": "千里之行，始于足下，学中文要天天坚持。",
+      "pinyin": "Qiānlǐ zhī xíng, shǐ yú zú xià, xué Zhōngwén yào tiāntiān jiānchí.",
+      "meaning": "Chuyến đi ngàn dặm bắt đầu từ một bước chân, học tiếng Trung phải kiên trì mỗi ngày."
+    }
+  },
+  {
+    "id": 446,
+    "hanzi": "安排",
+    "pinyin": "ānpái",
+    "hanviet": "An bài",
+    "meaning": "Sắp xếp, bố trí, kế hoạch",
+    "level": "HSK 4",
+    "topic": "Công việc",
+    "radical": "宀 (Miên)",
+    "strokes": 17,
+    "mnemonic": "Giữ cho mọi việc an ổn (安) vào đúng hàng lối thứ tự (排).",
+    "example": {
+      "hanzi": "经理为我们安排了下周的商务行程。",
+      "pinyin": "Jīnglǐ wèi wǒmen ānpái le xià zhōu de shāngwù xíngchéng.",
+      "meaning": "Giám đốc đã sắp xếp lịch trình công tác tuần tới cho chúng tôi."
+    }
+  },
+  {
+    "id": 447,
+    "hanzi": "保证",
+    "pinyin": "bǎozhèng",
+    "hanviet": "Bảo chứng",
+    "meaning": "Đảm bảo, cam đoan",
+    "level": "HSK 4",
+    "topic": "Công việc",
+    "radical": "亻 (Nhân đứng)",
+    "strokes": 19,
+    "mnemonic": "Dùng uy tín con người (亻) và lời nói (讠) làm chứng bảo đảm.",
+    "example": {
+      "hanzi": "我向你保证，明天下午一定把报告交给你。",
+      "pinyin": "Wǒ xiàng nǐ bǎozhèng, míngtiān xiàwǔ yídìng bǎ bàogào jiāo gěi nǐ.",
+      "meaning": "Tôi bảo đảm với bạn, chiều mai nhất định nộp báo cáo cho bạn."
+    }
+  },
+  {
+    "id": 448,
+    "hanzi": "丰富",
+    "pinyin": "fēngfù",
+    "hanviet": "Phong phú",
+    "meaning": "Phong phú, dồi dào, đa dạng",
+    "level": "HSK 4",
+    "topic": "Tính từ",
+    "radical": "豆 (Đậu)",
+    "strokes": 25,
+    "mnemonic": "Mùa màng bội thu đầy ắp hoa màu (丰) và của cải trong nhà (富).",
+    "example": {
+      "hanzi": "他的工作经验非常丰富，大家都很信任他。",
+      "pinyin": "Tā de gōngzuò jīngyàn fēicháng fēngfù, dàjiā dōu hěn xìnrèn tā.",
+      "meaning": "Kinh nghiệm làm việc của anh ấy rất phong phú, mọi người đều rất tin tưởng anh ấy."
+    }
+  },
+  {
+    "id": 449,
+    "hanzi": "经历",
+    "pinyin": "jīnglì",
+    "hanviet": "Kinh lịch",
+    "meaning": "Trải qua, trải nghiệm, từng trải",
+    "level": "HSK 4",
+    "topic": "Đời sống",
+    "radical": "纟(Mịch)",
+    "strokes": 12,
+    "mnemonic": "Những chặng đường sợi tơ cuộc đời đã kinh qua từng ngày tháng.",
+    "example": {
+      "hanzi": "这次在中国留学的经历让我学到了很多。",
+      "pinyin": "Zhè cì zài Zhōngguó liúxué de jīnglì ràng wǒ xué dào le hěn duō.",
+      "meaning": "Trải nghiệm du học Trung Quốc lần này giúp tôi học hỏi được rất nhiều."
+    }
+  },
+  {
+    "id": 450,
+    "hanzi": "商量",
+    "pinyin": "shāngliang",
+    "hanviet": "Thương lượng",
+    "meaning": "Bàn bạc, thảo luận, thương lượng",
+    "level": "HSK 4",
+    "topic": "Giao tiếp",
+    "radical": "口 (Khẩu)",
+    "strokes": 23,
+    "mnemonic": "Dùng lời lẽ buôn bán suy xét đo lường (量) tìm giải pháp chung.",
+    "example": {
+      "hanzi": "遇到困难的时候，我们要互相商量。",
+      "pinyin": "Yù dào kùnnan de shíhou, wǒmen yào hùxiāng shāngliang.",
+      "meaning": "Khi gặp khó khăn, chúng ta nên cùng nhau bàn bạc."
+    }
+  },
+  {
+    "id": 451,
+    "hanzi": "适应",
+    "pinyin": "shìyìng",
+    "hanviet": "Thích ứng",
+    "meaning": "Thích nghi, làm quen, thích ứng",
+    "level": "HSK 4",
+    "topic": "Đời sống",
+    "radical": "辶 (Sước)",
+    "strokes": 16,
+    "mnemonic": "Bước chân hòa hợp thích đáng (适) đáp lại (应) với hoàn cảnh mới.",
+    "example": {
+      "hanzi": "他很快就适应了北方寒冷干燥的气候。",
+      "pinyin": "Tā hěn kuài jiù shìyìng le běifāng hánlěng gānzào de qìhòu.",
+      "meaning": "Anh ấy rất nhanh đã thích nghi với khí hậu lạnh khô của phương Bắc."
+    }
+  },
+  {
+    "id": 452,
+    "hanzi": "积累",
+    "pinyin": "jīlěi",
+    "hanviet": "Tích lũy",
+    "meaning": "Tích lũy, tích góp (kinh nghiệm, kiến thức)",
+    "level": "HSK 4",
+    "topic": "Học tập",
+    "radical": "禾 (Hòa)",
+    "strokes": 27,
+    "mnemonic": "Từng hạt lúa (禾) chất đống (累) từng ngày thành kho thóc lớn.",
+    "example": {
+      "hanzi": "学好一门外语需要每天积累词汇。",
+      "pinyin": "Xué hǎo yì mén wàiyǔ xūyào měitiān jīlěi cíhuì.",
+      "meaning": "Học tốt một ngoại ngữ cần tích lũy từ vựng mỗi ngày."
+    }
+  },
+  {
+    "id": 453,
+    "hanzi": "顺利",
+    "pinyin": "shùnlì",
+    "hanviet": "Thuận lợi",
+    "meaning": "Thuận lợi, suôn sẻ, trôi chảy",
+    "level": "HSK 4",
+    "topic": "Công việc",
+    "radical": "页 (Hiệt)",
+    "strokes": 16,
+    "mnemonic": "Xuôi theo dòng nước thuận buồm xuôi gió gặt hái kết quả tốt lành.",
+    "example": {
+      "hanzi": "祝你的汉语水平考试一切顺利！",
+      "pinyin": "Zhù nǐ de Hànyǔ Shuǐpíng Kǎoshì yíqiè shùnlì!",
+      "meaning": "Chúc kỳ thi năng lực tiếng Trung của bạn mọi sự thuận lợi!"
+    }
+  },
+  {
+    "id": 454,
+    "hanzi": "流利",
+    "pinyin": "liúlì",
+    "hanviet": "Lưu lợi",
+    "meaning": "Lưu loát, trôi chảy",
+    "level": "HSK 4",
+    "topic": "Kỹ năng",
+    "radical": "氵(Thủy)",
+    "strokes": 17,
+    "mnemonic": "Lời nói tuôn trào như dòng nước chảy (流) sắc bén thuận lợi (利).",
+    "example": {
+      "hanzi": "经过两年的努力，她能说一口流利的普通话。",
+      "pinyin": "Jīngguò liǎng nián de nǔlì, tā néng shuō yì kǒu liúlì de pǔtōnghuà.",
+      "meaning": "Sau hai năm nỗ lực, cô ấy có thể nói một giọng phổ thông lưu loát."
+    }
+  },
+  {
+    "id": 455,
+    "hanzi": "翻译",
+    "pinyin": "fānyì",
+    "hanviet": "Phiên dịch",
+    "meaning": "Dịch thuật, phiên dịch, thông dịch viên",
+    "level": "HSK 4",
+    "topic": "Công việc",
+    "radical": "羽 (Vũ)",
+    "strokes": 22,
+    "mnemonic": "Lật giở câu chữ (翻) chuyển đổi sang ngôn ngữ khác (译).",
+    "example": {
+      "hanzi": "你能帮我把这封中文邮件翻译成越南语吗？",
+      "pinyin": "Nǐ néng bāng wǒ bǎ zhè fēng Zhōngwén yóujiàn fānyì chéng Yuènányǔ ma?",
+      "meaning": "Bạn có thể giúp tôi dịch bức thư điện tử tiếng Trung này sang tiếng Việt không?"
+    }
   }
 ];
+
+
 
 export const TOPIC_FILTERS = [
   'Tất cả',

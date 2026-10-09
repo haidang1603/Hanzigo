@@ -18,6 +18,7 @@ const VocabularyPage = lazy(() => import('./pages/VocabularyPage'));
 const PronunciationPage = lazy(() => import('./pages/PronunciationPage'));
 const WritingPage = lazy(() => import('./pages/WritingPage'));
 const ConversationPage = lazy(() => import('./pages/ConversationPage'));
+const PracticePage = lazy(() => import('./pages/PracticePage'));
 const CommunityPage = lazy(() => import('./pages/CommunityPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const MaterialsPage = lazy(() => import('./pages/MaterialsPage'));
@@ -29,7 +30,7 @@ import TeacherGuard from './components/TeacherGuard';
 
 const VALID_TABS = [
   'home', 'dashboard', 'roadmap', 'lesson', 'vocabulary', 
-  'pronunciation', 'writing', 'conversation', 'community', 
+  'pronunciation', 'writing', 'conversation', 'practice', 'community', 
   'materials', 'admin', 'profile', 'leaderboard',
   'teacher', 'classroom'
 ];
@@ -279,11 +280,14 @@ function MainApp() {
               initialLessonId={targetRoadmapLessonId}
               onClearInitialLesson={() => setTargetRoadmapLessonId(null)}
               onAddXp={handleAddXp}
+              onSelectWriting={handleSelectWriting}
+              onSelectPronounce={handleSelectPronounce}
             />
           )}
 
           {activeTab === 'vocabulary' && (
             <VocabularyPage 
+              user={user}
               setActiveTab={setActiveTab} 
               onSelectWriting={handleSelectWriting}
               onSelectPronounce={handleSelectPronounce}
@@ -292,20 +296,36 @@ function MainApp() {
 
           {activeTab === 'pronunciation' && (
             <PronunciationPage 
+              user={user}
               targetVocab={pronounceTarget}
               onClearTargetVocab={handleClearPronounceTarget}
+              setActiveTab={setActiveTab}
+              onSelectWriting={handleSelectWriting}
             />
           )}
 
           {activeTab === 'writing' && (
             <WritingPage 
+              user={user}
               targetVocab={writingTarget}
               onClearTargetVocab={handleClearWritingTarget}
+              setActiveTab={setActiveTab}
+              onSelectPronounce={handleSelectPronounce}
             />
           )}
 
           {activeTab === 'conversation' && (
-            <ConversationPage />
+            <ConversationPage user={user} />
+          )}
+
+          {activeTab === 'practice' && (
+            <PracticePage 
+              user={user}
+              setActiveTab={setActiveTab} 
+              onSelectWriting={handleSelectWriting}
+              onSelectPronounce={handleSelectPronounce}
+              onSelectLesson={handleSelectLesson}
+            />
           )}
 
           {(activeTab === 'community' || activeTab === 'leaderboard') && (
@@ -317,7 +337,12 @@ function MainApp() {
           )}
 
           {activeTab === 'materials' && (
-            <MaterialsPage setActiveTab={setActiveTab} />
+            <MaterialsPage 
+              setActiveTab={setActiveTab} 
+              user={user} 
+              isAdmin={isAdmin}
+              onSelectLesson={handleSelectLesson}
+            />
           )}
 
           {activeTab === 'admin' && (

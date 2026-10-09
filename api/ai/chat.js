@@ -14,6 +14,7 @@
  */
 
 import { checkRateLimitAndQuota } from './distributedRateLimiter.js';
+import { verifyRequestAuth } from './verifyAuth.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 20;     // 20 requests per minute
@@ -64,21 +65,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Phương thức không hợp lệ. Chỉ chấp nhận POST.' });
   }
 
-  // 2. Client Authentication Validation
-  // Expects Authorization: Bearer <token> or x-user-id header
-  const authHeader = req.headers['authorization'] || req.headers['x-authorization'];
-  const userIdHeader = req.headers['x-user-id'] || req.headers['x-auth-uid'];
-  const clientToken = authHeader ? authHeader.replace(/^Bearer\s+/i, '').trim() : '';
-
-  if (!clientToken && !userIdHeader) {
+  // 2. Client Authentication & JWT Validation
+  const auth = await verifyRequestAuth(req);
+  if (!auth.authenticated) {
     return res.status(401).json({
-      error: 'Yêu cầu chưa được xác thực. Vui lòng đăng nhập để sử dụng tính năng trò chuyện AI.'
+      error: auth.error || 'Yêu cầu chưa được xác thực. Vui lòng đăng nhập để sử dụng tính năng trò chuyện AI.'
     });
   }
 
-  // Determine client rate limiting key (User ID or Token or IP)
-  const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown-client';
-  const clientKey = userIdHeader ? `user:${userIdHeader}` : `ip:${clientIp}`;
+  // Determine client rate limiting key (bound to verified User ID)
+  const clientKey = `user:${auth.user.id}`;
 
   // 3. Rate Limit & Daily Quota Check (Distributed with In-Memory fallback)
   const limitCheck = await checkRateLimitAndQuota({
@@ -129,9 +125,14 @@ export default async function handler(req, res) {
   // Sanitize Conversation History
   const safeHistory = Array.isArray(conversationHistory) 
     ? conversationHistory.slice(-MAX_HISTORY_ITEMS).map(msg => {
-        const rawText = String(msg.hanzi || msg.text || '').slice(0, MAX_HISTORY_MSG_LENGTH);
+        const rawText = msg && typeof msg === 'object' 
+          ? String(msg.hanzi || msg.text || '').slice(0, MAX_HISTORY_MSG_LENGTH)
+          : String(msg || '').slice(0, MAX_HISTORY_MSG_LENGTH);
+        const role = msg && typeof msg === 'object' && (msg.sender === 'user' || msg.speaker === 'user') 
+          ? 'user' 
+          : 'model';
         return {
-          role: msg.sender === 'user' || msg.speaker === 'user' ? 'user' : 'model',
+          role,
           parts: [{ text: rawText }]
         };
       })

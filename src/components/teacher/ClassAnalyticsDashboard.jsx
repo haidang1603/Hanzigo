@@ -36,6 +36,30 @@ export default function ClassAnalyticsDashboard({
     );
   }
 
+  if (analyticsData.isEmptyClass) {
+    return (
+      <div className="p-8 sm:p-12 rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center space-y-4 shadow-sm animate-in fade-in duration-300">
+        <div className="w-16 h-16 rounded-3xl bg-amber-50 dark:bg-amber-950/40 text-[#E85D3F] flex items-center justify-center mx-auto shadow-xs">
+          <Users size={32} />
+        </div>
+        <div className="space-y-1.5 max-w-md mx-auto">
+          <h3 className="text-lg font-black text-[#243447] dark:text-white">
+            Lớp học hiện chưa có học viên
+          </h3>
+          <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
+            {analyticsData.emptyStateMessage || 'Lớp học hiện chưa có học viên nào. Hãy chia sẻ mã lớp để học viên tham gia và bắt đầu thu thập số liệu phân tích sư phạm.'}
+          </p>
+        </div>
+        {currentClass?.class_code && (
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-white">
+            <span className="text-[#748092]">Mã lớp học:</span>
+            <span className="font-mono text-base text-[#E85D3F] tracking-wider font-black">{currentClass.class_code}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const {
     totalStudents,
     activeStudents,
@@ -310,6 +334,26 @@ export default function ClassAnalyticsDashboard({
             >
               Nhịp độ học tập
             </button>
+            <button
+              onClick={() => setActiveChartTab('weakness')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeChartTab === 'weakness'
+                  ? 'bg-[#E85D3F] text-white shadow-2xs'
+                  : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+              }`}
+            >
+              Điểm yếu kỹ năng
+            </button>
+            <button
+              onClick={() => setActiveChartTab('assignment')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeChartTab === 'assignment'
+                  ? 'bg-[#E85D3F] text-white shadow-2xs'
+                  : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+              }`}
+            >
+              Hiệu suất bài tập
+            </button>
           </div>
         </div>
 
@@ -444,6 +488,90 @@ export default function ClassAnalyticsDashboard({
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* CHART 5: Weakness Analysis */}
+        {activeChartTab === 'weakness' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between text-xs font-bold text-[#748092]">
+              <span>Chẩn đoán điểm yếu từng kỹ năng so với ngưỡng chuẩn (70 điểm)</span>
+              <span>Kỹ năng yếu: {analyticsData.weakSkills?.length || 0}</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              {(charts.weaknessAnalysis || []).map((w, idx) => {
+                const isUnder = w.score < (w.threshold || 70);
+                return (
+                  <div 
+                    key={idx} 
+                    className={`p-4 rounded-2xl border ${
+                      isUnder 
+                        ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60' 
+                        : 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/60'
+                    } flex items-center justify-between`}
+                  >
+                    <div className="space-y-1">
+                      <span className="text-xs font-bold text-[#243447] dark:text-white">{w.skill}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[11px] font-bold ${isUnder ? 'text-rose-600' : 'text-emerald-600'}`}>
+                          {w.status || (isUnder ? 'Cần cải thiện' : 'Tốt')}
+                        </span>
+                        <span className="text-[10px] text-[#748092]">Ngưỡng: {w.threshold || 70}đ</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-xl font-black ${isUnder ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        {w.score}
+                      </span>
+                      <span className="text-xs text-[#748092]">/100</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* CHART 6: Assignment Performance */}
+        {activeChartTab === 'assignment' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between text-xs font-bold text-[#748092]">
+              <span>Hiệu suất làm bài & tỷ lệ nộp bài theo từng nhiệm vụ</span>
+              <span>Tổng bài tập: {charts.assignmentPerformance?.length || 0}</span>
+            </div>
+
+            {(!charts.assignmentPerformance || charts.assignmentPerformance.length === 0) ? (
+              <div className="p-8 text-center text-xs text-[#748092]">
+                Lớp học chưa có bài tập nào được giao.
+              </div>
+            ) : (
+              <div className="space-y-2.5 pt-2">
+                {charts.assignmentPerformance.map((asg, idx) => (
+                  <div 
+                    key={asg.id || idx}
+                    className="p-3.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2]/50 dark:bg-[#243447]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div>
+                      <h5 className="text-xs font-bold text-[#243447] dark:text-white">{asg.title}</h5>
+                      <span className="text-[11px] text-[#748092]">
+                        Đã nộp: {asg.submittedCount}/{asg.totalStudents} ({asg.submissionRate}%)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs font-bold">
+                      <div className="text-right">
+                        <span className="text-[10px] text-[#748092] block">Điểm TB</span>
+                        <span className="text-amber-600 dark:text-amber-400 font-black">{asg.averageScore}đ</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-[#748092] block">Tỷ lệ nộp</span>
+                        <span className="text-blue-600 dark:text-blue-400 font-black">{asg.submissionRate}%</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

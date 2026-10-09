@@ -17,10 +17,17 @@ import {
   Check,
   Shield
 } from 'lucide-react';
-import { USER_ACHIEVEMENTS } from '../data/chineseData';
 import { playClickSound, playSuccessSound } from '../utils/audio';
 import { calculateTotalXp, getStreakStatus, getUserLevelInfo, getUserStorageKey } from '../utils/gamification';
+import { evaluateUserAchievements } from '../services/gamificationService';
 import { updateUserProfile } from '../supabase/services.js';
+import { 
+  LEARNING_GOALS, 
+  getUserLearningGoal, 
+  saveUserLearningGoal, 
+  getUserDailyGoalMinutes, 
+  saveUserDailyGoalMinutes 
+} from '../services/learningPathService.js';
 
 // Preset avatar collection
 const PRESET_AVATARS = [
@@ -54,7 +61,8 @@ export default function ProfilePage({
   setSoundEnabled 
 }) {
   const [reminderTime, setReminderTime] = useState('20:00');
-  const [dailyGoalMinutes, setDailyGoalMinutes] = useState('15');
+  const [dailyGoalMinutes, setDailyGoalMinutes] = useState(() => String(getUserDailyGoalMinutes(user)));
+  const [learningGoal, setLearningGoal] = useState(() => getUserLearningGoal(user));
   const [showSavedToast, setShowSavedToast] = useState(false);
 
   // Edit Profile Modal States
@@ -112,16 +120,6 @@ export default function ProfilePage({
     }
   }, [user]);
 
-  const aiChatHistory = useMemo(() => {
-    try {
-      const key = getUserStorageKey('hanzigo_ai_chat_history', user);
-      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_ai_chat_history'));
-      return s ? JSON.parse(s) : {};
-    } catch {
-      return {};
-    }
-  }, [user]);
-
   const wordsLearnedCount = rememberedIds.length > 0 ? rememberedIds.length : (user?.wordsLearned || 0);
 
   const totalStudyHours = useMemo(() => {
@@ -132,25 +130,10 @@ export default function ProfilePage({
   const totalXp = calculateTotalXp(user);
   const levelInfo = useMemo(() => getUserLevelInfo(totalXp), [totalXp]);
 
-  // Real Dynamic Achievements
+  // Real Dynamic Achievements verified by authentic learning events
   const dynamicAchievements = useMemo(() => {
-    const hasFinishedLesson = completedLessonIds.length > 0;
-    const hasLearnedVocab = rememberedIds.length >= 5;
-    const hasPracticedPronounce = pronounceHistory.length > 0;
-    const hasWrittenChar = customWritingChars.length > 0;
-    const hasChattedAI = Object.keys(aiChatHistory).length > 0;
-
-    return USER_ACHIEVEMENTS.map(ach => {
-      let isUnlocked = ach.unlocked;
-      if (ach.id === 'first-step' && hasFinishedLesson) isUnlocked = true;
-      if (ach.id === 'vocab-100' && hasLearnedVocab) isUnlocked = true;
-      if (ach.id === 'pinyin-master' && hasPracticedPronounce) isUnlocked = true;
-      if (ach.id === 'calligraphy' && hasWrittenChar) isUnlocked = true;
-      if (ach.id === 'conversation-star' && hasChattedAI) isUnlocked = true;
-      if (ach.id === 'streak-7' && streakCount >= 7) isUnlocked = true;
-      return { ...ach, unlocked: isUnlocked };
-    });
-  }, [completedLessonIds, rememberedIds, pronounceHistory, customWritingChars, aiChatHistory, streakCount]);
+    return evaluateUserAchievements(user);
+  }, [user, completedLessonIds.length, rememberedIds.length, pronounceHistory.length, customWritingChars.length, streakCount]);
 
   // Heatmap: 12 weeks of 7 days (84 days) with streak tail highlighted
   const heatmapData = useMemo(() => {
@@ -308,6 +291,23 @@ export default function ProfilePage({
 
   const handleSaveSettings = (e) => {
     e.preventDefault();
+    saveUserDailyGoalMinutes(Number(dailyGoalMinutes), user);
+    saveUserLearningGoal(learningGoal, user);
+
+    if (onUpdateUser) {
+      onUpdateUser(prev => {
+        const next = {
+          ...(prev || {}),
+          dailyGoalMinutes: Number(dailyGoalMinutes),
+          learningGoal: learningGoal
+        };
+        try {
+          localStorage.setItem('hanzigo_user', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    }
+
     playSuccessSound();
     setShowSavedToast(true);
     setTimeout(() => setShowSavedToast(false), 2000);
@@ -823,20 +823,66 @@ export default function ProfilePage({
             </div>
           </div>
 
+          {/* Learning Goal Selector */}
+          <div>
+            <label className="block text-xs font-bold text-[#243447] dark:text-white mb-2">
+              Mục tiêu học tập ưu tiên
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {Object.values(LEARNING_GOALS).map((g) => {
+                const isSelected = learningGoal === g.id;
+                return (
+                  <button
+                    type="button"
+                    key={g.id}
+                    onClick={() => {
+                      playClickSound();
+                      setLearningGoal(g.id);
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
+                      isSelected
+                        ? 'bg-[#FFF5F2] dark:bg-[#2C1D1A] border-[#E85D3F] shadow-xs'
+                        : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]/40'
+                    }`}
+                  >
+                    <span className="text-xl shrink-0 mt-0.5">{g.icon}</span>
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-xs font-black ${isSelected ? 'text-[#E85D3F]' : 'text-[#243447] dark:text-white'}`}>
+                          {g.name}
+                        </span>
+                        {isSelected && (
+                          <Check size={12} className="text-[#E85D3F]" />
+                        )}
+                      </div>
+                      <p className="text-[10px] text-[#748092] dark:text-gray-400 line-clamp-2 leading-relaxed">
+                        {g.desc}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Daily Study Time */}
           <div>
             <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
-              Mục tiêu học mỗi ngày
+              Thời gian học mục tiêu mỗi ngày
             </label>
-            <div className="flex items-center gap-2">
-              {['10', '15', '30', '45'].map((mins) => (
+            <div className="flex items-center gap-2 flex-wrap">
+              {['10', '15', '20', '30', '45', '60'].map((mins) => (
                 <button
                   type="button"
                   key={mins}
-                  onClick={() => setDailyGoalMinutes(mins)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  onClick={() => {
+                    playClickSound();
+                    setDailyGoalMinutes(mins);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     dailyGoalMinutes === mins 
-                      ? 'bg-[#E85D3F] text-white' 
-                      : 'border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092]'
+                      ? 'bg-[#E85D3F] text-white shadow-xs' 
+                      : 'border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white'
                   }`}
                 >
                   {mins} phút

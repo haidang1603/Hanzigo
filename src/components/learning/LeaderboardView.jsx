@@ -16,9 +16,18 @@ import {
   CheckCircle2,
   TrendingUp,
   ShieldCheck,
-  ChevronRight
+  Eye,
+  EyeOff,
+  Calendar,
+  Globe,
+  School
 } from 'lucide-react';
-import { getXpLeaderboard, XP_HONORIFIC_TITLES } from '../../services/leaderboardService';
+import { 
+  getXpLeaderboard, 
+  XP_HONORIFIC_TITLES,
+  isUserLeaderboardOptedOut,
+  setLeaderboardPrivacyOptOut
+} from '../../services/leaderboardService';
 import { playClickSound, playLevelUpSound } from '../../utils/audio';
 
 export default function LeaderboardView({ user, onNavigateTab }) {
@@ -34,15 +43,18 @@ export default function LeaderboardView({ user, onNavigateTab }) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
+  const [timeframe, setTimeframe] = useState('all'); // 'all' | 'weekly' | 'monthly'
+  const [scope, setScope] = useState('global'); // 'global' | 'class'
+  const [isOptedOut, setIsOptedOut] = useState(() => isUserLeaderboardOptedOut(user));
   const [showRulesModal, setShowRulesModal] = useState(false);
 
   // Load leaderboard data
-  const loadData = async (showSpin = false) => {
+  const loadData = async (showSpin = false, tf = timeframe, sc = scope) => {
     if (showSpin) setIsRefreshing(true);
     else setLoading(true);
 
     try {
-      const result = await getXpLeaderboard(user);
+      const result = await getXpLeaderboard(user, { timeframe: tf, scope: sc });
       setData(result);
     } catch (err) {
       console.error('Failed to load leaderboard:', err);
@@ -53,8 +65,16 @@ export default function LeaderboardView({ user, onNavigateTab }) {
   };
 
   useEffect(() => {
-    loadData();
-  }, [user]);
+    loadData(false, timeframe, scope);
+  }, [user, timeframe, scope]);
+
+  const handleToggleOptOut = () => {
+    playClickSound();
+    const nextVal = !isOptedOut;
+    setIsOptedOut(nextVal);
+    setLeaderboardPrivacyOptOut(user, nextVal);
+    loadData(true, timeframe, scope);
+  };
 
   // Filtered leaderboard
   const filteredList = useMemo(() => {
@@ -355,6 +375,85 @@ export default function LeaderboardView({ user, onNavigateTab }) {
         </div>
       )}
 
+      {/* 2.5 Scope, Timeframe & Privacy Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs">
+        {/* Timeframe tabs */}
+        <div className="flex items-center gap-1.5 p-1 bg-[#FFF9F2] dark:bg-[#131B24] rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
+          {[
+            { id: 'all', label: 'Toàn thời gian', icon: Trophy },
+            { id: 'weekly', label: 'Tuần này', icon: Zap },
+            { id: 'monthly', label: 'Tháng này', icon: Calendar }
+          ].map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  playClickSound();
+                  setTimeframe(tab.id);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  timeframe === tab.id
+                    ? 'bg-[#E85D3F] text-white shadow-xs'
+                    : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                }`}
+              >
+                <Icon size={13} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Scope tabs & Privacy opt-out */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 p-1 bg-[#FFF9F2] dark:bg-[#131B24] rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
+            <button
+              onClick={() => {
+                playClickSound();
+                setScope('global');
+              }}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                scope === 'global'
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+              }`}
+            >
+              <Globe size={13} />
+              <span>Toàn quốc</span>
+            </button>
+            <button
+              onClick={() => {
+                playClickSound();
+                setScope('class');
+              }}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                scope === 'class'
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+              }`}
+            >
+              <School size={13} />
+              <span>Lớp học</span>
+            </button>
+          </div>
+
+          {/* Privacy Opt-out Toggle */}
+          <button
+            onClick={handleToggleOptOut}
+            title={isOptedOut ? 'Nhấn để chuyển sang chế độ công khai' : 'Nhấn để ẩn danh trên bảng xếp hạng'}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+              isOptedOut
+                ? 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400'
+            }`}
+          >
+            {isOptedOut ? <EyeOff size={14} className="text-slate-500" /> : <Eye size={14} className="text-emerald-600" />}
+            <span>{isOptedOut ? 'Chế độ Ẩn danh: BẬT' : 'Hiển thị công khai'}</span>
+          </button>
+        </div>
+      </div>
+
       {/* 3. Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative w-full sm:w-72">
@@ -486,6 +585,11 @@ export default function LeaderboardView({ user, onNavigateTab }) {
                             Admin
                           </span>
                         )}
+                        {item.isOptedOut && item.isCurrentUser && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            Ẩn danh
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-[#748092] dark:text-[#94A3B8] mt-0.5">
                         <span className="px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 font-semibold">
@@ -493,6 +597,12 @@ export default function LeaderboardView({ user, onNavigateTab }) {
                         </span>
                         <span>•</span>
                         <span>🔥 {item.streak} ngày</span>
+                        {item.maskedEmail && (
+                          <>
+                            <span className="hidden md:inline">•</span>
+                            <span className="hidden md:inline font-mono text-[9px] opacity-75">{item.maskedEmail}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

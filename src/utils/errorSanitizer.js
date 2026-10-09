@@ -43,7 +43,7 @@ export function sanitizeUserErrorMessage(error, fallbackMessage = 'Đã xảy ra
   }
 
   // 1. Kiểm tra nếu có API key hoặc JWT lộ trong thông báo
-  if (/key\s+[A-Za-z0-9_\-]{15,}|AIza[0-9A-Za-z-_]{35}/.test(rawMsg)) {
+  if (/key\s+[A-Za-z0-9_-]{15,}|AIza[0-9A-Za-z-_]{35}/.test(rawMsg)) {
     return 'Lỗi cấu hình dịch vụ bảo mật. Vui lòng liên hệ quản trị viên.';
   }
 
