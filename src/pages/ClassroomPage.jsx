@@ -84,6 +84,7 @@ export default function ClassroomPage({
   const [peers, setPeers] = useState([]);
   const [submissionsMap, setSubmissionsMap] = useState({});
   const [activeLiveSession, setActiveLiveSession] = useState(null);
+  const [liveSessionsMap, setLiveSessionsMap] = useState({}); // { [classId]: session | undefined }
   const [copiedCode, setCopiedCode] = useState(false);
 
   // Search & Filter state for assignments
@@ -110,6 +111,19 @@ export default function ClassroomPage({
       const studentId = user?.uid || user?.id || 'user_guest';
       const list = await getClassroomsForStudent(studentId);
       setMyClasses(list || []);
+
+      // Preload live sessions for ALL enrolled classes → enables LIVE badge on list view
+      const sessionChecks = await Promise.allSettled(
+        (list || []).map(cls => getActiveSessionForClass(cls.id))
+      );
+      const liveMap = {};
+      (list || []).forEach((cls, idx) => {
+        const result = sessionChecks[idx];
+        if (result.status === 'fulfilled' && result.value) {
+          liveMap[cls.id] = result.value;
+        }
+      });
+      setLiveSessionsMap(liveMap);
 
       if (classId) {
         const [clsDetail, asgList, annList, matList, peerList, liveSes] = await Promise.all([
@@ -152,12 +166,18 @@ export default function ClassroomPage({
   useEffect(() => {
     if (!classId) return;
 
-    getActiveSessionForClass(classId).then(ses => setActiveLiveSession(ses || null)).catch(() => {});
+    getActiveSessionForClass(classId).then(ses => {
+      setActiveLiveSession(ses || null);
+      setLiveSessionsMap(prev => ({ ...prev, [classId]: ses || undefined }));
+    }).catch(() => {});
 
     const unsubscribe = subscribeToClassroomRealtime(classId, (event) => {
       switch (event.type) {
         case 'SESSION':
-          getActiveSessionForClass(classId).then(ses => setActiveLiveSession(ses || null)).catch(() => {});
+          getActiveSessionForClass(classId).then(ses => {
+            setActiveLiveSession(ses || null);
+            setLiveSessionsMap(prev => ({ ...prev, [classId]: ses || undefined }));
+          }).catch(() => {});
           break;
         case 'ASSIGNMENT':
           getAssignmentsForClassroom(classId).then(asgs => setAssignments(asgs || [])).catch(() => {});
@@ -176,19 +196,47 @@ export default function ClassroomPage({
       }
     });
 
-    // Fallback sync in case of network interruptions
+    // Fallback polling mỗi 5s (giảm từ 30s) — hoạt động ngay cả khi Supabase Realtime chưa config
     const interval = setInterval(async () => {
       try {
         const liveSes = await getActiveSessionForClass(classId);
         setActiveLiveSession(liveSes || null);
+        setLiveSessionsMap(prev => ({ ...prev, [classId]: liveSes || undefined }));
       } catch {}
-    }, 30000);
+    }, 5000);
 
     return () => {
       unsubscribe();
       clearInterval(interval);
     };
   }, [classId]);
+
+  // Poll live sessions cho TẤT CẢ lớp mỗi 5s → hiện LIVE badge trên list view
+  // Hoạt động ngay cả khi không có Supabase Realtime (demo mode / localStorage fallback)
+  useEffect(() => {
+    if (myClasses.length === 0) return;
+
+    const poll = async () => {
+      try {
+        const checks = await Promise.allSettled(
+          myClasses.map(c => getActiveSessionForClass(c.id))
+        );
+        const map = {};
+        myClasses.forEach((c, i) => {
+          if (checks[i].status === 'fulfilled' && checks[i].value) {
+            map[c.id] = checks[i].value;
+          }
+        });
+        setLiveSessionsMap(map);
+        // Cũng cập nhật active session cho detail view nếu đang mở
+        if (classId) setActiveLiveSession(map[classId] || null);
+      } catch {}
+    };
+
+    const timer = setInterval(poll, 5000);
+    return () => clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myClasses.length, classId]);
 
   // Handle lookup by class code
   const handleLookupCode = async () => {
@@ -660,9 +708,15 @@ export default function ClassroomPage({
                         <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-[#FFF5F2] dark:bg-[#2C1D1A] text-[#E85D3F] border border-[#E85D3F]/20">
                           {cls.hsk_level}
                         </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
-                          Đang tham gia
-                        </span>
+                        {liveSessionsMap[cls.id] ? (
+                          <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-rose-500 text-white flex items-center gap-1" style={{animation: 'pulse 1.5s ease-in-out infinite'}}>
+                            🔴 ĐANG LIVE
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                            Đang tham gia
+                          </span>
+                        )}
                       </div>
 
                       <div>
@@ -686,13 +740,27 @@ export default function ClassroomPage({
                       <span className="text-[#748092]">
                         Mã: <strong className="font-mono text-[#E85D3F]">{cls.class_code}</strong>
                       </span>
-                      <button
-                        onClick={() => navigateTo('detail', cls.id)}
-                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-xs hover:opacity-95 cursor-pointer flex items-center gap-1 shadow-xs group-hover:scale-105 transition-transform"
-                      >
-                        <span>Vào lớp học</span>
-                        <ChevronRight size={14} />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {liveSessionsMap[cls.id] && (
+                          <button
+                            onClick={() => {
+                              playClickSound();
+                              window.location.hash = `#classroom/${cls.id}/live/${liveSessionsMap[cls.id].id}`;
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold text-xs hover:opacity-95 cursor-pointer flex items-center gap-1 shadow-md shadow-rose-500/25 animate-pulse"
+                          >
+                            <Video size={12} />
+                            <span>Vào LIVE</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => navigateTo('detail', cls.id)}
+                          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-xs hover:opacity-95 cursor-pointer flex items-center gap-1 shadow-xs group-hover:scale-105 transition-transform"
+                        >
+                          <span>Vào lớp học</span>
+                          <ChevronRight size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

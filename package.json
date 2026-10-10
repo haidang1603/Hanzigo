@@ -8,14 +8,18 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --test tests/srsEngine.test.js tests/pronunciationEvaluator.test.js tests/securityRbac.test.js tests/learningPath.test.js tests/leaderboard.test.js tests/classroom.test.js tests/liveClassroom.test.js tests/teacherAnalyticsAi.test.js tests/productionSecurityHardening.test.js tests/loadAndAuthTokenRefresh.test.js tests/productionVerificationPhase1.test.js tests/aiLearningCoach.test.js tests/chineseLearningDepth.test.js tests/gamificationRetention.test.js tests/materialsIntegration.test.js tests/learningRoadmapIntegration.test.js tests/practiceLevels.test.js tests/personalizationEngine.test.js tests/featureIntegrationE2E.test.js tests/liveClassroomWorkflowE2E.test.js",
+    "test": "node --test tests/srsEngine.test.js tests/pronunciationEvaluator.test.js tests/securityRbac.test.js tests/learningPath.test.js tests/leaderboard.test.js tests/classroom.test.js tests/liveClassroom.test.js tests/teacherAnalyticsAi.test.js tests/productionSecurityHardening.test.js tests/loadAndAuthTokenRefresh.test.js tests/productionVerificationPhase1.test.js tests/aiLearningCoach.test.js tests/chineseLearningDepth.test.js tests/gamificationRetention.test.js tests/materialsIntegration.test.js tests/learningRoadmapIntegration.test.js tests/practiceLevels.test.js tests/personalizationEngine.test.js tests/featureIntegrationE2E.test.js tests/liveClassroomWorkflowE2E.test.js tests/livekitIntegration.test.js",
     "db:seed": "node scripts/seedSupabase.js",
     "db:seed:learning": "node scripts/seedLearningPath.js"
   },
   "dependencies": {
+    "@livekit/components-react": "^2.9.24",
+    "@livekit/components-styles": "^1.2.0",
     "@supabase/supabase-js": "^2.117.2",
     "canvas-confetti": "^1.9.4",
     "hanzi-writer": "^3.7.3",
+    "livekit-client": "^2.22.4",
+    "livekit-server-sdk": "^2.19.1",
     "lucide-react": "^1.48.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"

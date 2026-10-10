@@ -338,6 +338,73 @@ Chỉ trả về chuỗi JSON thuần túy.`;
           }));
           return;
         }
+
+        if (req.url === '/api/webrtc/livekit-token' && req.method === 'POST') {
+          res.setHeader('Content-Type', 'application/json');
+          const authHeader = req.headers['authorization'] || req.headers['x-authorization'];
+          const userIdHeader = req.headers['x-user-id'] || req.headers['x-auth-uid'];
+          if (!authHeader && !userIdHeader) {
+            res.statusCode = 401;
+            res.end(JSON.stringify({ error: 'Yêu cầu chưa được xác thực. Vui lòng đăng nhập.' }));
+            return;
+          }
+
+          let bodyStr = '';
+          req.on('data', chunk => { bodyStr += chunk; });
+          req.on('end', async () => {
+            try {
+              let body = {};
+              try {
+                body = JSON.parse(bodyStr || '{}');
+              } catch {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'JSON không hợp lệ.' }));
+                return;
+              }
+
+              const env = loadEnv('', process.cwd(), '');
+              const livekitUrl = env.VITE_LIVEKIT_URL || process.env.VITE_LIVEKIT_URL || env.LIVEKIT_URL || process.env.LIVEKIT_URL || '';
+              const apiKey = env.LIVEKIT_API_KEY || process.env.LIVEKIT_API_KEY || 'devkey';
+              const apiSecret = env.LIVEKIT_API_SECRET || process.env.LIVEKIT_API_SECRET || 'secret';
+
+              const userId = body.userId || userIdHeader || 'user-1';
+              const userName = body.userName || 'Người dùng HanziGo';
+              const role = body.role === 'teacher' ? 'teacher' : 'student';
+              const roomName = body.roomName || body.sessionId || 'hanzigo-room';
+
+              const { AccessToken } = await import('livekit-server-sdk');
+              const at = new AccessToken(apiKey, apiSecret, {
+                identity: String(userId),
+                name: String(userName),
+                metadata: JSON.stringify({ role, userId }),
+                ttl: '2h'
+              });
+
+              at.addGrant({
+                room: String(roomName),
+                roomJoin: true,
+                canPublish: role === 'teacher' || Boolean(body.canPublish),
+                canPublishData: true,
+                canSubscribe: true
+              });
+
+              const token = await at.toJwt();
+              res.statusCode = 200;
+              res.end(JSON.stringify({
+                token,
+                serverUrl: livekitUrl,
+                isConfigured: Boolean(livekitUrl),
+                role,
+                roomName
+              }));
+            } catch (err) {
+              console.error('Vite dev LiveKit token error:', err.message);
+              res.statusCode = 500;
+              res.end(JSON.stringify({ error: 'Lỗi tạo token LiveKit: ' + err.message }));
+            }
+          });
+          return;
+        }
         next();
       });
     }

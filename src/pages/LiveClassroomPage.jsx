@@ -55,6 +55,7 @@ import {
   LiveRoomMediaManager,
   liveEventBus
 } from '../services/liveClassroomService';
+import { LiveKitClassroomManager } from '../services/livekitService';
 import { playClickSound, playSuccessSound, playErrorSound } from '../utils/audio';
 
 // Interactive Live Chinese Teaching Suite Modules
@@ -103,6 +104,16 @@ export default function LiveClassroomPage({
   const teacherVideoRef = useRef(null);
   const screenVideoRef = useRef(null);
   const studentSelfVideoRef = useRef(null);
+  const studentTeacherVideoRef = useRef(null);
+
+  // LiveKit WebRTC SFU state
+  const livekitManagerRef = useRef(null);
+  const [livekitStatus, setLivekitStatus] = useState({ isConnected: false, isConfigured: false });
+  const [teacherRemoteStream, setTeacherRemoteStream] = useState({
+    videoTrack: null,
+    audioTrack: null,
+    screenTrack: null
+  });
 
   // Layout & Tabs state (for mobile / responsive)
   const [activeSideTab, setActiveSideTab] = useState('chat'); // 'chat' | 'participants' | 'hanziBoard'
@@ -202,6 +213,35 @@ export default function LiveClassroomPage({
 
     setAuthChecking(false);
 
+    // Initialize LiveKit WebRTC SFU Room
+    const lkManager = new LiveKitClassroomManager();
+    livekitManagerRef.current = lkManager;
+
+    lkManager.onTeacherStreamChange = (streamData) => {
+      setTeacherRemoteStream({ ...streamData });
+    };
+
+    lkManager.onConnectionChange = ({ isConnected }) => {
+      setLivekitStatus(prev => ({ ...prev, isConnected }));
+    };
+
+    lkManager.connect({
+      sessionId,
+      user,
+      role: check.role
+    }).then(res => {
+      setLivekitStatus({
+        isConnected: Boolean(res?.room?.state === 'connected'),
+        isConfigured: Boolean(res?.isConfigured)
+      });
+      if (check.role === 'teacher' && res?.isConfigured) {
+        lkManager.setCameraEnabled(true);
+        lkManager.setMicrophoneEnabled(true);
+      }
+    }).catch(err => {
+      console.warn('[LiveKit] Init error:', err);
+    });
+
     // If teacher, automatically request camera & mic by default for presenter role
     if (check.role === 'teacher') {
       mediaManagerRef.current?.startMedia({ video: true, audio: true });
@@ -212,6 +252,7 @@ export default function LiveClassroomPage({
     initSession();
 
     const handleBeforeUnload = () => {
+      livekitManagerRef.current?.disconnect();
       mediaManagerRef.current?.stopAll();
       if (currentUserId) {
         leaveLiveSession(sessionId, currentUserId);
@@ -223,6 +264,7 @@ export default function LiveClassroomPage({
     // Cleanup on unmount (Leave room & release camera/mic)
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      livekitManagerRef.current?.disconnect();
       mediaManagerRef.current?.stopAll();
       if (currentUserId) {
         leaveLiveSession(sessionId, currentUserId);
@@ -247,9 +289,30 @@ export default function LiveClassroomPage({
     }
   }, [mediaState.localStream, myRole]);
 
+  // Attach student view of remote teacher video via LiveKit
+  useEffect(() => {
+    if (myRole === 'student' && studentTeacherVideoRef.current && teacherRemoteStream.videoTrack) {
+      livekitManagerRef.current?.attachTrack(teacherRemoteStream.videoTrack, studentTeacherVideoRef.current);
+      return () => {
+        livekitManagerRef.current?.detachTrack(teacherRemoteStream.videoTrack, studentTeacherVideoRef.current);
+      };
+    }
+  }, [myRole, teacherRemoteStream.videoTrack]);
+
+  // Attach student view of remote teacher screen share via LiveKit
+  useEffect(() => {
+    if (myRole === 'student' && screenVideoRef.current && teacherRemoteStream.screenTrack) {
+      livekitManagerRef.current?.attachTrack(teacherRemoteStream.screenTrack, screenVideoRef.current);
+      return () => {
+        livekitManagerRef.current?.detachTrack(teacherRemoteStream.screenTrack, screenVideoRef.current);
+      };
+    }
+  }, [myRole, teacherRemoteStream.screenTrack]);
+
   // Leave room action
   const handleLeave = useCallback(async () => {
     playClickSound();
+    livekitManagerRef.current?.disconnect();
     mediaManagerRef.current?.stopAll();
 
     if (myRole === 'teacher') {
@@ -471,6 +534,7 @@ export default function LiveClassroomPage({
     }
 
     const nextMic = mediaManagerRef.current?.toggleMicrophone();
+    livekitManagerRef.current?.setMicrophoneEnabled(Boolean(nextMic));
     if (user) {
       updateMediaStatus(sessionId, user.uid || user.id, { micEnabled: nextMic });
     }
@@ -483,6 +547,7 @@ export default function LiveClassroomPage({
     }
 
     const nextCam = mediaManagerRef.current?.toggleCamera();
+    livekitManagerRef.current?.setCameraEnabled(Boolean(nextCam));
     if (user) {
       updateMediaStatus(sessionId, user.uid || user.id, { cameraEnabled: nextCam });
     }
@@ -494,10 +559,13 @@ export default function LiveClassroomPage({
 
     if (mediaState.isScreenSharing) {
       mediaManagerRef.current?.stopScreenShare();
+      livekitManagerRef.current?.setScreenShareEnabled(false);
     } else {
       const res = await mediaManagerRef.current?.startScreenShare();
       if (!res.success) {
         showToast(`⚠️ ${res.error}`);
+      } else {
+        livekitManagerRef.current?.setScreenShareEnabled(true);
       }
     }
   };
@@ -729,6 +797,17 @@ export default function LiveClassroomPage({
             <span>{activeStudents.length + (participants.some(p => p.role === 'teacher' && !p.left_at) ? 1 : 0)} / {sessionData?.max_capacity || 50}</span>
           </div>
 
+          {/* LiveKit WebRTC SFU Status Pill */}
+          <div 
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/10 text-xs font-bold text-white/80 cursor-default"
+            title={livekitStatus.isConnected ? 'LiveKit SFU: Đã kết nối với độ trễ thấp (Sub-second latency)' : (livekitStatus.isConfigured ? 'LiveKit: Đang kết nối...' : 'WebRTC: Chế độ tương tác cục bộ / Avatar')}
+          >
+            <span className={`w-2 h-2 rounded-full ${livekitStatus.isConnected ? 'bg-emerald-400 animate-pulse' : (livekitStatus.isConfigured ? 'bg-amber-400' : 'bg-blue-400')}`} />
+            <span className="text-[11px]">
+              {livekitStatus.isConnected ? 'LiveKit HD' : (livekitStatus.isConfigured ? 'LiveKit...' : 'WebRTC')}
+            </span>
+          </div>
+
           {/* AI Summary / Session Report Button */}
           <button
             onClick={handleOpenSummaryModal}
@@ -822,7 +901,7 @@ export default function LiveClassroomPage({
             )}
 
             {/* SCREEN SHARE PRESENTATION (IF ACTIVE) */}
-            {mediaState.isScreenSharing ? (
+            {(mediaState.isScreenSharing || teacherRemoteStream.screenTrack) ? (
               <div className="w-full flex-1 relative flex items-center justify-center bg-black min-h-[380px]">
                 <video
                   ref={screenVideoRef}
@@ -832,7 +911,7 @@ export default function LiveClassroomPage({
                 />
                 <div className="absolute top-4 left-4 px-3 py-1 rounded-xl bg-black/70 backdrop-blur-md border border-white/20 text-xs font-bold text-white flex items-center gap-2">
                   <Monitor size={14} className="text-[#E85D3F]" />
-                  <span>Màn hình của Giáo viên</span>
+                  <span>{myRole === 'teacher' ? 'Màn hình của bạn đang chia sẻ' : 'Màn hình của Giáo viên'}</span>
                 </div>
               </div>
             ) : (
@@ -995,39 +1074,85 @@ export default function LiveClassroomPage({
                     </>
                   )}
                 </div>
-              ) : (
-                /* Student view of teacher presenter stream */
-                <div className={`rounded-2xl bg-black/90 border border-white/20 overflow-hidden shadow-2xl pointer-events-auto transition-all ${
-                  isPresenterPipMinimized ? 'w-28 h-10 p-2 flex items-center justify-between' : 'w-44 h-32 relative'
-                }`}>
-                  {isPresenterPipMinimized ? (
-                    <div className="flex items-center justify-between w-full">
-                      <span className="text-[10px] font-bold text-white truncate">Giáo viên</span>
-                      <button
-                        onClick={() => setIsPresenterPipMinimized(false)}
-                        className="text-[10px] text-emerald-400 font-bold hover:underline cursor-pointer"
-                      >
-                        Mở
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center bg-[#0F172A] relative">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#E85D3F] to-[#F4B942] text-white text-xs font-black flex items-center justify-center shadow-md">
-                        师
+              ) : (() => {
+                // Đọc thông tin giáo viên thực từ participants list & LiveKit remote stream
+                const teacherP = participants.find(p => p.role === 'teacher' && !p.left_at);
+                const teacherName = teacherP?.user_name || 'Giáo viên';
+                const teacherOnline = Boolean(teacherP);
+                const hasLiveVideo = Boolean(teacherRemoteStream.videoTrack);
+
+                return (
+                  <div className={`rounded-2xl bg-black/90 border overflow-hidden shadow-2xl pointer-events-auto transition-all ${
+                    teacherOnline ? 'border-emerald-500/40' : 'border-white/20'
+                  } ${
+                    isPresenterPipMinimized ? 'w-40 h-10 p-2 flex items-center justify-between' : 'w-48 h-36 relative'
+                  }`}>
+                    {isPresenterPipMinimized ? (
+                      <div className="flex items-center justify-between w-full gap-1">
+                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-white truncate">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${teacherOnline ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                          {teacherName}
+                        </span>
+                        <button
+                          onClick={() => setIsPresenterPipMinimized(false)}
+                          className="text-[10px] text-emerald-400 font-bold hover:underline cursor-pointer shrink-0"
+                        >
+                          Mở
+                        </button>
                       </div>
-                      <span className="text-[10px] text-white font-bold mt-1">Giáo viên (Live)</span>
-                      <span className="text-[9px] text-emerald-400">● SFU Broadcast</span>
-                      <button
-                        onClick={() => setIsPresenterPipMinimized(true)}
-                        className="absolute top-1 right-1 text-[9px] font-bold text-white/60 hover:text-white bg-black/60 px-1 rounded cursor-pointer"
-                        title="Thu nhỏ"
-                      >
-                        _
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+                    ) : hasLiveVideo ? (
+                      <div className="w-full h-full relative">
+                        <video
+                          ref={studentTeacherVideoRef}
+                          autoPlay
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-1 left-2 flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded text-[9px] font-bold text-white pointer-events-none">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>GV: {teacherName}</span>
+                        </div>
+                        <button
+                          onClick={() => setIsPresenterPipMinimized(true)}
+                          className="absolute top-1 right-1 text-[9px] font-bold text-white/60 hover:text-white bg-black/60 px-1 rounded cursor-pointer z-10"
+                          title="Thu nhỏ"
+                        >
+                          _
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-[#0F172A] relative gap-1">
+                        {/* Avatar + online dot */}
+                        <div className="relative">
+                          <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-[#E85D3F] to-[#F4B942] text-white text-sm font-black flex items-center justify-center shadow-lg">
+                            {teacherName?.[0]?.toUpperCase() || 'G'}
+                          </div>
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#0F172A] ${
+                            teacherOnline ? 'bg-emerald-400' : 'bg-amber-400'
+                          }`} />
+                        </div>
+                        <span className="text-[11px] text-white font-bold leading-tight">{teacherName}</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#E85D3F]/20 text-[#E85D3F] font-black uppercase">Giáo viên</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[9px] font-bold ${teacherP?.mic_enabled ? 'text-emerald-400' : 'text-white/30'}`}>
+                            {teacherP?.mic_enabled ? '🎤 Mic bật' : '🔇 Mic tắt'}
+                          </span>
+                        </div>
+                        {!teacherOnline && (
+                          <span className="text-[9px] text-amber-400 font-bold">Chưa vào phòng</span>
+                        )}
+                        <button
+                          onClick={() => setIsPresenterPipMinimized(true)}
+                          className="absolute top-1 right-1 text-[9px] font-bold text-white/60 hover:text-white bg-black/60 px-1 rounded cursor-pointer"
+                          title="Thu nhỏ"
+                        >
+                          _
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Student Self Mini Video */}
               {myRole === 'student' && mediaState.isCameraOn && (
@@ -1309,7 +1434,7 @@ export default function LiveClassroomPage({
                 <div className="flex items-center gap-2">
                   <Users size={16} className="text-[#45B97C]" />
                   <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-                    Học viên ({activeStudents.length})
+                    Thành viên ({participants.filter(p => !p.left_at).length})
                   </h3>
                 </div>
                 <button
@@ -1320,6 +1445,44 @@ export default function LiveClassroomPage({
                   <X size={16} />
                 </button>
               </div>
+
+              {/* TEACHER PINNED CARD — always visible to students */}
+              {(() => {
+                const teacherP = participants.find(p => p.role === 'teacher' && !p.left_at);
+                const teacherName = teacherP?.user_name || 'Giáo viên';
+                return (
+                  <div className="mx-3 mt-3 p-2.5 rounded-2xl bg-[#E85D3F]/10 border border-[#E85D3F]/30 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="relative shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-[#E85D3F] text-white text-xs font-black flex items-center justify-center">
+                          {teacherName?.[0]?.toUpperCase() || 'G'}
+                        </div>
+                        {teacherP ? (
+                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0F172A]" />
+                        ) : (
+                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 border-2 border-[#0F172A]" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-bold text-white truncate">{teacherName}</p>
+                          <span className="px-1.5 py-0.2 rounded bg-[#E85D3F]/20 text-[#E85D3F] text-[9px] font-black uppercase">GV</span>
+                        </div>
+                        <p className="text-[10px] text-white/50">
+                          {teacherP
+                            ? (teacherP.mic_enabled ? 'Đang dạy • Mic bật' : 'Đang dạy')
+                            : 'Chưa vào phòng'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {teacherP?.mic_enabled
+                        ? <Mic size={14} className="text-emerald-400" />
+                        : <MicOff size={14} className="text-white/30" />}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* RAISE HAND FIFO QUEUE SECTION */}
               {raiseHandQueue.length > 0 && (

@@ -359,15 +359,19 @@ export async function getActiveSessionForClass(classroomId) {
         .maybeSingle();
 
       if (!error && data) {
-        const sessionAgeMs = now - new Date(data.created_at || data.started_at || 0).getTime();
-        if (sessionAgeMs > MAX_SESSION_DURATION_MS) {
-          try {
-            await supabase
-              .from('class_sessions')
-              .update({ status: 'ended', ended_at: new Date().toISOString() })
-              .eq('id', data.id);
-          } catch {}
-          return null;
+        // Only auto-end if we have a valid timestamp (guard against null → year-1970 false positive)
+        const sessionDateStr = data.created_at || data.started_at;
+        if (sessionDateStr) {
+          const sessionAgeMs = now - new Date(sessionDateStr).getTime();
+          if (sessionAgeMs > MAX_SESSION_DURATION_MS) {
+            try {
+              await supabase
+                .from('class_sessions')
+                .update({ status: 'ended', ended_at: new Date().toISOString() })
+                .eq('id', data.id);
+            } catch {}
+            return null;
+          }
         }
         return data;
       }
@@ -379,8 +383,9 @@ export async function getActiveSessionForClass(classroomId) {
   if (!liveSession) return null;
 
   // Stale duration validation (> 2.5 hours auto-ended)
-  const startTime = new Date(liveSession.started_at || liveSession.created_at || 0).getTime();
-  if (now - startTime > MAX_SESSION_DURATION_MS) {
+  // Guard: only check if timestamp is valid (null fallback to 0 = year 1970 = false positive)
+  const startDateStr = liveSession.started_at || liveSession.created_at;
+  if (startDateStr && now - new Date(startDateStr).getTime() > MAX_SESSION_DURATION_MS) {
     endLiveSession(liveSession.id, 'system_cleanup');
     return null;
   }
