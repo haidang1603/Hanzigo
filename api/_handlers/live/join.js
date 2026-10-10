@@ -1,13 +1,9 @@
 /**
- * =========================================================================
- * HANZI GO - PRODUCTION API: /api/live/join
- * =========================================================================
- * Serverless endpoint for recording participant presence in Supabase database.
+ * HANZI GO - LIVE JOIN HANDLER
  */
+import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
 
-import { verifyRequestAuth, getSupabaseAdminClient } from '../utils/supabaseServer.js';
-
-export default async function handler(req, res) {
+export default async function joinHandler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
   }
@@ -42,9 +38,7 @@ export default async function handler(req, res) {
         .select()
         .single();
 
-      if (error) {
-        console.warn('[/api/live/join] Supabase upsert notice:', error.message);
-      } else {
+      if (!error && data) {
         return res.status(200).json({ success: true, participant: data });
       }
     } catch (err) {

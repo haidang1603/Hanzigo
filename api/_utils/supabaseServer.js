@@ -4,6 +4,7 @@
  * =========================================================================
  * Authoritative database clients and authentication middleware for Vercel
  * serverless functions and production backend endpoints.
+ * Placed in _utils so Vercel does not count it as a Serverless Function.
  */
 
 import { createClient } from '@supabase/supabase-js';

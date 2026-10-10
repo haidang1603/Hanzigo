@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import livekitTokenHandler from '../api/webrtc/livekit-token.js';
+import livekitTokenHandler from '../api/_webrtc/livekit-token.js';
 import { LiveKitClassroomManager } from '../src/services/livekitService.js';
 
 test('LiveKit Token: Rejects unauthenticated requests with 401', async () => {

@@ -1,6 +1,18 @@
 {
   "rewrites": [
     {
+      "source": "/api/classroom/:action",
+      "destination": "/api/classroom/[action]?action=:action"
+    },
+    {
+      "source": "/api/live/:action",
+      "destination": "/api/live/[action]?action=:action"
+    },
+    {
+      "source": "/api/webrtc/:action",
+      "destination": "/api/webrtc/[action]?action=:action"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },

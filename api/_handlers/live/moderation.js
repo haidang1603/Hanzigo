@@ -1,17 +1,10 @@
 /**
- * =========================================================================
- * HANZI GO - PRODUCTION API: /api/live/moderation
- * =========================================================================
- * Server-side SFU moderation endpoint for Live Classroom:
- * - Grants / Revokes microphone publish permissions via LiveKit RoomServiceClient.
- * - Mute All: Server-enforced media cut-off.
- * - Kick: Removes participant from LiveKit Room and session_participants.
+ * HANZI GO - LIVE MODERATION HANDLER
  */
-
 import { RoomServiceClient } from 'livekit-server-sdk';
-import { verifyRequestAuth, getSupabaseAdminClient } from '../utils/supabaseServer.js';
+import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
 
-export default async function handler(req, res) {
+export default async function moderationHandler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
   }
@@ -29,7 +22,6 @@ export default async function handler(req, res) {
   const callerId = auth.user.id;
   const supabase = getSupabaseAdminClient();
 
-  // 1. Verify caller has Teacher / Admin authority over this session
   if (supabase) {
     try {
       const { data: session } = await supabase
@@ -44,7 +36,6 @@ export default async function handler(req, res) {
     } catch {}
   }
 
-  // 2. Perform LiveKit SFU moderation if credentials are configured
   const livekitUrl = process.env.LIVEKIT_URL || process.env.VITE_LIVEKIT_URL;
   const apiKey = process.env.LIVEKIT_API_KEY;
   const apiSecret = process.env.LIVEKIT_API_SECRET;
@@ -52,7 +43,6 @@ export default async function handler(req, res) {
   let sfuUpdated = false;
   if (livekitUrl && apiKey && apiSecret) {
     try {
-      // LiveKit RoomServiceClient needs http/https endpoint, not wss://
       const httpUrl = livekitUrl.replace(/^wss:\/\//i, 'https://').replace(/^ws:\/\//i, 'http://');
       const roomClient = new RoomServiceClient(httpUrl, apiKey, apiSecret);
 
@@ -93,7 +83,6 @@ export default async function handler(req, res) {
     }
   }
 
-  // 3. Update Supabase database records
   if (supabase) {
     try {
       if (action === 'ALLOW_MIC' && targetUserId) {

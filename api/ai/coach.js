@@ -9,8 +9,8 @@
  * - Sanitized response (no API keys, database internals, or stack traces leaked)
  */
 
-import { checkRateLimitAndQuota } from './distributedRateLimiter.js';
-import { verifyRequestAuth } from './verifyAuth.js';
+import { checkRateLimitAndQuota } from '../_utils/distributedRateLimiter.js';
+import { verifyRequestAuth } from '../_utils/supabaseServer.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 15;

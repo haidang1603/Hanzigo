@@ -1,13 +1,9 @@
 /**
- * =========================================================================
- * HANZI GO - PRODUCTION API: /api/classroom/members
- * =========================================================================
- * Serverless endpoint for fetching classroom members with teacher access isolation.
+ * HANZI GO - CLASSROOM MEMBERS HANDLER
  */
+import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
 
-import { verifyRequestAuth, getSupabaseAdminClient } from '../utils/supabaseServer.js';
-
-export default async function handler(req, res) {
+export default async function membersHandler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức GET.' });
   }
@@ -22,7 +18,6 @@ export default async function handler(req, res) {
 
   if (supabase) {
     try {
-      // 1. Verify Teacher Access Isolation if caller is teacher
       if (auth.authenticated && auth.user.role === 'teacher') {
         const { data: cls } = await supabase
           .from('classrooms')
@@ -35,7 +30,6 @@ export default async function handler(req, res) {
         }
       }
 
-      // 2. Query members
       const { data, error } = await supabase
         .from('class_members')
         .select('*, student:student_id(id, name, email, avatar, level, xp, streak)')

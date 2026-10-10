@@ -1,13 +1,9 @@
 /**
- * =========================================================================
- * HANZI GO - PRODUCTION API: /api/classroom/join
- * =========================================================================
- * Serverless endpoint for enrolling a student into a classroom via class code.
+ * HANZI GO - CLASSROOM JOIN HANDLER
  */
+import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
 
-import { verifyRequestAuth, getSupabaseAdminClient, getSupabaseUserClient } from '../utils/supabaseServer.js';
-
-export default async function handler(req, res) {
+export default async function joinHandler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
   }
@@ -27,7 +23,6 @@ export default async function handler(req, res) {
 
   if (supabase) {
     try {
-      // 1. Try RPC join_class_by_code if class_code provided
       if (class_code) {
         const cleanCode = String(class_code).trim().toUpperCase().replace(/\s+/g, '');
         const { data: rpcData, error: rpcErr } = await supabase.rpc('join_class_by_code', {
@@ -39,7 +34,6 @@ export default async function handler(req, res) {
         }
       }
 
-      // 2. Direct lookup & join
       let targetClassId = classroom_id;
       if (!targetClassId && class_code) {
         const cleanCode = String(class_code).trim().toUpperCase().replace(/\s+/g, '');
@@ -58,14 +52,6 @@ export default async function handler(req, res) {
       }
 
       if (targetClassId) {
-        // Check capacity
-        const { count } = await supabase
-          .from('class_members')
-          .select('id', { count: 'exact', head: true })
-          .eq('classroom_id', targetClassId)
-          .eq('status', 'active');
-
-        // Upsert membership
         const { data: member, error: memErr } = await supabase
           .from('class_members')
           .upsert({

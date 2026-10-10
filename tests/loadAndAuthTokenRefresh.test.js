@@ -10,7 +10,7 @@ import {
 import {
   checkRateLimitAndQuota,
   resetMemoryRateLimits
-} from '../api/ai/distributedRateLimiter.js';
+} from '../api/_utils/distributedRateLimiter.js';
 
 import {
   computeClassAnalytics,

@@ -1,13 +1,9 @@
 /**
- * =========================================================================
- * HANZI GO - PRODUCTION API: /api/live/leave
- * =========================================================================
- * Serverless endpoint for recording participant leave and computing duration in Supabase.
+ * HANZI GO - LIVE LEAVE HANDLER
  */
+import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
 
-import { verifyRequestAuth, getSupabaseAdminClient } from '../utils/supabaseServer.js';
-
-export default async function handler(req, res) {
+export default async function leaveHandler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
   }

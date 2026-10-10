@@ -1,13 +1,9 @@
 /**
- * =========================================================================
- * HANZI GO - PRODUCTION API: /api/classroom/lookup
- * =========================================================================
- * Serverless endpoint for looking up active classroom by class code.
+ * HANZI GO - CLASSROOM LOOKUP HANDLER
  */
+import { getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
 
-import { getSupabaseAdminClient } from '../utils/supabaseServer.js';
-
-export default async function handler(req, res) {
+export default async function lookupHandler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức GET.' });
   }

@@ -1,13 +1,9 @@
 /**
- * =========================================================================
- * HANZI GO - PRODUCTION API: /api/live/end
- * =========================================================================
- * Serverless endpoint for closing live classroom session and all participant presences in Supabase.
+ * HANZI GO - LIVE END HANDLER
  */
+import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
 
-import { verifyRequestAuth, getSupabaseAdminClient } from '../utils/supabaseServer.js';
-
-export default async function handler(req, res) {
+export default async function endHandler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
   }
@@ -27,13 +23,11 @@ export default async function handler(req, res) {
 
   if (supabase) {
     try {
-      // 1. Close session in class_sessions
       await supabase
         .from('class_sessions')
         .update({ status: 'ended', ended_at: closeTime })
         .eq('id', sessionId);
 
-      // 2. Close active participants
       await supabase
         .from('session_participants')
         .update({

@@ -1,13 +1,9 @@
 /**
- * =========================================================================
- * HANZI GO - PRODUCTION API: /api/classroom/remove
- * =========================================================================
- * Serverless endpoint for removing a student from a classroom.
+ * HANZI GO - CLASSROOM REMOVE HANDLER
  */
+import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
 
-import { verifyRequestAuth, getSupabaseAdminClient } from '../utils/supabaseServer.js';
-
-export default async function handler(req, res) {
+export default async function removeHandler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
   }
@@ -25,7 +21,6 @@ export default async function handler(req, res) {
   const supabase = getSupabaseAdminClient();
   if (supabase) {
     try {
-      // 1. Verify that caller is the teacher of this classroom
       const { data: cls } = await supabase
         .from('classrooms')
         .select('teacher_id')
@@ -36,7 +31,6 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: 'Chỉ giáo viên phụ trách mới có quyền xóa học viên khỏi lớp.' });
       }
 
-      // 2. Remove member from class_members
       const { error } = await supabase
         .from('class_members')
         .delete()

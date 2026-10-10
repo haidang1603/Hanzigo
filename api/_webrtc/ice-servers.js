@@ -2,16 +2,11 @@
  * =========================================================================
  * HANZI GO - SECURE SERVERLESS API: /api/webrtc/ice-servers
  * =========================================================================
- * Generates and returns time-limited, ephemeral TURN credentials on demand:
- * - Prevents hard-coding or exposing permanent TURN credentials in client bundles.
- * - Requires client authentication (Bearer token or verified user header).
- * - Implements RFC 5766 (Coturn TURN REST API) with HMAC-SHA1 shared secret.
- * - Returns ephemeral username (expiry:userId) and HMAC credential with 1-hour TTL.
- * - Gracefully falls back to high-reliability public STUN servers if TURN is unconfigured.
+ * Placed in _webrtc so Vercel does not count it as a standalone function.
  */
 
 import crypto from 'node:crypto';
-import { verifyRequestAuth } from '../ai/verifyAuth.js';
+import { verifyRequestAuth } from '../_utils/supabaseServer.js';
 
 export const DEFAULT_STUN_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },

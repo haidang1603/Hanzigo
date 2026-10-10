@@ -1,23 +1,16 @@
 /**
- * =========================================================================
- * HANZI GO - PRODUCTION API: /api/live/session
- * =========================================================================
- * Serverless endpoint for creating, syncing, and querying active live classroom sessions.
- * Guarantees that students in all browsers, tabs, and devices immediately see active live rooms.
+ * HANZI GO - LIVE SESSION HANDLER
  */
+import { getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
 
-import { getSupabaseAdminClient } from '../utils/supabaseServer.js';
-
-// In-memory global fallback for serverless container reuse
 const memorySessions = new Map();
 
-export default async function handler(req, res) {
+export default async function sessionHandler(req, res) {
   const supabase = getSupabaseAdminClient();
 
   if (req.method === 'GET') {
     const { classroomId, sessionId } = req.query || {};
 
-    // 1. Query by specific sessionId
     if (sessionId) {
       if (supabase) {
         try {
@@ -43,7 +36,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, session: null });
     }
 
-    // 2. Query active session by classroomId
     if (classroomId) {
       if (supabase) {
         try {
@@ -64,7 +56,6 @@ export default async function handler(req, res) {
         }
       }
 
-      // Memory fallback lookup
       for (const ses of memorySessions.values()) {
         if (
           (ses.classroom_id === classroomId || String(ses.classroom_id) === String(classroomId)) &&
@@ -96,14 +87,11 @@ export default async function handler(req, res) {
       ended_at: session.status === 'ended' ? (session.ended_at || new Date().toISOString()) : null
     };
 
-    // Store in memory cache
     memorySessions.set(sessionId, sessionRecord);
 
-    // Save to Supabase using admin client
     if (supabase) {
       try {
         if (sessionRecord.status === 'live') {
-          // Close prior live sessions for this classroom
           await supabase
             .from('class_sessions')
             .update({ status: 'ended', ended_at: new Date().toISOString() })

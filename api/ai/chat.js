@@ -13,8 +13,8 @@
  * - Sanitizes all error messages (no stack traces, no internal database / key leakage).
  */
 
-import { checkRateLimitAndQuota } from './distributedRateLimiter.js';
-import { verifyRequestAuth } from './verifyAuth.js';
+import { checkRateLimitAndQuota } from '../_utils/distributedRateLimiter.js';
+import { verifyRequestAuth } from '../_utils/supabaseServer.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 20;     // 20 requests per minute

@@ -1,6 +1,7 @@
 /**
  * Production-Hardened Distributed Rate Limiter with Upstash Redis REST
  * and automatic in-memory fallback for Vercel Serverless Functions.
+ * Placed in _utils so Vercel does not count it as a Serverless Function.
  */
 
 // In-memory fallback stores
@@ -64,61 +65,71 @@ export async function checkRateLimitAndQuota({
 
         return {
           allowed: true,
-          rateCount: currentRateCount,
-          quotaCount: currentQuotaCount,
+          remaining: Math.max(0, maxRequests - currentRateCount),
+          quotaRemaining: Math.max(0, dailyQuotaMax - currentQuotaCount),
           isDistributed: true
         };
       }
     } catch (err) {
-      console.warn('[RateLimiter] Upstash Redis request failed, falling back to in-memory:', err.message);
+      console.warn('⚠️ Upstash Rate Limiter REST Error, falling back to in-memory:', err.message);
     }
   }
 
-  // 2. In-memory Fallback Store
+  // 2. In-memory fallback
   const now = Date.now();
-  const rateKey = `${prefix}:rate:${clientKey}`;
-  const quotaKey = `${prefix}:quota:${clientKey}`;
+  const memoryKey = `${prefix}:${clientKey}`;
 
-  // Check Minute Window
-  const rateData = memoryStore.get(rateKey) || { count: 0, resetTime: now + windowMs };
-  if (now > rateData.resetTime) {
-    rateData.count = 1;
-    rateData.resetTime = now + windowMs;
-  } else {
-    if (rateData.count >= maxRequests) {
-      return {
-        allowed: false,
-        statusCode: 429,
-        reason: 'Quá nhiều yêu cầu trong thời gian ngắn (vượt quá giới hạn theo phút). Vui lòng đợi 1 phút.',
-        isDistributed: false
-      };
-    }
-    rateData.count += 1;
+  let record = memoryStore.get(memoryKey);
+  if (!record) {
+    record = {
+      windowStart: now,
+      requestCount: 0,
+      dailyStart: now,
+      dailyCount: 0
+    };
+    memoryStore.set(memoryKey, record);
   }
-  memoryStore.set(rateKey, rateData);
 
-  // Check Daily Quota
-  const quotaData = memoryStore.get(quotaKey) || { count: 0, resetTime: now + dailyQuotaWindowMs };
-  if (now > quotaData.resetTime) {
-    quotaData.count = 1;
-    quotaData.resetTime = now + dailyQuotaWindowMs;
-  } else {
-    if (quotaData.count >= dailyQuotaMax) {
-      return {
-        allowed: false,
-        statusCode: 429,
-        reason: `Bạn đã đạt hạn ngạch tối đa trong ngày (${dailyQuotaMax} lượt). Vui lòng quay lại vào ngày mai.`,
-        isDistributed: false
-      };
-    }
-    quotaData.count += 1;
+  // Reset minute window if expired
+  if (now - record.windowStart > windowMs) {
+    record.windowStart = now;
+    record.requestCount = 0;
   }
-  memoryStore.set(quotaKey, quotaData);
+
+  // Reset daily window if expired
+  if (now - record.dailyStart > dailyQuotaWindowMs) {
+    record.dailyStart = now;
+    record.dailyCount = 0;
+  }
+
+  // Check minute window limit
+  if (record.requestCount >= maxRequests) {
+    return {
+      allowed: false,
+      statusCode: 429,
+      reason: 'Quá nhiều yêu cầu trong thời gian ngắn. Vui lòng đợi 1 phút.',
+      isDistributed: false
+    };
+  }
+
+  // Check daily quota limit
+  if (record.dailyCount >= dailyQuotaMax) {
+    return {
+      allowed: false,
+      statusCode: 429,
+      reason: `Bạn đã đạt hạn ngạch tối đa trong ngày (${dailyQuotaMax} lượt). Vui lòng quay lại vào ngày mai.`,
+      isDistributed: false
+    };
+  }
+
+  // Increment counters
+  record.requestCount += 1;
+  record.dailyCount += 1;
 
   return {
     allowed: true,
-    rateCount: rateData.count,
-    quotaCount: quotaData.count,
+    remaining: maxRequests - record.requestCount,
+    quotaRemaining: dailyQuotaMax - record.dailyCount,
     isDistributed: false
   };
 }

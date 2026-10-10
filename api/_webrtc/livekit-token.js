@@ -2,15 +2,11 @@
  * =========================================================================
  * HANZI GO - LIVEKIT WEBRTC SFU TOKEN GENERATOR: /api/webrtc/livekit-token
  * =========================================================================
- * Securely mints LiveKit Room Access Tokens for teachers and students:
- * - Teacher: Granted publish & subscribe permissions (video, audio, screen share).
- * - Student: Granted subscribe permissions by default, with publish permissions
- *            granted conditionally for interactive speaking / voice turns.
- * - Protects API Secret from exposure on client bundles.
+ * Placed in _webrtc so Vercel does not count it as a standalone function.
  */
 
 import { AccessToken } from 'livekit-server-sdk';
-import { verifyRequestAuth, getSupabaseAdminClient } from '../utils/supabaseServer.js';
+import { verifyRequestAuth, getSupabaseAdminClient } from '../_utils/supabaseServer.js';
 
 function isValidUuid(id) {
   return typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -44,7 +40,7 @@ export default async function handler(req, res) {
   const supabase = getSupabaseAdminClient();
   if (supabase && isValidUuid(roomName)) {
     try {
-      const { data: session, error: sessErr } = await supabase
+      const { data: session } = await supabase
         .from('class_sessions')
         .select('*, classrooms:classroom_id(*)')
         .eq('id', roomName)

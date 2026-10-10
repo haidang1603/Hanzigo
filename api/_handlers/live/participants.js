@@ -1,13 +1,9 @@
 /**
- * =========================================================================
- * HANZI GO - PRODUCTION API: /api/live/participants
- * =========================================================================
- * Serverless endpoint for retrieving verified live session participants from Supabase.
+ * HANZI GO - LIVE PARTICIPANTS HANDLER
  */
+import { getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
 
-import { getSupabaseAdminClient } from '../utils/supabaseServer.js';
-
-export default async function handler(req, res) {
+export default async function participantsHandler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức GET.' });
   }
