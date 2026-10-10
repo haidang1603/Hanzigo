@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   User, 
   Flame, 
@@ -20,6 +20,7 @@ import {
 import { playClickSound, playSuccessSound } from '../utils/audio';
 import { calculateTotalXp, getStreakStatus, getUserLevelInfo, getUserStorageKey } from '../utils/gamification';
 import { evaluateUserAchievements } from '../services/gamificationService';
+import StreakModal from '../components/learning/StreakModal';
 import { updateUserProfile } from '../supabase/services.js';
 import { 
   LEARNING_GOALS, 
@@ -58,12 +59,14 @@ export default function ProfilePage({
   darkMode, 
   setDarkMode, 
   soundEnabled, 
-  setSoundEnabled 
+  setSoundEnabled,
+  setActiveTab
 }) {
   const [reminderTime, setReminderTime] = useState('20:00');
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState(() => String(getUserDailyGoalMinutes(user)));
   const [learningGoal, setLearningGoal] = useState(() => getUserLearningGoal(user));
   const [showSavedToast, setShowSavedToast] = useState(false);
+  const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
 
   // Edit Profile Modal States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -76,8 +79,31 @@ export default function ProfilePage({
 
   const fileInputRef = useRef(null);
 
-  const streakStatus = useMemo(() => getStreakStatus(user), [user]);
-  const streakCount = streakStatus.streak;
+  const [gamificationTick, setGamificationTick] = useState(0);
+
+  useEffect(() => {
+    const handleGamificationUpdated = () => setGamificationTick(t => t + 1);
+    window.addEventListener('hanzigo_gamification_updated', handleGamificationUpdated);
+    window.addEventListener('storage', handleGamificationUpdated);
+    return () => {
+      window.removeEventListener('hanzigo_gamification_updated', handleGamificationUpdated);
+      window.removeEventListener('storage', handleGamificationUpdated);
+    };
+  }, []);
+
+  const streakStatus = useMemo(() => getStreakStatus(user), [user, gamificationTick]);
+  const streakCount = useMemo(() => {
+    const s = streakStatus.streak || 0;
+    const uStreak = typeof user?.streak === 'number' && !isNaN(user.streak) ? user.streak : 0;
+    let localKeyVal = 0;
+    let globalVal = 0;
+    try {
+      const k = getUserStorageKey('hanzigo_streak_count', user);
+      localKeyVal = parseInt(localStorage.getItem(k) || '0', 10) || 0;
+      globalVal = parseInt(localStorage.getItem('hanzigo_streak_count') || '0', 10) || 0;
+    } catch {}
+    return Math.max(s, uStreak, localKeyVal, globalVal);
+  }, [streakStatus, user]);
 
   // Dynamic learning stats from storage for this specific user
   const rememberedIds = useMemo(() => {
@@ -88,7 +114,7 @@ export default function ProfilePage({
     } catch {
       return [];
     }
-  }, [user]);
+  }, [user, gamificationTick]);
 
   const completedLessonIds = useMemo(() => {
     try {
@@ -98,7 +124,7 @@ export default function ProfilePage({
     } catch {
       return [];
     }
-  }, [user]);
+  }, [user, gamificationTick]);
 
   const pronounceHistory = useMemo(() => {
     try {
@@ -108,7 +134,7 @@ export default function ProfilePage({
     } catch {
       return [];
     }
-  }, [user]);
+  }, [user, gamificationTick]);
 
   const customWritingChars = useMemo(() => {
     try {
@@ -118,7 +144,7 @@ export default function ProfilePage({
     } catch {
       return [];
     }
-  }, [user]);
+  }, [user, gamificationTick]);
 
   const wordsLearnedCount = rememberedIds.length > 0 ? rememberedIds.length : (user?.wordsLearned || 0);
 
@@ -127,7 +153,7 @@ export default function ProfilePage({
     return mins > 0 ? (mins / 60).toFixed(1) : (user ? '0.5' : '0');
   }, [completedLessonIds, rememberedIds, pronounceHistory, customWritingChars, user]);
 
-  const totalXp = calculateTotalXp(user);
+  const totalXp = useMemo(() => calculateTotalXp(user), [user, gamificationTick]);
   const levelInfo = useMemo(() => getUserLevelInfo(totalXp), [totalXp]);
 
   // Real Dynamic Achievements verified by authentic learning events
@@ -409,10 +435,18 @@ export default function ProfilePage({
                 <span>{levelInfo.badge}</span>
                 <span>{levelInfo.title}</span>
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] text-xs font-bold flex items-center gap-1 border border-[#F4B942]/20">
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setIsStreakModalOpen(true);
+                }}
+                className="px-2.5 py-0.5 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] hover:bg-[#FDE8BF] dark:hover:bg-[#3E3422] text-[#D97706] text-xs font-bold flex items-center gap-1 border border-[#F4B942]/30 transition-all cursor-pointer shadow-xs active:scale-95"
+                title="Nhấn để xem chi tiết chuỗi học và nhận thưởng"
+              >
                 <Flame size={12} className="fill-[#F4B942]" />
                 <span>Streak {streakCount} ngày</span>
-              </span>
+              </button>
             </div>
           </div>
         </div>
@@ -691,9 +725,19 @@ export default function ProfilePage({
 
       {/* Stats Summary Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center">
+        <div 
+          onClick={() => {
+            playClickSound();
+            setIsStreakModalOpen(true);
+          }}
+          className="p-5 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center cursor-pointer hover:border-[#E85D3F]/60 hover:shadow-md transition-all active:scale-95 group relative overflow-hidden"
+          title="Nhấn để xem lịch chuỗi học, khiên bảo vệ và quà mốc streak"
+        >
+          <div className="absolute top-1.5 right-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-300 opacity-80 group-hover:opacity-100">
+            Xem thưởng ✨
+          </div>
           <p className="text-[10px] uppercase font-bold text-[#748092]">Chuỗi học</p>
-          <p className="text-2xl font-black text-[#E85D3F] mt-1">{streakCount} ngày 🔥</p>
+          <p className="text-2xl font-black text-[#E85D3F] mt-1 group-hover:scale-105 transition-transform">{streakCount} ngày 🔥</p>
           <p className="text-[10px] text-[#45B97C] font-semibold mt-0.5">
             {streakStatus.hasStudiedToday ? 'Đã học hôm nay ✅' : 'Chưa học hôm nay'}
           </p>
@@ -708,9 +752,20 @@ export default function ProfilePage({
           <p className="text-2xl font-black text-[#3B82F6] mt-1">{totalStudyHours} giờ ⏱️</p>
           <p className="text-[10px] text-[#748092] font-semibold mt-0.5">Thời gian tích lũy</p>
         </div>
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center">
+        <div 
+          onClick={() => {
+            playClickSound();
+            if (setActiveTab) setActiveTab('leaderboard');
+            else window.location.hash = '#leaderboard';
+          }}
+          className="p-5 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center cursor-pointer hover:border-[#E85D3F]/60 hover:shadow-md transition-all active:scale-95 group relative overflow-hidden"
+          title="Nhấn để xem Bảng Vàng vinh danh cao thủ XP ⚡"
+        >
+          <div className="absolute top-1.5 right-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 opacity-80 group-hover:opacity-100">
+            Bảng Vàng 🏆
+          </div>
           <p className="text-[10px] uppercase font-bold text-[#748092]">Tổng EXP</p>
-          <p className="text-2xl font-black text-[#F4B942] mt-1">{totalXp} XP ⚡</p>
+          <p className="text-2xl font-black text-[#F4B942] mt-1 group-hover:scale-105 transition-transform">{totalXp} XP ⚡</p>
           <p className="text-[10px] text-[#D97706] font-semibold mt-0.5">Điểm kinh nghiệm</p>
         </div>
       </div>
@@ -947,6 +1002,14 @@ export default function ProfilePage({
 
         </form>
       </div>
+
+      {/* Streak Details Modal */}
+      <StreakModal 
+        isOpen={isStreakModalOpen} 
+        onClose={() => setIsStreakModalOpen(false)} 
+        user={user} 
+        onNavigateTab={setActiveTab}
+      />
 
     </div>
   );

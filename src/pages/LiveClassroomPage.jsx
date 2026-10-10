@@ -228,16 +228,27 @@ export default function LiveClassroomPage({
 
     lkManager.onLocalStreamChange = (localStreamData) => {
       setLivekitLocalTracks({ ...localStreamData });
+      if (check.role === 'teacher') {
+        setMediaState(prev => ({
+          ...prev,
+          isScreenSharing: Boolean(localStreamData.screenTrack)
+        }));
+      }
     };
 
     lkManager.onConnectionChange = ({ isConnected }) => {
       setLivekitStatus(prev => ({ ...prev, isConnected }));
     };
 
+    lkManager.onRemoteParticipantsChange = () => {
+      getSessionParticipants(sessionId).then(setParticipants).catch(() => {});
+    };
+
     lkManager.connect({
       sessionId,
       user,
-      role: check.role
+      role: check.role,
+      teacherId: check.session?.teacher_id
     }).then(res => {
       const isLiveKitConnected = Boolean(res?.room?.state === 'connected');
       setLivekitStatus({
@@ -248,20 +259,34 @@ export default function LiveClassroomPage({
         if (isLiveKitConnected) {
           lkManager.setCameraEnabled(true);
           lkManager.setMicrophoneEnabled(true);
+          setMediaState(prev => ({ ...prev, isCameraOn: true, isMicOn: true }));
         } else {
-          mediaManagerRef.current?.startMedia({ video: true, audio: true });
+          mediaManagerRef.current?.startMedia({ video: true, audio: true }).then(mRes => {
+            if (mRes?.success) {
+              setMediaState(prev => ({ ...prev, isCameraOn: true, isMicOn: true }));
+            }
+          });
         }
       }
     }).catch(err => {
       console.warn('[LiveKit] Init error:', err);
       if (check.role === 'teacher') {
-        mediaManagerRef.current?.startMedia({ video: true, audio: true });
+        mediaManagerRef.current?.startMedia({ video: true, audio: true }).then(mRes => {
+          if (mRes?.success) {
+            setMediaState(prev => ({ ...prev, isCameraOn: true, isMicOn: true }));
+          }
+        });
       }
     });
   }, [sessionId, currentUserId]);
 
   useEffect(() => {
     initSession();
+
+    // Polling interval (3s) to synchronize participants across tabs, browsers, and devices
+    const interval = setInterval(() => {
+      getSessionParticipants(sessionId).then(setParticipants).catch(() => {});
+    }, 3000);
 
     const handleBeforeUnload = () => {
       livekitManagerRef.current?.disconnect();
@@ -275,6 +300,7 @@ export default function LiveClassroomPage({
 
     // Cleanup on unmount (Leave room & release camera/mic)
     return () => {
+      clearInterval(interval);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       livekitManagerRef.current?.disconnect();
       mediaManagerRef.current?.stopAll();
@@ -286,10 +312,15 @@ export default function LiveClassroomPage({
 
   // 3. ATTACH MEDIA STREAMS TO VIDEO TAGS
   useEffect(() => {
-    if (mediaState.screenStream && screenVideoRef.current) {
-      screenVideoRef.current.srcObject = mediaState.screenStream;
+    if (screenVideoRef.current) {
+      if (mediaState.screenStream) {
+        screenVideoRef.current.srcObject = mediaState.screenStream;
+        screenVideoRef.current.play?.().catch(() => {});
+      } else if (!livekitLocalTracks.screenTrack && !teacherRemoteStream.screenTrack) {
+        screenVideoRef.current.srcObject = null;
+      }
     }
-  }, [mediaState.screenStream]);
+  }, [mediaState.screenStream, mediaState.isScreenSharing]);
 
   useEffect(() => {
     if (mediaState.localStream) {
@@ -301,15 +332,24 @@ export default function LiveClassroomPage({
     }
   }, [mediaState.localStream, myRole]);
 
-  // Attach teacher local preview video via LiveKit
+  // Attach/detach teacher local preview video via LiveKit
   useEffect(() => {
-    if (myRole === 'teacher' && teacherVideoRef.current && livekitLocalTracks.videoTrack) {
-      livekitManagerRef.current?.attachTrack(livekitLocalTracks.videoTrack, teacherVideoRef.current);
-      return () => {
+    if (myRole === 'teacher' && teacherVideoRef.current) {
+      if (mediaState.isCameraOn && livekitLocalTracks.videoTrack) {
+        livekitManagerRef.current?.attachTrack(livekitLocalTracks.videoTrack, teacherVideoRef.current);
+      } else {
         livekitManagerRef.current?.detachTrack(livekitLocalTracks.videoTrack, teacherVideoRef.current);
+        if (teacherVideoRef.current) {
+          teacherVideoRef.current.srcObject = null;
+        }
+      }
+      return () => {
+        if (livekitLocalTracks.videoTrack && teacherVideoRef.current) {
+          livekitManagerRef.current?.detachTrack(livekitLocalTracks.videoTrack, teacherVideoRef.current);
+        }
       };
     }
-  }, [myRole, livekitLocalTracks.videoTrack]);
+  }, [myRole, livekitLocalTracks.videoTrack, mediaState.isCameraOn]);
 
   // Attach student view of remote teacher video via LiveKit
   useEffect(() => {
@@ -323,21 +363,42 @@ export default function LiveClassroomPage({
 
   // Attach student view of remote teacher screen share via LiveKit
   useEffect(() => {
-    if (myRole === 'student' && screenVideoRef.current && teacherRemoteStream.screenTrack) {
-      livekitManagerRef.current?.attachTrack(teacherRemoteStream.screenTrack, screenVideoRef.current);
+    if (myRole === 'student' && screenVideoRef.current) {
+      if (teacherRemoteStream.screenTrack) {
+        livekitManagerRef.current?.attachTrack(teacherRemoteStream.screenTrack, screenVideoRef.current);
+      }
       return () => {
-        livekitManagerRef.current?.detachTrack(teacherRemoteStream.screenTrack, screenVideoRef.current);
+        if (teacherRemoteStream.screenTrack && screenVideoRef.current) {
+          livekitManagerRef.current?.detachTrack(teacherRemoteStream.screenTrack, screenVideoRef.current);
+        }
       };
     }
-  }, [myRole, teacherRemoteStream.screenTrack]);
+  }, [myRole, teacherRemoteStream.screenTrack, teacherRemoteStream.isScreenSharingActive]);
+
+  // Attach teacher local preview screen share via LiveKit
+  useEffect(() => {
+    if (myRole === 'teacher' && screenVideoRef.current) {
+      if (livekitLocalTracks.screenTrack) {
+        livekitManagerRef.current?.attachTrack(livekitLocalTracks.screenTrack, screenVideoRef.current);
+      }
+      return () => {
+        if (livekitLocalTracks.screenTrack && screenVideoRef.current) {
+          livekitManagerRef.current?.detachTrack(livekitLocalTracks.screenTrack, screenVideoRef.current);
+        }
+      };
+    }
+  }, [myRole, livekitLocalTracks.screenTrack, mediaState.isScreenSharing]);
 
   // Leave room action
-  const handleLeave = useCallback(async () => {
+  const handleLeave = useCallback(async (isForced = false) => {
     playClickSound();
-    livekitManagerRef.current?.disconnect();
-    mediaManagerRef.current?.stopAll();
+    try {
+      livekitManagerRef.current?.disconnect();
+      mediaManagerRef.current?.stopAll();
+      setMediaState(prev => ({ ...prev, isCameraOn: false, isMicOn: false, isScreenSharing: false }));
+    } catch {}
 
-    if (myRole === 'teacher') {
+    if (!isForced && myRole === 'teacher' && sessionData?.status !== 'ended') {
       const confirmEnd = window.confirm(
         'Bạn là giáo viên phụ trách phòng học.\n\nNhấn "OK" để KẾT THÚC buổi học cho tất cả học viên (lưu điểm danh & tổng kết).\nNhấn "Cancel" để chỉ rời phòng tạm thời.'
       );
@@ -349,15 +410,16 @@ export default function LiveClassroomPage({
       }
     }
 
-    if (user) {
-      await leaveLiveSession(sessionId, user.uid || user.id);
+    const userId = user?.uid || user?.id;
+    if (userId) {
+      await leaveLiveSession(sessionId, userId);
     }
     if (onNavigateBack) {
       onNavigateBack();
     } else {
       window.location.hash = `#classroom/${classId}`;
     }
-  }, [classId, myRole, onNavigateBack, sessionId, user]);
+  }, [classId, myRole, onNavigateBack, sessionData?.status, sessionId, user]);
 
   // 4. REALTIME EVENT BUS LISTENER (Chỉ subscribe khi đã xác thực quyền truy cập phòng)
   useEffect(() => {
@@ -386,6 +448,8 @@ export default function LiveClassroomPage({
           if (event.studentId === (user?.uid || user?.id)) {
             showToast('🔇 Giáo viên đã thu hồi quyền phát biểu.');
             mediaManagerRef.current?.toggleMicrophone(false);
+            livekitManagerRef.current?.setMicrophoneEnabled(false);
+            setMediaState(prev => ({ ...prev, isMicOn: false }));
             setMyParticipant(prev => prev ? { ...prev, is_mic_allowed: false, mic_enabled: false } : prev);
           }
           getSessionParticipants(sessionId).then(setParticipants);
@@ -394,6 +458,8 @@ export default function LiveClassroomPage({
         case 'MUTE_ALL':
           if (myRole !== 'teacher') {
             mediaManagerRef.current?.toggleMicrophone(false);
+            livekitManagerRef.current?.setMicrophoneEnabled(false);
+            setMediaState(prev => ({ ...prev, isMicOn: false }));
             showToast('🔇 Giáo viên đã tắt Micro của tất cả học viên.');
             setMyParticipant(prev => prev ? { ...prev, mic_enabled: false, is_mic_allowed: false } : prev);
           }
@@ -403,6 +469,8 @@ export default function LiveClassroomPage({
         case 'USER_MUTED':
           if (event.targetUserId === (user?.uid || user?.id)) {
             mediaManagerRef.current?.toggleMicrophone(false);
+            livekitManagerRef.current?.setMicrophoneEnabled(false);
+            setMediaState(prev => ({ ...prev, isMicOn: false }));
             showToast('🔇 Giáo viên đã tắt Micro của bạn.');
             setMyParticipant(prev => prev ? { ...prev, mic_enabled: false } : prev);
           }
@@ -438,9 +506,13 @@ export default function LiveClassroomPage({
           break;
 
         case 'SESSION_ENDED':
+          if (myRole === 'teacher') {
+            // Teacher initiated end class, their UI transitions to summary/attendance report
+            break;
+          }
           playErrorSound();
           alert('Lớp học trực tuyến đã kết thúc bởi Giáo viên.');
-          handleLeave();
+          handleLeave(true);
           break;
 
         case 'TEACHING_TOOL_CHANGED':
@@ -450,6 +522,21 @@ export default function LiveClassroomPage({
             ...(event.state || {})
           }));
           showToast(`🀄 Giáo viên đã chuyển sang công cụ: ${event.active_tool?.toUpperCase()}`);
+          break;
+
+        case 'TEACHER_SCREEN_SHARE_CHANGED':
+          if (myRole === 'student') {
+            setTeacherRemoteStream(prev => ({
+              ...prev,
+              isScreenSharingActive: Boolean(event.isSharing),
+              screenTrack: event.isSharing ? prev?.screenTrack : null
+            }));
+            if (event.isSharing) {
+              showToast('🖥️ Giáo viên đang chia sẻ màn hình bài giảng.');
+            } else {
+              showToast('🖥️ Giáo viên đã dừng chia sẻ màn hình.');
+            }
+          }
           break;
 
         case 'TEACHING_STATE_UPDATED':
@@ -528,6 +615,24 @@ export default function LiveClassroomPage({
     return unsubscribe;
   }, [sessionId, user, myRole, handleLeave, sessionData, accessDeniedReason, authChecking]);
 
+  // Heartbeat / periodic session status check for students (auto-leave if teacher ended room)
+  useEffect(() => {
+    if (!sessionId || myRole === 'teacher' || accessDeniedReason || authChecking) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const ses = await getSessionById(sessionId);
+        if (ses && (ses.status === 'ended' || ses.ended_at)) {
+          playErrorSound();
+          alert('Lớp học trực tuyến đã kết thúc bởi Giáo viên.');
+          handleLeave(true);
+        }
+      } catch {}
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [sessionId, myRole, accessDeniedReason, authChecking, handleLeave]);
+
   // Raise hand queue computation (FIFO)
   const raiseHandQueue = useMemo(() => {
     return participants
@@ -551,18 +656,16 @@ export default function LiveClassroomPage({
       return;
     }
 
-    let nextMic = false;
+    const nextMic = !mediaState.isMicOn;
     if (livekitStatus.isConnected) {
-      const willEnable = !(mediaState.isMicOn || Boolean(livekitLocalTracks.audioTrack));
-      await livekitManagerRef.current?.setMicrophoneEnabled(willEnable);
-      nextMic = willEnable;
-      setMediaState(prev => ({ ...prev, isMicOn: willEnable }));
+      await livekitManagerRef.current?.setMicrophoneEnabled(nextMic);
     } else {
-      if (!mediaState.localStream) {
+      if (nextMic && !mediaState.localStream) {
         await mediaManagerRef.current?.startMedia({ video: mediaState.isCameraOn, audio: true });
       }
-      nextMic = mediaManagerRef.current?.toggleMicrophone();
+      mediaManagerRef.current?.toggleMicrophone(nextMic);
     }
+    setMediaState(prev => ({ ...prev, isMicOn: nextMic }));
 
     if (user) {
       updateMediaStatus(sessionId, user.uid || user.id, { micEnabled: nextMic });
@@ -571,19 +674,17 @@ export default function LiveClassroomPage({
 
   const handleToggleCamera = async () => {
     playClickSound();
-    let nextCam = false;
+    const nextCam = !mediaState.isCameraOn;
 
     if (livekitStatus.isConnected) {
-      const willEnable = !(mediaState.isCameraOn || Boolean(livekitLocalTracks.videoTrack));
-      await livekitManagerRef.current?.setCameraEnabled(willEnable);
-      nextCam = willEnable;
-      setMediaState(prev => ({ ...prev, isCameraOn: willEnable }));
+      await livekitManagerRef.current?.setCameraEnabled(nextCam);
     } else {
-      if (!mediaState.localStream) {
+      if (nextCam && !mediaState.localStream) {
         await mediaManagerRef.current?.startMedia({ video: true, audio: mediaState.isMicOn });
       }
-      nextCam = mediaManagerRef.current?.toggleCamera();
+      mediaManagerRef.current?.toggleCamera(nextCam);
     }
+    setMediaState(prev => ({ ...prev, isCameraOn: nextCam }));
 
     if (user) {
       updateMediaStatus(sessionId, user.uid || user.id, { cameraEnabled: nextCam });
@@ -596,15 +697,35 @@ export default function LiveClassroomPage({
 
     if (livekitStatus.isConnected) {
       const willShare = !mediaState.isScreenSharing;
-      await livekitManagerRef.current?.setScreenShareEnabled(willShare);
-      setMediaState(prev => ({ ...prev, isScreenSharing: willShare }));
+      if (willShare) {
+        const success = await livekitManagerRef.current?.setScreenShareEnabled(true);
+        if (success) {
+          setMediaState(prev => ({ ...prev, isScreenSharing: true }));
+          showToast('🖥️ Đang chia sẻ màn hình bài giảng.');
+          liveEventBus.broadcast(sessionId, { type: 'TEACHER_SCREEN_SHARE_CHANGED', isSharing: true });
+        } else {
+          showToast('Đã hủy hoặc không thể chia sẻ màn hình.');
+        }
+      } else {
+        await livekitManagerRef.current?.setScreenShareEnabled(false);
+        setMediaState(prev => ({ ...prev, isScreenSharing: false }));
+        showToast('Đã dừng chia sẻ màn hình.');
+        liveEventBus.broadcast(sessionId, { type: 'TEACHER_SCREEN_SHARE_CHANGED', isSharing: false });
+      }
     } else {
       if (mediaState.isScreenSharing) {
         mediaManagerRef.current?.stopScreenShare();
+        setMediaState(prev => ({ ...prev, isScreenSharing: false }));
+        showToast('Đã dừng chia sẻ màn hình.');
+        liveEventBus.broadcast(sessionId, { type: 'TEACHER_SCREEN_SHARE_CHANGED', isSharing: false });
       } else {
         const res = await mediaManagerRef.current?.startScreenShare();
-        if (!res.success) {
-          showToast(`⚠️ ${res.error}`);
+        if (res?.success) {
+          setMediaState(prev => ({ ...prev, isScreenSharing: true }));
+          showToast('🖥️ Đang chia sẻ màn hình bài giảng.');
+          liveEventBus.broadcast(sessionId, { type: 'TEACHER_SCREEN_SHARE_CHANGED', isSharing: true });
+        } else {
+          showToast(`⚠️ ${res?.error || 'Không thể chia sẻ màn hình.'}`);
         }
       }
     }
@@ -740,15 +861,39 @@ export default function LiveClassroomPage({
       return;
     }
 
-    const res = await endLiveSession(sessionId, user.uid || user.id);
-    if (res.success) {
+    // Immediately stop local media & disconnect LiveKit SFU
+    try {
+      livekitManagerRef.current?.disconnect();
+      mediaManagerRef.current?.stopAll();
+      setMediaState(prev => ({ ...prev, isCameraOn: false, isMicOn: false, isScreenSharing: false }));
+    } catch (e) {
+      console.warn('Error stopping media on end class:', e);
+    }
+
+    const teacherId = user?.uid || user?.id || 'user_teacher_demo';
+    const res = await endLiveSession(sessionId, teacherId);
+    if (!res?.success) {
+      showToast(res?.error || 'Có lỗi khi kết thúc lớp học.');
+      return;
+    }
+
+    setSessionData(prev => prev ? { ...prev, status: 'ended', ended_at: res.endedAt } : prev);
+    showToast('✨ Buổi học đã kết thúc! Đang tổng hợp dữ liệu...');
+
+    try {
       const [report, summary] = await Promise.all([
-        getSessionAttendanceReport(sessionId, user.uid || user.id),
+        getSessionAttendanceReport(sessionId, teacherId),
         getSessionHistoryAndSummary(sessionId)
       ]);
       setAttendanceReport(report);
       setSessionSummaryData(summary);
       setShowSummaryModal(true);
+    } catch (err) {
+      console.error('Error fetching post-session summary:', err);
+      setTimeout(() => {
+        if (onNavigateBack) onNavigateBack();
+        else window.location.hash = `#classroom/${classId}`;
+      }, 1500);
     }
   };
 
@@ -941,12 +1086,13 @@ export default function LiveClassroomPage({
             )}
 
             {/* SCREEN SHARE PRESENTATION (IF ACTIVE) */}
-            {(mediaState.isScreenSharing || teacherRemoteStream.screenTrack) ? (
+            {(mediaState.isScreenSharing || teacherRemoteStream.screenTrack || teacherRemoteStream.isScreenSharingActive) ? (
               <div className="w-full flex-1 relative flex items-center justify-center bg-black min-h-[380px]">
                 <video
                   ref={screenVideoRef}
                   autoPlay
                   playsInline
+                  muted
                   className="w-full h-full object-contain"
                 />
                 <div className="absolute top-4 left-4 px-3 py-1 rounded-xl bg-black/70 backdrop-blur-md border border-white/20 text-xs font-bold text-white flex items-center gap-2">
@@ -1080,7 +1226,7 @@ export default function LiveClassroomPage({
                     </div>
                   ) : (
                     <>
-                      {(mediaState.isCameraOn || Boolean(livekitLocalTracks.videoTrack)) ? (
+                      {mediaState.isCameraOn ? (
                         <video
                           ref={teacherVideoRef}
                           autoPlay
@@ -1094,7 +1240,7 @@ export default function LiveClassroomPage({
                             {user?.name?.[0] || 'T'}
                           </div>
                           <span className="text-[10px] text-white/70 mt-1 font-bold truncate max-w-full">
-                            {user?.name || 'Giáo viên'}
+                            {user?.name || 'Giáo viên'} (Tắt Cam)
                           </span>
                         </div>
                       )}
@@ -1228,7 +1374,7 @@ export default function LiveClassroomPage({
                 title={mediaState.isMicOn ? 'Tắt Micro' : 'Bật Micro'}
               >
                 {mediaState.isMicOn ? <Mic size={18} /> : <MicOff size={18} />}
-                <span className="hidden sm:inline">{mediaState.isMicOn ? 'Bật Mic' : 'Tắt Mic'}</span>
+                <span className="hidden sm:inline">{mediaState.isMicOn ? 'Mic Bật' : 'Mic Tắt'}</span>
               </button>
 
               {/* Camera Button */}
@@ -1242,7 +1388,7 @@ export default function LiveClassroomPage({
                 title={mediaState.isCameraOn ? 'Tắt Camera' : 'Bật Camera'}
               >
                 {mediaState.isCameraOn ? <Video size={18} /> : <VideoOff size={18} />}
-                <span className="hidden sm:inline">{mediaState.isCameraOn ? 'Bật Cam' : 'Tắt Cam'}</span>
+                <span className="hidden sm:inline">{mediaState.isCameraOn ? 'Cam Bật' : 'Cam Tắt'}</span>
               </button>
 
               {/* Teacher Screen Share */}
@@ -1735,7 +1881,8 @@ export default function LiveClassroomPage({
               <button
                 onClick={() => {
                   setShowAttendanceModal(false);
-                  handleLeave();
+                  if (onNavigateBack) onNavigateBack();
+                  else window.location.hash = `#classroom/${classId}`;
                 }}
                 className="p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 cursor-pointer"
               >
@@ -1801,11 +1948,12 @@ export default function LiveClassroomPage({
               <button
                 onClick={() => {
                   setShowAttendanceModal(false);
-                  handleLeave();
+                  if (onNavigateBack) onNavigateBack();
+                  else window.location.hash = `#classroom/${classId}`;
                 }}
                 className="px-5 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#D44C2E] text-white text-xs font-bold transition-all cursor-pointer"
               >
-                Hoàn tất & Rời phòng
+                Hoàn tất & Quay về lớp học
               </button>
             </div>
           </div>
@@ -1816,7 +1964,15 @@ export default function LiveClassroomPage({
       {showSummaryModal && sessionSummaryData && (
         <SessionHistorySummaryModal
           summaryData={sessionSummaryData}
-          onClose={() => setShowSummaryModal(false)}
+          onClose={() => {
+            setShowSummaryModal(false);
+            if (attendanceReport) {
+              setShowAttendanceModal(true);
+            } else {
+              if (onNavigateBack) onNavigateBack();
+              else window.location.hash = `#classroom/${classId}`;
+            }
+          }}
         />
       )}
 

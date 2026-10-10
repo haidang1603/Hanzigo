@@ -26,6 +26,7 @@ import {
   Shield
 } from 'lucide-react';
 import { playClickSound } from '../utils/audio';
+import StreakModal from './learning/StreakModal';
 
 export default function Navbar({ 
   activeTab, 
@@ -44,6 +45,7 @@ export default function Navbar({
   const [practiceOpen, setPracticeOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [streakModalOpen, setStreakModalOpen] = useState(false);
 
   const practiceRef = useRef(null);
   const moreRef = useRef(null);
@@ -333,22 +335,25 @@ export default function Navbar({
             {/* Streak & EXP Badges */}
             {user && (
               <>
-                <div 
-                  title="Chuỗi ngày học liên tiếp"
-                  className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] border border-[#F4B942]/30 text-[#D97706] text-xs font-bold shadow-sm whitespace-nowrap shrink-0"
+                <button 
+                  onClick={() => {
+                    playClickSound();
+                    setStreakModalOpen(true);
+                  }}
+                  title="Nhấn để xem Lịch trình chuỗi & Phần thưởng 🔥"
+                  className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] border border-[#F4B942]/40 hover:border-[#F4B942] text-[#D97706] dark:text-amber-400 text-xs font-bold shadow-xs whitespace-nowrap shrink-0 transition-all cursor-pointer hover:scale-105 active:scale-95 group"
                 >
-                  <Flame size={14} className="text-[#F4B942] fill-[#F4B942]" />
+                  <Flame size={14} className="text-[#F4B942] fill-[#F4B942] group-hover:animate-bounce" />
                   <span>{streak} ngày</span>
-                </div>
+                </button>
 
                 <button 
                   onClick={() => handleNavClick('leaderboard')}
-                  title="Bảng xếp hạng cao thủ XP"
-                  className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border border-[#E85D3F]/20 text-[#E85D3F] hover:bg-[#E85D3F] hover:text-white text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer group shadow-xs"
+                  title="Bảng Vàng vinh danh cao thủ XP"
+                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border border-[#E85D3F]/30 text-[#E85D3F] hover:bg-[#E85D3F] hover:text-white text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer group shadow-xs hover:scale-105 active:scale-95"
                 >
-                  <Sparkles size={13} className="group-hover:rotate-12 transition-transform" />
+                  <Trophy size={13} className="text-amber-500 group-hover:text-amber-200 fill-amber-500 transition-colors" />
                   <span>{xp} XP</span>
-                  <Trophy size={12} className="text-amber-500 group-hover:text-amber-300 ml-0.5" />
                 </button>
               </>
             )}
@@ -658,6 +663,14 @@ export default function Navbar({
           </div>
         </div>
       )}
+
+      {/* Interactive Streak Details Modal */}
+      <StreakModal 
+        user={user}
+        isOpen={streakModalOpen}
+        onClose={() => setStreakModalOpen(false)}
+        onNavigateTab={handleNavClick}
+      />
     </header>
   );
 }

@@ -41,6 +41,32 @@ class LiveEventBus {
   constructor() {
     this.listeners = new Map();
     this.channels = new Map();
+    this.broadcastChannels = new Map();
+  }
+
+  getOrCreateBroadcastChannel(sessionId) {
+    if (typeof BroadcastChannel === 'undefined' || !sessionId) return null;
+    let bc = this.broadcastChannels.get(sessionId);
+    if (!bc) {
+      try {
+        bc = new BroadcastChannel(`hanzigo_live_bus_${sessionId}`);
+        if (typeof bc.unref === 'function') {
+          bc.unref();
+        }
+        bc.onmessage = (envelope) => {
+          const payload = envelope?.data;
+          if (!payload) return;
+          const subs = this.listeners.get(sessionId);
+          if (subs) {
+            subs.forEach(cb => {
+              try { cb(payload); } catch (e) { console.error('BroadcastChannel listener error:', e); }
+            });
+          }
+        };
+        this.broadcastChannels.set(sessionId, bc);
+      } catch {}
+    }
+    return bc;
   }
 
   getOrCreateChannel(sessionId) {
@@ -192,6 +218,7 @@ class LiveEventBus {
     this.listeners.get(sessionId).add(callback);
 
     this.getOrCreateChannel(sessionId);
+    this.getOrCreateBroadcastChannel(sessionId);
 
     return () => {
       const set = this.listeners.get(sessionId);
@@ -207,6 +234,13 @@ class LiveEventBus {
               console.warn('Error removing Supabase realtime channel:', e);
             }
             this.channels.delete(sessionId);
+          }
+          const bc = this.broadcastChannels.get(sessionId);
+          if (bc) {
+            try {
+              bc.close();
+            } catch {}
+            this.broadcastChannels.delete(sessionId);
           }
         }
       }
@@ -224,7 +258,17 @@ class LiveEventBus {
       });
     }
 
-    // 2. Realtime broadcast across remote devices/sessions
+    // 2. Cross-tab BroadcastChannel dispatch (sync across browser tabs/windows immediately)
+    const bc = this.getOrCreateBroadcastChannel(sessionId);
+    if (bc) {
+      try {
+        bc.postMessage(event);
+      } catch (e) {
+        console.warn('BroadcastChannel postMessage error:', e);
+      }
+    }
+
+    // 3. Realtime broadcast across remote devices/sessions
     if (isSupabaseConfigured && supabase) {
       try {
         const ch = this.getOrCreateChannel(sessionId);
@@ -327,12 +371,23 @@ export async function createClassSession({ classroomId, teacherId, title }) {
   // Always mirror in local storage for instant sync and offline resilience
   const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
   const updatedSessions = sessions.map(s => 
-    s.classroom_id === classroomId && s.status === 'live' 
+    (s.classroom_id === classroomId || String(s.classroom_id) === String(classroomId)) && s.status === 'live' 
       ? { ...s, status: 'ended', ended_at: new Date().toISOString() } 
       : s
   );
   updatedSessions.unshift(sessionToSave);
   setLiveItem(LIVE_STORAGE_KEYS.SESSIONS, updatedSessions);
+
+  // Sync to shared dev & serverless endpoint so all other browsers/students see the room
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      fetch('/api/live/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session: sessionToSave })
+      }).catch(() => {});
+    } catch {}
+  }
 
   return { success: true, session: sessionToSave };
 }
@@ -347,6 +402,23 @@ export async function getActiveSessionForClass(classroomId) {
   const now = Date.now();
   const MAX_SESSION_DURATION_MS = 2.5 * 60 * 60 * 1000; // 2.5 hours max session lifetime
 
+  // Helper to clear any stale live sessions for this classroom from local storage
+  const clearStaleLocalSession = () => {
+    try {
+      const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
+      let changed = false;
+      const updated = sessions.map(s => {
+        if ((s.classroom_id === classroomId || String(s.classroom_id) === String(classroomId)) && s.status === 'live') {
+          changed = true;
+          return { ...s, status: 'ended', ended_at: new Date().toISOString() };
+        }
+        return s;
+      });
+      if (changed) setLiveItem(LIVE_STORAGE_KEYS.SESSIONS, updated);
+    } catch {}
+  };
+
+  // 1. Supabase check if configured and valid UUID
   if (isSupabaseConfigured && supabase && isValidUuid(classroomId)) {
     try {
       const { data, error } = await supabase
@@ -358,32 +430,70 @@ export async function getActiveSessionForClass(classroomId) {
         .limit(1)
         .maybeSingle();
 
-      if (!error && data) {
-        // Only auto-end if we have a valid timestamp (guard against null → year-1970 false positive)
-        const sessionDateStr = data.created_at || data.started_at;
-        if (sessionDateStr) {
-          const sessionAgeMs = now - new Date(sessionDateStr).getTime();
-          if (sessionAgeMs > MAX_SESSION_DURATION_MS) {
-            try {
-              await supabase
-                .from('class_sessions')
-                .update({ status: 'ended', ended_at: new Date().toISOString() })
-                .eq('id', data.id);
-            } catch {}
-            return null;
+      if (!error) {
+        if (data) {
+          const sessionDateStr = data.created_at || data.started_at;
+          if (sessionDateStr) {
+            const sessionAgeMs = now - new Date(sessionDateStr).getTime();
+            if (sessionAgeMs > MAX_SESSION_DURATION_MS) {
+              try {
+                await supabase
+                  .from('class_sessions')
+                  .update({ status: 'ended', ended_at: new Date().toISOString() })
+                  .eq('id', data.id);
+              } catch {}
+              clearStaleLocalSession();
+              return null;
+            }
           }
+          return data;
+        } else {
+          // Explicitly NO live row found in Supabase for this classroom!
+          clearStaleLocalSession();
+          return null;
         }
-        return data;
       }
     } catch {}
   }
 
+  // 2. Fetch from shared dev / serverless backend (authoritative state synchronizer)
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      const res = await fetch(`/api/live/session?classroomId=${encodeURIComponent(classroomId)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.success) {
+          if (json.session && json.session.status === 'live') {
+            // Active live session found on server!
+            const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
+            const idx = sessions.findIndex(s => s.id === json.session.id);
+            if (idx >= 0) {
+              sessions[idx] = { ...sessions[idx], ...json.session };
+            } else {
+              sessions.unshift(json.session);
+            }
+            setLiveItem(LIVE_STORAGE_KEYS.SESSIONS, sessions);
+            return json.session;
+          } else {
+            // Server explicitly says session is null or ended:
+            // Clear any stale live session for this classroom from local storage immediately!
+            clearStaleLocalSession();
+            return null;
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Fallback to local storage (only reached if Supabase & server fetch both failed / network offline)
   const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
-  const liveSession = sessions.find(s => s.classroom_id === classroomId && s.status === 'live');
+  const liveSession = sessions.find(s => 
+    (s.classroom_id === classroomId || String(s.classroom_id) === String(classroomId)) && 
+    s.status === 'live'
+  );
   if (!liveSession) return null;
 
   // Stale duration validation (> 2.5 hours auto-ended)
-  // Guard: only check if timestamp is valid (null fallback to 0 = year 1970 = false positive)
   const startDateStr = liveSession.started_at || liveSession.created_at;
   if (startDateStr && now - new Date(startDateStr).getTime() > MAX_SESSION_DURATION_MS) {
     endLiveSession(liveSession.id, 'system_cleanup');
@@ -399,6 +509,7 @@ export async function getActiveSessionForClass(classroomId) {
 export async function getSessionById(sessionId) {
   if (!sessionId) return null;
 
+  // 1. Supabase check
   if (isSupabaseConfigured && supabase && isValidUuid(sessionId)) {
     try {
       const { data, error } = await supabase
@@ -424,12 +535,37 @@ export async function getSessionById(sessionId) {
         };
       }
     } catch (err) {
-      console.warn('Supabase getSessionById fallback to local store:', err);
+      console.warn('Supabase getSessionById fallback to server/local store:', err);
     }
   }
 
+  // 2. Query shared dev / serverless backend FIRST before checking stale local storage
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      const res = await fetch(`/api/live/session?sessionId=${encodeURIComponent(sessionId)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.success && json?.session) {
+          const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
+          const idx = sessions.findIndex(s => s.id === json.session.id);
+          if (idx >= 0) {
+            sessions[idx] = { ...sessions[idx], ...json.session };
+          } else {
+            sessions.unshift(json.session);
+          }
+          setLiveItem(LIVE_STORAGE_KEYS.SESSIONS, sessions);
+          return json.session;
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Fallback to local storage
   const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
-  return sessions.find(s => s.id === sessionId) || null;
+  const localFound = sessions.find(s => s.id === sessionId);
+  if (localFound) return localFound;
+
+  return null;
 }
 
 /**
@@ -454,30 +590,6 @@ export async function verifySessionAccess(sessionId, user) {
   const isTeacherUser = session.teacher_id === userId || user.role === 'admin' || session.teacher_id === 'user_teacher_demo';
 
   if (session.status === 'ended') {
-    // If user is the designated Teacher of the session or System Admin,
-    // and session was created/active recently (< 2.5 hours), let teacher resume or reopen it!
-    const sessionAge = Date.now() - new Date(session.created_at || session.started_at || 0).getTime();
-    if (isTeacherUser && sessionAge < 2.5 * 60 * 60 * 1000) {
-      session.status = 'live';
-      session.ended_at = null;
-      // Mirror update to local store
-      const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
-      const idx = sessions.findIndex(s => s.id === sessionId);
-      if (idx >= 0) {
-        sessions[idx] = { ...sessions[idx], status: 'live', ended_at: null };
-        setLiveItem(LIVE_STORAGE_KEYS.SESSIONS, sessions);
-      }
-      if (isSupabaseConfigured && supabase && isValidUuid(sessionId)) {
-        supabase
-          .from('class_sessions')
-          .update({ status: 'live', ended_at: null })
-          .eq('id', sessionId)
-          .then(() => {})
-          .catch(() => {});
-      }
-      return { allowed: true, role: 'teacher', session };
-    }
-
     return { allowed: false, reason: 'Lớp học trực tuyến này đã kết thúc.', session };
   }
 
@@ -579,6 +691,20 @@ export async function joinLiveSession(sessionId, user) {
   filtered.push(participantData);
   setLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, filtered);
 
+  // Sync to shared dev server (so teacher and students in other tabs/browsers see the participant immediately)
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      fetch('/api/live/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          participant: participantData
+        })
+      }).catch(() => {});
+    } catch {}
+  }
+
   // Sync to Supabase database if configured
   if (isSupabaseConfigured && supabase && isValidUuid(sessionId) && isValidUuid(userId)) {
     try {
@@ -643,6 +769,17 @@ export async function leaveLiveSession(sessionId, userId) {
 
   setLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, updated);
 
+  // Sync to shared dev server
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      fetch('/api/live/leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, userId })
+      }).catch(() => {});
+    } catch {}
+  }
+
   if (target && isSupabaseConfigured && supabase && isValidUuid(sessionId) && isValidUuid(userId)) {
     try {
       await supabase
@@ -676,18 +813,33 @@ export async function endLiveSession(sessionId, teacherId) {
   const session = await getSessionById(sessionId);
   if (!session) return { success: false, error: 'Phiên học không tồn tại.' };
 
-  if (
-    teacherId &&
-    session.teacher_id !== teacherId && 
-    teacherId !== 'user_teacher_demo' && 
-    teacherId !== 'system_cleanup'
-  ) {
+  const effectiveTeacherId = typeof teacherId === 'object' 
+    ? (teacherId?.uid || teacherId?.id || teacherId?.userId) 
+    : teacherId;
+
+  let isAuthorizedTeacher = (
+    !effectiveTeacherId ||
+    session.teacher_id === effectiveTeacherId ||
+    effectiveTeacherId === 'user_teacher_demo' ||
+    effectiveTeacherId === 'system_cleanup'
+  );
+
+  if (!isAuthorizedTeacher && session.classroom_id) {
+    try {
+      const classItem = await getClassroomById(session.classroom_id);
+      if (classItem && (classItem.teacher_id === effectiveTeacherId || classItem.teacher_id === 'user_teacher_demo')) {
+        isAuthorizedTeacher = true;
+      }
+    } catch {}
+  }
+
+  if (!isAuthorizedTeacher) {
     return { success: false, error: 'Chỉ giáo viên mới có quyền kết thúc lớp học.' };
   }
 
   const endedAt = new Date().toISOString();
 
-  // End session
+  // End session in memory / local storage
   const sessions = getLiveItem(LIVE_STORAGE_KEYS.SESSIONS, []);
   const updatedSessions = sessions.map(s => 
     s.id === sessionId ? { ...s, status: 'ended', ended_at: endedAt } : s
@@ -713,6 +865,30 @@ export async function endLiveSession(sessionId, teacherId) {
   });
   setLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, updatedParticipants);
 
+  // Sync to backend dev/production endpoint
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      fetch('/api/live/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, teacherId: effectiveTeacherId, endedAt })
+      }).catch(() => {});
+
+      fetch('/api/live/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session: {
+            id: sessionId,
+            classroom_id: session.classroom_id,
+            status: 'ended',
+            ended_at: endedAt
+          }
+        })
+      }).catch(() => {});
+    } catch {}
+  }
+
   // Sync to Supabase if configured
   if (isSupabaseConfigured && supabase && isValidUuid(sessionId)) {
     try {
@@ -729,7 +905,8 @@ export async function endLiveSession(sessionId, teacherId) {
           camera_enabled: false,
           hand_raised: false
         })
-        .match({ session_id: sessionId, left_at: null });
+        .eq('session_id', sessionId)
+        .is('left_at', null);
     } catch (e) {
       console.warn('Supabase endLiveSession notice:', e);
     }
@@ -738,7 +915,8 @@ export async function endLiveSession(sessionId, teacherId) {
   // Broadcast SESSION_ENDED
   liveEventBus.broadcast(sessionId, {
     type: 'SESSION_ENDED',
-    endedAt
+    endedAt,
+    teacherId: effectiveTeacherId
   });
 
   // Automatically generate and save session history and AI Lesson Summary
@@ -811,9 +989,69 @@ export async function toggleChatMute(sessionId, teacherId, isMuted) {
 /**
  * Get all participants in a session
  */
-export async function getSessionParticipants(sessionId) {
-  const list = getLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, []);
-  return list.filter(p => p.session_id === sessionId);
+export async function getSessionParticipants(sessionId, activeOnly = false) {
+  if (!sessionId) return [];
+
+  // 1. Fetch from shared dev server API (syncs participants who joined from other tabs/browsers)
+  let serverParts = [];
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      const res = await fetch(`/api/live/participants?sessionId=${encodeURIComponent(sessionId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data?.participants)) {
+          serverParts = data.participants;
+        }
+      }
+    } catch {}
+  }
+
+  // 2. Local storage participants
+  const localList = getLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, [])
+    .filter(p => (p.session_id === sessionId || String(p.session_id) === String(sessionId)));
+
+  // Merge server and local participants
+  const mergedMap = new Map();
+  localList.forEach(p => mergedMap.set(p.user_id, p));
+  serverParts.forEach(p => {
+    if (!mergedMap.has(p.user_id) || (p.reconnected_at && !mergedMap.get(p.user_id)?.reconnected_at)) {
+      mergedMap.set(p.user_id, p);
+    }
+  });
+
+  // 3. Supabase database query if configured
+  if (isSupabaseConfigured && supabase && isValidUuid(sessionId)) {
+    try {
+      const { data: dbParts } = await supabase
+        .from('session_participants')
+        .select('*, profiles:user_id(name, avatar)')
+        .eq('session_id', sessionId);
+
+      if (Array.isArray(dbParts)) {
+        dbParts.forEach(dp => {
+          const prev = mergedMap.get(dp.user_id) || {};
+          mergedMap.set(dp.user_id, {
+            ...prev,
+            id: dp.id,
+            session_id: dp.session_id,
+            user_id: dp.user_id,
+            user_name: dp.profiles?.name || prev.user_name || (dp.role === 'teacher' ? 'Giáo viên' : 'Học viên'),
+            user_avatar: dp.profiles?.avatar || prev.user_avatar || null,
+            role: dp.role || prev.role,
+            joined_at: dp.joined_at || prev.joined_at,
+            left_at: dp.left_at,
+            total_duration_seconds: dp.total_duration_seconds ?? prev.total_duration_seconds ?? 0,
+            is_mic_allowed: dp.is_mic_allowed ?? prev.is_mic_allowed,
+            can_speak: dp.is_mic_allowed ?? prev.can_speak,
+            attendance_status: dp.attendance_status || prev.attendance_status || 'present'
+          });
+        });
+      }
+    } catch {}
+  }
+
+  const all = Array.from(mergedMap.values());
+  return activeOnly ? all.filter(p => !p.left_at) : all;
 }
 
 /**
@@ -885,6 +1123,30 @@ export async function allowStudentMic(sessionId, teacherId, studentId) {
   });
   setLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, updated);
 
+  // Sync to Supabase DB if configured
+  if (isSupabaseConfigured && supabase && isValidUuid(sessionId) && isValidUuid(targetStudentId)) {
+    supabase
+      .from('session_participants')
+      .update({ is_mic_allowed: true })
+      .eq('session_id', sessionId)
+      .eq('user_id', targetStudentId)
+      .then(() => {})
+      .catch(() => {});
+  }
+
+  // Trigger server-side SFU permission update
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    fetch('/api/live/moderation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId,
+        action: 'ALLOW_MIC',
+        targetUserId: targetStudentId
+      })
+    }).catch(() => {});
+  }
+
   liveEventBus.broadcast(sessionId, {
     type: 'MIC_PERMISSION_GRANTED',
     studentId: targetStudentId
@@ -909,6 +1171,30 @@ export async function revokeStudentMic(sessionId, teacherId, studentId) {
     return p;
   });
   setLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, updated);
+
+  // Sync to Supabase DB if configured
+  if (isSupabaseConfigured && supabase && isValidUuid(sessionId) && isValidUuid(studentId)) {
+    supabase
+      .from('session_participants')
+      .update({ is_mic_allowed: false })
+      .eq('session_id', sessionId)
+      .eq('user_id', studentId)
+      .then(() => {})
+      .catch(() => {});
+  }
+
+  // Trigger server-side SFU permission update
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    fetch('/api/live/moderation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId,
+        action: 'REVOKE_MIC',
+        targetUserId: studentId
+      })
+    }).catch(() => {});
+  }
 
   liveEventBus.broadcast(sessionId, {
     type: 'MIC_PERMISSION_REVOKED',
@@ -952,6 +1238,29 @@ export async function muteAllParticipants(sessionId, teacherId) {
   });
   setLiveItem(LIVE_STORAGE_KEYS.PARTICIPANTS, updated);
 
+  // Sync to Supabase DB if configured
+  if (isSupabaseConfigured && supabase && isValidUuid(sessionId)) {
+    supabase
+      .from('session_participants')
+      .update({ is_mic_allowed: false })
+      .eq('session_id', sessionId)
+      .neq('role', 'teacher')
+      .then(() => {})
+      .catch(() => {});
+  }
+
+  // Trigger server-side SFU mute all
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    fetch('/api/live/moderation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId,
+        action: 'MUTE_ALL'
+      })
+    }).catch(() => {});
+  }
+
   liveEventBus.broadcast(sessionId, {
     type: 'MUTE_ALL'
   });
@@ -964,6 +1273,30 @@ export async function muteAllParticipants(sessionId, teacherId) {
  */
 export async function removeParticipant(sessionId, teacherId, targetUserId) {
   await leaveLiveSession(sessionId, targetUserId);
+
+  // Sync to Supabase DB if configured
+  if (isSupabaseConfigured && supabase && isValidUuid(sessionId) && isValidUuid(targetUserId)) {
+    supabase
+      .from('session_participants')
+      .update({ left_at: new Date().toISOString() })
+      .eq('session_id', sessionId)
+      .eq('user_id', targetUserId)
+      .then(() => {})
+      .catch(() => {});
+  }
+
+  // Trigger server-side SFU remove participant
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    fetch('/api/live/moderation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId,
+        action: 'KICK',
+        targetUserId
+      })
+    }).catch(() => {});
+  }
 
   liveEventBus.broadcast(sessionId, {
     type: 'USER_KICKED',
@@ -2741,3 +3074,9 @@ export async function getSessionLearningOutcomes(sessionId, studentId = null) {
   const store = getLiveItem(LIVE_STORAGE_KEYS.OUTCOMES, []);
   return store.filter(o => o.session_id === sessionId && (!studentId || o.student_id === studentId));
 }
+
+// Aliases for unified testing and semantic compatibility
+export const kickParticipant = removeParticipant;
+export const lockRoom = toggleRoomLock;
+export const setTeachingBoardChar = updateSideHanziBoard;
+

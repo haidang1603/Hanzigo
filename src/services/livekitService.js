@@ -167,10 +167,14 @@ export class LiveKitClassroomManager {
   /**
    * Connect to the LiveKit classroom room
    */
-  async connect({ sessionId, user, role = 'student' }) {
+  /**
+   * Connect to the LiveKit classroom room
+   */
+  async connect({ sessionId, user, role = 'student', teacherId = null }) {
     this.role = role;
     this.sessionId = sessionId;
     this.userId = user?.uid || user?.id;
+    this.teacherId = teacherId;
 
     // 1. Fetch token
     const tokenResult = await fetchLiveKitToken({ sessionId, user, role });
@@ -210,6 +214,18 @@ export class LiveKitClassroomManager {
       this.isConnected = true;
       console.info('[LiveKit] Đã kết nối thành công tới phòng:', sessionId, 'State:', room.state);
 
+      // Handle browser audio autoplay restriction
+      if (!room.canPlaybackAudio) {
+        console.info('[LiveKit] Đang chờ cử chỉ người dùng để kích hoạt âm thanh phòng học...');
+        const unlockAudio = () => {
+          room.startAudio().then(() => {
+            console.info('[LiveKit] Đã mở khóa âm thanh phòng học thành công.');
+          }).catch(() => {});
+        };
+        window.addEventListener('click', unlockAudio, { once: true });
+        window.addEventListener('keydown', unlockAudio, { once: true });
+      }
+
       if (this.onConnectionChange) {
         this.onConnectionChange({ isConnected: true, state: room.state });
       }
@@ -234,6 +250,16 @@ export class LiveKitClassroomManager {
     // When a remote track is unsubscribed
     room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
       this._handleTrackUnsubscribed(track, publication, participant);
+    });
+
+    // Audio playback status changed (e.g. browser autoplay unlocked)
+    room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
+      if (!room.canPlaybackAudio) {
+        const unlockAudio = () => {
+          room.startAudio().catch(() => {});
+        };
+        window.addEventListener('click', unlockAudio, { once: true });
+      }
     });
 
     // Participant connected
@@ -279,6 +305,24 @@ export class LiveKitClassroomManager {
         });
       }
     });
+
+    // Local track unpublished (when camera, mic or screen share is turned off)
+    room.on(RoomEvent.LocalTrackUnpublished, (publication) => {
+      if (publication.track?.kind === Track.Kind.Video && publication.source !== Track.Source.ScreenShare) {
+        this.localVideoTrack = null;
+      } else if (publication.source === Track.Source.ScreenShare) {
+        this.localScreenTrack = null;
+      } else if (publication.track?.kind === Track.Kind.Audio) {
+        this.localAudioTrack = null;
+      }
+      if (this.onLocalStreamChange) {
+        this.onLocalStreamChange({
+          videoTrack: this.localVideoTrack,
+          audioTrack: this.localAudioTrack,
+          screenTrack: this.localScreenTrack
+        });
+      }
+    });
   }
 
   _scanParticipants(room) {
@@ -288,11 +332,14 @@ export class LiveKitClassroomManager {
       this.onRemoteParticipantsChange(participants);
     }
 
-    // In a 1-teacher model, any remote publisher or participant tagged teacher is the presenter
+    // Identify teacher participant strictly
     for (const p of participants) {
       let meta = {};
       try { meta = JSON.parse(p.metadata || '{}'); } catch {}
-      const isTeacher = meta.role === 'teacher' || this.role === 'student' || p.identity.includes('teacher');
+      const isTeacher = meta.role === 'teacher' || 
+                        (this.teacherId && String(p.identity) === String(this.teacherId)) || 
+                        p.identity.startsWith('teacher') || 
+                        p.identity.includes('teacher');
       if (isTeacher) {
         this.teacherParticipant = p;
         p.trackPublications.forEach(pub => {
@@ -307,11 +354,15 @@ export class LiveKitClassroomManager {
   _handleTrackSubscribed(track, publication, participant) {
     let meta = {};
     try { meta = JSON.parse(participant.metadata || '{}'); } catch {}
-    const isTeacher = meta.role === 'teacher' || this.role === 'student' || participant.identity.includes('teacher');
+    const isTeacher = meta.role === 'teacher' || 
+                      (this.teacherId && String(participant.identity) === String(this.teacherId)) || 
+                      participant.identity.startsWith('teacher') || 
+                      participant.identity.includes('teacher');
 
     if (isTeacher) {
       this.teacherParticipant = participant;
-      if (track.source === Track.Source.ScreenShare) {
+      const isScreenShare = publication?.source === Track.Source.ScreenShare || track?.source === Track.Source.ScreenShare;
+      if (isScreenShare) {
         this.teacherScreenTrack = track;
       } else if (track.kind === Track.Kind.Video) {
         this.teacherVideoTrack = track;
@@ -324,24 +375,54 @@ export class LiveKitClassroomManager {
           document.body.appendChild(el);
           el.play?.().catch(() => {
             // Browser autoplay restrictions may wait for user interaction
+            const unlock = () => {
+              el.play?.().catch(() => {});
+            };
+            window.addEventListener('click', unlock, { once: true });
           });
         } catch {}
       }
       this._notifyTeacherStreamChange();
+    } else {
+      // Remote student track (e.g. student granted speech permission)
+      if (track.kind === Track.Kind.Audio) {
+        try {
+          const el = track.attach();
+          el.style.display = 'none';
+          el.dataset.livekitParticipant = participant.identity;
+          document.body.appendChild(el);
+          el.play?.().catch(() => {
+            const unlock = () => {
+              el.play?.().catch(() => {});
+            };
+            window.addEventListener('click', unlock, { once: true });
+          });
+        } catch {}
+      }
     }
   }
 
   _handleTrackUnsubscribed(track, publication, participant) {
-    if (track === this.teacherVideoTrack) {
-      this.teacherVideoTrack = null;
-    }
-    if (track === this.teacherScreenTrack) {
+    const isScreenShare = publication?.source === Track.Source.ScreenShare || 
+                          track?.source === Track.Source.ScreenShare || 
+                          track === this.teacherScreenTrack;
+    if (isScreenShare) {
+      if (this.teacherScreenTrack) {
+        try { this.teacherScreenTrack.detach().forEach(el => el.remove()); } catch {}
+      }
       this.teacherScreenTrack = null;
     }
-    if (track === this.teacherAudioTrack) {
-      track.detach().forEach(el => el.remove());
+    if (track === this.teacherVideoTrack || publication?.source === Track.Source.Camera) {
+      this.teacherVideoTrack = null;
+    }
+    if (track === this.teacherAudioTrack || publication?.source === Track.Source.Microphone) {
+      try { track.detach().forEach(el => el.remove()); } catch {}
       this.teacherAudioTrack = null;
     }
+    // Clean up detached student audio elements
+    try {
+      track.detach().forEach(el => el.remove());
+    } catch {}
     this._notifyTeacherStreamChange();
   }
 
@@ -363,6 +444,16 @@ export class LiveKitClassroomManager {
     if (!this.room || !this.isConnected) return false;
     try {
       await this.room.localParticipant.setCameraEnabled(enabled);
+      if (!enabled) {
+        this.localVideoTrack = null;
+        if (this.onLocalStreamChange) {
+          this.onLocalStreamChange({
+            videoTrack: null,
+            audioTrack: this.localAudioTrack,
+            screenTrack: this.localScreenTrack
+          });
+        }
+      }
       return enabled;
     } catch (err) {
       console.warn('[LiveKit] Không thể đổi trạng thái Camera:', err.message);
@@ -377,6 +468,16 @@ export class LiveKitClassroomManager {
     if (!this.room || !this.isConnected) return false;
     try {
       await this.room.localParticipant.setMicrophoneEnabled(enabled);
+      if (!enabled) {
+        this.localAudioTrack = null;
+        if (this.onLocalStreamChange) {
+          this.onLocalStreamChange({
+            videoTrack: this.localVideoTrack,
+            audioTrack: null,
+            screenTrack: this.localScreenTrack
+          });
+        }
+      }
       return enabled;
     } catch (err) {
       console.warn('[LiveKit] Không thể đổi trạng thái Micro:', err.message);
@@ -391,7 +492,17 @@ export class LiveKitClassroomManager {
     if (!this.room || !this.isConnected) return false;
     try {
       await this.room.localParticipant.setScreenShareEnabled(enabled);
-      return enabled;
+      if (!enabled) {
+        this.localScreenTrack = null;
+        if (this.onLocalStreamChange) {
+          this.onLocalStreamChange({
+            videoTrack: this.localVideoTrack,
+            audioTrack: this.localAudioTrack,
+            screenTrack: null
+          });
+        }
+      }
+      return Boolean(enabled);
     } catch (err) {
       console.warn('[LiveKit] Không thể đổi trạng thái Screen Share:', err.message);
       return false;

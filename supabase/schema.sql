@@ -23,6 +23,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   streak INT DEFAULT 1,
   xp INT DEFAULT 50,
   words_learned INT DEFAULT 0,
+  longest_streak INT DEFAULT 1,
+  last_study_date DATE,
+  is_leaderboard_hidden BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

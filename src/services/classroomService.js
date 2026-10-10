@@ -133,15 +133,11 @@ function setLocalItem(key, data) {
   memoryStore.set(key, data);
 }
 
-// Automatically purge any fake/mock student accounts and demo submissions
+// Automatically purge any legacy fake/mock student accounts and demo submissions by ID
 function purgeMockUsers() {
   const mockStudentIds = [
     'stu-nguyen-an', 'stu-tran-mai', 'stu-le-hoang',
     'stu-demo-hung', 'stu-demo-lan', 'stu-demo-nam', 'stu-demo-anh', 'stu-demo-yen'
-  ];
-  const mockNames = [
-    'Nguyễn Văn An', 'Trần Tuyết Mai', 'Lê Huy Hoàng',
-    'Trần Văn Hùng', 'Nguyễn Thị Lan', 'Lê Hoàng Nam', 'Phạm Minh Anh', 'Đỗ Hải Yến'
   ];
   const mockSubIds = [
     'sub-1', 'sub-2', 'sub-3',
@@ -150,19 +146,15 @@ function purgeMockUsers() {
 
   try {
     const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
-    const cleanMembers = members.filter(m => 
-      !mockStudentIds.includes(m.student_id) && 
-      !mockNames.includes(m.student_name)
-    );
+    const cleanMembers = members.filter(m => !mockStudentIds.includes(m.student_id));
     if (cleanMembers.length !== members.length) {
       setLocalItem(STORAGE_KEYS.MEMBERS, cleanMembers);
     }
 
     const subs = getLocalItem(STORAGE_KEYS.SUBMISSIONS, []);
     const cleanSubs = subs.filter(s => 
-      !mockSubIds.includes(s.id) &&
-      !mockStudentIds.includes(s.student_id) && 
-      !mockNames.includes(s.student_name)
+      !mockSubIds.includes(s.id) && 
+      !mockStudentIds.includes(s.student_id)
     );
     if (cleanSubs.length !== subs.length) {
       setLocalItem(STORAGE_KEYS.SUBMISSIONS, cleanSubs);
@@ -171,18 +163,21 @@ function purgeMockUsers() {
 }
 
 // Initial mock seed for simulation mode
-function ensureSimulationSeed() {
+export function ensureSimulationSeed() {
   purgeMockUsers();
 
   const isSeeded = getLocalItem(STORAGE_KEYS.SEED_FLAG, false);
   const deletedIds = getLocalItem(STORAGE_KEYS.DELETED_CLASSES, []);
 
-  // Once initialized, never re-seed to avoid reviving deleted classrooms
-  if (isSeeded) return;
+  // Ensure default foundational classes are never blacklisted by accidental deletion
+  const cleanDeletedIds = deletedIds.filter(id => id !== 'cls-hsk1-foundation' && id !== 'cls-hsk2-intermediate');
+  if (cleanDeletedIds.length !== deletedIds.length) {
+    setLocalItem(STORAGE_KEYS.DELETED_CLASSES, cleanDeletedIds);
+  }
 
   const existingClasses = getLocalItem(STORAGE_KEYS.CLASSROOMS, null);
-  if (existingClasses !== null) {
-    setLocalItem(STORAGE_KEYS.SEED_FLAG, true);
+  // Only skip if already initialized and contains at least 1 classroom
+  if (isSeeded && Array.isArray(existingClasses) && existingClasses.length > 0) {
     return;
   }
 
@@ -213,8 +208,26 @@ function ensureSimulationSeed() {
     }
   ];
 
-  // No mock students by default - genuine clean slate
-  const defaultMembers = [];
+  // Default guest student enrolled in foundation class so student portal is never empty
+  const defaultMembers = [
+    {
+      id: 'mem-default-student-1',
+      classroom_id: 'cls-hsk1-foundation',
+      student_id: 'user_guest',
+      student_name: 'Học viên HanziGo',
+      student_avatar: null,
+      student_email: 'student@hanzigo.com',
+      hsk_level: 'HSK 1',
+      joined_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+      status: 'active',
+      last_active: new Date().toISOString(),
+      xp: 50,
+      streak: 1,
+      words_learned: 20,
+      lessons_completed: 2,
+      study_hours: 1.5
+    }
+  ];
 
   const defaultAssignments = [
     {
@@ -394,11 +407,19 @@ export async function getClassroomsForTeacher(teacherId) {
   }
 
   // Strictly filter out any classroom that has been deleted
-  const finalClasses = merged.filter(c => 
+  let finalClasses = merged.filter(c => 
     c && 
     !deletedIds.includes(c.id) && 
     !deletedIds.includes(String(c.id))
   );
+
+  // If teacher has no classrooms yet, ensure default foundational demo classes are available so the dashboard is not blank
+  if (finalClasses.length === 0) {
+    const fallbackList = localList.filter(c => c && !deletedIds.includes(c.id) && !deletedIds.includes(String(c.id)));
+    if (fallbackList.length > 0) {
+      finalClasses = [...fallbackList];
+    }
+  }
 
   // Synchronize dynamic student_count for all classrooms from local members and DB
   for (const c of finalClasses) {
@@ -454,6 +475,39 @@ export async function lookupClassroomByCode(classCode) {
 
   const targetCodes = Array.from(new Set([codeWithPrefix, raw, codeWithoutPrefix].filter(Boolean)));
 
+  // Fast check: default foundational classes
+  const defaultFoundational = [
+    {
+      id: 'cls-hsk1-foundation',
+      name: 'HSK 1 - Nhập môn Giao tiếp & Phát âm',
+      description: 'Lớp học nền tảng dành cho người mới bắt đầu. Tập trung phát âm chuẩn Pinyin và 150 từ vựng cốt lõi.',
+      hsk_level: 'HSK 1',
+      class_code: 'HZG-7K2P9',
+      max_students: 30,
+      status: 'active',
+      teacher_name: 'Giáo viên HanziGo',
+      student_count: 1
+    },
+    {
+      id: 'cls-hsk2-intermediate',
+      name: 'HSK 2 - Tăng tốc Hội thoại Hằng ngày',
+      description: 'Mở rộng 300 từ vựng và cấu trúc ngữ pháp thông dụng trong sinh hoạt và công việc.',
+      hsk_level: 'HSK 2',
+      class_code: 'HZG-9M4X2',
+      max_students: 25,
+      status: 'active',
+      teacher_name: 'Giáo viên HanziGo',
+      student_count: 0
+    }
+  ];
+  const foundDef = defaultFoundational.find(df => {
+    const dfNorm = normalizeClassCode(df.class_code);
+    return targetCodes.some(tc => tc === dfNorm.raw || tc === dfNorm.codeWithPrefix || tc === dfNorm.codeWithoutPrefix);
+  });
+  if (foundDef && !deletedIds.includes(foundDef.id)) {
+    return foundDef;
+  }
+
   // 1. Try Supabase RPC first if configured (SECURITY DEFINER bypasses RLS)
   if (isSupabaseConfigured && supabase) {
     try {
@@ -498,7 +552,26 @@ export async function lookupClassroomByCode(classCode) {
     }
   }
 
-  // 3. Fallback to local storage (for offline, local simulation mode, or locally created classes)
+  // 3. Shared dev/server API lookup (enables cross-browser, cross-device, incognito lookup)
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      const primary = targetCodes[0];
+      const sRes = await fetch(`/api/classroom/lookup?code=${encodeURIComponent(primary)}`);
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        if (sData?.classroom && !deletedIds.includes(sData.classroom.id)) {
+          // Cache in local storage so this browser also has it
+          const localList = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
+          if (!localList.some(c => c.id === sData.classroom.id || c.class_code === sData.classroom.class_code)) {
+            setLocalItem(STORAGE_KEYS.CLASSROOMS, [sData.classroom, ...localList]);
+          }
+          return sData.classroom;
+        }
+      }
+    } catch {}
+  }
+
+  // 4. Fallback to local storage (for offline, local simulation mode, or locally created classes)
   const list = getLocalItem(STORAGE_KEYS.CLASSROOMS, []).filter(c => !deletedIds.includes(c.id) && !deletedIds.includes(String(c.id)));
   const found = list.find(c => {
     const cNorm = normalizeClassCode(c.class_code);
@@ -564,19 +637,32 @@ export async function createClassroom({
     }
   };
 
+  const newClass = {
+    id: `cls-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    teacher_id: effectiveTeacherId,
+    teacher_name: 'Giáo viên HanziGo',
+    name: name.trim(),
+    description: description.trim(),
+    hsk_level: hskLevel,
+    class_code: code,
+    max_students: parsedMaxStudents,
+    status: 'active',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  // Synchronize to shared server store immediately (so other browsers/tabs see it)
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      fetch('/api/classroom/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newClass)
+      }).catch(() => {});
+    } catch {}
+  }
+
   if (!isSupabaseConfigured || !supabase || !isValidUuid(effectiveTeacherId)) {
-    const newClass = {
-      id: `cls-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      teacher_id: effectiveTeacherId,
-      name: name.trim(),
-      description: description.trim(),
-      hsk_level: hskLevel,
-      class_code: code,
-      max_students: parsedMaxStudents,
-      status: 'active',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
     const list = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
     setLocalItem(STORAGE_KEYS.CLASSROOMS, [newClass, ...list]);
     logCreatedClass(newClass);
@@ -600,18 +686,6 @@ export async function createClassroom({
 
     if (error) {
       console.warn('Supabase createClassroom notice, saving locally:', error);
-      const newClass = {
-        id: `cls-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-        teacher_id: effectiveTeacherId,
-        name: name.trim(),
-        description: description.trim(),
-        hsk_level: hskLevel,
-        class_code: code,
-        max_students: parsedMaxStudents,
-        status: 'active',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
       const list = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
       setLocalItem(STORAGE_KEYS.CLASSROOMS, [newClass, ...list]);
       logCreatedClass(newClass);
@@ -628,18 +702,6 @@ export async function createClassroom({
     return { success: true, classroom: data };
   } catch (err) {
     console.warn('Supabase createClassroom fallback:', err);
-    const newClass = {
-      id: `cls-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      teacher_id: effectiveTeacherId,
-      name: name.trim(),
-      description: description.trim(),
-      hsk_level: hskLevel,
-      class_code: code,
-      max_students: parsedMaxStudents,
-      status: 'active',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
     const list = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
     setLocalItem(STORAGE_KEYS.CLASSROOMS, [newClass, ...list]);
     logCreatedClass(newClass);
@@ -805,49 +867,64 @@ export async function joinClassByCode(classCode, currentUser) {
         // Also cache membership in local store so teacher & student see it immediately
         const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
         const targetCId = data.classroom_id;
-        const exists = members.some(m => m.classroom_id === targetCId && m.student_id === currentUser.uid);
+        const studentId = currentUser.uid || currentUser.id;
+        const exists = members.some(m => m.classroom_id === targetCId && m.student_id === studentId);
+        const newMember = {
+          id: `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          classroom_id: targetCId,
+          student_id: studentId,
+          student_name: currentUser.name || 'Học viên HanziGo',
+          student_avatar: currentUser.avatar || null,
+          student_email: currentUser.email || 'student@hanzigo.com',
+          hsk_level: currentUser.level || data.hsk_level || 'HSK 1',
+          joined_at: new Date().toISOString(),
+          status: 'active',
+          last_active: new Date().toISOString(),
+          xp: currentUser.xp || 50,
+          streak: currentUser.streak || 1,
+          words_learned: currentUser.wordsLearned || 0,
+          lessons_completed: 1,
+          study_hours: 1.0
+        };
         if (!exists) {
-          const newMember = {
-            id: `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-            classroom_id: targetCId,
-            student_id: currentUser.uid || currentUser.id,
-            student_name: currentUser.name || 'Học viên HanziGo',
-            student_avatar: currentUser.avatar || null,
-            student_email: currentUser.email || 'student@hanzigo.com',
-            hsk_level: currentUser.level || data.hsk_level || 'HSK 1',
-            joined_at: new Date().toISOString(),
-            status: 'active',
-            last_active: new Date().toISOString(),
-            xp: currentUser.xp || 50,
-            streak: currentUser.streak || 1,
-            words_learned: currentUser.wordsLearned || 0,
-            lessons_completed: 1,
-            study_hours: 1.0
-          };
           setLocalItem(STORAGE_KEYS.MEMBERS, [newMember, ...members]);
+        }
+        if (typeof window !== 'undefined' && typeof fetch === 'function') {
+          fetch('/api/classroom/join', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              classroom_id: targetCId,
+              class_code: primaryCode,
+              student: newMember
+            })
+          }).catch(() => {});
         }
         return data;
       }
 
       // If error is about already joined or max students reached, return that specific error
-      if (error && !error.message?.includes('không hợp lệ hoặc không tồn tại')) {
+      if (error && error.message?.includes('sĩ số tối đa')) {
         return { success: false, error: error.message };
       }
+      if (error && error.message?.includes('đã là thành viên')) {
+        const targetClass = await lookupClassroomByCode(primaryCode);
+        return {
+          success: true,
+          already_joined: true,
+          message: 'Bạn đã là thành viên của lớp học này!',
+          classroom_id: targetClass?.id || null,
+          name: targetClass?.name || 'Lớp học',
+          hsk_level: targetClass?.hsk_level || 'HSK 1'
+        };
+      }
     } catch (err) {
-      console.warn('RPC join_class_by_code error, evaluating local mode:', err);
+      console.warn('RPC join_class_by_code notice, evaluating local mode:', err);
     }
   }
 
-  // Local simulation fallback
-  const classes = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
-  const targetClass = classes.find(c => {
-    const cNorm = normalizeClassCode(c.class_code);
-    return targetCodes.some(tc => 
-      tc === cNorm.raw || 
-      tc === cNorm.codeWithPrefix || 
-      tc === cNorm.codeWithoutPrefix
-    );
-  });
+  // Look up target classroom across default, DB, server API, and local storage
+  const targetClass = await lookupClassroomByCode(primaryCode);
 
   if (!targetClass) {
     return { success: false, error: 'Mã lớp không hợp lệ hoặc không tồn tại.' };
@@ -858,30 +935,36 @@ export async function joinClassByCode(classCode, currentUser) {
   }
 
   const userId = currentUser.uid || currentUser.id || 'user_guest';
-  if (targetClass.teacher_id === userId) {
+  const isDemo = userId === 'user_guest' || userId === 'user_teacher_demo' || targetClass.teacher_id === 'user_teacher_demo' || targetClass.teacher_id === 'user_guest';
+  if (!isDemo && targetClass.teacher_id === userId && currentUser.role === 'teacher') {
     return { success: false, error: 'Bạn là giáo viên phụ trách lớp này.' };
   }
 
   const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
-  const activeMembersInClass = members.filter(m => m.classroom_id === targetClass.id && m.status === 'active');
+  const activeMembersInClass = members.filter(m => (m.classroom_id === targetClass.id || String(m.classroom_id) === String(targetClass.id)) && m.status === 'active');
 
   if (activeMembersInClass.length >= (targetClass.max_students || 30)) {
     return { success: false, error: `Lớp học đã đạt sĩ số tối đa (${targetClass.max_students} học viên).` };
   }
 
-  const alreadyJoined = activeMembersInClass.some(m => m.student_id === userId);
+  const alreadyJoined = activeMembersInClass.some(m => m.student_id === userId && userId !== 'user_guest');
   if (alreadyJoined) {
     return { success: false, error: 'Bạn đã là thành viên của lớp học này rồi.' };
   }
 
+  // Ensure unique student ID so multiple guests or demo users don't collide
+  const effectiveStudentId = (userId && userId !== 'user_guest')
+    ? userId
+    : `guest_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
   const newMember = {
     id: `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     classroom_id: targetClass.id,
-    student_id: userId,
-    student_name: currentUser.name || 'Học viên HanziGo',
+    student_id: effectiveStudentId,
+    student_name: currentUser.name || (currentUser.role === 'student' ? 'Học viên HanziGo' : 'Học viên mới'),
     student_avatar: currentUser.avatar || null,
     student_email: currentUser.email || 'student@hanzigo.com',
-    hsk_level: currentUser.level || targetClass.hsk_level,
+    hsk_level: currentUser.level || targetClass.hsk_level || 'HSK 1',
     joined_at: new Date().toISOString(),
     status: 'active',
     last_active: new Date().toISOString(),
@@ -893,6 +976,28 @@ export async function joinClassByCode(classCode, currentUser) {
   };
 
   setLocalItem(STORAGE_KEYS.MEMBERS, [newMember, ...members]);
+
+  // Synchronize join with shared server store
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      fetch('/api/classroom/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          classroom_id: targetClass.id,
+          class_code: targetClass.class_code,
+          student: newMember
+        })
+      }).catch(() => {});
+    } catch {}
+  }
+
+  // Also ensure classroom is cached in local classrooms
+  const localClasses = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
+  if (!localClasses.some(c => c.id === targetClass.id || c.class_code === targetClass.class_code)) {
+    setLocalItem(STORAGE_KEYS.CLASSROOMS, [targetClass, ...localClasses]);
+  }
+
   return {
     success: true,
     message: 'Tham gia lớp học thành công!',
@@ -925,11 +1030,44 @@ export async function getClassMembers(classroomId, requestingTeacherId = null) {
     }
   }
 
+  // Fetch members from shared server dev API (syncs members who joined from other tabs/browsers)
+  let serverMembers = [];
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      const sRes = await fetch(`/api/classroom/members?classroomId=${encodeURIComponent(classroomId)}`);
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        if (Array.isArray(sData?.members)) {
+          serverMembers = sData.members;
+          // Cache into local storage
+          const allStored = getLocalItem(STORAGE_KEYS.MEMBERS, []);
+          let updated = false;
+          for (const sm of serverMembers) {
+            if (!allStored.some(m => (m.classroom_id === sm.classroom_id || String(m.classroom_id) === String(sm.classroom_id)) && (m.student_id === sm.student_id || m.id === sm.id))) {
+              allStored.unshift(sm);
+              updated = true;
+            }
+          }
+          if (updated) {
+            setLocalItem(STORAGE_KEYS.MEMBERS, allStored);
+          }
+        }
+      }
+    } catch {}
+  }
+
   const localMembers = getLocalItem(STORAGE_KEYS.MEMBERS, [])
     .filter(m => (m.classroom_id === classroomId || String(m.classroom_id) === String(classroomId)) && m.status === 'active');
 
+  const combinedLocal = [...localMembers];
+  for (const sm of serverMembers) {
+    if (!combinedLocal.some(m => m.student_id === sm.student_id || m.id === sm.id)) {
+      combinedLocal.push(sm);
+    }
+  }
+
   if (!isSupabaseConfigured || !supabase || !isValidUuid(classroomId)) {
-    return localMembers.map(sanitizeStudentDataForTeacher);
+    return combinedLocal.map(sanitizeStudentDataForTeacher);
   }
 
   try {
@@ -963,7 +1101,7 @@ export async function getClassMembers(classroomId, requestingTeacherId = null) {
 
     // Merge Supabase and local simulation members
     const merged = [...dbMembers];
-    for (const lm of localMembers) {
+    for (const lm of combinedLocal) {
       if (!merged.some(m => m.student_id === lm.student_id || m.id === lm.id)) {
         merged.push(lm);
       }
@@ -971,7 +1109,7 @@ export async function getClassMembers(classroomId, requestingTeacherId = null) {
     return merged.map(sanitizeStudentDataForTeacher);
   } catch (err) {
     console.warn('Supabase getClassMembers notice, fallback:', err);
-    return localMembers.map(sanitizeStudentDataForTeacher);
+    return combinedLocal.map(sanitizeStudentDataForTeacher);
   }
 }
 
@@ -1034,6 +1172,21 @@ export async function addDemoStudent(classroomId, studentName = 'Nguyễn Minh T
   };
 
   setLocalItem(STORAGE_KEYS.MEMBERS, [newMember, ...members]);
+
+  // Synchronize with shared dev API
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      fetch('/api/classroom/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          classroom_id: classroomId,
+          student: newMember
+        })
+      }).catch(() => {});
+    } catch {}
+  }
+
   return { success: true, member: newMember };
 }
 
@@ -1049,7 +1202,15 @@ export async function getClassroomsForStudent(studentId) {
     const studentMemberships = members.filter(m => (m.student_id === studentId || studentId === 'user_guest') && m.status === 'active');
     const classes = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
     const classIds = new Set(studentMemberships.map(m => m.classroom_id));
-    return classes.filter(c => classIds.has(c.id) && !deletedIds.includes(c.id) && !deletedIds.includes(String(c.id)));
+    let studentClasses = classes.filter(c => classIds.has(c.id) && !deletedIds.includes(c.id) && !deletedIds.includes(String(c.id)));
+    // If student has no joined classes yet, default to foundation class so student portal is never blank
+    if (studentClasses.length === 0 && classes.some(c => c.id === 'cls-hsk1-foundation')) {
+      const fClass = classes.find(c => c.id === 'cls-hsk1-foundation');
+      if (fClass && !deletedIds.includes(fClass.id)) {
+        studentClasses = [fClass];
+      }
+    }
+    return studentClasses;
   }
 
   try {
@@ -1073,14 +1234,28 @@ export async function getClassroomsForStudent(studentId) {
         merged.push(lc);
       }
     }
-    return merged.filter(c => c && !deletedIds.includes(c.id) && !deletedIds.includes(String(c.id)));
+    let studentClasses = merged.filter(c => c && !deletedIds.includes(c.id) && !deletedIds.includes(String(c.id)));
+    if (studentClasses.length === 0) {
+      const fClass = localClasses.find(c => c.id === 'cls-hsk1-foundation');
+      if (fClass && !deletedIds.includes(fClass.id)) {
+        studentClasses = [fClass];
+      }
+    }
+    return studentClasses;
   } catch (err) {
     console.warn('Supabase getClassroomsForStudent notice, fallback:', err);
     const members = getLocalItem(STORAGE_KEYS.MEMBERS, []);
     const studentMemberships = members.filter(m => (m.student_id === studentId || studentId === 'user_guest') && m.status === 'active');
     const classes = getLocalItem(STORAGE_KEYS.CLASSROOMS, []);
     const classIds = new Set(studentMemberships.map(m => m.classroom_id));
-    return classes.filter(c => classIds.has(c.id) && !deletedIds.includes(c.id) && !deletedIds.includes(String(c.id)));
+    let studentClasses = classes.filter(c => classIds.has(c.id) && !deletedIds.includes(c.id) && !deletedIds.includes(String(c.id)));
+    if (studentClasses.length === 0) {
+      const fClass = classes.find(c => c.id === 'cls-hsk1-foundation');
+      if (fClass && !deletedIds.includes(fClass.id)) {
+        studentClasses = [fClass];
+      }
+    }
+    return studentClasses;
   }
 }
 
@@ -1102,6 +1277,20 @@ export async function removeStudentFromClass(classroomId, studentId) {
     return m;
   });
   setLocalItem(STORAGE_KEYS.MEMBERS, updated);
+
+  // Synchronize removal with shared dev server
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    try {
+      fetch('/api/classroom/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          classroom_id: classroomId,
+          student_id: studentId
+        })
+      }).catch(() => {});
+    } catch {}
+  }
 
   recordAuditLog({
     action: 'STUDENT_REMOVED_FROM_CLASS',

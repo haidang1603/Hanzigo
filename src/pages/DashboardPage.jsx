@@ -46,13 +46,38 @@ import {
   getLessonById,
   getRecommendedNextLesson 
 } from '../services/learningPathService';
-import AiLearningCoachWidget from '../components/learning/AiLearningCoachWidget';
 import { evaluateUserAchievements } from '../services/gamificationService';
+import StreakModal from '../components/learning/StreakModal';
+import AiLearningCoachWidget from '../components/learning/AiLearningCoachWidget';
 
 export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   const userName = user ? (user.name ? user.name.split(' ').pop() : 'Bạn') : 'Bạn';
-  const streakStatus = useMemo(() => getStreakStatus(user), [user]);
-  const userStreak = streakStatus.streak;
+  const [gamificationTick, setGamificationTick] = useState(0);
+
+  useEffect(() => {
+    const handleGamificationUpdated = () => setGamificationTick(t => t + 1);
+    window.addEventListener('hanzigo_gamification_updated', handleGamificationUpdated);
+    window.addEventListener('storage', handleGamificationUpdated);
+    return () => {
+      window.removeEventListener('hanzigo_gamification_updated', handleGamificationUpdated);
+      window.removeEventListener('storage', handleGamificationUpdated);
+    };
+  }, []);
+
+  const streakStatus = useMemo(() => getStreakStatus(user), [user, gamificationTick]);
+  const userStreak = useMemo(() => {
+    const s = streakStatus.streak || 0;
+    const uStreak = typeof user?.streak === 'number' && !isNaN(user.streak) ? user.streak : 0;
+    let localKeyVal = 0;
+    let globalVal = 0;
+    try {
+      const k = getUserStorageKey('hanzigo_streak_count', user);
+      localKeyVal = parseInt(localStorage.getItem(k) || '0', 10) || 0;
+      globalVal = parseInt(localStorage.getItem('hanzigo_streak_count') || '0', 10) || 0;
+    } catch {}
+    return Math.max(s, uStreak, localKeyVal, globalVal);
+  }, [streakStatus, user]);
+  const [streakModalOpen, setStreakModalOpen] = useState(false);
 
   // Daily study goal state (persisted in localStorage per user)
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState(() => {
@@ -122,7 +147,7 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   const actualWordsLearned = rememberedIds.length > 0 ? rememberedIds.length : (user?.wordsLearned || 0);
 
   // Total XP and Level info calculated from centralized gamification engine
-  const calculatedTotalXp = calculateTotalXp(user);
+  const calculatedTotalXp = useMemo(() => calculateTotalXp(user), [user, gamificationTick]);
 
   const levelInfo = useMemo(() => {
     return getUserLevelInfo(calculatedTotalXp);
@@ -377,7 +402,7 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
     const key = getUserStorageKey('hanzigo_daily_goal', user);
     localStorage.setItem(key, String(mins));
     localStorage.setItem('hanzigo_daily_goal', String(mins));
-    triggerCloudSync(user?.id);
+    triggerCloudSync(user?.uid || user?.id);
     setIsEditingGoal(false);
   };
 
@@ -457,13 +482,20 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         
         {/* Streak */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-center gap-4 hover:border-[#E85D3F] transition-all">
-          <div className="w-13 h-13 rounded-2xl bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] flex items-center justify-center text-2xl font-bold p-3">
+        <div 
+          onClick={() => {
+            playClickSound();
+            setStreakModalOpen(true);
+          }}
+          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-center gap-4 hover:border-[#E85D3F] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          title="Nhấn để xem Lịch trình chuỗi & Phần thưởng 🔥"
+        >
+          <div className="w-13 h-13 rounded-2xl bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] flex items-center justify-center text-2xl font-bold p-3 group-hover:scale-105 transition-transform">
             <Flame size={28} className="fill-[#F4B942] text-[#E85D3F]" />
           </div>
           <div>
             <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Chuỗi liên tiếp</p>
-            <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white">{userStreak} ngày</p>
+            <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">{userStreak} ngày</p>
             <p className={`text-[10px] font-semibold ${streakStatus.hasStudiedToday ? 'text-[#45B97C]' : 'text-[#E85D3F]'}`}>
               {streakStatus.hasStudiedToday 
                 ? 'Đã học hôm nay ✅' 
@@ -492,9 +524,16 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
         </div>
 
         {/* Study Time / XP */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-center gap-4 hover:border-[#E85D3F] transition-all">
-          <div className="w-13 h-13 rounded-2xl bg-[#EFF6FF] dark:bg-[#131B24] text-[#3B82F6] flex items-center justify-center text-2xl p-3">
-            <Zap size={26} className="text-[#3B82F6]" />
+        <div 
+          onClick={() => {
+            playClickSound();
+            setActiveTab('leaderboard');
+          }}
+          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-center gap-4 hover:border-[#E85D3F] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          title="Nhấn để xem Bảng Vàng vinh danh cao thủ XP ⚡"
+        >
+          <div className="w-13 h-13 rounded-2xl bg-[#EFF6FF] dark:bg-[#131B24] text-[#3B82F6] flex items-center justify-center text-2xl p-3 group-hover:scale-105 transition-transform">
+            <Zap size={26} className="text-[#3B82F6] fill-[#3B82F6]/30" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
@@ -503,7 +542,7 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
                 Lv.{levelInfo.level} {levelInfo.badge}
               </span>
             </div>
-            <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white">{calculatedTotalXp} XP</p>
+            <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">{calculatedTotalXp} XP</p>
             <p className="text-[10px] text-[#3B82F6] font-semibold truncate">
               {levelInfo.title}
             </p>
@@ -1139,6 +1178,14 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
         </div>
 
       </div>
+
+      {/* Interactive Streak Modal */}
+      <StreakModal 
+        user={user}
+        isOpen={streakModalOpen}
+        onClose={() => setStreakModalOpen(false)}
+        onNavigateTab={setActiveTab}
+      />
 
     </div>
   );

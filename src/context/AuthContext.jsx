@@ -64,11 +64,26 @@ export function AuthProvider({ children }) {
         status: dbProfile?.status || 'active',
         streak: typeof dbProfile?.streak === 'number' ? dbProfile.streak : 0,
         xp: safeXp,
-        wordsLearned: dbProfile?.words_learned || 0
+        wordsLearned: dbProfile?.words_learned || 0,
+        last_study_date: dbProfile?.last_study_date || null,
+        longest_streak: dbProfile?.longest_streak || null
       };
 
       setUser(mergedUser);
       localStorage.setItem('hanzigo_user', JSON.stringify(mergedUser));
+
+      if (typeof dbProfile?.streak === 'number' && dbProfile.streak > 0) {
+        localStorage.setItem(`hanzigo_streak_count_${authUser.id}`, String(dbProfile.streak));
+        localStorage.setItem('hanzigo_streak_count', String(dbProfile.streak));
+      }
+      if (dbProfile?.last_study_date) {
+        localStorage.setItem(`hanzigo_last_study_date_${authUser.id}`, String(dbProfile.last_study_date));
+        localStorage.setItem('hanzigo_last_study_date', String(dbProfile.last_study_date));
+      }
+      if (typeof dbProfile?.longest_streak === 'number') {
+        localStorage.setItem(`hanzigo_longest_streak_${authUser.id}`, String(dbProfile.longest_streak));
+      }
+
       return mergedUser;
     } catch (err) {
       console.warn('AuthContext profile sync notice:', err);

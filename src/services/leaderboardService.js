@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
-import { calculateTotalXp } from '../utils/gamification.js';
+import { calculateTotalXp, getStreakStatus } from '../utils/gamification.js';
+import { isValidUuid } from './authService.js';
 
 // Honorific titles earned by reaching total XP thresholds
 export const XP_HONORIFIC_TITLES = [
@@ -97,32 +98,34 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
 
   const usersMap = new Map();
 
-  // 1. Fetch live profiles from Supabase if connected
+  // 1. Fetch live profiles from Supabase if connected (authoritative source of truth)
   if (isSupabaseConfigured && supabase) {
     try {
       const { data: dbProfiles, error } = await supabase
         .from('profiles')
         .select('id, name, email, avatar, level, xp, streak, words_learned, role, status, is_leaderboard_hidden, created_at')
-        .eq('status', 'active')
-        .order('xp', { ascending: false })
+        .neq('status', 'blocked')
+        .order('xp', { ascending: false, nullsFirst: false })
         .limit(100);
 
       if (!error && Array.isArray(dbProfiles)) {
         dbProfiles.filter(p => !isDemoLeaderboardUser(p)).forEach(p => {
-          const key = p.email || p.id;
+          const normEmail = p.email ? p.email.toLowerCase().trim() : '';
+          const key = normEmail || p.id;
           usersMap.set(key, {
             id: p.id,
             name: p.name || 'Học viên',
             email: p.email || '',
             avatar: p.avatar || null,
             level: p.level || 'HSK 1 - Sơ cấp',
-            xp: typeof p.xp === 'number' ? p.xp : 50,
-            streak: typeof p.streak === 'number' ? p.streak : 1,
+            xp: typeof p.xp === 'number' && !isNaN(p.xp) ? p.xp : (Number(p.xp) || 50),
+            streak: typeof p.streak === 'number' && !isNaN(p.streak) ? p.streak : (Number(p.streak) || 1),
             wordsLearned: p.words_learned || 0,
             role: p.role || 'student',
             status: p.status || 'active',
             isOptedOut: Boolean(p.is_leaderboard_hidden)
           });
+          if (p.id) usersMap.set(p.id, usersMap.get(key));
         });
       }
     } catch (err) {
@@ -130,15 +133,35 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
     }
   }
 
-  // 2. Merge local registered directory from Admin / localStorage
+  // 2. Merge local registered shared profiles cache & admin directory
   try {
+    const rawShared = localStorage.getItem('hanzigo_shared_profiles_cache');
+    if (rawShared) {
+      const sharedCache = JSON.parse(rawShared);
+      Object.values(sharedCache).forEach(u => {
+        if (!isDemoLeaderboardUser(u) && u.status !== 'blocked') {
+          const normEmail = u.email ? u.email.toLowerCase().trim() : '';
+          const key = normEmail || u.id;
+          const existing = usersMap.get(key) || (u.id ? usersMap.get(u.id) : null);
+          if (!existing) {
+            usersMap.set(key, { ...u, isOptedOut: isUserLeaderboardOptedOut(u) });
+          } else {
+            if (typeof u.xp === 'number' && u.xp > existing.xp) {
+              existing.xp = u.xp;
+            }
+          }
+        }
+      });
+    }
+
     const rawLocal = localStorage.getItem('hanzigo_admin_users_directory');
     if (rawLocal) {
       const localUsers = JSON.parse(rawLocal);
       if (Array.isArray(localUsers)) {
         localUsers.filter(u => !isDemoLeaderboardUser(u) && u.status !== 'blocked').forEach(u => {
-          const key = u.email || u.id;
-          const existing = usersMap.get(key);
+          const normEmail = u.email ? u.email.toLowerCase().trim() : '';
+          const key = normEmail || u.id;
+          const existing = usersMap.get(key) || (u.id ? usersMap.get(u.id) : null);
           const isOptedOut = isUserLeaderboardOptedOut(u);
 
           if (!existing) {
@@ -168,19 +191,34 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
   // 3. Merge currently logged-in user with authentic live calculated XP
   if (currentUser) {
     const liveXp = calculateTotalXp(currentUser);
-    const userKey = currentUser.email || currentUser.uid || currentUser.id;
-    const existing = usersMap.get(userKey);
+    const normEmail = currentUser.email ? currentUser.email.toLowerCase().trim() : '';
+    const userKey = normEmail || currentUser.uid || currentUser.id;
+    const existing = usersMap.get(userKey) || (currentUser.id ? usersMap.get(currentUser.id) : null);
     const isOptedOut = isUserLeaderboardOptedOut(currentUser);
 
+    // CRITICAL: authoritative XP must be the highest between live calculation, cloud DB, and user object
+    const authoritativeXp = Math.max(
+      liveXp,
+      typeof existing?.xp === 'number' ? existing.xp : 0,
+      typeof currentUser?.xp === 'number' ? currentUser.xp : 0
+    );
+
+    const liveStreak = getStreakStatus(currentUser).streak;
+    const authoritativeStreak = Math.max(
+      liveStreak,
+      currentUser.streak || 0,
+      existing?.streak || 1
+    );
+
     const mergedUser = {
-      id: currentUser.uid || currentUser.id || 'current_user',
-      name: currentUser.name || currentUser.displayName || 'Bạn',
-      email: currentUser.email || '',
-      avatar: currentUser.avatar || currentUser.photoURL || null,
+      id: currentUser.uid || currentUser.id || existing?.id || 'current_user',
+      name: currentUser.name || currentUser.displayName || existing?.name || 'Bạn',
+      email: currentUser.email || existing?.email || '',
+      avatar: currentUser.avatar || currentUser.photoURL || existing?.avatar || null,
       level: currentUser.level || existing?.level || 'HSK 1 - Sơ cấp',
-      xp: liveXp,
-      streak: Math.max(currentUser.streak || 0, existing?.streak || 1),
-      wordsLearned: currentUser.wordsLearned || existing?.wordsLearned || 0,
+      xp: authoritativeXp,
+      streak: authoritativeStreak,
+      wordsLearned: Math.max(currentUser.wordsLearned || 0, existing?.wordsLearned || 0),
       role: currentUser.role || existing?.role || 'student',
       status: 'active',
       isCurrentUser: true,
@@ -188,6 +226,46 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
     };
 
     usersMap.set(userKey, mergedUser);
+    if (mergedUser.id) usersMap.set(mergedUser.id, mergedUser);
+
+    // CRITICAL: Immediately persist authoritative XP to Supabase profiles
+    // so ALL OTHER ACCOUNTS see this user's exact up-to-date XP on their leaderboard!
+    if (isSupabaseConfigured && supabase && mergedUser.id && isValidUuid(mergedUser.id)) {
+      if (!existing || authoritativeXp !== existing.xp || authoritativeStreak !== existing.streak) {
+        supabase
+          .from('profiles')
+          .update({
+            xp: authoritativeXp,
+            streak: authoritativeStreak,
+            level: mergedUser.level,
+            avatar: mergedUser.avatar,
+            name: mergedUser.name,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', mergedUser.id)
+          .then(() => {})
+          .catch((e) => console.warn('Leaderboard Supabase sync notice:', e));
+      }
+    }
+
+    // Persist to shared roster cache for multi-account testing
+    try {
+      const rawShared = localStorage.getItem('hanzigo_shared_profiles_cache');
+      const roster = rawShared ? JSON.parse(rawShared) : {};
+      roster[mergedUser.id || userKey] = {
+        id: mergedUser.id,
+        name: mergedUser.name,
+        email: mergedUser.email,
+        avatar: mergedUser.avatar,
+        level: mergedUser.level,
+        xp: mergedUser.xp,
+        streak: mergedUser.streak,
+        wordsLearned: mergedUser.wordsLearned,
+        role: mergedUser.role,
+        status: mergedUser.status
+      };
+      localStorage.setItem('hanzigo_shared_profiles_cache', JSON.stringify(roster));
+    } catch {}
   }
 
   // 4. Lọc theo lớp học nếu scope === 'class'
@@ -203,7 +281,6 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
             .filter(Boolean)
         );
 
-        // Giữ lại thành viên trong lớp hoặc currentUser
         for (const [key, userObj] of usersMap.entries()) {
           const isMember = classMemberIds.has(userObj.id) || classMemberIds.has(userObj.email);
           if (!isMember && !userObj.isCurrentUser) {
@@ -214,12 +291,21 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
     } catch {}
   }
 
+  // Deduplicate unique users
+  const uniqueUsers = new Map();
+  for (const userObj of usersMap.values()) {
+    const dedupKey = (userObj.email ? userObj.email.toLowerCase().trim() : '') || userObj.id;
+    const prev = uniqueUsers.get(dedupKey);
+    if (!prev || (!prev.isCurrentUser && (userObj.isCurrentUser || (userObj.xp || 0) > (prev.xp || 0)))) {
+      uniqueUsers.set(dedupKey, userObj);
+    }
+  }
+
   // 5. Điều chỉnh điểm XP theo timeframe (Weekly / Monthly)
-  let rawList = Array.from(usersMap.values()).map(userObj => {
+  let rawList = Array.from(uniqueUsers.values()).map(userObj => {
     let effectiveXp = userObj.xp;
 
     if (timeframe === 'weekly') {
-      // Ước lượng XP tuần dựa trên chuỗi học gần nhất và tỷ trọng tích lũy
       const streakWeight = Math.min(7, Math.max(1, userObj.streak || 1)) / 7;
       effectiveXp = Math.max(25, Math.round(userObj.xp * (0.15 + (streakWeight * 0.25))));
     } else if (timeframe === 'monthly') {
@@ -240,13 +326,18 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
   });
 
   // 7. Gán thứ hạng, bảo mật che email và xử lý Opt-Out (Ẩn danh)
-  const currentKey = currentUser ? (currentUser.email || currentUser.uid || currentUser.id) : null;
+  const currentId = currentUser?.uid || currentUser?.id;
+  const currentEmail = (currentUser?.email || '').toLowerCase().trim();
   let currentUserRank = -1;
   let currentUserEntry = null;
 
   const rankedList = rawList.map((item, index) => {
     const rank = index + 1;
-    const isCurrent = Boolean(currentKey && (item.email === currentKey || item.id === currentKey));
+    const itemEmail = (item.email || '').toLowerCase().trim();
+    const isCurrent = Boolean(
+      (currentId && item.id === currentId) ||
+      (currentEmail && itemEmail && itemEmail === currentEmail)
+    );
     const titleObj = getXpHonorificTitle(item.xp);
 
     // Quyền riêng tư: Che email nhạy cảm

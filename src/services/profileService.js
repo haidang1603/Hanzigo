@@ -57,6 +57,11 @@ export async function updateUserProfile(uid, profileData) {
     if (profileData.avatar !== undefined) payload.avatar = profileData.avatar;
     if (profileData.bio !== undefined) payload.bio = profileData.bio;
     if (profileData.level !== undefined) payload.level = profileData.level;
+    if (profileData.xp !== undefined && typeof profileData.xp === 'number') payload.xp = profileData.xp;
+    if (profileData.streak !== undefined && typeof profileData.streak === 'number') payload.streak = profileData.streak;
+    if (profileData.words_learned !== undefined && typeof profileData.words_learned === 'number') payload.words_learned = profileData.words_learned;
+    if (profileData.last_study_date !== undefined) payload.last_study_date = profileData.last_study_date;
+    if (profileData.longest_streak !== undefined && typeof profileData.longest_streak === 'number') payload.longest_streak = profileData.longest_streak;
 
     const { data, error } = await supabase
       .from('profiles')
@@ -104,6 +109,8 @@ export async function saveUserProgress(uid, progressData) {
     if (progressData.streak !== undefined) updatePayload.streak = progressData.streak;
     if (progressData.wordsLearned !== undefined) updatePayload.words_learned = progressData.wordsLearned;
     if (progressData.level !== undefined) updatePayload.level = progressData.level;
+    if (progressData.last_study_date !== undefined) updatePayload.last_study_date = progressData.last_study_date;
+    if (progressData.longestStreak !== undefined) updatePayload.longest_streak = progressData.longestStreak;
 
     await supabase
       .from('profiles')

@@ -204,9 +204,20 @@ export default function TeacherDashboardPage({
       });
     }
 
+    // Polling mỗi 3s cho classrooms, members và submissions (hỗ trợ đa tab, browser khác nhau & demo mode)
+    const interval = setInterval(() => {
+      const currentTeacherId = user?.uid || user?.id || 'user_teacher_demo';
+      getClassroomsForTeacher(currentTeacherId).then(clsList => setClassrooms(clsList || [])).catch(() => {});
+      getAllStudentsForTeacher(currentTeacherId).then(allStu => setAllStudents(allStu || [])).catch(() => {});
+      if (classId) {
+        getClassMembers(classId).then(mems => setMembers(mems || [])).catch(() => {});
+      }
+    }, 3000);
+
     return () => {
       unsubSubmissions();
       unsubClass();
+      clearInterval(interval);
     };
   }, [user, classId]);
 
