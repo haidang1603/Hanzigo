@@ -5,15 +5,83 @@
  * Real-time audio, video, and screen-sharing engine powered by LiveKit SFU.
  * - Sub-second latency for teacher broadcasting (1 teacher + 50 students).
  * - Automatic track subscription & video element mounting.
- * - Graceful fallback if LiveKit server credentials are not yet configured.
+ * - Dual-layer Token Resolution: Serverless API with client-side fallback via jose.
+ * - Hardware collision avoidance on Windows / multi-device.
  */
 
 import { Room, RoomEvent, Track, VideoPresets } from 'livekit-client';
 
+function getEnv(key) {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta?.env?.[key]) {
+      return import.meta.env[key];
+    }
+  } catch {}
+  try {
+    if (typeof process !== 'undefined' && process?.env?.[key]) {
+      return process.env[key];
+    }
+  } catch {}
+  return '';
+}
+
 /**
- * Fetch LiveKit access token from backend API endpoint
+ * Generate LiveKit access token directly on client using jose (HS256)
+ * Used as high-reliability fallback when backend API is unreachable or in dev mode.
+ */
+async function generateLocalLiveKitToken({ sessionId, user, role = 'student' }) {
+  const apiKey = getEnv('VITE_LIVEKIT_API_KEY') || getEnv('LIVEKIT_API_KEY');
+  const apiSecret = getEnv('VITE_LIVEKIT_API_SECRET') || getEnv('LIVEKIT_API_SECRET');
+  const serverUrl = getEnv('VITE_LIVEKIT_URL') || getEnv('LIVEKIT_URL');
+
+  if (!apiKey || !apiSecret || !serverUrl) return null;
+
+  try {
+    const { SignJWT } = await import('jose');
+    const secretBytes = new TextEncoder().encode(apiSecret);
+    const userId = String(user?.uid || user?.id || `user-${Date.now()}`);
+    const userName = String(user?.name || user?.email || (role === 'teacher' ? 'Giáo viên' : 'Học sinh'));
+    const isTeacher = role === 'teacher';
+
+    const jwt = await new SignJWT({
+      sub: userId,
+      name: userName,
+      metadata: JSON.stringify({ role, userId }),
+      video: {
+        room: String(sessionId),
+        roomJoin: true,
+        canPublish: isTeacher,
+        canSubscribe: true,
+        canPublishData: true
+      }
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuer(apiKey)
+      .setExpirationTime('2h')
+      .setNotBefore(Math.floor(Date.now() / 1000) - 10)
+      .sign(secretBytes);
+
+    console.info('[LiveKit] Sinh token thành công từ client-side generator');
+    return {
+      success: true,
+      token: jwt,
+      serverUrl,
+      isConfigured: true
+    };
+  } catch (err) {
+    console.warn('[LiveKit] Client token generator notice:', err.message);
+    return null;
+  }
+}
+
+/**
+ * Fetch LiveKit access token from backend API endpoint, with client-side fallback
  */
 export async function fetchLiveKitToken({ sessionId, user, role = 'student' }) {
+  const serverUrl = getEnv('VITE_LIVEKIT_URL') || getEnv('LIVEKIT_URL') || '';
+  const isEnvConfigured = Boolean(serverUrl);
+
+  // 1. Try serverless API endpoint
   try {
     const userId = user?.uid || user?.id || `user-${Date.now()}`;
     const userName = user?.name || user?.email || (role === 'teacher' ? 'Giáo viên' : 'Học sinh');
@@ -38,27 +106,31 @@ export async function fetchLiveKitToken({ sessionId, user, role = 'student' }) {
       })
     });
 
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      return {
-        success: false,
-        error: errData.error || `HTTP ${response.status}: Không thể lấy LiveKit token.`
-      };
+    if (response.ok) {
+      const data = await response.json();
+      if (data.token) {
+        return {
+          success: true,
+          token: data.token,
+          serverUrl: data.serverUrl || serverUrl,
+          isConfigured: Boolean(data.isConfigured || isEnvConfigured)
+        };
+      }
     }
-
-    const data = await response.json();
-    return {
-      success: true,
-      token: data.token,
-      serverUrl: data.serverUrl || import.meta.env.VITE_LIVEKIT_URL || '',
-      isConfigured: Boolean(data.isConfigured || import.meta.env.VITE_LIVEKIT_URL)
-    };
   } catch (err) {
-    return {
-      success: false,
-      error: 'Không thể kết nối đến máy chủ cấp token: ' + err.message
-    };
+    console.warn('[LiveKit] Backend token endpoint unavailable, trying local resolution:', err.message);
   }
+
+  // 2. Fallback to client-side token generator if API is offline or returns error
+  const localToken = await generateLocalLiveKitToken({ sessionId, user, role });
+  if (localToken) {
+    return localToken;
+  }
+
+  return {
+    success: false,
+    error: 'Không thể kết nối LiveKit (Chưa cấu hình URL hoặc Token).'
+  };
 }
 
 /**
@@ -79,11 +151,17 @@ export class LiveKitClassroomManager {
     this.teacherScreenTrack = null;
     this.teacherParticipant = null;
 
+    // Local Tracks
+    this.localVideoTrack = null;
+    this.localAudioTrack = null;
+    this.localScreenTrack = null;
+
     // Callbacks
     this.onTeacherStreamChange = null;
     this.onConnectionChange = null;
     this.onError = null;
     this.onRemoteParticipantsChange = null;
+    this.onLocalStreamChange = null;
   }
 
   /**
@@ -105,7 +183,7 @@ export class LiveKitClassroomManager {
     this.isConfigured = isConfigured;
 
     if (!serverUrl || !isConfigured) {
-      console.info('[LiveKit] VITE_LIVEKIT_URL chưa cấu hình. Hệ thống sẽ chạy chế độ mô phỏng WebRTC cục bộ.');
+      console.info('[LiveKit] VITE_LIVEKIT_URL chưa cấu hình. Hệ thống sẽ chạy chế độ mô phỏng WebRTC.');
       return {
         success: true,
         isConfigured: false,
@@ -130,6 +208,7 @@ export class LiveKitClassroomManager {
       // 4. Connect to LiveKit server
       await room.connect(serverUrl, token);
       this.isConnected = true;
+      console.info('[LiveKit] Đã kết nối thành công tới phòng:', sessionId, 'State:', room.state);
 
       if (this.onConnectionChange) {
         this.onConnectionChange({ isConnected: true, state: room.state });
@@ -177,8 +256,27 @@ export class LiveKitClassroomManager {
     // Disconnected
     room.on(RoomEvent.Disconnected, () => {
       this.isConnected = false;
+      console.info('[LiveKit] Phòng đã ngắt kết nối.');
       if (this.onConnectionChange) {
         this.onConnectionChange({ isConnected: false, state: 'disconnected' });
+      }
+    });
+
+    // Local track published
+    room.on(RoomEvent.LocalTrackPublished, (publication) => {
+      if (publication.track?.kind === Track.Kind.Video && publication.source !== Track.Source.ScreenShare) {
+        this.localVideoTrack = publication.track;
+      } else if (publication.source === Track.Source.ScreenShare) {
+        this.localScreenTrack = publication.track;
+      } else if (publication.track?.kind === Track.Kind.Audio) {
+        this.localAudioTrack = publication.track;
+      }
+      if (this.onLocalStreamChange) {
+        this.onLocalStreamChange({
+          videoTrack: this.localVideoTrack,
+          audioTrack: this.localAudioTrack,
+          screenTrack: this.localScreenTrack
+        });
       }
     });
   }
@@ -190,11 +288,12 @@ export class LiveKitClassroomManager {
       this.onRemoteParticipantsChange(participants);
     }
 
-    // Identify teacher participant
+    // In a 1-teacher model, any remote publisher or participant tagged teacher is the presenter
     for (const p of participants) {
       let meta = {};
       try { meta = JSON.parse(p.metadata || '{}'); } catch {}
-      if (meta.role === 'teacher') {
+      const isTeacher = meta.role === 'teacher' || this.role === 'student' || p.identity.includes('teacher');
+      if (isTeacher) {
         this.teacherParticipant = p;
         p.trackPublications.forEach(pub => {
           if (pub.track && pub.isSubscribed) {
@@ -208,7 +307,7 @@ export class LiveKitClassroomManager {
   _handleTrackSubscribed(track, publication, participant) {
     let meta = {};
     try { meta = JSON.parse(participant.metadata || '{}'); } catch {}
-    const isTeacher = meta.role === 'teacher';
+    const isTeacher = meta.role === 'teacher' || this.role === 'student' || participant.identity.includes('teacher');
 
     if (isTeacher) {
       this.teacherParticipant = participant;
@@ -218,10 +317,15 @@ export class LiveKitClassroomManager {
         this.teacherVideoTrack = track;
       } else if (track.kind === Track.Kind.Audio) {
         this.teacherAudioTrack = track;
-        // Auto-play audio track
-        const el = track.attach();
-        el.style.display = 'none';
-        document.body.appendChild(el);
+        // Auto-play audio safely
+        try {
+          const el = track.attach();
+          el.style.display = 'none';
+          document.body.appendChild(el);
+          el.play?.().catch(() => {
+            // Browser autoplay restrictions may wait for user interaction
+          });
+        } catch {}
       }
       this._notifyTeacherStreamChange();
     }
@@ -261,7 +365,7 @@ export class LiveKitClassroomManager {
       await this.room.localParticipant.setCameraEnabled(enabled);
       return enabled;
     } catch (err) {
-      console.error('[LiveKit] Không thể đổi trạng thái Camera:', err);
+      console.warn('[LiveKit] Không thể đổi trạng thái Camera:', err.message);
       return false;
     }
   }
@@ -275,7 +379,7 @@ export class LiveKitClassroomManager {
       await this.room.localParticipant.setMicrophoneEnabled(enabled);
       return enabled;
     } catch (err) {
-      console.error('[LiveKit] Không thể đổi trạng thái Micro:', err);
+      console.warn('[LiveKit] Không thể đổi trạng thái Micro:', err.message);
       return false;
     }
   }
@@ -289,7 +393,7 @@ export class LiveKitClassroomManager {
       await this.room.localParticipant.setScreenShareEnabled(enabled);
       return enabled;
     } catch (err) {
-      console.error('[LiveKit] Không thể đổi trạng thái Screen Share:', err);
+      console.warn('[LiveKit] Không thể đổi trạng thái Screen Share:', err.message);
       return false;
     }
   }
@@ -333,7 +437,7 @@ export class LiveKitClassroomManager {
         }
         await this.room.disconnect();
       } catch (err) {
-        console.warn('[LiveKit] Lỗi khi disconnect room:', err);
+        console.warn('[LiveKit] Lỗi khi disconnect room:', err.message);
       }
       this.room = null;
     }
@@ -342,5 +446,8 @@ export class LiveKitClassroomManager {
     this.teacherAudioTrack = null;
     this.teacherScreenTrack = null;
     this.teacherParticipant = null;
+    this.localVideoTrack = null;
+    this.localAudioTrack = null;
+    this.localScreenTrack = null;
   }
 }

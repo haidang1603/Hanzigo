@@ -114,6 +114,11 @@ export default function LiveClassroomPage({
     audioTrack: null,
     screenTrack: null
   });
+  const [livekitLocalTracks, setLivekitLocalTracks] = useState({
+    videoTrack: null,
+    audioTrack: null,
+    screenTrack: null
+  });
 
   // Layout & Tabs state (for mobile / responsive)
   const [activeSideTab, setActiveSideTab] = useState('chat'); // 'chat' | 'participants' | 'hanziBoard'
@@ -221,6 +226,10 @@ export default function LiveClassroomPage({
       setTeacherRemoteStream({ ...streamData });
     };
 
+    lkManager.onLocalStreamChange = (localStreamData) => {
+      setLivekitLocalTracks({ ...localStreamData });
+    };
+
     lkManager.onConnectionChange = ({ isConnected }) => {
       setLivekitStatus(prev => ({ ...prev, isConnected }));
     };
@@ -230,22 +239,25 @@ export default function LiveClassroomPage({
       user,
       role: check.role
     }).then(res => {
+      const isLiveKitConnected = Boolean(res?.room?.state === 'connected');
       setLivekitStatus({
-        isConnected: Boolean(res?.room?.state === 'connected'),
+        isConnected: isLiveKitConnected,
         isConfigured: Boolean(res?.isConfigured)
       });
-      if (check.role === 'teacher' && res?.isConfigured) {
-        lkManager.setCameraEnabled(true);
-        lkManager.setMicrophoneEnabled(true);
+      if (check.role === 'teacher') {
+        if (isLiveKitConnected) {
+          lkManager.setCameraEnabled(true);
+          lkManager.setMicrophoneEnabled(true);
+        } else {
+          mediaManagerRef.current?.startMedia({ video: true, audio: true });
+        }
       }
     }).catch(err => {
       console.warn('[LiveKit] Init error:', err);
+      if (check.role === 'teacher') {
+        mediaManagerRef.current?.startMedia({ video: true, audio: true });
+      }
     });
-
-    // If teacher, automatically request camera & mic by default for presenter role
-    if (check.role === 'teacher') {
-      mediaManagerRef.current?.startMedia({ video: true, audio: true });
-    }
   }, [sessionId, currentUserId]);
 
   useEffect(() => {
@@ -288,6 +300,16 @@ export default function LiveClassroomPage({
       }
     }
   }, [mediaState.localStream, myRole]);
+
+  // Attach teacher local preview video via LiveKit
+  useEffect(() => {
+    if (myRole === 'teacher' && teacherVideoRef.current && livekitLocalTracks.videoTrack) {
+      livekitManagerRef.current?.attachTrack(livekitLocalTracks.videoTrack, teacherVideoRef.current);
+      return () => {
+        livekitManagerRef.current?.detachTrack(livekitLocalTracks.videoTrack, teacherVideoRef.current);
+      };
+    }
+  }, [myRole, livekitLocalTracks.videoTrack]);
 
   // Attach student view of remote teacher video via LiveKit
   useEffect(() => {
@@ -529,12 +551,19 @@ export default function LiveClassroomPage({
       return;
     }
 
-    if (!mediaState.localStream) {
-      await mediaManagerRef.current?.startMedia({ video: mediaState.isCameraOn, audio: true });
+    let nextMic = false;
+    if (livekitStatus.isConnected) {
+      const willEnable = !(mediaState.isMicOn || Boolean(livekitLocalTracks.audioTrack));
+      await livekitManagerRef.current?.setMicrophoneEnabled(willEnable);
+      nextMic = willEnable;
+      setMediaState(prev => ({ ...prev, isMicOn: willEnable }));
+    } else {
+      if (!mediaState.localStream) {
+        await mediaManagerRef.current?.startMedia({ video: mediaState.isCameraOn, audio: true });
+      }
+      nextMic = mediaManagerRef.current?.toggleMicrophone();
     }
 
-    const nextMic = mediaManagerRef.current?.toggleMicrophone();
-    livekitManagerRef.current?.setMicrophoneEnabled(Boolean(nextMic));
     if (user) {
       updateMediaStatus(sessionId, user.uid || user.id, { micEnabled: nextMic });
     }
@@ -542,12 +571,20 @@ export default function LiveClassroomPage({
 
   const handleToggleCamera = async () => {
     playClickSound();
-    if (!mediaState.localStream) {
-      await mediaManagerRef.current?.startMedia({ video: true, audio: mediaState.isMicOn });
+    let nextCam = false;
+
+    if (livekitStatus.isConnected) {
+      const willEnable = !(mediaState.isCameraOn || Boolean(livekitLocalTracks.videoTrack));
+      await livekitManagerRef.current?.setCameraEnabled(willEnable);
+      nextCam = willEnable;
+      setMediaState(prev => ({ ...prev, isCameraOn: willEnable }));
+    } else {
+      if (!mediaState.localStream) {
+        await mediaManagerRef.current?.startMedia({ video: true, audio: mediaState.isMicOn });
+      }
+      nextCam = mediaManagerRef.current?.toggleCamera();
     }
 
-    const nextCam = mediaManagerRef.current?.toggleCamera();
-    livekitManagerRef.current?.setCameraEnabled(Boolean(nextCam));
     if (user) {
       updateMediaStatus(sessionId, user.uid || user.id, { cameraEnabled: nextCam });
     }
@@ -557,15 +594,18 @@ export default function LiveClassroomPage({
     playClickSound();
     if (myRole !== 'teacher') return;
 
-    if (mediaState.isScreenSharing) {
-      mediaManagerRef.current?.stopScreenShare();
-      livekitManagerRef.current?.setScreenShareEnabled(false);
+    if (livekitStatus.isConnected) {
+      const willShare = !mediaState.isScreenSharing;
+      await livekitManagerRef.current?.setScreenShareEnabled(willShare);
+      setMediaState(prev => ({ ...prev, isScreenSharing: willShare }));
     } else {
-      const res = await mediaManagerRef.current?.startScreenShare();
-      if (!res.success) {
-        showToast(`⚠️ ${res.error}`);
+      if (mediaState.isScreenSharing) {
+        mediaManagerRef.current?.stopScreenShare();
       } else {
-        livekitManagerRef.current?.setScreenShareEnabled(true);
+        const res = await mediaManagerRef.current?.startScreenShare();
+        if (!res.success) {
+          showToast(`⚠️ ${res.error}`);
+        }
       }
     }
   };
@@ -1040,7 +1080,7 @@ export default function LiveClassroomPage({
                     </div>
                   ) : (
                     <>
-                      {mediaState.isCameraOn ? (
+                      {(mediaState.isCameraOn || Boolean(livekitLocalTracks.videoTrack)) ? (
                         <video
                           ref={teacherVideoRef}
                           autoPlay
