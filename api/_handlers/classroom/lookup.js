@@ -25,7 +25,7 @@ export default async function lookupHandler(req, res) {
         .select('*')
         .or(`class_code.eq.${cleanCode},class_code.eq.${codeWithPrefix},class_code.eq.${codeWithoutPrefix}`)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
 
       if (!error && data) {
         return res.status(200).json({ success: true, classroom: data });

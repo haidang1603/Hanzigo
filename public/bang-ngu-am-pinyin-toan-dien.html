@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bảng Ngữ Âm Pinyin Toàn Diện & Quy Tắc Biến Điệu - HanziGo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Serif SC", sans-serif;
+      background: #FFF9F2;
+      color: #1e293b;
+      padding: 24px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: white;
+      padding: 32px;
+      border-radius: 24px;
+      border: 1px solid #f1e5d8;
+      box-shadow: 0 4px 24px rgba(232, 93, 63, 0.06);
+    }
+    header {
+      background: linear-gradient(135deg, #E85D3F, #CB4529);
+      color: white;
+      padding: 28px 24px;
+      border-radius: 18px;
+      margin-bottom: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .header-text h1 { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+    .header-text p { font-size: 14px; opacity: 0.95; }
+    .toolbar-btns { display: flex; gap: 10px; }
+    .btn {
+      background: white;
+      color: #E85D3F;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      transition: all 0.2s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.12); }
+    
+    .section-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #E85D3F;
+      margin: 32px 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px solid #FEE2E2;
+      padding-bottom: 8px;
+    }
+    .tip-box {
+      background: #FEF3C7;
+      border-left: 4px solid #D97706;
+      padding: 14px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #92400E;
+      margin-bottom: 20px;
+    }
+    .grid-pinyin {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .pinyin-card {
+      background: #FAFAFA;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+      user-select: none;
+      position: relative;
+    }
+    .pinyin-card:hover {
+      background: #FFF5F2;
+      border-color: #E85D3F;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(232, 93, 63, 0.12);
+    }
+    .pinyin-card:active { transform: scale(0.97); }
+    .pinyin-card .char {
+      font-size: 22px;
+      font-weight: 900;
+      color: #E85D3F;
+      margin-bottom: 4px;
+    }
+    .pinyin-card .desc {
+      font-size: 11px;
+      color: #64748B;
+      line-height: 1.3;
+    }
+    .pinyin-card .ipa {
+      font-size: 11px;
+      font-weight: 600;
+      color: #0284C7;
+      margin-top: 2px;
+    }
+    .sound-badge {
+      font-size: 10px;
+      background: #E0F2FE;
+      color: #0369A1;
+      border-radius: 6px;
+      padding: 2px 6px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    /* Tone Scale Table */
+    .tone-table, .rule-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 28px;
+    }
+    .tone-table th, .tone-table td, .rule-table th, .rule-table td {
+      border: 1px solid #F1E5D8;
+      padding: 12px 16px;
+      font-size: 14px;
+      text-align: left;
+    }
+    .tone-table th, .rule-table th {
+      background: #FFF0EB;
+      color: #E85D3F;
+      font-weight: 800;
+    }
+    .tone-preview {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 900;
+      font-size: 18px;
+      color: #E85D3F;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #FFF5F2;
+    }
+    .tone-preview:hover { background: #FEE2E2; }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .container { border: none; box-shadow: none; padding: 0; }
+      .toolbar-btns { display: none; }
+      .pinyin-card { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-text">
+        <h1>🎵 Cẩm Nang Ngữ Âm Pinyin Toàn Diện & Quy Tắc Biến Điệu</h1>
+        <p>Bảng tra chuẩn 21 Thanh mẫu, 36 Vận mẫu, 4 Thanh điệu và 5 quy tắc biến điệu vàng (Nhấp chuột để nghe phát âm giọng chuẩn)</p>
+      </div>
+      <div class="toolbar-btns">
+        <button class="btn" onclick="window.print()">🖨️ In Khổ A4</button>
+      </div>
+    </header>
+
+    <div class="tip-box">
+      <strong>💡 Mẹo học ngữ âm HanziGo:</strong> Nhấp vào bất kỳ ô thanh mẫu, vận mẫu hoặc thanh điệu nào bên dưới để nghe phát âm chuẩn bản ngữ qua công nghệ tổng hợp âm thanh giọng chuẩn Bắc Kinh!
+    </div>
+
+    <!-- PHẦN 1: 21 THANH MẪU -->
+    <h2 class="section-title">1. Bảng 21 Thanh Mẫu (Phụ âm đầu) & 2 Thanh Mẫu Phụ</h2>
+    <div class="grid-pinyin" id="initialsGrid">
+      <!-- Generated by JS for audio handling -->
+    </div>
+
+    <!-- PHẦN 2: 36 VẬN MẪU -->
+    <h2 class="section-title">2. Bảng 36 Vận Mẫu (Nguyên âm & Vần)</h2>
+    <div class="grid-pinyin" id="finalsGrid"></div>
+
+    <!-- PHẦN 3: 4 THANH ĐIỆU -->
+    <h2 class="section-title">3. Bảng 4 Thanh Điệu Chuẩn (Ngũ Độ Chế 1-5)</h2>
+    <table class="tone-table">
+      <thead>
+        <tr>
+          <th>Thanh điệu</th>
+          <th>Tên gọi</th>
+          <th>Cao độ (Ngũ độ chế)</th>
+          <th>Ví dụ mẫu (Click để nghe)</th>
+          <th>Mô tả cách phát âm & Mẹo cho người Việt</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Thanh 1 (阴平)</strong></td>
+          <td>Thanh không / Ngang cao</td>
+          <td><strong>5 - 5</strong> (Cao, phẳng)</td>
+          <td><span class="tone-preview" onclick="speak('mā')">mā (妈 - Mẹ) 🔊</span></td>
+          <td>Đọc cao, đều và kéo dài, tương tự như nốt "Sol" ngân dài, cao hơn dấu ngang tiếng Việt.</td>
+        </tr>
+        <tr>
+          <td><strong>Thanh 2 (阳平)</strong></td>
+          <td>Thanh sắc / Lên cao</td>
+          <td><strong>3 - 5</strong> (Từ giữa lên cao)</td>
+          <td><span class="tone-preview" onclick="speak('má')">má (麻 - Gai) 🔊</span></td>
+          <td>Giống dấu sắc tiếng Việt nhưng xuất phát từ âm vực trung bình rồi vút lên cao dứt khoát.</td>
+        </tr>
+        <tr>
+          <td><strong>Thanh 3 (上声)</strong></td>
+          <td>Thanh hỏi / Xuống - Lên</td>
+          <td><strong>2 - 1 - 4</strong> (Trầm xuống rồi lên)</td>
+          <td><span class="tone-preview" onclick="speak('mǎ')">mǎ (马 - Ngựa) 🔊</span></td>
+          <td>Hạ giọng xuống thật trầm rồi hơi đưa nhẹ lên. Khi đọc nhanh thường đọc nửa thanh 3 (2-1).</td>
+        </tr>
+        <tr>
+          <td><strong>Thanh 4 (去声)</strong></td>
+          <td>Thanh huyền-nặng / Rơi dốc</td>
+          <td><strong>5 - 1</strong> (Từ đỉnh rơi xuống đáy)</td>
+          <td><span class="tone-preview" onclick="speak('mà')">mà (骂 - Mắng) 🔊</span></td>
+          <td>Dứt khoát, mạnh mẽ từ đỉnh cao độ rơi thẳng xuống đáy, phát âm dứt khoát như chặt chém.</td>
+        </tr>
+        <tr>
+          <td><strong>Thanh nhẹ (轻声)</strong></td>
+          <td>Khinh thanh</td>
+          <td>Ngắn, nhẹ</td>
+          <td><span class="tone-preview" onclick="speak('māma')">māma (妈妈) 🔊</span></td>
+          <td>Đọc cực kỳ ngắn, nhẹ nhàng, buông lỏng hơi (ví dụ: bābɑ, māma, de, le, ma).</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- PHẦN 4: 5 QUY TẮC BIẾN ĐIỆU VÀNG -->
+    <h2 class="section-title">4. Năm Quy Tắc Biến Điệu Cốt Lõi Người Học Bắt Buộc Phải Nhớ</h2>
+    <table class="rule-table">
+      <thead>
+        <tr>
+          <th>Tên quy tắc</th>
+          <th>Quy luật biến đổi</th>
+          <th>Ví dụ thực tế</th>
+          <th>Giải thích chi tiết</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1. Biến điệu hai thanh 3</strong></td>
+          <td><strong>3 + 3 ➔ 2 + 3</strong></td>
+          <td><span class="tone-preview" onclick="speak('nǐ hǎo')">nǐ hǎo ➔ ní hǎo (你好) 🔊</span><br><span class="tone-preview" onclick="speak('kě yǐ')">kě yǐ ➔ ké yǐ (可以) 🔊</span></td>
+          <td>Khi hai âm tiết mang thanh 3 đi liền nhau, từ đầu tiên biến đổi thành thanh 2 (viết vẫn giữ nguyên dấu thanh 3).</td>
+        </tr>
+        <tr>
+          <td><strong>2. Biến điệu của "不" (bù)</strong></td>
+          <td><strong>bù + thanh 4 ➔ bú + thanh 4</strong></td>
+          <td><span class="tone-preview" onclick="speak('bú shì')">bù shì ➔ bú shì (不是) 🔊</span><br><span class="tone-preview" onclick="speak('bú duì')">bù duì ➔ bú duì (不对) 🔊</span></td>
+          <td>Chữ "不" vốn mang thanh 4 (bù). Nhưng khi đứng trước một từ mang thanh 4 khác, nó bắt buộc biến thành thanh 2 (bú). Đứng trước thanh 1, 2, 3 vẫn đọc là bù (bù hǎo, bù lái).</td>
+        </tr>
+        <tr>
+          <td><strong>3. Biến điệu của "一" (yī)</strong></td>
+          <td><strong>yī + thanh 4 ➔ yí + thanh 4</strong><br><strong>yī + thanh 1/2/3 ➔ yì + thanh 1/2/3</strong></td>
+          <td><span class="tone-preview" onclick="speak('yí yàng')">yī yàng ➔ yí yàng (一样) 🔊</span><br><span class="tone-preview" onclick="speak('yì qǐ')">yī qǐ ➔ yì qǐ (一起) 🔊</span></td>
+          <td>Đọc đơn lẻ là "yī". Đứng trước thanh 4 biến thành thanh 2 (yí). Đứng trước thanh 1, 2, 3 biến thành thanh 4 (yì tiān, yì nián).</td>
+        </tr>
+        <tr>
+          <td><strong>4. Vị trí đánh dấu thanh điệu</strong></td>
+          <td><strong>a > o > e > i, u > ü</strong></td>
+          <td><strong>hǎo</strong> (trên a), <strong>xiè</strong> (trên e), <strong>guì</strong> (trên i vì i đi sau u)</td>
+          <td>Ưu tiên đánh dấu theo thứ tự: a, o, e. Nếu xuất hiện cả "i" và "u" thì đánh dấu vào nguyên âm đứng sau ("iu" đánh trên u, "ui" đánh trên i).</td>
+        </tr>
+        <tr>
+          <td><strong>5. Quy tắc lược bỏ dấu hai chấm (ü)</strong></td>
+          <td><strong>j, q, x, y + ü ➔ ju, qu, xu, yu</strong></td>
+          <td><span class="tone-preview" onclick="speak('jù')">jù (句), qù (去), xué (学), yuè (月) 🔊</span></td>
+          <td>Khi "ü" đi cùng các âm j, q, x, y thì bỏ hai dấu chấm trên đầu nhưng phát âm vẫn giữ nguyên âm tròn môi "ü". Đi với n, l vẫn giữ nguyên: nǚ, lǜ.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const INITIALS = [
+      { char: 'b', desc: 'Âm môi-môi (bật nhẹ)', ipa: '[p]', word: 'bā (八)' },
+      { char: 'p', desc: 'Âm môi (bật hơi mạnh)', ipa: "[pʰ]", word: 'pō (坡)' },
+      { char: 'm', desc: 'Âm mũi môi (giống m Việt)', ipa: '[m]', word: 'mā (妈)' },
+      { char: 'f', desc: 'Âm răng-môi (giống ph Việt)', ipa: '[f]', word: 'fēi (飞)' },
+      { char: 'd', desc: 'Âm đầu lưỡi (như t Việt)', ipa: '[t]', word: 'dà (大)' },
+      { char: 't', desc: 'Âm đầu lưỡi (bật hơi th)', ipa: "[tʰ]", word: 'tā (他)' },
+      { char: 'n', desc: 'Âm mũi lưỡi (giống n Việt)', ipa: '[n]', word: 'nǐ (你)' },
+      { char: 'l', desc: 'Âm biên lưỡi (giống l Việt)', ipa: '[l]', word: 'lù (路)' },
+      { char: 'g', desc: 'Âm cuống lưỡi (như c/k Việt)', ipa: '[k]', word: 'gē (哥)' },
+      { char: 'k', desc: 'Âm cuống lưỡi (bật hơi kh)', ipa: "[kʰ]", word: 'kǒu (口)' },
+      { char: 'h', desc: 'Âm cuống lưỡi (nhẹ hơn h Việt)', ipa: '[x]', word: 'hǎo (好)' },
+      { char: 'j', desc: 'Âm mặt lưỡi (như ch nhẹ)', ipa: '[tɕ]', word: 'jiàn (见)' },
+      { char: 'q', desc: 'Âm mặt lưỡi (bật hơi ch)', ipa: "[tɕʰ]", word: 'qī (七)' },
+      { char: 'x', desc: 'Âm mặt lưỡi (như x nhẹ)', ipa: '[ɕ]', word: 'xiè (谢)' },
+      { char: 'zh', desc: 'Uốn lưỡi không bật hơi', ipa: '[ʈʂ]', word: 'zhōng (中)' },
+      { char: 'ch', desc: 'Uốn lưỡi bật hơi mạnh', ipa: "[ʈʂʰ]", word: 'chī (吃)' },
+      { char: 'sh', desc: 'Uốn lưỡi xát (như s miền nam)', ipa: '[ʂ]', word: 'shū (书)' },
+      { char: 'r', desc: 'Uốn lưỡi rung nhẹ (như r)', ipa: '[ʐ]', word: 'rén (人)' },
+      { char: 'z', desc: 'Đầu lưỡi thẳng (như tr)', ipa: '[ts]', word: 'zài (在)' },
+      { char: 'c', desc: 'Đầu lưỡi thẳng bật hơi', ipa: "[tsʰ]", word: 'cài (菜)' },
+      { char: 's', desc: 'Đầu lưỡi thẳng (xát s)', ipa: '[s]', word: 'sān (三)' },
+      { char: 'y', desc: 'Bán nguyên âm (như d/gi)', ipa: '[j]', word: 'yī (一)' },
+      { char: 'w', desc: 'Bán nguyên âm (như u/qu)', ipa: '[w]', word: 'wǒ (我)' }
+    ];
+
+    const FINALS = [
+      // 1. 6 Vận mẫu đơn (单韵母)
+      { char: 'a', group: 'Đơn (6)', desc: 'Nguyên âm đơn a rộng', ipa: '[a]', word: 'bā (八)' },
+      { char: 'o', group: 'Đơn (6)', desc: 'Nguyên âm đơn ô tròn môi', ipa: '[o]', word: 'bō (波)' },
+      { char: 'e', group: 'Đơn (6)', desc: 'Nguyên âm đơn ưa/ơ', ipa: '[ɤ]', word: 'hē (喝)' },
+      { char: 'i', group: 'Đơn (6)', desc: 'Nguyên âm đơn i bẹt môi', ipa: '[i]', word: 'yī (一)' },
+      { char: 'u', group: 'Đơn (6)', desc: 'Nguyên âm đơn u tròn môi', ipa: '[u]', word: 'wǔ (五)' },
+      { char: 'ü', group: 'Đơn (6)', desc: 'Nguyên âm đơn uy tròn môi', ipa: '[y]', word: 'yǚ (雨)' },
+
+      // 2. 13 Vận mẫu kép (复韵母)
+      { char: 'ai', group: 'Kép (13)', desc: 'Vận mẫu kép ai', ipa: '[aɪ]', word: 'bái (白)' },
+      { char: 'ei', group: 'Kép (13)', desc: 'Vận mẫu kép ơi/ê', ipa: '[eɪ]', word: 'fēi (飞)' },
+      { char: 'ao', group: 'Kép (13)', desc: 'Vận mẫu kép ao', ipa: '[aʊ]', word: 'hǎo (好)' },
+      { char: 'ou', group: 'Kép (13)', desc: 'Vận mẫu kép âu/âu', ipa: '[oʊ]', word: 'kǒu (口)' },
+      { char: 'ia', group: 'Kép (13)', desc: 'Vận mẫu kép ia/ya', ipa: '[ia]', word: 'jiā (家)' },
+      { char: 'ie', group: 'Kép (13)', desc: 'Vận mẫu kép iê/yê', ipa: '[iɛ]', word: 'jiě (姐)' },
+      { char: 'iao', group: 'Kép (13)', desc: 'Vận mẫu kép ieo/yao', ipa: '[iaʊ]', word: 'xiǎo (小)' },
+      { char: 'iu (iou)', group: 'Kép (13)', desc: 'Vận mẫu kép iêu/you', ipa: '[ioʊ]', word: 'liù (六)' },
+      { char: 'ua', group: 'Kép (13)', desc: 'Vận mẫu kép oa/wa', ipa: '[ua]', word: 'huā (花)' },
+      { char: 'uo', group: 'Kép (13)', desc: 'Vận mẫu kép ua/uô/wo', ipa: '[uo]', word: 'duō (多)' },
+      { char: 'uai', group: 'Kép (13)', desc: 'Vận mẫu kép oai/wai', ipa: '[uaɪ]', word: 'kuài (快)' },
+      { char: 'ui (uei)', group: 'Kép (13)', desc: 'Vận mẫu kép uôi/wei', ipa: '[ueɪ]', word: 'duì (对)' },
+      { char: 'üe', group: 'Kép (13)', desc: 'Vận mẫu kép uy-ê/yue', ipa: '[yɛ]', word: 'yuè (月)' },
+
+      // 3. 16 Vận mẫu mũi (鼻韵母)
+      // 8 Mũi trước (前鼻音)
+      { char: 'an', group: 'Mũi trước (8)', desc: 'Vận mẫu mũi trước an', ipa: '[an]', word: 'sān (三)' },
+      { char: 'en', group: 'Mũi trước (8)', desc: 'Vận mẫu mũi trước ân/ơn', ipa: '[ən]', word: 'mén (门)' },
+      { char: 'in', group: 'Mũi trước (8)', desc: 'Vận mẫu mũi trước in/yin', ipa: '[in]', word: 'xīn (心)' },
+      { char: 'ün', group: 'Mũi trước (8)', desc: 'Vận mẫu mũi trước uyn/yun', ipa: '[yn]', word: 'yún (云)' },
+      { char: 'ian', group: 'Mũi trước (8)', desc: 'Vận mẫu mũi trước iên/yan', ipa: '[iɛn]', word: 'tiān (天)' },
+      { char: 'uan', group: 'Mũi trước (8)', desc: 'Vận mẫu mũi trước oan/wan', ipa: '[uan]', word: 'guān (关)' },
+      { char: 'un (uen)', group: 'Mũi trước (8)', desc: 'Vận mẫu mũi trước uân/wen', ipa: '[uən]', word: 'wén (文)' },
+      { char: 'üan', group: 'Mũi trước (8)', desc: 'Vận mẫu mũi trước oen/yuan', ipa: '[yɛn]', word: 'yuán (元)' },
+
+      // 8 Mũi sau (后鼻音)
+      { char: 'ang', group: 'Mũi sau (8)', desc: 'Vận mẫu mũi sau ang', ipa: '[ɑŋ]', word: 'máng (忙)' },
+      { char: 'eng', group: 'Mũi sau (8)', desc: 'Vận mẫu mũi sau âng', ipa: '[ɤŋ]', word: 'fēng (风)' },
+      { char: 'ing', group: 'Mũi sau (8)', desc: 'Vận mẫu mũi sau ing/ying', ipa: '[iŋ]', word: 'míng (明)' },
+      { char: 'ong', group: 'Mũi sau (8)', desc: 'Vận mẫu mũi sau ung/ong', ipa: '[ʊŋ]', word: 'zhōng (中)' },
+      { char: 'iang', group: 'Mũi sau (8)', desc: 'Vận mẫu mũi sau iang/yang', ipa: '[iɑŋ]', word: 'xiǎng (想)' },
+      { char: 'iong', group: 'Mũi sau (8)', desc: 'Vận mẫu mũi sau iung/yong', ipa: '[iʊŋ]', word: 'xióng (熊)' },
+      { char: 'uang', group: 'Mũi sau (8)', desc: 'Vận mẫu mũi sau oang/wang', ipa: '[uɑŋ]', word: 'guāng (光)' },
+      { char: 'ueng', group: 'Mũi sau (8)', desc: 'Vận mẫu mũi sau uâng/weng', ipa: '[uɤŋ]', word: 'wēng (翁)' },
+
+      // 4. 1 Vận mẫu uốn lưỡi đặc biệt
+      { char: 'er', group: 'Uốn lưỡi (1)', desc: 'Vần uốn lưỡi đặc biệt er', ipa: '[ɑɻ]', word: 'èr (二)' }
+    ];
+
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const cleanText = text.replace(/^[a-z()\/ ]+\s*\(/i, '').replace(/\).*$/, '') || text;
+        const msg = new SpeechSynthesisUtterance(cleanText);
+        msg.lang = 'zh-CN';
+        msg.rate = 0.85;
+        window.speechSynthesis.speak(msg);
+      }
+    }
+
+    const initialsGrid = document.getElementById('initialsGrid');
+    INITIALS.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'pinyin-card';
+      card.onclick = () => speak(item.word);
+      card.innerHTML = `
+        <div class="char">${item.char}</div>
+        <div class="desc">${item.desc}</div>
+        <div class="ipa">${item.ipa}</div>
+        <span class="sound-badge">${item.word} 🔊</span>
+      `;
+      initialsGrid.appendChild(card);
+    });
+
+    const finalsGrid = document.getElementById('finalsGrid');
+    FINALS.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'pinyin-card';
+      card.onclick = () => speak(item.word);
+      card.innerHTML = `
+        <span style="font-size:10px; background:#F1F5F9; color:#64748B; padding:2px 6px; border-radius:6px; display:inline-block; margin-bottom:4px; font-weight:700;">${item.group}</span>
+        <div class="char">${item.char}</div>
+        <div class="desc">${item.desc}</div>
+        <div class="ipa">${item.ipa}</div>
+        <span class="sound-badge">${item.word} 🔊</span>
+      `;
+      finalsGrid.appendChild(card);
+    });
+  </script>
+</body>
+</html>

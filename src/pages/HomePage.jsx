@@ -30,7 +30,6 @@ import AudioButton from '../components/AudioButton';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
 import { ROADMAP_LEVELS } from '../data/chineseData';
 import { getLessonsByChapter } from '../services/learningPathService';
-import { PRACTICE_LEVELS } from '../data/practiceLevelData';
 
 // Mini Quick Reflex Quiz Dataset
 const QUICK_QUIZZES = [
@@ -205,8 +204,6 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
   // Selected Sino-Vietnamese word for live preview
   const [activeSinoWord, setActiveSinoWord] = useState(SINO_VIETNAMESE_WORDS[0]);
 
-  // Selected Practice Level (highlighted)
-  const [activeLevelId, setActiveLevelId] = useState('level-1');
 
   // Get actual completed lessons from localStorage
   const completedLessonCount = useMemo(() => {
@@ -252,10 +249,6 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
     setActiveTab('roadmap');
   };
 
-  const handleGoToPractice = () => {
-    playClickSound();
-    setActiveTab('practice');
-  };
 
   return (
     <div className="space-y-20 pb-20 animate-in fade-in duration-300">
@@ -373,6 +366,18 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-[#45B97C]" />
                   <span>Thuật toán SM-2 chống quên</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setActiveTab('hsk');
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-black text-[#E85D3F] hover:underline cursor-pointer"
+                  >
+                    <span>🏆 Thi thử HSK miễn phí (Không cần tài khoản) &rarr;</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -548,93 +553,6 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
         </div>
       </section>
 
-      {/* 2. PRACTICE HUB SHOWCASE (4 MỨC ĐỘ SƯ PHẠM CHUẨN HSK) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Khung năng lực phân hóa</span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
-            Trung Tâm Luyện Tập 4 Cấp Độ Sư Phạm
-          </h2>
-          <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-2">
-            Hệ thống bài tập phân chia rõ ràng: Nghe hiểu, Ghép câu ngữ pháp và Từ vựng ứng dụng thực chiến.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {PRACTICE_LEVELS.map((tier) => {
-            const isHighlighted = activeLevelId === tier.id;
-            return (
-              <div
-                key={tier.id}
-                onMouseEnter={() => setActiveLevelId(tier.id)}
-                onClick={() => {
-                  playClickSound();
-                  setActiveTab('practice');
-                }}
-                className={`p-5 rounded-3xl bg-white dark:bg-[#1E293B] border transition-all cursor-pointer flex flex-col justify-between group ${
-                  isHighlighted 
-                    ? 'border-2 border-[#E85D3F] shadow-lg shadow-[#E85D3F]/15 -translate-y-1' 
-                    : 'border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:border-[#E85D3F]/50 hover:shadow-md'
-                }`}
-              >
-                <div className="space-y-3">
-                  {/* Badges row */}
-                  <div className="flex items-center justify-between">
-                    <span 
-                      className="px-2.5 py-0.5 rounded-full text-[11px] font-black"
-                      style={{ 
-                        backgroundColor: `${tier.color}20`,
-                        color: tier.color 
-                      }}
-                    >
-                      {tier.code}
-                    </span>
-                    <span className="text-xs font-bold flex items-center gap-1" style={{ color: tier.color }}>
-                      {tier.badge}
-                    </span>
-                  </div>
-
-                  {/* Title & subtitle */}
-                  <div>
-                    <h3 className="text-sm sm:text-base font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors leading-snug">
-                      {tier.name}
-                    </h3>
-                    <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1.5 leading-relaxed line-clamp-2">
-                      {tier.subtitle}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Footer action */}
-                <div className="pt-4 mt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-xs font-semibold">
-                  <span className="text-[#748092] dark:text-[#94A3B8]">
-                    {tier.stats?.pronounceItems || 8} bài phát âm
-                  </span>
-                  <span 
-                    className="font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform"
-                    style={{ color: tier.color }}
-                  >
-                    <span>Luyện ngay</span>
-                    <ArrowRight size={13} />
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Quick Link to Full Practice Hub */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={handleGoToPractice}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-[#E85D3F]/30 text-[#E85D3F] font-bold text-xs hover:bg-[#E85D3F] hover:text-white transition-all cursor-pointer shadow-xs"
-          >
-            <Target size={14} />
-            <span>Mở đầy đủ Trung tâm Luyện tập 4 mức độ</span>
-            <ChevronRight size={14} />
-          </button>
-        </div>
-      </section>
 
       {/* 3. MINI REFLEX GAME (THỬ TÀI PHẢN XẠ HÁN NGỮ 1 PHÚT) */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">

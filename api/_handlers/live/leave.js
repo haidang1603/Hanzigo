@@ -29,7 +29,7 @@ export default async function leaveHandler(req, res) {
         .select('*')
         .eq('session_id', sessionId)
         .eq('user_id', effectiveUserId)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         const joinTime = new Date(existing.joined_at || now);
@@ -40,7 +40,10 @@ export default async function leaveHandler(req, res) {
           .from('session_participants')
           .update({
             left_at: now.toISOString(),
-            total_duration_seconds: totalDuration
+            total_duration_seconds: totalDuration,
+            mic_enabled: false,
+            camera_enabled: false,
+            hand_raised: false
           })
           .eq('session_id', sessionId)
           .eq('user_id', effectiveUserId);

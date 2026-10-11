@@ -14,6 +14,8 @@ const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABA
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 let cachedAdminClient = null;
+export const memoryParticipants = new Map();
+
 
 /**
  * Returns a privileged Supabase client using service role key if available,
@@ -73,7 +75,7 @@ export async function verifyRequestAuth(req) {
     };
   }
 
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
   const adminClient = getSupabaseAdminClient();
 
   // 1. Verify via Supabase Auth API if token is provided
@@ -96,16 +98,23 @@ export async function verifyRequestAuth(req) {
     } catch {}
   }
 
-  // 2. Reject untrusted headers in production
-  if (isProd && !token) {
+  // 2. Reject in production: Zero trust on unverified tokens, spoofed headers, or missing credentials
+  if (isProd) {
+    if (!token) {
+      return {
+        authenticated: false,
+        user: null,
+        error: 'Yêu cầu thiếu Bearer access token hợp lệ từ máy chủ xác thực.'
+      };
+    }
     return {
       authenticated: false,
       user: null,
-      error: 'Yêu cầu thiếu Bearer access token hợp lệ từ máy chủ xác thực.'
+      error: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'
     };
   }
 
-  // 3. Development / Test environment compatibility
+  // 3. Development / Test environment compatibility (offline simulated runs)
   const effectiveUserId = (token && token.startsWith('valid_'))
     ? (userIdHeader || 'test_user')
     : (userIdHeader || (token ? 'auth_user' : null));

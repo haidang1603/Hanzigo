@@ -1074,25 +1074,6 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
               Lối tắt luyện tập nhanh
             </h3>
 
-            {/* Practice Hub by Levels Shortcut */}
-            <button
-              onClick={() => {
-                playClickSound();
-                setActiveTab('practice');
-              }}
-              className="w-full p-3 rounded-2xl bg-gradient-to-r from-[#FDEEEB] to-[#FEF7E9] dark:from-[#2D1E1B] dark:to-[#2D2619] hover:border-[#E85D3F] border border-[#E85D3F]/30 flex items-center justify-between text-left transition-all group shadow-2xs"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#E85D3F] text-white flex items-center justify-center font-bold text-sm shadow-xs">
-                  <Sparkles size={17} />
-                </div>
-                <div>
-                  <p className="text-xs font-black text-[#243447] dark:text-white">Trung tâm Luyện tập 4 mức độ</p>
-                  <p className="text-[10px] text-[#E85D3F] font-bold">Cơ bản ➔ Sơ cấp ➔ Trung cấp ➔ Thử thách</p>
-                </div>
-              </div>
-              <ArrowRight size={14} className="text-[#E85D3F] group-hover:translate-x-1 transition-transform" />
-            </button>
 
             {/* Pronunciation Shortcut */}
             <button

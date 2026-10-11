@@ -18,7 +18,6 @@ const VocabularyPage = lazy(() => import('./pages/VocabularyPage'));
 const PronunciationPage = lazy(() => import('./pages/PronunciationPage'));
 const WritingPage = lazy(() => import('./pages/WritingPage'));
 const ConversationPage = lazy(() => import('./pages/ConversationPage'));
-const PracticePage = lazy(() => import('./pages/PracticePage'));
 const CommunityPage = lazy(() => import('./pages/CommunityPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const MaterialsPage = lazy(() => import('./pages/MaterialsPage'));
@@ -26,13 +25,14 @@ const AdminPage = lazy(() => import('./pages/AdminPage'));
 const TeacherDashboardPage = lazy(() => import('./pages/TeacherDashboardPage'));
 const ClassroomPage = lazy(() => import('./pages/ClassroomPage'));
 const LiveClassroomPage = lazy(() => import('./pages/LiveClassroomPage'));
+const HskPracticePage = lazy(() => import('./pages/HskPracticePage'));
 import TeacherGuard from './components/TeacherGuard';
 
 const VALID_TABS = [
   'home', 'dashboard', 'roadmap', 'lesson', 'vocabulary', 
-  'pronunciation', 'writing', 'conversation', 'practice', 'community', 
+  'pronunciation', 'writing', 'conversation', 'community', 
   'materials', 'admin', 'profile', 'leaderboard',
-  'teacher', 'classroom'
+  'teacher', 'classroom', 'hsk'
 ];
 
 function MainApp() {
@@ -44,7 +44,8 @@ function MainApp() {
     try {
       const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
       const parts = hash.split('/').filter(Boolean);
-      const tab = parts[0] || 'home';
+      const rawTab = parts[0] || 'home';
+      const tab = rawTab === 'practice' ? 'vocabulary' : rawTab;
       const sub = parts[1] || null;
       const param = parts[2] || null;
       const extra = parts[3] || null;
@@ -340,15 +341,6 @@ function MainApp() {
             <ConversationPage user={user} />
           )}
 
-          {activeTab === 'practice' && (
-            <PracticePage 
-              user={user}
-              setActiveTab={setActiveTab} 
-              onSelectWriting={handleSelectWriting}
-              onSelectPronounce={handleSelectPronounce}
-              onSelectLesson={handleSelectLesson}
-            />
-          )}
 
           {(activeTab === 'community' || activeTab === 'leaderboard') && (
             <CommunityPage 
@@ -440,6 +432,36 @@ function MainApp() {
                   window.location.hash = `#classroom/${id}`;
                 } else if (route === 'assignments' && id) {
                   window.location.hash = `#classroom/${id}/assignments`;
+                }
+              }}
+            />
+          )}
+
+          {activeTab === 'hsk' && (
+            <HskPracticePage 
+              user={user}
+              setActiveTab={setActiveTab}
+              subRoute={routeInfo.sub || 'home'}
+              paramId={routeInfo.param}
+              onNavigate={(view, id) => {
+                if (view === 'home' || view === 'levels') {
+                  window.location.hash = '#hsk';
+                } else if (view === 'exams') {
+                  window.location.hash = '#hsk/exams';
+                } else if (view === 'history') {
+                  window.location.hash = '#hsk/history';
+                } else if (view === 'mistakes') {
+                  window.location.hash = '#hsk/mistakes';
+                } else if (view === 'analytics') {
+                  window.location.hash = '#hsk/analytics';
+                } else if (view === 'resources') {
+                  window.location.hash = '#hsk/resources';
+                } else if (view === 'exam' && id) {
+                  window.location.hash = `#hsk/exam/${id}`;
+                } else if (view === 'take' && id) {
+                  window.location.hash = `#hsk/take/${id}`;
+                } else if (view === 'result' && id) {
+                  window.location.hash = `#hsk/result/${id}`;
                 }
               }}
             />

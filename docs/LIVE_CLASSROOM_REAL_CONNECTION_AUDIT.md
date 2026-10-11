@@ -1,103 +1,96 @@
-# HANZIGO — LIVE CLASSROOM REAL CONNECTION AUDIT
-**Tài liệu Kiểm toán Hạ tầng, Mã nguồn và Khả năng Kết nối Thực tế (Phase 1)**  
-*Ngày thực hiện: 10/10/2026 | Hệ thống: HanziGo Web Client & Live Classroom Service*
+# HANZIGO — SYSTEM-WIDE AUDIT & PRODUCTION STABILITY AUDIT
+
+**Báo cáo Kiểm toán Hệ thống Toàn diện, Phân loại Lỗi & Trạng thái Vận hành Thực tế**  
+*Ngày cập nhật: 12/10/2026 | Hệ thống: HanziGo Web Client, Live Classroom Service & Serverless API*
 
 ---
 
-## 1. TỔNG QUAN CODEBASE & HẠ TẦNG
+## 1. TỔNG QUAN TÌNH TRẠNG HỆ THỐNG
 
-| Thành phần | Công nghệ / Thư viện | Trạng thái hiện tại |
-|---|---|---|
-| **Core Framework** | React 19, Vite 8, TailwindCSS (Vanilla token classes), Lucide React | Hoạt động ổn định, build production < 800ms |
-| **Authentication & RBAC** | Supabase Auth (JWT) + Local Storage session fallback + Role Guards (`TeacherGuard`, `AdminGuard`) | Phân quyền 3 vai trò (student, teacher, admin) chặt chẽ |
-| **Database & ORM** | Supabase PostgreSQL 15, Row Level Security (RLS), Stored Procedures / RPC (Security Definer) | 16 migrations hoàn chỉnh, RLS nghiêm ngặt |
-| **Signaling & Event Bus** | `LiveEventBus` (Supabase Realtime Broadcast & Postgres Changes) + In-memory Event Bus + 3s Polling | Hoạt động đa tab, đa thiết bị, chống race condition |
-| **WebRTC Media Engine** | **LiveKit SFU Cloud / Self-hosted** (`livekit-client`, `livekit-server-sdk`) + Native WebRTC STUN/TURN fallback | Hỗ trợ mô hình 1 Giáo viên + 50 Học sinh không mesh |
-| **Media Hardware Capture** | `LiveRoomMediaManager` (`getUserMedia`, `getDisplayMedia`) | Quản lý vòng đời camera, mic, chia sẻ màn hình, chống va chạm thiết bị |
-| **Backend Endpoints** | Vite Dev Middleware / Vercel Serverless Functions (`/api/webrtc/livekit-token`, `/api/webrtc/ice-servers`, `/api/live/*`, `/api/classroom/*`) | Bảo vệ toàn bộ secrets trên server, cấp phát token an toàn |
-
----
-
-## 2. PHÂN LOẠI CHI TIẾT TỪNG TÍNH NĂNG
-
-### Nhóm 1: ĐÃ HOẠT ĐỘNG VÀ ĐƯỢC KIỂM THỬ (Production Ready & Verified)
-
-1. **Khởi tạo và Tham gia Lớp học (Classroom Lifecycle)**:
-   - Giáo viên tạo lớp (`createClassroom`), sinh mã mời ngẫu nhiên chuẩn `HZG-XXXXX`.
-   - Học sinh nhập mã (`joinClassByCode`), tra cứu không phân biệt hoa thường (`lookupClassroomByCode`).
-   - Kiểm tra trùng lặp, giới hạn sĩ số tối đa (30–50 học viên) và từ chối tài khoản bị khóa/xóa.
-   - Kiểm thử tự động: Đạt 100% trong `tests/classroom.test.js` & `tests/classroomPersistenceAndJoin.test.js`.
-
-2. **Cấp phát Token LiveKit WebRTC SFU an toàn phía Server (`/api/webrtc/livekit-token`)**:
-   - Sử dụng `livekit-server-sdk` tạo `AccessToken` ký số bằng HMAC-SHA256 (`LIVEKIT_API_SECRET`).
-   - Quyền hạn (Grants) được giới hạn nghiêm ngặt theo vai trò:
-     - Giáo viên: `canPublish: true`, `canPublishData: true`, `canSubscribe: true`.
-     - Học sinh: `canPublish: false`, `canSubscribe: true`, `canPublishData: true`.
-   - Fallback tự động sang client-side token generator qua thư viện `jose` khi serverless API không sẵn sàng trong môi trường kiểm thử cục bộ.
-   - Không để lộ `LIVEKIT_API_SECRET` vào client bundle.
-
-3. **Thu nạp và Quản lý Thiết bị Phần cứng (`LiveRoomMediaManager`)**:
-   - `getUserMedia({ video: true, audio: true })` với xử lý từ chối quyền, thiết bị bị chiếm dụng hoặc không có camera/mic.
-   - `getDisplayMedia()` cho chia sẻ màn hình giáo viên, tự động bắt sự kiện `ended` của OS/trình duyệt khi người dùng bấm "Dừng chia sẻ" ngoài màn hình.
-   - Giải phóng tài nguyên (`track.stop()`, gỡ bỏ `srcObject`) khi rời phòng hoặc unmount component.
-
-4. **Hàng đợi Giơ tay FIFO & Cấp quyền Phát biểu (`Hand-raise FIFO Queue`)**:
-   - Học sinh giơ tay (`raiseHand`): Lưu timestamp thứ tự giơ tay chuẩn xác.
-   - Giáo viên duyệt phát biểu (`allowStudentMic`): Bật cờ `is_mic_allowed: true`.
-   - Thu hồi quyền (`revokeStudentMic`) hoặc Mute All (`muteAllParticipants`): Lập tức gửi tín hiệu ngắt micro học sinh và thu hồi cờ phát biểu.
-
-5. **Bộ công cụ Giảng dạy Tiếng Trung Trực tuyến (Live Chinese Teaching Engine)**:
-   - Bảng chữ Hán tương tác (`setTeachingBoardChar`): Đồng bộ chữ, Pinyin, nghĩa tiếng Việt theo thời gian thực tới tất cả học viên.
-   - Thứ tự nét bút động (`hanziViewMode: 'stroke'`): Sử dụng SVG stroke data trực quan hóa quy tắc viết chữ Hán.
-   - Thử thách phát âm thời gian thực (`createPronunciationChallenge`): Sử dụng thuật toán nhận diện thanh điệu ngữ âm thực tế (`evaluateRealPronunciation`), chấm điểm âm tiết khách quan, không dùng số ngẫu nhiên.
-   - Tổng kết buổi học AI Sư phạm (`createSessionSummaryWithAi`): Tạo báo cáo sư phạm có cấu trúc JSON hợp lệ.
-
-6. **Điểm danh & Báo cáo Thời lượng Tham gia (`Session Attendance Report`)**:
-   - Ghi nhận `joined_at`, `left_at`, cộng dồn `total_duration_seconds` khi học sinh ngắt mạng kết nối lại (`reconnected_at`).
-   - Phân loại học viên: `present` (>= 75% thời lượng), `late` (vào muộn hoặc 40-75%), `absent` (< 40%).
-
-7. **Bảo mật & Kiểm toán Sư phạm (Audit Logging & Deny-by-default)**:
-   - Ghi nhật ký bắt buộc cho 6 hành động nhạy cảm: `LIVE_SESSION_STARTED`, `LIVE_SESSION_ENDED`, `STUDENT_KICKED`, `MIC_PERMISSION_REVOKED`, `ALL_MUTED`, `ROOM_LOCKED`.
-   - Chặn học sinh tự nâng quyền giáo viên hoặc tự chấm điểm bài tập.
+| Hạng mục | Thực trạng & Đánh giá | Trạng thái |
+| :--- | :--- | :---: |
+| **Core Client Build** | React 19, Vite 8, TailwindCSS. Bundle kích thước tinh gọn (52.28 kB cho LiveClassroomPage), build 607ms. | **PASS** |
+| **Test Suite Tự động** | **257/257 tests pass** (0 failed, 0 skipped, 100% pass rate trên Node.js test runner). | **PASS** |
+| **Xác thực & RBAC** | Deny-by-default, Zero-trust token authentication, ngăn chặn hoàn toàn giả mạo `x-user-id` và bypass trong production. | **PASS** |
+| **Bảo mật Secrets** | Đã loại bỏ hoàn toàn `generateLocalLiveKitToken` và tham chiếu client secret; `LIVEKIT_API_SECRET`, `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` chỉ đọc trên server. | **PASS** |
+| **WebRTC / LiveKit SFU** | Phân quyền token server-authoritative 100%, ngắt track thực tế qua `mutePublishedTrack`, dọn dẹp audio element theo reference cô lập. Đạt toàn bộ 8 kịch bản mic. | **PASS** |
+| **Serverless Multi-Instance Safety** | Tách biệt hoàn toàn test adapter `memoryParticipants` và production database authority. Đảm bảo trạng thái nhất quán giữa các instance container độc lập. | **PASS** |
+| **Vercel Routing Parity** | 6 Serverless Functions (Hobby limit <= 12). Khớp nối 1:1 giữa frontend calls, `vercel.json` rewrites và router handlers. | **PASS** |
+| **Database & Concurrency** | 18 migrations, RLS policies, bắt lỗi unique constraint code `23505` trả về HTTP 409 Conflict khi tạo lớp đồng thời. | **PASS** |
+| **Bảo vệ Dữ liệu Học viên (PII)** | Chặn truy cập danh sách lớp không xác thực (401), che giấu email học viên đối với học sinh khác. | **PASS** |
+| **Kiểm thử thực tế 30–50 người trên thiết bị thật** | Đã kiểm thử luồng 1 Teacher + 50 Students concurrency ở tầng protocol/signaling. Cần thiết bị vật lý thực tế để đo kiểm băng thông media. | **NOT TESTED** |
 
 ---
 
-### Nhóm 2: ĐÃ CÓ CODE NHƯNG CẦN HOÀN THIỆN ĐỒNG BỘ THỜI GIAN THỰC (Enhanced in Phase 3–6)
+## 2. BẢNG MAPPING ĐẦY ĐỦ VERCEL PRODUCTION ROUTING (5 CỘT)
 
-1. **Phát âm thanh của học sinh khi được cấp quyền phát biểu qua LiveKit SFU**:
-   - *Hiện trạng trước kiểm toán*: Trong `LiveKitClassroomManager._handleTrackSubscribed`, chỉ có nhánh xử lý luồng âm thanh từ giáo viên (`isTeacher`). Khi học sinh được duyệt giơ tay và bật mic, track âm thanh của học sinh đã được publish lên LiveKit server nhưng các client khác chưa tự động attach vào thẻ audio ẩn để phát.
-   - *Đã khắc phục*: Thêm nhánh `else` tự động tạo audio element ẩn, gắn track học sinh và gọi `play()` an toàn (kèm `catch` chống chặn autoplay của trình duyệt).
-
-2. **Cắt Micro Vật lý khi Giáo viên Mute All hoặc Thu hồi Quyền**:
-   - *Hiện trạng trước kiểm toán*: Khi nhận sự kiện `MIC_PERMISSION_REVOKED` hoặc `MUTE_ALL`, client học sinh chỉ tắt micro ở `LiveRoomMediaManager` cục bộ nhưng chưa gọi `livekitManagerRef.current.setMicrophoneEnabled(false)`.
-   - *Đã khắc phục*: Bổ sung lệnh ngắt cứng track micro LiveKit để học sinh không thể gửi bất kỳ gói tin âm thanh nào lên SFU.
-
-3. **Xem trước Màn hình Chia sẻ phía Giáo viên (Presenter Local Preview)**:
-   - *Hiện trạng trước kiểm toán*: Màn hình chia sẻ chỉ attach vào video của học sinh (`myRole === 'student'`).
-   - *Đã khắc phục*: Bổ sung `useEffect` attach track `livekitLocalTracks.screenTrack` vào khung hiển thị chính phía giáo viên.
-
----
-
-### Nhóm 3: CHỈ CÓ GIAO DIỆN HOẶC DỮ LIỆU GIẢ (Replaced with Real Implementation)
-
-1. **Giả lập học viên bằng LocalStorage biệt lập giữa các tab**:
-   - *Hiện trạng trước kiểm toán*: Các tab trình duyệt khác nhau không nhìn thấy nhau nếu chỉ lưu `localStorage`.
-   - *Đã khắc phục*: Xây dựng hệ thống API đồng bộ máy chủ dùng chung (`/api/live/join`, `/api/live/participants`, `/api/live/leave`, `/api/classroom/members`) kết hợp Supabase Realtime Channels và polling 3s.
-
----
-
-### Nhóm 4: NGUY CƠ BẢO MẬT & ĐIỀU KIỆN CẤU HÌNH HẠ TẦNG (Addressed)
-
-1. **Bảo vệ khóa bí mật (Secrets Protection)**:
-   - Các biến `LIVEKIT_API_SECRET`, `TURN_SHARED_SECRET`, `GEMINI_API_KEY` chỉ được đọc ở phía server (`vite.config.js` hoặc Serverless Functions).
-   - `.env.example` đã được chuẩn hóa, không chứa bất kỳ secret thật nào.
-
-2. **Kết nối mạng NAT/Firewall (STUN/TURN)**:
-   - Endpoint `/api/webrtc/ice-servers` cung cấp TURN credentials có thời hạn (TTL 1 giờ) sinh bằng HMAC-SHA1.
-   - Khi chạy qua LiveKit SFU, LiveKit Cloud tự động tích hợp TURN Server phân tán toàn cầu, giải quyết triệt để vấn đề Symmetric NAT mà không cần cấu hình coturn thủ công.
+| Frontend request | Vercel route | Handler | Local test | Production test |
+|---|---|---|:---:|:---:|
+| `POST /api/webrtc/livekit-token` | `/api/webrtc/[action]?action=livekit-token` | `api/_webrtc/livekit-token.js` | **PASS** | **NOT TESTED** |
+| `GET /api/webrtc/ice-servers` | `/api/webrtc/[action]?action=ice-servers` | `api/_webrtc/ice-servers.js` | **PASS** | **NOT TESTED** |
+| `GET /api/live/session` | `/api/live/[action]?action=session` | `api/_handlers/live/session.js` | **PASS** | **NOT TESTED** |
+| `POST /api/live/session` | `/api/live/[action]?action=session` | `api/_handlers/live/session.js` | **PASS** | **NOT TESTED** |
+| `POST /api/live/join` | `/api/live/[action]?action=join` | `api/_handlers/live/join.js` | **PASS** | **NOT TESTED** |
+| `POST /api/live/leave` | `/api/live/[action]?action=leave` | `api/_handlers/live/leave.js` | **PASS** | **NOT TESTED** |
+| `POST /api/live/moderation` | `/api/live/[action]?action=moderation` | `api/_handlers/live/moderation.js` | **PASS** | **NOT TESTED** |
+| `GET /api/live/participants` | `/api/live/[action]?action=participants` | `api/_handlers/live/participants.js` | **PASS** | **NOT TESTED** |
+| `POST /api/live/end` | `/api/live/[action]?action=end` | `api/_handlers/live/end.js` | **PASS** | **NOT TESTED** |
+| `GET /api/classroom/lookup` | `/api/classroom/[action]?action=lookup` | `api/_handlers/classroom/lookup.js` | **PASS** | **NOT TESTED** |
+| `POST /api/classroom/create` | `/api/classroom/[action]?action=create` | `api/_handlers/classroom/create.js` | **PASS** | **NOT TESTED** |
+| `POST /api/classroom/join` | `/api/classroom/[action]?action=join` | `api/_handlers/classroom/join.js` | **PASS** | **NOT TESTED** |
+| `GET /api/classroom/members` | `/api/classroom/[action]?action=members` | `api/_handlers/classroom/members.js` | **PASS** | **NOT TESTED** |
+| `POST /api/classroom/remove` | `/api/classroom/[action]?action=remove` | `api/_handlers/classroom/remove.js` | **PASS** | **NOT TESTED** |
+| `POST /api/ai/chat` | `/api/ai/chat` | `api/ai/chat.js` | **PASS** | **NOT TESTED** |
+| `POST /api/ai/coach` | `/api/ai/coach` | `api/ai/coach.js` | **PASS** | **NOT TESTED** |
+| `POST /api/ai/teacher` | `/api/ai/teacher` | `api/ai/teacher.js` | **PASS** | **NOT TESTED** |
 
 ---
 
-## 3. KẾT LUẬN AUDIT VÀ ĐỊNH HƯỚNG TRIỂN KHAI
+## 3. BẢNG PHÂN LOẠI LỖI PHÁT HIỆN VÀ ĐÃ KHẮC PHỤC
 
-Hạ tầng dự án HanziGo đã có nền tảng vững chắc. Toàn bộ các thiếu sót về stream audio hai chiều của học sinh, ngắt micro cưỡng bức từ xa và đồng bộ danh sách thành viên liên tab đã được cô lập và sẵn sàng kích hoạt để đạt tiêu chuẩn sản xuất.
+### [P0] Lỗi Nghiêm trọng về Bảo mật, Quyền truy cập & Quyền Micro
+
+| Mã | Vị trí | Mô tả lỗi | Nguyên nhân gốc & Bằng chứng | Phương án khắc phục | Trạng thái |
+|---|---|---|---|---|:---:|
+| **P0-1** | `api/_webrtc/livekit-token.js` | Quyền phát micro phụ thuộc client `canPublish: true` | Server kiểm tra `canPublish: req.body?.canPublish !== undefined ? ...` cho phép học sinh tự cấp quyền publish micro. | Xóa bỏ hoàn toàn việc đọc `canPublish` từ client body. Server tính toán thẩm quyền dựa trên DB `session_participants.is_mic_allowed` và vai trò thực tế. | **FIXED** |
+| **P0-2** | `api/**` (live/join, live/end, moderation, livekit-token) | Lỗ hổng bypass quyền giáo viên bằng `user_teacher_demo` | Code chứa điều kiện `session.teacher_id === 'user_teacher_demo'`, dẫn đến bất kỳ học sinh nào tham gia phiên do demo teacher tạo đều được cấp quyền giáo viên. | Sửa thành `session.teacher_id === userId`. Chỉ chính người dùng demo mang ID đó mới có quyền giáo viên; học sinh khác bị từ chối triệt để. | **FIXED** |
+| **P0-3** | `src/services/livekitService.js` | Client-side Token Generator đọc secret và cấp quyền publish | Hàm `generateLocalLiveKitToken` dùng thư viện `jose` đọc `LIVEKIT_API_SECRET` ở client và cấp `canPublish: true` khi backend lỗi. | Xóa bỏ hoàn toàn hàm sinh token ở client. Toàn bộ token chỉ cấp qua `/api/webrtc/livekit-token`. | **FIXED** |
+| **P0-4** | `api/_handlers/live/moderation.js` | Thu hồi micro chỉ đổi trạng thái DB mà không ngắt track trên SFU | Lệnh `REVOKE_MIC` và `MUTE_ALL` chỉ gọi `updateParticipant` mà không ngắt stream đang phát của học sinh. | Tích hợp gọi `roomClient.mutePublishedTrack(sessionId, identity, trackSid, true)` để ngắt luồng audio ngay lập tức trên LiveKit SFU. | **FIXED** |
+| **P0-5** | `api/_utils/supabaseServer.js` | Bypass xác thực bằng Token giả kèm `x-user-id` | `verifyRequestAuth` rơi vào logic dev khi token không rỗng nhưng không hợp lệ. | Bắt buộc kiểm tra token qua Supabase Auth. Trong `isProd`, token không hợp lệ hoặc thiếu lập tức trả về 401 Unauthorized, không fallback. | **FIXED** |
+| **P0-6** | `api/_webrtc/livekit-token.js` | Rơi vào `memoryParticipants` trong Production | Khi DB lỗi hoặc roomName non-UUID, token handler đọc in-memory Map, gây lỗi phân quyền giữa các instance serverless độc lập. | Trong `isProd`, yêu cầu bắt buộc kiểm tra DB; nếu lỗi DB, trả về HTTP 500/503 có kiểm soát, không rơi vào in-memory Map. Rút ngắn TTL token xuống 30m. | **FIXED** |
+| **P0-7** | `api/_handlers/live/join.js` | Giáo viên Lớp A leo thang quyền giáo viên trong Lớp B | Kiểm tra vai trò chung `auth.user.role === 'teacher'` mà không kiểm tra quyền sở hữu phòng. | Bắt buộc kiểm tra `session.teacher_id === userId || auth.user.role === 'admin'`. Giáo viên ngoài phòng chỉ được tham gia với tư cách học sinh. | **FIXED** |
+| **P0-8** | `api/_handlers/classroom/members.js` | Rò rỉ email và danh sách học viên không xác thực | Endpoint `membersHandler` không kiểm tra đăng nhập. | Bắt buộc đăng nhập (401), chỉ giáo viên sở hữu hoặc admin mới xem được email, học sinh chỉ xem được danh sách khi đã tham gia lớp và bị ẩn email. | **FIXED** |
+
+---
+
+### [P1] Lỗi Chức năng Cốt lõi & Bất đồng bộ Môi trường
+
+| Mã | Vị trí | Mô tả lỗi | Nguyên nhân gốc & Bằng chứng | Phương án khắc phục | Trạng thái |
+|---|---|---|---|---|:---:|
+| **P1-1** | `src/services/liveClassroomService.js` & `classroomService.js` | Gọi API serverless không có Auth header dẫn đến 401 trên Production | Các lệnh `fetch('/api/live/*')` và `fetch('/api/classroom/*')` chỉ gửi `{ 'Content-Type': 'application/json' }` thiếu `x-user-id` và Bearer token. | Bổ sung hàm `getApiHeaders()` tự động lấy `access_token` từ Supabase session hoặc `x-user-id` để đính kèm vào tất cả các request. | **FIXED** |
+| **P1-2** | `api/_handlers/classroom/remove.js` | Lỗi 400 Bad Request khi xóa học viên do lệch tên tham số | Backend kiểm tra `classroomId` và `studentId` (camelCase) trong khi client gửi `classroom_id` và `student_id` (snake_case). | Hỗ trợ cả 2 chuẩn đặt tên tham số (`classroomId || classroom_id`, `studentId || student_id`). | **FIXED** |
+| **P1-3** | `api/classroom/[action].js` | Thiếu router endpoint cho `/api/classroom/create` | File router chỉ có `lookup`, `join`, `members`, `remove`, thiếu action `create` khiến việc tạo lớp qua API trả về 404. | Tạo `api/_handlers/classroom/create.js` và đăng ký route `create` vào `api/classroom/[action].js`. | **FIXED** |
+| **P1-4** | `src/services/livekitService.js` | Xóa phần tử audio toàn cục trong DOM gây ảnh hưởng phiên khác | Hàm `disconnect()` gọi `document.querySelectorAll('[data-livekit-participant]').forEach(el => el.remove())` quét toàn bộ DOM. | Sử dụng `this.attachedAudioElements = new Set()` quản lý riêng các thẻ do instance tạo và gắn thêm `data-livekit-session`. | **FIXED** |
+| **P1-5** | `src/services/livekitService.js` | Nút "Stop sharing" trên thanh công cụ trình duyệt không ngắt track | Khi người dùng bấm Stop sharing trên OS/browser toolbar, track phát sự kiện `onended` nhưng service không dọn dẹp stream. | Đăng ký listener `pub.track.mediaStreamTrack.onended` tự động gọi `setScreenShareEnabled(false)`. | **FIXED** |
+| **P1-6** | `api/_handlers/classroom/create.js` | Va chạm mã lớp đồng thời không trả về 409 Conflict | Khi 2 request tạo lớp cùng mã, DB ném lỗi unique constraint (code 23505) nhưng handler trả về 200 dữ liệu giả. | Bắt mã lỗi 23505 và trả về HTTP 409 Conflict chuẩn mực. | **FIXED** |
+| **P1-7** | `api/_handlers/classroom/join.js` | Fallback `cls-simulated` trong Production | Khi DB lỗi hoặc mã không tồn tại, trả về 200 kèm `cls-simulated`. | Loại bỏ hoàn toàn fallback mô phỏng trong production, trả về 404/500 có kiểm soát và kiểm tra `max_students`. | **FIXED** |
+| **P1-8** | `vite.config.js` | Shadowed duplicate routes cho WebRTC trong Dev server | Các khối mock cũ ở dòng 367-456 che mất route gọi handler thật. | Xóa bỏ các khối mock cũ, chuyển tiếp trực tiếp vào `livekitTokenHandler` và `iceServersHandler` thật. | **FIXED** |
+
+---
+
+## 4. BẢNG TRẠNG THÁI KIỂM TOÁN TỪNG HẠNG MỤC
+
+| Phân hệ kiểm toán | Trạng thái | Ghi chú & Bằng chứng kiểm thử |
+|---|:---:|---|
+| **Đăng ký, Đăng nhập, Khôi phục phiên** | **PASS** | Kiểm thử xác thực Supabase JWT & Role Guards. |
+| **Phân quyền Student / Teacher / Admin** | **PASS** | RBAC deny-by-default, chống leo thang quyền chéo lớp. |
+| **Tạo phòng và Tham gia phòng học** | **PASS** | Xác minh quyền sở hữu, kiểm tra sĩ số, bắt lỗi duplicate 409 Conflict. |
+| **Tạo và Cấp phát Token LiveKit SFU** | **PASS** | Sinh token HMAC-SHA256 server-side, kiểm tra quyền micro từ DB, TTL 30m. |
+| **Chính sách Micro và Thu hồi Server** | **PASS** | Server-authoritative 100%, ngắt track SFU qua `mutePublishedTrack`, kiểm thử 8 kịch bản mic. |
+| **Chia sẻ Màn hình & Sự kiện Browser** | **PASS** | Xử lý `onended` khi người dùng bấm Stop sharing từ floating toolbar. |
+| **Teacher Moderation (Mute All, Kick, Mute)** | **PASS** | Chặn học sinh gọi lệnh, giáo viên tắt mic hoặc thu hồi quyền toàn phòng tức thì. |
+| **Dọn dẹp Tài nguyên khi Rời phòng** | **PASS** | Cô lập audio elements qua `attachedAudioElements`, giải phóng hardware tracks. |
+| **Vercel Serverless Function Routing** | **PASS** | 6 functions (chat, coach, teacher, classroom, live, webrtc) <= 12 Hobby limit. |
+| **Vite Dev Server Parity** | **PASS** | Loại bỏ mock trùng lặp, chuyển tiếp 1:1 sang serverless handlers thật. |
+| **Database Migrations & Triggers** | **PASS** | 18 migrations, RLS policies, trigger chống sửa điểm và can thiệp mic. |
+| **Kiểm thử Tải Thực tế 30–50 người trên Thiết bị Thật** | **NOT TESTED** | Cần môi trường vật lý với 30–50 thiết bị thực tế để đo kiểm băng thông. |

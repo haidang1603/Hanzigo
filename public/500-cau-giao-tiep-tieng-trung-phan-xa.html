@@ -1,0 +1,3291 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>500 Câu Giao Tiếp Tiếng Trung Phản Xạ Hàng Ngày - HanziGo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Serif SC", sans-serif;
+      background: #FFF9F2;
+      color: #1e293b;
+      padding: 24px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: white;
+      padding: 32px;
+      border-radius: 24px;
+      border: 1px solid #f1e5d8;
+      box-shadow: 0 4px 24px rgba(232, 93, 63, 0.06);
+    }
+    header {
+      background: linear-gradient(135deg, #E85D3F, #CB4529);
+      color: white;
+      padding: 28px 24px;
+      border-radius: 18px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .header-text h1 { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+    .header-text p { font-size: 14px; opacity: 0.95; }
+    .btn {
+      background: white;
+      color: #E85D3F;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      transition: all 0.2s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.12); }
+    
+    .stats-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 10px 16px;
+      background: #FFF5F2;
+      border: 1px solid #FED7AA;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #C2410C;
+    }
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .filter-btn {
+      background: #F1F5F9;
+      color: #475569;
+      border: 1px solid #CBD5E1;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn.active, .filter-btn:hover {
+      background: #E85D3F;
+      color: white;
+      border-color: #E85D3F;
+    }
+    .search-input {
+      width: 100%;
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: 1px solid #CBD5E1;
+      font-size: 15px;
+      outline: none;
+      margin-bottom: 16px;
+    }
+    .search-input:focus { border-color: #E85D3F; }
+
+    .phrase-card {
+      background: #FAFAFA;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.15s;
+    }
+    .phrase-card:hover {
+      background: #FFF5F2;
+      border-color: #E85D3F;
+      transform: translateY(-1px);
+    }
+    .phrase-content { flex: 1; }
+    .phrase-index {
+      font-size: 11px;
+      font-weight: 800;
+      color: #94A3B8;
+      margin-right: 6px;
+    }
+    .phrase-category {
+      font-size: 11px;
+      background: #E2E8F0;
+      color: #475569;
+      padding: 2px 8px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-right: 8px;
+      font-weight: 700;
+    }
+    .phrase-cn {
+      font-size: 18px;
+      font-weight: 900;
+      color: #0F172A;
+      margin: 4px 0 2px;
+    }
+    .phrase-pinyin {
+      font-size: 13px;
+      color: #0284C7;
+      font-weight: 600;
+    }
+    .phrase-vi {
+      font-size: 14px;
+      color: #475569;
+      margin-top: 4px;
+    }
+    .audio-btn {
+      background: #FEE2E2;
+      color: #E85D3F;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .audio-btn:hover { background: #E85D3F; color: white; }
+
+    @media print {
+      body { background: white; padding: 0; font-size: 11pt; }
+      .container { border: none; box-shadow: none; padding: 0; max-width: 100%; }
+      header button, .stats-bar, .filter-bar, .search-input, .audio-btn { display: none; }
+      header { background: #E85D3F; padding: 16px; margin-bottom: 12px; }
+      .phrase-card { break-inside: avoid; border: 1px solid #CBD5E1; padding: 8px 12px; margin-bottom: 6px; }
+      .phrase-cn { font-size: 14pt; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-text">
+        <h1>🗣️ 500 Câu Giao Tiếp Tiếng Trung Phản Xạ Hàng Ngày</h1>
+        <p>Tuyển tập 500 câu khẩu ngữ thực chiến chuẩn bản xứ: Chào hỏi, Gọi món, Mua sắm, Hỏi đường, Khách sạn, Công sở, Y tế, Khẩn cấp, Cảm xúc & Đời sống</p>
+      </div>
+      <div>
+        <button class="btn" onclick="window.print()">🖨️ In Danh Sách A4</button>
+      </div>
+    </header>
+
+    <div class="stats-bar">
+      <span>Trọn bộ đầy đủ: <strong>500 / 500 câu giao tiếp thực tế</strong> (10 Chủ đề x 50 câu)</span>
+      <span id="counterDisplay">Đang hiển thị: 500 câu</span>
+    </div>
+
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 Tìm kiếm câu thoại (Ví dụ: bao nhiêu tiền, wifi, đặt phòng, gọi món, đau đầu, cảm ơn...)..." oninput="renderPhrases()">
+
+    <div class="filter-bar" id="categoryFilter">
+      <button class="filter-btn active" onclick="setCategory('all', this)">Tất cả (500)</button>
+      <button class="filter-btn" onclick="setCategory('greeting', this)">1. Chào hỏi & Xã giao (50)</button>
+      <button class="filter-btn" onclick="setCategory('dining', this)">2. Ăn uống & Gọi món (50)</button>
+      <button class="filter-btn" onclick="setCategory('shopping', this)">3. Mua sắm & Mặc cả (50)</button>
+      <button class="filter-btn" onclick="setCategory('travel', this)">4. Hỏi đường & Đi lại (50)</button>
+      <button class="filter-btn" onclick="setCategory('hotel', this)">5. Khách sạn & Lưu trú (50)</button>
+      <button class="filter-btn" onclick="setCategory('work', this)">6. Công sở & Đối tác (50)</button>
+      <button class="filter-btn" onclick="setCategory('health', this)">7. Y tế & Sức khỏe (50)</button>
+      <button class="filter-btn" onclick="setCategory('emergency', this)">8. Khẩn cấp & Cứu hộ (50)</button>
+      <button class="filter-btn" onclick="setCategory('emotion', this)">9. Cảm xúc & Ứng xử (50)</button>
+      <button class="filter-btn" onclick="setCategory('daily', this)">10. Đời sống & Giải trí (50)</button>
+    </div>
+
+    <div id="phrasesList"></div>
+  </div>
+
+  <script>
+    const PHRASES = [
+  {
+    "cat": "greeting",
+    "cn": "你好！很高兴认识你。",
+    "py": "Nǐ hǎo! Hěn gāoxìng rènshí nǐ.",
+    "vi": "Xin chào! Rất vui được quen biết bạn."
+  },
+  {
+    "cat": "greeting",
+    "cn": "早上好！今天过得怎么样？",
+    "py": "Zǎoshang hǎo! Jīntiān guò de zěnmeyàng?",
+    "vi": "Chào buổi sáng! Hôm nay bạn thế nào?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "下午好！吃饭了吗？",
+    "py": "Xiàwǔ hǎo! Chīfàn le ma?",
+    "vi": "Chào buổi chiều! Bạn đã ăn cơm chưa?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "晚上好！今晚有什么安排吗？",
+    "py": "Wǎnshang hǎo! Jīnwǎn yǒu shénme ānpái ma?",
+    "vi": "Chào buổi tối! Tối nay bạn có kế hoạch gì không?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "好久不见，你最近好吗？",
+    "py": "Hǎojiǔ bú jiàn, nǐ zuìjìn hǎo ma?",
+    "vi": "Lâu rồi không gặp, dạo này bạn khỏe không?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "请问，您贵姓？",
+    "py": "Qǐngwèn, nín guìxìng?",
+    "vi": "Xin hỏi, quý danh của ngài là gì ạ?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "我叫阮文海，是越南人。",
+    "py": "Wǒ jiào Ruǎn Wénhǎi, shì Yuènán rén.",
+    "vi": "Tôi tên là Nguyễn Văn Hải, là người Việt Nam."
+  },
+  {
+    "cat": "greeting",
+    "cn": "你是哪里人？",
+    "py": "Nǐ shì nǎlǐ rén?",
+    "vi": "Bạn là người ở đâu?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "我是河内人，你呢？",
+    "py": "Wǒ shì Hénèi rén, nǐ ne?",
+    "vi": "Tôi là người Hà Nội, còn bạn?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "你在哪里工作？",
+    "py": "Nǐ zài nǎlǐ gōngzuò?",
+    "vi": "Bạn làm việc ở đâu?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "我是软件工程师。",
+    "py": "Wǒ shì ruǎnjiàn gōngchéngshī.",
+    "vi": "Tôi là kỹ sư phần mềm."
+  },
+  {
+    "cat": "greeting",
+    "cn": "你的汉语说得真好！",
+    "py": "Nǐ de Hànyǔ shuō de zhēn hǎo!",
+    "vi": "Tiếng Trung của bạn nói giỏi thật đấy!"
+  },
+  {
+    "cat": "greeting",
+    "cn": "哪里哪里，我还在学习中。",
+    "py": "Nǎlǐ nǎlǐ, wǒ hái zài xuéxí zhōng.",
+    "vi": "Đâu có đâu có, tôi vẫn đang học hỏi thôi."
+  },
+  {
+    "cat": "greeting",
+    "cn": "你学汉语多长时间了？",
+    "py": "Nǐ xué Hànyǔ duō cháng shíjiān le?",
+    "vi": "Bạn học tiếng Trung được bao lâu rồi?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "我刚学了半年左右。",
+    "py": "Wǒ gāng xué le bàn nián zuǒyòu.",
+    "vi": "Tôi mới học được tầm nửa năm thôi."
+  },
+  {
+    "cat": "greeting",
+    "cn": "请多多关照！",
+    "py": "Qǐng duōduō guānzhào!",
+    "vi": "Xin được chỉ giáo và giúp đỡ nhiều ạ!"
+  },
+  {
+    "cat": "greeting",
+    "cn": "有什么需要帮忙的随时告诉我。",
+    "py": "Yǒu shénme xūyào bāngmáng de suíshí gàosu wǒ.",
+    "vi": "Có gì cần giúp đỡ cứ thoải mái báo tôi nhé."
+  },
+  {
+    "cat": "greeting",
+    "cn": "非常感谢你的帮助！",
+    "py": "Fēicháng gǎnxiè nǐ de bāngzhù!",
+    "vi": "Vô cùng cảm ơn sự giúp đỡ của bạn!"
+  },
+  {
+    "cat": "greeting",
+    "cn": "不客气，不用谢！",
+    "py": "Bú kèqi, bú yòng xiè!",
+    "vi": "Không có chi, đừng khách sáo!"
+  },
+  {
+    "cat": "greeting",
+    "cn": "对不起，打扰一下。",
+    "py": "Duìbuqǐ, dǎrǎo yíxià.",
+    "vi": "Xin lỗi, làm phiền bạn một chút."
+  },
+  {
+    "cat": "greeting",
+    "cn": "没关系，不碍事。",
+    "py": "Méi guānxi, bú àishì.",
+    "vi": "Không sao đâu, không ảnh hưởng gì cả."
+  },
+  {
+    "cat": "greeting",
+    "cn": "明天见！",
+    "py": "Míngtiān jiàn!",
+    "vi": "Hẹn gặp lại vào ngày mai nhé!"
+  },
+  {
+    "cat": "greeting",
+    "cn": "周末愉快！",
+    "py": "Zhōumò yúkuài!",
+    "vi": "Chúc bạn cuối tuần vui vẻ!"
+  },
+  {
+    "cat": "greeting",
+    "cn": "祝你一路平安！",
+    "py": "Zhù nǐ yílù píng'ān!",
+    "vi": "Chúc bạn thượng lộ bình an!"
+  },
+  {
+    "cat": "greeting",
+    "cn": "保持联系，微信常聊。",
+    "py": "Bǎochí liánxì, Wēixìn cháng liáo.",
+    "vi": "Giữ liên lạc nhé, rảnh nhắn tin WeChat nha."
+  },
+  {
+    "cat": "greeting",
+    "cn": "加个微信方便联系吧。",
+    "py": "Jiā ge Wēixìn fāngbiàn liánxì ba.",
+    "vi": "Kết bạn WeChat để tiện liên lạc nhé."
+  },
+  {
+    "cat": "greeting",
+    "cn": "这是我的二维码，你扫我吧。",
+    "py": "Zhè shì wǒ de èrwéimǎ, nǐ sǎo wǒ ba.",
+    "vi": "Đây là mã QR của tôi, bạn quét tôi đi."
+  },
+  {
+    "cat": "greeting",
+    "cn": "我扫你还是你扫我？",
+    "py": "Wǒ sǎo nǐ háishì nǐ sǎo wǒ?",
+    "vi": "Tôi quét bạn hay là bạn quét tôi?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "已经发好友申请了，请通过一下。",
+    "py": "Yǐjīng fā hǎoyǒu shēnqǐng le, qǐng tōngguò yíxià.",
+    "vi": "Tôi gửi lời mời kết bạn rồi, duyệt giúp tôi nhé."
+  },
+  {
+    "cat": "greeting",
+    "cn": "你今年多大？",
+    "py": "Nǐ jīnnián duō dà?",
+    "vi": "Năm nay bạn bao nhiêu tuổi rồi?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "我属龙，今年二十四岁。",
+    "py": "Wǒ shǔ lóng, jīnnián èrshísì suì.",
+    "vi": "Tôi tuổi Thìn, năm nay 24 tuổi."
+  },
+  {
+    "cat": "greeting",
+    "cn": "你平时有什么爱好？",
+    "py": "Nǐ píngshí yǒu shénme àihào?",
+    "vi": "Bình thường bạn có sở thích gì?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "我喜欢看电影和听音乐。",
+    "py": "Wǒ xǐhuan kàn diànyǐng hé tīng yīnyuè.",
+    "vi": "Tôi thích xem phim và nghe nhạc."
+  },
+  {
+    "cat": "greeting",
+    "cn": "有空一起喝杯咖啡吧！",
+    "py": "Yǒu kòng yìqǐ hē bēi kāfēi ba!",
+    "vi": "Khi nào rảnh cùng đi uống cà phê nhé!"
+  },
+  {
+    "cat": "greeting",
+    "cn": "好啊，随时奉陪。",
+    "py": "Hǎo a, suíshí fèngpéi.",
+    "vi": "Được thôi, sẵn sàng đi cùng bất cứ lúc nào."
+  },
+  {
+    "cat": "greeting",
+    "cn": "今天天气真不错！",
+    "py": "Jīntiān tiānqì zhēn búcuò!",
+    "vi": "Thời tiết hôm nay đẹp thật đấy!"
+  },
+  {
+    "cat": "greeting",
+    "cn": "听说这两天要降温。",
+    "py": "Tīngshuō zhè liǎng tiān yào jiàngwēn.",
+    "vi": "Nghe nói hai ngày tới trời sẽ trở lạnh."
+  },
+  {
+    "cat": "greeting",
+    "cn": "注意保暖，别感冒了。",
+    "py": "Zhùyì bǎonuǎn, bié gǎnmào le.",
+    "vi": "Nhớ giữ ấm, đừng để bị cảm nhé."
+  },
+  {
+    "cat": "greeting",
+    "cn": "你今天看起来精神很好！",
+    "py": "Nǐ jīntiān kàn qǐlái jīngshen hěn hǎo!",
+    "vi": "Hôm nay trông bạn tinh thần rất phấn chấn!"
+  },
+  {
+    "cat": "greeting",
+    "cn": "你穿这件衣服真漂亮。",
+    "py": "Nǐ chuān zhè jiàn yīfu zhēn piàoliang.",
+    "vi": "Bạn mặc bộ đồ này trông đẹp thật đấy."
+  },
+  {
+    "cat": "greeting",
+    "cn": "谢谢你的夸奖！",
+    "py": "Xièxie nǐ de kuājiǎng!",
+    "vi": "Cảm ơn lời khen của bạn nhé!"
+  },
+  {
+    "cat": "greeting",
+    "cn": "我能坐这里吗？",
+    "py": "Wǒ néng zuò zhèlǐ ma?",
+    "vi": "Tôi có thể ngồi ở đây được không?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "当然可以，请坐。",
+    "py": "Dāngrán kěyǐ, qǐng zuò.",
+    "vi": "Đương nhiên được rồi, xin mời ngồi."
+  },
+  {
+    "cat": "greeting",
+    "cn": "请问洗手间在哪儿？",
+    "py": "Qǐngwèn xǐshǒujiān zài nǎr?",
+    "vi": "Xin hỏi nhà vệ sinh ở đâu ạ?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "出门往右走就是。",
+    "py": "Chū mén wǎng yòu zǒu jiù shì.",
+    "vi": "Ra khỏi cửa rẽ phải là thấy ngay."
+  },
+  {
+    "cat": "greeting",
+    "cn": "我听不太懂，能再说一遍吗？",
+    "py": "Wǒ tīng bú tài dǒng, néng zài shuō yí biàn ma?",
+    "vi": "Tôi nghe chưa hiểu lắm, bạn nói lại lần nữa được không?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "请说得慢一点儿。",
+    "py": "Qǐng shuō de màn yìdiǎnr.",
+    "vi": "Xin hãy nói chậm lại một chút."
+  },
+  {
+    "cat": "greeting",
+    "cn": "这个用中文怎么说？",
+    "py": "Zhège yòng Zhōngwén zěnme shuō?",
+    "vi": "Cái này tiếng Trung nói như thế nào?"
+  },
+  {
+    "cat": "greeting",
+    "cn": "我明白了，非常感谢！",
+    "py": "Wǒ míngbai le, fēicháng gǎnxiè!",
+    "vi": "Tôi hiểu rồi, vô cùng cảm ơn bạn!"
+  },
+  {
+    "cat": "greeting",
+    "cn": "那就先这样，回聊！",
+    "py": "Nà jiù xiān zhèyàng, huí liáo!",
+    "vi": "Thế tạm thời vậy nhé, nói chuyện sau nha!"
+  },
+  {
+    "cat": "dining",
+    "cn": "服务员，请给我们看下菜单。",
+    "py": "Fúwùyuán, qǐng gěi wǒmen kàn xià càidān.",
+    "vi": "Phục vụ ơi, cho chúng tôi xem thực đơn một chút."
+  },
+  {
+    "cat": "dining",
+    "cn": "两位，请问有空位吗？",
+    "py": "Liǎng wèi, qǐngwèn yǒu kòngwèi ma?",
+    "vi": "Hai người, xin hỏi còn bàn trống không ạ?"
+  },
+  {
+    "cat": "dining",
+    "cn": "请问需要排队等位吗？",
+    "py": "Qǐngwèn xūyào páiduì děngwèi ma?",
+    "vi": "Xin hỏi có cần xếp hàng lấy số chờ bàn không?"
+  },
+  {
+    "cat": "dining",
+    "cn": "大概需要等多久？",
+    "py": "Dàgài xūyào děng duōjiǔ?",
+    "vi": "Khoảng bao lâu thì có bàn ạ?"
+  },
+  {
+    "cat": "dining",
+    "cn": "我们想坐靠窗的位置。",
+    "py": "Wǒmen xiǎng zuò kào chuāng de wèizhǐ.",
+    "vi": "Chúng tôi muốn ngồi vị trí gần cửa sổ."
+  },
+  {
+    "cat": "dining",
+    "cn": "这里有什么招牌菜推荐吗？",
+    "py": "Zhèlǐ yǒu shénme zhāopái cài tuījiàn ma?",
+    "vi": "Ở đây có món đặc sản \"tủ\" nào giới thiệu không?"
+  },
+  {
+    "cat": "dining",
+    "cn": "哪个菜最受客人欢迎？",
+    "py": "Nǎ ge cài zuì shòu kèrén huānyíng?",
+    "vi": "Món nào được khách gọi nhiều nhất vậy?"
+  },
+  {
+    "cat": "dining",
+    "cn": "这个菜辣不辣？",
+    "py": "Zhège cài là bu là?",
+    "vi": "Món này có cay không em?"
+  },
+  {
+    "cat": "dining",
+    "cn": "我不吃辣，请做微辣或者不辣。",
+    "py": "Wǒ bù chī là, qǐng zuò wēilà huòzhě bù là.",
+    "vi": "Tôi không ăn được cay, làm cay the nhẹ hoặc không cay giúp tôi nhé."
+  },
+  {
+    "cat": "dining",
+    "cn": "请不要放香菜。",
+    "py": "Qǐng bú yào fàng xiāngcài.",
+    "vi": "Xin đừng cho rau mùi (ngò rí) nhé."
+  },
+  {
+    "cat": "dining",
+    "cn": "少放盐和味精，清淡一点。",
+    "py": "Shǎo fàng yán hé wèijīng, qīngdàn yìdiǎn.",
+    "vi": "Cho ít muối và bột ngọt thôi, làm thanh đạm chút."
+  },
+  {
+    "cat": "dining",
+    "cn": "我对花生过敏。",
+    "py": "Wǒ duì huāshēng guòmǐn.",
+    "vi": "Tôi bị dị ứng với đậu phộng (lạc)."
+  },
+  {
+    "cat": "dining",
+    "cn": "来一份北京烤鸭。",
+    "py": "Lái yí fèn Běijīng kǎoyā.",
+    "vi": "Cho một phần vịt quay Bắc Kinh."
+  },
+  {
+    "cat": "dining",
+    "cn": "来一盘宫保鸡丁和一碗酸辣汤。",
+    "py": "Cho một đĩa gà Kung Pao và một tô canh chua cay."
+  },
+  {
+    "cat": "dining",
+    "cn": "主食有米饭还是水饺？",
+    "py": "Zhǔshí yǒu mǐfàn háishì shuǐjiǎo?",
+    "vi": "Món chính có cơm trắng hay sủi cảo vậy?"
+  },
+  {
+    "cat": "dining",
+    "cn": "先来两碗米饭。",
+    "py": "Xiān lái liǎng wǎn mǐfàn.",
+    "vi": "Trước tiên cho hai bát cơm trắng."
+  },
+  {
+    "cat": "dining",
+    "cn": "饮料要冰的还是常温的？",
+    "py": "Yǐnliào yào bīng de háishì chángwēn de?",
+    "vi": "Đồ uống lấy loại đá lạnh hay nhiệt độ thường?"
+  },
+  {
+    "cat": "dining",
+    "cn": "来一壶热茶，谢谢。",
+    "py": "Lái yì hú rè chá, xièxie.",
+    "vi": "Cho một ấm trà nóng, cảm ơn em."
+  },
+  {
+    "cat": "dining",
+    "cn": "请问有纸巾吗？",
+    "py": "Qǐngwèn yǒu zhǐjīn ma?",
+    "vi": "Xin hỏi có khăn giấy không ạ?"
+  },
+  {
+    "cat": "dining",
+    "cn": "麻烦加一点儿水。",
+    "py": "Máfan jiā yìdiǎnr shuǐ.",
+    "vi": "Làm phiền châm thêm chút nước."
+  },
+  {
+    "cat": "dining",
+    "cn": "我们的菜还没上齐，请帮忙催一下。",
+    "py": "Wǒmen de cài hái méi shàng qí, qǐng bāngmáng cuī yíxià.",
+    "vi": "Món của chúng tôi chưa ra đủ, giục bếp giúp với nhé."
+  },
+  {
+    "cat": "dining",
+    "cn": "这个菜味道真棒！",
+    "py": "Zhège cài wèidao zhēn bàng!",
+    "vi": "Món này hương vị ngon tuyệt đỉnh!"
+  },
+  {
+    "cat": "dining",
+    "cn": "味道非常地道。",
+    "py": "Wèidao fēicháng dìdào.",
+    "vi": "Vị rất chuẩn bản xứ."
+  },
+  {
+    "cat": "dining",
+    "cn": "服务员，买单！",
+    "py": "Fúwùyuán, mǎidān!",
+    "vi": "Phục vụ ơi, tính tiền!"
+  },
+  {
+    "cat": "dining",
+    "cn": "一共多少钱？",
+    "py": "Yígòng duōshao qián?",
+    "vi": "Tổng cộng hết bao nhiêu tiền?"
+  },
+  {
+    "cat": "dining",
+    "cn": "可以分开付吗？",
+    "py": "Kěyǐ fēnkāi fù ma?",
+    "vi": "Có thể thanh toán riêng (chia tiền) được không?"
+  },
+  {
+    "cat": "dining",
+    "cn": "可以开发票吗？",
+    "py": "Kěyǐ kāi fāpiào ma?",
+    "vi": "Có thể xuất hóa đơn được không?"
+  },
+  {
+    "cat": "dining",
+    "cn": "可以用微信支付吗？",
+    "py": "Kěyǐ yòng Wēixìn zhīfù ma?",
+    "vi": "Có thanh toán bằng WeChat Pay được không?"
+  },
+  {
+    "cat": "dining",
+    "cn": "剩下的菜请帮我们打包。",
+    "py": "Shèngxià de cài qǐng bāng wǒmen dǎbāo.",
+    "vi": "Thức ăn còn thừa xin gói hộp mang về giúp chúng tôi."
+  },
+  {
+    "cat": "dining",
+    "cn": "请给我两个打包盒。",
+    "py": "Qǐng gěi wǒ liǎng ge dǎbāohé.",
+    "vi": "Cho tôi xin hai chiếc hộp xốp mang về."
+  },
+  {
+    "cat": "dining",
+    "cn": "这道菜太咸了。",
+    "py": "Zhè dào cài tài xián le.",
+    "vi": "Món này hơi bị mặn quá."
+  },
+  {
+    "cat": "dining",
+    "cn": "这个肉还没熟透。",
+    "py": "Zhège ròu hái méi shútòu.",
+    "vi": "Chỗ thịt này hình như chưa chín kỹ."
+  },
+  {
+    "cat": "dining",
+    "cn": "不好意思，我们没点这个菜。",
+    "py": "Bù hǎoyìsi, wǒmen méi diǎn zhège cài.",
+    "vi": "Ngại quá, bàn chúng tôi không gọi món này."
+  },
+  {
+    "cat": "dining",
+    "cn": "请换一副干净的碗筷。",
+    "py": "Qǐng huàn yí fù gānjìng de wǎnkuài.",
+    "vi": "Làm phiền đổi một bộ bát đũa sạch khác."
+  },
+  {
+    "cat": "dining",
+    "cn": "请问Wi-Fi密码是多少？",
+    "py": "Qǐngwèn Wi-Fi mìmǎ shì duōshao?",
+    "vi": "Xin hỏi mật khẩu Wi-Fi là gì vậy?"
+  },
+  {
+    "cat": "dining",
+    "cn": "来一听可乐，加冰。",
+    "py": "Lái yì tīng kělè, jiā bīng.",
+    "vi": "Cho một lon Coca, thêm đá."
+  },
+  {
+    "cat": "dining",
+    "cn": "我不喝酒，喝矿泉水就行。",
+    "py": "Wǒ bù hē jiǔ, hē kuàngquánshuǐ jiù xíng.",
+    "vi": "Tôi không uống rượu, uống nước khoáng là được rồi."
+  },
+  {
+    "cat": "dining",
+    "cn": "干杯！祝大家身体健康！",
+    "py": "Gānbēi! Zhù dàjiā shēntǐ jiànkāng!",
+    "vi": "Cạn ly! Chúc mọi người sức khỏe dồi dào!"
+  },
+  {
+    "cat": "dining",
+    "cn": "我随意，你随意。",
+    "py": "Wǒ suíyì, nǐ suíyì.",
+    "vi": "Tôi tùy ý nhấp môi, bạn cũng tùy sức nhé."
+  },
+  {
+    "cat": "dining",
+    "cn": "今天我请客！",
+    "py": "Jīntiān wǒ qǐngkè!",
+    "vi": "Hôm nay để tôi bao/khao cả nhà!"
+  },
+  {
+    "cat": "dining",
+    "cn": "下次换我请你。",
+    "py": "Xià cì huàn wǒ qǐng nǐ.",
+    "vi": "Lần sau đổi lại tới lượt tôi mời bạn nhé."
+  },
+  {
+    "cat": "dining",
+    "cn": "我已经吃饱了，吃不下了。",
+    "py": "Wǒ yǐjīng chī bǎo le, chī bu xià le.",
+    "vi": "Tôi no căng bụng rồi, không ăn thêm nổi nữa."
+  },
+  {
+    "cat": "dining",
+    "cn": "菜量很大，根本吃不完。",
+    "py": "Càiliàng hěn dà, gēnběn chī bu wán.",
+    "vi": "Khẩu phần ăn nhiều thật, ăn không xuể luôn."
+  },
+  {
+    "cat": "dining",
+    "cn": "这顿饭吃得真过瘾！",
+    "py": "Zhè dùn fàn chī de zhēn guòyǐn!",
+    "vi": "Bữa này ăn đã miệng thật đấy!"
+  },
+  {
+    "cat": "dining",
+    "cn": "老板，结账！",
+    "py": "Lǎobǎn, jiézhàng!",
+    "vi": "Chủ quán ơi, thanh toán!"
+  },
+  {
+    "cat": "dining",
+    "cn": "扫桌上的二维码点餐吗？",
+    "py": "Sǎo zhuō shang de èrwéimǎ diǎncān ma?",
+    "vi": "Quét mã QR trên bàn để gọi món đúng không ạ?"
+  },
+  {
+    "cat": "dining",
+    "cn": "有没有中文拼音菜单？",
+    "py": "Yǒu méiyǒu Zhōngwén pīnyīn càidān?",
+    "vi": "Có thực đơn phiên âm Pinyin không ạ?"
+  },
+  {
+    "cat": "dining",
+    "cn": "能帮我们拍张合影吗？",
+    "py": "Néng bāng wǒmen pāi zhāng héyǐng ma?",
+    "vi": "Phiền bạn chụp giúp chúng tôi tấm ảnh kỷ niệm được không?"
+  },
+  {
+    "cat": "dining",
+    "cn": "请慢用！",
+    "py": "Qǐng màn yòng!",
+    "vi": "Xin mời quý khách dùng bữa ngon miệng!"
+  },
+  {
+    "cat": "dining",
+    "cn": "欢迎下次光临！",
+    "py": "Huānyíng xià cì guānglín!",
+    "vi": "Hân hạnh đón tiếp quý khách lần sau!"
+  },
+  {
+    "cat": "shopping",
+    "cn": "这个多少钱一个？",
+    "py": "Zhège duōshao qián yí ge?",
+    "vi": "Cái này bao nhiêu tiền một chiếc?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "怎么卖的？按斤还是按个？",
+    "py": "Zěnme mài de? Àn jīn háishì àn ge?",
+    "vi": "Bán thế nào vậy? Tính theo cân (nửa kg) hay theo cái?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "太贵了，能不能便宜点儿？",
+    "py": "Tài guì le, néng bu néng piányi diǎnr?",
+    "vi": "Đắt quá, có thể bớt chút xíu được không?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "最低多少钱能卖？",
+    "py": "Zuìdī duōshao qián néng mài?",
+    "vi": "Giá chốt thấp nhất bao nhiêu bán được ạ?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "能打个折吗？",
+    "py": "Néng dǎ ge zhé ma?",
+    "vi": "Có chiết khấu giảm giá được không?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "买两个可以打八折吗？",
+    "py": "Mǎi liǎng ge kěyǐ dǎ bā zhé ma?",
+    "vi": "Mua 2 cái giảm 20% (tính 80% giá) được không?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "我是诚心想买的，给个实价吧。",
+    "py": "Wǒ shì chéngxīn xiǎng mǎi de, gěi ge shíjià ba.",
+    "vi": "Tôi thật lòng muốn mua đấy, cho tôi giá chuẩn đi."
+  },
+  {
+    "cat": "shopping",
+    "cn": "五十块卖不卖？",
+    "py": "Wǔshí kuài mài bu mài?",
+    "vi": "50 tệ bán không chủ quán?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "不卖就算了，我去别家看看。",
+    "py": "Bú mài jiù suàn le, wǒ qù bié jiā kànkan.",
+    "vi": "Không bán thì thôi vậy, tôi sang hàng khác xem."
+  },
+  {
+    "cat": "shopping",
+    "cn": "行吧，拿去吧，亏本卖给你。",
+    "py": "Xíng ba, ná qù ba, kuīběn mài gěi nǐ.",
+    "vi": "Thôi được rồi, cầm lấy đi, bán lỗ vốn cho bạn đấy."
+  },
+  {
+    "cat": "shopping",
+    "cn": "我能试穿一下吗？",
+    "py": "Wǒ néng shìchuān yíxià ma?",
+    "vi": "Tôi có thể mặc thử một chút được không?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "试衣间在哪里？",
+    "py": "Shìyījiān zài nǎlǐ?",
+    "vi": "Phòng thử đồ ở đâu vậy bạn?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "这件有点儿小，有大号吗？",
+    "py": "Zhè jiàn yǒudiǎnr xiǎo, yǒu dàhào ma?",
+    "vi": "Cái này hơi chật một chút, có size to hơn không?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "有别的颜色吗？我想看黑色的。",
+    "py": "Yǒu bié de yánsè ma? Wǒ xiǎng kàn hēisè de.",
+    "vi": "Có màu khác không? Tôi muốn xem màu đen."
+  },
+  {
+    "cat": "shopping",
+    "cn": "这件挺适合你的。",
+    "py": "Zhè jiàn tǐng shìhé nǐ de.",
+    "vi": "Chiếc này rất hợp dáng với bạn đấy."
+  },
+  {
+    "cat": "shopping",
+    "cn": "质地是什么面料？纯棉的吗？",
+    "py": "Zhìdì shì shénme miànliào? Chúnmián de ma?",
+    "vi": "Chất liệu là vải gì? Có phải 100% cotton không?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "质量有保证吗？会不会掉色？",
+    "py": "Zhìliàng yǒu bǎozhèng ma? Huì bu huì diàosè?",
+    "vi": "Chất lượng đảm bảo không? Có bị phai màu không?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "我不喜欢这个款式。",
+    "py": "Wǒ bù xǐhuan zhège kuǎnshì.",
+    "vi": "Tôi không thích kiểu dáng mẫu này."
+  },
+  {
+    "cat": "shopping",
+    "cn": "我就随便看看。",
+    "py": "Wǒ jiù suíbiàn kànkan.",
+    "vi": "Tôi chỉ xem dạo quanh một chút thôi."
+  },
+  {
+    "cat": "shopping",
+    "cn": "好的，需要帮忙随时叫我。",
+    "py": "Hǎo de, xūyào bāngmáng suíshí jiào wǒ.",
+    "vi": "Vâng, cần giúp gì bạn cứ gọi tôi nhé."
+  },
+  {
+    "cat": "shopping",
+    "cn": "我就要这件了，帮我包起来。",
+    "py": "Wǒ jiù yào zhè jiàn le, bāng wǒ bāo qǐlái.",
+    "vi": "Tôi chốt lấy cái này, gói lại giúp tôi."
+  },
+  {
+    "cat": "shopping",
+    "cn": "可以刷国际信用卡吗？",
+    "py": "Kěyǐ shuā guójì xìnyòngkǎ ma?",
+    "vi": "Có quẹt thẻ tín dụng quốc tế (Visa/Mastercard) được không?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "支付宝还是微信？",
+    "py": "Zhīfùbǎo háishì Wēixìn?",
+    "vi": "Thanh toán bằng Alipay hay WeChat?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "请出示付款码。",
+    "py": "Qǐng chūshì fùkuǎnmǎ.",
+    "vi": "Xin vui lòng đưa mã thanh toán để tôi quét."
+  },
+  {
+    "cat": "shopping",
+    "cn": "现金找零三十块，请拿好。",
+    "py": "Xiànjīn zhǎolíng sānshí kuài, qǐng ná hǎo.",
+    "vi": "Tiền mặt thối lại 30 tệ, quý khách cầm lấy ạ."
+  },
+  {
+    "cat": "shopping",
+    "cn": "请给我一张小票。",
+    "py": "Qǐng gěi wǒ yì zhāng xiǎopiào.",
+    "vi": "Cho tôi xin một tờ hóa đơn thanh toán."
+  },
+  {
+    "cat": "shopping",
+    "cn": "七天之内可以退换吗？",
+    "py": "Qī tiān zhīnèi kěyǐ tuìhuàn ma?",
+    "vi": "Trong vòng 7 ngày có được đổi trả không?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "凭小票可以保修一年。",
+    "py": "Píng xiǎopiào kěyǐ bǎoxiū yì nián.",
+    "vi": "Dựa vào hóa đơn được bảo hành 1 năm ạ."
+  },
+  {
+    "cat": "shopping",
+    "cn": "这个有现货吗？",
+    "py": "Zhège yǒu xiànhuò ma?",
+    "vi": "Mẫu này có sẵn hàng không?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "目前断货了，需要预订。",
+    "py": "Mùqián duànhuò le, xūyào yùdìng.",
+    "vi": "Hiện tại đang hết hàng, cần phải đặt trước."
+  },
+  {
+    "cat": "shopping",
+    "cn": "预订需要等几天？",
+    "py": "Yùdìng xūyào děng jǐ tiān?",
+    "vi": "Đặt trước thì phải chờ mấy ngày?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "大概三到五天左右。",
+    "py": "Dàgài sān dào wǔ tiān zuǒyòu.",
+    "vi": "Khoảng tầm 3 đến 5 ngày."
+  },
+  {
+    "cat": "shopping",
+    "cn": "买一送一，非常划算！",
+    "py": "Mǎi yī sòng yī, fēicháng huásuàn!",
+    "vi": "Mua 1 tặng 1, hời quá chừng luôn!"
+  },
+  {
+    "cat": "shopping",
+    "cn": "满两百减三十。",
+    "py": "Mǎn liǎngbǎi jiǎn sānshí.",
+    "vi": "Hóa đơn đủ 200 tệ giảm ngay 30 tệ."
+  },
+  {
+    "cat": "shopping",
+    "cn": "这个功能怎么用？",
+    "py": "Zhège gōngnéng zěnme yòng?",
+    "vi": "Chức năng này sử dụng như thế nào?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "有中文说明书吗？",
+    "py": "Yǒu Zhōngwén shuōmíngshū ma?",
+    "vi": "Có sách hướng dẫn sử dụng tiếng Trung không?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "我想退货，这件衣服尺寸不合适。",
+    "py": "Wǒ xiǎng tuìhuò, zhè jiàn yīfu chǐcùn bù héshì.",
+    "vi": "Tôi muốn trả hàng, chiếc áo này kích cỡ không vừa."
+  },
+  {
+    "cat": "shopping",
+    "cn": "吊牌剪了吗？",
+    "py": "Diàopái jiǎn le ma?",
+    "vi": "Bạn đã cắt mác áo chưa?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "吊牌还没剪，小票也在。",
+    "py": "Diàopái hái méi jiǎn, xiǎopiào yě zài.",
+    "vi": "Mác áo chưa cắt, hóa đơn vẫn còn nguyên đây."
+  },
+  {
+    "cat": "shopping",
+    "cn": "好的，马上为您办理退款。",
+    "py": "Hǎo de, mǎshàng wèi nín bànlǐ tuìkuǎn.",
+    "vi": "Được rồi, tôi sẽ làm thủ tục hoàn tiền cho bạn ngay."
+  },
+  {
+    "cat": "shopping",
+    "cn": "请问超市几点关门？",
+    "py": "Qǐngwèn chāoshì jǐ diǎn guānmén?",
+    "vi": "Xin hỏi siêu thị mấy giờ đóng cửa?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "晚上十点打烊。",
+    "py": "Wǎnshang shí diǎn dǎyàng.",
+    "vi": "10 giờ tối siêu thị đóng cửa nghỉ ạ."
+  },
+  {
+    "cat": "shopping",
+    "cn": "入口在哪里？",
+    "py": "Rùkǒu zài nǎlǐ?",
+    "vi": "Lối vào ở chỗ nào vậy?"
+  },
+  {
+    "cat": "shopping",
+    "cn": "结账通道在前面。",
+    "py": "Jiézhàng tōngdào zài qiánmiàn.",
+    "vi": "Lối ra quầy thanh toán ở phía trước."
+  },
+  {
+    "cat": "shopping",
+    "cn": "需要塑料袋吗？两毛一个。",
+    "py": "Xūyào sùliàodài ma? Liǎng máo yí ge.",
+    "vi": "Quý khách có cần túi nilon không? 2 hào một chiếc."
+  },
+  {
+    "cat": "shopping",
+    "cn": "不用了，我自己带了环保袋。",
+    "py": "Bú yòng le, wǒ zìjǐ dài le huánbǎodài.",
+    "vi": "Không cần đâu, tôi tự mang túi vải rồi."
+  },
+  {
+    "cat": "shopping",
+    "cn": "祝您购物愉快！",
+    "py": "Zhù nín gòuwù yúkuài!",
+    "vi": "Chúc quý khách mua sắm vui vẻ!"
+  },
+  {
+    "cat": "shopping",
+    "cn": "这个东西真物美价廉。",
+    "py": "Zhège dōngxi zhēn wùmèijiàlián.",
+    "vi": "Món đồ này đúng là ngon-bổ-rẻ."
+  },
+  {
+    "cat": "shopping",
+    "cn": "性价比特别高。",
+    "py": "Xìngjiàbǐ tèbié gāo.",
+    "vi": "Tỷ lệ hiệu năng trên giá thành cực kỳ cao."
+  },
+  {
+    "cat": "shopping",
+    "cn": "谢谢老板，生意兴隆！",
+    "py": "Xièxie lǎobǎn, shēngyì xīnglóng!",
+    "vi": "Cảm ơn chủ quán, chúc buôn may bán đắt nhé!"
+  },
+  {
+    "cat": "travel",
+    "cn": "请问，最近的地铁站在哪里？",
+    "py": "Qǐngwèn, zuìjìn de dìtiězhàn zài nǎlǐ?",
+    "vi": "Xin hỏi, ga tàu điện ngầm gần nhất ở đâu?"
+  },
+  {
+    "cat": "travel",
+    "cn": "一直往前走大概两百米。",
+    "py": "Yìzhí wǎng qián zǒu dàgài liǎngbǎi mǐ.",
+    "vi": "Cứ đi thẳng về phía trước tầm 200 mét."
+  },
+  {
+    "cat": "travel",
+    "cn": "到红绿灯十字路口左拐。",
+    "py": "Dào hónglǜdēng shízì lùkǒu zuǒ guǎi.",
+    "vi": "Đến ngã tư đèn xanh đèn đỏ thì rẽ trái."
+  },
+  {
+    "cat": "travel",
+    "cn": "在第二个路口向右转。",
+    "py": "Zài dì-èr ge lùkǒu xiàng yòu zhuǎn.",
+    "vi": "Ở ngã rẽ thứ hai thì quẹo sang phải."
+  },
+  {
+    "cat": "travel",
+    "cn": "过马路请走人行横道。",
+    "py": "Guò mǎlù qǐng zǒu rénxíng héngdào.",
+    "vi": "Sang đường xin mời đi trên vạch kẻ cho người đi bộ."
+  },
+  {
+    "cat": "travel",
+    "cn": "请问这里离故宫有多远？",
+    "py": "Qǐngwèn zhèlǐ lí Gùgōng yǒu duō yuǎn?",
+    "vi": "Xin hỏi từ đây cách Cố Cung bao xa?"
+  },
+  {
+    "cat": "travel",
+    "cn": "走路大概要十五分钟。",
+    "py": "Zǒulù dàgài yào shíwǔ fēnzhōng.",
+    "vi": "Đi bộ mất khoảng chừng 15 phút."
+  },
+  {
+    "cat": "travel",
+    "cn": "我迷路了，请问这是哪里？",
+    "py": "Wǒ mílù le, qǐngwèn zhè shì nǎlǐ?",
+    "vi": "Tôi bị lạc đường rồi, xin hỏi đây là nơi nào?"
+  },
+  {
+    "cat": "travel",
+    "cn": "你在地图上帮我指一下好吗？",
+    "py": "Nǐ zài dìtú shang bāng wǒ zhǐ yíxià hǎo ma?",
+    "vi": "Bạn chỉ giúp tôi trên bản đồ được không?"
+  },
+  {
+    "cat": "travel",
+    "cn": "坐几路公交车能到高铁站？",
+    "py": "Zuò jǐ lù gōngjiāochē néng dào gāotiězhàn?",
+    "vi": "Đi xe buýt tuyến số mấy thì đến được ga tàu cao tốc?"
+  },
+  {
+    "cat": "travel",
+    "cn": "你可以坐三路车，在火车站下车。",
+    "py": "Nǐ kěyǐ zuò sān lù chē, zài huǒchēzhàn xià chē.",
+    "vi": "Bạn có thể đi xe tuyến số 3, xuống ở ga xe lửa."
+  },
+  {
+    "cat": "travel",
+    "cn": "这趟车到首都机场吗？",
+    "py": "Zhè tàng chē dào Shǒudū Jīchǎng ma?",
+    "vi": "Chuyến xe này có đi sân bay Thủ Đô không?"
+  },
+  {
+    "cat": "travel",
+    "cn": "请问在哪里换乘一号线？",
+    "py": "Qǐngwèn zài nǎlǐ huànchéng Yī Hào Xiàn?",
+    "vi": "Xin hỏi đổi sang Line 1 ở ga nào vậy?"
+  },
+  {
+    "cat": "travel",
+    "cn": "在前门站换乘。",
+    "py": "Zài Qiánmén Zhàn huànchéng.",
+    "vi": "Đổi tuyến ở ga Tiền Môn nhé."
+  },
+  {
+    "cat": "travel",
+    "cn": "下一站是哪里？",
+    "py": "Xià yí zhàn shì nǎlǐ?",
+    "vi": "Trạm tiếp theo là trạm nào?"
+  },
+  {
+    "cat": "travel",
+    "cn": "师傅，我想去天安门广场。",
+    "py": "Shīfu, wǒ xiǎng qù Tiān'ānmén Guǎngchǎng.",
+    "vi": "Bác tài ơi, tôi muốn đến quảng trường Thiên An Môn."
+  },
+  {
+    "cat": "travel",
+    "cn": "请打表计费，谢谢。",
+    "py": "Qǐng dǎbiǎo jìfèi, xièxie.",
+    "vi": "Làm phiền bác bật đồng hồ tính cước giúp tôi, cảm ơn bác."
+  },
+  {
+    "cat": "travel",
+    "cn": "大概需要多长时间能到？",
+    "py": "Dàgài xūyào duō cháng shíjiān néng dào?",
+    "vi": "Đi khoảng bao lâu thì đến nơi bác?"
+  },
+  {
+    "cat": "travel",
+    "cn": "现在路上有点儿堵车。",
+    "py": "Xiànzài lù shang yǒudiǎnr dǔchē.",
+    "vi": "Bây giờ trên đường hơi bị kẹt xe chút."
+  },
+  {
+    "cat": "travel",
+    "cn": "请靠边停车，我就在这里下。",
+    "py": "Qǐng kàobiān tíngchē, wǒ jiù zài zhèlǐ xià.",
+    "vi": "Bác tấp vào lề giúp tôi nhé, tôi xuống ngay chỗ này."
+  },
+  {
+    "cat": "travel",
+    "cn": "车费一共三十五块。",
+    "py": "Chēfèi yígòng sānshíwǔ kuài.",
+    "vi": "Tiền cước xe tổng cộng 35 tệ."
+  },
+  {
+    "cat": "travel",
+    "cn": "我扫支付宝付给您。",
+    "py": "Wǒ sǎo Zhīfùbǎo fù gěi nín.",
+    "vi": "Tôi quét Alipay thanh toán cho bác nhé."
+  },
+  {
+    "cat": "travel",
+    "cn": "请问买高铁票在哪里取票？",
+    "py": "Qǐngwèn mǎi gāotiěpiào zài nǎlǐ qǔpiào?",
+    "vi": "Xin hỏi mua vé tàu cao tốc thì lấy vé ở đâu?"
+  },
+  {
+    "cat": "travel",
+    "cn": "刷护照直接进站就可以了。",
+    "py": "Shuā hùzhào zhíjiē jìnzhàn jiù kěyǐ le.",
+    "vi": "Quẹt hộ chiếu là đi thẳng qua cửa vào ga được luôn."
+  },
+  {
+    "cat": "travel",
+    "cn": "请出示您的车票和身份证件。",
+    "py": "Qǐng chūshì nín de chēpiào hé shēnfèn zhèngjiàn.",
+    "vi": "Xin vui lòng xuất trình vé và giấy tờ tùy thân."
+  },
+  {
+    "cat": "travel",
+    "cn": "检票口在几号？",
+    "py": "Jiǎnpiàokǒu zài jǐ hào?",
+    "vi": "Cửa soát vé là cửa số mấy vậy?"
+  },
+  {
+    "cat": "travel",
+    "cn": "去往上海的高铁在五号检票口。",
+    "py": "Qùwǎng Shànghǎi de gāotiě zài wǔ hào jiǎnpiàokǒu.",
+    "vi": "Tàu cao tốc đi Thượng Hải ở cửa soát vé số 5."
+  },
+  {
+    "cat": "travel",
+    "cn": "请问行李托运处在哪里？",
+    "py": "Qǐngwèn xínglǐ tuōyùn chù zài nǎlǐ?",
+    "vi": "Xin hỏi quầy ký gửi hành lý ở chỗ nào?"
+  },
+  {
+    "cat": "travel",
+    "cn": "这件行李超重了吗？",
+    "py": "Zhè jiàn xínglǐ chāozhòng le ma?",
+    "vi": "Kiện hành lý này có bị quá cân không?"
+  },
+  {
+    "cat": "travel",
+    "cn": "随身行李限重七公斤。",
+    "py": "Suíshēn xínglǐ xiànzhòng qī gōngjīn.",
+    "vi": "Hành lý xách tay giới hạn tối đa 7 kg."
+  },
+  {
+    "cat": "travel",
+    "cn": "请问登机口几号？",
+    "py": "Qǐngwèn dēngjīkǒu jǐ hào?",
+    "vi": "Xin hỏi cửa lên máy bay (gate) số mấy?"
+  },
+  {
+    "cat": "travel",
+    "cn": "航班延误了一个小时。",
+    "py": "Hángbān yánwù le yí ge xiǎoshí.",
+    "vi": "Chuyến bay bị hoãn (delay) mất một tiếng đồng hồ."
+  },
+  {
+    "cat": "travel",
+    "cn": "请问安检通道在哪里？",
+    "py": "Qǐngwèn ānjiǎn tōngdào zài nǎlǐ?",
+    "vi": "Xin hỏi lối kiểm tra an ninh ở chỗ nào?"
+  },
+  {
+    "cat": "travel",
+    "cn": "请脱下外套，取出笔记本电脑。",
+    "py": "Qǐng tuō xià wàitào, qǔchū bǐjìběn diànnǎo.",
+    "vi": "Xin cởi áo khoác ngoài và lấy laptop ra khay."
+  },
+  {
+    "cat": "travel",
+    "cn": "请问这附近有共享单车吗？",
+    "py": "Qǐngwèn zhè fùjìn yǒu gòngxiǎng dānchē ma?",
+    "vi": "Xin hỏi gần đây có xe đạp công cộng không?"
+  },
+  {
+    "cat": "travel",
+    "cn": "用美团或者哈啰扫码就能骑。",
+    "py": "Yòng Měituán huòzhě Hāluō sǎomǎ jiù néng qí.",
+    "vi": "Dùng app Meituan hoặc Hello quét mã là đi được."
+  },
+  {
+    "cat": "travel",
+    "cn": "请问这辆公交车往哪个方向开？",
+    "py": "Qǐngwèn zhè liàng gōngjiāochē wǎng nǎge fāngxiàng kāi?",
+    "vi": "Xin hỏi xe buýt này chạy theo hướng nào?"
+  },
+  {
+    "cat": "travel",
+    "cn": "开往市中心方向。",
+    "py": "Kāi wǎng shìzhōngxīn fāngxiàng.",
+    "vi": "Chạy về hướng trung tâm thành phố."
+  },
+  {
+    "cat": "travel",
+    "cn": "坐过站了怎么办？",
+    "py": "Zuò guò zhàn le zěnme bàn?",
+    "vi": "Bị đi lố trạm rồi thì làm sao giờ?"
+  },
+  {
+    "cat": "travel",
+    "cn": "到下一站下车，到对面坐回去。",
+    "py": "Dào xià yí zhàn xià chē, dào duìmiàn zuò huíqù.",
+    "vi": "Đến trạm sau xuống xe, rồi sang đối diện bắt xe quay lại."
+  },
+  {
+    "cat": "travel",
+    "cn": "这里可以招手停出租车吗？",
+    "py": "Zhèlǐ kěyǐ zhāoshǒu tíng chūzūchē ma?",
+    "vi": "Ở đây có vẫy xe taxi được không?"
+  },
+  {
+    "cat": "travel",
+    "cn": "这里禁停，去前面出租车停靠点吧。",
+    "py": "Zhèlǐ jìntíng, qù qiánmiàn chūzūchē tíngkàodiǎn ba.",
+    "vi": "Chỗ này cấm dừng, ra điểm đỗ taxi phía trước nhé."
+  },
+  {
+    "cat": "travel",
+    "cn": "你也可以用滴滴打车，很方便。",
+    "py": "Nǐ yě kěyǐ yòng Dīdī dǎchē, hěn fāngbiàn.",
+    "vi": "Bạn cũng có thể gọi xe qua app Didi, tiện lắm."
+  },
+  {
+    "cat": "travel",
+    "cn": "师傅，开一下后备箱，我放行李。",
+    "py": "Shīfu, kāi yíxià hòubèixiāng, wǒ fàng xínglǐ.",
+    "vi": "Bác tài mở cốp sau giúp tôi để cất hành lý với."
+  },
+  {
+    "cat": "travel",
+    "cn": "请系好安全带。",
+    "py": "Qǐng jì hǎo ānquándài.",
+    "vi": "Xin quý khách vui lòng thắt dây an toàn."
+  },
+  {
+    "cat": "travel",
+    "cn": "师傅，麻烦开一下空调。",
+    "py": "Shīfu, máfan kāi yíxià kōngtiáo.",
+    "vi": "Bác tài ơi, làm phiền bật điều hòa giúp tôi."
+  },
+  {
+    "cat": "travel",
+    "cn": "这附近有加油站吗？",
+    "py": "Zhè fùjìn yǒu jiāyóuzhàn ma?",
+    "vi": "Gần đây có cây xăng nào không?"
+  },
+  {
+    "cat": "travel",
+    "cn": "往前开一公里就有一家。",
+    "py": "Wǎng qián kāi yì gōnglǐ jiù yǒu yì jiā.",
+    "vi": "Chạy thẳng về phía trước 1 cây số là có một cây xăng."
+  },
+  {
+    "cat": "travel",
+    "cn": "祝您旅途愉快！",
+    "py": "Zhù nín lǚtú yúkuài!",
+    "vi": "Chúc bạn có một chuyến đi vui vẻ!"
+  },
+  {
+    "cat": "travel",
+    "cn": "一路顺风！",
+    "py": "Yílù shùnfēng!",
+    "vi": "Thuận buồm xuôi gió!"
+  },
+  {
+    "cat": "hotel",
+    "cn": "你好，我想办理入住手续。",
+    "py": "Nǐ hǎo, wǒ xiǎng bànlǐ rùzhù shǒuxù.",
+    "vi": "Xin chào, tôi muốn làm thủ tục nhận phòng (check-in)."
+  },
+  {
+    "cat": "hotel",
+    "cn": "我在网上预订了一间大床房。",
+    "py": "Wǒ zài wǎngshang yùdìng le yì jiān dàchuángfáng.",
+    "vi": "Tôi đã đặt một phòng giường đôi lớn trên mạng."
+  },
+  {
+    "cat": "hotel",
+    "cn": "请出示所有入住人的护照。",
+    "py": "Qǐng chūshì suǒyǒu rùzhù rén de hùzhào.",
+    "vi": "Xin vui lòng xuất trình hộ chiếu của tất cả người ở."
+  },
+  {
+    "cat": "hotel",
+    "cn": "预订人姓名是阮文海。",
+    "py": "Yùdìngrén xìngmíng shì Ruǎn Wénhǎi.",
+    "vi": "Tên người đặt là Nguyễn Văn Hải."
+  },
+  {
+    "cat": "hotel",
+    "cn": "查到了，您预订了两晚。",
+    "py": "Chádào le, nín yùdìng le liǎng wǎn.",
+    "vi": "Tôi tìm thấy rồi, bạn đặt phòng 2 đêm."
+  },
+  {
+    "cat": "hotel",
+    "cn": "需要交押金吗？押金多少？",
+    "py": "Xūyào jiāo yājīn ma? Yājīn duōshao?",
+    "vi": "Có cần đặt cọc tiền phòng không? Tiền cọc là bao nhiêu?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "押金五百元，退房时原路退回。",
+    "py": "Yājīn wǔbǎi yuán, tuìfáng shí yuánlù tuìhuí.",
+    "vi": "Tiền cọc 500 tệ, trả phòng sẽ hoàn lại như cũ."
+  },
+  {
+    "cat": "hotel",
+    "cn": "这是您的房卡，房间在八楼808。",
+    "py": "Zhè shì nín de fángkǎ, fángjiān zài bā lóu bābāolíng.",
+    "vi": "Đây là thẻ phòng của bạn, phòng ở tầng 8, số phòng 808."
+  },
+  {
+    "cat": "hotel",
+    "cn": "电梯在右转走廊尽头。",
+    "py": "Diàntī zài yòuzhuǎn zǒuláng jìntóu.",
+    "vi": "Thang máy ở cuối hành lang rẽ phải."
+  },
+  {
+    "cat": "hotel",
+    "cn": "请问早餐几点开始？在哪里吃？",
+    "py": "Qǐngwèn zǎocān jǐ diǎn kāishǐ? Zài nǎlǐ chī?",
+    "vi": "Xin hỏi bữa sáng mấy giờ bắt đầu? Ăn ở đâu vậy?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "早餐从早上七点到十点，在二楼餐厅。",
+    "py": "Zǎocān cóng zǎoshang qī diǎn dào shí diǎn, zài èr lóu cāntīng.",
+    "vi": "Bữa sáng từ 7h đến 10h sáng, tại nhà hàng tầng 2."
+  },
+  {
+    "cat": "hotel",
+    "cn": "房间里有免费Wi-Fi吗？",
+    "py": "Fángjiān lǐ yǒu miǎnfèi Wi-Fi ma?",
+    "vi": "Trong phòng có Wi-Fi miễn phí không?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "Wi-Fi账号是房间号，密码是您的手机号。",
+    "py": "Wi-Fi zhànghào shì fángjiān hào, mìmǎ shì nín de shǒujī hào.",
+    "vi": "Tên Wi-Fi là số phòng, mật khẩu là số điện thoại của bạn."
+  },
+  {
+    "cat": "hotel",
+    "cn": "退房时间是几点？",
+    "py": "Tuìfáng shíjiān shì jǐ diǎn?",
+    "vi": "Giờ trả phòng (check-out) muộn nhất là mấy giờ?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "退房时间是中午十二点之前。",
+    "py": "Tuìfáng shíjiān shì zhōngwǔ shí'èr diǎn zhīqián.",
+    "vi": "Giờ trả phòng là trước 12 giờ trưa."
+  },
+  {
+    "cat": "hotel",
+    "cn": "可以延迟退房到下午两点吗？",
+    "py": "Kěyǐ yánchí tuìfáng dào xiàwǔ liǎng diǎn ma?",
+    "vi": "Có thể lùi giờ trả phòng đến 2 giờ chiều được không?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "可以，为您免费延时到两点。",
+    "py": "Kěyǐ, wèi nín miǎnfèi yánshí dào liǎng diǎn.",
+    "vi": "Được ạ, khách sạn miễn phí lùi giờ đến 2h chiều cho bạn."
+  },
+  {
+    "cat": "hotel",
+    "cn": "请问可以帮我换一间安静的房间吗？",
+    "py": "Qǐngwèn kěyǐ bāng wǒ huàn yì jiān ānjìng de fángjiān ma?",
+    "vi": "Xin hỏi có thể đổi cho tôi phòng nào yên tĩnh hơn không?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "隔壁房间声音太吵了。",
+    "py": "Gébì fángjiān shēngyīn tài chǎo le.",
+    "vi": "Phòng bên cạnh ồn ào quá."
+  },
+  {
+    "cat": "hotel",
+    "cn": "空调好像不制冷，麻烦找人看一下。",
+    "py": "Kōngtiáo hǎoxiàng bú zhìlěng, máfan zhǎo rén kàn yíxià.",
+    "vi": "Điều hòa dường như không mát, làm phiền cho người lên xem giúp."
+  },
+  {
+    "cat": "hotel",
+    "cn": "浴室水龙头漏水了。",
+    "py": "Yùshì shuǐlóngtóu lòushuǐ le.",
+    "vi": "Vòi nước trong phòng tắm bị rò nước rồi."
+  },
+  {
+    "cat": "hotel",
+    "cn": "我们马上安排维修人员上去。",
+    "py": "Wǒmen mǎshàng ānpái wéixiū rényuán shàngqù.",
+    "vi": "Chúng tôi sẽ cử nhân viên kỹ thuật lên ngay."
+  },
+  {
+    "cat": "hotel",
+    "cn": "麻烦送两瓶矿泉水上来。",
+    "py": "Máfan sòng liǎng píng kuàngquánshuǐ shànglai.",
+    "vi": "Làm phiền mang lên giúp tôi hai chai nước khoáng."
+  },
+  {
+    "cat": "hotel",
+    "cn": "请再给我们一套洗漱用品和毛巾。",
+    "py": "Qǐng zài gěi wǒmen yí tào xǐshù yòngpǐn hé máojīn.",
+    "vi": "Cho chúng tôi xin thêm một bộ đồ vệ sinh cá nhân và khăn tắm."
+  },
+  {
+    "cat": "hotel",
+    "cn": "前台电话拨几号？",
+    "py": "Qiántái diànhuà bō jǐ hào?",
+    "vi": "Gọi quầy lễ tân thì bấm số mấy?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "直接按“0”就可以呼叫前台。",
+    "py": "Zhíjiē àn \"líng\" jiù kěyǐ hūjiào qiántái.",
+    "vi": "Bấm thẳng phím 0 là gọi tới lễ tân ạ."
+  },
+  {
+    "cat": "hotel",
+    "cn": "我想打扫房间，请挂“请即打扫”牌。",
+    "py": "Wǒ xiǎng dǎsǎo fángjiān, qǐng guà \"qǐng jí dǎsǎo\" pái.",
+    "vi": "Tôi muốn dọn phòng, xin hãy treo biển \"Làm phòng ngay\"."
+  },
+  {
+    "cat": "hotel",
+    "cn": "不要打扰，我想多睡会儿。",
+    "py": "Bú yào dǎrǎo, wǒ xiǎng duō shuì huìr.",
+    "vi": "Đừng làm phiền, tôi muốn ngủ thêm chút."
+  },
+  {
+    "cat": "hotel",
+    "cn": "这里有洗衣房吗？",
+    "py": "Zhèlǐ yǒu xǐyīfáng ma?",
+    "vi": "Ở đây có phòng giặt đồ không?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "五楼有自助洗衣房，提供烘干机。",
+    "py": "Wǔ lóu yǒu zìzhù xǐyīfáng, tígōng hōnggānjī.",
+    "vi": "Tầng 5 có phòng giặt tự phục vụ, có sẵn máy sấy khô."
+  },
+  {
+    "cat": "hotel",
+    "cn": "可以帮我叫一辆去机场的出租车吗？",
+    "py": "Kěyǐ bāng wǒ jiào yí liàng qù jīchǎng de chūzūchē ma?",
+    "vi": "Có thể gọi giúp tôi một chiếc taxi đi sân bay không?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "好的，请问几点出发？",
+    "py": "Hǎo de, qǐngwèn jǐ diǎn chūfā?",
+    "vi": "Vâng, xin hỏi mấy giờ bạn xuất phát?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "你好，我想办理退房。",
+    "py": "Nǐ hǎo, wǒ xiǎng bànlǐ tuìfáng.",
+    "vi": "Xin chào, tôi muốn làm thủ tục trả phòng."
+  },
+  {
+    "cat": "hotel",
+    "cn": "请出示您的房卡。",
+    "py": "Qǐng chūshì nín de fángkǎ.",
+    "vi": "Xin vui lòng đưa lại thẻ phòng ạ."
+  },
+  {
+    "cat": "hotel",
+    "cn": "请稍等，查房大概两分钟。",
+    "py": "Qǐng shāoděng, cháfáng dàgài liǎng fēnzhōng.",
+    "vi": "Xin chờ một lát, kiểm tra phòng mất tầm 2 phút."
+  },
+  {
+    "cat": "hotel",
+    "cn": "一切正常，押金已退回到您的账户。",
+    "py": "Yíqiè zhèngcháng, yājīn yǐ tuìhuí dào nín de zhànghù.",
+    "vi": "Mọi thứ bình thường, tiền cọc đã hoàn về tài khoản của bạn."
+  },
+  {
+    "cat": "hotel",
+    "cn": "我们可以把行李暂存在前台吗？",
+    "py": "Wǒmen kěyǐ bǎ xínglǐ zàncún zài qiántái ma?",
+    "vi": "Chúng tôi có thể gửi tạm hành lý ở quầy lễ tân được không?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "我们下午的飞机，大概四点来取。",
+    "py": "Wǒmen xiàwǔ de fēijī, dàgài sì diǎn lái qǔ.",
+    "vi": "Chuyến bay của chúng tôi buổi chiều, khoảng 4h sẽ quay lại lấy."
+  },
+  {
+    "cat": "hotel",
+    "cn": "可以的，这是您的行李牌，请保管好。",
+    "py": "Kěyǐ de, zhè shì nín de xínglǐpái, qǐng bǎoguǎn hǎo.",
+    "vi": "Được chứ, đây là thẻ giữ hành lý, bạn giữ cẩn thận nhé."
+  },
+  {
+    "cat": "hotel",
+    "cn": "凭行李牌随时可以来领取。",
+    "py": "Píng xínglǐpái suíshí kěyǐ lái lǐngqǔ.",
+    "vi": "Dựa vào thẻ giữ đồ bất cứ lúc nào cũng lấy lại được."
+  },
+  {
+    "cat": "hotel",
+    "cn": "你们这里的服务真周到！",
+    "py": "Nǐmen zhèlǐ de fúwù zhēn zhōudào!",
+    "vi": "Dịch vụ ở khách sạn các bạn chu đáo thật đấy!"
+  },
+  {
+    "cat": "hotel",
+    "cn": "床很舒服，睡得很好。",
+    "py": "Chuáng hěn shūfu, shuì de hěn hǎo.",
+    "vi": "Giường rất êm, tôi ngủ ngon lắm."
+  },
+  {
+    "cat": "hotel",
+    "cn": "附近有什么好吃的餐馆推荐吗？",
+    "py": "Fùjìn yǒu shénme hǎochī de cānguǎn tuījiàn ma?",
+    "vi": "Gần đây có quán ăn nào ngon giới thiệu không?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "出门往左拐两百米就是美食街。",
+    "py": "Chū mén wǎng zuǒ guǎi liǎngbǎi mǐ jiù shì měishíjiē.",
+    "vi": "Ra cửa rẽ trái 200 mét là phố ẩm thực."
+  },
+  {
+    "cat": "hotel",
+    "cn": "有健身房和游泳池吗？",
+    "py": "Yǒu jiànshēnfáng hé yóuyǒngchí ma?",
+    "vi": "Có phòng gym và bể bơi không ạ?"
+  },
+  {
+    "cat": "hotel",
+    "cn": "顶楼有恒温游泳池和健身房。",
+    "py": "Dǐnglóu yǒu héngwēn yóuyǒngchí hé jiànshēnfáng.",
+    "vi": "Tầng thượng có bể bơi bốn mùa nước ấm và phòng gym."
+  },
+  {
+    "cat": "hotel",
+    "cn": "营业时间到晚上十一点。",
+    "py": "Yíngyè shíjiān dào wǎnshang shí'yī diǎn.",
+    "vi": "Giờ mở cửa đến 11 giờ đêm."
+  },
+  {
+    "cat": "hotel",
+    "cn": "感谢您的入住，欢迎再次光临！",
+    "py": "Gǎnxiè nín de rùzhù, huānyíng zàicì guānglín!",
+    "vi": "Cảm ơn bạn đã lưu trú, hẹn gặp lại quý khách lần sau!"
+  },
+  {
+    "cat": "hotel",
+    "cn": "祝您旅途愉快，再见！",
+    "py": "Zhù nín lǚtú yúkuài, zàijiàn!",
+    "vi": "Chúc bạn có chuyến đi vui vẻ, tạm biệt!"
+  },
+  {
+    "cat": "hotel",
+    "cn": "下次来北京我还住这里。",
+    "py": "Xià cì lái Běijīng wǒ hái zhù zhèlǐ.",
+    "vi": "Lần sau đến Bắc Kinh tôi vẫn sẽ ở lại đây."
+  },
+  {
+    "cat": "work",
+    "cn": "这是我的名片，请多关照。",
+    "py": "Zhè shì wǒ de míngpiàn, qǐng duō guānzhào.",
+    "vi": "Đây là danh thiếp của tôi, xin được chỉ giáo."
+  },
+  {
+    "cat": "work",
+    "cn": "很高兴与贵公司展开合作。",
+    "py": "Hěn gāoxìng yǔ guì gōngsī zhǎnkāi hézuò.",
+    "vi": "Rất vui mừng được triển khai hợp tác cùng quý công ty."
+  },
+  {
+    "cat": "work",
+    "cn": "我们今天开会的主要议程是什么？",
+    "py": "Wǒmen jīntiān kāihuì de zhǔyào yìchéng shì shénme?",
+    "vi": "Chương trình nghị sự chính của cuộc họp hôm nay là gì?"
+  },
+  {
+    "cat": "work",
+    "cn": "请大家准时到三号会议室集合。",
+    "py": "Qǐng dàjiā zhǔnshí dào sān hào huìyìshì jíhé.",
+    "vi": "Mời mọi người tập trung đúng giờ tại phòng họp số 3."
+  },
+  {
+    "cat": "work",
+    "cn": "能听到我的声音吗？屏幕看得到吗？",
+    "py": "Néng tīng dào wǒ de shēngyīn ma? Píngmù kàn de dào ma?",
+    "vi": "Mọi người nghe rõ tiếng tôi không? Màn hình nhìn thấy không?"
+  },
+  {
+    "cat": "work",
+    "cn": "声音很清晰，请继续汇报。",
+    "py": "Shēngyīn hěn qīngxī, qǐng jìxù huìbào.",
+    "vi": "Âm thanh rất rõ, mời bạn tiếp tục báo cáo."
+  },
+  {
+    "cat": "work",
+    "cn": "关于这个方案，大家有什么看法？",
+    "py": "Guānyú zhège fāng'àn, dàjiā yǒu shénme kànfǎ?",
+    "vi": "Về phương án này, mọi người có quan điểm ý kiến gì không?"
+  },
+  {
+    "cat": "work",
+    "cn": "我非常赞同李总的提议。",
+    "py": "Wǒ fēicháng zàntóng Lǐ zǒng de tíyì.",
+    "vi": "Tôi vô cùng tán thành đề xuất của giám đốc Lý."
+  },
+  {
+    "cat": "work",
+    "cn": "这个项目目前的进展如何？",
+    "py": "Zhège xiàngmù mùqián de jìnzhǎn rúhé?",
+    "vi": "Tiến độ hiện tại của dự án này ra sao rồi?"
+  },
+  {
+    "cat": "work",
+    "cn": "目前一切按照计划进行。",
+    "py": "Mùqián yíqiè ànzhào jìhuà jìnxíng.",
+    "vi": "Hiện tại mọi việc đang tiến triển đúng theo kế hoạch."
+  },
+  {
+    "cat": "work",
+    "cn": "预计什么时候能够完成交付？",
+    "py": "Yùjì shénme shíhou nénggòu wánchéng jiāofù?",
+    "vi": "Dự kiến khi nào có thể hoàn tất bàn giao?"
+  },
+  {
+    "cat": "work",
+    "cn": "我们力争在下周五之前完成。",
+    "py": "Wǒmen lìzhēng zài xià zhōuwǔ zhīqián wánchéng.",
+    "vi": "Chúng tôi nỗ lực phấn đấu xong trước thứ Sáu tuần tới."
+  },
+  {
+    "cat": "work",
+    "cn": "请把最新的报价单发到我邮箱。",
+    "py": "Qǐng bǎ zuìxīn de bàojiàdān fā dào wǒ yóuxiāng.",
+    "vi": "Xin hãy gửi bảng báo giá mới nhất vào hộp thư của tôi."
+  },
+  {
+    "cat": "work",
+    "cn": "我已经把合同草案发给您了，请查收。",
+    "py": "Wǒ yǐjīng bǎ hétong cǎo'àn fā gěi nín le, qǐng cháchōu.",
+    "vi": "Tôi đã gửi dự thảo hợp đồng cho bạn rồi, vui lòng kiểm tra hòm thư."
+  },
+  {
+    "cat": "work",
+    "cn": "双方在价格方面还有一些分歧。",
+    "py": "Shuāngfāng zài jiàgé fāngmiàn hái yǒu yìxiē fēnqí.",
+    "vi": "Hai bên ở khía cạnh giá cả vẫn còn một vài bất đồng."
+  },
+  {
+    "cat": "work",
+    "cn": "我们希望能达成互利共赢。",
+    "py": "Wǒmen xīwàng néng dáchéng hùlì gòngyíng.",
+    "vi": "Chúng tôi hy vọng có thể đạt được kết quả đôi bên cùng có lợi."
+  },
+  {
+    "cat": "work",
+    "cn": "付款方式是怎样的？",
+    "py": "Fùkuǎn fāngshì shì zěnyàng de?",
+    "vi": "Phương thức thanh toán cụ thể là như thế nào?"
+  },
+  {
+    "cat": "work",
+    "cn": "预付百分之三十定金，验收后结清尾款。",
+    "py": "Yùfù bǎifēnzhī sānshí dìngjīn, yànshōu hòu jiéqīng wěikuǎn.",
+    "vi": "Đặt cọc trước 30%, nghiệm thu xong sẽ thanh toán hết phần còn lại."
+  },
+  {
+    "cat": "work",
+    "cn": "如果没问题，我们今天就可以签约。",
+    "py": "Rúguǒ méi wèntí, wǒmen jīntiān jiù kěyǐ qiānyuē.",
+    "vi": "Nếu không còn vấn đề gì, hôm nay chúng ta có thể ký hợp đồng."
+  },
+  {
+    "cat": "work",
+    "cn": "合作愉快！预祝项目顺利！",
+    "py": "Hézuò yúkuài! Yùzhù xiàngmù shùnlì!",
+    "vi": "Hợp tác vui vẻ! Chúc dự án thành công tốt đẹp!"
+  },
+  {
+    "cat": "work",
+    "cn": "今天下午三点有个跨部门会议。",
+    "py": "Jīntiān xiàwǔ sān diǎn yǒu ge kuà-bùmén huìyì.",
+    "vi": "Chiều nay 3 giờ có cuộc họp liên phòng ban."
+  },
+  {
+    "cat": "work",
+    "cn": "请准备好相关的PPT材料。",
+    "py": "Qǐng zhǔnbèi hǎo xiāngguān de PPT cáiliào.",
+    "vi": "Xin hãy chuẩn bị sẵn sàng tài liệu slide PPT liên quan."
+  },
+  {
+    "cat": "work",
+    "cn": "今天需要加班赶进度吗？",
+    "py": "Jīntiān xūyào jiābān gǎn jìndù ma?",
+    "vi": "Hôm nay có cần tăng ca để chạy kịp tiến độ không?"
+  },
+  {
+    "cat": "work",
+    "cn": "今天不加班，大家准时下班。",
+    "py": "Jīntiān bù jiābān, dàjiā zhǔnshí xiàbān.",
+    "vi": "Hôm nay không tăng ca, mọi người đúng giờ tan làm nhé."
+  },
+  {
+    "cat": "work",
+    "cn": "我想请假两天，回老家办点私事。",
+    "py": "Wǒ xiǎng qǐngjià liǎng tiān, huí lǎojiā bàn diǎn sīshì.",
+    "vi": "Tôi muốn xin nghỉ phép hai ngày để về quê giải quyết việc riêng."
+  },
+  {
+    "cat": "work",
+    "cn": "请在OA系统里提交请假申请。",
+    "py": "Qǐng zài OA xìtǒng lǐ tíjiāo qǐngjià shēnqǐng.",
+    "vi": "Xin vui lòng nộp đơn xin nghỉ trên hệ thống quản lý nội bộ."
+  },
+  {
+    "cat": "work",
+    "cn": "这个月KPI考核完成得非常好。",
+    "py": "Zhège yuè KPI kǎohé wánchéng de fēicháng hǎo.",
+    "vi": "Chỉ tiêu đánh giá KPI tháng này hoàn thành rất xuất sắc."
+  },
+  {
+    "cat": "work",
+    "cn": "大家这段时间辛苦了！",
+    "py": "Dàjiā zhè duàn shíjiān xīnkǔ le!",
+    "vi": "Thời gian này mọi người đã vất vả nhiều rồi!"
+  },
+  {
+    "cat": "work",
+    "cn": "下周组织团队建设活动。",
+    "py": "Xià zhōu zǔzhī tuánduì jiànshè huódòng.",
+    "vi": "Tuần tới công ty tổ chức hoạt động team building nhé."
+  },
+  {
+    "cat": "work",
+    "cn": "有什么困难大家互相协助。",
+    "py": "Yǒu shénme kùnnan dàjiā hùxiāng xiézhù.",
+    "vi": "Có khó khăn gì mọi người cùng tương trợ lẫn nhau."
+  },
+  {
+    "cat": "work",
+    "cn": "麻烦把这份文件打印两份。",
+    "py": "Máfan bǎ zhè fèn wénjiàn dǎyìn liǎng fèn.",
+    "vi": "Làm phiền in giúp tôi tài liệu này ra hai bản."
+  },
+  {
+    "cat": "work",
+    "cn": "请经理在最后一页签字盖章。",
+    "py": "Qǐng jīnglǐ zài zuìhòu yí yè qiānzì gàizhāng.",
+    "vi": "Xin mời sếp ký tên và đóng dấu ở trang cuối cùng."
+  },
+  {
+    "cat": "work",
+    "cn": "客户对我们的产品非常满意。",
+    "py": "Kèhù duì wǒmen de chǎnpǐn fēicháng mǎnyì.",
+    "vi": "Khách hàng vô cùng hài lòng với sản phẩm của chúng ta."
+  },
+  {
+    "cat": "work",
+    "cn": "售后服务一定要跟上。",
+    "py": "Shòuhòu fúwù yídìng yào gēn shàng.",
+    "vi": "Dịch vụ hậu mãi chăm sóc sau bán hàng bắt buộc phải theo sát."
+  },
+  {
+    "cat": "work",
+    "cn": "这周五之前提交季度总结报告。",
+    "py": "Zhè zhōuwǔ zhīqián tíjiāo jìdù zǒngjié bàogào.",
+    "vi": "Trước thứ Sáu này nộp báo cáo tổng kết quý nhé."
+  },
+  {
+    "cat": "work",
+    "cn": "收到，一定准时提交。",
+    "py": "Shōudào, yídìng zhǔnshí tíjiāo.",
+    "vi": "Đã nhận lệnh, nhất định nộp đúng hạn ạ."
+  },
+  {
+    "cat": "work",
+    "cn": "您好，请问找哪位？",
+    "py": "Nín hǎo, qǐngwèn zhǎo nǎ wèi?",
+    "vi": "Xin chào, bạn muốn tìm ai vậy ạ?"
+  },
+  {
+    "cat": "work",
+    "cn": "我找市场部的张总，有预约。",
+    "py": "Wǒ zhǎo shìchǎngbù de Zhāng zǒng, yǒu yùyuē.",
+    "vi": "Tôi tìm giám đốc Trương phòng Marketing, tôi có hẹn trước."
+  },
+  {
+    "cat": "work",
+    "cn": "张总在办公室等您，请跟我来。",
+    "py": "Zhāng zǒng zài bàngōngshì děng nín, qǐng gēn wǒ lái.",
+    "vi": "Giám đốc Trương đang đợi trong văn phòng, mời đi theo tôi."
+  },
+  {
+    "cat": "work",
+    "cn": "请稍坐，我给您倒杯茶。",
+    "py": "Qǐng shāo zuò, wǒ gěi nín dào bēi chá.",
+    "vi": "Xin mời ngồi chờ một chút, tôi rót tách trà mời bạn."
+  },
+  {
+    "cat": "work",
+    "cn": "久仰大名，很高兴见到您！",
+    "py": "Jiǔyǎng dàmíng, hěn gāoxìng jiàndào nín!",
+    "vi": "Ngưỡng mộ danh tiếng đã lâu, rất hân hạnh được diện kiến ngài!"
+  },
+  {
+    "cat": "work",
+    "cn": "哪里哪里，过奖了！",
+    "py": "Nǎlǐ nǎlǐ, guòjiǎng le!",
+    "vi": "Đâu có đâu có, ngài quá khen rồi!"
+  },
+  {
+    "cat": "work",
+    "cn": "我们对东南亚市场非常看好。",
+    "py": "Wǒmen duì Dōngnányà shìchǎng fēicháng kànhǎo.",
+    "vi": "Chúng tôi rất kỳ vọng và đánh giá cao thị trường Đông Nam Á."
+  },
+  {
+    "cat": "work",
+    "cn": "越南市场的增长潜力非常巨大。",
+    "py": "Yuènán shìchǎng de zēngzhǎng qiánlì fēicháng jùdà.",
+    "vi": "Tiềm năng tăng trưởng của thị trường Việt Nam là cực kỳ to lớn."
+  },
+  {
+    "cat": "work",
+    "cn": "期待未来有更深入的合作机会。",
+    "py": "Qīdài wèilái yǒu gèng shēnrù de hézuò jīhuì.",
+    "vi": "Kỳ vọng tương lai sẽ có nhiều cơ hội hợp tác sâu rộng hơn."
+  },
+  {
+    "cat": "work",
+    "cn": "下个月我们去河内拜访贵公司。",
+    "py": "Xià ge yuè wǒmen qù Hénèi bàifǎng guì gōngsī.",
+    "vi": "Tháng sau chúng tôi sẽ sang Hà Nội thăm quý công ty."
+  },
+  {
+    "cat": "work",
+    "cn": "热烈欢迎，我们一定热情接待！",
+    "py": "Rèliè huānyíng, wǒmen yídìng rèqíng jiēdài!",
+    "vi": "Nhiệt liệt chào đón, chúng tôi nhất định sẽ tiếp đón nồng hậu!"
+  },
+  {
+    "cat": "work",
+    "cn": "祝贵司事业蒸蒸日上！",
+    "py": "Zhù guì sī shìyè zhēngzhēng-rìshàng!",
+    "vi": "Chúc quý công ty sự nghiệp phát triển ngày càng thăng hoa rực rỡ!"
+  },
+  {
+    "cat": "work",
+    "cn": "财源广进，万事如意！",
+    "py": "Cáiyuán guǎngjìn, wànshì rúyì!",
+    "vi": "Tài nguyên cuồn cuộn, vạn sự như ý!"
+  },
+  {
+    "cat": "work",
+    "cn": "期待我们的下一次会面！",
+    "py": "Qīdài wǒmen de xià yí cì huìmiàn!",
+    "vi": "Rất mong chờ lần gặp gỡ tiếp theo của chúng ta!"
+  },
+  {
+    "cat": "health",
+    "cn": "我身体有点儿不舒服。",
+    "py": "Wǒ shēntǐ yǒudiǎnr bù shūfu.",
+    "vi": "Người tôi hơi có chút không được khỏe."
+  },
+  {
+    "cat": "health",
+    "cn": "你哪里不舒服？",
+    "py": "Nǐ nǎlǐ bù shūfu?",
+    "vi": "Bạn thấy khó chịu ở chỗ nào?"
+  },
+  {
+    "cat": "health",
+    "cn": "我头疼，嗓子也特别疼。",
+    "py": "Wǒ tóuténg, sǎngzi yě tèbié téng.",
+    "vi": "Tôi bị đau đầu, cổ họng cũng đau rát dữ dội."
+  },
+  {
+    "cat": "health",
+    "cn": "你发烧了吗？量过体温吗？",
+    "py": "Nǐ fāshāo le ma? Liáng guo tǐwēn ma?",
+    "vi": "Bạn có sốt không? Đã cặp nhiệt độ chưa?"
+  },
+  {
+    "cat": "health",
+    "cn": "刚才量了，三十八度五。",
+    "py": "Gāngcái liáng le, sānshíbā dù wǔ.",
+    "vi": "Vừa đo xong, 38 độ rưỡi."
+  },
+  {
+    "cat": "health",
+    "cn": "你好像感冒了，得去医院看看。",
+    "py": "Nǐ hǎoxiàng gǎnmào le, děi qù yīyuàn kànkan.",
+    "vi": "Hình như bạn bị cảm cúm rồi, phải đi bệnh viện khám thôi."
+  },
+  {
+    "cat": "health",
+    "cn": "请问挂号处在哪里？",
+    "py": "Qǐngwèn guàhàochù zài nǎlǐ?",
+    "vi": "Xin hỏi quầy đăng ký khám bệnh ở đâu?"
+  },
+  {
+    "cat": "health",
+    "cn": "我想挂内科专家号。",
+    "py": "Wǒ xiǎng guà nèikē zhuānjiā hào.",
+    "vi": "Tôi muốn lấy số khám chuyên gia khoa nội."
+  },
+  {
+    "cat": "health",
+    "cn": "有医保卡还是自费？",
+    "py": "Yǒu yībǎokǎ háishì zìfèi?",
+    "vi": "Bạn có thẻ bảo hiểm y tế hay tự chi trả?"
+  },
+  {
+    "cat": "health",
+    "cn": "我是外国游客，自费看病。",
+    "py": "Wǒ shì wàiguó yóukè, zìfèi kànbìng.",
+    "vi": "Tôi là khách du lịch nước ngoài, tự chi trả viện phí."
+  },
+  {
+    "cat": "health",
+    "cn": "请在这里等候叫号。",
+    "py": "Qǐng zài zhèlǐ děnghòu jiàohào.",
+    "vi": "Xin mời ngồi đây chờ gọi số thứ tự."
+  },
+  {
+    "cat": "health",
+    "cn": "这种症状持续几天了？",
+    "py": "Zhè zhǒng zhèngzhuàng chíxù jǐ tiān le?",
+    "vi": "Triệu chứng này kéo dài mấy ngày rồi?"
+  },
+  {
+    "cat": "health",
+    "cn": "从昨天晚上开始的。",
+    "py": "Cóng zuótiān wǎnshang kāishǐ de.",
+    "vi": "Bắt đầu từ tối hôm qua."
+  },
+  {
+    "cat": "health",
+    "cn": "肚子疼不疼？有没有恶心拉肚子？",
+    "py": "Dùzi téng bu téng? Yǒu méiyǒu ěxīn lādùzi?",
+    "vi": "Bụng có đau không? Có buồn nôn hay đi ngoài tiêu chảy không?"
+  },
+  {
+    "cat": "health",
+    "cn": "肚子有点儿胀，吃不下东西。",
+    "py": "Dùzi yǒudiǎnr zhàng, chī bu xià dōngxi.",
+    "vi": "Bụng hơi chướng đầy hơi, không ăn nổi thứ gì."
+  },
+  {
+    "cat": "health",
+    "cn": "需要先去做个血常规化验。",
+    "py": "Xūyào xiān qù zuò ge xuèchángguī huàyàn.",
+    "vi": "Cần phải đi làm xét nghiệm máu tổng quát trước."
+  },
+  {
+    "cat": "health",
+    "cn": "抽血检查处在二楼。",
+    "py": "Chōuxuè jiǎncháchù zài èr lóu.",
+    "vi": "Phòng lấy máu xét nghiệm ở tầng 2."
+  },
+  {
+    "cat": "health",
+    "cn": "结果大概半小时出来。",
+    "py": "Jiéguǒ dàgài bàn xiǎoshí chūlai.",
+    "vi": "Kết quả khoảng nửa tiếng sau là có."
+  },
+  {
+    "cat": "health",
+    "cn": "没什么大问题，就是普通的病毒性感冒。",
+    "py": "Méi shénme dà wèntí, jiù shì pǔtōng de bìngdúxìng gǎnmào.",
+    "vi": "Không có vấn đề gì nghiêm trọng đâu, chỉ là cảm cúm do virus thông thường."
+  },
+  {
+    "cat": "health",
+    "cn": "平时对什么药物过敏吗？",
+    "py": "Píngshí duì shénme yàowù guòmǐn ma?",
+    "vi": "Bình thường bạn có dị ứng với loại thuốc nào không?"
+  },
+  {
+    "cat": "health",
+    "cn": "我对青霉素过敏。",
+    "py": "Wǒ duì qīngméisù guòmǐn.",
+    "vi": "Tôi bị dị ứng với kháng sinh Penicillin."
+  },
+  {
+    "cat": "health",
+    "cn": "好的，我已经记下了。",
+    "py": "Hǎo de, wǒ yǐjīng jìxià le.",
+    "vi": "Được rồi, tôi đã ghi chú vào hồ sơ bệnh án."
+  },
+  {
+    "cat": "health",
+    "cn": "请拿着处方去一楼药房取药。",
+    "py": "Qǐng ná zhe chùfāng qù yī lóu yàofáng qǔyào.",
+    "vi": "Mời cầm đơn thuốc xuống nhà thuốc tầng 1 để lấy thuốc."
+  },
+  {
+    "cat": "health",
+    "cn": "这个药怎么吃？",
+    "py": "Zhège yào zěnme chī?",
+    "vi": "Thuốc này uống liều lượng như thế nào?"
+  },
+  {
+    "cat": "health",
+    "cn": "一日三次，一次两片，饭后服用。",
+    "py": "Yí rì sān cì, yí cì liǎng piàn, fànhòu fúyòng.",
+    "vi": "Một ngày 3 lần, mỗi lần 2 viên, uống sau khi ăn no."
+  },
+  {
+    "cat": "health",
+    "cn": "这个药吃了会犯困吗？",
+    "py": "Zhège yào chī le huì fànkùn ma?",
+    "vi": "Thuốc này uống vào có gây buồn ngủ không?"
+  },
+  {
+    "cat": "health",
+    "cn": "吃了会有点儿困，服药期间不要开车。",
+    "py": "Chī le huì yǒudiǎnr kùn, fúyào qījiān bú yào kāichē.",
+    "vi": "Uống vào hơi buồn ngủ một chút, thời gian dùng thuốc không được lái xe."
+  },
+  {
+    "cat": "health",
+    "cn": "多喝温开水，注意休息。",
+    "py": "Duō hē wēnkāishuǐ, zhùyì xiūxi.",
+    "vi": "Nhớ uống nhiều nước ấm, chú ý nghỉ ngơi tĩnh dưỡng."
+  },
+  {
+    "cat": "health",
+    "cn": "三天后如果还不退烧请来复诊。",
+    "py": "Sān tiān hòu rúguǒ hái bú tuìshāo qǐng lái fùzhěn.",
+    "vi": "Sau 3 ngày nếu vẫn chưa cắt sốt thì quay lại tái khám."
+  },
+  {
+    "cat": "health",
+    "cn": "这附近有二十四小时药店吗？",
+    "py": "Zhè fùjìn yǒu èrshísì xiǎoshí yàodiàn ma?",
+    "vi": "Gần đây có hiệu thuốc nào mở cửa 24/24 không?"
+  },
+  {
+    "cat": "health",
+    "cn": "我想买一盒创可贴和碘伏。",
+    "py": "Wǒ xiǎng mǎi yì hé chuāngkětiē hé diǎnfú.",
+    "vi": "Tôi muốn mua một hộp băng gạc cá nhân (urgo) và cồn iod sát trùng."
+  },
+  {
+    "cat": "health",
+    "cn": "我不小心被刀切到手指了。",
+    "py": "Wǒ bù xiǎoxīn bèi dāo qiē dào shǒuzhǐ le.",
+    "vi": "Tôi sơ ý bị dao cắt trúng ngón tay rồi."
+  },
+  {
+    "cat": "health",
+    "cn": "伤口深不深？需要打破伤风吗？",
+    "py": "Shāngkǒu shēn bu shēn? Xūyào dǎ pòshāngfēng ma?",
+    "vi": "Vết thương có sâu không? Có cần tiêm uốn ván không?"
+  },
+  {
+    "cat": "health",
+    "cn": "伤口不深，消毒包扎一下就好。",
+    "py": "Shāngkǒu bù shēn, xiāodú bāozhā yíxià jiù hǎo.",
+    "vi": "Vết thương nông thôi, sát trùng băng bó lại là ổn."
+  },
+  {
+    "cat": "health",
+    "cn": "我的脚踝扭伤了，肿得很厉害。",
+    "py": "Wǒ de jiǎohuái niǔshāng le, zhǒng de hěn lìhai.",
+    "vi": "Mắt cá chân của tôi bị trẹo trật khớp, sưng to lắm."
+  },
+  {
+    "cat": "health",
+    "cn": "先冷敷二十分钟，不要用力揉。",
+    "py": "Xiān lěngfū èrshí fēnzhōng, bú yào yònglì róu.",
+    "vi": "Chườm đá lạnh trước 20 phút, tuyệt đối đừng xoa bóp mạnh."
+  },
+  {
+    "cat": "health",
+    "cn": "我想拍个X光片看看有没有骨折。",
+    "py": "Wǒ xiǎng pāi ge X-guāng piàn kànkan yǒu méiyǒu gǔzhé.",
+    "vi": "Tôi muốn chụp X-quang xem có bị rạn nứt xương không."
+  },
+  {
+    "cat": "health",
+    "cn": "放射科在负一楼。",
+    "py": "Fàngshèkē zài fù yī lóu.",
+    "vi": "Khoa chẩn đoán hình ảnh ở tầng hầm B1."
+  },
+  {
+    "cat": "health",
+    "cn": "骨头没有问题，只是软组织挫伤。",
+    "py": "Gǔtou méiyǒu wèntí, zhǐshì ruǎnzǔzhī cuòshāng.",
+    "vi": "Xương cốt không sao cả, chỉ bị chấn thương phần mềm."
+  },
+  {
+    "cat": "health",
+    "cn": "回去擦点红花油或者贴膏药。",
+    "py": "Huíqù cā diǎn hónghuāyóu huòzhě tiē gāoyào.",
+    "vi": "Về nhà bôi chút dầu hồng hoa hoặc dán cao dán giảm đau."
+  },
+  {
+    "cat": "health",
+    "cn": "我最近失眠，总是睡不着觉。",
+    "py": "Wǒ zuìjìn shīmián, zǒngshì shuì bu zháo jiào.",
+    "vi": "Dạo này tôi bị mất ngủ, toàn trằn trọc không ngủ được."
+  },
+  {
+    "cat": "health",
+    "cn": "工作压力太大了，要学会放松。",
+    "py": "Gōngzuò yālì tài dà le, yào xuéhuì fàngsōng.",
+    "vi": "Áp lực công việc căng thẳng quá, bạn nên học cách thư giãn thả lỏng."
+  },
+  {
+    "cat": "health",
+    "cn": "睡前喝杯温牛奶有助于睡眠。",
+    "py": "Shuì qián hē bēi wēn niúnǎi yǒuzhù yú shuìmián.",
+    "vi": "Trước khi ngủ uống một ly sữa ấm sẽ dễ ngủ hơn."
+  },
+  {
+    "cat": "health",
+    "cn": "我的眼睛有点儿干涩发红。",
+    "py": "Wǒ de yǎnjing yǒudiǎnr gānsè fāhóng.",
+    "vi": "Mắt tôi hơi bị khô rát và đỏ ngầu."
+  },
+  {
+    "cat": "health",
+    "cn": "这是眼药水，每天滴三次。",
+    "py": "Zhè shì yǎnyàoshuǐ, měitiān dī sān cì.",
+    "vi": "Đây là thuốc nhỏ mắt, mỗi ngày nhỏ 3 lần."
+  },
+  {
+    "cat": "health",
+    "cn": "少看手机和电脑屏幕。",
+    "py": "Shǎo kàn shǒujī hé diànnǎo píngmù.",
+    "vi": "Hạn chế nhìn vào màn hình điện thoại và máy tính."
+  },
+  {
+    "cat": "health",
+    "cn": "祝你早日康复！",
+    "py": "Zhù nǐ zǎorì kāngfù!",
+    "vi": "Chúc bạn mau chóng bình phục sức khỏe!"
+  },
+  {
+    "cat": "health",
+    "cn": "身体是革命的本钱。",
+    "py": "Shēntǐ shì gémìng de běnqián.",
+    "vi": "Sức khỏe là vốn quý nhất."
+  },
+  {
+    "cat": "health",
+    "cn": "平时一定要多锻炼身体。",
+    "py": "Píngshí yídìng yào duō duànliàn shēntǐ.",
+    "vi": "Ngày thường nhất định phải chăm chỉ rèn luyện thể thao."
+  },
+  {
+    "cat": "health",
+    "cn": "谢谢医生的细心治疗！",
+    "py": "Xièxie yīshēng de xìxīn zhìliáo!",
+    "vi": "Cảm ơn bác sĩ đã tận tình khám chữa bệnh!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "救命啊！有人落水了！",
+    "py": "Jiùmìng a! Yǒurén luòshuǐ le!",
+    "vi": "Cứu tôi với! Có người bị rơi xuống nước rồi!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "快打120叫救护车！",
+    "py": "Kuài dǎ yāi-èr-líng jiào jiùhùchē!",
+    "vi": "Mau gọi 120 cấp cứu gọi xe cứu thương ngay!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "快打110报警！",
+    "py": "Kuài dǎ yāi-yāi-líng bàojǐng!",
+    "vi": "Mau gọi 110 báo cảnh sát ngay!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "着火了！快打119叫消防队！",
+    "py": "Zháohuǒ le! Kuài dǎ yāi-yāi-jiǔ jiào xiāofángduì!",
+    "vi": "Cháy rồi! Mau gọi 119 gọi đội cứu hỏa!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "请帮帮我，我需要帮助！",
+    "py": "Qǐng bāngbang wǒ, wǒ xūyào bāngzhù!",
+    "vi": "Làm ơn giúp tôi với, tôi đang cần sự giúp đỡ!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "发生车祸了，有人受伤了！",
+    "py": "Fāshēng chēhuò le, yǒurén shòushāng le!",
+    "vi": "Có tai nạn giao thông rồi, có người bị thương!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "具体地址在哪里？在哪个路口？",
+    "py": "Jùtǐ dìzhǐ zài nǎlǐ? Zài nǎge lùkǒu?",
+    "vi": "Địa chỉ cụ thể ở đâu? Ở ngã tư đường nào?"
+  },
+  {
+    "cat": "emergency",
+    "cn": "在长安街和王府井路口交界处。",
+    "py": "Zài Cháng'ān Jiē hé Wángfǔjǐng lùkǒu jiāojiè chù.",
+    "vi": "Ở ngã tư giao giữa đường Trường An và phố Vương Phủ Tỉnh."
+  },
+  {
+    "cat": "emergency",
+    "cn": "有人昏倒了，请问现场有医生吗？",
+    "py": "Yǒurén hūndǎo le, qǐngwèn xiànchǎng yǒu yīshēng ma?",
+    "vi": "Có người bị ngất xỉu rồi, xin hỏi ở đây có ai là bác sĩ không?"
+  },
+  {
+    "cat": "emergency",
+    "cn": "请大家让一让，保持空气流通。",
+    "py": "Qǐng dàjiā ràng yí ràng, bǎochí kōngqì liútōng.",
+    "vi": "Xin mọi người tản ra một chút để không khí thông thoáng."
+  },
+  {
+    "cat": "emergency",
+    "cn": "我的钱包被小偷偷走了！",
+    "py": "Wǒ de qiánbāo bèi xiǎotōu tōuzǒu le!",
+    "vi": "Ví tiền của tôi bị kẻ gian móc trộm mất rồi!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "抓小偷！别让他跑了！",
+    "py": "Zhuā xiǎotōu! Bié ràng tā pǎo le!",
+    "vi": "Bắt kẻ trộm! Đừng để nó chạy thoát!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "我的护照丢失了，在哪里补办？",
+    "py": "Wǒ de hùzhào diūshī le, zài nǎlǐ bǔbàn?",
+    "vi": "Hộ chiếu của tôi bị mất rồi, đi làm lại ở đâu?"
+  },
+  {
+    "cat": "emergency",
+    "cn": "先去派出所报案开具报失证明。",
+    "py": "Xiān qù pàichūsuǒ bào'àn kāijù bàoshī zhèngmíng.",
+    "vi": "Trước tiên tới đồn công an báo án lấy giấy chứng nhận mất đồ."
+  },
+  {
+    "cat": "emergency",
+    "cn": "然后去越南驻华大使馆申请旅行证。",
+    "py": "Ránhòu qù Yuènán zhù Huá dàshǐguǎn shēnqǐng lǚxíngzhèng.",
+    "vi": "Sau đó đến Đại sứ quán Việt Nam tại Trung Quốc xin cấp giấy thông hành."
+  },
+  {
+    "cat": "emergency",
+    "cn": "大使馆的电话是多少？",
+    "py": "Dàshǐguǎn de diànhuà shì duōshao?",
+    "vi": "Số điện thoại của Đại sứ quán là bao nhiêu?"
+  },
+  {
+    "cat": "emergency",
+    "cn": "我的手机掉在出租车上了。",
+    "py": "Wǒ de shǒujī diào zài chūzūchē shang le.",
+    "vi": "Điện thoại của tôi bị bỏ quên trên xe taxi rồi."
+  },
+  {
+    "cat": "emergency",
+    "cn": "你记得车牌号或者有发票吗？",
+    "py": "Nǐ jìde chēpái hào huòzhě yǒu fāpiào ma?",
+    "vi": "Bạn có nhớ biển số xe hoặc còn giữ hóa đơn cuốc xe không?"
+  },
+  {
+    "cat": "emergency",
+    "cn": "发票上有出租车公司的电话。",
+    "py": "Fāpiào shang yǒu chūzūchē gōngsī de diànhuà.",
+    "vi": "Trên hóa đơn có số điện thoại của hãng taxi."
+  },
+  {
+    "cat": "emergency",
+    "cn": "赶紧打电话联系司机师傅。",
+    "py": "Gǎnjǐn dǎ diànhuà liánxì sījī shīfu.",
+    "vi": "Mau chóng gọi điện thoại liên hệ với bác tài xế."
+  },
+  {
+    "cat": "emergency",
+    "cn": "我和我的同伴走散了。",
+    "py": "Wǒ hé wǒ de tóngbàn zǒusàn le.",
+    "vi": "Tôi và bạn đồng hành bị lạc mất nhau rồi."
+  },
+  {
+    "cat": "emergency",
+    "cn": "他穿着一件蓝色羽绒服。",
+    "py": "Tā chuān zhe yí jiàn lánsè yǔróngfú.",
+    "vi": "Anh ấy mặc chiếc áo khoác lông vũ màu xanh lam."
+  },
+  {
+    "cat": "emergency",
+    "cn": "能借您的手机打个紧急电话吗？",
+    "py": "Néng jiè nín de shǒujī dǎ ge jǐnjí diànhuà ma?",
+    "vi": "Tôi mượn nhờ điện thoại của bạn gọi cuộc gọi khẩn cấp được không?"
+  },
+  {
+    "cat": "emergency",
+    "cn": "当然可以，你拿去打吧。",
+    "py": "Dāngrán kěyǐ, nǐ ná qù dǎ ba.",
+    "vi": "Được chứ, bạn cầm lấy gọi đi."
+  },
+  {
+    "cat": "emergency",
+    "cn": "我找不到回酒店的路了。",
+    "py": "Wǒ zhǎo bu dào huí jiǔdiàn de lù le.",
+    "vi": "Tôi không tìm thấy đường quay về khách sạn."
+  },
+  {
+    "cat": "emergency",
+    "cn": "这是我酒店的名片和地址。",
+    "py": "Zhè shì wǒ jiǔdiàn de míngpiàn hé dìzhǐ.",
+    "vi": "Đây là danh thiếp và địa chỉ khách sạn của tôi."
+  },
+  {
+    "cat": "emergency",
+    "cn": "别着急，我帮你叫一辆车送你回去。",
+    "py": "Bié zháojí, wǒ bāng nǐ jiào yí liàng chē sòng nǐ huíqù.",
+    "vi": "Đừng sốt ruột, tôi gọi giúp bạn chiếc xe chở bạn về."
+  },
+  {
+    "cat": "emergency",
+    "cn": "遇到坏人敲诈勒索怎么办？",
+    "py": "Yù dào huàirén qiāozhà lèsuǒ zěnme bàn?",
+    "vi": "Gặp kẻ xấu tống tiền đe dọa thì làm thế nào?"
+  },
+  {
+    "cat": "emergency",
+    "cn": "大声呼救，往人多的地方跑。",
+    "py": "Dàshēng hūjiù, wǎng rén duō de dìfang pǎo.",
+    "vi": "Hô hoán thật to cầu cứu, chạy về phía chỗ đông người."
+  },
+  {
+    "cat": "emergency",
+    "cn": "保护好自己的人身安全最重要。",
+    "py": "Bǎohù hǎo zìjǐ de rénshēn ānquán zuì zhòngyào.",
+    "vi": "Bảo vệ an toàn tính mạng bản thân là quan trọng nhất."
+  },
+  {
+    "cat": "emergency",
+    "cn": "警察叔叔，这里有人闹事。",
+    "py": "Jǐngchá shūshu, zhèlǐ yǒurén nàoshì.",
+    "vi": "Chú cảnh sát ơi, ở đây có người gây rối làm loạn."
+  },
+  {
+    "cat": "emergency",
+    "cn": "请立刻停止违法行为！",
+    "py": "Qǐng lìkè tíngzhǐ wéifǎ xíngwéi!",
+    "vi": "Yêu cầu dừng ngay hành vi vi phạm pháp luật!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "这里禁止吸烟，有火灾隐患。",
+    "py": "Zhèlǐ jìnzhǐ xīyān, yǒu huǒzāi yǐnhuàn.",
+    "vi": "Chỗ này cấm hút thuốc, có nguy cơ gây hỏa hoạn."
+  },
+  {
+    "cat": "emergency",
+    "cn": "紧急出口在走廊右手边。",
+    "py": "Jǐnjí chūkǒu zài zǒuláng yòushǒu biān.",
+    "vi": "Cửa thoát hiểm khẩn cấp ở bên tay phải hành lang."
+  },
+  {
+    "cat": "emergency",
+    "cn": "发生地震时不要乘坐电梯！",
+    "py": "Fāshēng dìzhèn shí bú yào chéngzuò diàntī!",
+    "vi": "Khi xảy ra động đất tuyệt đối không được đi thang máy!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "请走安全通道楼梯迅速撤离。",
+    "py": "Qǐng zǒu ānquán tōngdào lóutī xùnsù chèlí.",
+    "vi": "Mời đi thang bộ thoát hiểm sơ tán thật nhanh chóng."
+  },
+  {
+    "cat": "emergency",
+    "cn": "请保持镇静，不要慌乱拥挤。",
+    "py": "Qǐng bǎochí zhènjìng, bú yào huāngluàn yōngjǐ.",
+    "vi": "Xin giữ bình tĩnh, không được hoảng loạn chen lấn xô đẩy."
+  },
+  {
+    "cat": "emergency",
+    "cn": "大家排好队，老人和小孩先走。",
+    "py": "Dàjiā pái hǎo duì, lǎorén hé xiǎohái xiān zǒu.",
+    "vi": "Mọi người xếp hàng ngay ngắn, người già và trẻ nhỏ đi trước."
+  },
+  {
+    "cat": "emergency",
+    "cn": "我的银行卡被ATM机吞了！",
+    "py": "Wǒ de yínhángkǎ bèi ATM jī tūn le!",
+    "vi": "Thẻ ngân hàng của tôi bị cây ATM nuốt mất rồi!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "拨打机器上的银行客服电话报修。",
+    "py": "Bōdǎ jīqì shang de yínháng kèfù diànhuà bàoxiū.",
+    "vi": "Gọi số hotline của ngân hàng in trên cây để báo xử lý."
+  },
+  {
+    "cat": "emergency",
+    "cn": "拿好打印凭条，明天去柜台办理。",
+    "py": "Ná hǎo dǎyìn píngtiáo, míngtiān qù guìtái bànlǐ.",
+    "vi": "Cầm giữ tờ biên lai, ngày mai ra quầy giao dịch nhận lại."
+  },
+  {
+    "cat": "emergency",
+    "cn": "我的随身包裹被错拿了。",
+    "py": "Wǒ de suíshēn bāoguǒ bèi cuòná le.",
+    "vi": "Túi xách của tôi bị ai đó cầm nhầm mất rồi."
+  },
+  {
+    "cat": "emergency",
+    "cn": "去火车站广播室播放寻物启事。",
+    "py": "Qù huǒchēzhàn guǎngbōshì bōfàng xúnwù qǐshì.",
+    "vi": "Đến phòng phát thanh nhà ga phát thông báo tìm đồ thất lạc."
+  },
+  {
+    "cat": "emergency",
+    "cn": "有人捡到了您的包，在前台领取。",
+    "py": "Yǒurén jiǎndào le nín de bāo, zài qiántái lǐngqǔ.",
+    "vi": "Có người nhặt được túi của bạn rồi, đến quầy lễ tân nhận lại nhé."
+  },
+  {
+    "cat": "emergency",
+    "cn": "太感谢好心人了！",
+    "py": "Tài gǎnxiè hǎoxīnrén le!",
+    "vi": "Vô cùng cảm ơn người tốt bụng đã giúp đỡ!"
+  },
+  {
+    "cat": "emergency",
+    "cn": "人间处处有真情。",
+    "py": "Rénjiān chùchù yǒu zhēnqíng.",
+    "vi": "Cuộc đời ở đâu cũng ấm áp tình người."
+  },
+  {
+    "cat": "emergency",
+    "cn": "出门在外一定要注意安全。",
+    "py": "Chū mén zài wài yídìng yào zhùyì ānquán.",
+    "vi": "Đi xa ra ngoài nhất định phải cẩn thận giữ an toàn."
+  },
+  {
+    "cat": "emergency",
+    "cn": "随身贵重物品一定要看管好。",
+    "py": "Suíshēn guìzhòng wùpǐn yídìng yào kānguǎn hǎo.",
+    "vi": "Đồ đạc tư trang quý giá phải luôn trông coi cẩn thận."
+  },
+  {
+    "cat": "emergency",
+    "cn": "防人之心不可无。",
+    "py": "Fáng rén zhī xīn bù kě wú.",
+    "vi": "Lòng phòng ngừa cảnh giác kẻ xấu không bao giờ thừa."
+  },
+  {
+    "cat": "emergency",
+    "cn": "万事小心，平安第一！",
+    "py": "Wànshì xiǎoxīn, píng'ān dì-yī!",
+    "vi": "Vạn sự cẩn trọng, bình an là trên hết!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "祝你生日快乐，心想事成！",
+    "py": "Zhù nǐ shēngrì kuàilè, xīnxiǎngshìchéng!",
+    "vi": "Chúc bạn sinh nhật vui vẻ, vạn sự như ý muốn!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "新年快乐，恭喜发财，万事大吉！",
+    "py": "Xīnnián kuàilè, gōngxǐ fācái, wànshì dàjí!",
+    "vi": "Năm mới vui vẻ, cung hỷ phát tài, vạn sự đại cát!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "祝贺你顺利升职加薪！",
+    "py": "Zhùhè nǐ shùnlì shēngzhí jiāxīn!",
+    "vi": "Chúc mừng bạn thuận lợi thăng chức tăng lương nhé!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "这是你应得的荣誉，为你感到骄傲！",
+    "py": "Zhè shì nǐ yīngdé de róngyù, wèi nǐ gǎndào jiāo'ào!",
+    "vi": "Đây là vinh dự bạn hoàn toàn xứng đáng có được, tự hào về bạn!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "你太厉害了，简直是个天才！",
+    "py": "Nǐ tài lìhai le, jiǎnzhí shì ge tiāncái!",
+    "vi": "Bạn giỏi đỉnh quá, đúng là một thiên tài!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "别灰心，下次一定会更好！",
+    "py": "Bié huīxīn, xià cì yídìng huì gèng hǎo!",
+    "vi": "Đừng nản lòng, lần sau nhất định sẽ tốt hơn thôi!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "失败是成功之母，继续加油！",
+    "py": "Shībài shì chénggōng zhī mǔ, jìxù jiāyóu!",
+    "vi": "Thất bại là mẹ thành công, tiếp tục cố lên nhé!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "不管发生什么，我都在你身边支持你。",
+    "py": "Bùguǎn fāshēng shénme, wǒ dōu zài nǐ shēnbiān zhīchí nǐ.",
+    "vi": "Dù có chuyện gì xảy ra, tôi vẫn luôn ở bên cạnh ủng hộ bạn."
+  },
+  {
+    "cat": "emotion",
+    "cn": "听到这个好消息，我太为你高兴了！",
+    "py": "Tīngdào zhège hǎo xiāoxi, wǒ tài wèi nǐ gāoxìng le!",
+    "vi": "Nghe được tin vui này, tôi mừng thay cho bạn quá chừng!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "真不好意思，给您添麻烦了。",
+    "py": "Zhēn bù hǎoyìsi, gěi nín tiān máfan le.",
+    "vi": "Thực sự ngại quá, đã làm phiền và gây thêm rắc rối cho bạn rồi."
+  },
+  {
+    "cat": "emotion",
+    "cn": "都是我的错，请您千万原谅我。",
+    "py": "Dōu shì wǒ de cuò, qǐng nín qiānwàn yuánliàng wǒ.",
+    "vi": "Tất cả là lỗi của tôi, xin ngài hãy tha thứ cho tôi."
+  },
+  {
+    "cat": "emotion",
+    "cn": "我向你诚恳地道歉。",
+    "py": "Wǒ xiàng nǐ chéngkěn de dàoqiàn.",
+    "vi": "Tôi chân thành gửi lời xin lỗi sâu sắc tới bạn."
+  },
+  {
+    "cat": "emotion",
+    "cn": "别放在心上，我已经不介意了。",
+    "py": "Bié fàng zài xīn shang, wǒ yǐjīng bú jièyì le.",
+    "vi": "Đừng để trong lòng nữa, tôi đã không còn để bụng nữa rồi."
+  },
+  {
+    "cat": "emotion",
+    "cn": "过去的事就让它过去吧。",
+    "py": "Guòqù de shì jiù ràng tā guòqù ba.",
+    "vi": "Chuyện gì đã qua thì cứ để nó trôi qua đi."
+  },
+  {
+    "cat": "emotion",
+    "cn": "你今天心情看起来特别好。",
+    "py": "Nǐ jīntiān xīnqíng kàn qǐlái tèbié hǎo.",
+    "vi": "Hôm nay trông tâm trạng bạn đặc biệt vui vẻ đấy."
+  },
+  {
+    "cat": "emotion",
+    "cn": "遇到什么开心的事了吗？",
+    "py": "Yù dào shénme kāixīn de shì le ma?",
+    "vi": "Có chuyện gì vui gặp được thế?"
+  },
+  {
+    "cat": "emotion",
+    "cn": "我今天中彩票了，太幸运了！",
+    "py": "Wǒ jīntiān zhòng cǎipiào le, tài xìngyùn le!",
+    "vi": "Hôm nay tôi trúng xổ số rồi, may mắn quá đỗi!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "真羡慕你这么好的运气！",
+    "py": "Zhēn xiànmù nǐ zhème hǎo de yùnqi!",
+    "vi": "Thật sự ghen tị với vận may tuyệt vời của bạn quá!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "我最近有点儿烦躁，心静不下来。",
+    "py": "Wǒ zuìjìn yǒudiǎnr fánzào, xīn jìng bu xiàlai.",
+    "vi": "Dạo này tôi hơi bứt rứt bực bội, tâm không tĩnh lại được."
+  },
+  {
+    "cat": "emotion",
+    "cn": "去散散步，听听轻音乐放松一下。",
+    "py": "Qù sànsàn bù, tīngting qīngyīnyuè fàngsōng yíxià.",
+    "vi": "Đi dạo bộ một chút, nghe nhạc êm dịu thư giãn nhé."
+  },
+  {
+    "cat": "emotion",
+    "cn": "我非常喜欢你的性格，真诚又开朗。",
+    "py": "Wǒ fēicháng xǐhuan nǐ de xìnggé, zhēnchéng yòu kāilǎng.",
+    "vi": "Tôi vô cùng thích tính cách của bạn, vừa chân thành lại vừa cởi mở."
+  },
+  {
+    "cat": "emotion",
+    "cn": "能和你做朋友真是一件幸运的事。",
+    "py": "Néng hé nǐ zuò péngyou zhēn shì yí jiàn xìngyùn de shì.",
+    "vi": "Được làm bạn với bạn thực sự là một điều may mắn."
+  },
+  {
+    "cat": "emotion",
+    "cn": "我有一件心事想和你倾诉。",
+    "py": "Wǒ yǒu yí jiàn xīnshì xiǎng hé nǐ qīngsù.",
+    "vi": "Tôi có một tâm sự trĩu nặng muốn giãi bày cùng bạn."
+  },
+  {
+    "cat": "emotion",
+    "cn": "你说吧，我洗耳恭听。",
+    "py": "Nǐ shuō ba, wǒ xǐ'ěrgōngtīng.",
+    "vi": "Bạn nói đi, tôi luôn chăm chú lắng nghe đây."
+  },
+  {
+    "cat": "emotion",
+    "cn": "有你这个倾听者，我感觉好多了。",
+    "py": "Yǒu nǐ zhège qīngtīngzhě, wǒ gǎnjué hǎo duō le.",
+    "vi": "Có một người biết lắng nghe như bạn, tôi thấy nhẹ nhõm hơn nhiều rồi."
+  },
+  {
+    "cat": "emotion",
+    "cn": "我其实一直默默喜欢着你。",
+    "py": "Wǒ qíshí yìzhí mòmò xǐhuan zhe nǐ.",
+    "vi": "Thực ra tôi bấy lâu nay vẫn luôn âm thầm thích bạn."
+  },
+  {
+    "cat": "emotion",
+    "cn": "你愿意做我的女朋友吗？",
+    "py": "Nǐ yuànyì zuò wǒ de nǚpéngyou ma?",
+    "vi": "Em có đồng ý làm bạn gái của anh không?"
+  },
+  {
+    "cat": "emotion",
+    "cn": "我也喜欢你很久了，我愿意！",
+    "py": "Wǒ yě xǐhuan nǐ hěn jiǔ le, wǒ yuànyì!",
+    "vi": "Em cũng thích anh từ lâu lắm rồi, em đồng ý!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "我会一生一世好好照顾你。",
+    "py": "Wǒ huì yìshēng-yíshì hǎohǎo zhàogù nǐ.",
+    "vi": "Anh sẽ suốt một đời này chăm sóc thật tốt cho em."
+  },
+  {
+    "cat": "emotion",
+    "cn": "执子之手，与子偕老。",
+    "py": "Zhí zǐ zhī shǒu, yǔ zǐ xiélǎo.",
+    "vi": "Nắm lấy tay nhau, cùng nhau già đi đến trọn kiếp."
+  },
+  {
+    "cat": "emotion",
+    "cn": "真受不了这个鬼天气，太闷热了！",
+    "py": "Zhēn shòu bu liǎo zhège guǐ tiānqì, tài mēnrè le!",
+    "vi": "Thực sự chịu không nổi cái thời tiết quái quỷ này, oi ả ngột ngạt quá!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "别抱怨了，心静自然凉。",
+    "py": "Bié bàoyuàn le, xīn jìng zìrán liáng.",
+    "vi": "Đừng than vãn nữa, lòng tĩnh thì tự nhiên thấy mát mẻ thôi."
+  },
+  {
+    "cat": "emotion",
+    "cn": "这件事真的让我很感动。",
+    "py": "Zhè jiàn shì zhēn de ràng wǒ hěn gǎndòng.",
+    "vi": "Sự việc này thực sự khiến tôi vô cùng xúc động."
+  },
+  {
+    "cat": "emotion",
+    "cn": "雪中送炭的情谊我永生难忘。",
+    "py": "Xuězhōng-sòngtàn de qíngyì wǒ yǒngshēng-nánwàng.",
+    "vi": "Nghĩa tình giúp đỡ lúc hoạn nạn khó khăn tôi suốt đời không quên."
+  },
+  {
+    "cat": "emotion",
+    "cn": "滴水之恩，当涌泉相报。",
+    "py": "Dīshuǐ-zhī'ēn, dāng yǒngquán-xiāngbào.",
+    "vi": "Ơn một giọt nước, nguyện báo đáp cả dòng suối mát."
+  },
+  {
+    "cat": "emotion",
+    "cn": "你总是这么为他人着想。",
+    "py": "Nǐ zǒngshì zhème wèi tārén zhuóxiǎng.",
+    "vi": "Bạn lúc nào cũng biết nghĩ suy lo lắng cho người khác."
+  },
+  {
+    "cat": "emotion",
+    "cn": "善良的人总会有好报的。",
+    "py": "Shànliáng de rén zǒng huì yǒu hǎobào de.",
+    "vi": "Người lương thiện sống tốt ắt sẽ gặp phúc báo tốt lành."
+  },
+  {
+    "cat": "emotion",
+    "cn": "我对你的决定表示完全理解。",
+    "py": "Wǒ duì nǐ de juédìng biǎoshì wánquán lǐjiě.",
+    "vi": "Tôi hoàn toàn thấu hiểu và ủng hộ quyết định của bạn."
+  },
+  {
+    "cat": "emotion",
+    "cn": "无论你走到哪里，我们都是好朋友。",
+    "py": "Wúlùn nǐ zǒu dào nǎlǐ, wǒmen dōu shì hǎo péngyou.",
+    "vi": "Bất luận bạn đi đến phương trời nào, chúng ta mãi là bạn tốt."
+  },
+  {
+    "cat": "emotion",
+    "cn": "海内存知己，天涯若比邻。",
+    "py": "Hǎinèi cún zhījǐ, tiānyá ruò bǐlín.",
+    "vi": "Trong bốn biển có người tri kỷ, thì dù chân trời góc bể cũng như kề cận bên nhau."
+  },
+  {
+    "cat": "emotion",
+    "cn": "真舍不得离开大家！",
+    "py": "Zhēn shěbude líkāi dàjiā!",
+    "vi": "Thật sự quyến luyến không nỡ rời xa mọi người!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "天下没有不散的筵席。",
+    "py": "Tiānxià méiyǒu bú sàn de yánxí.",
+    "vi": "Trên đời không có bữa tiệc nào là không tàn."
+  },
+  {
+    "cat": "emotion",
+    "cn": "期待我们的再次重逢！",
+    "py": "Qīdài wǒmen de zàicì chóngféng!",
+    "vi": "Rất mong đợi ngày chúng ta lại trùng phùng tương ngộ!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "保重身体，常回家看看。",
+    "py": "Bǎozhòng shēntǐ, cháng huí jiā kànkan.",
+    "vi": "Bảo trọng sức khỏe nhé, nhớ thường xuyên về thăm nhà."
+  },
+  {
+    "cat": "emotion",
+    "cn": "你的一席话让我茅塞顿开。",
+    "py": "Nǐ de yìxíhuà ràng wǒ máosè-dùnkāi.",
+    "vi": "Lời khuyên của bạn khiến tôi bừng tỉnh ngộ ra bao điều."
+  },
+  {
+    "cat": "emotion",
+    "cn": "听君一席话，胜读十年书。",
+    "py": "Tīng jūn yìxíhuà, shèng dú shí nián shū.",
+    "vi": "Nghe người một lời bàn, quý hơn đọc sách mười năm."
+  },
+  {
+    "cat": "emotion",
+    "cn": "希望明天一切都会好起来。",
+    "py": "Xīwàng míngtiān yíqiè dōu huì hǎo qǐlai.",
+    "vi": "Hy vọng ngày mai mọi sự đều sẽ tốt lành trở lại."
+  },
+  {
+    "cat": "emotion",
+    "cn": "明天又是充满希望的一天！",
+    "py": "Míngtiān yòu shì chōngmǎn xīwàng de yì tiān!",
+    "vi": "Ngày mai lại là một ngày mới tràn ngập niềm hy vọng!"
+  },
+  {
+    "cat": "emotion",
+    "cn": "微笑面对生活，生活也会对你微笑。",
+    "py": "Wēixiào miànduì shēnghuó, shēnghuó yě huì duì nǐ wēixiào.",
+    "vi": "Hãy mỉm cười với cuộc sống, cuộc sống cũng sẽ mỉm cười lại với bạn."
+  },
+  {
+    "cat": "emotion",
+    "cn": "晚安，做一个香甜的美梦！",
+    "py": "Wǎn'ān, zuò yí ge xiāngtián de měimèng!",
+    "vi": "Chúc ngủ ngon, có một giấc mơ thật êm đềm ngọt ngào!"
+  },
+  {
+    "cat": "daily",
+    "cn": "你今天几点起床的？",
+    "py": "Nǐ jīntiān jǐ diǎn qǐchuáng de?",
+    "vi": "Hôm nay mấy giờ bạn thức dậy thế?"
+  },
+  {
+    "cat": "daily",
+    "cn": "我每天早上七点半准时起床。",
+    "py": "Wǒ měitiān zǎoshang qī diǎn bàn zhǔnshí qǐchuáng.",
+    "vi": "Mỗi ngày tôi đều thức dậy đúng 7 giờ rưỡi sáng."
+  },
+  {
+    "cat": "daily",
+    "cn": "今天天气预报说下午有大雨。",
+    "py": "Jīntiān tiānqì yùbào shuō xiàwǔ yǒu dàyǔ.",
+    "vi": "Dự báo thời tiết hôm nay bảo buổi chiều có mưa to."
+  },
+  {
+    "cat": "daily",
+    "cn": "出门记得带上一把雨伞。",
+    "py": "Chū mén jìde dài shang yì bǎ yǔsǎn.",
+    "vi": "Ra khỏi cửa nhớ mang theo một chiếc ô (dù) nhé."
+  },
+  {
+    "cat": "daily",
+    "cn": "外面太阳太毒了，防晒霜涂了吗？",
+    "py": "Wàimiàn tàiyáng tài dú le, fángshàishuāng tú le ma?",
+    "vi": "Bên ngoài nắng gắt dữ quá, bạn đã bôi kem chống nắng chưa?"
+  },
+  {
+    "cat": "daily",
+    "cn": "我们周末去逛商场还是去公园？",
+    "py": "Wǒmen zhōumò qù guàng shāngchǎng háishì qù gōngyuán?",
+    "vi": "Cuối tuần chúng mình đi lượn trung tâm thương mại hay đi công viên?"
+  },
+  {
+    "cat": "daily",
+    "cn": "去奥林匹克森林公园散步吧。",
+    "py": "Qù Àolínpǐkè Sēnlín Gōngyuán sànbù ba.",
+    "vi": "Đi dạo ở Công viên Rừng Olympic đi."
+  },
+  {
+    "cat": "daily",
+    "cn": "那里空气清新，风景也很美。",
+    "py": "Nàlǐ kōngqì qīngxīn, fēngjǐng yě hěn měi.",
+    "vi": "Ở đấy không khí trong lành, phong cảnh cũng rất thơ mộng."
+  },
+  {
+    "cat": "daily",
+    "cn": "你平时下班后都做些什么？",
+    "py": "Nǐ píngshí xiàbān hòu dōu zuò xiē shénme?",
+    "vi": "Bình thường sau khi tan làm bạn hay làm gì?"
+  },
+  {
+    "cat": "daily",
+    "cn": "我通常去健身房锻炼一个小时。",
+    "py": "Wǒ tōngcháng qù jiànshēnfáng duànliàn yí ge xiǎoshí.",
+    "vi": "Tôi thường đến phòng tập gym tập luyện một tiếng."
+  },
+  {
+    "cat": "daily",
+    "cn": "你喜欢跑步还是游泳？",
+    "py": "Nǐ xǐhuan pǎobù háishì yóuyǒng?",
+    "vi": "Bạn thích chạy bộ hay là bơi lội?"
+  },
+  {
+    "cat": "daily",
+    "cn": "我更喜欢打羽毛球和打乒乓球。",
+    "py": "Wǒ gèng xǐhuan dǎ yǔmáoqiú hé dǎ pīngpāngqiú.",
+    "vi": "Tôi thích chơi cầu lông và bóng bàn hơn."
+  },
+  {
+    "cat": "daily",
+    "cn": "这周末我们一起打一场羽毛球吧！",
+    "py": "Zhè zhōumò wǒmen yìqǐ dǎ yì chǎng yǔmáoqiú ba!",
+    "vi": "Cuối tuần này chúng mình cùng chơi một trận cầu lông nhé!"
+  },
+  {
+    "cat": "daily",
+    "cn": "好主意，我来预订场地。",
+    "py": "Hǎo zhǔyi, wǒ lái yùdìng chǎngdì.",
+    "vi": "Ý hay đấy, để tôi đặt sân trước cho."
+  },
+  {
+    "cat": "daily",
+    "cn": "你最近在追什么电视剧吗？",
+    "py": "Nǐ zuìjìn zài zhuī shénme diànshìjù ma?",
+    "vi": "Dạo này bạn có đang \"cày\" bộ phim truyền hình nào không?"
+  },
+  {
+    "cat": "daily",
+    "cn": "我在看一部历史古装剧，非常精彩。",
+    "py": "Wǒ zài kàn yí bù lìshǐ gǔzhuāng jù, fēicháng jīngcǎi.",
+    "vi": "Tôi đang xem một bộ phim cổ trang lịch sử, gay cấn đặc sắc lắm."
+  },
+  {
+    "cat": "daily",
+    "cn": "今晚电影院有新片上映，一起去吗？",
+    "py": "Jīnwǎn diànyǐngyuàn yǒu xīnpiān shàngyìng, yìqǐ qù ma?",
+    "vi": "Tối nay rạp chiếu phim có phim mới công chiếu, cùng đi xem không?"
+  },
+  {
+    "cat": "daily",
+    "cn": "我想看科幻大片，你觉得怎么样？",
+    "py": "Wǒ xiǎng kàn kēhuàn dàpiàn, nǐ juéde zěnmeyàng?",
+    "vi": "Tôi muốn xem phim bom tấn khoa học viễn tưởng, bạn thấy sao?"
+  },
+  {
+    "cat": "daily",
+    "cn": "太棒了，我们买七点半那场的票。",
+    "py": "Tài bàng le, wǒmen mǎi qī diǎn bàn nà chǎng de piào.",
+    "vi": "Tuyệt vời quá, chúng mình mua vé suất 7 rưỡi tối nhé."
+  },
+  {
+    "cat": "daily",
+    "cn": "买中排靠中间的位置视野最好。",
+    "py": "Mǎi zhōng pái kào zhōngjiān de wèizhǐ shìyě zuì hǎo.",
+    "vi": "Mua dãy hàng ghế giữa tầm nhìn là đẹp nhất."
+  },
+  {
+    "cat": "daily",
+    "cn": "我去买大桶爆米花和两杯可乐。",
+    "py": "Wǒ qù mǎi dà tǒng bàomǐhuā hé liǎng bēi kělè.",
+    "vi": "Tôi đi mua một bắp rang bơ cỡ lớn và 2 ly nước ngọt."
+  },
+  {
+    "cat": "daily",
+    "cn": "你在网上买过东西吗？",
+    "py": "Nǐ zài wǎngshang mǎi guo dōngxi ma?",
+    "vi": "Bạn đã từng mua hàng online bao giờ chưa?"
+  },
+  {
+    "cat": "daily",
+    "cn": "我经常在淘宝和京东上网购。",
+    "py": "Wǒ chángcháng zài Táobǎo hé Jīngdōng shang wǎnggòu.",
+    "vi": "Tôi thường xuyên mua sắm online trên Taobao và JD."
+  },
+  {
+    "cat": "daily",
+    "cn": "中国的物流速度实在太快了！",
+    "py": "Zhōngguó de wùliú sùdù shízài tài kuài le!",
+    "vi": "Tốc độ vận chuyển chuyển phát nhanh của Trung Quốc thực sự nhanh thần tốc!"
+  },
+  {
+    "cat": "daily",
+    "cn": "昨天下单，今天早上就送到了。",
+    "py": "Zuótiān xiàdān, jīntiān zǎoshang jiù sòngdào le.",
+    "vi": "Hôm qua vừa chốt đơn, sáng nay đã giao tới tận cửa rồi."
+  },
+  {
+    "cat": "daily",
+    "cn": "你的快递到了，放在菜鸟驿站了。",
+    "py": "Nǐ de kuàidì dào le, fàng zài Càiniǎo yìzhàn le.",
+    "vi": "Bưu phẩm chuyển phát nhanh của bạn tới rồi, đang gửi ở trạm Cainiao."
+  },
+  {
+    "cat": "daily",
+    "cn": "凭取件码随时可以去拿。",
+    "py": "Píng qǔjiànmǎ suíshí kěyǐ qù ná.",
+    "vi": "Cầm mã nhận hàng lúc nào ra lấy cũng được."
+  },
+  {
+    "cat": "daily",
+    "cn": "今天中午不想做饭，我们点外卖吧。",
+    "py": "Jīntiān zhōngwǔ bù xiǎng zuòfàn, wǒmen diǎn wàimài ba.",
+    "vi": "Trưa nay lười không muốn nấu cơm, chúng mình gọi đồ ăn giao tận nơi nhé."
+  },
+  {
+    "cat": "daily",
+    "cn": "用美团外卖点个黄焖鸡米饭。",
+    "py": "Yòng Měituán wàimài diǎn ge huángmènjī mǐfàn.",
+    "vi": "Lên app Meituan Waimai gọi một suất cơm gà hầm sốt vàng thơm."
+  },
+  {
+    "cat": "daily",
+    "cn": "外卖小哥大概半小时送达。",
+    "py": "Wàimài xiǎogē dàgài bàn xiǎoshí sòngdá.",
+    "vi": "Anh shipper đồ ăn tầm nửa tiếng là giao tới nơi."
+  },
+  {
+    "cat": "daily",
+    "cn": "无接触配送，放在门口鞋柜上就行。",
+    "py": "Wú-jiēchù pèisòng, fàng zài ménkǒu xiéguì shang jiù xíng.",
+    "vi": "Giao hàng không tiếp xúc, cứ để trên tủ giày ngoài cửa là được."
+  },
+  {
+    "cat": "daily",
+    "cn": "你平时自己做饭吗？",
+    "py": "Nǐ píngshí zìjǐ zuòfàn ma?",
+    "vi": "Ngày thường bạn có tự mình nấu nướng không?"
+  },
+  {
+    "cat": "daily",
+    "cn": "我偶尔做做，厨艺还算凑合。",
+    "py": "Wǒ ǒu'ěr zuòzuo, chúyì hái suàn còuhe.",
+    "vi": "Thỉnh thoảng tôi có nấu, tay nghề cũng tạm ổn."
+  },
+  {
+    "cat": "daily",
+    "cn": "最拿手的菜是西红柿炒鸡蛋。",
+    "py": "Zuì náshǒu de cài shì xīhóngshì chǎo jīdàn.",
+    "vi": "Món \"tủ\" sở trường nhất là món cà chua xào trứng gà."
+  },
+  {
+    "cat": "daily",
+    "cn": "这可是中国国民第一家常菜！",
+    "py": "Zhè kě shì Zhōngguó guómín dì-yī jiācháng cài!",
+    "vi": "Món đấy đúng là món ăn gia đình quốc dân số một của Trung Quốc đấy!"
+  },
+  {
+    "cat": "daily",
+    "cn": "有机会请尝尝我做的越南春卷。",
+    "py": "Yǒu jīhuì qǐng chángchang wǒ zuò de Yuènán chūnjuǎn.",
+    "vi": "Có dịp mời bạn thưởng thức món nem rán cuốn chả giò Việt Nam tôi làm."
+  },
+  {
+    "cat": "daily",
+    "cn": "太期待了，我最喜欢吃越南菜了！",
+    "py": "Tài qīdài le, wǒ zuì xǐhuan chī Yuènán cài le!",
+    "vi": "Hóng quá, tôi thích nhất là ăn món ăn Việt Nam đấy!"
+  },
+  {
+    "cat": "daily",
+    "cn": "家里电费快用完了，得在手机上缴费。",
+    "py": "Jiālǐ diànfèi kuài yòng wán le, děi zài shǒujī shang jiǎofèi.",
+    "vi": "Tiền điện trong nhà sắp cạn rồi, phải nộp tiền trên điện thoại thôi."
+  },
+  {
+    "cat": "daily",
+    "cn": "微信生活缴费特别方便。",
+    "py": "Wēixìn shēnghuó jiǎofèi tèbié fāngbiàn.",
+    "vi": "Thanh toán hóa đơn sinh hoạt qua WeChat tiện lợi cực kỳ."
+  },
+  {
+    "cat": "daily",
+    "cn": "水费、燃气费也都能在线交。",
+    "py": "Shuǐfèi, ránqìfèi yě dōu néng zàixiàn jiāo.",
+    "vi": "Tiền nước, tiền gas khí đốt cũng đều đóng online được hết."
+  },
+  {
+    "cat": "daily",
+    "cn": "房间有点儿乱，今天得彻底大扫除。",
+    "py": "Fángjiān yǒudiǎnr luàn, jīntiān děi chèdǐ dàsǎochú.",
+    "vi": "Phòng hơi bừa bộn một chút, hôm nay phải tổng vệ sinh dọn dẹp sạch sẽ."
+  },
+  {
+    "cat": "daily",
+    "cn": "把旧衣服和不需要的东西扔掉。",
+    "py": "Bǎ jiù yīfu hé bù xūyào de dōngxi rēngdiào.",
+    "vi": "Vứt bớt quần áo cũ và những thứ đồ không cần dùng đến đi."
+  },
+  {
+    "cat": "daily",
+    "cn": "断舍离让生活变得更轻松。",
+    "py": "Duàn-shě-lí ràng shēnghuó biàn de gèng qīngsōng.",
+    "vi": "Lối sống tối giản buông bỏ đồ thừa làm cuộc sống nhẹ nhõm hơn hẳn."
+  },
+  {
+    "cat": "daily",
+    "cn": "你养宠物吗？猫还是狗？",
+    "py": "Nǐ yǎng chǒngwù ma? Māo háishì gǒu?",
+    "vi": "Bạn có nuôi thú cưng không? Mèo hay chó?"
+  },
+  {
+    "cat": "daily",
+    "cn": "我养了一只可爱的小英短猫。",
+    "py": "Wǒ yǎng le yì zhī kě'ài de xiǎo yīngduǎn māo.",
+    "vi": "Tôi nuôi một bé mèo Anh lông ngắn dễ thương lắm."
+  },
+  {
+    "cat": "daily",
+    "cn": "每天下班回家撸猫特别解压。",
+    "py": "Měitiān xiàbān huí jiā lū māo tèbié jiěyā.",
+    "vi": "Mỗi ngày đi làm về vuốt ve cưng nựng mèo giải tỏa stress cực kỳ."
+  },
+  {
+    "cat": "daily",
+    "cn": "生活需要仪式感。",
+    "py": "Shēnghuó xūyào yíshìgǎn.",
+    "vi": "Cuộc sống rất cần những khoảnh khắc chỉn chu trân trọng."
+  },
+  {
+    "cat": "daily",
+    "cn": "珍惜当下的每一寸光阴。",
+    "py": "Zhēnxī dāngxià de měi yí cùn guāngyīn.",
+    "vi": "Hãy biết trân quý từng tấc thời gian ở hiện tại."
+  },
+  {
+    "cat": "daily",
+    "cn": "开开心心过好每一天！",
+    "py": "Kāikāixīnxīn guò hǎo měi yì tiān!",
+    "vi": "Sống vui tươi hạnh phúc trọn vẹn mỗi một ngày trôi qua!"
+  },
+  {
+    "cat": "daily",
+    "cn": "明天会更加美好！",
+    "py": "Míngtiān huì gèngjiā měihǎo!",
+    "vi": "Ngày mai chắc chắn sẽ càng tươi đẹp hơn nữa!"
+  }
+];
+
+    const CAT_NAMES = {
+      greeting: 'Chào hỏi & Xã giao',
+      dining: 'Ăn uống & Gọi món',
+      shopping: 'Mua sắm & Mặc cả',
+      travel: 'Hỏi đường & Giao thông',
+      hotel: 'Khách sạn & Lưu trú',
+      work: 'Công sở & Đối tác',
+      health: 'Y tế & Sức khỏe',
+      emergency: 'Tình huống khẩn cấp',
+      emotion: 'Cảm xúc & Ứng xử',
+      daily: 'Đời sống thường nhật'
+    };
+
+    let currentCategory = 'all';
+
+    function setCategory(cat, btn) {
+      currentCategory = cat;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderPhrases();
+    }
+
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'zh-CN';
+        msg.rate = 0.85;
+        window.speechSynthesis.speak(msg);
+      }
+    }
+
+    function renderPhrases() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      const list = document.getElementById('phrasesList');
+      list.innerHTML = '';
+
+      const filtered = PHRASES.filter(p => {
+        const matchesCat = currentCategory === 'all' || p.cat === currentCategory;
+        const matchesSearch = !q || p.cn.includes(q) || p.py.toLowerCase().includes(q) || p.vi.toLowerCase().includes(q);
+        return matchesCat && matchesSearch;
+      });
+
+      document.getElementById('counterDisplay').textContent = `Đang hiển thị: ${filtered.length} / 500 câu`;
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<div style="text-align: center; padding: 40px; color: #94A3B8;">Không tìm thấy câu phù hợp với từ khóa tìm kiếm.</div>';
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      filtered.forEach((p, idx) => {
+        const card = document.createElement('div');
+        card.className = 'phrase-card';
+        card.innerHTML = `
+          <div class="phrase-content">
+            <div>
+              <span class="phrase-index">#${idx + 1}</span>
+              <span class="phrase-category">${CAT_NAMES[p.cat] || p.cat}</span>
+            </div>
+            <div class="phrase-cn">${p.cn}</div>
+            <div class="phrase-pinyin">${p.py}</div>
+            <div class="phrase-vi">${p.vi}</div>
+          </div>
+          <button class="audio-btn" onclick="speak('${p.cn.replace(/'/g, "\\'")}')">🔊 Nghe</button>
+        `;
+        fragment.appendChild(card);
+      });
+      list.appendChild(fragment);
+    }
+
+    renderPhrases();
+  </script>
+</body>
+</html>

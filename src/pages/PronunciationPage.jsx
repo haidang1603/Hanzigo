@@ -1245,7 +1245,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                       type="button"
                       onClick={() => {
                         playClickSound();
-                        setAppActiveTab('practice');
+                        setAppActiveTab('vocabulary');
                       }}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-50 dark:bg-[#131B24] text-[#748092] hover:text-[#243447] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold transition-colors cursor-pointer"
                       title="Quay lại luyện tập từ vựng"

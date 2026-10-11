@@ -2,7 +2,7 @@
  * HANZI GO - LIVE MODERATION HANDLER
  */
 import { RoomServiceClient } from 'livekit-server-sdk';
-import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, getSupabaseAdminClient, memoryParticipants } from '../../_utils/supabaseServer.js';
 
 export default async function moderationHandler(req, res) {
   if (req.method !== 'POST') {
@@ -20,6 +20,7 @@ export default async function moderationHandler(req, res) {
   }
 
   const callerId = auth.user.id;
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
   const supabase = getSupabaseAdminClient();
 
   if (supabase) {
@@ -28,12 +29,20 @@ export default async function moderationHandler(req, res) {
         .from('class_sessions')
         .select('teacher_id')
         .eq('id', sessionId)
-        .single();
+        .maybeSingle();
 
-      if (session && session.teacher_id !== callerId && auth.user.role !== 'admin' && session.teacher_id !== 'user_teacher_demo') {
-        return res.status(403).json({ error: 'Chỉ giáo viên phụ trách phòng học mới có quyền điều khiển.' });
+      if (session) {
+        if (session.teacher_id !== callerId && auth.user.role !== 'admin') {
+          return res.status(403).json({ error: 'Chỉ giáo viên phụ trách phòng học mới có quyền điều khiển.' });
+        }
+      } else if (isProd) {
+        return res.status(404).json({ error: 'Phòng học trực tuyến không tồn tại.' });
+      } else if (auth.user.role !== 'teacher' && auth.user.role !== 'admin' && !callerId.includes('teacher')) {
+        return res.status(403).json({ error: 'Chỉ giáo viên mới có quyền điều khiển phòng học.' });
       }
     } catch {}
+  } else if (auth.user.role !== 'teacher' && auth.user.role !== 'admin' && (!callerId.includes('teacher') || isProd)) {
+    return res.status(403).json({ error: 'Chỉ giáo viên mới có quyền điều khiển phòng học.' });
   }
 
   const livekitUrl = process.env.LIVEKIT_URL || process.env.VITE_LIVEKIT_URL;
@@ -59,6 +68,28 @@ export default async function moderationHandler(req, res) {
           canSubscribe: true,
           canPublishData: true
         });
+        try {
+          const p = await roomClient.getParticipant(sessionId, targetUserId);
+          if (p?.tracks) {
+            for (const t of p.tracks) {
+              if (t.sid) {
+                await roomClient.mutePublishedTrack(sessionId, targetUserId, t.sid, true).catch(() => {});
+              }
+            }
+          }
+        } catch {}
+        sfuUpdated = true;
+      } else if ((action === 'MUTE_STUDENT' || action === 'MUTE_MIC') && targetUserId) {
+        try {
+          const p = await roomClient.getParticipant(sessionId, targetUserId);
+          if (p?.tracks) {
+            for (const t of p.tracks) {
+              if (t.sid) {
+                await roomClient.mutePublishedTrack(sessionId, targetUserId, t.sid, true).catch(() => {});
+              }
+            }
+          }
+        } catch {}
         sfuUpdated = true;
       } else if (action === 'MUTE_ALL') {
         const participants = await roomClient.listParticipants(sessionId);
@@ -71,6 +102,14 @@ export default async function moderationHandler(req, res) {
               canSubscribe: true,
               canPublishData: true
             }).catch(() => {});
+
+            if (p.tracks) {
+              for (const t of p.tracks) {
+                if (t.sid) {
+                  await roomClient.mutePublishedTrack(sessionId, p.identity, t.sid, true).catch(() => {});
+                }
+              }
+            }
           }
         }
         sfuUpdated = true;
@@ -88,19 +127,25 @@ export default async function moderationHandler(req, res) {
       if (action === 'ALLOW_MIC' && targetUserId) {
         await supabase
           .from('session_participants')
-          .update({ is_mic_allowed: true })
+          .update({ is_mic_allowed: true, mic_enabled: true })
           .eq('session_id', sessionId)
           .eq('user_id', targetUserId);
       } else if (action === 'REVOKE_MIC' && targetUserId) {
         await supabase
           .from('session_participants')
-          .update({ is_mic_allowed: false })
+          .update({ is_mic_allowed: false, mic_enabled: false })
+          .eq('session_id', sessionId)
+          .eq('user_id', targetUserId);
+      } else if ((action === 'MUTE_STUDENT' || action === 'MUTE_MIC') && targetUserId) {
+        await supabase
+          .from('session_participants')
+          .update({ mic_enabled: false })
           .eq('session_id', sessionId)
           .eq('user_id', targetUserId);
       } else if (action === 'MUTE_ALL') {
         await supabase
           .from('session_participants')
-          .update({ is_mic_allowed: false })
+          .update({ is_mic_allowed: false, mic_enabled: false })
           .eq('session_id', sessionId)
           .neq('role', 'teacher');
       } else if (action === 'KICK' && targetUserId) {
@@ -113,6 +158,24 @@ export default async function moderationHandler(req, res) {
     } catch {}
   }
 
+  // In-memory state tracking for local simulation & automated tests
+  if (action === 'ALLOW_MIC' && targetUserId) {
+    const existing = memoryParticipants.get(`${sessionId}:${targetUserId}`) || {};
+    memoryParticipants.set(`${sessionId}:${targetUserId}`, { ...existing, is_mic_allowed: true, mic_enabled: true });
+  } else if (action === 'REVOKE_MIC' && targetUserId) {
+    const existing = memoryParticipants.get(`${sessionId}:${targetUserId}`) || {};
+    memoryParticipants.set(`${sessionId}:${targetUserId}`, { ...existing, is_mic_allowed: false, mic_enabled: false });
+  } else if ((action === 'MUTE_STUDENT' || action === 'MUTE_MIC') && targetUserId) {
+    const existing = memoryParticipants.get(`${sessionId}:${targetUserId}`) || {};
+    memoryParticipants.set(`${sessionId}:${targetUserId}`, { ...existing, mic_enabled: false });
+  } else if (action === 'MUTE_ALL') {
+    for (const [key, part] of memoryParticipants.entries()) {
+      if (key.startsWith(`${sessionId}:`)) {
+        memoryParticipants.set(key, { ...part, is_mic_allowed: false, mic_enabled: false });
+      }
+    }
+  }
+
   return res.status(200).json({
     success: true,
     action,
@@ -121,3 +184,4 @@ export default async function moderationHandler(req, res) {
     targetUserId: targetUserId || null
   });
 }
+

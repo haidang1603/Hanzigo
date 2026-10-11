@@ -15,6 +15,7 @@ import lookupHandler from '../_handlers/classroom/lookup.js';
 import joinHandler from '../_handlers/classroom/join.js';
 import membersHandler from '../_handlers/classroom/members.js';
 import removeHandler from '../_handlers/classroom/remove.js';
+import createHandler from '../_handlers/classroom/create.js';
 
 export default async function handler(req, res) {
   const urlPath = req.url ? req.url.split('?')[0] : '';
@@ -23,6 +24,10 @@ export default async function handler(req, res) {
 
   if (action === 'lookup') {
     return lookupHandler(req, res);
+  }
+
+  if (action === 'create') {
+    return createHandler(req, res);
   }
 
   if (action === 'join') {

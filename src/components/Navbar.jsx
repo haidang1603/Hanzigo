@@ -21,6 +21,7 @@ import {
   ChevronDown,
   GraduationCap,
   Trophy,
+  Award,
   LogOut,
   Settings,
   Shield
@@ -59,18 +60,12 @@ export default function Navbar({
   const coreNavItems = [
     { id: 'home', label: 'Trang chủ', icon: BookOpen },
     { id: 'roadmap', label: 'Lộ trình', icon: Compass },
+    { id: 'hsk', label: 'Thi thử HSK', icon: Award },
     { id: 'classroom', label: 'Lớp học', icon: GraduationCap },
   ];
 
   // Specific skill training items grouped cleanly under "Luyện tập"
   const practiceItems = [
-    { 
-      id: 'practice', 
-      label: 'Trung tâm Luyện tập', 
-      desc: 'Phân cấp 4 mức độ: Cơ bản ➔ Bậc thầy', 
-      icon: Sparkles, 
-      color: 'text-[#E85D3F] bg-[#FDEEEB] dark:bg-[#2D1E1B]' 
-    },
     { 
       id: 'vocabulary', 
       label: 'Từ vựng HSK', 
@@ -108,7 +103,7 @@ export default function Navbar({
     { id: 'community', label: 'Cộng đồng', desc: 'Hỏi đáp & Ghép bạn học', icon: Users },
   ];
 
-  const isPracticeActive = activeTab === 'practice' || practiceItems.some(item => item.id === activeTab);
+  const isPracticeActive = practiceItems.some(item => item.id === activeTab);
   const activePractice = practiceItems.find(item => item.id === activeTab);
 
   const isMoreActive = moreItems.some(item => item.id === activeTab);

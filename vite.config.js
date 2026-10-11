@@ -1,6 +1,8 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
+import iceServersHandler from './api/_webrtc/ice-servers.js'
+import livekitTokenHandler from './api/_webrtc/livekit-token.js'
 
 // In-memory shared registry for local dev classroom sync across browsers/tabs
 const sharedDevClassrooms = [
@@ -362,96 +364,7 @@ Chỉ trả về chuỗi JSON thuần túy.`;
           return;
         }
 
-        if (req.url === '/api/webrtc/ice-servers') {
-          res.setHeader('Content-Type', 'application/json');
-          const authHeader = req.headers['authorization'] || req.headers['x-authorization'];
-          const userIdHeader = req.headers['x-user-id'] || req.headers['x-auth-uid'];
-          if (!authHeader && !userIdHeader) {
-            res.statusCode = 401;
-            res.end(JSON.stringify({ error: 'Yêu cầu chưa được xác thực. Vui lòng đăng nhập.' }));
-            return;
-          }
-          res.statusCode = 200;
-          res.end(JSON.stringify({
-            iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' },
-              { urls: 'stun:stun2.l.google.com:19302' }
-            ],
-            ttl: 86400,
-            type: 'stun_only'
-          }));
-          return;
-        }
 
-        if (req.url === '/api/webrtc/livekit-token' && req.method === 'POST') {
-          res.setHeader('Content-Type', 'application/json');
-          const authHeader = req.headers['authorization'] || req.headers['x-authorization'];
-          const userIdHeader = req.headers['x-user-id'] || req.headers['x-auth-uid'];
-          if (!authHeader && !userIdHeader) {
-            res.statusCode = 401;
-            res.end(JSON.stringify({ error: 'Yêu cầu chưa được xác thực. Vui lòng đăng nhập.' }));
-            return;
-          }
-
-          let bodyStr = '';
-          req.on('data', chunk => { bodyStr += chunk; });
-          req.on('end', async () => {
-            try {
-              let body = {};
-              try {
-                body = JSON.parse(bodyStr || '{}');
-              } catch {
-                res.statusCode = 400;
-                res.end(JSON.stringify({ error: 'JSON không hợp lệ.' }));
-                return;
-              }
-
-              const env = loadEnv('', process.cwd(), '');
-              const livekitUrl = env.VITE_LIVEKIT_URL || process.env.VITE_LIVEKIT_URL || env.LIVEKIT_URL || process.env.LIVEKIT_URL || '';
-              const apiKey = env.LIVEKIT_API_KEY || process.env.LIVEKIT_API_KEY || 'devkey';
-              const apiSecret = env.LIVEKIT_API_SECRET || process.env.LIVEKIT_API_SECRET || 'secret';
-
-              const userId = body.userId || userIdHeader || 'user-1';
-              const userName = body.userName || 'Người dùng HanziGo';
-              const isTeacher = String(userId).includes('teacher') || (body.role === 'teacher' && !String(userId).includes('student'));
-              const verifiedRole = isTeacher ? 'teacher' : 'student';
-              const canPublish = isTeacher ? true : Boolean(body.canPublish && body.isMicAllowed);
-              const roomName = body.roomName || body.sessionId || 'hanzigo-room';
-
-              const { AccessToken } = await import('livekit-server-sdk');
-              const at = new AccessToken(apiKey, apiSecret, {
-                identity: String(userId),
-                name: String(userName),
-                metadata: JSON.stringify({ role: verifiedRole, userId }),
-                ttl: '2h'
-              });
-
-              at.addGrant({
-                room: String(roomName),
-                roomJoin: true,
-                canPublish: canPublish,
-                canPublishData: true,
-                canSubscribe: true
-              });
-
-              const token = await at.toJwt();
-              res.statusCode = 200;
-              res.end(JSON.stringify({
-                token,
-                serverUrl: livekitUrl,
-                isConfigured: Boolean(livekitUrl),
-                role,
-                roomName
-              }));
-            } catch (err) {
-              console.error('Vite dev LiveKit token error:', err.message);
-              res.statusCode = 500;
-              res.end(JSON.stringify({ error: 'Lỗi tạo token LiveKit: ' + err.message }));
-            }
-          });
-          return;
-        }
         if (req.url === '/api/classroom/list') {
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
@@ -770,6 +683,64 @@ Chỉ trả về chuỗi JSON thuần túy.`;
             } catch {
               res.statusCode = 200;
               res.end(JSON.stringify({ success: true }));
+            }
+          });
+          return;
+        }
+
+        if (req.url?.startsWith('/api/webrtc/livekit-token')) {
+          let bodyStr = '';
+          req.on('data', chunk => { bodyStr += chunk; });
+          req.on('end', async () => {
+            try {
+              req.body = JSON.parse(bodyStr || '{}');
+            } catch {
+              req.body = {};
+            }
+            res.status = (code) => {
+              res.statusCode = code;
+              return {
+                json: (payload) => {
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify(payload));
+                }
+              };
+            };
+            try {
+              await livekitTokenHandler(req, res);
+            } catch (err) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: err.message }));
+            }
+          });
+          return;
+        }
+
+        if (req.url?.startsWith('/api/webrtc/ice-servers')) {
+          let bodyStr = '';
+          req.on('data', chunk => { bodyStr += chunk; });
+          req.on('end', async () => {
+            try {
+              req.body = JSON.parse(bodyStr || '{}');
+            } catch {
+              req.body = {};
+            }
+            res.status = (code) => {
+              res.statusCode = code;
+              return {
+                json: (payload) => {
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify(payload));
+                }
+              };
+            };
+            try {
+              await iceServersHandler(req, res);
+            } catch (err) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: err.message }));
             }
           });
           return;

@@ -1655,7 +1655,7 @@ export default function WritingPage({ user, targetVocab, onClearTargetVocab, set
                         type="button"
                         onClick={() => {
                           playClickSound();
-                          setActiveTab('practice');
+                          setActiveTab('vocabulary');
                         }}
                         className="py-2 px-3 rounded-xl bg-gray-50 dark:bg-[#131B24] text-[#748092] hover:text-[#243447] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold transition-colors cursor-pointer"
                         title="Quay lại luyện từ vựng"

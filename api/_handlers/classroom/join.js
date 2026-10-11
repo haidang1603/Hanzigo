@@ -19,6 +19,7 @@ export default async function joinHandler(req, res) {
   }
 
   const userId = auth.user.id;
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
   const supabase = getSupabaseAdminClient();
 
   if (supabase) {
@@ -41,13 +42,28 @@ export default async function joinHandler(req, res) {
           .from('classrooms')
           .select('id, max_students, status')
           .eq('class_code', cleanCode)
-          .single();
+          .maybeSingle();
 
         if (cls) {
           if (cls.status !== 'active') {
             return res.status(400).json({ error: 'Lớp học hiện tại đã đóng hoặc lưu trữ.' });
           }
           targetClassId = cls.id;
+
+          // Check capacity limit
+          if (cls.max_students) {
+            const { count } = await supabase
+              .from('class_members')
+              .select('*', { count: 'exact', head: true })
+              .eq('classroom_id', targetClassId)
+              .eq('status', 'active');
+
+            if (count && count >= cls.max_students) {
+              return res.status(400).json({ error: 'Lớp học đã đạt số lượng học viên tối đa.' });
+            }
+          }
+        } else {
+          return res.status(404).json({ error: 'Mã lớp học không tồn tại.' });
         }
       }
 
@@ -61,19 +77,29 @@ export default async function joinHandler(req, res) {
             joined_at: new Date().toISOString()
           }, { onConflict: 'classroom_id,student_id' })
           .select()
-          .single();
+          .maybeSingle();
 
-        if (!memErr) {
+        if (!memErr && member) {
           return res.status(200).json({
             success: true,
             classroom_id: targetClassId,
             member
           });
         }
+        if (memErr && isProd) {
+          return res.status(500).json({ error: 'Lỗi cơ sở dữ liệu khi tham gia lớp học: ' + memErr.message });
+        }
+      } else if (isProd) {
+        return res.status(400).json({ error: 'Không tìm thấy lớp học hợp lệ để tham gia.' });
       }
     } catch (err) {
       console.warn('[/api/classroom/join] Notice:', err.message);
+      if (isProd) {
+        return res.status(500).json({ error: 'Lỗi hệ thống khi tham gia lớp học.' });
+      }
     }
+  } else if (isProd) {
+    return res.status(503).json({ error: 'Dịch vụ cơ sở dữ liệu không khả dụng.' });
   }
 
   return res.status(200).json({

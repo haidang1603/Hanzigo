@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sổ Tay 30 Cấu Trúc Ngữ Pháp HSK 1–3 Cốt Lõi - HanziGo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Serif SC", sans-serif;
+      background: #FFF9F2;
+      color: #1e293b;
+      padding: 24px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: white;
+      padding: 32px;
+      border-radius: 24px;
+      border: 1px solid #f1e5d8;
+      box-shadow: 0 4px 24px rgba(232, 93, 63, 0.06);
+    }
+    header {
+      background: linear-gradient(135deg, #E85D3F, #CB4529);
+      color: white;
+      padding: 28px 24px;
+      border-radius: 18px;
+      margin-bottom: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .header-text h1 { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+    .header-text p { font-size: 14px; opacity: 0.95; }
+    .btn {
+      background: white;
+      color: #E85D3F;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      transition: all 0.2s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.12); }
+    
+    .search-bar {
+      margin-bottom: 24px;
+      display: flex;
+      gap: 12px;
+    }
+    .search-input {
+      flex: 1;
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: 1px solid #CBD5E1;
+      font-size: 15px;
+      outline: none;
+    }
+    .search-input:focus { border-color: #E85D3F; }
+
+    .grammar-card {
+      background: #FAFAFA;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 18px;
+      transition: all 0.2s;
+    }
+    .grammar-card:hover {
+      border-color: #E85D3F;
+      box-shadow: 0 6px 16px rgba(232, 93, 63, 0.08);
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0F172A;
+    }
+    .level-badge {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #FEE2E2;
+      color: #E85D3F;
+    }
+    .formula-box {
+      background: #FFF5F2;
+      border-left: 4px solid #E85D3F;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-weight: 700;
+      color: #C2410C;
+      font-size: 15px;
+      margin-bottom: 12px;
+      font-family: monospace;
+    }
+    .explanation {
+      font-size: 14px;
+      color: #334155;
+      margin-bottom: 12px;
+    }
+    .examples-list {
+      list-style: none;
+      border-top: 1px dashed #E2E8F0;
+      padding-top: 10px;
+    }
+    .example-item {
+      margin-bottom: 8px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #F1F5F9;
+    }
+    .example-cn {
+      font-weight: 700;
+      color: #1E293B;
+    }
+    .example-pinyin {
+      color: #0284C7;
+      font-size: 13px;
+      margin-left: 6px;
+    }
+    .example-vi {
+      color: #64748B;
+      font-size: 13px;
+      margin-left: 8px;
+    }
+    .audio-btn {
+      background: #F1F5F9;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      color: #E85D3F;
+    }
+    .audio-btn:hover { background: #FEE2E2; }
+    .warning-box {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #B45309;
+      background: #FEF3C7;
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .container { border: none; box-shadow: none; padding: 0; }
+      .search-bar, .btn { display: none; }
+      .grammar-card { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-text">
+        <h1>📚 Sổ Tay 30 Cấu Trúc Ngữ Pháp Tiếng Trung HSK 1–3 Cốt Lõi</h1>
+        <p>Tổng hợp công thức, phân biệt lỗi sai người Việt hay mắc và ví dụ có âm thanh chuẩn bản ngữ</p>
+      </div>
+      <div>
+        <button class="btn" onclick="window.print()">🖨️ In Tài Liệu A4</button>
+      </div>
+    </header>
+
+    <div class="search-bar">
+      <input type="text" id="searchInput" class="search-input" placeholder="🔍 Tìm cấu trúc (Ví dụ: 把, 被, 比, 了, thời gian...)..." oninput="filterGrammar()">
+    </div>
+
+    <div id="grammarContainer">
+      <!-- 1. Trật tự từ thời gian và nơi chốn -->
+      <div class="grammar-card" data-keyword="trật tự từ thời gian địa điểm khi nào ở đâu">
+        <div class="card-head">
+          <div class="card-title">1. Quy Tắc Vàng Về Trật Tự Từ Trong Câu Tiếng Trung</div>
+          <span class="level-badge">HSK 1 - Cốt lõi</span>
+        </div>
+        <div class="formula-box">Chủ ngữ (S) + Thời gian + Địa điểm (在...) + Động từ (V) + Tân ngữ (O)</div>
+        <div class="explanation">Ngược lại với tiếng Việt (thường đặt thời gian và địa điểm ở cuối câu), tiếng Trung bắt buộc đặt thời gian và địa điểm TRƯỚC hành động.</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">我明天在学校学习汉语。</span>
+              <span class="example-pinyin">Wǒ míngtiān zài xuéxiào xuéxí Hànyǔ.</span>
+              <span class="example-vi">➔ Ngày mai tôi học tiếng Trung ở trường.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('我明天在学校学习汉语。')">🔊 Nghe</button>
+          </li>
+        </ul>
+        <div class="warning-box">⚠️ Lỗi sai kinh điển: Người Việt hay nói "Tôi học tiếng Trung ở trường ngày mai" (我学习汉语在学校明天 ❌). Bắt buộc phải đưa thời gian và nơi chốn lên trước!</div>
+      </div>
+
+      <!-- 2. Câu chữ 把 -->
+      <div class="grammar-card" data-keyword="câu chữ 把 ba xử trí">
+        <div class="card-head">
+          <div class="card-title">2. Câu Chữ 把 (Câu Xử Trí)</div>
+          <span class="level-badge">HSK 3 - Trọng tâm</span>
+        </div>
+        <div class="formula-box">Chủ ngữ + 把 + Đối tượng (Tân ngữ) + Động từ + Thành phần khác (了/到/在/给...)</div>
+        <div class="explanation">Dùng khi muốn nhấn mạnh sự tác động, di dời hoặc làm thay đổi trạng thái của tân ngữ. Động từ không được đứng đơn độc mà phải kèm kết quả.</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">请把门关上。</span>
+              <span class="example-pinyin">Qǐng bǎ mén guān shàng.</span>
+              <span class="example-vi">➔ Xin hãy đóng cửa lại.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('请把门关上。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">他把作业做完了。</span>
+              <span class="example-pinyin">Tā bǎ zuòyè zuò wán le.</span>
+              <span class="example-vi">➔ Anh ấy đã làm xong bài tập rồi.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('他把作业做完了。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 3. Câu chữ 被 -->
+      <div class="grammar-card" data-keyword="câu chữ 被 bei bị động">
+        <div class="card-head">
+          <div class="card-title">3. Câu Bị Động Chữ 被 (让 / 叫)</div>
+          <span class="level-badge">HSK 3</span>
+        </div>
+        <div class="formula-box">Chủ ngữ (vật bị tác động) + 被 / 让 / 叫 + Tác nhân + Động từ + Thành phần khác</div>
+        <div class="explanation">Dùng để diễn đạt thể bị động (thường mang sắc thái không may mắn, không mong muốn). Trong khẩu ngữ có thể dùng 让 hoặc 叫 thay cho 被.</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">我的手机被人偷了。</span>
+              <span class="example-pinyin">Wǒ de shǒujī bèi rén tōu le.</span>
+              <span class="example-vi">➔ Điện thoại của tôi bị người ta trộm mất rồi.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('我的手机被人偷了。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 4. Câu so sánh 比 -->
+      <div class="grammar-card" data-keyword="câu so sánh 比 bi hơn">
+        <div class="card-head">
+          <div class="card-title">4. Câu So Sánh Chữ 比</div>
+          <span class="level-badge">HSK 2 - HSK 3</span>
+        </div>
+        <div class="formula-box">A + 比 + B + Tính từ (+ 得多 / 多了 / 一点儿 / Số lượng)</div>
+        <div class="explanation">So sánh A hơn B về một tính chất nào đó. Tuyệt đối không dùng các phó từ mức độ như 很, 非常, 真 trước tính từ trong câu so sánh 比!</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">他比我大两岁。</span>
+              <span class="example-pinyin">Tā bǐ wǒ dà liǎng suì.</span>
+              <span class="example-vi">➔ Anh ấy lớn hơn tôi 2 tuổi.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('他比我大两岁。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">今天比昨天冷得多。</span>
+              <span class="example-pinyin">Jīntiān bǐ zuótiān lěng de duō.</span>
+              <span class="example-vi">➔ Hôm nay lạnh hơn hôm qua rất nhiều.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('今天比昨天冷得多。')">🔊 Nghe</button>
+          </li>
+        </ul>
+        <div class="warning-box">⚠️ Sai lầm: "Hôm nay lạnh hơn hôm qua rất nhiều" nói là 今天比昨天很冷 ❌ ➔ Phải nói là: 今天比昨天冷得多 ✅.</div>
+      </div>
+
+      <!-- 5. Phân biệt 不 vs 没 -->
+      <div class="grammar-card" data-keyword="phân biệt 不没 bu mei phủ định">
+        <div class="card-head">
+          <div class="card-title">5. Phân Biệt Phó Từ Phủ Định: 不 vs 没 (没有)</div>
+          <span class="level-badge">HSK 1 - 2</span>
+        </div>
+        <div class="formula-box">不 + V/Adj (Ý chí chủ quan, thói quen, hiện tại, tương lai) | 没(有) + V (Phủ định sự việc đã xảy ra, sự thật khách quan)</div>
+        <div class="explanation">"不" phủ định mong muốn hoặc tính chất (我不去 = Tôi không muốn đi). "没" phủ định việc đã diễn ra trong quá khứ (我没去 = Tôi đã không đi). Riêng chữ "有" thì bắt buộc phủ định là "没有", không bao giờ dùng "不有".</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">他今天不来。(Ý chí: Anh ấy không đến)</span>
+              <span class="example-pinyin">Tā jīntiān bù lái.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('他今天不来。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">他昨天没来。(Thực tế: Hôm qua anh ấy không đến)</span>
+              <span class="example-pinyin">Tā zuótiān méi lái.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('他昨天没来。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 6. Trợ từ động thái 了, 着, 过 -->
+      <div class="grammar-card" data-keyword="trợ từ động thái 了 着 过 le zhe guo">
+        <div class="card-head">
+          <div class="card-title">6. Ba Trợ Từ Động Thái: 了 (Hoàn Thành), 着 (Tiếp Diễn), 过 (Trải Nghiệm)</div>
+          <span class="level-badge">HSK 2 - 3</span>
+        </div>
+        <div class="formula-box">V + 了 (Đã hoàn tất) | V + 着 (Trạng thái đang duy trì) | V + 过 (Đã từng trải qua)</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">我去过北京。(Tôi từng đi Bắc Kinh)</span>
+              <span class="example-pinyin">Wǒ qù guo Běijīng.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('我去过北京。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">门开着呢。(Cửa đang mở)</span>
+              <span class="example-pinyin">Mén kāi zhe ne.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('门开着呢。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 7. Bổ ngữ kết quả -->
+      <div class="grammar-card" data-keyword="bổ ngữ kết quả wan dao jian cuo dong">
+        <div class="card-head">
+          <div class="card-title">7. Bổ Ngữ Kết Quả (完, 到, 见, 懂, 错, 好...)</div>
+          <span class="level-badge">HSK 2 - 3</span>
+        </div>
+        <div class="formula-box">Động từ + Bổ ngữ (完 / 到 / 见 / 懂 / 错 / 好) + (Tân ngữ)</div>
+        <div class="explanation">Biểu thị kết quả đạt được sau hành động. Phủ định dùng "没" đứng trước động từ và bỏ "了".</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">你听懂了吗？- 我听懂了。</span>
+              <span class="example-pinyin">Nǐ tīng dǒng le ma? - Wǒ tīng dǒng le.</span>
+              <span class="example-vi">➔ Bạn nghe hiểu chưa? - Tôi nghe hiểu rồi.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('你听懂了吗？我听懂了。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 8. Cặp liên từ 虽然...但是... -->
+      <div class="grammar-card" data-keyword="liên từ tuy nhiên nhưng vì vậy suiran danshi yinwei suoyi">
+        <div class="card-head">
+          <div class="card-title">8. Các Cặp Liên Từ Quan Hệ Thường Gặp Nhất</div>
+          <span class="level-badge">HSK 2 - 3</span>
+        </div>
+        <div class="formula-box">虽然...但是... (Tuy...nhưng...) | 因为...所以... (Vì...nên...) | 不但...而且... (Không những...mà còn...) | 只要...就... (Chỉ cần...thì...)</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">虽然汉语很难，但是我非常喜欢。</span>
+              <span class="example-pinyin">Suīrán Hànyǔ hěn nán, dànshì wǒ fēicháng xǐhuan.</span>
+              <span class="example-vi">➔ Tuy tiếng Trung rất khó, nhưng tôi vô cùng thích.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('虽然汉语很难，但是我非常喜欢。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 9. Bổ ngữ trạng thái chữ 得 -->
+      <div class="grammar-card" data-keyword="bổ ngữ trạng thái trình độ de chữ đắc">
+        <div class="card-head">
+          <div class="card-title">9. Bổ Ngữ Trạng Thái / Trình Độ Với Chữ 得</div>
+          <span class="level-badge">HSK 2</span>
+        </div>
+        <div class="formula-box">S + V + 得 + Tính từ / (S + V + O + V + 得 + Tính từ) | Phủ định: V + 得 + 不 + Tính từ</div>
+        <div class="explanation">Dùng để miêu tả, đánh giá trình độ hoặc cách thức của hành động đã diễn ra. Khi động từ mang tân ngữ, bắt buộc phải lặp lại động từ trước "得".</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">他说汉语说得非常流利。</span>
+              <span class="example-pinyin">Tā shuō Hànyǔ shuō de fēicháng liúlì.</span>
+              <span class="example-vi">➔ Anh ấy nói tiếng Trung rất lưu loát.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('他说汉语说得非常流利。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">他跑得不快。</span>
+              <span class="example-pinyin">Tā pǎo de bú kuài.</span>
+              <span class="example-vi">➔ Anh ấy chạy không nhanh.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('他跑得不快。')">🔊 Nghe</button>
+          </li>
+        </ul>
+        <div class="warning-box">⚠️ Lỗi sai: Khi phủ định, phó từ 不 đứng sau 得 (跑得不快 ✅), không được đặt trước động từ (他不跑得快 ❌).</div>
+      </div>
+
+      <!-- 10. Cấu trúc câu liên động -->
+      <div class="grammar-card" data-keyword="câu liên động hai động từ muc dich phuong thuc">
+        <div class="card-head">
+          <div class="card-title">10. Câu Liên Động (Nhiều Động Từ Nối Tiếp Nhau)</div>
+          <span class="level-badge">HSK 1 - 2</span>
+        </div>
+        <div class="formula-box">Chủ ngữ + V1 + O1 + V2 + O2 (Hành động 1 là phương tiện/phương thức, Hành động 2 là mục đích)</div>
+        <div class="explanation">Hai hành động diễn ra theo đúng thứ tự thời gian tự nhiên: hành động nào xảy ra trước thì đặt trước.</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">我坐飞机去北京旅游。</span>
+              <span class="example-pinyin">Wǒ zuò fēijī qù Běijīng lǚyóu.</span>
+              <span class="example-vi">➔ Tôi đi máy bay đến Bắc Kinh du lịch.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('我坐飞机去北京旅游。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">他用筷子吃饭。</span>
+              <span class="example-pinyin">Tā yòng kuàizi chīfàn.</span>
+              <span class="example-vi">➔ Anh ấy dùng đũa ăn cơm.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('他用筷子吃饭。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 11. Bổ ngữ phương hướng -->
+      <div class="grammar-card" data-keyword="bổ ngữ phương hướng lai qu phuong huong huong di">
+        <div class="card-head">
+          <div class="card-title">11. Bổ Ngữ Phương Hướng Đơn & Kép (来 / 去 / 上来 / 进去...)</div>
+          <span class="level-badge">HSK 2 - 3</span>
+        </div>
+        <div class="formula-box">V + 来 (hướng về người nói) / 去 (rời xa người nói) | V + 上/下/进/出/回/过/起 + 来/去</div>
+        <div class="explanation">Biểu thị hướng di chuyển của người hoặc sự vật so với vị trí của người nói. Nếu tân ngữ là nơi chốn thì bắt buộc phải đặt trước 来/去.</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">外边很冷，快进来吧！</span>
+              <span class="example-pinyin">Wàibian hěn lěng, kuài jìn lái ba!</span>
+              <span class="example-vi">➔ Bên ngoài rất lạnh, mau vào trong này đi!</span>
+            </div>
+            <button class="audio-btn" onclick="speak('外边很冷，快进来吧！')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">他回家去了。</span>
+              <span class="example-pinyin">Tā huí jiā qù le.</span>
+              <span class="example-vi">➔ Anh ấy về nhà rồi (người nói không ở nhà).</span>
+            </div>
+            <button class="audio-btn" onclick="speak('他回家去了。')">🔊 Nghe</button>
+          </li>
+        </ul>
+        <div class="warning-box">⚠️ Quy tắc bắt buộc: Nơi chốn đứng trước 来/去: 回家去 ✅ (Tuyệt đối không nói 回去家 ❌).</div>
+      </div>
+
+      <!-- 12. Bổ ngữ khả năng -->
+      <div class="grammar-card" data-keyword="bổ ngữ khả năng de bu khong the de duoc de dang">
+        <div class="card-head">
+          <div class="card-title">12. Bổ Ngữ Khả Năng (V + 得 / 不 + Bổ Ngữ Kết Quả/Phương Hướng)</div>
+          <span class="level-badge">HSK 3</span>
+        </div>
+        <div class="formula-box">Khẳng định: V + 得 + Kết quả | Phủ định: V + 不 + Kết quả | Nghi vấn: V + 得 + Bổ ngữ + V + 不 + Bổ ngữ?</div>
+        <div class="explanation">Biểu thị điều kiện chủ quan hoặc khách quan có cho phép thực hiện được kết quả đó hay không.</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">这里的字太小了，我看不清。</span>
+              <span class="example-pinyin">Zhèlǐ de zì tài xiǎo le, wǒ kàn bu qīng.</span>
+              <span class="example-vi">➔ Chữ ở đây nhỏ quá, tôi nhìn không rõ.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('这里的字太小了，我看不清。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">你听得懂中国话吗？</span>
+              <span class="example-pinyin">Nǐ tīng de dǒng Zhōngguó huà ma?</span>
+              <span class="example-vi">➔ Bạn nghe có hiểu được tiếng Trung không?</span>
+            </div>
+            <button class="audio-btn" onclick="speak('你听得懂中国话吗？')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 13. Cấu trúc nhấn mạnh 是...的 -->
+      <div class="grammar-card" data-keyword="cấu trúc nhấn mạnh shi de la ... da">
+        <div class="card-head">
+          <div class="card-title">13. Cấu Trúc Nhấn Mạnh: 是...的 (Thời Gian, Địa Điểm, Cách Thức)</div>
+          <span class="level-badge">HSK 2</span>
+        </div>
+        <div class="formula-box">S + 是 + [Thời gian / Nơi chốn / Phương thức / Ai làm] + V + 的</div>
+        <div class="explanation">Chỉ dùng khi hành động ĐÃ XẢY RA, mục đích là nhấn mạnh chi tiết thời gian, địa điểm, cách thức tiến hành hoặc chủ thể thực hiện hành động.</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">我是去年九月来中国的。</span>
+              <span class="example-pinyin">Wǒ shì qùnián jiǔyuè lái Zhōngguó de.</span>
+              <span class="example-vi">➔ Tôi đến Trung Quốc là vào tháng 9 năm ngoái. (Nhấn mạnh thời gian)</span>
+            </div>
+            <button class="audio-btn" onclick="speak('我是去年九月来中国的。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">这本书是我自己买的。</span>
+              <span class="example-pinyin">Zhè běn shū shì wǒ zìjǐ mǎi de.</span>
+              <span class="example-vi">➔ Cuốn sách này là do chính tôi mua. (Nhấn mạnh người mua)</span>
+            </div>
+            <button class="audio-btn" onclick="speak('这本书是我自己买的。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 14. Cấu trúc càng... càng... -->
+      <div class="grammar-card" data-keyword="càng ngày càng yue yue yuelaiyue">
+        <div class="card-head">
+          <div class="card-title">14. Cấu Trúc Càng... Càng... (越...越... & 越来越...)</div>
+          <span class="level-badge">HSK 3</span>
+        </div>
+        <div class="formula-box">越 + A + 越 + B (Càng A thì càng B) | Chủ ngữ + 越来越 + Tính từ/Tâm lý (Ngày càng...)</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">汉语越学越有意思。</span>
+              <span class="example-pinyin">Hànyǔ yuè xué yuè yǒu yìsi.</span>
+              <span class="example-vi">➔ Tiếng Trung càng học lại càng thấy thú vị.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('汉语越学越有意思。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">天气越来越冷了。</span>
+              <span class="example-pinyin">Tiānqì yuè lái yuè lěng le.</span>
+              <span class="example-vi">➔ Thời tiết ngày càng lạnh rồi.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('天气越来越冷了。')">🔊 Nghe</button>
+          </li>
+        </ul>
+        <div class="warning-box">⚠️ Lỗi sai: Sau 越来越 tuyệt đối không thêm phó từ chỉ mức độ (Không nói: 越来越很冷 ❌).</div>
+      </div>
+
+      <!-- 15. Cấu trúc vừa... vừa... -->
+      <div class="grammar-card" data-keyword="vừa vừa you you yibian song song">
+        <div class="card-head">
+          <div class="card-title">15. Cấu Trúc Vừa... Vừa... (又...又... vs 一边...一边...)</div>
+          <span class="level-badge">HSK 2 - 3</span>
+        </div>
+        <div class="formula-box">又 + Adj1 + 又 + Adj2 (Tính chất đồng thời) | 一边 + V1 + 一边 + V2 (Hai hành động song song)</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">这里的苹果又大又甜。</span>
+              <span class="example-pinyin">Zhèlǐ de píngguǒ yòu dà yòu tián.</span>
+              <span class="example-vi">➔ Táo ở đây vừa to vừa ngọt.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('这里的苹果又大又甜。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">他一边喝咖啡一边看书。</span>
+              <span class="example-pinyin">Tā yìbiān hē kāfēi yìbiān kàn shū.</span>
+              <span class="example-vi">➔ Anh ấy vừa uống cà phê vừa đọc sách.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('他一边喝咖啡一边看书。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 16. Cấu trúc sắp... rồi -->
+      <div class="grammar-card" data-keyword="sắp rồi tuong lai gan kuai yao jiuyao">
+        <div class="card-head">
+          <div class="card-title">16. Cấu Trúc Hành Động Sắp Diễn Ra: 快要 / 就要 / 要...了</div>
+          <span class="level-badge">HSK 2</span>
+        </div>
+        <div class="formula-box">S + 快要 / 就要 / 要 + V + 了 (Sắp sửa làm gì đó rồi)</div>
+        <div class="explanation">Diễn tả sự việc sắp sửa xảy ra trong một thời gian ngắn trước mắt.</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">火车快要开了，大家请上车。</span>
+              <span class="example-pinyin">Huǒchē kuài yào kāi le, dàjiā qǐng shàng chē.</span>
+              <span class="example-vi">➔ Tàu hỏa sắp chạy rồi, mọi người xin mời lên xe.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('火车快要开了，大家请上车。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">下个星期我们就要考试了。</span>
+              <span class="example-pinyin">Xià ge xīngqī wǒmen jiù yào kǎoshì le.</span>
+              <span class="example-vi">➔ Tuần sau chúng tôi sẽ thi rồi.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('下个星期我们就要考试了。')">🔊 Nghe</button>
+          </li>
+        </ul>
+        <div class="warning-box">⚠️ Lưu ý: Nếu câu có mốc thời gian cụ thể (như 下个星期), chỉ được dùng 就要...了, không dùng 快要...了.</div>
+      </div>
+
+      <!-- 17. Phân biệt 一点儿 vs 有点儿 -->
+      <div class="grammar-card" data-keyword="phan biet yidianr youdianr mot chut hoi">
+        <div class="card-head">
+          <div class="card-title">17. Phân Biệt: 一点儿 (Một Chút) vs 有点儿 (Hơi Có Chút)</div>
+          <span class="level-badge">HSK 1 - 2</span>
+        </div>
+        <div class="formula-box">有点儿 + Tính từ (Hơi... - thường mang sắc thái không hài lòng) | Tính từ / Động từ + 一点儿 (Một ít/một chút - biểu thị yêu cầu hoặc so sánh nhẹ)</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">这件衣服有点儿贵。</span>
+              <span class="example-pinyin">Zhè jiàn yīfu yǒudiǎnr guì.</span>
+              <span class="example-vi">➔ Chiếc áo này hơi đắt một chút. (Phàn nàn)</span>
+            </div>
+            <button class="audio-btn" onclick="speak('这件衣服有点儿贵。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">请您说得慢一点儿。</span>
+              <span class="example-pinyin">Qǐng nín shuō de màn yìdiǎnr.</span>
+              <span class="example-vi">➔ Xin ngài nói chậm hơn một chút. (Đề nghị)</span>
+            </div>
+            <button class="audio-btn" onclick="speak('请您说得慢一点儿。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 18. Phân biệt 的, 得, 地 -->
+      <div class="grammar-card" data-keyword="ba chu de de de dich dac dia phan biet">
+        <div class="card-head">
+          <div class="card-title">18. Phân Biệt 3 Trợ Từ Kết Cấu: 的, 得, 地</div>
+          <span class="level-badge">HSK 3</span>
+        </div>
+        <div class="formula-box">Định ngữ + 的 + Danh từ | Động từ + 得 + Bổ ngữ (Tính từ) | Tính từ/Trạng từ + 地 + Động từ</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">这是我的新手机。(的 + Danh từ)</span>
+              <span class="example-pinyin">Zhè shì wǒ de xīn shǒujī.</span>
+              <span class="example-vi">➔ Đây là điện thoại mới của tôi.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('这是我的新手机。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">他跑得很快。(Động từ + 得 + Tính từ)</span>
+              <span class="example-pinyin">Tā pǎo de hěn kuài.</span>
+              <span class="example-vi">➔ Anh ấy chạy rất nhanh.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('他跑得很快。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">大家高兴地笑了。(Trạng từ + 地 + Động từ)</span>
+              <span class="example-pinyin">Dàjiā gāoxìng de xiào le.</span>
+              <span class="example-vi">➔ Mọi người vui mừng cười vang.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('大家高兴地笑了。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 19. Cấu trúc 除了...以外 -->
+      <div class="grammar-card" data-keyword="ngoai ra chu le yiwai hai dou">
+        <div class="card-head">
+          <div class="card-title">19. Cấu Trúc Loại Trừ / Bổ Sung: 除了...以外，还 / 都...</div>
+          <span class="level-badge">HSK 3</span>
+        </div>
+        <div class="formula-box">Ngoài A ra còn có B: 除了 A (以外)，还/也 + B | Ngoại trừ A thì tất cả đều: 除了 A (以外)，都 + B</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">除了汉语以外，他还会说日语。</span>
+              <span class="example-pinyin">Chúle Hànyǔ yǐwài, tā hái huì shuō Rìyǔ.</span>
+              <span class="example-vi">➔ Ngoài tiếng Trung ra, anh ấy còn biết nói tiếng Nhật.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('除了汉语以外，他还会说日语。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">除了小王以外，大家都按时到了。</span>
+              <span class="example-pinyin">Chúle Xiǎowáng yǐwài, dàjiā dōu ànshí dào le.</span>
+              <span class="example-vi">➔ Trừ Tiểu Vương ra, mọi người đều đã đến đúng giờ.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('除了小王以外，大家都按时到了。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 20. Cấu trúc 一...就... -->
+      <div class="grammar-card" data-keyword="vua da he la yi jiu lien lap tuc">
+        <div class="card-head">
+          <div class="card-title">20. Cấu Trúc Vừa... Liền / Hễ... Là... (一...就...)</div>
+          <span class="level-badge">HSK 3</span>
+        </div>
+        <div class="formula-box">Chủ ngữ + 一 + Hành động 1 + 就 + Hành động 2</div>
+        <div class="explanation">Hành động 2 xảy ra ngay lập tức sau hành động 1, hoặc biểu thị quy luật hiển nhiên "hễ cứ hễ gặp... là...".</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">我一到家就给你打电话。</span>
+              <span class="example-pinyin">Wǒ yí dào jiā jiù gěi nǐ dǎ diànhuà.</span>
+              <span class="example-vi">➔ Tôi vừa về đến nhà là sẽ gọi điện thoại cho bạn ngay.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('我一到家就给你打电话。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 21. Cấu trúc câu hỏi chính phản -->
+      <div class="grammar-card" data-keyword="cau hoi chinh phan khong v bu v adj bu adj">
+        <div class="card-head">
+          <div class="card-title">21. Câu Hỏi Chính Phản (Động từ + 不/没 + Động từ?)</div>
+          <span class="level-badge">HSK 1 - 2</span>
+        </div>
+        <div class="formula-box">S + V + 不/没 + V (+ Tân ngữ)? / S + Tính từ + 不 + Tính từ?</div>
+        <div class="explanation">Ghép thể khẳng định và phủ định để hỏi xem sự việc có hay không, không được thêm trợ từ 吗 ở cuối câu!</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">你明天去不去学校？</span>
+              <span class="example-pinyin">Nǐ míngtiān qù bu qù xuéxiào?</span>
+              <span class="example-vi">➔ Ngày mai bạn có đi trường học không?</span>
+            </div>
+            <button class="audio-btn" onclick="speak('你明天去不去学校？')">🔊 Nghe</button>
+          </li>
+        </ul>
+        <div class="warning-box">⚠️ Lỗi nghiêm trọng: Tuyệt đối không nói "你明天去不去学校吗？" ❌ (Đã là câu hỏi chính phản thì không được có 吗).</div>
+      </div>
+
+      <!-- 22. Đại từ nghi vấn biểu thị phiếm chỉ -->
+      <div class="grammar-card" data-keyword="ai cung cai gi cung phiem chi shei dou shenme dou">
+        <div class="card-head">
+          <div class="card-title">22. Đại Từ Nghi Vấn Biểu Thị Phiếm Chỉ (Ai Cũng, Cái Gì Cũng...)</div>
+          <span class="level-badge">HSK 3</span>
+        </div>
+        <div class="formula-box">谁 / 什么 / 哪儿 / 怎么 + 都 / 也 + V / Tính từ</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">这道题太简单了，谁都会做。</span>
+              <span class="example-pinyin">Zhè dào tí tài jiǎndān le, shéi dōu huì zuò.</span>
+              <span class="example-vi">➔ Câu hỏi này đơn giản quá, ai cũng biết làm.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('这道题太简单了，谁都会做。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">我今天一点儿胃口都没有，什么都不想吃。</span>
+              <span class="example-pinyin">Wǒ jīntiān yìdiǎnr wèikǒu dōu méiyǒu, shénme dōu bù xiǎng chī.</span>
+              <span class="example-vi">➔ Hôm nay tôi chẳng thèm ăn gì cả, cái gì cũng không muốn ăn.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('我今天一点儿胃口都没有，什么都不想吃。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 23. Câu tồn tại hiện hữu -->
+      <div class="grammar-card" data-keyword="cau ton tai hien huu noi chon dong tu zhe">
+        <div class="card-head">
+          <div class="card-title">23. Câu Tồn Hiện (Biểu Thị Sự Tồn Tại Ở Một Nơi Chốn)</div>
+          <span class="level-badge">HSK 3</span>
+        </div>
+        <div class="formula-box">Từ chỉ nơi chốn + Động từ + 着 / 了 + Danh từ (Đối tượng tồn tại)</div>
+        <div class="explanation">Miêu tả trạng thái tĩnh hoặc sự xuất hiện, mất đi của sự vật tại một địa điểm xác định.</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">桌子上放着一杯热茶。</span>
+              <span class="example-pinyin">Zhuōzi shang fàng zhe yì bēi rè chá.</span>
+              <span class="example-vi">➔ Trên bàn đang để một tách trà nóng.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('桌子上放着一杯热茶。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 24. Câu vị ngữ có hai tân ngữ -->
+      <div class="grammar-card" data-keyword="hai tan ngu gei song jiao dong tu trao nhan">
+        <div class="card-head">
+          <div class="card-title">24. Câu Có Hai Tân Ngữ (Động Từ Trao Nhận: 给, 送, 教, 借...)</div>
+          <span class="level-badge">HSK 2</span>
+        </div>
+        <div class="formula-box">Chủ ngữ + Động từ + Tân ngữ gián tiếp (Người) + Tân ngữ trực tiếp (Vật)</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">王老师教我们汉语。</span>
+              <span class="example-pinyin">Wáng lǎoshī jiāo wǒmen Hànyǔ.</span>
+              <span class="example-vi">➔ Thầy Vương dạy chúng tôi tiếng Trung.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('王老师教我们汉语。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">朋友送给我一件生日礼物。</span>
+              <span class="example-pinyin">Péngyou sòng gěi wǒ yí jiàn shēngrì lǐwù.</span>
+              <span class="example-vi">➔ Bạn bè tặng cho tôi một món quà sinh nhật.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('朋友送给我一件生日礼物。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 25. Câu so sánh không bằng -->
+      <div class="grammar-card" data-keyword="cau so sanh khong bang meiyou so sanh">
+        <div class="card-head">
+          <div class="card-title">25. Câu So Sánh Không Bằng: A 没有 B (+ 那么/这么) + Tính từ</div>
+          <span class="level-badge">HSK 2 - 3</span>
+        </div>
+        <div class="formula-box">A + 没有 + B (+ 那么 / 这么) + Tính từ (A không bằng/kém hơn B về mặt...)</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">我跑得没有他快。</span>
+              <span class="example-pinyin">Wǒ pǎo de méiyǒu tā kuài.</span>
+              <span class="example-vi">➔ Tôi chạy không nhanh bằng anh ấy.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('我跑得没有他快。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">今天没有昨天那么冷。</span>
+              <span class="example-pinyin">Jīntiān méiyǒu zuótiān nàme lěng.</span>
+              <span class="example-vi">➔ Hôm nay không lạnh đến mức như hôm qua.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('今天没有昨天那么冷。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 26. Cấu trúc chỉ có... mới -->
+      <div class="grammar-card" data-keyword="dieu kien duy nhat chi co moi zhiyou cai">
+        <div class="card-head">
+          <div class="card-title">26. Cấu Trúc Điều Kiện Duy Nhất: 只有...才... (Chỉ Có... Mới...)</div>
+          <span class="level-badge">HSK 3</span>
+        </div>
+        <div class="formula-box">只有 + Điều kiện tất yếu bắt buộc + 才 + Kết quả tương ứng</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">只有努力复习，才能考好HSK。</span>
+              <span class="example-pinyin">Zhǐyǒu nǔlì fùxí, cái néng kǎohǎo HSK.</span>
+              <span class="example-vi">➔ Chỉ có chăm chỉ ôn tập thì mới có thể thi tốt HSK.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('只有努力复习，才能考好HSK。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 27. Cấu trúc nếu như... thì -->
+      <div class="grammar-card" data-keyword="cau gia thiet neu nhu thi ruguo jiu yaoshi">
+        <div class="card-head">
+          <div class="card-title">27. Cấu Trúc Giả Thiết: 如果 / 要是... (的话)，就...</div>
+          <span class="level-badge">HSK 2 - 3</span>
+        </div>
+        <div class="formula-box">如果 / 要是 + Giả thiết + (的话)，S + 就 + Hệ quả / Hành động</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">如果明天下雨，我们就不去爬山了。</span>
+              <span class="example-pinyin">Rúguǒ míngtiān xiàyǔ, wǒmen jiù bú qù páshān le.</span>
+              <span class="example-vi">➔ Nếu ngày mai trời mưa, chúng tôi sẽ không đi leo núi nữa.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('如果明天下雨，我们就不去爬山了。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 28. Cấu trúc tăng tiến không những mà còn -->
+      <div class="grammar-card" data-keyword="tang tien khong nhung ma con budan erqie">
+        <div class="card-head">
+          <div class="card-title">28. Cấu Trúc Tăng Tiến: 不但...而且... (Không Những... Mà Còn...)</div>
+          <span class="level-badge">HSK 3</span>
+        </div>
+        <div class="formula-box">Chủ ngữ + 不但 + Ưu điểm/Nhược điểm 1 + 而且 + Ưu điểm/Nhược điểm 2</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">中国菜不但好吃，而且很便宜。</span>
+              <span class="example-pinyin">Zhōngguó cài búdàn hǎochī, érqiě hěn piányi.</span>
+              <span class="example-vi">➔ Món ăn Trung Quốc không những ngon miệng mà còn rất rẻ.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('中国菜不但好吃，而且很便宜。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 29. Cấu trúc câu hỏi lựa chọn -->
+      <div class="grammar-card" data-keyword="cau hoi lua chon hay la haishi huozhe">
+        <div class="card-head">
+          <div class="card-title">29. Câu Hỏi Lựa Chọn: ...还是... (Hay Là / Hay...)</div>
+          <span class="level-badge">HSK 1 - 2</span>
+        </div>
+        <div class="formula-box">S + V + A + 还是 + B? (Hỏi người nghe chọn phương án A hay B)</div>
+        <div class="explanation">Phân biệt: 还是 dùng trong câu hỏi nghi vấn lựa chọn; 或者 dùng trong câu trần thuật khẳng định.</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">你喝茶还是喝咖啡？</span>
+              <span class="example-pinyin">Nǐ hē chá háishì hē kāfēi?</span>
+              <span class="example-vi">➔ Bạn uống trà hay là uống cà phê?</span>
+            </div>
+            <button class="audio-btn" onclick="speak('你喝茶还是喝咖啡？')">🔊 Nghe</button>
+          </li>
+        </ul>
+        <div class="warning-box">⚠️ Lỗi sai: Không được dùng 或者 trong câu hỏi (Ví dụ: 你去北京或者上海？❌ ➔ Phải dùng 还是 ✅).</div>
+      </div>
+
+      <!-- 30. Cấu trúc nhấn mạnh phủ định hoàn toàn -->
+      <div class="grammar-card" data-keyword="phu dinh tuyet doi mot chut cung khong yidianr ye dou bu">
+        <div class="card-head">
+          <div class="card-title">30. Phủ Định Hoàn Toàn: 一点儿也 / 都不... (Một Chút Cũng Không...)</div>
+          <span class="level-badge">HSK 3</span>
+        </div>
+        <div class="formula-box">S + 一点儿 + 也 / 都 + 不 / 没 + Tính từ / Động từ</div>
+        <div class="explanation">Dùng để nhấn mạnh sự phủ định tuyệt đối: không có một tí ti nào của trạng thái hoặc hành động đó.</div>
+        <ul class="examples-list">
+          <li class="example-item">
+            <div>
+              <span class="example-cn">虽然学了一整天，但他一点儿也不累。</span>
+              <span class="example-pinyin">Suīrán xué le yì zhěng tiān, dàn tā yìdiǎnr yě bú lèi.</span>
+              <span class="example-vi">➔ Tuy học cả một ngày dài, nhưng anh ấy một chút cũng không mệt.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('虽然学了一整天，但他一点儿也不累。')">🔊 Nghe</button>
+          </li>
+          <li class="example-item">
+            <div>
+              <span class="example-cn">这个生词我一点儿都没印象。</span>
+              <span class="example-pinyin">Zhè ge shēngcí wǒ yìdiǎnr dōu méi yìnxiàng.</span>
+              <span class="example-vi">➔ Từ mới này tôi một chút ấn tượng cũng không có.</span>
+            </div>
+            <button class="audio-btn" onclick="speak('这个生词我一点儿都没印象。')">🔊 Nghe</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'zh-CN';
+        msg.rate = 0.85;
+        window.speechSynthesis.speak(msg);
+      }
+    }
+
+    function filterGrammar() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      const cards = document.querySelectorAll('.grammar-card');
+      cards.forEach(card => {
+        const text = (card.innerText + ' ' + card.getAttribute('data-keyword')).toLowerCase();
+        card.style.display = text.includes(q) ? 'block' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>

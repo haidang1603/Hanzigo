@@ -14,19 +14,41 @@ export default async function membersHandler(req, res) {
   }
 
   const auth = await verifyRequestAuth(req);
+  if (!auth.authenticated) {
+    return res.status(401).json({ error: 'Yêu cầu chưa được xác thực. Vui lòng đăng nhập.' });
+  }
+
   const supabase = getSupabaseAdminClient();
 
   if (supabase) {
     try {
-      if (auth.authenticated && auth.user.role === 'teacher') {
-        const { data: cls } = await supabase
-          .from('classrooms')
-          .select('teacher_id')
-          .eq('id', classroomId)
-          .single();
+      const isTeacher = auth.user.role === 'teacher' || auth.user.id.includes('teacher');
+      const isAdmin = auth.user.role === 'admin';
 
-        if (cls && cls.teacher_id !== auth.user.id && auth.user.role !== 'admin' && cls.teacher_id !== 'user_teacher_demo') {
+      const { data: cls } = await supabase
+        .from('classrooms')
+        .select('teacher_id')
+        .eq('id', classroomId)
+        .maybeSingle();
+
+      if (cls) {
+        if (isTeacher && cls.teacher_id !== auth.user.id && !isAdmin) {
           return res.status(403).json({ error: 'Bạn không có quyền truy cập học viên của lớp này.' });
+        }
+      }
+
+      // If student caller, verify enrollment
+      if (!isTeacher && !isAdmin) {
+        const { data: selfMember } = await supabase
+          .from('class_members')
+          .select('id')
+          .eq('classroom_id', classroomId)
+          .eq('student_id', auth.user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (!selfMember) {
+          return res.status(403).json({ error: 'Bạn không phải là thành viên của lớp học này.' });
         }
       }
 
@@ -37,13 +59,14 @@ export default async function membersHandler(req, res) {
         .eq('status', 'active');
 
       if (!error && Array.isArray(data)) {
+        const isStaff = isTeacher || isAdmin;
         const sanitized = data.map(m => ({
           id: m.id,
           classroom_id: m.classroom_id,
           student_id: m.student_id,
           student_name: m.student?.name || 'Học viên HanziGo',
           student_avatar: m.student?.avatar || null,
-          student_email: m.student?.email || '',
+          student_email: isStaff ? (m.student?.email || '') : '',
           hsk_level: m.student?.level || 'HSK 1',
           joined_at: m.joined_at,
           status: m.status,

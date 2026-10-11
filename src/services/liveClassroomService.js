@@ -36,6 +36,22 @@ function setLiveItem(key, data) {
   liveMemoryStore.set(key, data);
 }
 
+async function getApiHeaders(userId) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (userId) {
+    headers['x-user-id'] = String(userId);
+  }
+  try {
+    if (isSupabaseConfigured && supabase?.auth) {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.access_token) {
+        headers['Authorization'] = `Bearer ${data.session.access_token}`;
+      }
+    }
+  } catch {}
+  return headers;
+}
+
 // Global Event Bus supporting local in-memory listeners and cross-device Supabase Realtime Channels
 class LiveEventBus {
   constructor() {
@@ -381,10 +397,12 @@ export async function createClassSession({ classroomId, teacherId, title }) {
   // Sync to shared dev & serverless endpoint so all other browsers/students see the room
   if (typeof window !== 'undefined' && typeof fetch === 'function') {
     try {
-      fetch('/api/live/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session: sessionToSave })
+      getApiHeaders(sessionToSave.teacher_id).then(headers => {
+        fetch('/api/live/session', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ session: sessionToSave })
+        }).catch(() => {});
       }).catch(() => {});
     } catch {}
   }
@@ -694,13 +712,15 @@ export async function joinLiveSession(sessionId, user) {
   // Sync to shared dev server (so teacher and students in other tabs/browsers see the participant immediately)
   if (typeof window !== 'undefined' && typeof fetch === 'function') {
     try {
-      fetch('/api/live/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: sessionId,
-          participant: participantData
-        })
+      getApiHeaders(userId).then(headers => {
+        fetch('/api/live/join', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            session_id: sessionId,
+            participant: participantData
+          })
+        }).catch(() => {});
       }).catch(() => {});
     } catch {}
   }
@@ -772,10 +792,12 @@ export async function leaveLiveSession(sessionId, userId) {
   // Sync to shared dev server
   if (typeof window !== 'undefined' && typeof fetch === 'function') {
     try {
-      fetch('/api/live/leave', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, userId })
+      getApiHeaders(userId).then(headers => {
+        fetch('/api/live/leave', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ sessionId, userId })
+        }).catch(() => {});
       }).catch(() => {});
     } catch {}
   }
@@ -868,23 +890,25 @@ export async function endLiveSession(sessionId, teacherId) {
   // Sync to backend dev/production endpoint
   if (typeof window !== 'undefined' && typeof fetch === 'function') {
     try {
-      fetch('/api/live/end', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, teacherId: effectiveTeacherId, endedAt })
-      }).catch(() => {});
+      getApiHeaders(effectiveTeacherId).then(headers => {
+        fetch('/api/live/end', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ sessionId, teacherId: effectiveTeacherId, endedAt })
+        }).catch(() => {});
 
-      fetch('/api/live/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session: {
-            id: sessionId,
-            classroom_id: session.classroom_id,
-            status: 'ended',
-            ended_at: endedAt
-          }
-        })
+        fetch('/api/live/session', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            session: {
+              id: sessionId,
+              classroom_id: session.classroom_id,
+              status: 'ended',
+              ended_at: endedAt
+            }
+          })
+        }).catch(() => {});
       }).catch(() => {});
     } catch {}
   }
@@ -1136,14 +1160,16 @@ export async function allowStudentMic(sessionId, teacherId, studentId) {
 
   // Trigger server-side SFU permission update
   if (typeof window !== 'undefined' && typeof fetch === 'function') {
-    fetch('/api/live/moderation', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId,
-        action: 'ALLOW_MIC',
-        targetUserId: targetStudentId
-      })
+    getApiHeaders(teacherId).then(headers => {
+      fetch('/api/live/moderation', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          sessionId,
+          action: 'ALLOW_MIC',
+          targetUserId: targetStudentId
+        })
+      }).catch(() => {});
     }).catch(() => {});
   }
 
@@ -1185,14 +1211,16 @@ export async function revokeStudentMic(sessionId, teacherId, studentId) {
 
   // Trigger server-side SFU permission update
   if (typeof window !== 'undefined' && typeof fetch === 'function') {
-    fetch('/api/live/moderation', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId,
-        action: 'REVOKE_MIC',
-        targetUserId: studentId
-      })
+    getApiHeaders(teacherId).then(headers => {
+      fetch('/api/live/moderation', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          sessionId,
+          action: 'REVOKE_MIC',
+          targetUserId: studentId
+        })
+      }).catch(() => {});
     }).catch(() => {});
   }
 
@@ -1251,13 +1279,15 @@ export async function muteAllParticipants(sessionId, teacherId) {
 
   // Trigger server-side SFU mute all
   if (typeof window !== 'undefined' && typeof fetch === 'function') {
-    fetch('/api/live/moderation', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId,
-        action: 'MUTE_ALL'
-      })
+    getApiHeaders(teacherId).then(headers => {
+      fetch('/api/live/moderation', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          sessionId,
+          action: 'MUTE_ALL'
+        })
+      }).catch(() => {});
     }).catch(() => {});
   }
 
@@ -1287,14 +1317,16 @@ export async function removeParticipant(sessionId, teacherId, targetUserId) {
 
   // Trigger server-side SFU remove participant
   if (typeof window !== 'undefined' && typeof fetch === 'function') {
-    fetch('/api/live/moderation', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId,
-        action: 'KICK',
-        targetUserId
-      })
+    getApiHeaders(teacherId).then(headers => {
+      fetch('/api/live/moderation', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          sessionId,
+          action: 'KICK',
+          targetUserId
+        })
+      }).catch(() => {});
     }).catch(() => {});
   }
 

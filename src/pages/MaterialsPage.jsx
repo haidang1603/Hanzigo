@@ -66,6 +66,36 @@ import { useAuth } from '../context/AuthContext';
 // Featured Exclusive Interactive Tools in HanziGo
 const FEATURED_EXCLUSIVE_TOOLS = [
   {
+    id: 'feat-pinyin',
+    title: 'Cẩm Nang Ngữ Âm Pinyin & Quy Tắc Biến Điệu',
+    badge: '🎵 Phát âm & Ngữ âm',
+    badgeColor: 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300',
+    description: 'Bảng tra chuẩn 21 Thanh mẫu, 36 Vận mẫu, 4 Thanh điệu và 5 quy tắc biến điệu vàng kèm phát âm chuẩn Bắc Kinh.',
+    url: '/bang-ngu-am-pinyin-toan-dien.html',
+    actionText: 'Học ngữ âm ngay',
+    type: 'interactive'
+  },
+  {
+    id: 'feat-grammar',
+    title: 'Sổ Tay 30 Cấu Trúc Ngữ Pháp HSK 1–3 Cốt Lõi',
+    badge: '📚 Cú pháp & Ngữ pháp',
+    badgeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300',
+    description: 'Công thức câu chữ 把, chữ 被, câu so sánh 比, phân biệt 不 vs 没 và bảng cảnh báo lỗi sai kinh điển của người Việt.',
+    url: '/so-tay-ngu-phap-hsk-cot-loi.html',
+    actionText: 'Xem sổ tay ngữ pháp',
+    type: 'guide'
+  },
+  {
+    id: 'feat-phrases',
+    title: '500 Câu Giao Tiếp Tiếng Trung Phản Xạ Hàng Ngày',
+    badge: '🗣️ Khẩu ngữ & Giao tiếp',
+    badgeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300',
+    description: 'Mẫu câu đàm thoại thực chiến theo ngữ cảnh: Mua sắm, Nhà hàng, Sân bay, Hỏi đường, Khách sạn & Công sở có audio.',
+    url: '/500-cau-giao-tiep-tieng-trung-phan-xa.html',
+    actionText: 'Luyện giao tiếp ngay',
+    type: 'interactive'
+  },
+  {
     id: 'feat-mizige',
     title: 'Vở Luyện Viết Ô Mễ Tự (米字格) Chuẩn A4',
     badge: '✍️ In ấn & Luyện viết',
@@ -73,6 +103,16 @@ const FEATURED_EXCLUSIVE_TOOLS = [
     description: 'Trang kẻ ô mễ tự 8 hướng chuẩn kèm dòng pinyin. Tối ưu in A4 vector nét căng hoặc xuất file PDF để tập viết chữ Hán bằng bút mực.',
     url: '/vo-tap-viet-chu-han-a4.html',
     actionText: 'Mở & In A4 ngay',
+    type: 'print'
+  },
+  {
+    id: 'feat-tianzige',
+    title: 'Vở Luyện Viết Ô Điền Tự (田字格) Chuẩn A4',
+    badge: '✍️ In ấn & Luyện viết',
+    badgeColor: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300',
+    description: 'Trang kẻ ô điền tự 4 phần đối xứng kèm dòng pinyin. Tùy chọn in chữ mẫu nét mờ đồ theo nét viết.',
+    url: '/vo-luyen-viet-o-dien-tu-tianzige.html',
+    actionText: 'In Ô Điền Tự A4',
     type: 'print'
   },
   {

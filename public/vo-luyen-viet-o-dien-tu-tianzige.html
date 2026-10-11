@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vở Tập Viết Chữ Hán Ô Điền Tự (田字格) & Ô Cửu Cung - HanziGo</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Serif SC", sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    .no-print-toolbar {
+      background: white;
+      padding: 16px 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      background: #E85D3F;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(232, 93, 63, 0.25);
+    }
+    .btn:hover {
+      background: #CB4529;
+    }
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .input-text {
+      padding: 8px 12px;
+      border: 1px solid #CBD5E1;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      width: 180px;
+    }
+    .input-text:focus { border-color: #E85D3F; }
+
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 12mm 14mm;
+      background: white;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 2px solid #E85D3F;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+    .brand {
+      font-size: 18px;
+      font-weight: 900;
+      color: #E85D3F;
+      letter-spacing: -0.5px;
+    }
+    .title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #1e293b;
+    }
+    .meta {
+      display: flex;
+      gap: 20px;
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .meta span strong {
+      color: #0f172a;
+    }
+
+    /* Grid container */
+    .grid-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+    }
+    .pinyin-row {
+      height: 14px;
+    }
+    .pinyin-cell {
+      border: 1px dashed #cbd5e1;
+      border-bottom: 1px solid #94a3b8;
+      background: #fdfefe;
+      font-size: 10px;
+      text-align: center;
+      color: #64748b;
+    }
+    .tianzige-row {
+      height: 48px;
+    }
+    .tianzige-cell {
+      width: 48px;
+      height: 48px;
+      border: 1.5px solid #E85D3F;
+      position: relative;
+      background: #fff;
+    }
+    /* Tianzige Cross lines */
+    .tianzige-cell::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      border-top: 1px dashed #fca5a5;
+    }
+    .tianzige-cell::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      border-left: 1px dashed #fca5a5;
+    }
+    .sample-char {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 400;
+      color: #cbd5e1; /* Watermark light gray for tracing */
+      z-index: 2;
+      user-select: none;
+    }
+
+    .footer {
+      margin-top: auto;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    @media print {
+      body {
+        background: transparent;
+        padding: 0;
+      }
+      .no-print-toolbar {
+        display: none !important;
+      }
+      .sheet {
+        box-shadow: none;
+        padding: 0;
+        width: 100%;
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print-toolbar">
+    <button class="btn" onclick="window.print()">
+      🖨️ In Khổ A4 Chuẩn
+    </button>
+    <div class="input-group">
+      <label>Chữ mẫu để đồ (tô nét):</label>
+      <input type="text" id="sampleInput" class="input-text" placeholder="Nhập chữ Hán (vd: 你好中国)" oninput="updateSample()">
+    </div>
+    <div class="input-group">
+      <label>Chủ đề bài tập:</label>
+      <input type="text" id="titleInput" class="input-text" placeholder="HSK 1 - Bài 1" oninput="updateTitle()">
+    </div>
+  </div>
+
+  <div class="sheet">
+    <div class="header">
+      <div>
+        <div class="brand">HanziGo 汉字走</div>
+        <div class="title" id="displayTitle">Vở Luyện Viết Ô Điền Tự (田字格) Chuẩn A4</div>
+      </div>
+      <div class="meta">
+        <span>Học viên: <strong>...........................</strong></span>
+        <span>Lớp: <strong>...................</strong></span>
+        <span>Ngày: <strong>..../..../202...</strong></span>
+      </div>
+    </div>
+
+    <table class="grid-table" id="gridTable">
+      <!-- 10 rows generated dynamically -->
+    </table>
+
+    <div class="footer">
+      <span>HanziGo — Nền Tảng Học Tiếng Trung Chuyên Sâu Cho Người Việt</span>
+      <span>Hệ Thống Lưới Ô Điền Tự Chuẩn Bộ Giáo Dục Quốc Gia Trung Quốc (MOE)</span>
+    </div>
+  </div>
+
+  <script>
+    const ROWS = 10;
+    const COLS = 11;
+    const table = document.getElementById('gridTable');
+
+    function renderGrid(chars = '') {
+      table.innerHTML = '';
+      const charArr = Array.from(chars);
+
+      for (let r = 0; r < ROWS; r++) {
+        // Pinyin row
+        const pyTr = document.createElement('tr');
+        pyTr.className = 'pinyin-row';
+        for (let c = 0; c < COLS; c++) {
+          const td = document.createElement('td');
+          td.className = 'pinyin-cell';
+          pyTr.appendChild(td);
+        }
+        table.appendChild(pyTr);
+
+        // Tianzige row
+        const charTr = document.createElement('tr');
+        charTr.className = 'tianzige-row';
+        for (let c = 0; c < COLS; c++) {
+          const td = document.createElement('td');
+          td.className = 'tianzige-cell';
+          
+          const char = charArr[c % (charArr.length || 1)];
+          if (chars && char) {
+            const span = document.createElement('span');
+            span.className = 'sample-char';
+            span.textContent = char;
+            td.appendChild(span);
+          }
+          charTr.appendChild(td);
+        }
+        table.appendChild(charTr);
+      }
+    }
+
+    function updateSample() {
+      const val = document.getElementById('sampleInput').value.trim();
+      renderGrid(val);
+    }
+
+    function updateTitle() {
+      const val = document.getElementById('titleInput').value.trim();
+      document.getElementById('displayTitle').textContent = val 
+        ? `Vở Luyện Viết: ${val}` 
+        : 'Vở Luyện Viết Ô Điền Tự (田字格) Chuẩn A4';
+    }
+
+    renderGrid('');
+  </script>
+</body>
+</html>

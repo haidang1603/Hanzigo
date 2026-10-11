@@ -19,10 +19,27 @@ export default async function endHandler(req, res) {
   }
 
   const closeTime = endedAt || new Date().toISOString();
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
   const supabase = getSupabaseAdminClient();
 
   if (supabase) {
     try {
+      const { data: session } = await supabase
+        .from('class_sessions')
+        .select('teacher_id')
+        .eq('id', sessionId)
+        .maybeSingle();
+
+      if (session) {
+        if (session.teacher_id !== auth.user.id && auth.user.role !== 'admin') {
+          return res.status(403).json({ error: 'Chỉ giáo viên phụ trách mới có quyền kết thúc buổi học.' });
+        }
+      } else if (isProd) {
+        return res.status(404).json({ error: 'Phòng học trực tuyến không tồn tại.' });
+      } else if (auth.user.role !== 'teacher' && auth.user.role !== 'admin' && !auth.user.id.includes('teacher')) {
+        return res.status(403).json({ error: 'Chỉ giáo viên phụ trách mới có quyền kết thúc buổi học.' });
+      }
+
       await supabase
         .from('class_sessions')
         .update({ status: 'ended', ended_at: closeTime })
@@ -41,6 +58,8 @@ export default async function endHandler(req, res) {
     } catch (err) {
       console.warn('[/api/live/end] Notice:', err.message);
     }
+  } else if (auth.user.role !== 'teacher' && auth.user.role !== 'admin' && (!auth.user.id.includes('teacher') || isProd)) {
+    return res.status(403).json({ error: 'Chỉ giáo viên phụ trách mới có quyền kết thúc buổi học.' });
   }
 
   return res.status(200).json({ success: true, endedAt: closeTime });

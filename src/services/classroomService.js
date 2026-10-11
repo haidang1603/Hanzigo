@@ -15,6 +15,22 @@ const STORAGE_KEYS = {
   SEED_FLAG: 'hanzigo_classroom_seed_initialized',
 };
 
+async function getApiHeaders(userId) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (userId) {
+    headers['x-user-id'] = String(userId);
+  }
+  try {
+    if (isSupabaseConfigured && supabase?.auth) {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.access_token) {
+        headers['Authorization'] = `Bearer ${data.session.access_token}`;
+      }
+    }
+  } catch {}
+  return headers;
+}
+
 /**
  * Generate unique, easy-to-read Class Code (e.g., HZG-7K2P9)
  * Excludes ambiguous chars (0, O, 1, I, L)
@@ -654,10 +670,12 @@ export async function createClassroom({
   // Synchronize to shared server store immediately (so other browsers/tabs see it)
   if (typeof window !== 'undefined' && typeof fetch === 'function') {
     try {
-      fetch('/api/classroom/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newClass)
+      getApiHeaders(effectiveTeacherId).then(headers => {
+        fetch('/api/classroom/create', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(newClass)
+        }).catch(() => {});
       }).catch(() => {});
     } catch {}
   }
@@ -1281,13 +1299,15 @@ export async function removeStudentFromClass(classroomId, studentId) {
   // Synchronize removal with shared dev server
   if (typeof window !== 'undefined' && typeof fetch === 'function') {
     try {
-      fetch('/api/classroom/remove', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          classroom_id: classroomId,
-          student_id: studentId
-        })
+      getApiHeaders('teacher').then(headers => {
+        fetch('/api/classroom/remove', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            classroomId,
+            studentId
+          })
+        }).catch(() => {});
       }).catch(() => {});
     } catch {}
   }
