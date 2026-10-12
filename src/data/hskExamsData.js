@@ -56,10 +56,10 @@ export const HSK_EXAMS = [
     exam_type: 'mock',
     skill_category: 'mixed',
     duration_minutes: 55,
-    total_questions: 25,
+    total_questions: 5,
     passing_score: 120,
     max_score: 200,
-    description: 'Cấu trúc đề HSK 2 chuẩn: 12 câu Nghe hiểu hội thoại 2 lượt và 13 câu Đọc hiểu phân loại ngữ pháp, trạng từ chỉ thời gian và liên từ.',
+    description: 'Cấu trúc đề HSK 2 chuẩn: Nghe hiểu hội thoại (audio phát 2 lượt) và Đọc hiểu phân loại ngữ pháp, trạng từ chỉ thời gian và liên từ.',
     source_url: 'https://hanzigo.com/hsk/mock/hsk2-01',
     source_author: 'Ban Học Thuật & Khảo Thí HanziGo',
     license: 'CC BY-NC-SA 4.0',
@@ -88,17 +88,36 @@ export const HSK_EXAMS = [
   },
   {
     id: 'hsk3-mock-01',
-    title: 'Đề Thi Thử HSK 3 Chuẩn Số 1 (Nghe - Đọc - Ngữ Pháp Cốt Lõi)',
+    title: 'Đề Thi Thử HSK 3 Chuẩn Số 1 (Nghe - Đọc - Viết Câu)',
     level: 'HSK 3',
     exam_version: '2015-Standard',
     exam_type: 'mock',
     skill_category: 'mixed',
     duration_minutes: 85,
-    total_questions: 30,
+    total_questions: 6,
     passing_score: 180,
     max_score: 300,
-    description: 'Đề thi thử HSK 3 toàn diện 3 kỹ năng: Nghe hiểu đoạn văn ngắn, Đọc hiểu chọn đoạn tương ứng và kiểm tra câu chữ 把, chữ 被, câu so sánh 比.',
+    description: 'Đề thi thử HSK 3 toàn diện 3 kỹ năng: Nghe hiểu đoạn văn ngắn (audio phát 2 lượt), Đọc hiểu ngữ pháp câu chữ 把 / chữ 被, và phần thi Viết sắp xếp từ thành câu.',
     source_url: 'https://hanzigo.com/hsk/mock/hsk3-01',
+    source_author: 'Ban Học Thuật & Khảo Thí HanziGo',
+    license: 'CC BY-NC-SA 4.0',
+    permission_status: 'original_content',
+    verified_date: '2026-10-12',
+    is_published: true
+  },
+  {
+    id: 'hsk4-mock-01',
+    title: 'Đề Thi Thử HSK 4 Toàn Diện Số 1 (Nghe 1 Lần - Đọc - Viết Đoạn)',
+    level: 'HSK 4',
+    exam_version: '2015-Standard',
+    exam_type: 'mock',
+    skill_category: 'mixed',
+    duration_minutes: 105,
+    total_questions: 6,
+    passing_score: 180,
+    max_score: 300,
+    description: 'Mô phỏng cấu trúc HSK 4 chuẩn: Phần Nghe chỉ phát duy nhất 1 lần, Đọc hiểu phân loại liên từ, phần Viết sắp xếp câu và viết câu tự luận theo tranh.',
+    source_url: 'https://hanzigo.com/hsk/mock/hsk4-01',
     source_author: 'Ban Học Thuật & Khảo Thí HanziGo',
     license: 'CC BY-NC-SA 4.0',
     permission_status: 'original_content',
@@ -649,14 +668,57 @@ export const HSK_QUESTIONS = [
   },
 
   // ==========================================
-  // EXAM 3: hsk3-mock-01 (Mẫu HSK 3: câu chữ 把, 被, v.v.)
+  // EXAM 3: hsk3-mock-01 (Mẫu HSK 3: Nghe, Đọc, Viết)
   // ==========================================
   {
     id: 'q-hsk3-01-01',
     exam_id: 'hsk3-mock-01',
-    part_type: 'reading',
+    part_type: 'listening',
     part_number: 1,
     question_number: 1,
+    question_type: 'multiple_choice',
+    prompt: '听对话，选择正确答案：',
+    pinyin: 'Tīng duìhuà, xuǎnzé zhèngquè dá\'àn:',
+    translation: 'Nghe đối thoại, chọn đáp án đúng:',
+    audio_url: '',
+    audio_script: '男：小王，请问会议室在几层？女：在五层，出电梯往左走就是。问：会议室在几层？',
+    options: [
+      { text: '三层 (Tầng 3)', pinyin: 'Sān céng', translation: 'Tầng 3' },
+      { text: '五层 (Tầng 5)', pinyin: 'Wǔ céng', translation: 'Tầng 5' },
+      { text: '七层 (Tầng 7)', pinyin: 'Qī céng', translation: 'Tầng 7' }
+    ],
+    correct_option_index: 1,
+    explanation: 'Lời thoại người nữ: "在五层，出电梯往左走就是" (Ở tầng 5, ra khỏi thang máy rẽ trái là tới).',
+    points: 15
+  },
+  {
+    id: 'q-hsk3-01-02',
+    exam_id: 'hsk3-mock-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 2,
+    question_type: 'multiple_choice',
+    prompt: '听对话，判断女的打算买什么：',
+    pinyin: 'Tīng duìhuà, pànduàn nǚ de dǎsuàn mǎi shénme:',
+    translation: 'Nghe đối thoại, phán đoán người nữ định mua gì:',
+    audio_url: '',
+    audio_script: '男：天气越来越冷了，你得多穿点儿。女：是啊，我打算周末去商场买一件厚羽绒服。问：女的打算买什么？',
+    options: [
+      { text: '羽绒服 (Áo phao lông vũ)', pinyin: 'Yǔróngfú', translation: 'Áo phao' },
+      { text: '衬衫 (Áo sơ mi)', pinyin: 'Chènshān', translation: 'Áo sơ mi' },
+      { text: '雨伞 (Cái ô)', pinyin: 'Yǔsǎn', translation: 'Cái ô' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Người nữ nói: "我打算周末去商场买一件厚羽绒服" (Tôi định cuối tuần đi trung tâm mua sắm mua một chiếc áo phao dày).',
+    points: 15
+  },
+  {
+    id: 'q-hsk3-01-03',
+    exam_id: 'hsk3-mock-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 3,
+    question_type: 'multiple_choice',
     prompt: '选词填空：请你把窗户______，外面刮大风了。',
     pinyin: 'Xuǎncí tiánkòng: Qǐng nǐ bǎ chuānghu ______, wàimiàn guā dàfēng le.',
     translation: 'Điền từ vào câu chữ 把: Làm phiền bạn đem cửa sổ ______, bên ngoài gió to quá.',
@@ -670,35 +732,15 @@ export const HSK_QUESTIONS = [
     ],
     correct_option_index: 0,
     explanation: 'Bên ngoài đang có gió to (刮大风), vì vậy hành động xử trí đối với cửa sổ là "关上" (đóng lại). Cấu trúc câu chữ 把: S + 把 + O + V + Bổ ngữ kết quả/phương hướng.',
-    points: 10
+    points: 15
   },
   {
-    id: 'q-hsk3-01-02',
+    id: 'q-hsk3-01-04',
     exam_id: 'hsk3-mock-01',
     part_type: 'reading',
-    part_number: 1,
-    question_number: 2,
-    prompt: '选择语法正确的一句：',
-    pinyin: 'Xuǎnzé yǔfǎ zhèngquè de yí jù:',
-    translation: 'Chọn câu có ngữ pháp chuẩn xác:',
-    audio_url: '',
-    audio_script: '',
-    options: [
-      { text: '他把作业做完了。', pinyin: 'Tā bǎ zuòyè zuò wán le.', translation: 'Chuẩn câu chữ 把' },
-      { text: '他把作业做。', pinyin: 'Tā bǎ zuòyè zuò.', translation: 'Thiếu thành phần kết quả sau V' },
-      { text: '他作业把做完了。', pinyin: 'Tā zuòyè bǎ zuò wán le.', translation: 'Sai vị trí 把' },
-      { text: '他把做完了作业。', pinyin: 'Tā bǎ zuò wán le zuòyè.', translation: 'Sai vị trí tân ngữ' }
-    ],
-    correct_option_index: 0,
-    explanation: 'Trong câu chữ 把, động từ bắt buộc phải có thành phần kết quả đi kèm (做完了), và tân ngữ chịu tác động (作业) phải đứng ngay sau 把.',
-    points: 10
-  },
-  {
-    id: 'q-hsk3-01-03',
-    exam_id: 'hsk3-mock-01',
-    part_type: 'reading',
-    part_number: 1,
-    question_number: 3,
+    part_number: 2,
+    question_number: 4,
+    question_type: 'multiple_choice',
     prompt: '选词填空：我的自行车______人骑走了。',
     pinyin: 'Xuǎncí tiánkòng: Wǒ de zìxíngchē ______ rén qí zǒu le.',
     translation: 'Điền từ câu bị động: Xe đạp của tôi ______ người ta đạp đi mất rồi.',
@@ -712,7 +754,197 @@ export const HSK_QUESTIONS = [
     ],
     correct_option_index: 0,
     explanation: 'Chủ ngữ "我的自行车" là vật bị tác động, mất đi xe đạp mang sắc thái không mong muốn nên dùng câu bị động chữ 被: S (chịu tác động) + 被 + Tác nhân + V + Thành phần khác.',
-    points: 10
+    points: 15
+  },
+  {
+    id: 'q-hsk3-01-05',
+    exam_id: 'hsk3-mock-01',
+    part_type: 'writing',
+    part_number: 3,
+    question_number: 5,
+    question_type: 'reorder_sentence',
+    prompt: '书写第一部分：将词语排列成一句通顺的话（Sắp xếp từ thành câu）：',
+    pinyin: 'Shūxiě dì-yī bùfen: Jiāng cíyǔ páiliè chéng yí jù tōngshùn de huà:',
+    translation: 'Viết Phần 1: Sắp xếp các cụm từ sau thành câu hoàn chỉnh đúng ngữ pháp:',
+    audio_url: '',
+    audio_script: '',
+    words: ['作业', '他', '把', '做完了'],
+    correct_order: ['他', '把', '作业', '做完了'],
+    correct_sentence: '他把作业做完了。',
+    options: [
+      { text: '他把作业做完了。', pinyin: 'Tā bǎ zuòyè zuò wán le.', translation: 'Anh ấy đã làm xong bài tập rồi.' },
+      { text: '作业他把做完了。', pinyin: 'Zuòyè tā bǎ zuò wán le.', translation: 'Sai vị trí chủ ngữ - tân ngữ' },
+      { text: '他把做完了作业。', pinyin: 'Tā bǎ zuò wán le zuòyè.', translation: 'Sai cấu trúc chữ 把' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Cấu trúc câu chữ 把: Chủ ngữ (他) + 把 + Tân ngữ chịu tác động (作业) + Động từ (做) + Bổ ngữ kết quả (完了).',
+    points: 20
+  },
+  {
+    id: 'q-hsk3-01-06',
+    exam_id: 'hsk3-mock-01',
+    part_type: 'writing',
+    part_number: 3,
+    question_number: 6,
+    question_type: 'fill_blank',
+    prompt: '书写第二部分：读拼音，写汉字（Điền chữ Hán vào chỗ trống）：他是我的好朋______ (yǒu)。',
+    pinyin: 'Shūxiě dì-èr bùfen: Dú pīnyīn, xiě hànzì: Tā shì wǒ de hǎo péng______ (yǒu).',
+    translation: 'Viết Phần 2: Nhìn Pinyin điền chữ Hán: Cậu ấy là người bạn tốt của tôi.',
+    audio_url: '',
+    audio_script: '',
+    hint_pinyin: 'yǒu',
+    accepted_answers: ['友'],
+    options: [
+      { text: '友 (Hữu - bạn bè)', pinyin: 'yǒu', translation: 'Bạn hữu' },
+      { text: '有 (Hữu - có)', pinyin: 'yǒu', translation: 'Có' },
+      { text: '右 (Hữu - bên phải)', pinyin: 'yòu', translation: 'Bên phải' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Từ vựng "朋友" (péngyou - bạn bè). Chữ Hán cần điền là chữ 友 (yǒu - có bộ Hựu 又).',
+    points: 20
+  },
+
+  // ==========================================
+  // EXAM 4: hsk4-mock-01 (Mẫu HSK 4: Nghe 1 Lần, Đọc, Viết)
+  // ==========================================
+  {
+    id: 'q-hsk4-01-01',
+    exam_id: 'hsk4-mock-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 1,
+    question_type: 'multiple_choice',
+    prompt: '听短文（仅播放一次），选择正确答案：',
+    pinyin: 'Tīng duǎnwén (jǐn bōfàng yí cì), xuǎnzé zhèngquè dá\'àn:',
+    translation: 'Nghe đoạn văn (chỉ phát duy nhất 1 lần theo chuẩn HSK 4), chọn đáp án đúng:',
+    audio_url: '',
+    audio_script: '每个人都会遇到困难，重要的是要保持乐观的心态，勇敢面对。问：遇到困难时最重要的是什么？',
+    options: [
+      { text: '放弃目标 (Từ bỏ mục tiêu)', pinyin: 'Fàngqì mùbiāo', translation: 'Từ bỏ' },
+      { text: '保持乐观心态 (Giữ tinh thần lạc quan)', pinyin: 'Bǎochí lèguān xīntài', translation: 'Giữ thái độ lạc quan' },
+      { text: '依靠别人 (Dựa dẫm người khác)', pinyin: 'Yīkào biérén', translation: 'Trông cậy người khác' }
+    ],
+    correct_option_index: 1,
+    explanation: 'Lời thoại đoạn văn: "重要的是要保持乐观的心态，勇敢面对" (Điều quan trọng là giữ vững tinh thần lạc quan, dũng cảm đối diện).',
+    points: 15
+  },
+  {
+    id: 'q-hsk4-01-02',
+    exam_id: 'hsk4-mock-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 2,
+    question_type: 'multiple_choice',
+    prompt: '听对话（仅播放一次），选择男的对这份工作的感觉：',
+    pinyin: 'Tīng duìhuà (jǐn bōfàng yí cì), xuǎnzé nán de duì zhè fèn gōngzuò de gǎnjué:',
+    translation: 'Nghe đối thoại (phát 1 lần), chọn cảm nhận của người nam về công việc:',
+    audio_url: '',
+    audio_script: '女：新工作适应得怎么样了？男：挺好的，同事们都很友好，而且加班也不算多。问：男的觉得新工作怎么样？',
+    options: [
+      { text: '挺满意的 (Khá hài lòng)', pinyin: 'Tǐng mǎnyì de', translation: 'Rất hài lòng' },
+      { text: '压力太大 (Áp lực quá lớn)', pinyin: 'Yālì tài dà', translation: 'Quá áp lực' },
+      { text: '想换工作 (Muốn đổi việc)', pinyin: 'Xiǎng huàn gōngzuò', translation: 'Muốn đổi việc' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Người nam trả lời: "挺好的，同事们都很友好..." (Rất tốt, các đồng nghiệp đều thân thiện). Thể hiện thái độ hài lòng.',
+    points: 15
+  },
+  {
+    id: 'q-hsk4-01-03',
+    exam_id: 'hsk4-mock-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 3,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：成功往往属于那些能够坚持到底的人，______他们从不轻易放弃。',
+    pinyin: 'Xuǎncí tiánkòng: Chénggōng wǎngwǎng shǔyú nàxiē nénggòu jiānchí dàodǐ de rén, ______ tāmen cóngbù qīngyì fàngqì.',
+    translation: 'Điền từ nối câu: Thành công thường thuộc về những người có thể kiên trì đến cùng, ______ họ không bao giờ dễ dàng từ bỏ.',
+    audio_url: '',
+    audio_script: '',
+    options: [
+      { text: '因为 (Bởi vì)', pinyin: 'Yīnwèi', translation: 'Bởi vì' },
+      { text: '尽管 (Mặc dù)', pinyin: 'Jǐnguǎn', translation: 'Mặc dù' },
+      { text: '即使 (Cho dù)', pinyin: 'Jíshǐ', translation: 'Cho dù' },
+      { text: '不仅 (Không những)', pinyin: 'Bùjǐn', translation: 'Không chỉ' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Vế sau giải thích nguyên nhân cho vế trước ("họ không bao giờ từ bỏ"), do đó dùng liên từ nguyên nhân "因为" (yīnwèi).',
+    points: 15
+  },
+  {
+    id: 'q-hsk4-01-04',
+    exam_id: 'hsk4-mock-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 4,
+    question_type: 'multiple_choice',
+    prompt: '阅读理解：要想身体健康，除了合理饮食，保证充足的睡眠也是非常必要的。根据这段话，可以知道：',
+    pinyin: 'Yuèdú lǐjiě: Yào xiǎng shēntǐ jiànkāng, chúle hélǐ yǐnshí, bǎozhèng chōngzú de shuìmián yě shì fēicháng bìyào de. Gēnjù zhè duàn huà, kěyǐ zhīdào:',
+    translation: 'Đọc hiểu: Muốn cơ thể khỏe mạnh, ngoài ăn uống hợp lý, đảm bảo ngủ đủ giấc cũng vô cùng cần thiết. Căn cứ đoạn văn trên, có thể biết:',
+    audio_url: '',
+    audio_script: '',
+    options: [
+      { text: '睡眠对健康很重要 (Giấc ngủ rất quan trọng với sức khỏe)', pinyin: 'Shuìmián duì jiànkāng hěn zhòngyào', translation: 'Giấc ngủ rất quan trọng' },
+      { text: '饮食比睡眠更关键 (Ăn uống quan trọng hơn giấc ngủ)', pinyin: 'Yǐnshí bǐ shuìmián gèng guānjiàn', translation: 'Ăn uống quan trọng hơn' },
+      { text: '运动是最好的习惯 (Thể thao là thói quen tốt nhất)', pinyin: 'Yùndòng shì zuì hǎo de xíguàn', translation: 'Vận động tốt nhất' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Đoạn văn nhấn mạnh: "保证充足的睡眠也是非常必要的" (đảm bảo ngủ đủ giấc cũng là vô cùng cần thiết).',
+    points: 15
+  },
+  {
+    id: 'q-hsk4-01-05',
+    exam_id: 'hsk4-mock-01',
+    part_type: 'writing',
+    part_number: 3,
+    question_number: 5,
+    question_type: 'reorder_sentence',
+    prompt: '书写第一部分：排列词语成句：',
+    pinyin: 'Shūxiě dì-yī bùfen: Páiliè cíyǔ chéng jù:',
+    translation: 'Viết Phần 1: Sắp xếp các cụm từ sau thành câu hoàn chỉnh đúng ngữ pháp:',
+    audio_url: '',
+    audio_script: '',
+    words: ['这次', '举办', '活动', '很成功', '得'],
+    correct_order: ['这次', '活动', '举办', '得', '很成功'],
+    correct_sentence: '这次活动举办得很成功。',
+    options: [
+      { text: '这次活动举办得很成功。', pinyin: 'Zhè cì huó dòng jǔ bàn de hěn chéng gōng.', translation: 'Hoạt động lần này tổ chức rất thành công.' },
+      { text: '这次举办活动得很成功。', pinyin: 'Zhè cì jǔ bàn huó dòng de hěn chéng gōng.', translation: 'Sai vị trí trợ từ kết cấu 得' },
+      { text: '活动这次得很成功举办。', pinyin: 'Huó dòng zhè cì de hěn chéng gōng jǔ bàn.', translation: 'Sai trật tự câu bổ ngữ trạng thái' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Cấu trúc bổ ngữ trạng thái: Chủ ngữ (这次活动) + Động từ (举办) + 得 + Bổ ngữ chỉ mức độ (很成功).',
+    points: 20
+  },
+  {
+    id: 'q-hsk4-01-06',
+    exam_id: 'hsk4-mock-01',
+    part_type: 'writing',
+    part_number: 3,
+    question_number: 6,
+    question_type: 'free_writing',
+    is_subjective: true,
+    prompt: '书写第二部分：看图用词造句（Nhìn tranh dùng từ [乒乓球] đặt câu）：',
+    pinyin: 'Shūxiě dì-èr bùfen: Kàn tú yòng cí zào jù: [pīngpāngqiú]',
+    translation: 'Viết Phần 2: Dùng từ gợi ý "bóng bàn" (乒乓球) viết 1 câu hoàn chỉnh mô tả hành động (tối thiểu 6 chữ).',
+    audio_url: '',
+    audio_script: '',
+    required_words: ['乒乓球'],
+    min_words: 6,
+    max_words: 30,
+    options: [
+      { text: '他们俩在体育馆里打乒乓球。', pinyin: 'Tāmen liǎ zài tǐyùguǎn lǐ dǎ pīngpāngqiú.', translation: 'Bài mẫu tham khảo: Hai người họ đang đánh bóng bàn ở nhà thi đấu.' },
+      { text: '我非常喜欢打乒乓球。', pinyin: 'Wǒ fēicháng xǐhuan dǎ pīngpāngqiú.', translation: 'Bài mẫu tham khảo 2: Tôi rất thích đánh bóng bàn.' }
+    ],
+    correct_option_index: 0,
+    sample_answer: '他们俩在体育馆里打乒乓球。',
+    writing_criteria: [
+      { name: 'Sử dụng đúng từ gợi ý [乒乓球]', weight: 30, description: 'Có xuất hiện từ 乒乓球 và kết hợp đúng động từ 打' },
+      { name: 'Cấu trúc câu hoàn chỉnh', weight: 40, description: 'Đầy đủ chủ ngữ, vị ngữ, nơi chốn hoặc thời gian' },
+      { name: 'Chính tả chữ Hán & dấu câu', weight: 30, description: 'Không viết sai nét chữ Hán, có dấu chấm câu đúng quy cách' }
+    ],
+    explanation: 'Tiêu chuẩn chấm bài thi viết tự do HSK 4: Đặt câu hoàn chỉnh có động từ 打乒乓球 (đánh bóng bàn), bổ sung trạng ngữ chỉ nơi chốn (在体育馆) hoặc thời gian (周末) để câu sinh động.',
+    points: 20
   }
 ];
 
@@ -737,14 +969,21 @@ export function getSanitizedExamForTaking(examId) {
       part_type: q.part_type,
       part_number: q.part_number,
       question_number: q.question_number,
+      question_type: q.question_type || 'multiple_choice',
       prompt: q.prompt,
       pinyin: q.pinyin,
       translation: q.translation,
       audio_url: q.audio_url,
       audio_script: q.audio_script,
       options: q.options,
+      words: q.words || [],
+      writing_criteria: q.writing_criteria || [],
+      min_words: q.min_words || 0,
+      max_words: q.max_words || 0,
+      is_subjective: !!q.is_subjective,
       points: q.points
-      // BẢO MẬT: Tuyệt đối không bao gồm correct_option_index và explanation ở đây!
+      // BẢO MẬT TUYỆT ĐỐI: Không bao gồm correct_option_index, correct_order, accepted_answers, sample_answer và explanation ở đây!
     }));
   return { ...exam, questions };
 }
+

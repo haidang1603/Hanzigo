@@ -12,8 +12,32 @@
  */
 
 import { HSK_EXAMS, HSK_QUESTIONS, getFullExamById, getSanitizedExamForTaking } from '../data/hskExamsData.js';
+import { 
+  getHskStructure, 
+  getAllHskLevels, 
+  HSK_OFFICIAL_VERSIONS, 
+  HSK_STRUCTURE_DEFINITIONS 
+} from '../data/hskStructureData.js';
 import { supabase } from '../supabase/config.js';
 import { awardXp } from '../utils/gamification.js';
+
+export {
+  getHskStructure,
+  getAllHskLevels,
+  HSK_OFFICIAL_VERSIONS,
+  HSK_STRUCTURE_DEFINITIONS
+};
+
+/**
+ * Quy định số lượt phát audio theo cấp độ và chế độ thi (chính thức vs luyện tập)
+ */
+export function getAudioPlayLimit(level, examMode = 'simulation') {
+  if (examMode === 'practice') return Infinity;
+  const lvl = String(level || '').toUpperCase();
+  if (lvl.includes('HSK 1') || lvl.includes('HSK 2')) return 2;
+  return 1; // HSK 3, 4, 5, 6
+}
+
 
 const STORAGE_ATTEMPTS_KEY = 'hanzigo_hsk_attempts';
 const STORAGE_DRAFT_PREFIX = 'hanzigo_hsk_draft_';
@@ -102,9 +126,26 @@ export async function getExamForTaking(examId) {
 
 /**
  * Chấm điểm và lưu kết quả bài làm
- * @param {Object} params - { examId, submittedAnswers, timeSpentSeconds, user }
+ * Hỗ trợ đa dạng câu hỏi: Trắc nghiệm, Đúng/Sai, Sắp xếp từ, Điền từ, Viết tự luận.
+ * @param {Object} params - { examId, submittedAnswers, timeSpentSeconds, user, examMode }
  */
-export async function submitExamAttempt({ examId, submittedAnswers = {}, timeSpentSeconds = 0, user = null }) {
+export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, maybeTimeSpent = 0, maybeUser = null, maybeMode = 'simulation') {
+  let examId, submittedAnswers, timeSpentSeconds, user, examMode;
+  if (typeof optionsOrExamId === 'object' && optionsOrExamId !== null) {
+    ({ 
+      examId, 
+      submittedAnswers = {}, 
+      timeSpentSeconds = 0, 
+      user = null, 
+      examMode = 'simulation' 
+    } = optionsOrExamId);
+  } else {
+    examId = optionsOrExamId;
+    submittedAnswers = maybeAnswers || {};
+    timeSpentSeconds = maybeTimeSpent || 0;
+    user = maybeUser || null;
+    examMode = maybeMode || 'simulation';
+  }
   const fullExam = getFullExamById(examId);
   if (!fullExam) {
     throw new Error(`Không tìm thấy đề thi mã: ${examId}`);
@@ -115,13 +156,79 @@ export async function submitExamAttempt({ examId, submittedAnswers = {}, timeSpe
   let correctCount = 0;
   let incorrectCount = 0;
   let unansweredCount = 0;
+  let subjectiveCount = 0;
 
   const skillStats = {};
 
   const detailedResults = questions.map(q => {
-    const selectedIndex = submittedAnswers[q.id] !== undefined ? Number(submittedAnswers[q.id]) : null;
-    const isAnswered = selectedIndex !== null && !isNaN(selectedIndex);
-    const isCorrect = isAnswered && selectedIndex === q.correct_option_index;
+    const rawAnswer = submittedAnswers[q.id];
+    const isAnswered = rawAnswer !== undefined && rawAnswer !== null && rawAnswer !== '';
+    let isCorrect = false;
+    let selectedIndex = null;
+    const isSubjective = !!q.is_subjective || q.question_type === 'free_writing';
+    let needsSelfAssessment = false;
+    let earnedPoints = 0;
+
+    if (isSubjective) {
+      needsSelfAssessment = true;
+      subjectiveCount++;
+      isCorrect = null; // Tự luận: không chấm máy tự động, hiển thị tiêu chí tự chấm
+      earnedPoints = 0;
+    } else if (!isAnswered) {
+      unansweredCount++;
+      isCorrect = false;
+    } else if (q.question_type === 'reorder_sentence') {
+      // Sắp xếp từ thành câu: có thể gửi mảng từ, câu ghép hoặc số thứ tự đáp án (nếu chọn trắc nghiệm)
+      if (typeof rawAnswer === 'number') {
+        selectedIndex = rawAnswer;
+        isCorrect = selectedIndex === q.correct_option_index;
+      } else {
+        const cleanStr = (val) => String(val || '').replace(/[\s\p{P}]/gu, '');
+        const targetClean = cleanStr(q.correct_sentence || (q.correct_order || []).join('') || (q.options?.[q.correct_option_index]?.text));
+        const userClean = Array.isArray(rawAnswer) ? cleanStr(rawAnswer.join('')) : cleanStr(rawAnswer);
+        isCorrect = userClean.length > 0 && userClean === targetClean;
+      }
+
+      if (isCorrect) {
+        correctCount++;
+        totalScore += q.points;
+        earnedPoints = q.points;
+      } else {
+        incorrectCount++;
+      }
+    } else if (q.question_type === 'fill_blank' && typeof rawAnswer === 'string' && !q.options?.some((_, idx) => idx === Number(rawAnswer))) {
+      const clean = (s) => String(s || '').trim().toLowerCase();
+      const userStr = clean(rawAnswer);
+      const accepted = (q.accepted_answers || []).map(clean);
+      if (q.options?.[q.correct_option_index]) {
+        accepted.push(clean(q.options[q.correct_option_index].text));
+      }
+      isCorrect = accepted.some(a => a === userStr);
+      if (isCorrect) {
+        correctCount++;
+        totalScore += q.points;
+        earnedPoints = q.points;
+      } else {
+        incorrectCount++;
+      }
+    } else {
+      // Trắc nghiệm khách quan chuẩn hoặc True/False
+      selectedIndex = Number(rawAnswer);
+      if (isNaN(selectedIndex)) {
+        selectedIndex = null;
+        unansweredCount++;
+        isCorrect = false;
+      } else {
+        isCorrect = selectedIndex === q.correct_option_index;
+        if (isCorrect) {
+          correctCount++;
+          totalScore += q.points;
+          earnedPoints = q.points;
+        } else {
+          incorrectCount++;
+        }
+      }
+    }
 
     // Phân tích kỹ năng
     const skillKey = q.part_type || 'general';
@@ -137,16 +244,9 @@ export async function submitExamAttempt({ examId, submittedAnswers = {}, timeSpe
 
     skillStats[skillKey].totalQuestions += 1;
     skillStats[skillKey].maxPoints += q.points;
-
-    if (!isAnswered) {
-      unansweredCount++;
-    } else if (isCorrect) {
-      correctCount++;
-      totalScore += q.points;
+    if (isCorrect) {
       skillStats[skillKey].correctQuestions += 1;
       skillStats[skillKey].earnedPoints += q.points;
-    } else {
-      incorrectCount++;
     }
 
     return {
@@ -154,28 +254,40 @@ export async function submitExamAttempt({ examId, submittedAnswers = {}, timeSpe
       questionNumber: q.question_number,
       partType: q.part_type,
       partNumber: q.part_number,
+      questionType: q.question_type || 'multiple_choice',
       prompt: q.prompt,
       pinyin: q.pinyin,
       translation: q.translation,
       audio_url: q.audio_url,
       audio_script: q.audio_script,
       options: q.options,
+      words: q.words || [],
+      writingCriteria: q.writing_criteria || [],
+      sampleAnswer: q.sample_answer || '',
       selectedIndex,
+      userAnswer: rawAnswer,
       correctIndex: q.correct_option_index,
+      correctOrder: q.correct_order,
+      correctSentence: q.correct_sentence,
+      acceptedAnswers: q.accepted_answers,
       isCorrect,
+      isSubjective,
+      needsSelfAssessment,
       explanation: q.explanation,
       points: q.points,
-      pointsAwarded: isCorrect ? q.points : 0
+      pointsAwarded: earnedPoints,
+      earnedPoints
     };
   });
 
   const totalQuestions = questions.length;
-  const accuracyPercentage = totalQuestions > 0 
-    ? Math.round((correctCount / totalQuestions) * 1000) / 10 
+  // Độ chính xác tính trên số câu trắc nghiệm/khách quan có thể chấm tự động
+  const objectiveCount = totalQuestions - subjectiveCount;
+  const accuracyPercentage = objectiveCount > 0 
+    ? Math.round((correctCount / objectiveCount) * 1000) / 10 
     : 0;
 
-  // Tính điểm ước tính theo thang chuẩn của đề
-  // Nếu đề quy định max_score = 200 (HSK 1-2) hoặc 300 (HSK 3-6)
+  // Tính điểm ước tính theo thang chuẩn của đề (200 đối với HSK 1-2, 300 đối với HSK 3-6)
   const maxScore = fullExam.max_score || 200;
   const passingScore = fullExam.passing_score || Math.round(maxScore * 0.6);
   
@@ -195,6 +307,7 @@ export async function submitExamAttempt({ examId, submittedAnswers = {}, timeSpe
     examTitle: fullExam.title,
     examLevel: fullExam.level,
     examType: fullExam.exam_type,
+    examMode,
     userId: user?.id || null,
     anonymousSessionId: anonSessionId,
     timeSpentSeconds,
@@ -208,8 +321,11 @@ export async function submitExamAttempt({ examId, submittedAnswers = {}, timeSpe
     correctCount,
     incorrectCount,
     unansweredCount,
+    subjectiveCount,
     skillBreakdown: skillStats,
     detailedResults,
+    isEstimatedScore: true,
+    disclaimer: 'Điểm số luyện tập mô phỏng theo chuẩn CTI của HanziGo, không thay thế chứng chỉ khảo thí chính thức.',
     createdAt: new Date().toISOString()
   };
 
@@ -223,18 +339,18 @@ export async function submitExamAttempt({ examId, submittedAnswers = {}, timeSpe
   clearTemporaryAnswers(examId);
 
   // 3. Tặng XP nếu đạt kết quả tốt
-  if (user) {
+  if (user && correctCount > 0) {
     try {
-      const xpGained = passed ? 50 : 20;
-      awardXp(xpGained, user.id);
+      awardXp(correctCount * 5, user, `hsk_exam_${examId}_${Date.now()}`);
     } catch {}
   }
 
-  // 4. Đồng bộ lên Supabase nếu có kết nối
-  syncAttemptToSupabase(attemptResult).catch(() => {});
+  // 4. Đồng bộ nền lên Supabase nếu có kết nối
+  syncAttemptToSupabase(attemptResult);
 
   return attemptResult;
 }
+
 
 /**
  * Lưu kết quả lượt làm bài vào localStorage
@@ -337,19 +453,23 @@ export function getPastAttempts(examId = null) {
 
 /**
  * Lưu câu trả lời tạm thời (chống mất dữ liệu khi F5/reload)
+ * Hỗ trợ lưu danh sách câu đánh dấu và chế độ thi
  */
-export function saveTemporaryAnswers(examId, answers) {
+export function saveTemporaryAnswers(examId, answers, extra = {}) {
   try {
     if (!examId) return;
     localStorage.setItem(STORAGE_DRAFT_PREFIX + examId, JSON.stringify({
       answers,
+      flaggedQuestionIds: extra.flaggedQuestionIds || [],
+      examMode: extra.examMode || 'simulation',
+      currentIdx: extra.currentIdx || 0,
       savedAt: Date.now()
     }));
   } catch {}
 }
 
 /**
- * Lấy câu trả lời tạm thời đã lưu
+ * Lấy câu trả lời tạm thời đã lưu (cho tính năng tương thích ngược)
  */
 export function getTemporaryAnswers(examId) {
   try {
@@ -363,6 +483,25 @@ export function getTemporaryAnswers(examId) {
       return null;
     }
     return data.answers || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Lấy toàn bộ phiên làm bài tạm thời (answers, flagged, examMode, currentIdx)
+ */
+export function getTemporaryExamSession(examId) {
+  try {
+    if (!examId) return null;
+    const raw = localStorage.getItem(STORAGE_DRAFT_PREFIX + examId);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (Date.now() - data.savedAt > 4 * 60 * 60 * 1000) {
+      clearTemporaryAnswers(examId);
+      return null;
+    }
+    return data;
   } catch {
     return null;
   }

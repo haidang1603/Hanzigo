@@ -62,6 +62,14 @@ import {
 } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
 import { useAuth } from '../context/AuthContext';
+import { 
+  HSK_LEARNING_RESOURCES, 
+  RESOURCE_ACADEMIC_CATEGORIES, 
+  PERMISSION_BADGES, 
+  HOST_TYPE_BADGES 
+} from '../data/hskResourcesData';
+import ResourceDetailModal from '../components/ResourceDetailModal';
+import { HskReportModal } from '../components/HskPhase3Components';
 
 // Featured Exclusive Interactive Tools in HanziGo
 const FEATURED_EXCLUSIVE_TOOLS = [
@@ -365,17 +373,65 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
     ? propIsAdmin 
     : Boolean(authContext?.isAdmin || user?.role === 'admin' || (user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim())));
 
+  // Helper to combine legacy stored materials with master academic resources
+  const initializeMasterMaterials = () => {
+    const stored = getStoredMaterials();
+    const storedIds = new Set(stored.map(m => String(m.id)));
+    
+    const enrichedStored = stored.map(m => {
+      if (m.academic_category) return m;
+      let acad = 'textbooks_courses';
+      const cat = (m.category || '').toLowerCase();
+      const skills = Array.isArray(m.skills) ? m.skills.join(' ').toLowerCase() : '';
+      if (cat.includes('phát âm') || skills.includes('phát âm') || m.id === 'feat-pinyin') {
+        acad = 'pinyin_pronunciation';
+      } else if (cat.includes('bộ thủ') || cat.includes('viết') || skills.includes('thuận bút') || m.id === 'mat-4' || m.id === 'mat-9' || m.id === 'feat-radicals' || m.id === 'feat-mizige' || m.id === 'feat-tianzige') {
+        acad = 'chinese_characters';
+      } else if (cat.includes('từ vựng') || skills.includes('từ vựng') || m.id === 'mat-1' || m.id === 'mat-3') {
+        acad = 'vocabulary';
+      } else if (cat.includes('ngữ pháp') || skills.includes('ngữ pháp') || m.id === 'mat-5' || m.id === 'feat-grammar') {
+        acad = 'grammar';
+      } else if (cat.includes('giao tiếp') || skills.includes('nói') || skills.includes('nghe') || m.id === 'mat-2' || m.id === 'feat-phrases') {
+        acad = 'listening_speaking';
+      } else if (skills.includes('đọc') || skills.includes('viết')) {
+        acad = 'reading_writing';
+      } else if (cat.includes('đề thi') || skills.includes('luyện thi') || m.id === 'mat-6') {
+        acad = 'hsk_preparation';
+      } else if (cat.includes('thành ngữ') || cat.includes('văn hóa') || m.id === 'mat-10' || m.id === 'feat-hanviet') {
+        acad = 'culture_communication';
+      }
+      return {
+        ...m,
+        academic_category: acad,
+        host_type: m.host_type || (m.downloadUrl && m.downloadUrl.startsWith('/') ? 'hanzigo_original' : 'free_external'),
+        permission_status: m.permission_status || 'open_educational',
+        verified_date: m.verified_date || '2026-10-12'
+      };
+    });
+
+    const additionalAcademic = HSK_LEARNING_RESOURCES.filter(r => !storedIds.has(String(r.id)));
+    return [...enrichedStored, ...additionalAcademic];
+  };
+
   // Core Data State
-  const [materials, setMaterials] = useState(() => getStoredMaterials());
+  const [materials, setMaterials] = useState(() => initializeMasterMaterials());
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedAcademicCategory, setSelectedAcademicCategory] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
   const [selectedLevel, setSelectedLevel] = useState('Tất cả');
   const [selectedSkill, setSelectedSkill] = useState('Tất cả kỹ năng');
   const [selectedVerification, setSelectedVerification] = useState('all');
+  const [selectedExamVersion, setSelectedExamVersion] = useState('all');
+  const [selectedLanguage, setSelectedLanguage] = useState('all');
+  const [selectedHostType, setSelectedHostType] = useState('all');
   const [formatFilter, setFormatFilter] = useState('all');
   const [activeTabFilter, setActiveTabFilter] = useState('all'); // 'all', 'bookmarked', 'custom'
-  const [sortBy, setSortBy] = useState('downloads'); // 'downloads', 'newest', 'name'
+  const [sortBy, setSortBy] = useState('downloads'); // 'downloads', 'newest', 'recently_verified', 'name', 'level_asc'
   
+  // Detail Modal & Broken Link Report States
+  const [activeDetailResource, setActiveDetailResource] = useState(null);
+  const [brokenReportTarget, setBrokenReportTarget] = useState(null);
+
   // Loading & Error States
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -395,6 +451,50 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
       return [];
     }
   });
+
+  // URL Hash query parser for 2-way routing (#materials?category=...&level=...&lesson=...&exam=...)
+  useEffect(() => {
+    const parseHashParams = () => {
+      try {
+        const hash = window.location.hash || '';
+        const queryIdx = hash.indexOf('?');
+        if (queryIdx === -1) return;
+        const queryStr = hash.slice(queryIdx + 1);
+        const params = new URLSearchParams(queryStr);
+        
+        const catParam = params.get('category');
+        if (catParam) {
+          const matchAcad = RESOURCE_ACADEMIC_CATEGORIES.find(c => 
+            c.id === catParam || c.code.toLowerCase() === catParam.toLowerCase()
+          );
+          if (matchAcad) {
+            setSelectedAcademicCategory(matchAcad.id);
+          }
+        }
+        
+        const lvlParam = params.get('level');
+        if (lvlParam) setSelectedLevel(lvlParam);
+        
+        const lessonParam = params.get('lesson');
+        if (lessonParam) setSearchTerm(lessonParam);
+        
+        const examParam = params.get('exam');
+        if (examParam) setSearchTerm(examParam);
+
+        const resId = params.get('id');
+        if (resId) {
+          const found = materials.find(m => String(m.id) === resId);
+          if (found) setActiveDetailResource(found);
+        }
+      } catch (err) {
+        console.warn('Lỗi đọc tham số URL tài nguyên:', err);
+      }
+    };
+
+    parseHashParams();
+    window.addEventListener('hashchange', parseHashParams);
+    return () => window.removeEventListener('hashchange', parseHashParams);
+  }, [materials]);
 
   // Modal States
   const [showAddModal, setShowAddModal] = useState(false);
@@ -744,10 +844,14 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
   const handleResetFilters = () => {
     playClickSound();
     setSearchTerm('');
+    setSelectedAcademicCategory('all');
     setSelectedCategory('Tất cả');
     setSelectedLevel('Tất cả');
     setSelectedSkill('Tất cả kỹ năng');
     setSelectedVerification('all');
+    setSelectedExamVersion('all');
+    setSelectedLanguage('all');
+    setSelectedHostType('all');
     setFormatFilter('all');
     setActiveTabFilter('all');
   };
@@ -757,6 +861,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
     playClickSound();
     setSelectedLevel(bundle.level);
     setSelectedCategory('Tất cả');
+    setSelectedAcademicCategory('all');
     setActiveTabFilter('all');
     const matched = materials.find(m => m.id === bundle.recommendDocId);
     if (matched) {
@@ -770,26 +875,41 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
       // 1. RBAC check: Non-admins cannot see hidden materials
       if (item.isHidden && !isAdmin) return false;
 
-      // 2. Multi-dimensional search
+      // 2. Multi-dimensional search across title, objectives, topics, codes
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch = !term || (
         (item.title && item.title.toLowerCase().includes(term)) ||
+        (item.title_cn && item.title_cn.toLowerCase().includes(term)) ||
         (item.description && item.description.toLowerCase().includes(term)) ||
         (item.author && item.author.toLowerCase().includes(term)) ||
         (item.publisher && item.publisher.toLowerCase().includes(term)) ||
         (item.license && item.license.toLowerCase().includes(term)) ||
         (item.relatedLessonId && item.relatedLessonId.toLowerCase().includes(term)) ||
+        (Array.isArray(item.related_lesson_ids) && item.related_lesson_ids.some(lid => lid.toLowerCase().includes(term))) ||
+        (Array.isArray(item.related_exam_ids) && item.related_exam_ids.some(eid => eid.toLowerCase().includes(term))) ||
+        (Array.isArray(item.learning_objectives) && item.learning_objectives.some(obj => obj.toLowerCase().includes(term))) ||
         (Array.isArray(item.skills) && item.skills.some(s => s.toLowerCase().includes(term))) ||
         (Array.isArray(item.tags) && item.tags.some(t => t.toLowerCase().includes(term)))
       );
 
-      // 3. Category Filter
+      // 3. Academic Category (A - I)
+      const matchesAcademicCategory = selectedAcademicCategory === 'all' || 
+        item.academic_category === selectedAcademicCategory;
+
+      // 4. Legacy Category Filter
       const matchesCategory = selectedCategory === 'Tất cả' || item.category === selectedCategory;
 
-      // 4. Level Filter
-      const matchesLevel = selectedLevel === 'Tất cả' || item.level === selectedLevel;
+      // 5. Level Filter (handles HSK 1..6 and composite levels like HSK 1-6)
+      let matchesLevel = true;
+      if (selectedLevel !== 'Tất cả') {
+        const itemLevel = (item.level || '').toUpperCase();
+        const filterLvl = selectedLevel.toUpperCase();
+        matchesLevel = itemLevel.includes(filterLvl) || 
+          (filterLvl === 'HSK 1' && itemLevel.includes('HSK 1')) ||
+          (itemLevel.includes('1-6') || itemLevel.includes('1-3') || itemLevel.includes('3-4') || itemLevel.includes('3.0'));
+      }
 
-      // 5. Skill Filter
+      // 6. Skill Filter
       let matchesSkill = true;
       if (selectedSkill !== 'Tất cả kỹ năng') {
         matchesSkill = Array.isArray(item.skills) && item.skills.some(s => 
@@ -798,13 +918,34 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
         );
       }
 
-      // 6. Verification Status Filter
+      // 7. Exam Version Filter (2.0, 3.0)
+      let matchesExamVersion = true;
+      if (selectedExamVersion !== 'all') {
+        matchesExamVersion = !item.exam_version || 
+          item.exam_version === 'both' || 
+          item.exam_version === selectedExamVersion;
+      }
+
+      // 8. Language of Instruction Filter
+      let matchesLanguage = true;
+      if (selectedLanguage !== 'all') {
+        matchesLanguage = !item.language_of_instruction || 
+          item.language_of_instruction === selectedLanguage;
+      }
+
+      // 9. Host Type Filter
+      let matchesHostType = true;
+      if (selectedHostType !== 'all') {
+        matchesHostType = item.host_type === selectedHostType;
+      }
+
+      // 10. Verification Status Filter
       let matchesVerification = true;
       if (selectedVerification !== 'all') {
         matchesVerification = item.verificationStatus === selectedVerification;
       }
 
-      // 7. Tabs Filter
+      // 11. Tabs Filter
       let matchesTab = true;
       if (activeTabFilter === 'bookmarked') {
         matchesTab = bookmarkedIds.includes(item.id);
@@ -812,25 +953,37 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
         matchesTab = Boolean(item.isCustom);
       }
 
-      // 8. Format Filter
+      // 12. Format Filter
       let matchesFormat = true;
       if (formatFilter === 'pdf') {
-        matchesFormat = (item.format || '').toLowerCase().includes('pdf');
+        matchesFormat = (item.format || '').toLowerCase().includes('pdf') || item.format === 'document_pdf';
       } else if (formatFilter === 'audio') {
         matchesFormat = (item.format || '').toLowerCase().includes('mp3') || 
+          item.format === 'audio' ||
           (item.tags && item.tags.some(t => t.toLowerCase().includes('audio') || t.toLowerCase().includes('mp3')));
       } else if (formatFilter === 'interactive') {
         matchesFormat = (item.format || '').toLowerCase().includes('trực tuyến') || 
           (item.format || '').toLowerCase().includes('tương tác') || 
           (item.format || '').toLowerCase().includes('bách khoa') ||
           (item.format || '').toLowerCase().includes('từ điển') ||
+          item.format === 'online_practice' ||
           (item.format || '').toLowerCase().includes('vector');
       } else if (formatFilter === 'print') {
         matchesFormat = (item.format || '').toLowerCase().includes('in') || 
           (item.downloadUrl || '').endsWith('.html');
       }
 
-      return matchesSearch && matchesCategory && matchesLevel && matchesSkill && matchesVerification && matchesTab && matchesFormat;
+      return matchesSearch && 
+        matchesAcademicCategory && 
+        matchesCategory && 
+        matchesLevel && 
+        matchesSkill && 
+        matchesExamVersion &&
+        matchesLanguage &&
+        matchesHostType &&
+        matchesVerification && 
+        matchesTab && 
+        matchesFormat;
     }).sort((a, b) => {
       if (Boolean(a.isFeatured) !== Boolean(b.isFeatured)) {
         return b.isFeatured ? 1 : -1;
@@ -839,19 +992,29 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
         return (b.downloadsCount || 0) - (a.downloadsCount || 0);
       }
       if (sortBy === 'newest') {
-        return new Date(b.createdAt || '2026-01-01') - new Date(a.createdAt || '2026-01-01');
+        return new Date(b.createdAt || b.verified_date || '2026-01-01') - new Date(a.createdAt || a.verified_date || '2026-01-01');
+      }
+      if (sortBy === 'recently_verified') {
+        return new Date(b.verified_date || b.createdAt || '2026-01-01') - new Date(a.verified_date || a.createdAt || '2026-01-01');
       }
       if (sortBy === 'name') {
-        return a.title.localeCompare(b.title, 'vi');
+        return (a.title || '').localeCompare(b.title || '', 'vi');
+      }
+      if (sortBy === 'level_asc') {
+        return (a.level || '').localeCompare(b.level || '', 'vi');
       }
       return 0;
     });
   }, [
     materials, 
     searchTerm, 
+    selectedAcademicCategory,
     selectedCategory, 
     selectedLevel, 
     selectedSkill, 
+    selectedExamVersion,
+    selectedLanguage,
+    selectedHostType,
     selectedVerification, 
     activeTabFilter, 
     formatFilter, 
@@ -862,10 +1025,14 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
 
   const hasActiveFilters = 
     searchTerm !== '' || 
+    selectedAcademicCategory !== 'all' ||
     selectedCategory !== 'Tất cả' || 
     selectedLevel !== 'Tất cả' || 
     selectedSkill !== 'Tất cả kỹ năng' || 
     selectedVerification !== 'all' || 
+    selectedExamVersion !== 'all' ||
+    selectedLanguage !== 'all' ||
+    selectedHostType !== 'all' ||
     formatFilter !== 'all' || 
     activeTabFilter !== 'all';
 
@@ -1141,7 +1308,100 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
         </div>
       </div>
 
-      {/* 4. MULTI-DIMENSIONAL FILTER AND SEARCH BAR */}
+      {/* 4. 9 ACADEMIC CATEGORIES TAB BAR (A - I) */}
+      <div className="space-y-3 bg-white dark:bg-[#1E293B] p-5 sm:p-6 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-xl bg-[#E85D3F]/10 text-[#E85D3F]">
+              <Layers size={18} />
+            </span>
+            <h2 className="text-base sm:text-lg font-black text-[#243447] dark:text-white">
+              9 Danh Mục Học Thuật Chuẩn (A – I)
+            </h2>
+          </div>
+          <span className="text-xs text-[#748092] dark:text-[#94A3B8] font-semibold hidden sm:inline">
+            Học liệu miễn phí, xác minh học thuật & phân cấp rõ ràng
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-1">
+          <button
+            onClick={() => {
+              playClickSound();
+              setSelectedAcademicCategory('all');
+            }}
+            className={`p-3 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between ${
+              selectedAcademicCategory === 'all'
+                ? 'bg-[#243447] text-white dark:bg-white dark:text-[#131B24] border-transparent shadow-md'
+                : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] dark:text-[#94A3B8] border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-base">🌐</span>
+              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${selectedAcademicCategory === 'all' ? 'bg-white/20 text-white dark:bg-black/10 dark:text-[#131B24]' : 'bg-black/5 dark:bg-white/10 text-[#748092]'}`}>
+                {materials.length}
+              </span>
+            </div>
+            <div className="mt-2">
+              <span className="text-xs font-black block">Tất cả danh mục</span>
+              <span className="text-[10px] opacity-80 block truncate">Khung chuẩn HSK 1-6</span>
+            </div>
+          </button>
+
+          {RESOURCE_ACADEMIC_CATEGORIES.map(cat => {
+            const isSelected = selectedAcademicCategory === cat.id;
+            const count = materials.filter(m => m.academic_category === cat.id).length;
+            const catIcons = {
+              textbooks_courses: '📖',
+              pinyin_pronunciation: '🎙️',
+              chinese_characters: '✍️',
+              vocabulary: '🗂️',
+              grammar: '📑',
+              listening_speaking: '🎧',
+              reading_writing: '📝',
+              hsk_preparation: '🏆',
+              culture_communication: '🌏'
+            };
+
+            return (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  playClickSound();
+                  setSelectedAcademicCategory(cat.id);
+                }}
+                className={`p-3 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between group ${
+                  isSelected
+                    ? 'bg-gradient-to-br from-[#E85D3F] to-[#CB4529] text-white border-transparent shadow-md shadow-[#E85D3F]/20 ring-2 ring-[#E85D3F]/30'
+                    : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] dark:text-[#94A3B8] border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F] hover:text-[#243447] dark:hover:text-white'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-base">{catIcons[cat.id] || '📚'}</span>
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[10px] font-black px-1.5 py-0.2 rounded ${isSelected ? 'bg-black/20 text-white' : 'bg-amber-100 text-[#D97706] dark:bg-amber-950/60 dark:text-amber-300'}`}>
+                      {cat.code}
+                    </span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-black/5 dark:bg-white/10 text-[#748092]'}`}>
+                      {count}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <span className="text-xs font-bold block leading-snug group-hover:text-[#E85D3F] transition-colors" style={{ color: isSelected ? '#FFFFFF' : undefined }}>
+                    {cat.nameVi}
+                  </span>
+                  <span className="text-[10px] font-['Noto_Serif_SC'] opacity-75 block truncate">
+                    {cat.nameCn}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 5. MULTI-DIMENSIONAL FILTER AND SEARCH BAR */}
       <div className="space-y-4 bg-white dark:bg-[#1E293B] p-5 sm:p-6 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
         
         {/* Search Input */}
@@ -1209,8 +1469,10 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                 className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
               >
                 <option value="downloads">Lượt quan tâm nhiều nhất</option>
+                <option value="recently_verified">Mới thẩm định gần nhất</option>
                 <option value="newest">Mới cập nhật</option>
                 <option value="name">Tên tài liệu A - Z</option>
+                <option value="level_asc">Trình độ HSK (Sơ cấp → Cao cấp)</option>
               </select>
             </div>
           </div>
@@ -1266,8 +1528,8 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
             ))}
           </div>
 
-          {/* Level & Verification Dropdowns */}
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          {/* Level, Version, Language, Host Type, Verification Dropdowns */}
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             {/* Level Dropdown */}
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">Cấp độ:</span>
@@ -1279,6 +1541,51 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                 {MATERIAL_LEVELS.map((lvl) => (
                   <option key={lvl} value={lvl}>{lvl}</option>
                 ))}
+              </select>
+            </div>
+
+            {/* Exam Version Dropdown */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">Phiên bản:</span>
+              <select
+                value={selectedExamVersion}
+                onChange={(e) => setSelectedExamVersion(e.target.value)}
+                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+              >
+                <option value="all">Mọi phiên bản</option>
+                <option value="2.0">HSK 2.0 (1-6 cấp)</option>
+                <option value="3.0">HSK 3.0 (Cửu cấp)</option>
+              </select>
+            </div>
+
+            {/* Language of Instruction */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">Ngôn ngữ:</span>
+              <select
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+              >
+                <option value="all">Tất cả ngôn ngữ</option>
+                <option value="bilingual">Song ngữ Trung - Việt</option>
+                <option value="vi">Tiếng Việt</option>
+                <option value="zh">Tiếng Trung</option>
+              </select>
+            </div>
+
+            {/* Host / Storage Type */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">Lưu trữ:</span>
+              <select
+                value={selectedHostType}
+                onChange={(e) => setSelectedHostType(e.target.value)}
+                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+              >
+                <option value="all">Mọi nguồn lưu trữ</option>
+                <option value="hanzigo_original">⚡ HanziGo biên soạn</option>
+                <option value="official_published">🏛️ Khảo thí CTI chính thức</option>
+                <option value="open_license">✅ Giáo dục Mở OER / CC</option>
+                <option value="free_external">🌐 Dẫn nguồn liên kết</option>
               </select>
             </div>
 
@@ -1471,22 +1778,71 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                     </div>
                   </div>
 
-                  {/* Title */}
-                  <h3 
-                    onClick={() => {
-                      playClickSound();
-                      setSelectedPreviewDoc(item);
-                      setPreviewTab('excerpt');
-                    }}
-                    className="text-base font-bold text-[#243447] dark:text-white line-clamp-2 leading-snug group-hover:text-[#E85D3F] transition-colors cursor-pointer"
-                  >
-                    {item.title}
-                  </h3>
+                  {/* Title & Subtitle */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {item.academic_category && (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                          {RESOURCE_ACADEMIC_CATEGORIES.find(c => c.id === item.academic_category)?.code ? `[${RESOURCE_ACADEMIC_CATEGORIES.find(c => c.id === item.academic_category).code}] ` : ''}
+                          {RESOURCE_ACADEMIC_CATEGORIES.find(c => c.id === item.academic_category)?.nameVi || item.category}
+                        </span>
+                      )}
+                      {item.host_type && (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
+                          item.host_type === 'hanzigo_original' 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300' 
+                            : item.host_type === 'official_published'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300'
+                            : item.host_type === 'open_license'
+                            ? 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                        }`}>
+                          {item.host_type === 'hanzigo_original' ? '⚡ HanziGo biên soạn' :
+                           item.host_type === 'official_published' ? '🏛️ CTI khảo thí' :
+                           item.host_type === 'open_license' ? '✅ OER Mở' : '🌐 Dẫn nguồn'}
+                        </span>
+                      )}
+                      {item.verified_date && (
+                        <span className="text-[9px] text-[#748092] dark:text-[#94A3B8]">
+                          ✓ Đã duyệt: {item.verified_date}
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 
+                      onClick={() => {
+                        playClickSound();
+                        setActiveDetailResource(item);
+                      }}
+                      className="text-base font-bold text-[#243447] dark:text-white line-clamp-2 leading-snug group-hover:text-[#E85D3F] transition-colors cursor-pointer"
+                    >
+                      {item.title}
+                    </h3>
+
+                    {item.title_cn && (
+                      <p className="text-xs font-['Noto_Serif_SC'] text-[#748092] dark:text-[#94A3B8]">
+                        {item.title_cn}
+                      </p>
+                    )}
+                  </div>
 
                   {/* Description */}
-                  <p className="text-xs text-[#748092] dark:text-[#94A3B8] line-clamp-3 leading-relaxed">
+                  <p className="text-xs text-[#748092] dark:text-[#94A3B8] line-clamp-2 leading-relaxed">
                     {item.description}
                   </p>
+
+                  {/* Learning Objectives Preview Snippet */}
+                  {Array.isArray(item.learning_objectives) && item.learning_objectives.length > 0 && (
+                    <div className="p-2.5 rounded-xl bg-orange-50/60 dark:bg-orange-950/20 border border-orange-200/50 dark:border-orange-900/30 text-[11px] text-[#748092] dark:text-[#94A3B8] space-y-1">
+                      <span className="text-[10px] font-bold text-[#E85D3F] flex items-center gap-1">
+                        <Target size={11} />
+                        <span>Mục tiêu đầu ra:</span>
+                      </span>
+                      <p className="line-clamp-2 leading-relaxed text-[#243447] dark:text-[#E2E8F0]">
+                        • {item.learning_objectives[0]}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Skills Chips */}
                   {Array.isArray(item.skills) && item.skills.length > 0 && (
@@ -1502,7 +1858,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                     </div>
                   )}
 
-                  {/* Metadata Strip */}
+                  {/* Metadata Strip & 2-Way Connection Badges */}
                   <div className="pt-2 border-t border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70 text-[11px] text-[#748092] dark:text-[#94A3B8] space-y-1.5">
                     
                     <div className="flex items-center gap-1.5 truncate">
@@ -1519,22 +1875,45 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                       </span>
                     </div>
 
-                    {item.relatedLessonId && (
+                    {/* 2-Way Connection to Roadmap */}
+                    {(item.related_lesson_ids || item.relatedLessonId) && (
                       <div 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           playClickSound();
-                          const match = String(item.relatedLessonId).match(/\b(\d+)\b/);
+                          const targetLesson = Array.isArray(item.related_lesson_ids) && item.related_lesson_ids[0]
+                            ? item.related_lesson_ids[0]
+                            : item.relatedLessonId;
+                          const match = String(targetLesson).match(/\b(\d+)\b/);
                           if (match && onSelectLesson) {
                             onSelectLesson(match[1]);
                           } else if (setActiveTab) {
                             setActiveTab('roadmap');
                           }
                         }}
-                        className="flex items-center gap-1.5 text-[10px] font-bold text-[#E85D3F] hover:underline cursor-pointer pt-0.5"
-                        title="Bấm để mở bài học hoặc lộ trình tương ứng"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-[10px] font-bold border border-blue-200 dark:border-blue-800 hover:underline cursor-pointer"
+                        title="Bấm để mở bài học trong Lộ trình"
                       >
-                        <Compass size={12} className="shrink-0" />
-                        <span className="truncate">Lộ trình: {item.relatedLessonId}</span>
+                        <Compass size={11} className="shrink-0" />
+                        <span className="truncate">Lộ trình: {Array.isArray(item.related_lesson_ids) ? item.related_lesson_ids.join(', ') : item.relatedLessonId}</span>
+                      </div>
+                    )}
+
+                    {/* 2-Way Connection to HSK Practice */}
+                    {Array.isArray(item.related_exam_ids) && item.related_exam_ids.length > 0 && (
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playClickSound();
+                          const examId = item.related_exam_ids[0];
+                          window.location.hash = `#hsk/exam/${examId}`;
+                          if (setActiveTab) setActiveTab('hsk');
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-800 hover:underline cursor-pointer ml-1"
+                        title="Bấm để mở đề thi HSK tương ứng"
+                      >
+                        <Award size={11} className="shrink-0" />
+                        <span className="truncate">Đề thi: {item.related_exam_ids[0]}</span>
                       </div>
                     )}
 
@@ -1544,28 +1923,41 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
 
                 {/* Action Buttons */}
                 <div className="pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playClickSound();
-                      setSelectedPreviewDoc(item);
-                      setPreviewTab('excerpt');
-                    }}
-                    className="px-3 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-[#FEF7E9] text-[#243447] dark:text-white text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Eye size={14} />
-                    <span>Xem đọc mẫu</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setActiveDetailResource(item);
+                      }}
+                      className="px-3 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-[#FEF7E9] text-[#243447] dark:text-white text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Eye size={14} />
+                      <span>Chi tiết</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setBrokenReportTarget(item);
+                      }}
+                      title="Báo cáo liên kết hỏng hoặc sai lệch dữ liệu"
+                      className="p-2 rounded-xl text-[#748092] hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
+                    >
+                      <AlertCircle size={14} />
+                    </button>
+                  </div>
 
                   <a
-                    href={item.sourceUrl || item.downloadUrl}
+                    href={item.sourceUrl || item.downloadUrl || item.source_url || item.download_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => handleDownloadClick(item)}
                     className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#CB4529] hover:to-[#B9381E] text-white text-xs font-bold shadow-md shadow-[#E85D3F]/25 flex items-center gap-1.5 transition-all group-hover:scale-105 active:scale-95 cursor-pointer"
                   >
                     {isPrintable ? <Printer size={14} /> : <ExternalLink size={14} />}
-                    <span>{isPrintable ? 'Mở & In' : 'Nguồn gốc'}</span>
+                    <span>{isPrintable ? 'Mở & In' : (item.host_type === 'hanzigo_original' ? 'Mở học cụ' : 'Nguồn gốc')}</span>
                   </a>
                 </div>
 
@@ -2667,6 +3059,35 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
           </div>
         </div>
       )}
+
+      {/* 13. MODAL: RESOURCE DETAIL MODAL (PHASE 4) */}
+      <ResourceDetailModal
+        resource={activeDetailResource}
+        isOpen={Boolean(activeDetailResource)}
+        onClose={() => setActiveDetailResource(null)}
+        onSelectLesson={(lessonId) => {
+          if (onSelectLesson) {
+            onSelectLesson(lessonId);
+          } else if (setActiveTab) {
+            setActiveTab('roadmap');
+          }
+        }}
+        onNavigateExam={(examId) => {
+          window.location.hash = `#hsk/exam/${examId}`;
+          if (setActiveTab) setActiveTab('hsk');
+        }}
+        onReportBroken={(item) => {
+          setBrokenReportTarget(item);
+        }}
+      />
+
+      {/* 14. MODAL: PUBLIC CONTENT & BROKEN LINK REPORT MODAL (PHASE 4) */}
+      <HskReportModal
+        isOpen={Boolean(brokenReportTarget)}
+        onClose={() => setBrokenReportTarget(null)}
+        targetItem={brokenReportTarget}
+        user={user}
+      />
 
     </div>
   );

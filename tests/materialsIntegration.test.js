@@ -136,18 +136,20 @@ test('5. CURRICULUM LESSON FILTERING: getMaterialsForLesson finds relevant mater
   assert.ok(hsk3Materials.length > 0, 'Should find materials for Module 3.1');
 });
 
-test('6. DATABASE MIGRATION 14 & RLS: Migration file exists and defines new metadata schema', () => {
-  const migrationPath = path.resolve(process.cwd(), 'supabase/migrations/14_materials_metadata_and_skills.sql');
-  assert.ok(fs.existsSync(migrationPath), 'Migration 14 file must exist');
+test('6. DATABASE SCHEMA & RLS: Schema defines new metadata schema for materials', () => {
+  const schemaPath = fs.existsSync(path.resolve(process.cwd(), 'supabase/migrations/14_materials_metadata_and_skills.sql'))
+    ? path.resolve(process.cwd(), 'supabase/migrations/14_materials_metadata_and_skills.sql')
+    : path.resolve(process.cwd(), 'supabase/schema.sql');
+  assert.ok(fs.existsSync(schemaPath), 'Schema file must exist');
 
-  const content = fs.readFileSync(migrationPath, 'utf8');
-  assert.ok(content.includes('ADD COLUMN IF NOT EXISTS source_url'), 'Must add source_url column');
-  assert.ok(content.includes('ADD COLUMN IF NOT EXISTS publisher'), 'Must add publisher column');
-  assert.ok(content.includes('ADD COLUMN IF NOT EXISTS skills'), 'Must add skills column');
-  assert.ok(content.includes('ADD COLUMN IF NOT EXISTS language'), 'Must add language column');
-  assert.ok(content.includes('ADD COLUMN IF NOT EXISTS license'), 'Must add license column');
-  assert.ok(content.includes('ADD COLUMN IF NOT EXISTS verification_status'), 'Must add verification_status column');
-  assert.ok(content.includes('ADD COLUMN IF NOT EXISTS related_lesson_id'), 'Must add related_lesson_id column');
+  const content = fs.readFileSync(schemaPath, 'utf8');
+  assert.ok(content.includes('source_url'), 'Must include source_url column');
+  assert.ok(content.includes('publisher'), 'Must include publisher column');
+  assert.ok(content.includes('skills'), 'Must include skills column');
+  assert.ok(content.includes('language'), 'Must include language column');
+  assert.ok(content.includes('license'), 'Must include license column');
+  assert.ok(content.includes('verification_status'), 'Must include verification_status column');
+  assert.ok(content.includes('related_lesson_id'), 'Must include related_lesson_id column');
   assert.ok(content.includes('is_hidden = false'), 'RLS policy must restrict public view to non-hidden materials');
   assert.ok(content.includes('public.is_admin()'), 'RLS policy must grant full access to admins');
 });

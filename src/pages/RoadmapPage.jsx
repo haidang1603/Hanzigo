@@ -457,6 +457,21 @@ export default function RoadmapPage({
                       <p className="text-xs text-[#748092] dark:text-[#94A3B8] max-w-2xl leading-relaxed">
                         {selectedLevel.description || selectedLevel.tagline}
                       </p>
+
+                      <div className="pt-1.5 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClickSound();
+                            window.location.hash = `#materials?level=${selectedLevel.code}`;
+                            if (setActiveTab) setActiveTab('materials');
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] border border-[#E85D3F]/30 text-xs font-bold hover:bg-orange-100 transition-colors cursor-pointer"
+                        >
+                          <BookOpen size={13} />
+                          <span>📚 Thư viện tài nguyên & Giáo trình {selectedLevel.code}</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* 3 Metrics target badges */}
@@ -697,6 +712,20 @@ export default function RoadmapPage({
                                   )}
 
                                   <button
+                                    type="button"
+                                    onClick={() => {
+                                      playClickSound();
+                                      window.location.hash = `#materials?lesson=${lesson.id}`;
+                                      if (setActiveTab) setActiveTab('materials');
+                                    }}
+                                    title="Xem tài liệu học tập bổ trợ cho bài này trong Thư viện"
+                                    className="p-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#E85D3F] hover:bg-[#FFF9F2] dark:hover:bg-[#131B24] transition-colors cursor-pointer text-xs flex items-center gap-1"
+                                  >
+                                    <FileText size={13} className="text-[#E85D3F]" />
+                                    <span className="hidden sm:inline text-[11px] font-bold">Tài liệu</span>
+                                  </button>
+
+                                  <button
                                     onClick={() => {
                                       if (isLocked) {
                                         playErrorSound();
@@ -922,6 +951,19 @@ export default function RoadmapPage({
             )}
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setSelectedMaterialModal(null);
+                  window.location.hash = `#materials?level=${selectedMaterialModal.level || 'HSK 1'}`;
+                  if (setActiveTab) setActiveTab('materials');
+                }}
+                className="px-3 py-2 rounded-xl border border-[#E85D3F]/40 bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] text-xs font-bold hover:bg-orange-100 transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <BookOpen size={13} />
+                <span>Vào Thư viện tài nguyên</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setSelectedMaterialModal(null)}

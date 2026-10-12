@@ -1467,4 +1467,349 @@ BEGIN
   BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.class_materials; EXCEPTION WHEN duplicate_object THEN END;
 END $$;
 
+-- =========================================================================
+-- 11. HSK PRACTICE PLATFORM, MOCK EXAM ENGINE & FREE LEARNING RESOURCE LIBRARY
+-- (Tích hợp hoàn chỉnh: Cấu trúc đề thi, Câu hỏi, Lượt thi, Sổ câu sai & Thư viện OER)
+-- =========================================================================
+
+-- 11.1. hsk_exam_structures: Cấu trúc đề thi HSK chính thức đa phiên bản
+CREATE TABLE IF NOT EXISTS public.hsk_exam_structures (
+  id TEXT PRIMARY KEY, -- e.g. 'hsk-1-2015', 'hsk-3-2015', 'hsk-7-9-2021'
+  level TEXT NOT NULL, -- 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7-9'
+  version TEXT NOT NULL DEFAULT '2015-Standard', -- '2015-Standard', 'HSK 3.0-2021'
+  level_name_vi TEXT NOT NULL,
+  total_duration_minutes INTEGER NOT NULL,
+  total_questions INTEGER NOT NULL,
+  max_score INTEGER NOT NULL DEFAULT 200,
+  passing_score INTEGER NOT NULL DEFAULT 120,
+  vocabulary_requirement INTEGER NOT NULL,
+  character_requirement INTEGER,
+  has_pinyin BOOLEAN NOT NULL DEFAULT true,
+  audio_play_count INTEGER NOT NULL DEFAULT 2,
+  sections JSONB NOT NULL DEFAULT '[]'::jsonb,
+  source_reference TEXT NOT NULL DEFAULT 'chinesetest.cn',
+  source_url TEXT DEFAULT 'http://www.chinesetest.cn/',
+  verification_status TEXT NOT NULL DEFAULT 'verified' CHECK (verification_status IN ('verified', 'unverified_transition', 'official_standard')),
+  verified_date DATE DEFAULT CURRENT_DATE,
+  unverified_fields JSONB DEFAULT '[]'::jsonb,
+  notes_vi TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_hsk_structures_level ON public.hsk_exam_structures(level);
+CREATE INDEX IF NOT EXISTS idx_hsk_structures_version ON public.hsk_exam_structures(version);
+
+-- 11.2. hsk_exams: Bảng đề thi HSK (Đề mô phỏng, Đề mẫu CTI)
+CREATE TABLE IF NOT EXISTS public.hsk_exams (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  level TEXT NOT NULL, -- HSK 1, HSK 2, HSK 3, HSK 4, HSK 5, HSK 6
+  exam_version TEXT NOT NULL DEFAULT '2015-Standard',
+  exam_type TEXT NOT NULL DEFAULT 'mock', -- 'mock', 'official_sample', 'licensed_external'
+  skill_category TEXT NOT NULL DEFAULT 'mixed', -- 'listening', 'reading', 'writing', 'grammar', 'mixed'
+  duration_minutes INTEGER NOT NULL DEFAULT 40,
+  total_questions INTEGER NOT NULL DEFAULT 20,
+  passing_score INTEGER NOT NULL DEFAULT 120, -- HSK 1-2: 120/200, HSK 3-6: 180/300
+  max_score INTEGER NOT NULL DEFAULT 200, -- HSK 1-2: 200, HSK 3-6: 300
+  description TEXT,
+  source_url TEXT,
+  source_author TEXT,
+  license TEXT DEFAULT 'CC BY-NC-SA 4.0 / HanziGo Educational Content',
+  permission_status TEXT NOT NULL DEFAULT 'reproducible', -- 'reproducible', 'linked_only', 'original_content'
+  review_status TEXT NOT NULL DEFAULT 'published' CHECK (review_status IN ('draft', 'needs_review', 'approved', 'published', 'rejected', 'archived')),
+  difficulty_estimate TEXT NOT NULL DEFAULT 'standard',
+  audio_play_limit INTEGER DEFAULT 2,
+  verified_date DATE DEFAULT CURRENT_DATE,
+  is_published BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_hsk_exams_level ON public.hsk_exams(level);
+CREATE INDEX IF NOT EXISTS idx_hsk_exams_published ON public.hsk_exams(is_published);
+CREATE INDEX IF NOT EXISTS idx_hsk_exams_skill ON public.hsk_exams(skill_category);
+CREATE INDEX IF NOT EXISTS idx_hsk_exams_type ON public.hsk_exams(exam_type);
+
+-- 11.3. hsk_questions: Bảng câu hỏi chi tiết đa dạng
+CREATE TABLE IF NOT EXISTS public.hsk_questions (
+  id TEXT PRIMARY KEY,
+  exam_id TEXT NOT NULL REFERENCES public.hsk_exams(id) ON DELETE CASCADE,
+  part_type TEXT NOT NULL, -- 'listening', 'reading', 'writing', 'grammar', 'vocabulary'
+  part_number INTEGER NOT NULL DEFAULT 1,
+  question_number INTEGER NOT NULL,
+  question_type TEXT NOT NULL DEFAULT 'multiple_choice',
+  prompt TEXT NOT NULL, -- Nội dung đề bài (Chữ Hán)
+  pinyin TEXT, -- Phiên âm Pinyin
+  translation TEXT, -- Nghĩa tiếng Việt
+  audio_url TEXT, -- File âm thanh (nếu có)
+  audio_script TEXT, -- Lời thoại phát thanh
+  options JSONB NOT NULL DEFAULT '[]'::jsonb, -- Phương án lựa chọn
+  correct_option_index INTEGER NOT NULL, -- BẢO MẬT: Không lộ cho client trước khi nộp
+  explanation TEXT, -- Lời giải chi tiết
+  points INTEGER NOT NULL DEFAULT 5,
+  words JSONB DEFAULT '[]'::jsonb,
+  correct_order JSONB DEFAULT '[]'::jsonb,
+  accepted_answers JSONB DEFAULT '[]'::jsonb,
+  writing_criteria JSONB DEFAULT '[]'::jsonb,
+  sample_answer TEXT,
+  min_words INTEGER DEFAULT 0,
+  max_words INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_hsk_questions_exam ON public.hsk_questions(exam_id);
+CREATE INDEX IF NOT EXISTS idx_hsk_questions_number ON public.hsk_questions(exam_id, question_number);
+
+-- 11.4. hsk_attempts: Lượt làm bài thi thử (Học viên & Khách vãng lai)
+CREATE TABLE IF NOT EXISTS public.hsk_attempts (
+  id TEXT PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- Nullable cho khách vãng lai
+  anonymous_session_id TEXT, -- Định danh phiên ẩn danh
+  exam_id TEXT NOT NULL REFERENCES public.hsk_exams(id) ON DELETE CASCADE,
+  exam_mode TEXT NOT NULL DEFAULT 'simulation' CHECK (exam_mode IN ('simulation', 'practice')),
+  time_spent_seconds INTEGER NOT NULL DEFAULT 0,
+  submitted_answers JSONB NOT NULL DEFAULT '{}'::jsonb, -- { [questionId]: selectedOptionIndex }
+  writing_answers JSONB DEFAULT '{}'::jsonb,
+  score INTEGER NOT NULL DEFAULT 0,
+  max_score INTEGER NOT NULL DEFAULT 200,
+  accuracy_percentage NUMERIC(5,2) NOT NULL DEFAULT 0,
+  passed BOOLEAN NOT NULL DEFAULT false,
+  skill_breakdown JSONB NOT NULL DEFAULT '{}'::jsonb,
+  detailed_results JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_hsk_attempts_user ON public.hsk_attempts(user_id);
+CREATE INDEX IF NOT EXISTS idx_hsk_attempts_session ON public.hsk_attempts(anonymous_session_id);
+CREATE INDEX IF NOT EXISTS idx_hsk_attempts_exam ON public.hsk_attempts(exam_id);
+
+-- 11.5. hsk_mistakes: Sổ tay câu hỏi sai (Mistakes Notebook)
+CREATE TABLE IF NOT EXISTS public.hsk_mistakes (
+  id TEXT PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  anonymous_session_id TEXT,
+  question_id TEXT NOT NULL,
+  exam_id TEXT NOT NULL REFERENCES public.hsk_exams(id) ON DELETE CASCADE,
+  level TEXT NOT NULL DEFAULT 'HSK 1',
+  part_type TEXT NOT NULL DEFAULT 'general',
+  category TEXT DEFAULT 'Tổng hợp',
+  prompt TEXT NOT NULL,
+  pinyin TEXT,
+  translation TEXT,
+  options JSONB NOT NULL DEFAULT '[]'::jsonb,
+  user_answer_index INTEGER,
+  correct_answer_index INTEGER NOT NULL,
+  explanation TEXT,
+  mistake_count INTEGER NOT NULL DEFAULT 1,
+  status TEXT NOT NULL DEFAULT 'needs_review' CHECK (status IN ('needs_review', 'mastered')),
+  last_attempt_id TEXT REFERENCES public.hsk_attempts(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_hsk_mistakes_user ON public.hsk_mistakes(user_id);
+CREATE INDEX IF NOT EXISTS idx_hsk_mistakes_session ON public.hsk_mistakes(anonymous_session_id);
+CREATE INDEX IF NOT EXISTS idx_hsk_mistakes_question ON public.hsk_mistakes(question_id);
+CREATE INDEX IF NOT EXISTS idx_hsk_mistakes_status ON public.hsk_mistakes(status);
+CREATE INDEX IF NOT EXISTS idx_hsk_mistakes_level ON public.hsk_mistakes(level);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_hsk_mistakes_user_question 
+  ON public.hsk_mistakes(user_id, question_id) 
+  WHERE user_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_hsk_mistakes_session_question 
+  ON public.hsk_mistakes(anonymous_session_id, question_id) 
+  WHERE anonymous_session_id IS NOT NULL AND user_id IS NULL;
+
+-- 11.6. hsk_resources: Thư viện tài nguyên học tập tiếng Trung miễn phí
+CREATE TABLE IF NOT EXISTS public.hsk_resources (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  level TEXT NOT NULL DEFAULT 'All', -- 'HSK 1' -> 'HSK 6', 'HSK 7-9', 'All'
+  exam_version TEXT NOT NULL DEFAULT '2015-Standard',
+  category TEXT NOT NULL DEFAULT 'sample_exam',
+  academic_category TEXT NOT NULL DEFAULT 'textbooks_courses' CHECK (academic_category IN (
+    'textbooks_courses',       -- A. Giáo trình & Khóa học
+    'pinyin_pronunciation',    -- B. Ngữ âm & Pinyin
+    'chinese_characters',      -- C. Hán tự & Bộ thủ
+    'vocabulary',              -- D. Từ vựng theo cấp độ & chủ đề
+    'grammar',                 -- E. Ngữ pháp & Cú pháp
+    'listening_speaking',      -- F. Nghe & Nói
+    'reading_writing',         -- G. Đọc & Viết
+    'hsk_preparation',         -- H. Luyện thi HSK & Đề mẫu
+    'culture_communication'    -- I. Văn hóa & Giao tiếp thực tế
+  )),
+  skill TEXT NOT NULL DEFAULT 'mixed',
+  format TEXT NOT NULL DEFAULT 'web_link',
+  source_url TEXT NOT NULL,
+  source_author TEXT NOT NULL,
+  publisher TEXT,
+  host_type TEXT NOT NULL DEFAULT 'free_external' CHECK (host_type IN ('hanzigo_original', 'official_published', 'open_license', 'free_external')),
+  language_of_instruction TEXT NOT NULL DEFAULT 'Song ngữ Trung - Việt',
+  license_status TEXT NOT NULL DEFAULT 'Public Educational Sample',
+  permission_status TEXT NOT NULL DEFAULT 'reproducible' CHECK (permission_status IN ('reproducible', 'linked_only', 'unverified')),
+  review_status TEXT NOT NULL DEFAULT 'published' CHECK (review_status IN ('draft', 'needs_review', 'approved', 'published', 'rejected', 'archived')),
+  is_published BOOLEAN NOT NULL DEFAULT true,
+  download_url TEXT,
+  description TEXT,
+  tags TEXT[] DEFAULT '{}'::text[],
+  learning_objectives TEXT[] DEFAULT '{}'::text[],
+  related_lesson_ids TEXT[] DEFAULT '{}'::text[],
+  related_exam_ids TEXT[] DEFAULT '{}'::text[],
+  verified_date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_hsk_resources_level ON public.hsk_resources(level);
+CREATE INDEX IF NOT EXISTS idx_hsk_resources_category ON public.hsk_resources(category);
+CREATE INDEX IF NOT EXISTS idx_hsk_resources_academic_cat ON public.hsk_resources(academic_category);
+CREATE INDEX IF NOT EXISTS idx_hsk_resources_host_type ON public.hsk_resources(host_type);
+CREATE INDEX IF NOT EXISTS idx_hsk_resources_language ON public.hsk_resources(language_of_instruction);
+CREATE INDEX IF NOT EXISTS idx_hsk_resources_exam_version ON public.hsk_resources(exam_version);
+CREATE INDEX IF NOT EXISTS idx_hsk_resources_skill ON public.hsk_resources(skill);
+CREATE INDEX IF NOT EXISTS idx_hsk_resources_published ON public.hsk_resources(is_published);
+CREATE INDEX IF NOT EXISTS idx_hsk_resources_status ON public.hsk_resources(review_status);
+CREATE INDEX IF NOT EXISTS idx_hsk_resources_related_lessons ON public.hsk_resources USING GIN(related_lesson_ids);
+CREATE INDEX IF NOT EXISTS idx_hsk_resources_related_exams ON public.hsk_resources USING GIN(related_exam_ids);
+
+-- 11.7. hsk_reports: Báo cáo lỗi & khiếu nại chất lượng từ học viên
+CREATE TABLE IF NOT EXISTS public.hsk_reports (
+  id TEXT PRIMARY KEY,
+  resource_id TEXT REFERENCES public.hsk_resources(id) ON DELETE SET NULL,
+  exam_id TEXT REFERENCES public.hsk_exams(id) ON DELETE SET NULL,
+  question_id TEXT,
+  report_type TEXT NOT NULL CHECK (report_type IN ('broken_link', 'audio_error', 'answer_discrepancy', 'typo', 'copyright_concern')),
+  description TEXT NOT NULL,
+  reporter_email TEXT,
+  admin_notes TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'dismissed')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_hsk_reports_status ON public.hsk_reports(status);
+CREATE INDEX IF NOT EXISTS idx_hsk_reports_type ON public.hsk_reports(report_type);
+
+-- 11.8. VIEW bảo mật cho client (TƯỚC BỎ TOÀN BỘ ĐÁP ÁN: correct_option_index, correct_order, accepted_answers, sample_answer, explanation)
+DROP VIEW IF EXISTS public.v_hsk_questions_public;
+CREATE OR REPLACE VIEW public.v_hsk_questions_public AS
+  SELECT 
+    id,
+    exam_id,
+    part_type,
+    part_number,
+    question_number,
+    question_type,
+    prompt,
+    pinyin,
+    translation,
+    audio_url,
+    audio_script,
+    options,
+    words,
+    writing_criteria,
+    min_words,
+    max_words,
+    points
+  FROM public.hsk_questions;
+
+-- 11.9. Bật Row Level Security & Thiết lập Policies
+ALTER TABLE public.hsk_exam_structures ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.hsk_exams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.hsk_questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.hsk_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.hsk_mistakes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.hsk_resources ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.hsk_reports ENABLE ROW LEVEL SECURITY;
+
+-- hsk_exam_structures Policies
+DROP POLICY IF EXISTS "hsk_exam_structures_public_read" ON public.hsk_exam_structures;
+CREATE POLICY "hsk_exam_structures_public_read" ON public.hsk_exam_structures FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "hsk_exam_structures_admin_all" ON public.hsk_exam_structures;
+CREATE POLICY "hsk_exam_structures_admin_all" ON public.hsk_exam_structures FOR ALL USING (public.is_admin());
+
+-- hsk_exams Policies
+DROP POLICY IF EXISTS "hsk_exams_public_read" ON public.hsk_exams;
+CREATE POLICY "hsk_exams_public_read" ON public.hsk_exams FOR SELECT USING (is_published = true OR public.is_admin());
+
+DROP POLICY IF EXISTS "hsk_exams_admin_all" ON public.hsk_exams;
+CREATE POLICY "hsk_exams_admin_all" ON public.hsk_exams FOR ALL USING (public.is_admin());
+
+-- hsk_questions Policies (Chỉ admin query trực tiếp; client đọc qua VIEW v_hsk_questions_public)
+DROP POLICY IF EXISTS "hsk_questions_admin_all" ON public.hsk_questions;
+CREATE POLICY "hsk_questions_admin_all" ON public.hsk_questions FOR ALL USING (public.is_admin());
+
+-- hsk_attempts Policies
+DROP POLICY IF EXISTS "hsk_attempts_insert_public" ON public.hsk_attempts;
+CREATE POLICY "hsk_attempts_insert_public" ON public.hsk_attempts FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "hsk_attempts_select_owner" ON public.hsk_attempts;
+CREATE POLICY "hsk_attempts_select_owner" ON public.hsk_attempts FOR SELECT USING (
+  (auth.uid() IS NOT NULL AND user_id = auth.uid()) OR
+  (auth.uid() IS NULL AND anonymous_session_id IS NOT NULL) OR
+  public.is_admin()
+);
+
+DROP POLICY IF EXISTS "hsk_attempts_no_update" ON public.hsk_attempts;
+CREATE POLICY "hsk_attempts_no_update" ON public.hsk_attempts FOR UPDATE USING (public.is_admin());
+
+-- hsk_mistakes Policies
+DROP POLICY IF EXISTS "hsk_mistakes_select_owner" ON public.hsk_mistakes;
+CREATE POLICY "hsk_mistakes_select_owner" ON public.hsk_mistakes FOR SELECT USING (
+  (auth.uid() IS NOT NULL AND user_id = auth.uid()) OR
+  (auth.uid() IS NULL AND anonymous_session_id IS NOT NULL) OR
+  public.is_admin()
+);
+
+DROP POLICY IF EXISTS "hsk_mistakes_insert_owner" ON public.hsk_mistakes;
+CREATE POLICY "hsk_mistakes_insert_owner" ON public.hsk_mistakes FOR INSERT WITH CHECK (
+  (auth.uid() IS NOT NULL AND user_id = auth.uid()) OR
+  (auth.uid() IS NULL AND anonymous_session_id IS NOT NULL) OR
+  public.is_admin()
+);
+
+DROP POLICY IF EXISTS "hsk_mistakes_update_owner" ON public.hsk_mistakes;
+CREATE POLICY "hsk_mistakes_update_owner" ON public.hsk_mistakes FOR UPDATE USING (
+  (auth.uid() IS NOT NULL AND user_id = auth.uid()) OR
+  (auth.uid() IS NULL AND anonymous_session_id IS NOT NULL) OR
+  public.is_admin()
+);
+
+DROP POLICY IF EXISTS "hsk_mistakes_delete_owner" ON public.hsk_mistakes;
+CREATE POLICY "hsk_mistakes_delete_owner" ON public.hsk_mistakes FOR DELETE USING (
+  (auth.uid() IS NOT NULL AND user_id = auth.uid()) OR
+  (auth.uid() IS NULL AND anonymous_session_id IS NOT NULL) OR
+  public.is_admin()
+);
+
+-- hsk_resources Policies
+DROP POLICY IF EXISTS "Public can view published learning resources" ON public.hsk_resources;
+CREATE POLICY "Public can view published learning resources" ON public.hsk_resources FOR SELECT USING (
+  (is_published = true AND review_status = 'published') OR
+  public.is_admin()
+);
+
+DROP POLICY IF EXISTS "Admins full access on learning resources" ON public.hsk_resources;
+CREATE POLICY "Admins full access on learning resources" ON public.hsk_resources FOR ALL USING (public.is_admin());
+
+-- hsk_reports Policies
+DROP POLICY IF EXISTS "hsk_reports_public_insert" ON public.hsk_reports;
+CREATE POLICY "hsk_reports_public_insert" ON public.hsk_reports FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "hsk_reports_admin_all" ON public.hsk_reports;
+CREATE POLICY "hsk_reports_admin_all" ON public.hsk_reports FOR ALL USING (public.is_admin());
+
+-- 11.10. Realtime Replication cho bảng HSK
+ALTER TABLE public.hsk_attempts REPLICA IDENTITY FULL;
+ALTER TABLE public.hsk_mistakes REPLICA IDENTITY FULL;
+ALTER TABLE public.hsk_reports REPLICA IDENTITY FULL;
+
+DO $$
+BEGIN
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.hsk_attempts; EXCEPTION WHEN duplicate_object THEN END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.hsk_mistakes; EXCEPTION WHEN duplicate_object THEN END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.hsk_reports; EXCEPTION WHEN duplicate_object THEN END;
+END $$;
+
+
 

@@ -77,11 +77,13 @@ function createMockRes() {
 // 1. SUPABASE PRODUCTION SECURITY & MIGRATION 13
 // =========================================================================
 
-test('1.1. Migration 13 file exists and defines audit_logs schema with strict RLS', () => {
-  const migPath = path.resolve(process.cwd(), 'supabase/migrations/13_audit_logs_and_grade_protection.sql');
-  assert.ok(fs.existsSync(migPath), 'Migration 13 must exist');
+test('1.1. Schema defines audit_logs schema with strict RLS', () => {
+  const schemaPath = fs.existsSync(path.resolve(process.cwd(), 'supabase/migrations/13_audit_logs_and_grade_protection.sql'))
+    ? path.resolve(process.cwd(), 'supabase/migrations/13_audit_logs_and_grade_protection.sql')
+    : path.resolve(process.cwd(), 'supabase/schema.sql');
+  assert.ok(fs.existsSync(schemaPath), 'Canonical schema file must exist');
 
-  const content = fs.readFileSync(migPath, 'utf8');
+  const content = fs.readFileSync(schemaPath, 'utf8');
   assert.ok(content.includes('CREATE TABLE IF NOT EXISTS public.audit_logs'), 'Must create audit_logs table');
   assert.ok(content.includes('ENABLE ROW LEVEL SECURITY'), 'Must enable RLS on audit_logs');
   assert.ok(content.includes('audit_logs_select_policy'), 'Must define SELECT policy on audit_logs');

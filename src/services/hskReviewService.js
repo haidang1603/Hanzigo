@@ -20,9 +20,16 @@ const STORAGE_RESOURCES_KEY = 'hanzigo_hsk_resources_cache';
 export async function getPublicHskResources({ 
   level = 'all', 
   category = 'all', 
+  academicCategory = 'all',
+  examVersion = 'all',
   skill = 'all', 
   format = 'all', 
-  search = '' 
+  hostType = 'all',
+  language = 'all',
+  lessonId = null,
+  examId = null,
+  search = '',
+  sortBy = 'recently_verified'
 } = {}) {
   let list = [...HSK_RESOURCES].filter(r => r.is_published && r.review_status === 'published');
 
@@ -37,8 +44,11 @@ export async function getPublicHskResources({
 
       if (level && level !== 'all') query = query.eq('level', level);
       if (category && category !== 'all') query = query.eq('category', category);
+      if (academicCategory && academicCategory !== 'all') query = query.eq('academic_category', academicCategory);
+      if (examVersion && examVersion !== 'all') query = query.eq('exam_version', examVersion);
       if (skill && skill !== 'all') query = query.eq('skill', skill);
       if (format && format !== 'all') query = query.eq('format', format);
+      if (hostType && hostType !== 'all') query = query.eq('host_type', hostType);
 
       const { data, error } = await query;
       if (!error && data && data.length > 0) {
@@ -56,6 +66,21 @@ export async function getPublicHskResources({
     list = list.filter(r => r.category.toLowerCase() === category.toLowerCase());
   }
 
+  if (academicCategory && academicCategory !== 'all') {
+    list = list.filter(r => (r.academic_category || '').toLowerCase() === academicCategory.toLowerCase());
+  }
+
+  if (examVersion && examVersion !== 'all') {
+    const ev = examVersion.toLowerCase();
+    list = list.filter(r => {
+      const rev = (r.exam_version || '').toLowerCase();
+      if (!rev || rev === 'all' || rev === 'both') return true;
+      if (ev.includes('3.0') && (rev.includes('3.0') || rev.includes('2021'))) return true;
+      if (ev.includes('2.0') && (rev.includes('2.0') || rev.includes('2015') || rev.includes('standard'))) return true;
+      return rev.includes(ev);
+    });
+  }
+
   if (skill && skill !== 'all') {
     list = list.filter(r => r.skill.toLowerCase() === skill.toLowerCase() || r.skill.toLowerCase() === 'mixed');
   }
@@ -64,18 +89,83 @@ export async function getPublicHskResources({
     list = list.filter(r => r.format.toLowerCase() === format.toLowerCase());
   }
 
+  if (hostType && hostType !== 'all') {
+    list = list.filter(r => (r.host_type || '').toLowerCase() === hostType.toLowerCase());
+  }
+
+  if (language && language !== 'all') {
+    list = list.filter(r => (r.language_of_instruction || '').toLowerCase().includes(language.toLowerCase()));
+  }
+
+  // Lọc theo bài học lộ trình liên quan
+  if (lessonId) {
+    list = list.filter(r => Array.isArray(r.related_lesson_ids) && r.related_lesson_ids.includes(lessonId));
+  }
+
+  // Lọc theo đề thi HSK liên quan
+  if (examId) {
+    list = list.filter(r => Array.isArray(r.related_exam_ids) && r.related_exam_ids.includes(examId));
+  }
+
   if (search && search.trim()) {
     const s = search.toLowerCase().trim();
     list = list.filter(r => 
       (r.title && r.title.toLowerCase().includes(s)) ||
       (r.description && r.description.toLowerCase().includes(s)) ||
       (r.source_author && r.source_author.toLowerCase().includes(s)) ||
+      (r.publisher && r.publisher.toLowerCase().includes(s)) ||
       (r.source_url && r.source_url.toLowerCase().includes(s)) ||
-      (Array.isArray(r.tags) && r.tags.some(t => t.toLowerCase().includes(s)))
+      (Array.isArray(r.tags) && r.tags.some(t => t.toLowerCase().includes(s))) ||
+      (Array.isArray(r.learning_objectives) && r.learning_objectives.some(o => o.toLowerCase().includes(s)))
     );
   }
 
+  // Sắp xếp
+  if (sortBy === 'recently_verified') {
+    list.sort((a, b) => new Date(b.verified_date || '2020-01-01') - new Date(a.verified_date || '2020-01-01'));
+  } else if (sortBy === 'title_asc') {
+    list.sort((a, b) => a.title.localeCompare(b.title, 'vi'));
+  } else if (sortBy === 'level_asc') {
+    const levelOrder = { 'hsk 1': 1, 'hsk 2': 2, 'hsk 3': 3, 'hsk 4': 4, 'hsk 5': 5, 'hsk 6': 6, 'hsk 7-9': 7, 'all': 0 };
+    list.sort((a, b) => (levelOrder[a.level?.toLowerCase()] || 99) - (levelOrder[b.level?.toLowerCase()] || 99));
+  }
+
+  // Đảm bảo các thuộc tính mặc định
+  list = list.map(r => ({
+    ...r,
+    is_archived: r.is_archived || false,
+    review_status: r.review_status || 'published'
+  }));
+
   return list;
+}
+
+/**
+ * Lấy chi tiết tài nguyên theo ID
+ */
+export async function getResourceById(id) {
+  if (!id) return null;
+  const list = await getPublicHskResources();
+  return list.find(r => r.id === id) || null;
+}
+
+/**
+ * Lấy danh sách tài nguyên bổ trợ cho một bài học lộ trình (Curriculum Lesson)
+ */
+export async function getResourcesForLesson(lessonId) {
+  if (!lessonId) return [];
+  return getPublicHskResources({ lessonId });
+}
+
+/**
+ * Lấy danh sách tài nguyên phục vụ ôn tập cho một đề thi HSK hoặc kỹ năng cụ thể
+ */
+export async function getResourcesForExam(examId = null, skill = null) {
+  if (!examId && !skill) return [];
+  const options = {};
+  if (examId) options.examId = examId;
+  if (skill) options.skill = skill;
+  return getPublicHskResources(options);
 }
 
 /**

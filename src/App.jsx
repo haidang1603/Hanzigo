@@ -26,13 +26,15 @@ const TeacherDashboardPage = lazy(() => import('./pages/TeacherDashboardPage'));
 const ClassroomPage = lazy(() => import('./pages/ClassroomPage'));
 const LiveClassroomPage = lazy(() => import('./pages/LiveClassroomPage'));
 const HskPracticePage = lazy(() => import('./pages/HskPracticePage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
 import TeacherGuard from './components/TeacherGuard';
 
 const VALID_TABS = [
   'home', 'dashboard', 'roadmap', 'lesson', 'vocabulary', 
   'pronunciation', 'writing', 'conversation', 'community', 
   'materials', 'admin', 'profile', 'leaderboard',
-  'teacher', 'classroom', 'hsk'
+  'teacher', 'classroom', 'hsk', 'privacy', 'terms'
 ];
 
 function MainApp() {
@@ -456,6 +458,8 @@ function MainApp() {
                   window.location.hash = '#hsk/analytics';
                 } else if (view === 'resources') {
                   window.location.hash = '#hsk/resources';
+                } else if (view === 'structure') {
+                  window.location.hash = '#hsk/structure';
                 } else if (view === 'exam' && id) {
                   window.location.hash = `#hsk/exam/${id}`;
                 } else if (view === 'take' && id) {
@@ -478,6 +482,14 @@ function MainApp() {
               setSoundEnabled={setSoundEnabled}
               setActiveTab={setActiveTab}
             />
+          )}
+
+          {activeTab === 'privacy' && (
+            <PrivacyPolicyPage setActiveTab={setActiveTab} />
+          )}
+
+          {activeTab === 'terms' && (
+            <TermsOfServicePage setActiveTab={setActiveTab} />
           )}
         </Suspense>
       </main>

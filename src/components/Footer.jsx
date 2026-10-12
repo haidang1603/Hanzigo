@@ -140,8 +140,26 @@ export default function Footer({ setActiveTab }) {
               <ShieldCheck size={14} />
               <span>Quản trị viên (Admin)</span>
             </button>
-            <a href="#privacy" className="hover:text-white transition-colors">Chính sách bảo mật</a>
-            <a href="#terms" className="hover:text-white transition-colors">Điều khoản sử dụng</a>
+            <a 
+              href="#privacy" 
+              onClick={(e) => {
+                e.preventDefault();
+                handleNav('privacy');
+              }}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              Chính sách bảo mật
+            </a>
+            <a 
+              href="#terms" 
+              onClick={(e) => {
+                e.preventDefault();
+                handleNav('terms');
+              }}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              Điều khoản sử dụng
+            </a>
           </div>
         </div>
       </div>
