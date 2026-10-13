@@ -7,19 +7,27 @@
 // In-memory fallback stores
 const memoryStore = new Map();
 
+export const REDIS_TIMEOUT_MS = 2500;
+
 export async function checkRateLimitAndQuota({
   clientKey,
   windowMs = 60 * 1000,
   maxRequests = 20,
   dailyQuotaMax = 150,
   dailyQuotaWindowMs = 24 * 60 * 60 * 1000,
-  prefix = 'ratelimit'
+  prefix = 'ratelimit',
+  timeoutMs = REDIS_TIMEOUT_MS
 }) {
   const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
   const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const isProduction = process.env.NODE_ENV === 'production' && process.env.NODE_ENV !== 'test';
+  const allowMemoryInProd = process.env.ALLOW_IN_MEMORY_RATE_LIMIT === 'true';
 
-  // 1. Try Upstash Redis REST if configured
+  // 1. Kiểm tra cấu hình Upstash Redis REST
   if (upstashUrl && upstashToken && typeof fetch === 'function') {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
       const windowSec = Math.ceil(windowMs / 1000);
       const quotaSec = Math.ceil(dailyQuotaWindowMs / 1000);
@@ -37,8 +45,11 @@ export async function checkRateLimitAndQuota({
           ['EXPIRE', rateKey, windowSec, 'NX'],
           ['INCR', quotaKey],
           ['EXPIRE', quotaKey, quotaSec, 'NX']
-        ])
+        ]),
+        signal: controller.signal
       });
+
+      clearTimeout(timer);
 
       if (res.ok) {
         const results = await res.json();
@@ -69,13 +80,39 @@ export async function checkRateLimitAndQuota({
           quotaRemaining: Math.max(0, dailyQuotaMax - currentQuotaCount),
           isDistributed: true
         };
+      } else {
+        throw new Error(`Upstash returned HTTP ${res.status}`);
       }
     } catch (err) {
-      console.warn('⚠️ Upstash Rate Limiter REST Error, falling back to in-memory:', err.message);
+      clearTimeout(timer);
+      const isTimeout = err.name === 'AbortError' || err.message?.includes('aborted');
+      // Không ghi log chứa secret hoặc URL chi tiết
+      console.warn(`[RateLimiter] Redis error (${isTimeout ? 'Timeout' : 'Connection failure'}).`);
+
+      // Chính sách Fail-Closed trong Production nếu không cho phép in-memory fallback
+      if (isProduction && !allowMemoryInProd) {
+        return {
+          allowed: false,
+          statusCode: 503,
+          reason: 'Dịch vụ kiểm soát lưu lượng tạm thời gián đoạn. Vui lòng thử lại sau giây lát.',
+          isDistributed: true,
+          error: isTimeout ? 'redis_timeout' : 'redis_error'
+        };
+      }
     }
+  } else if (isProduction && !allowMemoryInProd) {
+    // Trong Production nhưng chưa cấu hình Upstash Redis credentials
+    console.warn('[RateLimiter] CẢNH BÁO: UPSTASH_REDIS credentials chưa được cấu hình trên môi trường Production.');
+    return {
+      allowed: false,
+      statusCode: 503,
+      reason: 'Hệ thống giới hạn phân tán chưa sẵn sàng. Vui lòng liên hệ quản trị viên để cấu hình Redis.',
+      isDistributed: false,
+      error: 'redis_unconfigured'
+    };
   }
 
-  // 2. In-memory fallback
+  // 2. In-memory fallback (chỉ dùng cho môi trường Test / Local Dev hoặc khi bật ALLOW_IN_MEMORY_RATE_LIMIT=true)
   const now = Date.now();
   const memoryKey = `${prefix}:${clientKey}`;
 

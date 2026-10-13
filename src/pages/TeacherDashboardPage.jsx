@@ -2334,6 +2334,7 @@ export default function TeacherDashboardPage({
         initialTab={aiStudioInitialTab}
         onPublishAssignment={handlePublishAiAssignment}
         onSaveLessonPlan={handleSaveLessonPlanToMaterials}
+        showToast={showToast}
       />
 
     </div>

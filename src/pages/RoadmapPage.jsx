@@ -43,8 +43,11 @@ import {
   getLessonNodeStatus,
   isBossUnlocked,
   getBossChallengeByChapter,
-  getChapterMaterials
+  getChapterMaterials,
+  getRecommendedNextLesson,
+  getRecommendedReviewLessons
 } from '../services/learningPathService';
+import AiContextBadge from '../components/personalization/AiContextBadge.jsx';
 
 export default function RoadmapPage({ 
   user, 
@@ -85,6 +88,14 @@ export default function RoadmapPage({
   const resumeInfo = useMemo(() => {
     return getResumeLesson(progress);
   }, [progress]);
+
+  const recommendedNext = useMemo(() => {
+    return getRecommendedNextLesson(user);
+  }, [user, journeyVersion]);
+
+  const recommendedReview = useMemo(() => {
+    return getRecommendedReviewLessons(user, 1);
+  }, [user, journeyVersion]);
 
   const levels = useMemo(() => getAllLevels(), []);
   const selectedLevel = useMemo(() => getLevelById(selectedLevelId), [selectedLevelId]);
@@ -291,6 +302,60 @@ export default function RoadmapPage({
           {/* Decorative Calligraphy Watermark */}
           <div className="absolute right-4 -bottom-6 font-['Noto_Serif_SC'] text-8xl sm:text-9xl font-black text-white/5 select-none pointer-events-none">
             学海无涯
+          </div>
+        </div>
+
+        {/* 1.5 ADAPTIVE ROADMAP AI RECOMMENDATION BANNER */}
+        <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-orange-100 dark:border-gray-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div className="space-y-1.5 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-[#E85D3F] flex items-center gap-1.5">
+                <Sparkles size={14} />
+                <span>Lão Sư Đề xuất bước tiếp theo</span>
+              </span>
+              <AiContextBadge type="ai_pedagogy" size="xs" />
+              <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                • Bạn luôn có quyền tự do lựa chọn bất kỳ bài học nào trên bản đồ
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">
+                {recommendedNext?.title}
+              </h3>
+              {recommendedReview[0] && (
+                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  (Bài cần ôn lại: {recommendedReview[0].title || recommendedReview[0].lessonId})
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+              {recommendedNext?.reason}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {recommendedReview[0] && (
+              <button
+                onClick={() => {
+                  playClickSound();
+                  const target = getLessonById(recommendedReview[0].lessonId);
+                  if (target) setActiveLessonToPlay(target);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Ôn bài {recommendedReview[0].lessonId}
+              </button>
+            )}
+            <button
+              onClick={() => {
+                playClickSound();
+                const target = getLessonById(recommendedNext?.lessonId);
+                if (target) setActiveLessonToPlay(target);
+              }}
+              className="px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Play size={13} fill="currentColor" />
+              <span>Học bài đề xuất ({recommendedNext?.lessonId})</span>
+            </button>
           </div>
         </div>
 

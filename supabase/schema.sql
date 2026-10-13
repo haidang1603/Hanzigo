@@ -1691,7 +1691,8 @@ CREATE INDEX IF NOT EXISTS idx_hsk_reports_type ON public.hsk_reports(report_typ
 
 -- 11.8. VIEW bảo mật cho client (TƯỚC BỎ TOÀN BỘ ĐÁP ÁN: correct_option_index, correct_order, accepted_answers, sample_answer, explanation)
 DROP VIEW IF EXISTS public.v_hsk_questions_public;
-CREATE OR REPLACE VIEW public.v_hsk_questions_public AS
+CREATE VIEW public.v_hsk_questions_public 
+WITH (security_invoker = true) AS
   SELECT 
     id,
     exam_id,
@@ -1735,9 +1736,17 @@ CREATE POLICY "hsk_exams_public_read" ON public.hsk_exams FOR SELECT USING (is_p
 DROP POLICY IF EXISTS "hsk_exams_admin_all" ON public.hsk_exams;
 CREATE POLICY "hsk_exams_admin_all" ON public.hsk_exams FOR ALL USING (public.is_admin());
 
--- hsk_questions Policies (Chỉ admin query trực tiếp; client đọc qua VIEW v_hsk_questions_public)
+-- hsk_questions Policies (Chỉ admin toàn quyền; client đọc câu hỏi bài thi qua VIEW v_hsk_questions_public)
 DROP POLICY IF EXISTS "hsk_questions_admin_all" ON public.hsk_questions;
 CREATE POLICY "hsk_questions_admin_all" ON public.hsk_questions FOR ALL USING (public.is_admin());
+
+DROP POLICY IF EXISTS "hsk_questions_read_published" ON public.hsk_questions;
+CREATE POLICY "hsk_questions_read_published" ON public.hsk_questions FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM public.hsk_exams 
+    WHERE id = hsk_questions.exam_id AND is_published = true
+  ) OR public.is_admin()
+);
 
 -- hsk_attempts Policies
 DROP POLICY IF EXISTS "hsk_attempts_insert_public" ON public.hsk_attempts;
@@ -1790,7 +1799,10 @@ CREATE POLICY "Public can view published learning resources" ON public.hsk_resou
 );
 
 DROP POLICY IF EXISTS "Admins full access on learning resources" ON public.hsk_resources;
-CREATE POLICY "Admins full access on learning resources" ON public.hsk_resources FOR ALL USING (public.is_admin());
+CREATE POLICY "Admins full access on learning resources" ON public.hsk_resources FOR ALL USING (
+  public.is_admin() OR 
+  (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin')
+);
 
 -- hsk_reports Policies
 DROP POLICY IF EXISTS "hsk_reports_public_insert" ON public.hsk_reports;
@@ -1810,6 +1822,109 @@ BEGIN
   BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.hsk_mistakes; EXCEPTION WHEN duplicate_object THEN END;
   BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.hsk_reports; EXCEPTION WHEN duplicate_object THEN END;
 END $$;
+
+-- =========================================================================
+-- 12. RAG KNOWLEDGE DATASET PIPELINE & AI TUTOR FOUNDATION
+-- =========================================================================
+
+-- 12.1. rag_knowledge_sources: Nguồn tri thức và giấy phép bản quyền
+CREATE TABLE IF NOT EXISTS public.rag_knowledge_sources (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  source_key TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  category TEXT NOT NULL CHECK (category IN ('dictionary', 'grammar', 'curriculum', 'hsk_standard', 'dialogue', 'academic_paper')),
+  hsk_level TEXT DEFAULT 'All',
+  author TEXT,
+  publisher TEXT,
+  source_url TEXT,
+  license_identifier TEXT NOT NULL,
+  attribution TEXT NOT NULL,
+  version TEXT DEFAULT '1.0.0',
+  retrieval_date TIMESTAMPTZ DEFAULT NOW(),
+  checksum TEXT,
+  review_status TEXT NOT NULL DEFAULT 'pending_review' CHECK (review_status IN ('curated_verified', 'pending_review', 'rejected')),
+  is_verified BOOLEAN DEFAULT false,
+  is_active BOOLEAN DEFAULT true,
+  record_count INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 12.2. rag_knowledge_chunks: Đoạn tri thức chi tiết (Idempotent by chunk_key)
+CREATE TABLE IF NOT EXISTS public.rag_knowledge_chunks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  source_id UUID NOT NULL REFERENCES public.rag_knowledge_sources(id) ON DELETE CASCADE,
+  chunk_key TEXT UNIQUE NOT NULL,
+  chunk_type TEXT NOT NULL CHECK (chunk_type IN ('vocab_entry', 'grammar_pattern', 'example_sentence', 'dialogue_context', 'culture_note')),
+  hsk_level TEXT DEFAULT 'HSK 1',
+  topic TEXT,
+  simplified TEXT NOT NULL,
+  traditional TEXT,
+  pinyin TEXT,
+  pinyin_numbered TEXT,
+  vietnamese_meaning TEXT NOT NULL,
+  pedagogical_notes TEXT,
+  grammar_pattern TEXT,
+  example_sentences JSONB DEFAULT '[]'::jsonb,
+  license_identifier TEXT NOT NULL,
+  attribution TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'pending_review' CHECK (review_status IN ('curated_verified', 'pending_review', 'rejected')),
+  is_verified BOOLEAN DEFAULT false,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 12.3. rag_ingestion_audit_logs: Lịch sử kiểm toán nhập tri thức
+CREATE TABLE IF NOT EXISTS public.rag_ingestion_audit_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  batch_id TEXT NOT NULL,
+  source_key TEXT NOT NULL,
+  action TEXT NOT NULL CHECK (action IN ('dry_run', 'import', 'rollback', 'deduplicate')),
+  total_records INT DEFAULT 0,
+  imported_records INT DEFAULT 0,
+  updated_records INT DEFAULT 0,
+  skipped_duplicates INT DEFAULT 0,
+  invalid_records INT DEFAULT 0,
+  checksum TEXT,
+  error_details JSONB DEFAULT '[]'::jsonb,
+  executed_by TEXT DEFAULT 'system_importer',
+  duration_ms INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Chỉ mục
+CREATE INDEX IF NOT EXISTS idx_rag_chunks_source ON public.rag_knowledge_chunks(source_id);
+CREATE INDEX IF NOT EXISTS idx_rag_chunks_type_hsk ON public.rag_knowledge_chunks(chunk_type, hsk_level);
+CREATE INDEX IF NOT EXISTS idx_rag_chunks_simplified ON public.rag_knowledge_chunks(simplified);
+CREATE INDEX IF NOT EXISTS idx_rag_sources_key ON public.rag_knowledge_sources(source_key);
+CREATE INDEX IF NOT EXISTS idx_rag_audit_batch ON public.rag_ingestion_audit_logs(batch_id);
+
+-- RLS Policies
+ALTER TABLE public.rag_knowledge_sources ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rag_knowledge_chunks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rag_ingestion_audit_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "rag_sources_read_verified" ON public.rag_knowledge_sources;
+CREATE POLICY "rag_sources_read_verified" ON public.rag_knowledge_sources
+  FOR SELECT USING ((is_verified = true AND review_status = 'curated_verified' AND is_active = true) OR public.is_admin());
+
+DROP POLICY IF EXISTS "rag_sources_admin_all" ON public.rag_knowledge_sources;
+CREATE POLICY "rag_sources_admin_all" ON public.rag_knowledge_sources
+  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "rag_chunks_read_verified" ON public.rag_knowledge_chunks;
+CREATE POLICY "rag_chunks_read_verified" ON public.rag_knowledge_chunks
+  FOR SELECT USING ((is_verified = true AND review_status = 'curated_verified') OR public.is_admin());
+
+DROP POLICY IF EXISTS "rag_chunks_admin_all" ON public.rag_knowledge_chunks;
+CREATE POLICY "rag_chunks_admin_all" ON public.rag_knowledge_chunks
+  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "rag_audit_admin_all" ON public.rag_ingestion_audit_logs;
+CREATE POLICY "rag_audit_admin_all" ON public.rag_ingestion_audit_logs
+  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
 
 
 

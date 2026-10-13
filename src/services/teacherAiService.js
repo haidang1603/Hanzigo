@@ -216,8 +216,63 @@ function getOfflineAssignment(payload) {
     }
   ];
 
-  const count = Math.min(Math.max(Number(questionCount) || 5, 1), multiSkillQuestions.length);
-  const selectedQuestions = multiSkillQuestions.slice(0, count);
+  const count = Math.min(Math.max(Number(questionCount) || 5, 1), 30);
+  const questions = [...multiSkillQuestions];
+
+  const templates = [
+    {
+      skill: 'Vocabulary',
+      skillName: 'Từ vựng (Vocabulary)',
+      q: (i, t, h) => `[Từ vựng] Câu hỏi ${i}: Chọn từ vựng thích hợp trong chủ đề "${t}" (${h}):`,
+      options: ['核心词汇 (Từ cốt lõi)', '干扰项 A', '干扰项 B', '干扰项 C'],
+      explanation: 'Từ vựng trọng tâm thường xuất hiện trong giao tiếp bám sát chủ đề và cấp độ HSK.'
+    },
+    {
+      skill: 'Grammar',
+      skillName: 'Ngữ pháp (Grammar)',
+      q: (i, t, h) => `[Ngữ pháp] Câu hỏi ${i}: Điền liên từ hoặc cấu trúc ngữ pháp chuẩn (${h}): "虽然...____..."`,
+      options: ['但是 (dànshì)', '所以 (suǒyǐ)', '因为 (yīnwèi)', '除了 (chúle)'],
+      explanation: 'Cặp liên từ biểu thị sự chuyển ý tương phản: 虽然...但是... (Tuy... nhưng...)'
+    },
+    {
+      skill: 'Listening',
+      skillName: 'Nghe hiểu (Listening)',
+      q: (i, t, h) => `[Nghe hiểu] Câu hỏi ${i}: Người nói nói: "我想换一件大一点儿的。" - Người nói có ý định gì?`,
+      options: ['Muốn đổi áo cỡ lớn hơn', 'Muốn hoàn tiền lại', 'Muốn mua thêm quần áo', 'Khen ngợi áo đẹp'],
+      explanation: 'Ý nghĩa giao tiếp thực tế: "大一点儿" là lớn hơn một chút.'
+    },
+    {
+      skill: 'Reading',
+      skillName: 'Đọc hiểu (Reading)',
+      q: (i, t, h) => `[Đọc hiểu] Câu hỏi ${i}: Đọc câu ngắn về chủ đề "${t}": Thông tin nào sau đây là chính xác?`,
+      options: ['Nội dung phù hợp ngữ cảnh đoạn văn', 'Thông tin trái ngược đoạn văn', 'Thông tin không được đề cập', 'Thời gian không chính xác'],
+      explanation: 'Kỹ năng đối chiếu thông tin và định vị từ khóa trong văn bản.'
+    },
+    {
+      skill: 'Speaking',
+      skillName: 'Khẩu ngữ (Speaking)',
+      q: (i, t, h) => `[Khẩu ngữ] Câu hỏi ${i}: Trong tình huống về "${t}", cách diễn đạt lịch sự và tự nhiên nhất là:`,
+      options: ['太感谢你了，麻烦你了！', '我不知道，别找我。', '无所谓，随便。', '快点儿，别慢吞吞的。'],
+      explanation: 'Cách biểu đạt văn hóa giao tiếp chuẩn mực, hòa nhã của người bản xứ.'
+    }
+  ];
+
+  while (questions.length < count) {
+    const idx = questions.length;
+    const tmpl = templates[idx % templates.length];
+    questions.push({
+      id: `q${idx + 1}`,
+      skill: tmpl.skill,
+      skillName: tmpl.skillName,
+      question: tmpl.q(idx + 1, topic, hskLevel),
+      options: tmpl.options,
+      correctAnswer: 0,
+      explanation: tmpl.explanation,
+      difficulty: idx >= 15 ? 'Khó' : idx >= 8 ? 'Trung bình' : 'Dễ'
+    });
+  }
+
+  const selectedQuestions = questions.slice(0, count);
 
   return {
     title: `Bài tập ${assignmentType}: ${topic} (${hskLevel})`,

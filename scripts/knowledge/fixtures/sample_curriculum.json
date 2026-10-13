@@ -1,0 +1,58 @@
+{
+  "sourceMetadata": {
+    "source_key": "hanzigo-sample-fixture",
+    "title": "HanziGo Standard Pedagogical Fixture",
+    "license_identifier": "Educational-CC-BY-NC-SA-4.0",
+    "attribution": "HanziGo Pedagogical Curriculum (CC BY-NC-SA 4.0)"
+  },
+  "vocabulary": [
+    {
+      "word": "苹果",
+      "pinyin": "píngguǒ",
+      "meaning": "Quả táo",
+      "level": "HSK 1",
+      "radical": "艹 (Thảo)",
+      "example": "我喜欢吃红色的苹果。"
+    },
+    {
+      "word": "火车站",
+      "pinyin": "huǒchēzhàn",
+      "meaning": "Ga xe lửa, nhà ga tàu hỏa",
+      "level": "HSK 2",
+      "radical": "火 (Hỏa)",
+      "example": "去火车站怎么走？"
+    },
+    {
+      "word": "虽然",
+      "pinyin": "suīrán",
+      "meaning": "Mặc dù, tuy rằng",
+      "level": "HSK 3",
+      "example": "虽然天气很冷，但是他仍然坚持跑步。"
+    }
+  ],
+  "lessons": [
+    {
+      "id": "lesson-sample-1",
+      "title": "Bài 1: Cấu trúc câu chữ 把 trong HSK 3",
+      "level": "HSK 3",
+      "grammar": [
+        {
+          "pattern": "Chủ ngữ + 把 + Tân ngữ + Động từ + Thành phần khác",
+          "explanation": "Câu chữ 把 biểu thị sự tác động của chủ ngữ làm thay đổi trạng thái, vị trí của tân ngữ.",
+          "examples": [
+            {
+              "chinese": "请把书放在桌子上。",
+              "pinyin": "Qǐng bǎ shū fàng zài zhuōzi shang.",
+              "vietnamese": "Làm ơn để quyển sách lên trên bàn."
+            },
+            {
+              "chinese": "他把作业写完了。",
+              "pinyin": "Tā bǎ zuòyè xiě wán le.",
+              "vietnamese": "Anh ấy đã viết xong bài tập rồi."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

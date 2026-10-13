@@ -32,16 +32,22 @@ export default function AiTeacherStudioModal({
   initialTab = 'analysis', // 'analysis' | 'assignment' | 'lesson_plan'
   classrooms = [],
   currentClassId = null,
+  initialClassId = null,
   analyticsData = null,
+  classAnalytics = null,
   onPublishAssignment = null,
   onSaveLessonPlanToMaterials = null,
+  onSaveLessonPlan = null,
   showToast = () => {}
 }) {
   const [activeTab, setActiveTab] = useState(initialTab);
 
   // Selected Class
-  const [selectedClassId, setSelectedClassId] = useState(currentClassId || classrooms[0]?.id || '');
+  const [selectedClassId, setSelectedClassId] = useState(initialClassId || currentClassId || classrooms[0]?.id || '');
   const activeClass = classrooms.find(c => c.id === selectedClassId) || classrooms[0] || null;
+
+  const resolvedAnalytics = classAnalytics || analyticsData;
+  const saveLessonPlanFn = onSaveLessonPlan || onSaveLessonPlanToMaterials;
 
   // -------------------------------------------------------------
   // 1. AI CLASS ANALYSIS STATE
@@ -54,12 +60,12 @@ export default function AiTeacherStudioModal({
     setAnalyzingClass(true);
     try {
       const payload = {
-        totalStudents: analyticsData?.totalStudents || 10,
+        totalStudents: resolvedAnalytics?.totalStudents || 10,
         hskLevel: activeClass?.hsk_level || 'HSK 1',
-        averageScore: analyticsData?.averageScore || 75,
-        assignmentCompletion: analyticsData?.assignmentCompletion || 70,
-        attendanceRate: analyticsData?.attendanceRate || 80,
-        skillBreakdown: analyticsData?.skillBreakdown || { listening: 70, speaking: 65, reading: 75, writing: 60 }
+        averageScore: resolvedAnalytics?.averageScore || 75,
+        assignmentCompletion: resolvedAnalytics?.assignmentCompletion || 70,
+        attendanceRate: resolvedAnalytics?.attendanceRate || 80,
+        skillBreakdown: resolvedAnalytics?.skillBreakdown || { listening: 70, speaking: 65, reading: 75, writing: 60 }
       };
 
       const result = await analyzeClassWithAi(payload);
@@ -493,9 +499,12 @@ export default function AiTeacherStudioModal({
                       onChange={e => setAsgQuestionCount(Number(e.target.value))}
                       className="w-full p-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] font-bold text-[#243447] dark:text-white"
                     >
-                      <option value={5}>5 câu</option>
-                      <option value={10}>10 câu</option>
-                      <option value={15}>15 câu</option>
+                      <option value={5}>5 câu (Khởi động nhanh)</option>
+                      <option value={10}>10 câu (Tiêu chuẩn 15p)</option>
+                      <option value={15}>15 câu (Luyện tập sâu)</option>
+                      <option value={20}>20 câu (Bộ đề kiểm tra)</option>
+                      <option value={25}>25 câu (Đề thi giữa kỳ)</option>
+                      <option value={30}>30 câu (Đề thi hoàn chỉnh)</option>
                     </select>
                   </div>
                 </div>
@@ -755,10 +764,10 @@ export default function AiTeacherStudioModal({
                         <span>Sao chép</span>
                       </button>
 
-                      {onSaveLessonPlanToMaterials && (
+                      {saveLessonPlanFn && (
                         <button
                           onClick={() => {
-                            onSaveLessonPlanToMaterials({
+                            saveLessonPlanFn({
                               classroomId: selectedClassId,
                               title: lessonPlanResult.title,
                               content: JSON.stringify(lessonPlanResult, null, 2)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { 
   Send, 
   Mic, 
@@ -14,23 +14,39 @@ import {
   Bot,
   Headphones,
   Layers,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
+  Sliders,
+  Check
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
-import { CONVERSATIONS_DATA } from '../data/chineseData';
+import { ALL_CONVERSATION_SCENARIOS, SCENARIO_CATEGORIES } from '../data/conversationScenarios';
+import AiContextBadge from '../components/personalization/AiContextBadge';
 import { speakChinese, playSuccessSound, playClickSound } from '../utils/audio';
 import { triggerCloudSync } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
 import { sendTutorMessage } from '../services/aiTutorService';
 import ListeningPracticeView from '../components/depth/ListeningPracticeView';
 import GrammarEngineView from '../components/depth/GrammarEngineView';
+import AiTutorChatView from '../components/depth/AiTutorChatView';
 
 const STORAGE_KEY = 'hanzigo_ai_chat_history';
 
-export default function ConversationPage() {
-  const [activeDepthTab, setActiveDepthTab] = useState('conversation'); // 'conversation' | 'listening' | 'grammar'
-  const [selectedConvIndex, setSelectedConvIndex] = useState(0);
-  const conversation = CONVERSATIONS_DATA[selectedConvIndex];
+export default function ConversationPage({ user }) {
+  const [activeDepthTab, setActiveDepthTab] = useState('tutor'); // 'tutor' | 'conversation' | 'listening' | 'grammar'
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [selectedScenarioId, setSelectedScenarioId] = useState(ALL_CONVERSATION_SCENARIOS[0].id);
+  const [targetHskLevel, setTargetHskLevel] = useState(user?.hskLevel || 'HSK 1');
+  const [trackMistakesConsent, setTrackMistakesConsent] = useState(true);
+
+  const filteredScenarios = useMemo(() => {
+    if (activeCategory === 'all') return ALL_CONVERSATION_SCENARIOS;
+    return ALL_CONVERSATION_SCENARIOS.filter(s => s.category === activeCategory);
+  }, [activeCategory]);
+
+  const conversation = useMemo(() => {
+    return ALL_CONVERSATION_SCENARIOS.find(s => s.id === selectedScenarioId) || ALL_CONVERSATION_SCENARIOS[0];
+  }, [selectedScenarioId]);
 
   // Global chat history store { [convId]: messages[] }
   const [allChatHistory, setAllChatHistory] = useState(() => {
@@ -107,13 +123,16 @@ export default function ConversationPage() {
   }, [chatHistory, isAiTyping]);
 
   // Sync active scenario dialogue when switching
-  const handleSelectConversation = (idx) => {
+  const handleSelectScenario = (scenId) => {
     playClickSound();
-    setSelectedConvIndex(idx);
-    const newConv = CONVERSATIONS_DATA[idx];
+    setSelectedScenarioId(scenId);
+    const newConv = ALL_CONVERSATION_SCENARIOS.find(s => s.id === scenId) || ALL_CONVERSATION_SCENARIOS[0];
     const savedForConv = allChatHistory[newConv.id];
     setChatHistory(savedForConv && savedForConv.length > 0 ? savedForConv : newConv.dialogue);
     setAiFeedback(null);
+    if (newConv.level) {
+      setTargetHskLevel(newConv.level);
+    }
   };
 
   // Save conversation messages to persistent storage
@@ -157,8 +176,9 @@ export default function ConversationPage() {
 
     try {
       const aiReply = await sendTutorMessage(userMessageObj.hanzi, {
-        hskLevel: conversation.level || 'HSK 1',
-        conversationHistory: updatedWithUser
+        hskLevel: targetHskLevel || conversation.level || 'HSK 1',
+        conversationHistory: updatedWithUser,
+        userId: user?.id
       });
 
       const aiMsg = {
@@ -185,13 +205,34 @@ export default function ConversationPage() {
           rating: aiReply.provider === 'gemini' ? 'AI Tutor Gemini' : 'AI Offline Tutor',
           note: aiReply.userCorrection
         });
+
+        // Track communication error only with explicit user consent (Decree 13 compliance)
+        if (trackMistakesConsent) {
+          try {
+            const existingMistakes = JSON.parse(localStorage.getItem('hanzigo_conversation_mistakes') || '[]');
+            const newRecord = {
+              id: `conv-err-${Date.now()}`,
+              user_id: user?.id || 'guest',
+              scenario_id: conversation.id,
+              scenario_title: conversation.title,
+              user_sentence: userMessageObj.hanzi,
+              correction: aiReply.userCorrection,
+              hsk_level: targetHskLevel,
+              created_at: new Date().toISOString()
+            };
+            localStorage.setItem('hanzigo_conversation_mistakes', JSON.stringify([newRecord, ...existingMistakes.slice(0, 49)]));
+            window.dispatchEvent(new CustomEvent('hanzigo_progress_event', { detail: { action: 'conversation_mistake_recorded', data: newRecord } }));
+          } catch (e) {
+            console.warn('Ghi nhận lỗi giao tiếp không thành công:', e);
+          }
+        }
       }
     } catch (err) {
       console.warn('AI chat error:', err);
     } finally {
       setIsAiTyping(false);
     }
-  }, [chatHistory, conversation]);
+  }, [chatHistory, conversation, targetHskLevel, trackMistakesConsent, user]);
 
   // Handle custom input submission
   const handleCustomSend = (e) => {
@@ -338,8 +379,13 @@ export default function ConversationPage() {
           </p>
         </div>
 
-        {/* Global toggles & History Button */}
+        {/* Global toggles, Privacy badge & History Button */}
         <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+          <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+            <ShieldCheck size={14} className="text-emerald-600 dark:text-emerald-400" />
+            <span>Zero Audio Retention</span>
+          </div>
+
           <button
             onClick={() => setIsHistoryModalOpen(true)}
             className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-[#243447] dark:text-white hover:border-[#E85D3F] transition-colors flex items-center gap-1.5 shadow-xs"
@@ -382,6 +428,7 @@ export default function ConversationPage() {
       {/* Segmented Mode Switcher */}
       <div className="flex flex-wrap items-center justify-center gap-2 bg-white dark:bg-[#1E293B] p-2 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm max-w-2xl mx-auto">
         {[
+          { id: 'tutor', label: '🎓 Gia Sư AI Lão Sư (RAG)' },
           { id: 'conversation', label: '💬 Hội Thoại AI Tiểu Hàm' },
           { id: 'listening', label: '🎧 Listening Practice' },
           { id: 'grammar', label: '🧱 Grammar Engine' }
@@ -403,6 +450,11 @@ export default function ConversationPage() {
         ))}
       </div>
 
+      {/* MODE: AI TUTOR RAG (LÃO SƯ HANZIGO) */}
+      {activeDepthTab === 'tutor' && (
+        <AiTutorChatView user={user} />
+      )}
+
       {/* MODE: LISTENING PRACTICE */}
       {activeDepthTab === 'listening' && (
         <ListeningPracticeView />
@@ -416,24 +468,50 @@ export default function ConversationPage() {
       {/* MODE: CONVERSATION AI */}
       {activeDepthTab === 'conversation' && (
         <>
-          {/* Scenarios Carousel Pills */}
+          {/* Category Filter Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            {SCENARIO_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  playClickSound();
+                  setActiveCategory(cat.id);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeCategory === cat.id
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-slate-750'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Scenarios Carousel Pills for active category */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            {CONVERSATIONS_DATA.map((conv, idx) => {
-              const savedCount = allChatHistory[conv.id]?.length;
+            {filteredScenarios.map((scen) => {
+              const savedCount = allChatHistory[scen.id]?.length;
               return (
                 <button
-                  key={conv.id}
-                  onClick={() => handleSelectConversation(idx)}
-                  className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
-                    selectedConvIndex === idx
+                  key={scen.id}
+                  onClick={() => handleSelectScenario(scen.id)}
+                  className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
+                    selectedScenarioId === scen.id
                       ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
                       : 'bg-white dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:bg-[#FFF9F2]'
                   }`}
                 >
-                  <span>{conv.title}</span>
+                  <span>{scen.title}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${
+                    selectedScenarioId === scen.id ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                  }`}>
+                    {scen.level || 'HSK 1'}
+                  </span>
                   {savedCount > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                      selectedConvIndex === idx ? 'bg-white/20 text-white' : 'bg-[#FFF9F2] text-[#E85D3F]'
+                      selectedScenarioId === scen.id ? 'bg-white/20 text-white' : 'bg-[#FFF9F2] text-[#E85D3F]'
                     }`}>
                       {savedCount}
                     </span>
@@ -444,10 +522,10 @@ export default function ConversationPage() {
           </div>
 
           {/* Main Dialogue Box */}
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl overflow-hidden flex flex-col h-[600px]">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl overflow-hidden flex flex-col h-[650px]">
         
-        {/* Scenario Header Bar */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-[#FFF9F2] to-white dark:from-[#131B24] dark:to-[#1E293B] border-b border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
+        {/* Scenario Header Bar with Adjustable Proficiency & Privacy Controls */}
+        <div className="p-4 sm:p-5 bg-gradient-to-r from-[#FFF9F2] to-white dark:from-[#131B24] dark:to-[#1E293B] border-b border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <img 
               src={conversation.avatar} 
@@ -473,25 +551,56 @@ export default function ConversationPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Adjustable Proficiency */}
+            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+              <span className="text-[10px] text-slate-400 font-bold uppercase">Trình độ:</span>
+              <select
+                value={targetHskLevel}
+                onChange={(e) => setTargetHskLevel(e.target.value)}
+                className="font-bold text-[#E85D3F] bg-transparent outline-none cursor-pointer text-xs"
+              >
+                {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map(lvl => (
+                  <option key={lvl} value={lvl} className="text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800">
+                    {lvl}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Tracking Mistake Consent (Decree 13 / GDPR Privacy) */}
+            <label 
+              title="Khi bật, AI sẽ ghi nhận các lỗi sửa câu vào sổ tay học tập để đề xuất bài tập khắc phục. Tắt để giữ hoàn toàn riêng tư."
+              className="hidden lg:flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer select-none"
+            >
+              <input
+                type="checkbox"
+                checked={trackMistakesConsent}
+                onChange={(e) => setTrackMistakesConsent(e.target.checked)}
+                className="w-3.5 h-3.5 text-amber-500 rounded border-slate-300 focus:ring-amber-500 cursor-pointer"
+              />
+              <span>Ghi nhận lỗi sửa câu</span>
+            </label>
+
+            {/* Actions */}
             <button
               onClick={handleCopyTranscript}
               title="Sao chép toàn bộ hội thoại"
-              className="p-2 rounded-xl text-[#748092] hover:text-[#243447] dark:hover:text-white hover:bg-white dark:hover:bg-[#131B24] transition-colors"
+              className="p-2 rounded-xl text-[#748092] hover:text-[#243447] dark:hover:text-white hover:bg-white dark:hover:bg-[#131B24] transition-colors cursor-pointer"
             >
               <Copy size={16} />
             </button>
             <button
               onClick={handleDownloadTranscript}
               title="Tải về file ghi chú (.txt)"
-              className="p-2 rounded-xl text-[#748092] hover:text-[#243447] dark:hover:text-white hover:bg-white dark:hover:bg-[#131B24] transition-colors"
+              className="p-2 rounded-xl text-[#748092] hover:text-[#243447] dark:hover:text-white hover:bg-white dark:hover:bg-[#131B24] transition-colors cursor-pointer"
             >
               <Download size={16} />
             </button>
             <button
               onClick={handleResetChat}
               title="Đặt lại kịch bản ban đầu"
-              className="p-2 rounded-xl text-[#748092] hover:text-[#243447] dark:hover:text-white hover:bg-white dark:hover:bg-[#131B24] transition-colors"
+              className="p-2 rounded-xl text-[#748092] hover:text-[#243447] dark:hover:text-white hover:bg-white dark:hover:bg-[#131B24] transition-colors cursor-pointer"
             >
               <RotateCcw size={16} />
             </button>

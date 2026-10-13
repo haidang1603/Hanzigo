@@ -15,6 +15,7 @@
 
 import { checkRateLimitAndQuota } from '../_utils/distributedRateLimiter.js';
 import { verifyRequestAuth } from '../_utils/supabaseServer.js';
+import { callUnifiedAiProvider } from '../_utils/aiProviderAdapter.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 20;     // 20 requests per minute
@@ -111,14 +112,6 @@ export default async function handler(req, res) {
     });
   }
 
-  // 5. GEMINI_API_KEY Check
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(503).json({
-      error: 'Hệ thống AI đang bảo trì. Vui lòng thử lại sau.'
-    });
-  }
-
   // Validate HSK Level
   const safeHskLevel = ALLOWED_HSK_LEVELS.includes(hskLevel) ? hskLevel : 'HSK 1';
 
@@ -130,56 +123,42 @@ export default async function handler(req, res) {
           : String(msg || '').slice(0, MAX_HISTORY_MSG_LENGTH);
         const role = msg && typeof msg === 'object' && (msg.sender === 'user' || msg.speaker === 'user') 
           ? 'user' 
-          : 'model';
+          : 'assistant';
         return {
           role,
-          parts: [{ text: rawText }]
+          content: rawText
         };
       })
     : [];
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-  const contents = [
-    {
-      role: 'user',
-      parts: [{ text: `${SYSTEM_PROMPT}\nTrình độ hiện tại của học viên: ${safeHskLevel}` }]
-    },
+  const messages = [
+    { role: 'system', content: `${SYSTEM_PROMPT}\nTrình độ hiện tại của học viên: ${safeHskLevel}` },
     ...safeHistory,
-    {
-      role: 'user',
-      parts: [{ text: `Câu người học vừa nói: "${cleanUserText}"` }]
-    }
+    { role: 'user', content: `Câu người học vừa nói: "${cleanUserText}"` }
   ];
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1000, // Enforce maximum output bounds
-          responseMimeType: 'application/json'
-        }
-      })
+    const aiResult = await callUnifiedAiProvider({
+      action: 'conversation_chat',
+      messages,
+      temperature: 0.7,
+      maxTokens: 1000
     });
 
-    if (!response.ok) {
-      console.error('Gemini API call failed with status:', response.status);
-      return res.status(502).json({
-        error: 'Dịch vụ AI phản hồi không thành công. Vui lòng thử lại sau.'
+    if (!aiResult.success) {
+      return res.status(aiResult.status || 502).json({
+        error: aiResult.error || 'Dịch vụ AI phản hồi không thành công. Vui lòng thử lại sau.'
       });
     }
 
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) {
-      return res.status(502).json({ error: 'Không nhận được dữ liệu phản hồi từ AI.' });
-    }
-
-    const parsed = JSON.parse(rawText);
+    const parsed = aiResult.data || {};
+    parsed._metadata = {
+      provider: aiResult.provider,
+      model: aiResult.model,
+      usage: aiResult.usage,
+      costUsd: aiResult.costUsd || 0,
+      latencyMs: aiResult.latencyMs
+    };
     return res.status(200).json(parsed);
   } catch (err) {
     // Sanitized internal error logging

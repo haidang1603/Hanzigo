@@ -30,6 +30,9 @@ import AudioButton from '../components/AudioButton';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
 import { ROADMAP_LEVELS } from '../data/chineseData';
 import { getLessonsByChapter } from '../services/learningPathService';
+import useAiPersonalization from '../hooks/useAiPersonalization.js';
+import PersonalizedRecommendationCard from '../components/personalization/PersonalizedRecommendationCard.jsx';
+import AiContextBadge from '../components/personalization/AiContextBadge.jsx';
 
 // Mini Quick Reflex Quiz Dataset
 const QUICK_QUIZZES = [
@@ -190,6 +193,9 @@ const FAQS = [
 ];
 
 export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openAuthModal, onSelectLesson }) {
+  // AI Personalization hook
+  const { studyPlan, learnerContext } = useAiPersonalization(user);
+
   // Showcase Tab State
   const [showcaseTab, setShowcaseTab] = useState('vocab');
 
@@ -553,6 +559,98 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
         </div>
       </section>
 
+      {/* 1.5 PERSONALIZED RECOMMENDATION SECTION */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 -mt-8 sm:-mt-12">
+        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-white via-orange-50/30 to-amber-50/20 dark:from-[#1E293B] dark:via-[#1A232E] dark:to-[#131B24] border border-orange-200/80 dark:border-gray-800 shadow-xl relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-orange-100 dark:border-gray-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#E85D3F]/10 flex items-center justify-center text-[#E85D3F]">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white">
+                    Gợi ý Học tập Cá nhân hóa Hôm nay
+                  </h3>
+                  <AiContextBadge type={studyPlan?.isOffline ? 'offline_rule' : 'ai_pedagogy'} size="xs" />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {learnerContext.hasSparseData 
+                    ? 'Chế độ khởi đầu thông minh cho người học mới' 
+                    : `Tối ưu cho mục tiêu: ${learnerContext.learningGoal === 'hsk_exam' ? 'Luyện thi HSK' : learnerContext.learningGoal === 'daily_communication' ? 'Giao tiếp hàng ngày' : 'Nền tảng HSK 3.0'} (${learnerContext.hskLevel})`}
+                </p>
+              </div>
+            </div>
+            {studyPlan?.durationMinutes && (
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/50 text-[#E85D3F] shrink-0 self-start sm:self-auto">
+                Mục tiêu: {studyPlan.durationMinutes} phút/ngày
+              </span>
+            )}
+          </div>
+
+          {/* Body: Cold-start onboarding OR Personalized Tasks */}
+          {learnerContext.hasSparseData ? (
+            <div className="mt-5 p-5 rounded-2xl bg-white/80 dark:bg-gray-800/80 border border-orange-100 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-5">
+              <div className="space-y-1.5 text-center sm:text-left">
+                <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Khởi đầu cá nhân hóa</span>
+                <h4 className="text-base font-bold text-gray-900 dark:text-gray-100">
+                  Xác định trình độ hoặc bắt đầu bài 1
+                </h4>
+                <p className="text-xs text-gray-600 dark:text-gray-300 max-w-xl">
+                  Để AI Lão Sư đề xuất bài học chính xác nhất, bạn có thể làm bài kiểm tra nhanh 5 phút hoặc bắt đầu ngay từ Bài 1 (Phát âm Pinyin & 4 thanh điệu).
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto">
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    if (onSelectLesson) onSelectLesson('l-101');
+                    else setActiveTab('roadmap');
+                  }}
+                  className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#D44D31] text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>Học Bài 1</span>
+                </button>
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    setActiveTab('roadmap');
+                  }}
+                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-white dark:bg-gray-700 border border-orange-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold hover:bg-orange-50 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Compass className="w-4 h-4 text-amber-500" />
+                  <span>Xếp lớp (Placement)</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-5 space-y-3.5">
+              {studyPlan?.summary && (
+                <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 italic leading-relaxed bg-white/70 dark:bg-gray-800/60 p-3.5 rounded-2xl border border-orange-100/60 dark:border-gray-700">
+                  &ldquo;{studyPlan.summary}&rdquo;
+                </p>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                {(studyPlan?.dailyPlan || []).slice(0, 2).map((item) => (
+                  <PersonalizedRecommendationCard
+                    key={item.id}
+                    item={item}
+                    onNavigate={(route, targetRef) => {
+                      playClickSound();
+                      if (route === 'roadmap' && targetRef && onSelectLesson) {
+                        onSelectLesson(targetRef);
+                      } else {
+                        setActiveTab(route);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* 3. MINI REFLEX GAME (THỬ TÀI PHẢN XẠ HÁN NGỮ 1 PHÚT) */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">

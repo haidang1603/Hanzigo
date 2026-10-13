@@ -11,6 +11,7 @@
 
 import { checkRateLimitAndQuota } from '../_utils/distributedRateLimiter.js';
 import { verifyRequestAuth } from '../_utils/supabaseServer.js';
+import { callUnifiedAiProvider } from '../_utils/aiProviderAdapter.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 15;
@@ -149,15 +150,7 @@ export default async function handler(req, res) {
     });
   }
 
-  // 4. Server API Key verification
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(503).json({
-      error: 'GEMINI_API_KEY is not configured on the server. Sẽ sử dụng bộ cố vấn sư phạm ngoại tuyến.'
-    });
-  }
-
-  // 5. Construct Prompts
+  // 4. Construct Prompts
   const { 
     hskLevel = 'HSK 1', 
     learningGoal = 'general_foundation',
@@ -200,48 +193,29 @@ export default async function handler(req, res) {
 
 Hãy đóng vai Lão Sư HanziGo, đưa ra phân tích, điểm yếu, đề xuất bài học tiếp theo, bài cần ôn lại, tài liệu từ Materials và tạo kế hoạch học tập chi tiết ${durationMinutes} phút hôm nay theo đúng cấu trúc JSON quy định.`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-  const contents = [
-    {
-      role: 'user',
-      parts: [{ text: `${SYSTEM_PROMPT_COACH}\n\nYêu cầu phân tích học viên:\n${userPrompt}` }]
-    }
-  ];
-
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature: 0.6,
-          maxOutputTokens: 1200,
-          responseMimeType: 'application/json'
-        }
-      })
+    const aiResult = await callUnifiedAiProvider({
+      action: 'coach_plan',
+      systemPrompt: SYSTEM_PROMPT_COACH,
+      userPrompt,
+      temperature: 0.6,
+      maxTokens: 1200
     });
 
-    if (!response.ok) {
-      return res.status(502).json({
-        error: 'Dịch vụ AI phản hồi không thành công. Hệ thống sẽ tự động chuyển sang chế độ ngoại tuyến.'
+    if (!aiResult.success) {
+      return res.status(aiResult.status || 502).json({
+        error: aiResult.error || 'Dịch vụ AI phản hồi không thành công. Hệ thống sẽ tự động chuyển sang chế độ ngoại tuyến.'
       });
     }
 
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!rawText) {
-      return res.status(502).json({ error: 'AI không tạo được phản hồi phù hợp.' });
-    }
-
-    let parsedResult;
-    try {
-      parsedResult = JSON.parse(rawText);
-    } catch {
-      return res.status(502).json({ error: 'Phản hồi từ AI không đúng chuẩn JSON.' });
-    }
+    const parsedResult = aiResult.data || {};
+    parsedResult._metadata = {
+      provider: aiResult.provider,
+      model: aiResult.model,
+      usage: aiResult.usage,
+      costUsd: aiResult.costUsd || 0,
+      latencyMs: aiResult.latencyMs
+    };
 
     return res.status(200).json(parsedResult);
   } catch (err) {

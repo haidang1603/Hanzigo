@@ -70,6 +70,7 @@ import {
 } from '../data/hskResourcesData';
 import ResourceDetailModal from '../components/ResourceDetailModal';
 import { HskReportModal } from '../components/HskPhase3Components';
+import PersonalizedMaterialsSection from '../components/personalization/PersonalizedMaterialsSection';
 
 // Featured Exclusive Interactive Tools in HanziGo
 const FEATURED_EXCLUSIVE_TOOLS = [
@@ -1183,6 +1184,13 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
           </button>
         </div>
       )}
+
+      {/* 1.5. ĐỀ XUẤT HỌC LIỆU CÁ NHÂN HÓA DỰA TRÊN MỤC TIÊU & ĐIỂM YẾU */}
+      <PersonalizedMaterialsSection
+        user={user}
+        materials={materials}
+        onSelectResource={(item) => setActiveDetailResource(item)}
+      />
 
       {/* 2. CURATED LEVEL STARTER PACKS (CHỌN NHANH THEO TRÌNH ĐỘ HSK) */}
       <div className="space-y-4">

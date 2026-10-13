@@ -14,6 +14,8 @@ import {
   evaluateGrammarExercise 
 } from '../../services/grammarEngineService';
 import { speakChinese, playSuccessSound, playClickSound, playErrorSound } from '../../utils/audio';
+import AiContextBadge from '../personalization/AiContextBadge.jsx';
+import { getContextualGrammarExplanation } from '../../services/aiGateway.js';
 
 export default function GrammarEngineView() {
   const lessons = getGrammarLessons('all');
@@ -29,6 +31,11 @@ export default function GrammarEngineView() {
   const [textInput, setTextInput] = useState('');
   const [evaluation, setEvaluation] = useState(null);
 
+  // AI Grammar Analysis state
+  const [aiGrammarData, setAiGrammarData] = useState(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
+
   const handleLessonChange = (idx) => {
     playClickSound();
     setSelectedLessonIndex(idx);
@@ -36,6 +43,24 @@ export default function GrammarEngineView() {
     setSelectedTokens([]);
     setTextInput('');
     setEvaluation(null);
+    setAiGrammarData(null);
+    setShowAiModal(false);
+  };
+
+  const handleFetchAiGrammar = async () => {
+    playClickSound();
+    setIsAiLoading(true);
+    setShowAiModal(true);
+    try {
+      const res = await getContextualGrammarExplanation(currentLesson.title, currentLesson.level);
+      if (res && res.data) {
+        setAiGrammarData(res.data);
+      }
+    } catch (err) {
+      console.warn('AI grammar notice:', err.message);
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const handleExerciseChange = (idx) => {
@@ -120,16 +145,81 @@ export default function GrammarEngineView() {
       </div>
 
       {/* 1. PATTERN BANNER */}
-      <div className="p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F4B942]/40 space-y-1">
-        <span className="text-[11px] font-bold text-[#D97706] uppercase tracking-wider block">
-          Công thức Ngữ pháp (Pattern):
-        </span>
+      <div className="p-4 sm:p-5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F4B942]/40 space-y-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-[#D97706] uppercase tracking-wider block">
+              Công thức Ngữ pháp (Pattern):
+            </span>
+            <AiContextBadge type="official_dict" size="xs" />
+          </div>
+          <button
+            type="button"
+            onClick={handleFetchAiGrammar}
+            disabled={isAiLoading}
+            className="px-3 py-1.5 rounded-xl bg-orange-100 hover:bg-orange-200 dark:bg-orange-950/60 dark:hover:bg-orange-900/60 text-[#E85D3F] dark:text-orange-300 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <Sparkles size={13} className={isAiLoading ? 'animate-spin' : ''} />
+            <span>{isAiLoading ? 'Đang phân tích...' : '✨ Lão Sư AI: Phân tích sâu & Lỗi người Việt'}</span>
+          </button>
+        </div>
         <p className="text-base sm:text-lg font-black text-[#243447] dark:text-white font-mono">
           {currentLesson.pattern}
         </p>
-        <p className="text-xs text-[#748092] leading-relaxed pt-1">
+        <p className="text-xs text-[#748092] dark:text-gray-400 leading-relaxed pt-1">
           {currentLesson.explanation}
         </p>
+
+        {/* AI In-depth Explanation Drawer / Box */}
+        {showAiModal && aiGrammarData && (
+          <div className="mt-3 p-4 rounded-xl bg-white dark:bg-[#1E293B] border border-orange-200 dark:border-gray-700 space-y-3 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-xs text-gray-900 dark:text-gray-100">
+                  Phân tích Sư phạm Chuyên sâu (Tiếng Việt)
+                </span>
+                <AiContextBadge type={aiGrammarData.isOffline ? 'offline_rule' : 'ai_pedagogy'} size="xs" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAiModal(false)}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Đóng
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+              {aiGrammarData.explanationVi}
+            </p>
+
+            {/* Common Mistakes Table */}
+            {aiGrammarData.commonMistakes && aiGrammarData.commonMistakes.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 block uppercase">
+                  Lỗi người Việt hay mắc phải:
+                </span>
+                <div className="space-y-2">
+                  {aiGrammarData.commonMistakes.map((m, mi) => (
+                    <div key={mi} className="p-2.5 rounded-lg bg-rose-50/60 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 text-xs space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-rose-600 font-bold">❌ Câu sai:</span>
+                        <span className="line-through text-gray-700 dark:text-gray-300">{m.wrong}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-600 font-bold">✔️ Sửa đúng:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{m.correct}</span>
+                      </div>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 italic">
+                        Lý do: {m.reason}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 2. EXAMPLES CAROUSEL / LIST */}

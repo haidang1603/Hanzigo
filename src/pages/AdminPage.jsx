@@ -25,8 +25,10 @@ import {
   EyeOff,
   Crown,
   Activity,
-  Check
+  Check,
+  Cpu
 } from 'lucide-react';
+import AiMonitoringDashboard from '../components/admin/AiMonitoringDashboard';
 import { 
   getStoredMaterials, 
   saveMaterial, 
@@ -1002,6 +1004,21 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
           <Upload size={16} />
           <span>Sao lưu & Hệ thống</span>
         </button>
+
+        <button
+          onClick={() => {
+            playClickSound();
+            setAdminTab('ai_metrics');
+          }}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+            adminTab === 'ai_metrics'
+              ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
+              : 'text-[#748092] dark:text-[#94A3B8] hover:bg-black/5 dark:hover:bg-white/5'
+          }`}
+        >
+          <Cpu size={16} />
+          <span>Giám sát AI & Chi phí</span>
+        </button>
       </div>
 
       {/* ============================================================== */}
@@ -1694,6 +1711,13 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* TAB 6: AI MONITORING & COST (GIÁM SÁT AI & CHI PHÍ) */}
+      {/* ============================================================== */}
+      {adminTab === 'ai_metrics' && (
+        <AiMonitoringDashboard />
       )}
 
       {/* ============================================================== */}

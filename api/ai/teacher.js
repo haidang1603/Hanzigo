@@ -15,6 +15,7 @@
 
 import { checkRateLimitAndQuota } from '../_utils/distributedRateLimiter.js';
 import { verifyRequestAuth } from '../_utils/supabaseServer.js';
+import { callUnifiedAiProvider } from '../_utils/aiProviderAdapter.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
@@ -84,11 +85,12 @@ Chỉ trả về chuỗi JSON thuần túy, không có văn bản thừa.
 `;
 
 const SYSTEM_PROMPT_GENERATE_ASSIGNMENT = `
-Bạn là Trợ lý Soạn Đề thi & Bài tập Tiếng Trung cho giáo viên.
-Tạo bộ câu hỏi đa kỹ năng bao gồm đủ 5 kỹ năng: Vocabulary, Grammar, Listening, Reading, Speaking bám sát chủ đề và chuẩn khung HSK.
+Bạn là Trợ lý Soạn Đề thi & Bài tập Tiếng Trung Sư phạm cho giáo viên HanziGo.
+Nhiệm vụ: Tạo bộ câu hỏi đa kỹ năng (Vocabulary, Grammar, Listening, Reading, Speaking) bám sát chủ đề và chuẩn khung HSK.
+Tạo chính xác đúng số lượng câu hỏi được yêu cầu (từ 5 đến 30 câu). Luân phiên phân bổ đều giữa 5 kỹ năng.
 Chú ý: Bộ đề do AI soạn là bản nháp chờ giáo viên duyệt (DRAFT_REQUIRES_TEACHER_REVIEW), không được tự động xuất bản (published: false).
 
-Yêu cầu trả về BẮT BUỘC theo định dạng JSON với cấu trúc sau:
+Yêu cầu trả về BẮT BUỘC theo định dạng JSON thuần túy (không bọc markdown) với cấu trúc sau:
 {
   "title": "Tiêu đề bài tập",
   "topic": "Chủ đề bài tập",
@@ -240,6 +242,9 @@ export default async function handler(req, res) {
   let systemPrompt = '';
   let userPrompt = '';
 
+  let requestedTokens = 1200;
+  let requestedTimeout = 20000;
+
   if (action === 'analyze_class') {
     systemPrompt = SYSTEM_PROMPT_ANALYZE_CLASS;
     const { totalStudents, averageScore, assignmentCompletion, attendanceRate, hskLevel = 'HSK 1', skillBreakdown } = payload;
@@ -251,13 +256,19 @@ export default async function handler(req, res) {
 - Tỷ lệ chuyên cần tham gia: ${attendanceRate || 0}%
 - Điểm kỹ năng tương đối: Nghe (${skillBreakdown?.listening || 70}%), Nói (${skillBreakdown?.speaking || 65}%), Đọc (${skillBreakdown?.reading || 75}%), Viết (${skillBreakdown?.writing || 60}%)
 Hãy phân tích điểm mạnh, điểm yếu và đưa ra khuyến nghị bài tập tiếp theo cho giáo viên.`;
+    requestedTokens = 1200;
+    requestedTimeout = 15000;
 
   } else if (action === 'generate_assignment') {
     systemPrompt = SYSTEM_PROMPT_GENERATE_ASSIGNMENT;
-    const { hskLevel = 'HSK 1', topic = 'Cuộc sống hàng ngày', questionCount = 5, assignmentType = 'Quiz' } = payload;
-    const countClamped = Math.min(Math.max(Number(questionCount) || 5, 1), 15);
+    const { hskLevel = 'HSK 1', topic = 'Cuộc sống hàng ngày', questionCount = 10, assignmentType = 'Quiz' } = payload;
+    const countClamped = Math.min(Math.max(Number(questionCount) || 5, 1), 30);
     const sanitizedTopic = String(topic).slice(0, 100);
-    userPrompt = `Hãy tạo ${countClamped} câu hỏi trắc nghiệm tiếng Trung cho cấp độ ${hskLevel}, dạng bài ${assignmentType}, chủ đề: "${sanitizedTopic}". Mỗi câu có 4 đáp án và giải thích tiếng Việt.`;
+    userPrompt = `Hãy tạo chính xác ${countClamped} câu hỏi trắc nghiệm tiếng Trung cho cấp độ ${hskLevel}, dạng bài ${assignmentType}, chủ đề: "${sanitizedTopic}".
+Bộ câu hỏi cần phân bổ đều các kỹ năng: Vocabulary, Grammar, Listening, Reading, Speaking.
+Mỗi câu có 4 đáp án (A, B, C, D), ghi rõ đáp án đúng và giải thích ngắn gọn bằng tiếng Việt.`;
+    requestedTokens = Math.min(Math.max(countClamped * 280, 2000), 8000);
+    requestedTimeout = Math.min(Math.max(countClamped * 2000, 45000), 75000);
 
   } else if (action === 'generate_lesson_plan') {
     systemPrompt = SYSTEM_PROMPT_GENERATE_LESSON_PLAN;
@@ -265,56 +276,30 @@ Hãy phân tích điểm mạnh, điểm yếu và đưa ra khuyến nghị bài
     const durClamped = Math.min(Math.max(Number(duration) || 45, 15), 120);
     const sanitizedTopic = String(topic).slice(0, 100);
     userPrompt = `Soạn giáo án chi tiết cho tiết học ${durClamped} phút, cấp độ ${hskLevel}, chủ đề: "${sanitizedTopic}".${targetOutcomes ? ` Mục tiêu cần đạt: ${String(targetOutcomes).slice(0, 150)}` : ''}`;
+    requestedTokens = 2000;
+    requestedTimeout = 45000;
 
   } else {
     return res.status(400).json({ error: `Unknown action: ${action}` });
   }
 
-  // GEMINI_API_KEY verification on server
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(503).json({
-      error: 'GEMINI_API_KEY is not configured on the server. Sẽ sử dụng bộ mô phỏng sư phạm ngoại tuyến.'
-    });
-  }
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-  const contents = [
-    {
-      role: 'user',
-      parts: [{ text: `${systemPrompt}\n\nYêu cầu cụ thể từ giáo viên:\n${userPrompt}` }]
-    }
-  ];
-
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature: 0.6,
-          maxOutputTokens: 1000,
-          responseMimeType: 'application/json'
-        }
-      })
+    const aiResult = await callUnifiedAiProvider({
+      action,
+      systemPrompt,
+      userPrompt,
+      temperature: 0.6,
+      maxTokens: requestedTokens,
+      timeoutMs: requestedTimeout
     });
 
-    if (!response.ok) {
-      console.error('Gemini API call failed with status:', response.status);
-      return res.status(502).json({
-        error: 'Dịch vụ AI phản hồi không thành công. Vui lòng thử lại sau.'
+    if (!aiResult.success) {
+      return res.status(aiResult.status || 502).json({
+        error: aiResult.error || 'Dịch vụ AI phản hồi không thành công. Vui lòng thử lại sau.'
       });
     }
 
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) {
-      return res.status(502).json({ error: 'Không nhận được dữ liệu phản hồi từ AI.' });
-    }
-
-    const parsed = JSON.parse(rawText);
+    const parsed = aiResult.data || {};
     if (action === 'generate_assignment') {
       parsed.status = 'DRAFT_REQUIRES_TEACHER_REVIEW';
       parsed.published = false;
@@ -323,6 +308,14 @@ Hãy phân tích điểm mạnh, điểm yếu và đưa ra khuyến nghị bài
       parsed.status = 'DRAFT_REQUIRES_TEACHER_REVIEW';
       parsed.published = false;
     }
+    parsed._metadata = {
+      action,
+      provider: aiResult.provider,
+      model: aiResult.model,
+      usage: aiResult.usage,
+      costUsd: aiResult.costUsd || 0,
+      latencyMs: aiResult.latencyMs
+    };
     return res.status(200).json(parsed);
   } catch (err) {
     console.error('Serverless Teacher AI error:', err.message);

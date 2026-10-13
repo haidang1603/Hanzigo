@@ -15,8 +15,11 @@ import {
   Upload,
   X,
   Check,
-  Shield
+  Shield,
+  Sparkles
 } from 'lucide-react';
+import PersonalizationSettingsModal from '../components/personalization/PersonalizationSettingsModal.jsx';
+import { isPersonalizationEnabled } from '../services/learnerContextService.js';
 import { playClickSound, playSuccessSound } from '../utils/audio';
 import { calculateTotalXp, getStreakStatus, getUserLevelInfo, getUserStorageKey } from '../utils/gamification';
 import { evaluateUserAchievements } from '../services/gamificationService';
@@ -67,6 +70,7 @@ export default function ProfilePage({
   const [learningGoal, setLearningGoal] = useState(() => getUserLearningGoal(user));
   const [showSavedToast, setShowSavedToast] = useState(false);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
+  const [isPersonalizationModalOpen, setIsPersonalizationModalOpen] = useState(false);
 
   // Edit Profile Modal States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -991,6 +995,38 @@ export default function ProfilePage({
             </button>
           </div>
 
+          {/* AI Personalization Deep Settings Banner */}
+          <div className="p-4 rounded-2xl bg-orange-50/70 dark:bg-gray-800/60 border border-orange-200/80 dark:border-gray-700 space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-[#E85D3F]" />
+                <span className="text-xs font-bold text-[#243447] dark:text-white">
+                  Động cơ Cá nhân hóa AI (Lão Sư HanziGo)
+                </span>
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                isPersonalizationEnabled(user)
+                  ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+              }`}>
+                {isPersonalizationEnabled(user) ? 'Đang kích hoạt' : 'Đã tắt'}
+              </span>
+            </div>
+            <p className="text-[11px] text-[#748092] dark:text-gray-400">
+              Tùy biến cấp độ HSK mục tiêu, ngày thi đếm ngược, ngôn ngữ giảng giải, xuất dữ liệu học tập hoặc xóa lịch sử phân tích.
+            </p>
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setIsPersonalizationModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-gray-700 border border-orange-200 dark:border-gray-600 text-[#E85D3F] dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-gray-600 font-bold text-xs transition-colors flex items-center gap-1.5"
+              >
+                <Sparkles size={13} />
+                <span>Mở Cài đặt Cá nhân hóa AI & Dữ liệu</span>
+              </button>
+            </div>
+          </div>
+
           <div className="pt-4">
             <button
               type="submit"
@@ -1009,6 +1045,13 @@ export default function ProfilePage({
         onClose={() => setIsStreakModalOpen(false)} 
         user={user} 
         onNavigateTab={setActiveTab}
+      />
+
+      {/* AI Personalization Deep Settings Modal */}
+      <PersonalizationSettingsModal
+        isOpen={isPersonalizationModalOpen}
+        onClose={() => setIsPersonalizationModalOpen(false)}
+        user={user}
       />
 
     </div>

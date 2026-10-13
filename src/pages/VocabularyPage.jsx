@@ -30,6 +30,8 @@ import { triggerCloudSync, getVocabularyFromDb, addVocabularyToDb } from '../sup
 import { awardXp, getUserStorageKey, getLocalDateString } from '../utils/gamification';
 import { calculateNextSrsReview, SRS_QUALITY } from '../utils/srsEngine';
 import { saveUserVocabSrsCard, updateDailyMissionProgress } from '../services';
+import AiContextBadge from '../components/personalization/AiContextBadge.jsx';
+import { getPersonalizedExercises } from '../services/aiGateway.js';
 
 const STORAGE_REMEMBERED = 'hanzigo_vocab_remembered';
 const STORAGE_REVIEW = 'hanzigo_vocab_review';
@@ -265,6 +267,8 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
   const [newExampleHanzi, setNewExampleHanzi] = useState('');
   const [newExamplePinyin, setNewExamplePinyin] = useState('');
   const [newExampleMeaning, setNewExampleMeaning] = useState('');
+  const [aiGeneratedExample, setAiGeneratedExample] = useState(null);
+  const [isGeneratingExample, setIsGeneratingExample] = useState(false);
 
   // Auto-detect vocabulary when typing in Add Modal
   const matchedVocabInDict = useMemo(() => {
@@ -318,6 +322,8 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
         matchesStatus = reviewIds.includes(item.id);
       } else if (statusFilter === 'custom') {
         matchesStatus = !!item.isCustom;
+      } else if (statusFilter === 'srs_priority') {
+        matchesStatus = reviewIds.includes(item.id) || !rememberedIds.includes(item.id);
       }
 
       let matchesLength = true;
@@ -343,14 +349,33 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
   const handleNextCard = useCallback(() => {
     playClickSound();
     setIsFlipped(false);
+    setAiGeneratedExample(null);
     setCurrentIndex(prev => (prev < filteredVocab.length - 1 ? prev + 1 : 0));
   }, [filteredVocab.length]);
 
   const handlePrevCard = useCallback(() => {
     playClickSound();
     setIsFlipped(false);
+    setAiGeneratedExample(null);
     setCurrentIndex(prev => (prev > 0 ? prev - 1 : Math.max(0, filteredVocab.length - 1)));
   }, [filteredVocab.length]);
+
+  // AI Contextual Example generator
+  const handleGenerateAiExample = useCallback(async (card) => {
+    if (!card) return;
+    setIsGeneratingExample(true);
+    try {
+      const res = await getPersonalizedExercises(card.hanzi, card.level, 'contextual_sentence', user);
+      if (res && res.data && res.data.drills && res.data.drills.length > 0) {
+        setAiGeneratedExample(res.data.drills[0]);
+        playSuccessSound();
+      }
+    } catch (err) {
+      console.warn('AI example generation notice:', err.message);
+    } finally {
+      setIsGeneratingExample(false);
+    }
+  }, [user]);
 
   // Handle SM-2 Spaced Repetition Rating
   const handleSrsRate = useCallback((card, quality) => {
@@ -829,7 +854,8 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
               { id: 'all', label: 'Tất cả' },
               { id: 'custom', label: `🌟 Tự thêm (${customVocabCount})` },
               { id: 'remembered', label: 'Đã nhớ' },
-              { id: 'review', label: 'Cần ôn' }
+              { id: 'review', label: 'Cần ôn' },
+              { id: 'srs_priority', label: '🔥 AI Ưu tiên ôn' }
             ].map(f => (
               <button
                 key={f.id}
@@ -1084,7 +1110,10 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
                   {currentCard.example && (
                     <div className="text-xs space-y-0.5 pt-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-[#243447] dark:text-white">Ví dụ thực tế:</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-[#243447] dark:text-white">Ví dụ từ điển:</span>
+                          <AiContextBadge type="official_dict" size="xs" />
+                        </div>
                         <AudioButton text={currentCard.example.hanzi} size="sm" />
                       </div>
                       <p className="text-[#243447] dark:text-white font-medium">{currentCard.example.hanzi}</p>
@@ -1092,6 +1121,39 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
                         <p className="text-[11px] text-[#E85D3F]">{currentCard.example.pinyin}</p>
                       )}
                       <p className="text-[11px] text-[#748092] dark:text-[#94A3B8]">{currentCard.example.meaning}</p>
+                    </div>
+                  )}
+
+                  {/* AI Contextual Generated Drill */}
+                  {aiGeneratedExample ? (
+                    <div className="text-xs space-y-0.5 pt-1 p-2.5 rounded-xl bg-amber-50/70 dark:bg-gray-800/70 border border-amber-200/60 dark:border-gray-700">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-[#E85D3F]">Ngữ cảnh bổ trợ:</span>
+                          <AiContextBadge type="ai_suggestion" size="xs" />
+                        </div>
+                        <AudioButton text={aiGeneratedExample.targetHanzi || currentCard.hanzi} size="sm" />
+                      </div>
+                      <p className="text-[#243447] dark:text-white font-medium">{aiGeneratedExample.targetHanzi || currentCard.hanzi}</p>
+                      {aiGeneratedExample.pinyin && (
+                        <p className="text-[11px] text-[#E85D3F]">{aiGeneratedExample.pinyin}</p>
+                      )}
+                      <p className="text-[11px] text-gray-600 dark:text-gray-300">{aiGeneratedExample.explanation || aiGeneratedExample.prompt}</p>
+                    </div>
+                  ) : (
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleGenerateAiExample(currentCard);
+                        }}
+                        disabled={isGeneratingExample}
+                        className="w-full py-1.5 px-3 rounded-xl bg-orange-50 dark:bg-gray-800 border border-orange-200 dark:border-gray-700 text-[#E85D3F] dark:text-orange-400 text-xs font-semibold hover:bg-orange-100 dark:hover:bg-gray-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Sparkles size={13} className={isGeneratingExample ? 'animate-spin' : ''} />
+                        <span>{isGeneratingExample ? 'Đang tạo câu ví dụ...' : '✨ Tạo câu ví dụ ngữ cảnh AI'}</span>
+                      </button>
                     </div>
                   )}
                 </div>

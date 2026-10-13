@@ -1,5 +1,6 @@
 import { HskResourcesView, HskReportModal, HskAdminImportModal } from '../components/HskPhase3Components';
 import HskStructureView from '../components/HskStructureView';
+import HskAiDiagnosticPanel from '../components/personalization/HskAiDiagnosticPanel';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Award, 
@@ -199,6 +200,7 @@ export default function HskPracticePage({
       {currentView === 'exam_result' && (
         <HskExamResultView 
           attemptId={paramId} 
+          user={user}
           onNavigate={navigateTo} 
         />
       )}
@@ -1623,7 +1625,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
 // =========================================================================
 // 5. EXAM RESULTS & ANSWER REVIEW VIEW: Báo cáo kết quả & Lời giải chi tiết
 // =========================================================================
-function HskExamResultView({ attemptId, onNavigate }) {
+function HskExamResultView({ attemptId, user, onNavigate }) {
   const [attempt, setAttempt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filterMode, setFilterMode] = useState('all'); // 'all', 'incorrect', 'correct'
@@ -1796,6 +1798,16 @@ function HskExamResultView({ attemptId, onNavigate }) {
             })}
           </div>
         </div>
+      )}
+
+      {/* AI Sư phạm Chẩn đoán lỗi bài làm */}
+      {attempt.incorrectCount > 0 && (
+        <HskAiDiagnosticPanel
+          mistakes={(attempt.detailedResults || []).filter(r => !r.isCorrect)}
+          attempts={[attempt]}
+          user={user}
+          onNavigate={onNavigate}
+        />
       )}
 
       {/* Answer Review Filter & List */}
@@ -2655,6 +2667,15 @@ function HskMistakesView({ user, onNavigate }) {
         </div>
       </div>
 
+      {/* AI Sư phạm: Chẩn đoán lỗi sai sổ tay */}
+      {mistakes.length > 0 && (
+        <HskAiDiagnosticPanel
+          mistakes={mistakes}
+          user={user}
+          onNavigate={onNavigate}
+        />
+      )}
+
       {/* Filters Bar */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 mb-6 space-y-3">
         <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -3040,6 +3061,14 @@ function HskAnalyticsView({ user, onNavigate, setActiveTab }) {
               )}
             </div>
           </div>
+
+          {/* AI Sư phạm: Chẩn đoán toàn diện kỹ năng & khắc phục lỗi */}
+          <HskAiDiagnosticPanel
+            mistakes={mistakes}
+            attempts={attempts}
+            user={user}
+            onNavigate={onNavigate}
+          />
 
           {/* Deterministic Study Recommendations */}
           <div>

@@ -208,6 +208,19 @@ test('AI Assignment Generator: generates draft questions requiring teacher revie
   assert.ok(firstQ.difficulty && firstQ.difficulty.length > 0);
 });
 
+test('AI Assignment Generator: supports large question sets (up to 20 questions) with multi-skill distribution', async () => {
+  const res = await generateAssignmentWithAi({
+    hskLevel: 'HSK 2',
+    topic: 'Food and Dining',
+    questionCount: 20
+  });
+
+  assert.ok(res.success);
+  assert.equal(res.status, 'DRAFT_REQUIRES_TEACHER_REVIEW');
+  assert.equal(res.data.questions.length, 20);
+  assert.ok(res.data.questions.every(q => q.options && q.options.length === 4));
+});
+
 test('AI Lesson Plan: generates 7-step pedagogical structure for teacher customization', async () => {
   const res = await generateLessonPlanWithAi({
     hskLevel: 'HSK 2',
