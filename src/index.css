@@ -102,3 +102,53 @@
 .dark ::-webkit-scrollbar-thumb {
   background: #2D3E53;
 }
+
+/* =========================================================================
+   HANZIGO WORKSHEET PRINT & A4 PDF EXPORT STYLES
+   ========================================================================= */
+@media print {
+  /* Reset màu nền toàn bộ tài liệu in */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ẩn toàn bộ giao diện web, modal chrome, navbar */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Chỉ hiển thị duy nhất container bảng in tập viết */
+  #hanzigo-worksheet-printable,
+  #hanzigo-worksheet-printable * {
+    visibility: visible;
+  }
+
+  #hanzigo-worksheet-printable {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 8mm 6mm !important;
+    background: #ffffff !important;
+  }
+
+  /* Cấu hình khổ giấy A4 in dọc */
+  @page {
+    size: A4 portrait;
+    margin: 6mm 6mm 6mm 6mm;
+  }
+
+  /* Ngăn ngắt trang xấu giữa các phần chữ Hán */
+  .break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
+

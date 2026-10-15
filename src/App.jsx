@@ -32,7 +32,7 @@ import TeacherGuard from './components/TeacherGuard';
 
 const VALID_TABS = [
   'home', 'dashboard', 'roadmap', 'lesson', 'vocabulary', 
-  'pronunciation', 'writing', 'conversation', 'community', 
+  'pronunciation', 'writing', 'dictionary', 'conversation', 'community', 
   'materials', 'admin', 'profile', 'leaderboard',
   'teacher', 'classroom', 'hsk', 'privacy', 'terms'
 ];
@@ -47,7 +47,7 @@ function MainApp() {
       const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
       const parts = hash.split('/').filter(Boolean);
       const rawTab = parts[0] || 'home';
-      const tab = rawTab === 'practice' ? 'vocabulary' : rawTab;
+      const tab = rawTab === 'practice' ? 'vocabulary' : rawTab === 'dictionary' ? 'writing' : rawTab;
       const sub = parts[1] || null;
       const param = parts[2] || null;
       const extra = parts[3] || null;

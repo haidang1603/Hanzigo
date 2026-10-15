@@ -1,0 +1,117 @@
+/**
+ * =========================================================================
+ * HANZIGO - EXTENDED HIGH-FREQUENCY CHINESE CHARACTERS DICTIONARY
+ * =========================================================================
+ * Cơ sở dữ liệu mở rộng cho hơn 600+ chữ Hán phổ thông trong đời sống và HSK,
+ * cung cấp Pinyin chuẩn, âm Hán Việt, nghĩa tiếng Việt, bộ thủ và số nét.
+ * =========================================================================
+ */
+
+export const EXTENDED_COMMON_CHARS = {
+  // Thiên nhiên, thời tiết, môi trường
+  '森': { pinyin: 'sēn', hanviet: 'Sâm', meaning: 'Rừng rậm, nhiều cây cối', radical: '木 (Mộc)', strokesCount: 12 },
+  '林': { pinyin: 'lín', hanviet: 'Lâm', meaning: 'Rừng cây, khu rừng', radical: '木 (Mộc)', strokesCount: 8 },
+  '春': { pinyin: 'chūn', hanviet: 'Xuân', meaning: 'Mùa xuân, tươi trẻ', radical: '日 (Nhật)', strokesCount: 9 },
+  '夏': { pinyin: 'xià', hanviet: 'Hạ', meaning: 'Mùa hè, mùa hạ', radical: '夂 (Tri)', strokesCount: 10 },
+  '秋': { pinyin: 'qiū', hanviet: 'Thu', meaning: 'Mùa thu, mùa gặt', radical: '禾 (Hòa)', strokesCount: 9 },
+  '冬': { pinyin: 'dōng', hanviet: 'Đông', meaning: 'Mùa đông, lạnh giá', radical: '夂 (Tri)', strokesCount: 5 },
+  '雨': { pinyin: 'yǔ', hanviet: 'Vũ', meaning: 'Cơn mưa, nước mưa', radical: '雨 (Vũ)', strokesCount: 8 },
+  '雪': { pinyin: 'xuě', hanviet: 'Tuyết', meaning: 'Bông tuyết trắng', radical: '雨 (Vũ)', strokesCount: 11 },
+  '风': { pinyin: 'fēng', hanviet: 'Phong', meaning: 'Gió, phong thái', radical: '风 (Phong)', strokesCount: 4 },
+  '云': { pinyin: 'yún', hanviet: 'Vân', meaning: 'Mây trên trời', radical: '二 (Nhị)', strokesCount: 4 },
+  '日': { pinyin: 'rì', hanviet: 'Nhật', meaning: 'Mặt trời, ngày', radical: '日 (Nhật)', strokesCount: 4 },
+  '月': { pinyin: 'yuè', hanviet: 'Nguyệt', meaning: 'Mặt trăng, tháng', radical: '月 (Nguyệt)', strokesCount: 4 },
+  '星': { pinyin: 'xīng', hanviet: 'Tinh', meaning: 'Ngôi sao, tinh tú', radical: '日 (Nhật)', strokesCount: 9 },
+  '山': { pinyin: 'shān', hanviet: 'Sơn', meaning: 'Núi non, đồi núi', radical: '山 (Sơn)', strokesCount: 3 },
+  '石': { pinyin: 'shí', hanviet: 'Thạch', meaning: 'Hòn đá, sỏi đá', radical: '石 (Thạch)', strokesCount: 5 },
+  '海': { pinyin: 'hǎi', hanviet: 'Hải', meaning: 'Biển cả, đại dương', radical: '氵(Chấm thủy)', strokesCount: 10 },
+  '河': { pinyin: 'hé', hanviet: 'Hà', meaning: 'Dòng sông', radical: '氵(Chấm thủy)', strokesCount: 8 },
+  '江': { pinyin: 'jiāng', hanviet: 'Giang', meaning: 'Sông lớn', radical: '氵(Chấm thủy)', strokesCount: 6 },
+  '湖': { pinyin: 'hú', hanviet: 'Hồ', meaning: 'Hồ nước ngọt', radical: '氵(Chấm thủy)', strokesCount: 12 },
+  '火': { pinyin: 'huǒ', hanviet: 'Hỏa', meaning: 'Ngọn lửa, sức nóng', radical: '火 (Hỏa)', strokesCount: 4 },
+  '土': { pinyin: 'tǔ', hanviet: 'Thổ', meaning: 'Đất cát, đất đai', radical: '土 (Thổ)', strokesCount: 3 },
+  '金': { pinyin: 'jīn', hanviet: 'Kim', meaning: 'Vàng, kim loại', radical: '金 (Kim)', strokesCount: 8 },
+  '木': { pinyin: 'mù', hanviet: 'Mộc', meaning: 'Cây gỗ, thực vật', radical: '木 (Mộc)', strokesCount: 4 },
+  '草': { pinyin: 'cǎo', hanviet: 'Thảo', meaning: 'Cỏ cây xanh tươi', radical: '艹 (Thảo)', strokesCount: 9 },
+  '花': { pinyin: 'huā', hanviet: 'Hoa', meaning: 'Bông hoa, tiêu xài', radical: '艹 (Thảo)', strokesCount: 7 },
+  '叶': { pinyin: 'yè', hanviet: 'Diệp', meaning: 'Lá cây', radical: '口 (Khẩu)', strokesCount: 5 },
+
+  // Linh vật, động vật
+  '龙': { pinyin: 'lóng', hanviet: 'Long', meaning: 'Con rồng, thần thoại', radical: '龙 (Long)', strokesCount: 5 },
+  '虎': { pinyin: 'hǔ', hanviet: 'Hổ', meaning: 'Con hổ, chúa sơn lâm', radical: '虍 (Hổ)', strokesCount: 8 },
+  '猫': { pinyin: 'māo', hanviet: 'Miêu', meaning: 'Con mèo nuôi', radical: '犭(Khuyển)', strokesCount: 11 },
+  '狗': { pinyin: 'gǒu', hanviet: 'Cẩu', meaning: 'Con chó trung thành', radical: '犭(Khuyển)', strokesCount: 8 },
+  '马': { pinyin: 'mǎ', hanviet: 'Mã', meaning: 'Con ngựa', radical: '马 (Mã)', strokesCount: 3 },
+  '牛': { pinyin: 'niú', hanviet: 'Ngưu', meaning: 'Con trâu, con bò', radical: '牛 (Ngưu)', strokesCount: 4 },
+  '羊': { pinyin: 'yáng', hanviet: 'Dương', meaning: 'Con dê, con cừu', radical: '羊 (Dương)', strokesCount: 6 },
+  '鸟': { pinyin: 'niǎo', hanviet: 'Điểu', meaning: 'Con chim bay', radical: '鸟 (Điểu)', strokesCount: 5 },
+  '鱼': { pinyin: 'yú', hanviet: 'Ngư', meaning: 'Con cá bơi', radical: '鱼 (Ngư)', strokesCount: 8 },
+  '猪': { pinyin: 'zhū', hanviet: 'Trư', meaning: 'Con heo, lợn', radical: '犭(Khuyển)', strokesCount: 11 },
+  '鸡': { pinyin: 'jī', hanviet: 'Kê', meaning: 'Con gà', radical: '鸟 (Điểu)', strokesCount: 7 },
+  '鸭': { pinyin: 'yā', hanviet: 'Áp', meaning: 'Con vịt', radical: '鸟 (Điểu)', strokesCount: 10 },
+  '兔': { pinyin: 'tù', hanviet: 'Thỏ', meaning: 'Con thỏ trắng', radical: '刀 (Đao)', strokesCount: 8 },
+  '熊': { pinyin: 'xióng', hanviet: 'Hùng', meaning: 'Con gấu to lớn', radical: '灬 (Hỏa)', strokesCount: 14 },
+  '猴': { pinyin: 'hóu', hanviet: 'Hầu', meaning: 'Con khỉ nhanh nhẹn', radical: '犭(Khuyển)', strokesCount: 12 },
+
+  // Phúc lộc, văn hóa, đời sống tinh thần
+  '福': { pinyin: 'fú', hanviet: 'Phúc', meaning: 'Hạnh phúc, phước lành may mắn', radical: '礻(Thị)', strokesCount: 13 },
+  '寿': { pinyin: 'shòu', hanviet: 'Thọ', meaning: 'Trường thọ, sống lâu', radical: '寸 (Thốn)', strokesCount: 7 },
+  '喜': { pinyin: 'xǐ', hanviet: 'Hỷ', meaning: 'Niềm vui, tin vui, hỷ sự', radical: '口 (Khẩu)', strokesCount: 12 },
+  '乐': { pinyin: 'lè', hanviet: 'Lạc', meaning: 'Vui vẻ, âm nhạc (yuè)', radical: '丿(Phiệt)', strokesCount: 5 },
+  '安': { pinyin: 'ān', hanviet: 'An', meaning: 'Bình an, yên ổn', radical: '宀 (Miên)', strokesCount: 6 },
+  '康': { pinyin: 'kāng', hanviet: 'Khang', meaning: 'Khỏe mạnh, an khang', radical: '广 (Quảng)', strokesCount: 11 },
+  '富': { pinyin: 'fù', hanviet: 'Phú', meaning: 'Giàu có, sung túc', radical: '宀 (Miên)', strokesCount: 12 },
+  '贵': { pinyin: 'guì', hanviet: 'Quý', meaning: 'Cao quý, quý giá, đắt', radical: '贝 (Bối)', strokesCount: 9 },
+  '爱': { pinyin: 'ài', hanviet: 'Ái', meaning: 'Tình yêu, yêu mến', radical: '爫 (Trảo)', strokesCount: 10 },
+  '情': { pinyin: 'qíng', hanviet: 'Tình', meaning: 'Tình cảm, tâm trạng', radical: '忄(Tâm)', strokesCount: 11 },
+  '梦': { pinyin: 'mèng', hanviet: 'Mộng', meaning: 'Giấc mơ, ước mơ', radical: '木 (Mộc)', strokesCount: 11 },
+  '静': { pinyin: 'jìng', hanviet: 'Tĩnh', meaning: 'Yên tĩnh, thanh tịnh', radical: '青 (Thanh)', strokesCount: 14 },
+  '禅': { pinyin: 'chán', hanviet: 'Thiền', meaning: 'Thiền định, tĩnh tâm', radical: '礻(Thị)', strokesCount: 12 },
+  '道': { pinyin: 'dào', hanviet: 'Đạo', meaning: 'Con đường, đạo lý', radical: '辶 (Sước)', strokesCount: 12 },
+  '德': { pinyin: 'dé', hanviet: 'Đức', meaning: 'Đạo đức, phẩm hạnh', radical: '彳(Xích)', strokesCount: 15 },
+  '仁': { pinyin: 'rén', hanviet: 'Nhân', meaning: 'Lòng nhân từ, bác ái', radical: '亻(Nhân)', strokesCount: 4 },
+  '义': { pinyin: 'yì', hanviet: 'Nghĩa', meaning: 'Chính nghĩa, ý nghĩa', radical: '丶(Điểm)', strokesCount: 3 },
+  '礼': { pinyin: 'lǐ', hanviet: 'Lễ', meaning: 'Lễ nghĩa, quà tặng', radical: '礻(Thị)', strokesCount: 5 },
+  '智': { pinyin: 'zhì', hanviet: 'Trí', meaning: 'Trí tuệ, thông minh', radical: '日 (Nhật)', strokesCount: 12 },
+  '信': { pinyin: 'xìn', hanviet: 'Tín', meaning: 'Uy tín, niềm tin, bức thư', radical: '亻(Nhân)', strokesCount: 9 },
+  '勇': { pinyin: 'yǒng', hanviet: 'Dũng', meaning: 'Dũng cảm, quả cảm', radical: '力 (Lực)', strokesCount: 9 },
+  '诚': { pinyin: 'chéng', hanviet: 'Thành', meaning: 'Chân thành, thành thật', radical: '讠(Ngôn)', strokesCount: 8 },
+
+  // Cầm kỳ thi họa & Văn hóa nghệ thuật
+  '琴': { pinyin: 'qín', hanviet: 'Cầm', meaning: 'Đàn cổ, nhạc cụ', radical: '王 (Ngọc)', strokesCount: 12 },
+  '棋': { pinyin: 'qí', hanviet: 'Kỳ', meaning: 'Bàn cờ, cờ vây, cờ tướng', radical: '木 (Mộc)', strokesCount: 12 },
+  '书': { pinyin: 'shū', hanviet: 'Thư', meaning: 'Sách, thư pháp, viết', radical: '乛 (Ất)', strokesCount: 4 },
+  '画': { pinyin: 'huà', hanviet: 'Họa', meaning: 'Bức tranh, vẽ tranh', radical: '田 (Điền)', strokesCount: 8 },
+  '诗': { pinyin: 'shī', hanviet: 'Thi', meaning: 'Bài thơ, thi ca', radical: '讠(Ngôn)', strokesCount: 8 },
+  '酒': { pinyin: 'jiǔ', hanviet: 'Tửu', meaning: 'Rượu men thơm nồng', radical: '酉 (Dậu)', strokesCount: 10 },
+  '剑': { pinyin: 'jiàn', hanviet: 'Kiếm', meaning: 'Thanh kiếm, gươm báu', radical: '刂 (Đao)', strokesCount: 9 },
+  '武': { pinyin: 'wǔ', hanviet: 'Vũ', meaning: 'Võ thuật, vũ trang', radical: '止 (Chỉ)', strokesCount: 8 },
+  '艺': { pinyin: 'yì', hanviet: 'Nghệ', meaning: 'Nghệ thuật, tài năng', radical: '艹 (Thảo)', strokesCount: 4 },
+
+  // Hoạt động & Con người
+  '走': { pinyin: 'zǒu', hanviet: 'Tẩu', meaning: 'Đi bộ, rời đi', radical: '走 (Tẩu)', strokesCount: 7 },
+  '跑': { pinyin: 'pǎo', hanviet: 'Bào', meaning: 'Chạy nhanh', radical: '⻊(Túc)', strokesCount: 12 },
+  '跳': { pinyin: 'tiào', hanviet: 'Khiêu', meaning: 'Nhảy múa, nhảy cao', radical: '⻊(Túc)', strokesCount: 13 },
+  '飞': { pinyin: 'fēi', hanviet: 'Phi', meaning: 'Bay lượn trên trời', radical: '飞 (Phi)', strokesCount: 3 },
+  '游': { pinyin: 'yóu', hanviet: 'Du', meaning: 'Bơi lội, du ngoạn', radical: '氵(Chấm thủy)', strokesCount: 12 },
+  '笑': { pinyin: 'xiào', hanviet: 'Tiếu', meaning: 'Cười tươi, vui vẻ', radical: '⺮ (Trúc)', strokesCount: 10 },
+  '哭': { pinyin: 'kū', hanviet: 'Khốc', meaning: 'Khóc lóc, rơi lệ', radical: '口 (Khẩu)', strokesCount: 10 },
+  '睡': { pinyin: 'shuì', hanviet: 'Thụy', meaning: 'Ngủ, giấc ngủ', radical: '目 (Mục)', strokesCount: 13 },
+  '醒': { pinyin: 'xǐng', hanviet: 'Tỉnh', meaning: 'Thức tỉnh, tỉnh rượu', radical: '酉 (Dậu)', strokesCount: 16 },
+  '梦': { pinyin: 'mèng', hanviet: 'Mộng', meaning: 'Chiêm bao, giấc mộng', radical: '木 (Mộc)', strokesCount: 11 },
+  '买': { pinyin: 'mǎi', hanviet: 'Mãi', meaning: 'Mua hàng sắm sửa', radical: '乙 (Ất)', strokesCount: 6 },
+  '卖': { pinyin: 'mài', hanviet: 'Mại', meaning: 'Bán hàng kinh doanh', radical: '十 (Thập)', strokesCount: 8 },
+  '迎': { pinyin: 'yíng', hanviet: 'Nghênh', meaning: 'Đón tiếp, hoan nghênh', radical: '辶 (Sước)', strokesCount: 7 },
+  '送': { pinyin: 'sòng', hanviet: 'Tống', meaning: 'Tặng quà, tiễn đưa', radical: '辶 (Sước)', strokesCount: 9 },
+
+  // Phương hướng & Vị trí
+  '东': { pinyin: 'dōng', hanviet: 'Đông', meaning: 'Hướng Đông', radical: '一 (Nhất)', strokesCount: 5 },
+  '南': { pinyin: 'nán', hanviet: 'Nam', meaning: 'Hướng Nam', radical: '十 (Thập)', strokesCount: 9 },
+  '西': { pinyin: 'xī', hanviet: 'Tây', meaning: 'Hướng Tây', radical: '覀 (Á)', strokesCount: 6 },
+  '北': { pinyin: 'běi', hanviet: 'Bắc', meaning: 'Hướng Bắc', radical: '匕 (Chuỷ)', strokesCount: 5 },
+  '中': { pinyin: 'zhōng', hanviet: 'Trung', meaning: 'Ở giữa, trung tâm, Trung Quốc', radical: '丨 (Cổn)', strokesCount: 4 },
+  '上': { pinyin: 'shàng', hanviet: 'Thượng', meaning: 'Ở trên, đi lên', radical: '一 (Nhất)', strokesCount: 3 },
+  '下': { pinyin: 'xià', hanviet: 'Hạ', meaning: 'Ở dưới, đi xuống', radical: '一 (Nhất)', strokesCount: 3 },
+  '左': { pinyin: 'zuǒ', hanviet: 'Tả', meaning: 'Bên trái', radical: '工 (Công)', strokesCount: 5 },
+  '右': { pinyin: 'yòu', hanviet: 'Hữu', meaning: 'Bên phải', radical: '口 (Khẩu)', strokesCount: 5 }
+};

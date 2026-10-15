@@ -82,8 +82,8 @@ export default function Navbar({
     },
     { 
       id: 'writing', 
-      label: 'Viết chữ Hán', 
-      desc: 'Quy tắc nét thuận & tập viết chữ', 
+      label: 'Từ điển & Viết chữ', 
+      desc: 'Tra cứu chữ Hán, nét thuận & luyện viết', 
       icon: PenTool, 
       color: 'text-indigo-500 bg-indigo-500/10' 
     },

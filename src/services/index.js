@@ -17,6 +17,7 @@ export * from './grammarEngineService.js';
 export * from './listeningPracticeService.js';
 export * from './crossSkillService.js';
 export * from './aiFeedbackService.js';
+export * from './characterDictionaryService.js';
 export {
   GAMIFICATION_KEYS,
   REWARD_LIMITS,
