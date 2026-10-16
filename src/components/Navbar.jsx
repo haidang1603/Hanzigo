@@ -52,8 +52,7 @@ export default function Navbar({
   const moreRef = useRef(null);
   const userDropdownRef = useRef(null);
 
-  const ADMIN_EMAILS = ['lehaidang16032006@gmail.com', 'admin@hanzigo.com'];
-  const isAdmin = Boolean(user && (ADMIN_EMAILS.includes((user.email || '').toLowerCase().trim()) || user.role === 'admin'));
+  const isAdmin = Boolean(user && user.role === 'admin' && user.status !== 'blocked');
   const isTeacher = Boolean(user && (user.role === 'teacher' || isAdmin) && user.status !== 'blocked');
 
   // Primary navigation tabs (core flow)

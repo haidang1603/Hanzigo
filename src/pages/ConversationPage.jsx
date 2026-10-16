@@ -32,7 +32,7 @@ import AiTutorChatView from '../components/depth/AiTutorChatView';
 
 const STORAGE_KEY = 'hanzigo_ai_chat_history';
 
-export default function ConversationPage({ user }) {
+export default function ConversationPage({ user, openAuthModal }) {
   const [activeDepthTab, setActiveDepthTab] = useState('tutor'); // 'tutor' | 'conversation' | 'listening' | 'grammar'
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedScenarioId, setSelectedScenarioId] = useState(ALL_CONVERSATION_SCENARIOS[0].id);
@@ -452,7 +452,7 @@ export default function ConversationPage({ user }) {
 
       {/* MODE: AI TUTOR RAG (LÃO SƯ HANZIGO) */}
       {activeDepthTab === 'tutor' && (
-        <AiTutorChatView user={user} />
+        <AiTutorChatView user={user} openAuthModal={openAuthModal} />
       )}
 
       {/* MODE: LISTENING PRACTICE */}

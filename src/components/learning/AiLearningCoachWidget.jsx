@@ -44,7 +44,7 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
   const [completedSteps, setCompletedSteps] = useState({});
   const [durationMinutes, setDurationMinutes] = useState(() => getUserDailyGoalMinutes(user));
   const [learningGoal, setLearningGoal] = useState(() => getUserLearningGoal(user));
-  const [activeTabSub, setActiveTabSub] = useState('plan'); // 'plan' | 'review' | 'skills' | 'weaknesses' | 'materials'
+  const [activeTabSub, setActiveTabSub] = useState('recommendations'); // 'recommendations' | 'plan' | 'review' | 'skills' | 'weaknesses' | 'materials'
   const [showPlacementModal, setShowPlacementModal] = useState(false);
 
   // Load coach recommendation
@@ -104,6 +104,13 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
       setShowPlacementModal(true);
       return;
     }
+    if (targetRef === 'mistakes_tab' || route === 'hsk') {
+      if (typeof window !== 'undefined') {
+        window.location.hash = targetRef === 'mistakes_tab' ? '#hsk/mistakes' : '#hsk';
+      }
+      if (setActiveTab) setActiveTab('hsk');
+      return;
+    }
     if (route === 'roadmap' && targetRef && onSelectLesson) {
       onSelectLesson(targetRef);
     } else if (setActiveTab) {
@@ -134,6 +141,7 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
   const nextLesson = coachData?.recommendedNextLesson || profile?.nextLesson;
   const reviewLessons = coachData?.recommendedReviewLessons || profile?.reviewLessons || [];
   const recommendedMaterials = coachData?.recommendedMaterials || [];
+  const recommendations = coachData?.recommendations || [];
   const activeGoalDetails = LEARNING_GOALS[learningGoal] || LEARNING_GOALS.general_foundation;
 
   if (loading) {
@@ -381,6 +389,18 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
       {/* 5. Sub-Tab Switcher */}
       <div className="flex items-center gap-2 border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-2 text-xs font-bold overflow-x-auto">
         <button
+          onClick={() => { playClickSound(); setActiveTabSub('recommendations'); }}
+          className={`pb-1 px-2 border-b-2 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            activeTabSub === 'recommendations'
+              ? 'border-[#E85D3F] text-[#E85D3F]'
+              : 'border-transparent text-[#748092] hover:text-[#243447] dark:hover:text-white'
+          }`}
+        >
+          <Sparkles size={14} />
+          <span>Học gì tiếp theo? ({recommendations.length})</span>
+        </button>
+
+        <button
           onClick={() => { playClickSound(); setActiveTabSub('plan'); }}
           className={`pb-1 px-2 border-b-2 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
             activeTabSub === 'plan'
@@ -440,6 +460,94 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
           <span>Tài liệu đề xuất ({recommendedMaterials.length})</span>
         </button>
       </div>
+
+      {/* 5.5. Tab Content 0: PERSONALIZED RECOMMENDATIONS (HỌC GÌ TIẾP THEO?) */}
+      {activeTabSub === 'recommendations' && (
+        <div className="space-y-3">
+          <div className="p-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200 dark:border-orange-800/30 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-[#E85D3F]" />
+              <span className="text-xs font-bold text-[#243447] dark:text-white">
+                Gợi ý học tập cá nhân hóa đa tín hiệu (Zero-guesswork)
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-[#E85D3F] bg-white dark:bg-[#1E293B] px-2 py-0.5 rounded-full border border-[#F1E5D8] dark:border-[#2B3A4F]">
+              {recommendations.length} đề xuất
+            </span>
+          </div>
+
+          {recommendations.length === 0 ? (
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center space-y-2">
+              <CheckCircle2 size={32} className="mx-auto text-[#45B97C]" />
+              <p className="text-xs font-bold text-[#243447] dark:text-white">
+                Bạn đã hoàn thành các đề xuất ưu tiên!
+              </p>
+              <p className="text-[11px] text-[#748092]">
+                Hãy tiếp tục bài học mới trên Lộ trình hoặc luyện đề thi HSK.
+              </p>
+            </div>
+          ) : (
+            recommendations.map((rec, idx) => (
+              <div
+                key={rec.id || idx}
+                className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
+              >
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
+                      rec.priority === 'high'
+                        ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
+                        : rec.priority === 'medium'
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+                          : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+                    }`}>
+                      {rec.priority === 'high' ? '🔴 Ưu tiên cao' : (rec.priority === 'medium' ? '🟡 Cần ôn' : '🟢 Tự chọn')}
+                    </span>
+
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#F1E5D8]/60 dark:bg-[#131B24] text-[#748092]">
+                      {SKILL_LABELS[rec.skill] || rec.skill}
+                    </span>
+
+                    <span className="text-[11px] font-bold text-[#748092] flex items-center gap-1">
+                      <Clock size={11} />
+                      {rec.estimatedMinutes || 5} phút
+                    </span>
+                  </div>
+
+                  <h4 className="text-xs sm:text-sm font-extrabold text-[#243447] dark:text-white">
+                    {rec.title}
+                  </h4>
+
+                  <p className="text-[11px] text-[#E85D3F] dark:text-[#F4826B] font-medium leading-relaxed">
+                    💡 <strong>Vì sao gợi ý này xuất hiện:</strong> {rec.reason}
+                  </p>
+
+                  {rec.signals && rec.signals.length > 0 && (
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                      <span className="text-[10px] font-semibold text-[#748092]">Tín hiệu dữ liệu:</span>
+                      {rec.signals.map((sig, sIdx) => (
+                        <span key={sIdx} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[#748092]">
+                          {sig}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                  <button
+                    onClick={() => handleNavigateStep(rec.targetRoute || 'roadmap', rec.targetRef)}
+                    className="px-3.5 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                  >
+                    <span>Học ngay</span>
+                    <ArrowRight size={13} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* 6. Tab Content 1: TODAY'S LEARNING PLAN */}
       {activeTabSub === 'plan' && (

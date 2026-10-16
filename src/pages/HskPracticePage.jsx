@@ -2053,7 +2053,7 @@ function HskSubNavHeader({ currentView, user, onNavigate, onOpenAdmin }) {
     }
   };
 
-  const isAdmin = user && (user.role === 'admin' || user.isAdmin === true || (typeof user.email === 'string' && user.email.includes('admin')));
+  const isAdmin = Boolean(user && (user.role === 'admin' || user.isAdmin === true));
 
   const navItems = [
     { id: 'exams', label: 'Đề thi HSK', icon: BookOpen, view: 'exams', active: currentView === 'home' || currentView === 'exams' || currentView === 'exam_detail' },

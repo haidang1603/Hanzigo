@@ -21,6 +21,7 @@ import {
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { getStoredMaterials } from '../utils/materialsStorage.js';
 import { syncLessonVocabToSrs } from './vocabularyService.js';
+import { isValidUuid } from './authService.js';
 
 const STORAGE_KEYS = {
   JOURNEY_PROGRESS: 'hanzigo_journey_progress',
@@ -257,6 +258,7 @@ export function getUserJourneyProgress(user = null) {
 }
 
 export function saveUserJourneyProgress(progress, user = null) {
+  const targetUid = user?.id || user?.uid;
   const key = getUserStorageKey(STORAGE_KEYS.JOURNEY_PROGRESS, user);
   try {
     localStorage.setItem(key, JSON.stringify(progress));
@@ -264,68 +266,185 @@ export function saveUserJourneyProgress(progress, user = null) {
     console.error('Error saving journey progress:', err);
   }
 
-  // Asynchronously sync to Supabase if logged in
-  if (user?.uid && isSupabaseConfigured && supabase) {
+  // Backwards compatibility with flat array
+  try {
+    const completedList = Object.keys(progress.completedLessons || {});
+    localStorage.setItem('hanzigo_completed_lessons', JSON.stringify(completedList));
+  } catch {}
+
+  // Asynchronously sync to Supabase if logged in with valid UUID
+  if (targetUid && isValidUuid(targetUid) && isSupabaseConfigured && supabase) {
     const completedLessonIds = Object.keys(progress.completedLessons || {});
     const completedBossIds = Object.keys(progress.completedBosses || {});
 
+    // 1. Upsert aggregated user_journey_progress
     supabase
       .from('user_journey_progress')
       .upsert({
-        user_id: user.uid,
+        user_id: targetUid,
         completed_lessons: completedLessonIds,
         completed_bosses: completedBossIds,
-        unlocked_levels: progress.unlockedLevelNumber,
-        active_lesson_id: progress.activeLessonId,
+        lesson_details: progress.completedLessons || {},
+        unlocked_levels: progress.unlockedLevelNumber || 1,
+        active_lesson_id: progress.activeLessonId || 'l-101',
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' })
       .then(({ error }) => {
-        if (error) console.warn('Supabase journey sync fallback:', error.message);
+        if (error) console.warn('Supabase journey sync notice:', error.message);
       })
       .catch(() => {});
+
+    // 2. Also upsert normalized rows to user_lesson_progress
+    if (completedLessonIds.length > 0) {
+      const lessonRows = completedLessonIds.map(lid => {
+        const item = progress.completedLessons[lid] || {};
+        return {
+          user_id: targetUid,
+          lesson_id: String(lid),
+          score: typeof item.score === 'number' ? item.score : 100,
+          xp_earned: 50,
+          completed_at: item.completedAt || new Date().toISOString()
+        };
+      });
+
+      supabase
+        .from('user_lesson_progress')
+        .upsert(lessonRows, { onConflict: 'user_id,lesson_id' })
+        .catch(() => {});
+    }
+  }
+}
+
+/**
+ * Merge unauthenticated guest progress into newly authenticated user profile
+ */
+export function mergeGuestProgressIntoUser(user) {
+  const targetUid = user?.id || user?.uid;
+  if (!targetUid || !isValidUuid(targetUid)) return null;
+
+  try {
+    const guestKey = STORAGE_KEYS.JOURNEY_PROGRESS; // unauthenticated key
+    const rawGuest = localStorage.getItem(guestKey);
+    if (!rawGuest) return null;
+
+    const guestProgress = JSON.parse(rawGuest);
+    const guestLessons = guestProgress?.completedLessons || {};
+    const guestLessonCount = Object.keys(guestLessons).length;
+
+    if (guestLessonCount === 0) return null;
+
+    const userProgress = getUserJourneyProgress(user);
+    const mergedLessons = { ...userProgress.completedLessons };
+
+    Object.entries(guestLessons).forEach(([lid, guestInfo]) => {
+      const existing = mergedLessons[lid];
+      const bestScore = Math.max(existing?.score || 0, guestInfo?.score || 100);
+      const stars = bestScore >= 90 ? 3 : (bestScore >= 80 ? 2 : 1);
+      mergedLessons[lid] = {
+        score: bestScore,
+        stars,
+        completedAt: existing?.completedAt || guestInfo?.completedAt || new Date().toISOString(),
+        lastReviewedAt: new Date().toISOString()
+      };
+    });
+
+    const merged = {
+      completedLessons: mergedLessons,
+      completedBosses: { ...userProgress.completedBosses, ...(guestProgress.completedBosses || {}) },
+      unlockedLevelNumber: Math.max(userProgress.unlockedLevelNumber || 1, guestProgress.unlockedLevelNumber || 1),
+      activeLessonId: userProgress.activeLessonId || guestProgress.activeLessonId || 'l-101'
+    };
+
+    saveUserJourneyProgress(merged, user);
+    localStorage.removeItem(guestKey);
+    return merged;
+  } catch (err) {
+    console.warn('Guest progress merge notice:', err);
+    return null;
   }
 }
 
 /**
  * Sync user journey progress from cloud without overwriting local accomplishments
+ * Non-destructive bidirectional merge rule:
+ * - Lessons: Union of local and cloud completed lessons.
+ * - Score/Stars: Preserves maximum score and highest star count.
+ * - Levels: Preserves maximum unlocked level.
  */
 export async function syncUserJourneyProgressFromCloud(user = null) {
-  if (!user?.uid || !isSupabaseConfigured || !supabase) return null;
+  const targetUid = user?.id || user?.uid;
+  if (!targetUid || !isValidUuid(targetUid) || !isSupabaseConfigured || !supabase) return null;
 
   try {
-    const { data, error } = await supabase
+    // 1. Fetch user_journey_progress
+    const { data: journeyData, error: journeyErr } = await supabase
       .from('user_journey_progress')
       .select('*')
-      .eq('user_id', user.uid)
+      .eq('user_id', targetUid)
       .maybeSingle();
 
-    if (error) throw error;
-    if (!data) return null;
+    if (journeyErr) {
+      console.warn('Sync journey progress notice:', journeyErr.message);
+    }
+
+    // 2. Fetch normalized user_lesson_progress
+    const { data: normalizedLessons } = await supabase
+      .from('user_lesson_progress')
+      .select('lesson_id, score, completed_at')
+      .eq('user_id', targetUid);
 
     const localProgress = getUserJourneyProgress(user);
-
-    // Merge non-destructively: keep all completions from both sources
     const mergedCompletedLessons = { ...localProgress.completedLessons };
-    const cloudLessons = Array.isArray(data.completed_lessons) ? data.completed_lessons : [];
-    cloudLessons.forEach(lid => {
-      if (!mergedCompletedLessons[lid]) {
-        mergedCompletedLessons[lid] = { score: 100, stars: 3, completedAt: data.updated_at || new Date().toISOString() };
-      }
+
+    // Merge cloud journey details
+    const cloudDetails = journeyData?.lesson_details && typeof journeyData.lesson_details === 'object'
+      ? journeyData.lesson_details
+      : {};
+
+    const cloudLessonsArray = Array.isArray(journeyData?.completed_lessons) ? journeyData.completed_lessons : [];
+    cloudLessonsArray.forEach(lid => {
+      const detail = cloudDetails[lid];
+      const local = mergedCompletedLessons[lid];
+      const bestScore = Math.max(local?.score || 0, detail?.score || 100);
+      const stars = bestScore >= 90 ? 3 : (bestScore >= 80 ? 2 : 1);
+      mergedCompletedLessons[lid] = {
+        score: bestScore,
+        stars,
+        completedAt: local?.completedAt || detail?.completedAt || journeyData?.updated_at || new Date().toISOString(),
+        lastReviewedAt: local?.lastReviewedAt || detail?.lastReviewedAt || new Date().toISOString()
+      };
     });
 
+    // Merge normalized rows if any
+    if (Array.isArray(normalizedLessons)) {
+      normalizedLessons.forEach(row => {
+        const lid = row.lesson_id;
+        const local = mergedCompletedLessons[lid];
+        const bestScore = Math.max(local?.score || 0, row.score || 100);
+        const stars = bestScore >= 90 ? 3 : (bestScore >= 80 ? 2 : 1);
+        mergedCompletedLessons[lid] = {
+          score: bestScore,
+          stars,
+          completedAt: local?.completedAt || row.completed_at || new Date().toISOString(),
+          lastReviewedAt: local?.lastReviewedAt || new Date().toISOString()
+        };
+      });
+    }
+
+    // Merge Boss completions
     const mergedCompletedBosses = { ...localProgress.completedBosses };
-    const cloudBosses = Array.isArray(data.completed_bosses) ? data.completed_bosses : [];
+    const cloudBosses = Array.isArray(journeyData?.completed_bosses) ? journeyData.completed_bosses : [];
     cloudBosses.forEach(bid => {
       if (!mergedCompletedBosses[bid]) {
-        mergedCompletedBosses[bid] = { score: 100, completedAt: data.updated_at || new Date().toISOString() };
+        mergedCompletedBosses[bid] = { score: 100, completedAt: journeyData?.updated_at || new Date().toISOString() };
       }
     });
 
     const merged = {
       completedLessons: mergedCompletedLessons,
       completedBosses: mergedCompletedBosses,
-      unlockedLevelNumber: Math.max(localProgress.unlockedLevelNumber || 1, data.unlocked_levels || 1),
-      activeLessonId: localProgress.activeLessonId || data.active_lesson_id || 'l-101'
+      unlockedLevelNumber: Math.max(localProgress.unlockedLevelNumber || 1, journeyData?.unlocked_levels || 1),
+      activeLessonId: localProgress.activeLessonId || journeyData?.active_lesson_id || 'l-101'
     };
 
     saveUserJourneyProgress(merged, user);
@@ -333,6 +452,46 @@ export async function syncUserJourneyProgressFromCloud(user = null) {
   } catch (err) {
     console.warn('Sync journey progress from cloud notice:', err);
     return null;
+  }
+}
+
+/**
+ * Fetch official lesson curriculum from Supabase with fallback to local bundle
+ */
+export async function fetchLessonsFromDb() {
+  if (!isSupabaseConfigured || !supabase) return LEARNING_LESSONS;
+
+  try {
+    const { data, error } = await supabase
+      .from('learning_lessons')
+      .select('*')
+      .order('lesson_number', { ascending: true });
+
+    if (error || !data || data.length === 0) {
+      return LEARNING_LESSONS;
+    }
+
+    const mapped = data.map(row => ({
+      id: row.id,
+      chapterId: row.chapter_id,
+      levelId: row.level_id,
+      lessonNumber: row.lesson_number,
+      title: row.title,
+      chineseTitle: row.title_zh,
+      subtitle: row.description || '',
+      durationMinutes: row.duration_minutes || 18,
+      xpReward: row.xp_reward || 50,
+      tags: [],
+      ...(row.content || {})
+    }));
+
+    try {
+      localStorage.setItem('hanzigo_cached_db_lessons', JSON.stringify(mapped));
+    } catch {}
+
+    return mapped;
+  } catch {
+    return LEARNING_LESSONS;
   }
 }
 

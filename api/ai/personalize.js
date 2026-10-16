@@ -255,6 +255,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Payload không được chứa mật khẩu hoặc mã bảo mật cá nhân.' });
   }
 
+  // Zero-Trust Authorization: Strict ownership check on userId
+  if (payload.userId && payload.userId !== auth.user.id && auth.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Không có quyền truy cập hoặc can thiệp dữ liệu cá nhân của người dùng khác.' });
+  }
+  payload.userId = auth.user.id;
+
   // Length check
   const payloadStr = JSON.stringify(payload);
   if (payloadStr.length > MAX_PAYLOAD_LENGTH) {

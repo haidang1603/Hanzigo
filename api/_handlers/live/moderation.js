@@ -1,7 +1,7 @@
 /**
  * HANZI GO - LIVE MODERATION HANDLER
  */
-import { RoomServiceClient } from 'livekit-server-sdk';
+import { RoomServiceClient, TrackSource } from 'livekit-server-sdk';
 import { verifyRequestAuth, getSupabaseAdminClient, memoryParticipants } from '../../_utils/supabaseServer.js';
 
 export default async function moderationHandler(req, res) {
@@ -17,6 +17,11 @@ export default async function moderationHandler(req, res) {
   const { sessionId, action, targetUserId } = req.body || {};
   if (!sessionId || !action) {
     return res.status(400).json({ error: 'Thiếu thông tin sessionId hoặc action.' });
+  }
+
+  const TARGETED_ACTIONS = ['ALLOW_MIC', 'REVOKE_MIC', 'MUTE_STUDENT', 'MUTE_MIC', 'KICK'];
+  if (TARGETED_ACTIONS.includes(action) && (!targetUserId || typeof targetUserId !== 'string' || !targetUserId.trim())) {
+    return res.status(400).json({ error: 'Mục tiêu (targetUserId) là bắt buộc đối với thao tác này.' });
   }
 
   const callerId = auth.user.id;
@@ -59,14 +64,16 @@ export default async function moderationHandler(req, res) {
         await roomClient.updateParticipant(sessionId, targetUserId, undefined, {
           canPublish: true,
           canSubscribe: true,
-          canPublishData: true
+          canPublishData: true,
+          canPublishSources: [TrackSource.MICROPHONE]
         });
         sfuUpdated = true;
       } else if (action === 'REVOKE_MIC' && targetUserId) {
         await roomClient.updateParticipant(sessionId, targetUserId, undefined, {
           canPublish: false,
           canSubscribe: true,
-          canPublishData: true
+          canPublishData: true,
+          canPublishSources: []
         });
         try {
           const p = await roomClient.getParticipant(sessionId, targetUserId);
@@ -100,7 +107,8 @@ export default async function moderationHandler(req, res) {
             await roomClient.updateParticipant(sessionId, p.identity, undefined, {
               canPublish: false,
               canSubscribe: true,
-              canPublishData: true
+              canPublishData: true,
+              canPublishSources: []
             }).catch(() => {});
 
             if (p.tracks) {

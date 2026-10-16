@@ -1,5 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { isValidUuid } from './authService.js';
+import { syncUserJourneyProgressFromCloud } from './learningPathService.js';
+import { syncUserVocabSrsFromCloud } from './vocabularyService.js';
 
 /**
  * Record a study activity in normalized DB table (audit log & anti-abuse)
@@ -188,7 +190,7 @@ export async function loadAllUserDataFromDb(uid) {
       }
     }
 
-    // 2. Load completed lessons
+    // 2. Load completed lessons & Journey progress
     const { data: lessons } = await supabase
       .from('user_lesson_progress')
       .select('lesson_id')
@@ -199,22 +201,18 @@ export async function loadAllUserDataFromDb(uid) {
       localStorage.setItem('hanzigo_completed_lessons', JSON.stringify(lessonIds));
     }
 
-    // 3. Load SRS vocabulary progress
-    const { data: vocabList } = await supabase
-      .from('user_vocab_srs')
-      .select('*')
-      .eq('user_id', uid);
+    try {
+      await syncUserJourneyProgressFromCloud({ id: uid });
+    } catch {}
 
-    if (vocabList && vocabList.length > 0) {
-      const remembered = vocabList.filter(v => v.stage >= 2).map(v => v.hanzi);
-      const review = vocabList.filter(v => v.stage === 1).map(v => v.hanzi);
-      if (remembered.length > 0) {
-        localStorage.setItem('hanzigo_vocab_remembered', JSON.stringify(remembered));
+    // 3. Load SRS vocabulary progress
+    let vocabList = null;
+    try {
+      const srsRes = await syncUserVocabSrsFromCloud(uid);
+      if (srsRes) {
+        vocabList = srsRes;
       }
-      if (review.length > 0) {
-        localStorage.setItem('hanzigo_vocab_review', JSON.stringify(review));
-      }
-    }
+    } catch {}
 
     console.log('⚡ HanziGo Progress hydrated from Supabase for user', uid);
     return { profile, lessons, vocabList };

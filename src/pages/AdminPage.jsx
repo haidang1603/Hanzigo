@@ -76,12 +76,9 @@ function isDemoUser(u) {
          id.startsWith('user-stu-');
 }
 
-const ADMIN_EMAILS = ['lehaidang16032006@gmail.com', 'admin@hanzigo.com'];
-
 function checkIsAdmin(user) {
   if (!user) return false;
-  const email = (user.email || '').toLowerCase().trim();
-  return ADMIN_EMAILS.includes(email) || user.role === 'admin';
+  return user.role === 'admin' && user.status !== 'blocked';
 }
 
 export default function AdminPage({ user, onUpdateUser, setActiveTab }) {

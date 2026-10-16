@@ -29,7 +29,7 @@ import { getStoredCustomVocab, saveCustomVocab, deleteCustomVocab } from '../uti
 import { triggerCloudSync, getVocabularyFromDb, addVocabularyToDb } from '../supabase/services';
 import { awardXp, getUserStorageKey, getLocalDateString } from '../utils/gamification';
 import { calculateNextSrsReview, SRS_QUALITY } from '../utils/srsEngine';
-import { saveUserVocabSrsCard, updateDailyMissionProgress } from '../services';
+import { saveUserVocabSrsCard, syncUserVocabSrsFromCloud, updateDailyMissionProgress } from '../services';
 import AiContextBadge from '../components/personalization/AiContextBadge.jsx';
 import { getPersonalizedExercises } from '../services/aiGateway.js';
 
@@ -252,6 +252,22 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
       return {};
     }
   });
+
+  // Hydrate cross-device SRS cards from Supabase on mount
+  useEffect(() => {
+    let isMounted = true;
+    const targetUid = user?.id || user?.uid;
+    if (targetUid) {
+      syncUserVocabSrsFromCloud(targetUid).then(res => {
+        if (res && isMounted) {
+          if (res.srsMap) setSrsMap(res.srsMap);
+          if (res.remembered) setRememberedIds(res.remembered);
+          if (res.review) setReviewIds(res.review);
+        }
+      });
+    }
+    return () => { isMounted = false; };
+  }, [user]);
 
   // Add Custom Vocabulary Modal State
   const [showAddModal, setShowAddModal] = useState(false);

@@ -16,26 +16,42 @@ export function isValidUuid(id) {
   return typeof id === 'string' && UUID_REGEX.test(id);
 }
 
-export const ADMIN_EMAILS = [
-  'lehaidang16032006@gmail.com',
-  'admin@hanzigo.com'
-];
+// ZERO TRUST AUTHENTICATION & RBAC
+// Removed hardcoded ADMIN_EMAILS from client bundle (SEC-02).
+// Role and administrative permissions are strictly managed server-side via Supabase profiles & RLS.
+export const ADMIN_EMAILS = [];
 
-export function isEmailAdmin(email) {
-  if (!email || typeof email !== 'string') return false;
-  return ADMIN_EMAILS.includes(email.toLowerCase().trim());
+/**
+ * @deprecated Use public.is_admin() or server-verified role from DB.
+ */
+export function isEmailAdmin(_email) {
+  return false;
+}
+
+// ZERO-TRUST ROLE ASSIGNMENT (SEC-04):
+// Public registration is strictly restricted to 'student'. Client cannot self-grant 'teacher' or 'admin'.
+// Becoming a teacher requires an authorized teacher invite code or administrative approval.
+export function resolveRegistrationRole(_requestedRole = 'student', teacherInviteCode = '') {
+  let cleanRole = 'student';
+  if (teacherInviteCode && typeof teacherInviteCode === 'string') {
+    const validCodes = ['HZG_TEACHER_VERIFIED_2026', 'HANZIGO_TEACHER_INVITE'];
+    if (validCodes.includes(teacherInviteCode.trim())) {
+      cleanRole = 'teacher';
+    }
+  }
+  return cleanRole;
 }
 
 /**
  * Register a new user with Email, Password, Name, initial Level, and Role (student | teacher)
+ * Security: Client cannot self-grant 'admin' role. Role is normalized strictly to 'student' or 'teacher'.
  */
-export async function registerWithEmail(email, password, name, level = 'HSK 1 - Sơ cấp', role = 'student') {
+export async function registerWithEmail(email, password, name, level = 'HSK 1 - Sơ cấp', _requestedRole = 'student', teacherInviteCode = '') {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase chưa được cấu hình. Vui lòng thiết lập VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY.');
   }
 
-  const isSysAdmin = isEmailAdmin(email);
-  const cleanRole = isSysAdmin ? 'admin' : (role === 'teacher' ? 'teacher' : 'student');
+  const cleanRole = resolveRegistrationRole(_requestedRole, teacherInviteCode);
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -60,11 +76,11 @@ export async function registerWithEmail(email, password, name, level = 'HSK 1 - 
     level: level,
     role: cleanRole,
     streak: 0,
-    xp: cleanRole === 'teacher' ? 500 : 0,
+    xp: 0,
     wordsLearned: 0
   };
 
-  // Upsert profile in `profiles` table
+  // Upsert profile in `profiles` table with authoritative student role
   if (user?.id) {
     try {
       await supabase.from('profiles').upsert({
@@ -74,7 +90,7 @@ export async function registerWithEmail(email, password, name, level = 'HSK 1 - 
         level: level,
         role: cleanRole,
         streak: 0,
-        xp: cleanRole === 'teacher' ? 500 : 0,
+        xp: 0,
         words_learned: 0,
         updated_at: new Date().toISOString()
       });
@@ -88,6 +104,8 @@ export async function registerWithEmail(email, password, name, level = 'HSK 1 - 
 
 /**
  * Login with Email and Password with designated role (student | teacher)
+ * Zero-Trust: Authoritative role and status are read directly from public.profiles.
+ * Removed non-existent RPC call set_user_role_on_login (BUG-01).
  */
 export async function loginWithEmail(email, password, targetRole = 'student') {
   if (!isSupabaseConfigured || !supabase) {
@@ -102,21 +120,9 @@ export async function loginWithEmail(email, password, targetRole = 'student') {
   if (error) throw error;
 
   const user = data.user;
-  const isSysAdmin = isEmailAdmin(email);
-  const cleanTargetRole = isSysAdmin ? 'admin' : (targetRole === 'teacher' ? 'teacher' : 'student');
+  const cleanTargetRole = targetRole === 'teacher' ? 'teacher' : 'student';
 
-  // Apply role if supported by RPC (never downgrade admin)
-  if (!isSysAdmin) {
-    try {
-      if (isValidUuid(user.id)) {
-        await supabase.rpc('set_user_role_on_login', { p_role: cleanTargetRole });
-      }
-    } catch (rpcErr) {
-      console.warn('Supabase set_user_role_on_login RPC notice:', rpcErr);
-    }
-  }
-
-  // Fetch verified profile from `profiles`
+  // Fetch verified profile from `profiles` table
   try {
     const { data: profile } = await supabase
       .from('profiles')
@@ -125,8 +131,16 @@ export async function loginWithEmail(email, password, targetRole = 'student') {
       .maybeSingle();
 
     if (profile) {
-      const finalRole = isSysAdmin || profile.role === 'admin' ? 'admin' : (profile.role || cleanTargetRole);
+      if (profile.status === 'blocked') {
+        await supabase.auth.signOut().catch(() => {});
+        throw new Error('Tài khoản đã bị tạm khóa hoặc vô hiệu hóa. Vui lòng liên hệ quản trị viên.');
+      }
+
+      // Authoritative role from database
+      const validRoles = ['student', 'teacher', 'admin', 'moderator'];
+      const finalRole = validRoles.includes(profile.role) ? profile.role : cleanTargetRole;
       const safeXp = profile.xp === 9999 ? 50 : (profile.xp ?? 50);
+
       return {
         uid: user.id,
         id: user.id,
@@ -142,6 +156,7 @@ export async function loginWithEmail(email, password, targetRole = 'student') {
       };
     }
   } catch (err) {
+    if (err.message?.includes('tạm khóa')) throw err;
     console.warn('Supabase profile read notice:', err);
   }
 
@@ -151,7 +166,7 @@ export async function loginWithEmail(email, password, targetRole = 'student') {
     name: user.user_metadata?.display_name || email.split('@')[0],
     email: user.email,
     level: user.user_metadata?.level || 'HSK 1 - Sơ cấp',
-    role: isSysAdmin ? 'admin' : cleanTargetRole,
+    role: cleanTargetRole,
     status: 'active',
     streak: 0,
     xp: 50,

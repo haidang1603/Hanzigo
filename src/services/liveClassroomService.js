@@ -839,8 +839,11 @@ export async function endLiveSession(sessionId, teacherId) {
     ? (teacherId?.uid || teacherId?.id || teacherId?.userId) 
     : teacherId;
 
+  if (!effectiveTeacherId) {
+    return { success: false, error: 'Thiếu thông tin xác thực giáo viên phụ trách.' };
+  }
+
   let isAuthorizedTeacher = (
-    !effectiveTeacherId ||
     session.teacher_id === effectiveTeacherId ||
     effectiveTeacherId === 'user_teacher_demo' ||
     effectiveTeacherId === 'system_cleanup'

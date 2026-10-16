@@ -69,7 +69,7 @@ const SUGGESTED_PROMPTS = [
   }
 ];
 
-export default function AiTutorChatView({ user }) {
+export default function AiTutorChatView({ user, openAuthModal }) {
   const userId = user?.id || user?.uid || 'guest';
   const storageKey = `${STORAGE_PREFIX}_${userId}`;
 
@@ -421,6 +421,29 @@ export default function AiTutorChatView({ user }) {
           </div>
         )}
 
+        {!user && (
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/20 border border-orange-200 dark:border-orange-900/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-orange-950 dark:text-orange-200 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <Sparkles size={18} className="text-[#E85D3F] shrink-0" />
+              <div>
+                <span className="font-bold">Đăng nhập tài khoản HanziGo</span>
+                <p className="text-[11px] text-orange-800/80 dark:text-orange-300/80 mt-0.5">
+                  Đăng nhập để đồng bộ lịch sử hội thoại, cá nhân hóa lộ trình và trò chuyện trực tiếp cùng Lão Sư AI.
+                </p>
+              </div>
+            </div>
+            {openAuthModal && (
+              <button
+                type="button"
+                onClick={() => openAuthModal('login')}
+                className="px-3.5 py-1.5 rounded-xl bg-[#E85D3F] hover:bg-[#D44C2E] text-white font-bold text-xs shadow-xs transition-colors shrink-0 cursor-pointer"
+              >
+                Đăng nhập ngay
+              </button>
+            )}
+          </div>
+        )}
+
         {messages.map((msg) => {
           const isUser = msg.role === 'user';
 
@@ -711,19 +734,31 @@ export default function AiTutorChatView({ user }) {
           </div>
         )}
 
-        {/* Trạng thái Lỗi & Nút Retry (Không làm mất câu hỏi người dùng) */}
+        {/* Trạng thái Lỗi & Nút Retry / Login */}
         {errorState && (
           <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 flex flex-wrap items-center justify-between gap-3 text-xs text-rose-900 dark:text-rose-200">
             <div className="flex items-center gap-2">
               <AlertCircle size={16} className="text-rose-600 shrink-0" />
               <span>{errorState.message}</span>
             </div>
-            <button
-              onClick={handleRetry}
-              className="px-3 py-1.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-700 transition-colors flex items-center gap-1.5 shadow-sm"
-            >
-              <RotateCcw size={13} /> Thử lại câu hỏi
-            </button>
+            <div className="flex items-center gap-2">
+              {openAuthModal && (errorState.message.toLowerCase().includes('đăng nhập') || errorState.message.toLowerCase().includes('xác thực')) && (
+                <button
+                  type="button"
+                  onClick={() => openAuthModal('login')}
+                  className="px-3 py-1.5 rounded-xl bg-[#E85D3F] hover:bg-[#D44C2E] text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  Đăng nhập ngay
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="px-3 py-1.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-700 transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <RotateCcw size={13} /> Thử lại câu hỏi
+              </button>
+            </div>
           </div>
         )}
 

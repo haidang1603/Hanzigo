@@ -49,6 +49,11 @@
     .btn:hover {
       background: #CB4529;
     }
+    .toolbar-hint {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 500;
+    }
     .sheet {
       width: 210mm;
       min-height: 297mm;
@@ -159,19 +164,32 @@
       color: #94a3b8;
     }
 
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
     @media print {
       body {
         background: transparent;
         padding: 0;
+        margin: 0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
       .no-print-toolbar {
         display: none !important;
       }
       .sheet {
         box-shadow: none;
-        padding: 0;
-        width: 100%;
-        min-height: auto;
+        padding: 12mm 14mm;
+        width: 210mm;
+        min-height: 297mm;
+        height: 297mm;
+        margin: 0 auto;
+        box-sizing: border-box;
+        page-break-inside: avoid;
+        break-inside: avoid;
       }
     }
   </style>
@@ -182,7 +200,7 @@
     <button class="btn" onclick="window.print()">
       🖨️ In ra giấy A4 hoặc Lưu thành PDF
     </button>
-    <span style="font-size: 13px; color: #64748b;">
+    <span class="toolbar-hint">
       (Khuyến nghị: Chọn "Lưu dưới dạng PDF" hoặc chọn máy in, khổ giấy A4, tỉ lệ 100%)
     </span>
   </div>

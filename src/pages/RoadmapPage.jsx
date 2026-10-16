@@ -45,7 +45,8 @@ import {
   getBossChallengeByChapter,
   getChapterMaterials,
   getRecommendedNextLesson,
-  getRecommendedReviewLessons
+  getRecommendedReviewLessons,
+  syncUserJourneyProgressFromCloud
 } from '../services/learningPathService';
 import AiContextBadge from '../components/personalization/AiContextBadge.jsx';
 
@@ -78,6 +79,19 @@ export default function RoadmapPage({
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   }, []);
+
+  // Hydrate cross-device progress from Supabase on mount
+  useEffect(() => {
+    let isMounted = true;
+    if (user?.id || user?.uid) {
+      syncUserJourneyProgressFromCloud(user).then((res) => {
+        if (res && isMounted) {
+          setJourneyVersion(v => v + 1);
+        }
+      });
+    }
+    return () => { isMounted = false; };
+  }, [user]);
 
   // Compute live user journey progress
   const progress = useMemo(() => {

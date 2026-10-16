@@ -369,10 +369,9 @@ const QUICK_MATERIAL_SUGGESTIONS = [
 export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: propIsAdmin, onSelectLesson = null }) {
   const authContext = useAuth();
   const user = propUser !== undefined ? propUser : authContext?.user;
-  const ADMIN_EMAILS = ['lehaidang16032006@gmail.com', 'admin@hanzigo.com'];
   const isAdmin = propIsAdmin !== undefined 
     ? propIsAdmin 
-    : Boolean(authContext?.isAdmin || user?.role === 'admin' || (user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim())));
+    : Boolean(authContext?.isAdmin || (user?.role === 'admin' && user?.status === 'active'));
 
   // Helper to combine legacy stored materials with master academic resources
   const initializeMasterMaterials = () => {

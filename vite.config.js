@@ -1,12 +1,22 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
+
+// Preload .env into process.env before serverless handlers initialize
+const _initialEnv = loadEnv('', process.cwd(), '');
+for (const [k, v] of Object.entries(_initialEnv)) {
+  if (v && !process.env[k]) {
+    process.env[k] = v;
+  }
+}
+
 import iceServersHandler from './api/_webrtc/ice-servers.js'
 import livekitTokenHandler from './api/_webrtc/livekit-token.js'
 import personalizeHandler from './api/ai/personalize.js'
 import chatHandler from './api/ai/chat.js'
 import teacherHandler from './api/ai/teacher.js'
 import coachHandler from './api/ai/coach.js'
+import tutorHandler from './api/ai/tutor.js'
 
 // In-memory shared registry for local dev classroom sync across browsers/tabs
 const sharedDevClassrooms = [
@@ -59,9 +69,9 @@ function localAiTutorDevPlugin() {
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const env = loadEnv('', process.cwd(), '');
-        for (const key of ['XKIRO_API_KEY', 'XKIRO_BASE_URL', 'XKIRO_MODEL', 'GEMINI_API_KEY', 'ALLOW_PAID_FALLBACK', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']) {
-          if (env[key] && !process.env[key]) {
-            process.env[key] = env[key];
+        for (const [key, val] of Object.entries(env)) {
+          if (val && !process.env[key]) {
+            process.env[key] = val;
           }
         }
 
@@ -110,6 +120,11 @@ function localAiTutorDevPlugin() {
 
         if (req.url === '/api/ai/coach' && req.method === 'POST') {
           handleWithMockRes(coachHandler);
+          return;
+        }
+
+        if (req.url === '/api/ai/tutor' && req.method === 'POST') {
+          handleWithMockRes(tutorHandler);
           return;
         }
 

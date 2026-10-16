@@ -9,6 +9,10 @@
       "destination": "/api/live/[action]?action=:action"
     },
     {
+      "source": "/api/hsk/:action",
+      "destination": "/api/hsk/[action]?action=:action"
+    },
+    {
       "source": "/api/webrtc/:action",
       "destination": "/api/webrtc/[action]?action=:action"
     },

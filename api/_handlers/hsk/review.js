@@ -15,7 +15,7 @@ export default async function reviewHandler(req, res) {
     return res.status(401).json({ error: 'Yêu cầu chưa được xác thực. Vui lòng đăng nhập với tài khoản Quản trị viên.' });
   }
 
-  const isAdmin = auth.user.role === 'admin' || (auth.user.email && auth.user.email.includes('admin'));
+  const isAdmin = auth.user.role === 'admin';
   if (!isAdmin) {
     return res.status(403).json({ error: 'Từ chối quyền hạn: Chỉ Admin mới có quyền duyệt và xuất bản đề thi.' });
   }

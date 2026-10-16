@@ -340,7 +340,7 @@ function MainApp() {
           )}
 
           {activeTab === 'conversation' && (
-            <ConversationPage user={user} />
+            <ConversationPage user={user} openAuthModal={handleOpenAuth} />
           )}
 
 

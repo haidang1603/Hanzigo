@@ -116,10 +116,16 @@ export async function getHskExamDetails(examId) {
 /**
  * Lấy đề thi để làm bài — BẢO MẬT: Tước bỏ hoàn toàn correct_option_index & explanation
  */
-export async function getExamForTaking(examId) {
+export async function getExamForTaking(examId, user = null) {
   const sanitized = getSanitizedExamForTaking(examId);
   if (!sanitized) {
     throw new Error(`Đề thi không tồn tại: ${examId}`);
+  }
+  if (!sanitized.is_published && user?.role !== 'admin') {
+    throw new Error(`Đề thi chưa được xuất bản hoặc đang bảo trì: ${examId}`);
+  }
+  if (!sanitized.questions || sanitized.questions.length === 0) {
+    throw new Error(`Đề thi [${sanitized.title}] hiện đang được biên soạn nội dung hoặc là tài liệu tham chiếu ngoại bộ.`);
   }
   return sanitized;
 }
@@ -149,6 +155,54 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
   const fullExam = getFullExamById(examId);
   if (!fullExam) {
     throw new Error(`Không tìm thấy đề thi mã: ${examId}`);
+  }
+
+  const attemptId = 'hsk-att-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
+  const anonSessionId = getOrCreateAnonymousSessionId();
+
+  // SEC-06: Authoritative server-side grading integration via /api/hsk/submit
+  if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('sb-access-token') || localStorage.getItem('supabase.auth.token'))) || null;
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      if (!user && anonSessionId) {
+        headers['x-anonymous-session-id'] = anonSessionId;
+      }
+
+      const res = await window.fetch('/api/hsk/submit', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          examId,
+          answers: submittedAnswers,
+          timeSpentSeconds,
+          anonymousSessionId: anonSessionId,
+          examMode,
+          attemptId
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.attempt) {
+          const serverAttempt = data.attempt;
+          saveAttemptToLocal(serverAttempt);
+          recordMistakesFromAttempt(serverAttempt, user);
+          clearTemporaryAnswers(examId);
+          if (user && serverAttempt.correctCount > 0) {
+            try {
+              awardXp(serverAttempt.correctCount * 5, user, `hsk_exam_${examId}_${Date.now()}`);
+            } catch {}
+          }
+          return serverAttempt;
+        }
+      }
+    } catch (networkErr) {
+      console.warn('[hskService] Server submit unavailable, falling back to local grading:', networkErr?.message);
+    }
   }
 
   const questions = fullExam.questions;
@@ -298,8 +352,6 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
     : totalScore;
 
   const passed = estimatedScore >= passingScore;
-  const attemptId = 'hsk-att-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
-  const anonSessionId = getOrCreateAnonymousSessionId();
 
   const attemptResult = {
     id: attemptId,
@@ -351,6 +403,8 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
   return attemptResult;
 }
 
+export const submitExam = submitExamAttempt;
+
 
 /**
  * Lưu kết quả lượt làm bài vào localStorage
@@ -376,6 +430,7 @@ async function syncAttemptToSupabase(attempt) {
       user_id: attempt.userId,
       anonymous_session_id: attempt.anonymousSessionId,
       exam_id: attempt.examId,
+      exam_mode: attempt.examMode || 'simulation',
       time_spent_seconds: attempt.timeSpentSeconds,
       submitted_answers: attempt.submittedAnswers,
       score: attempt.score,
@@ -558,9 +613,13 @@ export function recordMistakesFromAttempt(attemptResult, user = null) {
           updatedAt: new Date().toISOString()
         };
       } else {
-        // Thêm mới câu sai
+        // Thêm mới câu sai (ID tất định theo user/session + questionId để chống trùng lặp)
+        const deterministicId = userId 
+          ? `mst_${userId}_${q.questionId}` 
+          : `mst_${anonSessionId}_${q.questionId}`;
+
         updatedList.unshift({
-          id: `mst_${attemptResult.examId}_${q.questionId}_${Date.now()}`,
+          id: deterministicId,
           userId,
           anonymousSessionId: anonSessionId,
           questionId: q.questionId,
@@ -693,13 +752,22 @@ export async function getMistakeNotebook({ user = null, level = 'all', skill = '
 /**
  * Cập nhật trạng thái câu sai (đã hiểu 'mastered' hoặc cần ôn lại 'needs_review')
  */
-export async function updateMistakeStatus(mistakeId, newStatus, user = null) {
+export async function updateMistakeStatus(mistakeId, newStatus, user = null, explicitAnonId = null) {
+  const anonSessionId = explicitAnonId || getOrCreateAnonymousSessionId();
+  let updatedCount = 0;
+
   try {
     const raw = localStorage.getItem(STORAGE_MISTAKES_KEY);
     if (raw) {
       const list = JSON.parse(raw);
       const updated = list.map(m => {
         if (m.id === mistakeId || m.questionId === mistakeId) {
+          const isOwner = user?.id ? m.userId === user.id : (m.anonymousSessionId === anonSessionId && !m.userId);
+          const isAdmin = user?.role === 'admin';
+          if (!isOwner && !isAdmin) {
+            return m; // Chặn sửa câu sai của người khác!
+          }
+          updatedCount++;
           return { ...m, status: newStatus, updatedAt: new Date().toISOString() };
         }
         return m;
@@ -708,40 +776,64 @@ export async function updateMistakeStatus(mistakeId, newStatus, user = null) {
     }
 
     if (supabase && user?.id) {
-      await supabase
+      let query = supabase
         .from('hsk_mistakes')
         .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id)
         .or(`id.eq.${mistakeId},question_id.eq.${mistakeId}`);
+
+      if (user.role !== 'admin') {
+        query = query.eq('user_id', user.id);
+      }
+      const { data, error } = await query.select('id');
+      if (!error && data && data.length > 0) updatedCount += data.length;
     }
 
-    return true;
+    return updatedCount > 0;
   } catch {
     return false;
   }
 }
 
 /**
- * Xóa một câu hỏi khỏi sổ tay câu sai
+ * Xóa một câu hỏi khỏi sổ tay câu sai (chỉ chính chủ hoặc Admin được xóa)
  */
-export async function removeMistakeItem(mistakeId, user = null) {
+export async function removeMistakeItem(mistakeId, user = null, explicitAnonId = null) {
+  const anonSessionId = explicitAnonId || getOrCreateAnonymousSessionId();
+  let removedCount = 0;
+
   try {
     const raw = localStorage.getItem(STORAGE_MISTAKES_KEY);
     if (raw) {
       const list = JSON.parse(raw);
-      const filtered = list.filter(m => m.id !== mistakeId && m.questionId !== mistakeId);
+      const filtered = list.filter(m => {
+        if (m.id === mistakeId || m.questionId === mistakeId) {
+          const isOwner = user?.id ? m.userId === user.id : (m.anonymousSessionId === anonSessionId && !m.userId);
+          const isAdmin = user?.role === 'admin';
+          if (!isOwner && !isAdmin) {
+            return true; // Giữ lại nếu không phải chính chủ!
+          }
+          removedCount++;
+          return false;
+        }
+        return true;
+      });
       localStorage.setItem(STORAGE_MISTAKES_KEY, JSON.stringify(filtered));
     }
 
     if (supabase && user?.id) {
-      await supabase
+      let query = supabase
         .from('hsk_mistakes')
         .delete()
-        .eq('user_id', user.id)
         .or(`id.eq.${mistakeId},question_id.eq.${mistakeId}`);
+
+      if (user.role !== 'admin') {
+        query = query.eq('user_id', user.id);
+      }
+      const { error } = await query;
+      if (!error) removedCount++;
     }
 
-    return true;
+    return removedCount > 0;
   } catch {
     return false;
   }
@@ -813,7 +905,7 @@ async function syncMistakesToSupabase(mistakes) {
       last_attempt_id: m.lastAttemptId,
       updated_at: m.updatedAt || new Date().toISOString()
     }));
-    await supabase.from('hsk_mistakes').upsert(rows, { onConflict: 'user_id,question_id' });
+    await supabase.from('hsk_mistakes').upsert(rows, { onConflict: 'id' });
   } catch {}
 }
 

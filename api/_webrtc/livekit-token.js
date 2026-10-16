@@ -5,7 +5,7 @@
  * Placed in _webrtc so Vercel does not count it as a standalone function.
  */
 
-import { AccessToken } from 'livekit-server-sdk';
+import { AccessToken, TrackSource } from 'livekit-server-sdk';
 import { verifyRequestAuth, getSupabaseAdminClient, memoryParticipants } from '../_utils/supabaseServer.js';
 
 function isValidUuid(id) {
@@ -15,6 +15,19 @@ function isValidUuid(id) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
+  }
+
+  // FAIL-CLOSED (SEC-05): Production / Preview missing LiveKit credentials must return 503
+  const isProd = process.env.NODE_ENV === 'production' || 
+                 process.env.VERCEL_ENV === 'production' || 
+                 process.env.VERCEL_ENV === 'preview';
+  const apiKey = process.env.LIVEKIT_API_KEY || process.env.VITE_LIVEKIT_API_KEY;
+  const apiSecret = process.env.LIVEKIT_API_SECRET;
+
+  if (isProd && (!apiKey || !apiSecret)) {
+    return res.status(503).json({
+      error: 'Dịch vụ lớp học trực tuyến tạm thời gián đoạn: chưa cấu hình LiveKit credentials cho môi trường Production/Preview.'
+    });
   }
 
   // 1. Authenticate user identity
@@ -37,7 +50,6 @@ export default async function handler(req, res) {
   let verifiedRole = 'student';
   let canPublish = false;
 
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
   const supabase = getSupabaseAdminClient();
 
   if (isProd) {
@@ -88,6 +100,21 @@ export default async function handler(req, res) {
           });
         }
 
+        // Enforce maximum class capacity (50 students limit)
+        const { count: activeCount } = await supabase
+          .from('session_participants')
+          .select('*', { count: 'exact', head: true })
+          .eq('session_id', roomName)
+          .is('left_at', null)
+          .neq('user_id', userId);
+
+        const maxCap = session.max_capacity || 50;
+        if (typeof activeCount === 'number' && activeCount >= maxCap) {
+          return res.status(403).json({
+            error: `Phòng học đã đạt sĩ số tối đa (${maxCap} học viên).`
+          });
+        }
+
         verifiedRole = 'student';
         // Authoritative server check: Has teacher granted mic permission in session_participants?
         const { data: partRecord } = await supabase
@@ -113,22 +140,26 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (!session) {
-        return res.status(404).json({ error: 'Phòng học trực tuyến không tồn tại hoặc đã bị xóa.' });
-      }
-
-      if (session.status === 'ended' || session.ended_at) {
-        return res.status(403).json({ error: 'Phiên học trực tuyến đã kết thúc.' });
-      }
-
-      if (session.classrooms && (session.classrooms.status === 'archived' || session.classrooms.status === 'closed')) {
-        return res.status(403).json({ error: 'Lớp học hiện tại đã đóng hoặc lưu trữ.' });
-      }
-
-      const isTeacherOwner = session.teacher_id === userId || auth.user.role === 'admin';
-      if (isTeacherOwner) {
-        verifiedRole = 'teacher';
-        canPublish = true;
+        if (auth.user.role === 'admin' || auth.user.role === 'teacher') {
+          verifiedRole = 'teacher';
+          canPublish = true;
+        } else {
+          return res.status(404).json({ error: 'Phòng học trực tuyến không tồn tại hoặc đã bị xóa.' });
+        }
       } else {
+        if (session.status === 'ended' || session.ended_at) {
+          return res.status(403).json({ error: 'Phiên học trực tuyến đã kết thúc.' });
+        }
+
+        if (session.classrooms && (session.classrooms.status === 'archived' || session.classrooms.status === 'closed')) {
+          return res.status(403).json({ error: 'Lớp học hiện tại đã đóng hoặc lưu trữ.' });
+        }
+
+        const isTeacherOwner = session.teacher_id === userId || auth.user.role === 'admin' || auth.user.role === 'teacher';
+        if (isTeacherOwner) {
+          verifiedRole = 'teacher';
+          canPublish = true;
+        } else {
         const { data: membership } = await supabase
           .from('class_members')
           .select('id, status')
@@ -143,6 +174,20 @@ export default async function handler(req, res) {
           });
         }
 
+        const { count: activeCount } = await supabase
+          .from('session_participants')
+          .select('*', { count: 'exact', head: true })
+          .eq('session_id', roomName)
+          .is('left_at', null)
+          .neq('user_id', userId);
+
+        const maxCap = session.max_capacity || 50;
+        if (typeof activeCount === 'number' && activeCount >= maxCap) {
+          return res.status(403).json({
+            error: `Phòng học đã đạt sĩ số tối đa (${maxCap} học viên).`
+          });
+        }
+
         verifiedRole = 'student';
         const { data: partRecord } = await supabase
           .from('session_participants')
@@ -152,6 +197,7 @@ export default async function handler(req, res) {
           .maybeSingle();
 
         canPublish = Boolean(partRecord?.is_mic_allowed);
+        }
       }
     } catch (e) {
       console.warn('[LiveKit Token] Supabase verification fallback notice:', e.message);
@@ -162,32 +208,62 @@ export default async function handler(req, res) {
                       auth.user.role === 'admin' ||
                       String(userId).includes('teacher');
     verifiedRole = isTeacher ? 'teacher' : 'student';
+
+    // Simulation capacity check: Count active participants in memory
+    if (!isTeacher) {
+      let activeCount = 0;
+      for (const [key, part] of memoryParticipants.entries()) {
+        if (key.startsWith(`${roomName}:`) && !key.endsWith(`:${userId}`) && !part?.left_at) {
+          activeCount++;
+        }
+      }
+      if (activeCount >= 50) {
+        return res.status(403).json({
+          error: 'Phòng học đã đạt sĩ số tối đa (50 học viên).'
+        });
+      }
+    }
+
     // Students can NEVER publish by default unless authorized on server
     const memPart = memoryParticipants.get(`${roomName}:${userId}`);
     canPublish = isTeacher ? true : Boolean(memPart?.is_mic_allowed);
   }
 
-  // 3. Read LiveKit credentials
+  // 3. Read LiveKit credentials & enforce Fail-Closed on Production / Preview (SEC-05)
   const livekitUrl = process.env.LIVEKIT_URL || process.env.VITE_LIVEKIT_URL || '';
-  const apiKey = process.env.LIVEKIT_API_KEY || 'devkey';
-  const apiSecret = process.env.LIVEKIT_API_SECRET || 'secret';
-  const isConfigured = Boolean(process.env.LIVEKIT_URL || process.env.VITE_LIVEKIT_URL);
+
+  if (isProd && (!apiKey || !apiSecret || !livekitUrl)) {
+    return res.status(503).json({
+      error: 'Dịch vụ kết nối phòng học trực tuyến LiveKit chưa được cấu hình đầy đủ khóa bí mật trên máy chủ sản xuất.'
+    });
+  }
+
+  const effectiveApiKey = apiKey || 'devkey';
+  const effectiveApiSecret = apiSecret || 'secret';
+  const isConfigured = Boolean(livekitUrl && apiKey && apiSecret);
 
   try {
-    const at = new AccessToken(apiKey, apiSecret, {
+    const at = new AccessToken(effectiveApiKey, effectiveApiSecret, {
       identity: String(userId),
       name: String(userName),
       metadata: JSON.stringify({ role: verifiedRole, userId }),
       ttl: '30m'
     });
 
-    at.addGrant({
+    const videoGrant = {
       room: String(roomName),
       roomJoin: true,
       canPublish: canPublish,
       canPublishData: true,
       canSubscribe: true
-    });
+    };
+
+    // Least Privilege: Students granted mic can ONLY publish audio/microphone, never camera or screenshare
+    if (canPublish && verifiedRole === 'student') {
+      videoGrant.canPublishSources = [TrackSource.MICROPHONE];
+    }
+
+    at.addGrant(videoGrant);
 
     const token = await at.toJwt();
 

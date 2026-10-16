@@ -1,9 +1,14 @@
 import React from 'react';
 import { GraduationCap, ArrowLeft, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import PageLoader from './PageLoader';
 
 export default function TeacherGuard({ user, isTeacher, onGoHome, children }) {
-  const { logout } = useAuth();
+  const { logout, loading } = useAuth();
+
+  if (loading) {
+    return <PageLoader />;
+  }
 
   if (!isTeacher) {
     return (

@@ -1,7 +1,15 @@
 import React from 'react';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import PageLoader from './PageLoader';
 
 export default function AdminGuard({ user, isAdmin, onGoHome, children }) {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return <PageLoader />;
+  }
+
   if (!isAdmin) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-6">

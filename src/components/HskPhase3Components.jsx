@@ -32,7 +32,7 @@ export function HskResourcesView({ user, onNavigate, onOpenReport, onOpenAdmin }
   const [selectedSkill, setSelectedSkill] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const isAdmin = user && (user.role === 'admin' || user.isAdmin === true || (typeof user.email === 'string' && user.email.includes('admin')));
+  const isAdmin = Boolean(user && (user.role === 'admin' || user.isAdmin === true));
 
   useEffect(() => {
     let mounted = true;

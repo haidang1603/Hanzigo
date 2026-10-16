@@ -22,15 +22,32 @@ async function callBackendAiTutor(userText, hskLevel = 'HSK 1', conversationHist
   let authToken = '';
   let authUid = '';
   try {
+    if (isSupabaseConfigured && supabase?.auth) {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.access_token) {
+        authToken = data.session.access_token;
+      }
+      if (data?.session?.user?.id && !authUid) {
+        authUid = data.session.user.id;
+      }
+    }
+  } catch {}
+
+  try {
     if (typeof localStorage !== 'undefined') {
       const rawUser = localStorage.getItem('hanzigo_user');
       if (rawUser) {
         const u = JSON.parse(rawUser);
-        authUid = u.uid || u.id || '';
-        authToken = u.token || u.access_token || '';
+        if (!authUid) authUid = u.uid || u.id || '';
+        if (!authToken) authToken = u.token || u.access_token || '';
       }
     }
   } catch {}
+
+  // In local development, fallback to dev user ID if unauthenticated
+  if (!authUid && import.meta.env?.DEV) {
+    authUid = 'dev_student_user';
+  }
 
   const response = await fetch('/api/ai/chat', {
     method: 'POST',

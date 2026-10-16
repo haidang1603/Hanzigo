@@ -1,7 +1,7 @@
 /**
  * HANZI GO - LIVE LEAVE HANDLER
  */
-import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, getSupabaseAdminClient, memoryParticipants } from '../../_utils/supabaseServer.js';
 
 export default async function leaveHandler(req, res) {
   if (req.method !== 'POST') {
@@ -51,6 +51,12 @@ export default async function leaveHandler(req, res) {
     } catch (err) {
       console.warn('[/api/live/leave] Notice:', err.message);
     }
+  }
+
+  const memPart = memoryParticipants.get(`${sessionId}:${effectiveUserId}`);
+  if (memPart) {
+    memPart.left_at = new Date().toISOString();
+    memPart.is_mic_allowed = false;
   }
 
   return res.status(200).json({ success: true });

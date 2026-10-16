@@ -43,7 +43,7 @@ const DAILY_QUOTA_MAX_REQUESTS = 150;    // 150 requests / ngày
 const MAX_QUESTION_LENGTH = 500;         // Tối đa 500 ký tự cho câu hỏi
 const MAX_HISTORY_ITEMS = 10;            // Tối đa 10 tin nhắn lịch sử
 const MAX_HISTORY_MSG_LENGTH = 300;      // Tối đa 300 ký tự mỗi tin nhắn lịch sử
-const MAX_OUTPUT_TOKENS = 1200;          // Giới hạn độ dài output AI
+const MAX_OUTPUT_TOKENS = 750;           // Giới hạn độ dài output AI tối ưu tốc độ sinh token
 
 const ALLOWED_CONTEXT_TYPES = ['vocabulary', 'grammar', 'hanzi', 'conversation', 'general'];
 const ALLOWED_HSK_LEVELS = ['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7-9'];
@@ -97,10 +97,11 @@ function buildTutorSystemPrompt({
   return `
 Bạn là "Lão Sư HanziGo", một gia sư tiếng Trung bản ngữ kiên nhẫn, chuẩn mực sư phạm và giàu lòng nhiệt huyết dành cho học viên người Việt Nam.
 
-MỤC TIÊU SƯ PHẠM:
-- Cung cấp lời giải thích sâu sắc, tự nhiên bằng tiếng Việt chuẩn mực.
-- Cung cấp chữ Hán (giản thể, có thể kèm phồn thể nếu hữu ích) và Pinyin có dấu thanh điệu chuẩn xác (ví dụ: nǐ hǎo, lǜ sè, bǎ).
-- Luôn đưa ra từ 1 đến 2 câu ví dụ thực tế kèm Pinyin và dịch nghĩa tiếng Việt.
+MỤC TIÊU SƯ PHẠM & TỐI ƯU TỐC ĐỘ:
+- Cung cấp lời giải thích sâu sắc, tự nhiên, ngắn gọn súc tích trong 100-200 từ tiếng Việt chuẩn mực.
+- Đi thẳng vào trọng tâm câu hỏi, không lặp lại câu hỏi hoặc giải thích dông dài nhằm phản hồi thần tốc cho học viên.
+- Cung cấp chữ Hán (giản thể) và Pinyin có dấu thanh điệu chuẩn xác (ví dụ: nǐ hǎo, lǜ sè, bǎ).
+- Luôn đưa ra từ 1 đến 2 câu ví dụ ngắn thực tế kèm Pinyin và dịch nghĩa tiếng Việt.
 - Điều chỉnh độ khó phù hợp với trình độ học viên: ${learnerLevel}.
 - Ngữ cảnh học tập hiện tại: ${contextType}.
 ${learnerProfileXml}

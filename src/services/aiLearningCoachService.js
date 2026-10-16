@@ -34,6 +34,10 @@ import {
 import { VOCABULARY_LIST } from '../data/chineseData.js';
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { isValidUuid } from './authService.js';
+import { buildUnifiedLearnerProfile } from './unifiedLearningProfileService.js';
+import { generateLearningRecommendations } from './learningRecommendationEngine.js';
+
+export { buildUnifiedLearnerProfile, generateLearningRecommendations };
 
 export const SKILL_KEYS = [
   'vocabulary',
@@ -156,6 +160,18 @@ export function buildStudentLearningProfile(user = null) {
       }
     }
   } catch {}
+
+  // 6.6. Dữ liệu Luyện thi HSK & Sổ tay câu sai (Phase 3 Integration)
+  let hskAttempts = [];
+  let hskMistakes = [];
+  try {
+    const rawAttempts = localStorage.getItem('hanzigo_hsk_attempts');
+    if (rawAttempts) hskAttempts = JSON.parse(rawAttempts) || [];
+    const rawMistakes = localStorage.getItem('hanzigo_hsk_mistakes');
+    if (rawMistakes) hskMistakes = JSON.parse(rawMistakes) || [];
+  } catch {}
+  const activeHskMistakes = hskMistakes.filter(m => m.status === 'needs_review');
+  const topRecurringMistakes = [...activeHskMistakes].sort((a, b) => (b.mistakeCount || 1) - (a.mistakeCount || 1)).slice(0, 5);
 
   // 7. Tính điểm cho 7 kỹ năng (Honest, 0 random)
   const skills = {};
@@ -387,6 +403,12 @@ export function buildStudentLearningProfile(user = null) {
       submissions: classroomSubmissions,
       overdueCount: overdueAssignmentsCount,
       lowScoreSubmissions
+    },
+    hskProgress: {
+      totalAttempts: hskAttempts.length,
+      activeMistakesCount: activeHskMistakes.length,
+      topRecurringMistakes,
+      mistakes: hskMistakes
     }
   };
 }
@@ -533,6 +555,22 @@ export function detectWeaknesses(profile) {
         : 'Điểm bài tập của bạn dưới 60 điểm. Hãy xem lại kiến thức bài học và cải thiện lỗi sai.',
       suggestedAction: 'Xem nhận xét của giáo viên và ôn lại kiến thức liên quan.',
       targetRoute: 'classroom'
+    });
+  }
+
+  // 6.6. Điểm yếu câu hỏi sai trong bài thi HSK (HSK Mistakes Notebook)
+  if (profile.hskProgress?.activeMistakesCount >= 3) {
+    const hasRecurring = profile.hskProgress.topRecurringMistakes?.length > 0;
+    weaknesses.push({
+      id: 'wk-hsk-mistakes',
+      skill: 'listening',
+      severity: hasRecurring ? 'high' : 'medium',
+      label: `Có ${profile.hskProgress.activeMistakesCount} câu sai trong đề thi HSK`,
+      detail: hasRecurring
+        ? `Sổ tay ghi nhận ${profile.hskProgress.activeMistakesCount} câu sai, trong đó có lỗi sai lặp lại nhiều lần. Cần luyện lại để tránh bẫy đề thi.`
+        : `Có ${profile.hskProgress.activeMistakesCount} câu hỏi bạn làm sai trong bài thi gần nhất cần củng cố lại.`,
+      suggestedAction: 'Vào Sổ tay câu sai làm lại các câu bị điểm liệt kèm giải thích chi tiết',
+      targetRoute: 'hsk'
     });
   }
 
@@ -877,9 +915,12 @@ export function getOfflineCoachRecommendation(profile, weaknesses = [], options 
     }
   ];
 
+  const recommendations = generateLearningRecommendations(profile);
+
   return {
     summary,
     weaknesses,
+    recommendations,
     recommendedLessons,
     recommendedNextLesson,
     recommendedReviewLessons,
@@ -909,7 +950,7 @@ export async function getAiCoachRecommendation(user = null, { forceRefresh = fal
   const effectiveGoal = learningGoal || profile.learningGoal || 'general_foundation';
 
   const todayStr = getLocalDateString(new Date());
-  const cacheKey = `${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${todayStr}`;
+  const cacheKey = `${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${effectiveGoal}_${effectiveMinutes}_${todayStr}`;
 
   // 1. Kiểm tra cache nếu không yêu cầu forceRefresh
   if (!forceRefresh) {
@@ -1013,6 +1054,7 @@ export async function getAiCoachRecommendation(user = null, { forceRefresh = fal
             ? json.dailyPlan 
             : generateDailyLearningPlan(profile, weaknesses, effectiveMinutes, effectiveGoal),
           reasoning: Array.isArray(json.reasoning) ? json.reasoning : [],
+          recommendations: generateLearningRecommendations(profile),
           guidanceForNewLearner: profile.guidanceForNewLearner,
           learningGoal: effectiveGoal,
           durationMinutes: effectiveMinutes,
@@ -1024,8 +1066,10 @@ export async function getAiCoachRecommendation(user = null, { forceRefresh = fal
         try {
           const valStr = JSON.stringify(validatedData);
           localStorage.setItem(cacheKey, valStr);
+          localStorage.setItem(`${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${todayStr}`, valStr);
           const utcDateStr = new Date().toISOString().split('T')[0];
           if (utcDateStr !== todayStr) {
+            localStorage.setItem(`${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${effectiveGoal}_${effectiveMinutes}_${utcDateStr}`, valStr);
             localStorage.setItem(`${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${utcDateStr}`, valStr);
           }
         } catch {}
@@ -1046,8 +1090,10 @@ export async function getAiCoachRecommendation(user = null, { forceRefresh = fal
   try {
     const valStr = JSON.stringify(offlineResult);
     localStorage.setItem(cacheKey, valStr);
+    localStorage.setItem(`${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${todayStr}`, valStr);
     const utcDateStr = new Date().toISOString().split('T')[0];
     if (utcDateStr !== todayStr) {
+      localStorage.setItem(`${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${effectiveGoal}_${effectiveMinutes}_${utcDateStr}`, valStr);
       localStorage.setItem(`${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${utcDateStr}`, valStr);
     }
   } catch {}

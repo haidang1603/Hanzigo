@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Mail, Lock, User, ArrowRight, GraduationCap } from 'lucide-react';
 import { playClickSound, playSuccessSound, playErrorSound } from '../utils/audio';
 import { isSupabaseConfigured } from '../supabase/config';
-import { loginWithEmail, registerWithEmail, loginWithGoogle, generateUuid, isEmailAdmin } from '../supabase/services';
+import { loginWithEmail, registerWithEmail, loginWithGoogle, generateUuid } from '../supabase/services';
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) {
   const [mode, setMode] = useState(initialMode); // 'login' or 'register'
@@ -62,10 +62,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
           playSuccessSound();
           const customAvatar = localStorage.getItem('hanzigo_custom_avatar');
           const generatedId = generateUuid();
-          const isSysAdmin = isEmailAdmin(formData.email);
           const isTeacher = selectedRole === 'teacher';
-          const defaultName = isSysAdmin ? 'Admin HanziGo' : isTeacher ? 'Thầy cô HanziGo' : 'Học viên HanziGo';
-          const finalRole = isSysAdmin ? 'admin' : selectedRole;
+          const defaultName = isTeacher ? 'Thầy cô HanziGo' : 'Học viên HanziGo';
+          const finalRole = isTeacher ? 'teacher' : 'student';
           const userData = {
             uid: generatedId,
             id: generatedId,
@@ -292,12 +291,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                 </div>
-                {isEmailAdmin(formData.email) && (
-                  <p className="mt-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 animate-in fade-in">
-                    <span>🛡️</span>
-                    <span>Hệ thống nhận diện: Tài khoản Quản trị viên (Admin)</span>
-                  </p>
-                )}
               </div>
 
               <div>

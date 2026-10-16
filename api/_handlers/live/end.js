@@ -1,7 +1,7 @@
 /**
  * HANZI GO - LIVE END HANDLER
  */
-import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, getSupabaseAdminClient, memoryParticipants } from '../../_utils/supabaseServer.js';
 
 export default async function endHandler(req, res) {
   if (req.method !== 'POST') {
@@ -60,6 +60,13 @@ export default async function endHandler(req, res) {
     }
   } else if (auth.user.role !== 'teacher' && auth.user.role !== 'admin' && (!auth.user.id.includes('teacher') || isProd)) {
     return res.status(403).json({ error: 'Chỉ giáo viên phụ trách mới có quyền kết thúc buổi học.' });
+  }
+
+  for (const [key, part] of memoryParticipants.entries()) {
+    if (key.startsWith(`${sessionId}:`)) {
+      part.left_at = closeTime;
+      part.is_mic_allowed = false;
+    }
   }
 
   return res.status(200).json({ success: true, endedAt: closeTime });

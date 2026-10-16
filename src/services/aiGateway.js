@@ -26,14 +26,29 @@ import {
   diagnoseOfflineHskMistakes,
   recommendOfflineResources
 } from './deterministicPersonalizationEngine.js';
+import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 
 /**
  * Lấy Bearer Token và User ID của người dùng hiện tại
  */
-function getClientAuthHeaders(user = null) {
+async function getClientAuthHeaders(user = null) {
   let authToken = user?.token || user?.access_token || '';
   let authUid = user?.uid || user?.id || '';
 
+  // 1. Trích xuất authoritative session JWT từ Supabase client nếu đã khởi tạo
+  if (isSupabaseConfigured && supabase?.auth) {
+    try {
+      const { data: { session } = {} } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        authToken = session.access_token;
+      }
+      if (session?.user?.id) {
+        authUid = session.user.id;
+      }
+    } catch {}
+  }
+
+  // 2. Dự phòng đọc từ localStorage nếu session chưa kịp hydrate
   try {
     if (typeof localStorage !== 'undefined') {
       const rawUser = localStorage.getItem('hanzigo_user');
@@ -44,6 +59,11 @@ function getClientAuthHeaders(user = null) {
       }
     }
   } catch {}
+
+  // 3. Trong môi trường dev cục bộ (Vite dev), nếu chưa đăng nhập thì cung cấp uid dev để hỗ trợ kiểm thử
+  if (!authUid && import.meta.env?.DEV) {
+    authUid = 'dev_student_user';
+  }
 
   return {
     ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
@@ -63,7 +83,9 @@ export async function invokeAiPersonalization({
   const enabled = isPersonalizationEnabled(user);
   const uid = user?.uid || user?.id || 'guest_learner';
   const today = new Date().toISOString().split('T')[0];
-  const cacheKey = `${LEARNER_STORAGE_KEYS.CACHE_PREFIX}_${uid}_${action}_${today}`;
+  const payloadTarget = payload.grammarPoint || payload.targetConcept || payload.questionId || payload.examId || payload.learningGoal || '';
+  const payloadSubKey = payloadTarget ? `_${String(payloadTarget).replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_').slice(0, 30)}` : '';
+  const cacheKey = `${LEARNER_STORAGE_KEYS.CACHE_PREFIX}_${uid}_${action}${payloadSubKey}_${today}`;
 
   // 1. Kiểm tra quyền riêng tư: Nếu tắt cá nhân hóa -> chạy deterministic offline ngay lập tức
   if (!enabled) {
@@ -88,7 +110,7 @@ export async function invokeAiPersonalization({
   }
 
   // 3. Chuẩn bị headers và dữ liệu đã làm sạch
-  const authHeaders = getClientAuthHeaders(user);
+  const authHeaders = await getClientAuthHeaders(user);
   const cleanPayload = sanitizeContextForAi(payload);
 
   // 4. Thử gọi backend serverless
@@ -255,9 +277,29 @@ export async function askAiTutor({
   learnerLevel = null,
   conversationHistory = [],
   learnerContext = null,
-  user = null
+  user = null,
+  bypassCache = false
 }) {
-  const authHeaders = getClientAuthHeaders(user);
+  // Bộ đệm phản hồi tức thì (Instant Cache) cho câu hỏi đơn lẻ hoặc câu hỏi mẫu
+  const effectiveLevel = learnerLevel || 'HSK 1';
+  const cleanQ = (question || '').trim().toLowerCase();
+  const cacheKey = `hanzigo_tutor_q_${contextType}_${effectiveLevel}_${cleanQ.slice(0, 40).replace(/[^a-z0-9_\u4e00-\u9fa5]/gi, '_')}`;
+
+  if (!bypassCache && (!conversationHistory || conversationHistory.length === 0)) {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.success && parsed.data) {
+            return { ...parsed, fromCache: true };
+          }
+        }
+      }
+    } catch {}
+  }
+
+  const authHeaders = await getClientAuthHeaders(user);
 
   // Xử lý ngữ cảnh cá nhân hóa an toàn nếu được bật
   let safeLearnerContext = null;
@@ -288,7 +330,15 @@ export async function askAiTutor({
     });
 
     if (response.ok) {
-      return await response.json();
+      const resData = await response.json();
+      if (!bypassCache && (!conversationHistory || conversationHistory.length === 0) && resData?.success) {
+        try {
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem(cacheKey, JSON.stringify(resData));
+          }
+        } catch {}
+      }
+      return resData;
     }
     const errData = await response.json().catch(() => ({}));
     return {

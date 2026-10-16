@@ -93,11 +93,81 @@ export async function saveUserVocabSrsCard(userId, srsCard) {
 }
 
 /**
+ * Hydrate and synchronize user's SRS flashcard state from Supabase to local storage
+ */
+export async function syncUserVocabSrsFromCloud(userId) {
+  if (!isSupabaseConfigured || !supabase || !isValidUuid(userId)) return null;
+
+  try {
+    const data = await getUserVocabSrsProgress(userId);
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    const srsKey = getUserStorageKey('hanzigo_vocab_srs_state', { id: userId });
+    let existingMap = {};
+    try {
+      const raw = localStorage.getItem(srsKey);
+      if (raw) existingMap = JSON.parse(raw);
+    } catch {}
+
+    const srsMap = { ...existingMap };
+    const remembered = [];
+    const review = [];
+
+    data.forEach(item => {
+      const hanzi = item.hanzi;
+      if (!hanzi) return;
+
+      const local = srsMap[hanzi];
+      const remoteLastReviewed = item.last_reviewed_at ? new Date(item.last_reviewed_at).getTime() : 0;
+      const localLastReviewed = local?.lastReviewedAt ? new Date(local.lastReviewedAt).getTime() : 0;
+
+      if (!local || remoteLastReviewed >= localLastReviewed) {
+        srsMap[hanzi] = {
+          repetitions: item.repetitions ?? local?.repetitions ?? 1,
+          intervalDays: item.interval_days ?? local?.intervalDays ?? 1,
+          easeFactor: Number(item.ease_factor) || local?.easeFactor || 2.50,
+          stage: item.stage ?? local?.stage ?? 1,
+          lastReviewedAt: item.last_reviewed_at || local?.lastReviewedAt || new Date().toISOString(),
+          nextReviewAt: item.next_review_at || local?.nextReviewAt || new Date().toISOString()
+        };
+      }
+
+      if (srsMap[hanzi].stage >= 2) {
+        remembered.push(hanzi);
+      } else if (srsMap[hanzi].stage === 1) {
+        review.push(hanzi);
+      }
+    });
+
+    try {
+      localStorage.setItem(srsKey, JSON.stringify(srsMap));
+      localStorage.setItem('hanzigo_vocab_srs_state', JSON.stringify(srsMap));
+
+      const remKey = getUserStorageKey('hanzigo_vocab_remembered', { id: userId });
+      localStorage.setItem(remKey, JSON.stringify(remembered));
+      localStorage.setItem('hanzigo_vocab_remembered', JSON.stringify(remembered));
+
+      const revKey = getUserStorageKey('hanzigo_vocab_review', { id: userId });
+      localStorage.setItem(revKey, JSON.stringify(review));
+      localStorage.setItem('hanzigo_vocab_review', JSON.stringify(review));
+    } catch (e) {
+      console.warn('LocalStorage save error in syncUserVocabSrsFromCloud:', e);
+    }
+
+    return { srsMap, remembered, review, count: data.length };
+  } catch (err) {
+    console.warn('Sync user vocab SRS from cloud notice:', err);
+    return null;
+  }
+}
+
+/**
  * Synchronize words learned in a lesson into user's remembered list & SRS queue
  * Prevents duplicates and maintains consistency between local & cloud storage.
  */
 export async function syncLessonVocabToSrs(vocabList = [], user = null) {
   if (!Array.isArray(vocabList) || vocabList.length === 0) return { addedCount: 0 };
+  const targetUid = user?.id || user?.uid;
 
   let existingRemembered = [];
   const remKey = getUserStorageKey('hanzigo_vocab_remembered', user);
@@ -139,9 +209,9 @@ export async function syncLessonVocabToSrs(vocabList = [], user = null) {
         nextReviewAt: tomorrowIso
       };
 
-      // Sync to cloud if user has uuid
-      if (user?.uid) {
-        saveUserVocabSrsCard(user.uid, {
+      // Sync to cloud if user has valid uuid
+      if (targetUid && isValidUuid(targetUid)) {
+        saveUserVocabSrsCard(targetUid, {
           hanzi,
           pinyin: item.pinyin || '',
           meaning: item.meaning || '',

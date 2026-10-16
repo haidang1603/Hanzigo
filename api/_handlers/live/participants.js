@@ -1,7 +1,7 @@
 /**
  * HANZI GO - LIVE PARTICIPANTS HANDLER
  */
-import { getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { getSupabaseAdminClient, memoryParticipants } from '../../_utils/supabaseServer.js';
 
 export default async function participantsHandler(req, res) {
   if (req.method !== 'GET') {
@@ -42,5 +42,15 @@ export default async function participantsHandler(req, res) {
     }
   }
 
-  return res.status(200).json({ success: true, participants: [] });
+  const memList = [];
+  for (const [key, part] of memoryParticipants.entries()) {
+    if (key.startsWith(`${sessionId}:`)) {
+      memList.push({
+        ...part,
+        user_name: part.name || (part.role === 'teacher' ? 'Giáo viên' : 'Học viên')
+      });
+    }
+  }
+
+  return res.status(200).json({ success: true, participants: memList });
 }

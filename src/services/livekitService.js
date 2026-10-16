@@ -294,6 +294,15 @@ export class LiveKitClassroomManager {
 
     // Participant disconnected
     room.on(RoomEvent.ParticipantDisconnected, (participant) => {
+      if (typeof document !== 'undefined' && participant?.identity) {
+        try {
+          const selector = `[data-livekit-participant="${participant.identity}"]`;
+          document.querySelectorAll(selector).forEach(el => {
+            this.attachedAudioElements.delete(el);
+            el.remove();
+          });
+        } catch {}
+      }
       this.remoteParticipantsMap.delete(participant.identity);
       if (this.teacherParticipant?.identity === participant.identity) {
         this.teacherVideoTrack = null;
@@ -546,7 +555,9 @@ export class LiveKitClassroomManager {
    * Teacher / Student: Toggle camera publishing
    */
   async setCameraEnabled(enabled) {
-    if (!this.room || !this.isConnected) return false;
+    if (!this.room || !this.isConnected) {
+      return { success: false, error: 'Chưa kết nối đến máy chủ phòng học.' };
+    }
     try {
       await this.room.localParticipant.setCameraEnabled(enabled);
       if (!enabled) {
@@ -559,10 +570,10 @@ export class LiveKitClassroomManager {
           });
         }
       }
-      return enabled;
+      return { success: true, enabled: Boolean(enabled) };
     } catch (err) {
       console.warn('[LiveKit] Không thể đổi trạng thái Camera:', err.message);
-      return false;
+      return { success: false, error: err.message };
     }
   }
 
@@ -570,7 +581,9 @@ export class LiveKitClassroomManager {
    * Teacher / Student: Toggle microphone publishing
    */
   async setMicrophoneEnabled(enabled) {
-    if (!this.room || !this.isConnected) return false;
+    if (!this.room || !this.isConnected) {
+      return { success: false, error: 'Chưa kết nối đến máy chủ phòng học.' };
+    }
     try {
       await this.room.localParticipant.setMicrophoneEnabled(enabled);
       if (!enabled) {
@@ -583,10 +596,10 @@ export class LiveKitClassroomManager {
           });
         }
       }
-      return enabled;
+      return { success: true, enabled: Boolean(enabled) };
     } catch (err) {
       console.warn('[LiveKit] Không thể đổi trạng thái Micro:', err.message);
-      return false;
+      return { success: false, error: err.message };
     }
   }
 
@@ -594,14 +607,22 @@ export class LiveKitClassroomManager {
    * Teacher: Toggle screen share publishing
    */
   async setScreenShareEnabled(enabled) {
-    if (!this.room || !this.isConnected) return false;
+    if (!this.room || !this.isConnected) {
+      return { success: false, error: 'Chưa kết nối đến máy chủ phòng học.' };
+    }
     try {
       const pub = await this.room.localParticipant.setScreenShareEnabled(enabled);
       if (enabled) {
+        const handleBrowserStopShare = () => {
+          this.setScreenShareEnabled(false).catch(() => {});
+        };
+
         if (pub?.track?.mediaStreamTrack) {
-          pub.track.mediaStreamTrack.onended = () => {
-            this.setScreenShareEnabled(false).catch(() => {});
-          };
+          pub.track.mediaStreamTrack.onended = handleBrowserStopShare;
+          pub.track.mediaStreamTrack.addEventListener?.('ended', handleBrowserStopShare, { once: true });
+        }
+        if (typeof pub?.track?.on === 'function') {
+          pub.track.on('ended', handleBrowserStopShare);
         }
       } else {
         if (this.localScreenTrack) {
@@ -616,11 +637,49 @@ export class LiveKitClassroomManager {
           });
         }
       }
-      return Boolean(enabled);
+      return { success: true, enabled: Boolean(enabled) };
     } catch (err) {
       console.warn('[LiveKit] Không thể đổi trạng thái Screen Share:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * Enumerate available media devices (audioinput, videoinput, audiooutput)
+   */
+  async getAvailableDevices(kind = null) {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) {
+      return [];
+    }
+    try {
+      if (kind && typeof Room.getLocalDevices === 'function') {
+        return await Room.getLocalDevices(kind);
+      }
+      const allDevices = await navigator.mediaDevices.enumerateDevices();
+      return kind ? allDevices.filter(d => d.kind === kind) : allDevices;
+    } catch (err) {
+      console.warn('[LiveKit] Device enumeration notice:', err.message);
+      return [];
+    }
+  }
+
+  /**
+   * Switch active input or output device on the fly
+   * @param {'audioinput' | 'videoinput' | 'audiooutput'} kind 
+   * @param {string} deviceId 
+   */
+  async switchDevice(kind, deviceId) {
+    if (!this.room || !deviceId) return false;
+    try {
+      if (typeof this.room.switchActiveDevice === 'function') {
+        await this.room.switchActiveDevice(kind, deviceId);
+        return true;
+      }
+    } catch (err) {
+      console.warn(`[LiveKit] Lỗi chuyển thiết bị (${kind}):`, err.message);
       return false;
     }
+    return false;
   }
 
   /**

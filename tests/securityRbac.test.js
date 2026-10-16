@@ -70,11 +70,10 @@ test('RBAC: Role immutability ensures users cannot escalate roles in client sess
   assert.equal(canUserModifyRoleDirectly(), false);
 });
 
-test('RBAC: System admin emails are permanently protected from demotion', async () => {
-  const { isEmailAdmin } = await import('../src/services/authService.js');
-  assert.equal(isEmailAdmin('lehaidang16032006@gmail.com'), true);
-  assert.equal(isEmailAdmin('LEHAIDANG16032006@GMAIL.COM'), true);
-  assert.equal(isEmailAdmin('admin@hanzigo.com'), true);
-  assert.equal(isEmailAdmin('student@example.com'), false);
-  assert.equal(isEmailAdmin('teacher@example.com'), false);
+test('RBAC: Admin privilege is not determined by client-side email list', async () => {
+  const { isEmailAdmin, ADMIN_EMAILS } = await import('../src/services/authService.js');
+  // ADMIN_EMAILS must be empty in frontend bundle (SEC-02)
+  assert.equal(ADMIN_EMAILS.length, 0);
+  assert.equal(isEmailAdmin('lehaidang16032006@gmail.com'), false);
+  assert.equal(isEmailAdmin('admin@hanzigo.com'), false);
 });

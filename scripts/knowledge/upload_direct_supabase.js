@@ -32,9 +32,14 @@ if (fs.existsSync('.env')) {
   });
 }
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || 'https://woszblniatdvijwdkmpm.supabase.co';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const serviceKeyArg = process.argv[2];
 const SERVICE_KEY = serviceKeyArg || process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL) {
+  console.error('❌ Lỗi: Thiếu biến môi trường VITE_SUPABASE_URL hoặc SUPABASE_URL.');
+  process.exit(1);
+}
 
 async function run() {
   console.log('===========================================================');

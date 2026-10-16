@@ -301,10 +301,15 @@ export default function LiveClassroomPage({
         error: connRes?.error || null
       });
 
+      if (!isConnected) {
+        const fallbackManager = new LiveRoomMediaManager();
+        mediaManagerRef.current = fallbackManager;
+      }
+
       // Teacher automatically publishes camera & mic upon joining
       if (check.role === 'teacher' && isConnected) {
-        await lkManager.setCameraEnabled(true);
-        await lkManager.setMicrophoneEnabled(true);
+        lkManager.setCameraEnabled(true).catch(() => {});
+        lkManager.setMicrophoneEnabled(true).catch(() => {});
       }
     } catch (err) {
       console.warn('[LiveClassroom] LiveKit connection warning:', err);
@@ -322,7 +327,7 @@ export default function LiveClassroomPage({
           if (mRes?.success) {
             setMediaState(prev => ({ ...prev, localStream: mRes.stream, isCameraOn: true, isMicOn: true }));
           }
-        });
+        }).catch(() => {});
       }
     }
   }, [sessionId, user]);
@@ -656,17 +661,38 @@ export default function LiveClassroomPage({
     const nextState = !mediaState.isCameraOn;
 
     if (livekitManagerRef.current?.isConnected) {
-      const success = await livekitManagerRef.current.setCameraEnabled(nextState);
-      if (success !== false) {
+      const res = await livekitManagerRef.current.setCameraEnabled(nextState);
+      if (res?.success) {
         setMediaState(prev => ({ ...prev, isCameraOn: nextState }));
         updateMediaStatus(sessionId, currentUserId, { camera: nextState }).catch(() => {});
+        showToast(nextState ? '📷 Đã bật Camera.' : '📷 Đã tắt Camera.');
       } else {
-        showToast('⚠️ Không thể bật camera. Vui lòng kiểm tra quyền truy cập thiết bị.');
+        const errMsg = res?.error || 'Không thể bật camera. Vui lòng kiểm tra quyền thiết bị.';
+        showToast(`⚠️ ${errMsg}`);
       }
-    } else if (mediaManagerRef.current) {
+    } else {
+      if (!mediaManagerRef.current) {
+        mediaManagerRef.current = new LiveRoomMediaManager();
+      }
+      if (!mediaManagerRef.current.localStream && nextState) {
+        const mRes = await mediaManagerRef.current.startMedia({ video: true, audio: mediaState.isMicOn });
+        if (mRes?.success) {
+          setMediaState(prev => ({ ...prev, isCameraOn: true, localStream: mRes.stream }));
+          updateMediaStatus(sessionId, currentUserId, { camera: true }).catch(() => {});
+          showToast('📷 Đã bật Camera.');
+        } else {
+          showToast(`⚠️ ${mRes?.error || 'Không thể bật camera. Vui lòng cấp quyền camera trong trình duyệt.'}`);
+        }
+        return;
+      }
       const active = mediaManagerRef.current.toggleCamera(nextState);
-      setMediaState(prev => ({ ...prev, isCameraOn: active }));
+      setMediaState(prev => ({ 
+        ...prev, 
+        isCameraOn: active, 
+        localStream: mediaManagerRef.current.localStream 
+      }));
       updateMediaStatus(sessionId, currentUserId, { camera: active }).catch(() => {});
+      showToast(active ? '📷 Đã bật Camera.' : '📷 Đã tắt Camera.');
     }
   };
 
@@ -674,20 +700,47 @@ export default function LiveClassroomPage({
   const handleToggleMic = async () => {
     playClickSound();
 
+    if (myRole === 'student' && !myParticipant?.is_mic_allowed) {
+      playErrorSound();
+      showToast('🔒 Microphone đã bị khóa bởi giáo viên. Vui lòng nhấn "Giơ tay" để xin phát biểu.');
+      return;
+    }
+
     const nextState = !mediaState.isMicOn;
 
     if (livekitManagerRef.current?.isConnected) {
-      const success = await livekitManagerRef.current.setMicrophoneEnabled(nextState);
-      if (success !== false) {
+      const res = await livekitManagerRef.current.setMicrophoneEnabled(nextState);
+      if (res?.success) {
         setMediaState(prev => ({ ...prev, isMicOn: nextState }));
         updateMediaStatus(sessionId, currentUserId, { mic: nextState }).catch(() => {});
+        showToast(nextState ? '🎙️ Đã bật Micro.' : '🔇 Đã tắt Micro.');
       } else {
-        showToast('⚠️ Không thể bật microphone. Vui lòng kiểm tra thiết bị.');
+        const errMsg = res?.error || 'Không thể bật micro. Vui lòng kiểm tra thiết bị.';
+        showToast(`⚠️ ${errMsg}`);
       }
-    } else if (mediaManagerRef.current) {
+    } else {
+      if (!mediaManagerRef.current) {
+        mediaManagerRef.current = new LiveRoomMediaManager();
+      }
+      if (!mediaManagerRef.current.localStream && nextState) {
+        const mRes = await mediaManagerRef.current.startMedia({ video: mediaState.isCameraOn, audio: true });
+        if (mRes?.success) {
+          setMediaState(prev => ({ ...prev, isMicOn: true, localStream: mRes.stream }));
+          updateMediaStatus(sessionId, currentUserId, { mic: true }).catch(() => {});
+          showToast('🎙️ Đã bật Micro.');
+        } else {
+          showToast(`⚠️ ${mRes?.error || 'Không thể bật micro. Vui lòng cấp quyền micro trong trình duyệt.'}`);
+        }
+        return;
+      }
       const active = mediaManagerRef.current.toggleMicrophone(nextState);
-      setMediaState(prev => ({ ...prev, isMicOn: active }));
+      setMediaState(prev => ({ 
+        ...prev, 
+        isMicOn: active, 
+        localStream: mediaManagerRef.current.localStream 
+      }));
       updateMediaStatus(sessionId, currentUserId, { mic: active }).catch(() => {});
+      showToast(active ? '🎙️ Đã bật Micro.' : '🔇 Đã tắt Micro.');
     }
   };
 
@@ -699,11 +752,46 @@ export default function LiveClassroomPage({
     const nextState = !mediaState.isScreenSharing;
     if (livekitManagerRef.current?.isConnected) {
       const res = await livekitManagerRef.current.setScreenShareEnabled(nextState);
-      setMediaState(prev => ({ ...prev, isScreenSharing: Boolean(res) }));
-      liveEventBus.broadcast(sessionId, {
-        type: 'TEACHER_SCREEN_SHARE_CHANGED',
-        isSharing: Boolean(res)
-      });
+      if (res?.success) {
+        setMediaState(prev => ({ ...prev, isScreenSharing: nextState }));
+        liveEventBus.broadcast(sessionId, {
+          type: 'TEACHER_SCREEN_SHARE_CHANGED',
+          isSharing: nextState
+        });
+        showToast(nextState ? '🖥️ Bắt đầu chia sẻ màn hình.' : '🖥️ Đã dừng chia sẻ màn hình.');
+      } else {
+        const isCancelled = res?.error?.includes?.('cancel') || res?.error?.includes?.('Permission');
+        showToast(isCancelled ? 'Đã hủy chia sẻ màn hình.' : `⚠️ ${res?.error || 'Không thể chia sẻ màn hình.'}`);
+      }
+    } else {
+      if (!mediaManagerRef.current) {
+        mediaManagerRef.current = new LiveRoomMediaManager();
+      }
+      if (nextState) {
+        const sRes = await mediaManagerRef.current.startScreenShare();
+        if (sRes?.success) {
+          setMediaState(prev => ({ 
+            ...prev, 
+            isScreenSharing: true, 
+            screenStream: sRes.stream 
+          }));
+          liveEventBus.broadcast(sessionId, {
+            type: 'TEACHER_SCREEN_SHARE_CHANGED',
+            isSharing: true
+          });
+          showToast('🖥️ Bắt đầu chia sẻ màn hình.');
+        } else {
+          showToast(`⚠️ ${sRes?.error || 'Không thể chia sẻ màn hình.'}`);
+        }
+      } else {
+        mediaManagerRef.current.stopScreenShare();
+        setMediaState(prev => ({ ...prev, isScreenSharing: false, screenStream: null }));
+        liveEventBus.broadcast(sessionId, {
+          type: 'TEACHER_SCREEN_SHARE_CHANGED',
+          isSharing: false
+        });
+        showToast('🖥️ Đã dừng chia sẻ màn hình.');
+      }
     }
   };
 
@@ -1210,18 +1298,27 @@ export default function LiveClassroomPage({
               <div className="flex items-center gap-2">
                 
                 {/* Microphone Toggle */}
-                <button
-                  onClick={handleToggleMic}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    mediaState.isMicOn 
-                      ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' 
-                      : 'bg-white/10 hover:bg-white/20 text-white/80'
-                  }`}
-                  title={mediaState.isMicOn ? 'Tắt Micro' : 'Bật Micro'}
-                >
-                  {mediaState.isMicOn ? <Mic size={16} /> : <MicOff size={16} />}
-                  <span className="hidden sm:inline">{mediaState.isMicOn ? 'Đang bật Mic' : 'Bật Mic'}</span>
-                </button>
+                {(() => {
+                  const isMicLocked = myRole === 'student' && !myParticipant?.is_mic_allowed;
+                  return (
+                    <button
+                      onClick={handleToggleMic}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                        mediaState.isMicOn 
+                          ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' 
+                          : isMicLocked
+                            ? 'bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                            : 'bg-white/10 hover:bg-white/20 text-white/80'
+                      }`}
+                      title={isMicLocked ? 'Microphone bị khóa bởi GV (Giơ tay xin phát biểu)' : (mediaState.isMicOn ? 'Tắt Micro' : 'Bật Micro')}
+                    >
+                      {mediaState.isMicOn ? <Mic size={16} /> : isMicLocked ? <Lock size={15} className="text-amber-400" /> : <MicOff size={16} />}
+                      <span className="hidden sm:inline">
+                        {mediaState.isMicOn ? 'Đang bật Mic' : isMicLocked ? 'Mic bị khóa (GV)' : 'Bật Mic'}
+                      </span>
+                    </button>
+                  );
+                })()}
 
                 {/* Camera Toggle */}
                 <button

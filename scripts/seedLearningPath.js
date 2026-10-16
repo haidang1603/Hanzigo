@@ -6,10 +6,21 @@ import {
   BOSS_CHALLENGES 
 } from '../src/data/learningPathData.js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://woszblniatdvijwdkmpm.supabase.co';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indvc3pibG5pYXRkdmlqd2RrbXBtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NzEwMTcsImV4cCI6MjEwNjA0NzAxN30.qpSGtdIgGG55MXsLJGbMS3KOLz6W_ZsC16r-6XixMXY';
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Lỗi cấu hình: Thiếu biến môi trường SUPABASE_URL hoặc SUPABASE_SERVICE_ROLE_KEY / SUPABASE_ANON_KEY.');
+  process.exit(1);
+}
+
+const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+if (isProductionEnv && process.env.CONFIRM_PRODUCTION_SEED !== 'true') {
+  console.error('⛔ CẢNH BÁO AN TOÀN: Đang chạy trong môi trường Production. Cần biến CONFIRM_PRODUCTION_SEED=true để xác nhận.');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function seedLearningPath() {
   console.log('🚀 Bắt đầu cập nhật dữ liệu Learning Path lên Supabase...');

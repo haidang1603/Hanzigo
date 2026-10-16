@@ -7,25 +7,27 @@ import {
   logoutUser as apiLogoutUser,
   getUserProfile,
   isValidUuid,
-  isEmailAdmin,
-  ADMIN_EMAILS,
-  flushPendingAuditLogs
+  flushPendingAuditLogs,
+  mergeGuestProgressIntoUser,
+  syncUserJourneyProgressFromCloud,
+  syncUserVocabSrsFromCloud
 } from '../services';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const [sessionVerified, setSessionVerified] = useState(false);
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('hanzigo_user');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
-          const isSysAdmin = isEmailAdmin(parsed.email);
           const safeXp = parsed.xp === 9999 ? 50 : (parsed.xp ?? 50);
+          // ZERO TRUST: Client cache must default to 'student' until server session is verified
           return {
             ...parsed,
-            role: isSysAdmin ? 'admin' : (parsed.role || 'student'),
+            role: (parsed.role === 'admin' || parsed.role === 'teacher') ? 'student' : (parsed.role || 'student'),
             xp: safeXp,
             uid: parsed.uid || parsed.id || 'user_guest',
             id: parsed.uid || parsed.id || 'user_guest'
@@ -48,15 +50,25 @@ export function AuthProvider({ children }) {
       const dbProfile = await getUserProfile(authUser.id);
       const googleName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.user_metadata?.display_name;
       const googleAvatar = authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture;
-      const isSysAdmin = isEmailAdmin(authUser.email);
-      const effectiveRole = isSysAdmin || dbProfile?.role === 'admin' ? 'admin' : (dbProfile?.role || 'student');
+      
+      // If user profile is marked blocked in database, immediately sign out
+      if (dbProfile?.status === 'blocked') {
+        await supabase.auth.signOut().catch(() => {});
+        setUser(null);
+        localStorage.removeItem('hanzigo_user');
+        setSessionVerified(false);
+        return null;
+      }
+
+      // Authoritative role from public.profiles table
+      const effectiveRole = dbProfile?.role || 'student';
       const safeXp = dbProfile?.xp !== undefined && dbProfile.xp !== 9999 ? dbProfile.xp : 50;
 
       const mergedUser = {
         uid: authUser.id,
         id: authUser.id,
         email: authUser.email,
-        name: dbProfile?.name || googleName || authUser.email?.split('@')[0] || (isSysAdmin ? 'Admin HanziGo' : 'Học viên HanziGo'),
+        name: dbProfile?.name || googleName || authUser.email?.split('@')[0] || 'Học viên HanziGo',
         level: dbProfile?.level || authUser.user_metadata?.level || 'HSK 1 - Sơ cấp',
         avatar: dbProfile?.avatar || googleAvatar || null,
         bio: dbProfile?.bio || '',
@@ -70,6 +82,7 @@ export function AuthProvider({ children }) {
       };
 
       setUser(mergedUser);
+      setSessionVerified(true);
       localStorage.setItem('hanzigo_user', JSON.stringify(mergedUser));
 
       if (typeof dbProfile?.streak === 'number' && dbProfile.streak > 0) {
@@ -82,6 +95,15 @@ export function AuthProvider({ children }) {
       }
       if (typeof dbProfile?.longest_streak === 'number') {
         localStorage.setItem(`hanzigo_longest_streak_${authUser.id}`, String(dbProfile.longest_streak));
+      }
+
+      // Cross-Device Progress Hydration & Guest Progress Merge
+      try {
+        mergeGuestProgressIntoUser(mergedUser);
+        syncUserJourneyProgressFromCloud(mergedUser).catch(() => {});
+        syncUserVocabSrsFromCloud(authUser.id).catch(() => {});
+      } catch (syncErr) {
+        console.warn('Cross-device progress hydration notice:', syncErr);
       }
 
       return mergedUser;
@@ -128,6 +150,18 @@ export function AuthProvider({ children }) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user && isMounted) {
           await syncProfile(session.user);
+        } else if (isMounted) {
+          // No active session: purge any unverified elevated role from localStorage
+          setUser(prev => {
+            if (!prev) return null;
+            if (prev.role === 'admin' || prev.role === 'teacher') {
+              const clean = { ...prev, role: 'student' };
+              localStorage.setItem('hanzigo_user', JSON.stringify(clean));
+              return clean;
+            }
+            return prev;
+          });
+          setSessionVerified(false);
         }
       } catch (err) {
         console.warn('Session restore notice:', err);
@@ -145,6 +179,7 @@ export function AuthProvider({ children }) {
           } else if (event === 'SIGNED_OUT') {
             if (isMounted) {
               setUser(null);
+              setSessionVerified(false);
               localStorage.removeItem('hanzigo_user');
             }
           }
@@ -167,6 +202,8 @@ export function AuthProvider({ children }) {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user && isMounted) {
             await syncProfile(session.user);
+            await syncUserJourneyProgressFromCloud(session.user);
+            await syncUserVocabSrsFromCloud(session.user.id);
           }
         } catch {}
       }
@@ -188,6 +225,7 @@ export function AuthProvider({ children }) {
   const loginWithEmail = async (email, password, targetRole = 'student') => {
     const userData = await apiLoginWithEmail(email, password, targetRole);
     setUser(userData);
+    setSessionVerified(true);
     localStorage.setItem('hanzigo_user', JSON.stringify(userData));
     return userData;
   };
@@ -195,6 +233,7 @@ export function AuthProvider({ children }) {
   const registerWithEmail = async (email, password, name, level, role = 'student') => {
     const userData = await apiRegisterWithEmail(email, password, name, level, role);
     setUser(userData);
+    setSessionVerified(true);
     localStorage.setItem('hanzigo_user', JSON.stringify(userData));
     return userData;
   };
@@ -206,6 +245,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     await apiLogoutUser();
     setUser(null);
+    setSessionVerified(false);
     localStorage.removeItem('hanzigo_user');
     localStorage.removeItem('hanzigo_custom_avatar');
     localStorage.removeItem('hanzigo_user_bio');
@@ -223,37 +263,25 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
+  // ZERO-TRUST AUTHORIZATION GATES:
+  // Requires verified server session and active status. Tampered localStorage cannot grant privileges.
   const isAdmin = Boolean(
+    sessionVerified &&
     user && 
-    (user.role === 'admin' || isEmailAdmin(user.email)) && 
-    user.status !== 'blocked'
+    isValidUuid(user.id) &&
+    user.role === 'admin' && 
+    user.status === 'active'
   );
-  const isTeacher = Boolean(
-    user && 
-    (user.role === 'teacher' || isAdmin) && 
-    user.status !== 'blocked'
-  );
-  const isStudent = Boolean(!user || (!isAdmin && user.role === 'student'));
 
-  const switchDemoRole = useCallback((newRole) => {
-    if (!['student', 'teacher', 'admin'].includes(newRole)) return;
-    setUser(prev => {
-      const updated = {
-        ...(prev || {
-          uid: 'user_guest',
-          id: 'user_guest',
-          email: 'demo@hanzigo.com',
-          name: newRole === 'teacher' ? 'Thầy Đặng (Giáo viên)' : newRole === 'admin' ? 'Admin HanziGo' : 'Học viên HanziGo',
-          level: 'HSK 3 - Trung cấp',
-          streak: 5,
-          xp: 450
-        }),
-        role: newRole
-      };
-      localStorage.setItem('hanzigo_user', JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
+  const isTeacher = Boolean(
+    sessionVerified &&
+    user && 
+    isValidUuid(user.id) &&
+    (user.role === 'teacher' || user.role === 'admin') && 
+    user.status === 'active'
+  );
+
+  const isStudent = Boolean(!isAdmin && !isTeacher);
 
   return (
     <AuthContext.Provider
@@ -261,11 +289,11 @@ export function AuthProvider({ children }) {
         user,
         setUser: updateUser,
         loading,
-        isAuthenticated: Boolean(user),
+        sessionVerified,
+        isAuthenticated: Boolean(user && sessionVerified),
         isAdmin,
         isTeacher,
         isStudent,
-        switchDemoRole,
         loginWithEmail,
         registerWithEmail,
         loginWithGoogle,
