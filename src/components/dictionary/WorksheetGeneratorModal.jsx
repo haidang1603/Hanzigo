@@ -501,8 +501,8 @@ export default function WorksheetGeneratorModal({
 
               {/* Footer Trang */}
               <div className="pt-6 border-t border-gray-200 flex items-center justify-between text-[10px] text-gray-400 mt-auto">
-                <span>HanziGo — Nền tảng học tiếng Trung hàng đầu cho người Việt</span>
-                <span>https://hanzigo.edu.vn</span>
+                <span>HanziGo — Nền tảng học tiếng Trung trực tuyến cho người Việt</span>
+                <span>https://hanzigo-xi.vercel.app</span>
               </div>
             </div>
           </div>
@@ -615,8 +615,8 @@ export default function WorksheetGeneratorModal({
 
           {/* Footer A4 */}
           <div className="pt-6 border-t border-gray-300 flex items-center justify-between text-xs text-gray-500">
-            <span>HanziGo — Nền tảng học tiếng Trung hàng đầu cho người Việt</span>
-            <span>https://hanzigo.edu.vn</span>
+            <span>HanziGo — Nền tảng học tiếng Trung trực tuyến cho người Việt</span>
+            <span>https://hanzigo-xi.vercel.app</span>
           </div>
         </div>
       </div>

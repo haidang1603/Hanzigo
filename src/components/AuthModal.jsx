@@ -13,8 +13,21 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
     password: '',
     level: 'HSK 1 - Sơ cấp'
   });
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreeMarketing, setAgreeMarketing] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Close on Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -32,6 +45,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
     }
     if (formData.password.length < 6) {
       setError('Mật khẩu cần tối thiểu 6 ký tự.');
+      return;
+    }
+
+    if (mode === 'register' && !agreeTerms) {
+      setError('Vui lòng đọc và tích chọn đồng ý với Điều khoản sử dụng & Chính sách bảo mật.');
       return;
     }
 
@@ -140,7 +158,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="auth-modal-title"
+    >
       <div 
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md bg-white dark:bg-[#1E293B] rounded-2xl shadow-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] overflow-hidden"
@@ -152,7 +175,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
               playClickSound();
               onClose();
             }}
-            className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+            aria-label="Đóng cửa sổ đăng nhập hoặc đăng ký"
+            className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -168,13 +192,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
             )}
           </div>
 
-          <h3 className="text-xl font-bold">
+          <h3 id="auth-modal-title" className="text-xl font-bold">
             {mode === 'login' ? 'Chào mừng bạn trở lại!' : 'Bắt đầu hành trình tiếng Trung'}
           </h3>
           <p className="text-xs text-white/80 mt-1">
             {mode === 'login' 
               ? 'Đăng nhập để đồng bộ tiến độ học tập và chuỗi ngày rực lửa.'
-              : 'Tạo tài khoản miễn phí trong 30 giây cùng hơn 10.000 người học.'}
+              : 'Tạo tài khoản miễn phí để đồng bộ tiến độ học tập trên mọi thiết bị.'}
           </p>
         </div>
 
@@ -324,6 +348,40 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
                     <option value="HSK 2 - Giao tiếp">Đã có gốc cơ bản (Mục tiêu giao tiếp)</option>
                     <option value="HSK 3-4 - Ôn thi">Luyện thi lấy chứng chỉ HSK 3 - HSK 4</option>
                   </select>
+                </div>
+              )}
+
+              {mode === 'register' && (
+                <div className="space-y-2.5 pt-1">
+                  <div className="p-2.5 rounded-xl bg-orange-50/80 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-900/50 text-[11px] text-[#748092] dark:text-gray-300 leading-relaxed">
+                    * <strong>Thông báo thu thập:</strong> Email và họ tên chỉ dùng để định danh tài khoản, lưu bài học và cá nhân hóa lộ trình. HanziGo cam kết không chia sẻ dữ liệu cho bên thứ ba.
+                  </div>
+
+                  <label className="flex items-start gap-2 text-xs text-[#243447] dark:text-gray-200 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreeTerms}
+                      onChange={(e) => setAgreeTerms(e.target.checked)}
+                      className="mt-0.5 rounded border-gray-300 text-[#E85D3F] focus:ring-[#E85D3F]"
+                    />
+                    <span>
+                      Tôi đồng ý với{' '}
+                      <a href="#terms" target="_blank" rel="noopener noreferrer" className="text-[#E85D3F] font-bold hover:underline">Điều khoản sử dụng</a>
+                      {' '}và{' '}
+                      <a href="#privacy" target="_blank" rel="noopener noreferrer" className="text-[#E85D3F] font-bold hover:underline">Chính sách bảo mật</a>
+                      {' '}<span className="text-rose-500 font-bold">*</span>
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-2 text-[11px] text-[#748092] dark:text-gray-400 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreeMarketing}
+                      onChange={(e) => setAgreeMarketing(e.target.checked)}
+                      className="mt-0.5 rounded border-gray-300 text-[#E85D3F] focus:ring-[#E85D3F]"
+                    />
+                    <span>(Tùy chọn) Nhận mẹo nhớ chữ Hán và bài học qua email hàng sáng.</span>
+                  </label>
                 </div>
               )}
 

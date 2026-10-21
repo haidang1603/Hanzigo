@@ -128,15 +128,18 @@ export default function Footer({ setActiveTab }) {
                 <span>Đăng ký miễn phí</span>
                 <Send size={14} />
               </button>
+              <p className="text-[10px] text-[#64748B] leading-tight">
+                * Thông báo quyền riêng tư: Email chỉ dùng để gửi bài học hàng ngày, không chia sẻ cho bên thứ ba. Hủy đăng ký bất kỳ lúc nào.
+              </p>
             </form>
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-[#94A3B8] gap-4">
-          <p>© 2026 HanziGo. Toàn bộ bản quyền thuộc về HanziGo Việt Nam.</p>
-          <div className="flex items-center gap-6">
-            <button onClick={() => handleNav('admin')} className="text-[#E85D3F] font-bold hover:underline flex items-center gap-1">
+        <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-[#94A3B8] gap-4">
+          <p>© 2026 HanziGo. Dự án giáo dục phi thương mại dành cho người Việt.</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            <button onClick={() => handleNav('admin')} className="text-[#E85D3F] font-bold hover:underline flex items-center gap-1 cursor-pointer">
               <ShieldCheck size={14} />
               <span>Quản trị viên (Admin)</span>
             </button>
@@ -160,6 +163,33 @@ export default function Footer({ setActiveTab }) {
             >
               Điều khoản sử dụng
             </a>
+            <a 
+              href="#cookies" 
+              onClick={(e) => {
+                e.preventDefault();
+                handleNav('cookies');
+              }}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              Chính sách cookie
+            </a>
+            <a 
+              href="#refund" 
+              onClick={(e) => {
+                e.preventDefault();
+                handleNav('refund');
+              }}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              Học phí & Hoàn tiền
+            </a>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('hanzigo_open_consent_modal'))}
+              className="text-[#94A3B8] hover:text-[#E85D3F] transition-colors cursor-pointer text-xs"
+            >
+              Tùy chọn lưu trữ
+            </button>
           </div>
         </div>
       </div>

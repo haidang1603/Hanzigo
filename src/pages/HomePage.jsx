@@ -292,7 +292,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
               ) : (
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border border-[#E85D3F]/30 text-[#E85D3F] text-xs font-bold shadow-sm">
                   <span className="flex h-2 w-2 rounded-full bg-[#E85D3F] animate-ping" />
-                  <span>🏮 Nền tảng học tiếng Trung tối ưu độc quyền cho người Việt</span>
+                  <span>🏮 Nền tảng học tiếng Trung trực tuyến thiết kế riêng cho người Việt</span>
                 </div>
               )}
 
@@ -308,7 +308,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
               <p className="text-base sm:text-lg text-[#748092] dark:text-[#94A3B8] font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
                 Phương pháp liên tưởng <strong className="text-[#243447] dark:text-white">Hán-Việt 70%</strong>, hiểu sâu bản chất chiết tự và luyện phản xạ giao tiếp cùng AI thông minh.
                 <span className="block mt-1 font-semibold text-[#E85D3F]">
-                  “Học 15 phút mỗi ngày – Tự tin giao tiếp tiếng Trung sau 30 ngày.”
+                  “Học 15 phút mỗi ngày – Từng bước xây dựng phản xạ và làm chủ ngữ âm tiếng Trung.”
                 </span>
               </p>
 
@@ -363,7 +363,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-[#45B97C]" />
-                  <span>Phát âm chuẩn Bắc Kinh</span>
+                  <span>Ngữ âm chuẩn phổ thông (Putonghua)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-[#45B97C]" />
@@ -860,7 +860,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
           <div className="text-center max-w-2xl mx-auto mb-14">
             <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Hệ sinh thái toàn diện</span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
-              Bộ Công Cụ Học Tiếng Trung Đầy Đủ Nhất
+              Bộ Công Cụ Học Tiếng Trung Đa Năng Cho Người Việt
             </h2>
             <p className="text-sm text-[#748092] dark:text-[#94A3B8] mt-2">
               Tích hợp mọi kỹ năng Nghe - Nói - Đọc - Viết - Ngữ Pháp và Ôn tập ngắt quãng trong cùng một tài khoản duy nhất.
@@ -1134,7 +1134,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
               Sẵn sàng bắt đầu hành trình học tiếng Trung ngay hôm nay?
             </h2>
             <p className="text-sm sm:text-base text-white/90 leading-relaxed">
-              Không cần học vẹt hàng ngàn chữ Hán một cách thụ động. Chỉ 15 phút mỗi ngày với phương pháp Hán-Việt khoa học, bạn sẽ thấy sự khác biệt sau 2 tuần!
+              Không cần học vẹt hàng ngàn chữ Hán một cách thụ động. Chỉ 15 phút mỗi ngày với phương pháp Hán-Việt khoa học, bạn sẽ nắm vững quy luật ngữ âm và tích lũy vốn từ vựng vững chắc!
             </p>
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button

@@ -87,7 +87,7 @@ export default function TermsOfServicePage({ setActiveTab }) {
           </div>
         </div>
 
-        {/* Tab switch between Privacy & Terms */}
+        {/* Tab switch between Legal Pages */}
         <div className="mt-8 pt-6 border-t border-white/15 flex flex-wrap items-center gap-3">
           <button
             onClick={() => handleNav('privacy')}
@@ -101,6 +101,19 @@ export default function TermsOfServicePage({ setActiveTab }) {
           >
             <FileText size={14} />
             <span>Điều khoản sử dụng</span>
+          </button>
+          <button
+            onClick={() => handleNav('cookies')}
+            className="px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>Chính sách cookie</span>
+          </button>
+          <button
+            onClick={() => handleNav('refund')}
+            className="px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>Học phí & Hoàn tiền</span>
+            <ChevronRight size={13} />
           </button>
         </div>
       </div>
@@ -264,7 +277,10 @@ export default function TermsOfServicePage({ setActiveTab }) {
                 2. <strong>Bài viết tự do (HSK 3 - 6):</strong> Đối với các câu hỏi viết văn miêu tả tranh hoặc tóm tắt đoạn văn, hệ thống cung cấp thang tiêu chí đánh giá (Rubric) và bài văn mẫu đạt điểm tối đa để bạn tự đối chiếu. HanziGo không chấm bài viết tự do bằng các thuật toán đơn giản lừa dối người học.
               </p>
               <p>
-                3. <strong>Không bảo đảm đỗ 100% nếu không tự nỗ lực:</strong> Kết quả thi thật phụ thuộc vào sự rèn luyện bền bỉ, tâm lý phòng thi và vốn từ vựng thực tế của từng học viên.
+                3. <strong>Giới hạn & Độ tin cậy của Trợ lý AI (AI Tutor):</strong> Các câu trả lời, hội thoại và giải thích ngữ pháp của AI (Tiểu Hàm, Lão Sư AI) được sinh tự động nhằm mục đích hỗ trợ học tập và luyện phản xạ. Mô hình ngôn ngữ AI có thể phát sinh sai sót hoặc hiện tượng ảo giác (hallucination). Nội dung do AI tạo ra chỉ mang tính chất tham khảo sư phạm và không thay thế cho giáo viên thực tế hoặc giáo trình được thẩm định chính thức.
+              </p>
+              <p>
+                4. <strong>Không bảo đảm đỗ 100% nếu không tự nỗ lực:</strong> Kết quả thi thật phụ thuộc vào sự rèn luyện bền bỉ, tâm lý phòng thi và vốn từ vựng thực tế của từng học viên.
               </p>
             </div>
           </section>

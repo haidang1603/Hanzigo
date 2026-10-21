@@ -16,7 +16,7 @@
     --border-color: #F1E5D8;
     --success: #45B97C;
     --success-light: #EBF8F2;
-    --text-muted: #748092;
+    --text-muted: #556272;
   }
 
   .dark {
@@ -35,6 +35,27 @@
     color: var(--dark);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
+  }
+
+  /* Accessibility: Accessible focus indicators (WCAG 2.2 AA) */
+  :focus-visible {
+    outline: 2px solid #E85D3F;
+    outline-offset: 2px;
+  }
+
+  .dark :focus-visible {
+    outline: 2px solid #F4B942;
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 

@@ -24,6 +24,7 @@ import { playClickSound, playSuccessSound } from '../utils/audio';
 import { calculateTotalXp, getStreakStatus, getUserLevelInfo, getUserStorageKey } from '../utils/gamification';
 import { evaluateUserAchievements } from '../services/gamificationService';
 import StreakModal from '../components/learning/StreakModal';
+import DataSubjectRequestModal from '../components/DataSubjectRequestModal';
 import { updateUserProfile } from '../supabase/services.js';
 import { 
   LEARNING_GOALS, 
@@ -71,6 +72,7 @@ export default function ProfilePage({
   const [showSavedToast, setShowSavedToast] = useState(false);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [isPersonalizationModalOpen, setIsPersonalizationModalOpen] = useState(false);
+  const [isDsarModalOpen, setIsDsarModalOpen] = useState(false);
 
   // Edit Profile Modal States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -1027,6 +1029,34 @@ export default function ProfilePage({
             </div>
           </div>
 
+          {/* Privacy Rights & DSAR Management Banner */}
+          <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800 space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Shield size={16} className="text-emerald-600" />
+                <span className="text-xs font-bold text-[#243447] dark:text-white">
+                  Quyền Riêng Tư & Quản Lý Dữ Liệu (Nghị định 13/2023/NĐ-CP)
+                </span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                DSAR Ready
+              </span>
+            </div>
+            <p className="text-[11px] text-[#748092] dark:text-gray-400">
+              Xem xét quyền dữ liệu cá nhân, xuất bản sao lưu học tập (JSON), hoặc yêu cầu xóa vĩnh viễn tài khoản và bản ghi học tập.
+            </p>
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setIsDsarModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-gray-700 border border-emerald-200 dark:border-gray-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-gray-600 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Shield size={13} />
+                <span>Quản lý Quyền Dữ Liệu & Xóa Tài Khoản (DSAR)</span>
+              </button>
+            </div>
+          </div>
+
           <div className="pt-4">
             <button
               type="submit"
@@ -1052,6 +1082,14 @@ export default function ProfilePage({
         isOpen={isPersonalizationModalOpen}
         onClose={() => setIsPersonalizationModalOpen(false)}
         user={user}
+      />
+
+      {/* Data Subject Rights & Deletion Modal (DSAR) */}
+      <DataSubjectRequestModal
+        isOpen={isDsarModalOpen}
+        onClose={() => setIsDsarModalOpen(false)}
+        user={user}
+        onLogout={onLogout}
       />
 
     </div>

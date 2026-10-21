@@ -28,13 +28,16 @@ const LiveClassroomPage = lazy(() => import('./pages/LiveClassroomPage'));
 const HskPracticePage = lazy(() => import('./pages/HskPracticePage'));
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
+const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
+const RefundPolicyPage = lazy(() => import('./pages/RefundPolicyPage'));
+import StorageConsentBanner from './components/StorageConsentBanner';
 import TeacherGuard from './components/TeacherGuard';
 
 const VALID_TABS = [
   'home', 'dashboard', 'roadmap', 'lesson', 'vocabulary', 
   'pronunciation', 'writing', 'dictionary', 'conversation', 'community', 
   'materials', 'admin', 'profile', 'leaderboard',
-  'teacher', 'classroom', 'hsk', 'privacy', 'terms'
+  'teacher', 'classroom', 'hsk', 'privacy', 'terms', 'cookies', 'refund'
 ];
 
 function MainApp() {
@@ -44,10 +47,24 @@ function MainApp() {
   // Helper to parse detailed sub-routes for teacher and classroom
   const parseCurrentRoute = () => {
     try {
+      // Check pathname first for clean legal routes (e.g., /privacy-policy, /terms-of-service)
+      const path = (window.location.pathname || '').replace(/^\//, '').toLowerCase();
+      if (path === 'privacy-policy' || path === 'privacy') return { tab: 'privacy', sub: null, param: null, extra: null };
+      if (path === 'terms-of-service' || path === 'terms') return { tab: 'terms', sub: null, param: null, extra: null };
+      if (path === 'cookie-policy' || path === 'cookies') return { tab: 'cookies', sub: null, param: null, extra: null };
+      if (path === 'refund-policy' || path === 'refund') return { tab: 'refund', sub: null, param: null, extra: null };
+
       const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
       const parts = hash.split('/').filter(Boolean);
-      const rawTab = parts[0] || 'home';
-      const tab = rawTab === 'practice' ? 'vocabulary' : rawTab === 'dictionary' ? 'writing' : rawTab;
+      const rawTab = (parts[0] || 'home').toLowerCase();
+      const tab = 
+        rawTab === 'practice' ? 'vocabulary' : 
+        rawTab === 'dictionary' ? 'writing' :
+        rawTab === 'privacy-policy' ? 'privacy' :
+        rawTab === 'terms-of-service' ? 'terms' :
+        rawTab === 'cookie-policy' ? 'cookies' :
+        rawTab === 'refund-policy' ? 'refund' :
+        rawTab;
       const sub = parts[1] || null;
       const param = parts[2] || null;
       const extra = parts[3] || null;
@@ -491,6 +508,14 @@ function MainApp() {
           {activeTab === 'terms' && (
             <TermsOfServicePage setActiveTab={setActiveTab} />
           )}
+
+          {activeTab === 'cookies' && (
+            <CookiePolicyPage setActiveTab={setActiveTab} />
+          )}
+
+          {activeTab === 'refund' && (
+            <RefundPolicyPage setActiveTab={setActiveTab} />
+          )}
         </Suspense>
       </main>
 
@@ -504,6 +529,9 @@ function MainApp() {
         initialMode={authModalMode}
         onLoginSuccess={handleLoginSuccess}
       />
+
+      {/* 5. Cookie & Storage Consent Banner */}
+      <StorageConsentBanner setActiveTab={setActiveTab} />
 
     </div>
   );
