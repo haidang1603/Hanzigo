@@ -4,12 +4,12 @@
  */
 
 export const HSK_LEVELS_METADATA = [
-  { id: 'all', code: 'ALL', label: 'Tất cả HSK', count: 455, color: '#243447', desc: 'Toàn bộ 455 từ vựng kèm câu ví dụ từ giáo án và tài liệu tổng hợp' },
+  { id: 'all', code: 'ALL', label: 'Tất cả HSK', count: 500, color: '#243447', desc: 'Toàn bộ 500 từ vựng kèm câu ví dụ từ giáo án và tài liệu tổng hợp' },
   { id: 'HSK 1', code: 'HSK 1', label: 'HSK 1 (Nền tảng)', count: 161, color: '#45B97C', desc: '161 từ cốt lõi, phiên âm Pinyin, số đếm, gia đình & chào hỏi' },
   { id: 'HSK 2', code: 'HSK 2', label: 'HSK 2 (Sinh hoạt)', count: 142, color: '#F4B942', desc: '142 từ giao tiếp hàng ngày, mua sắm, phương tiện & ăn uống' },
   { id: 'HSK 3', code: 'HSK 3', label: 'HSK 3 (Trung cấp)', count: 137, color: '#E85D3F', desc: '137 từ du lịch tự túc, công sở, câu chữ 把/被 & liên từ' },
-  { id: 'HSK 4', code: 'HSK 4', label: 'HSK 4 (Công sở)', count: 10, color: '#3B82F6', desc: '10 từ ngữ thương mại, đàm phán, kỹ năng lưu loát & phỏng vấn' },
-  { id: 'HSK 5-6', code: 'HSK 5-6', label: 'HSK 5-6 (Thành ngữ)', count: 5, color: '#8B5CF6', desc: '5 thành ngữ 4 chữ (成语), danh ngôn & chiều sâu văn hóa' }
+  { id: 'HSK 4', code: 'HSK 4', label: 'HSK 4 (Công sở)', count: 25, color: '#3B82F6', desc: '25 từ ngữ thương mại, đàm phán, kỹ năng lưu loát & phỏng vấn' },
+  { id: 'HSK 5-6', code: 'HSK 5-6', label: 'HSK 5-6 (Thành ngữ)', count: 35, color: '#8B5CF6', desc: '35 từ vựng cao cấp, học thuật, thành ngữ 4 chữ (成语) & chiều sâu văn hóa' }
 ];
 
 export const PRACTICE_LEVELS = [

@@ -30,12 +30,14 @@ const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
 const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
 const RefundPolicyPage = lazy(() => import('./pages/RefundPolicyPage'));
+const ReaderPage = lazy(() => import('./pages/ReaderPage'));
 import StorageConsentBanner from './components/StorageConsentBanner';
 import TeacherGuard from './components/TeacherGuard';
+import CommandPaletteModal from './components/dictionary/CommandPaletteModal.jsx';
 
 const VALID_TABS = [
   'home', 'dashboard', 'roadmap', 'lesson', 'vocabulary', 
-  'pronunciation', 'writing', 'dictionary', 'conversation', 'community', 
+  'pronunciation', 'writing', 'dictionary', 'reader', 'conversation', 'community', 
   'materials', 'admin', 'profile', 'leaderboard',
   'teacher', 'classroom', 'hsk', 'privacy', 'terms', 'cookies', 'refund'
 ];
@@ -132,6 +134,19 @@ function MainApp() {
 
   const [streak, setStreak] = useState(() => getEffectiveStreak(user));
   const [xp, setXp] = useState(() => calculateTotalXp(user));
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  // Global hotkey Ctrl+K / Cmd+K for Command Palette
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     setStreak(getEffectiveStreak(user));
@@ -291,6 +306,7 @@ function MainApp() {
         setDarkMode={setDarkMode}
         soundEnabled={soundEnabled}
         setSoundEnabled={setSoundEnabled}
+        onOpenCommandPalette={() => setCommandPaletteOpen(true)}
       />
 
       {/* 2. Main Page Content with Suspense & Lazy Loading */}
@@ -353,6 +369,14 @@ function MainApp() {
               onClearTargetVocab={handleClearWritingTarget}
               setActiveTab={setActiveTab}
               onSelectPronounce={handleSelectPronounce}
+            />
+          )}
+
+          {activeTab === 'reader' && (
+            <ReaderPage 
+              user={user}
+              setActiveTab={setActiveTab}
+              onSelectWritingChar={handleSelectWriting}
             />
           )}
 
@@ -532,6 +556,14 @@ function MainApp() {
 
       {/* 5. Cookie & Storage Consent Banner */}
       <StorageConsentBanner setActiveTab={setActiveTab} />
+
+      {/* 6. Global Command Palette Modal (Ctrl + K) */}
+      <CommandPaletteModal
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        user={user}
+        onNavigate={setActiveTab}
+      />
 
     </div>
   );

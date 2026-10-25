@@ -39,6 +39,9 @@ import {
 import { generatePostLessonAiFeedback, recordLearningLoopStep } from '../../services/aiLearningCoachService';
 import { evaluatePronunciation } from '../../utils/pronunciationEvaluator';
 import { playClickSound, playSuccessSound, playErrorSound, playLevelUpSound } from '../../utils/audio';
+import { captureWeakVocabulary } from '../../utils/srsEngine.js';
+import RoleplayStudioModal from './RoleplayStudioModal.jsx';
+import { buildScenarioForLesson } from '../../utils/roleplayScenarioBuilder.js';
 
 // Helper: Extract target phrase or challenge text from lesson definition
 const getChallengeTarget = (lesson) => {
@@ -71,6 +74,7 @@ export default function InteractiveLessonPlayer({
   const [listeningFeedback, setListeningFeedback] = useState(null);
   const [aiFeedback, setAiFeedback] = useState(null);
   const [showMaterialsModal, setShowMaterialsModal] = useState(false);
+  const [showRoleplayModal, setShowRoleplayModal] = useState(false);
   const lessonMaterials = lesson?.id ? getLessonMaterials(lesson.id) : [];
 
   const handleClose = () => {
@@ -362,6 +366,13 @@ export default function InteractiveLessonPlayer({
     } else {
       playErrorSound();
       setStepWarning('❌ Đáp án chưa chính xác, hãy suy nghĩ và chọn lại phương án đúng để vượt qua!');
+      try {
+        const targetQuiz = (lesson.step8_quiz || []).find(q => q.id === quizId);
+        const targetWord = targetQuiz?.targetWord || targetQuiz?.audioText || (lesson.step2_vocab && lesson.step2_vocab[0]?.hanzi);
+        if (targetWord) {
+          captureWeakVocabulary(targetWord, 'quiz_mistake', user);
+        }
+      } catch {}
     }
   };
 
@@ -720,6 +731,16 @@ export default function InteractiveLessonPlayer({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => { playClickSound(); setShowRoleplayModal(true); }}
+              title="Luyện hội thoại nhập vai AI bám sát từ vựng và ngữ pháp bài học"
+              className="px-2.5 py-1.5 rounded-xl bg-orange-100 hover:bg-orange-200 dark:bg-orange-950/60 text-[#E85D3F] dark:text-orange-300 transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer shadow-xs"
+            >
+              <span>🎭</span>
+              <span className="hidden md:inline">Nhập vai AI</span>
+            </button>
+
             {lessonMaterials.length > 0 && (
               <button
                 type="button"
@@ -1926,6 +1947,16 @@ export default function InteractiveLessonPlayer({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Roleplay Studio Modal */}
+      {showRoleplayModal && (
+        <RoleplayStudioModal
+          isOpen={showRoleplayModal}
+          onClose={() => setShowRoleplayModal(false)}
+          scenario={buildScenarioForLesson(lesson)}
+          user={user}
+        />
       )}
     </div>
   );

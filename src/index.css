@@ -160,7 +160,24 @@
     background: #ffffff !important;
   }
 
-  /* Cấu hình khổ giấy A4 in dọc */
+  /* Hiển thị duy nhất container chứng nhận khi in chứng chỉ */
+  #hanzigo-certificate-printable,
+  #hanzigo-certificate-printable * {
+    visibility: visible !important;
+  }
+
+  #hanzigo-certificate-printable {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 10mm 15mm !important;
+    background: #ffffff !important;
+  }
+
+  /* Cấu hình khổ giấy A4 in dọc hoặc ngang tùy tài liệu */
   @page {
     size: A4 portrait;
     margin: 6mm 6mm 6mm 6mm;
@@ -172,4 +189,5 @@
     page-break-inside: avoid !important;
   }
 }
+
 

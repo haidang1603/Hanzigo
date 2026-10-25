@@ -278,18 +278,20 @@ export function saveUserJourneyProgress(progress, user = null) {
     const completedBossIds = Object.keys(progress.completedBosses || {});
 
     // 1. Upsert aggregated user_journey_progress
-    supabase
-      .from('user_journey_progress')
-      .upsert({
-        user_id: targetUid,
-        completed_lessons: completedLessonIds,
-        completed_bosses: completedBossIds,
-        lesson_details: progress.completedLessons || {},
-        unlocked_levels: progress.unlockedLevelNumber || 1,
-        active_lesson_id: progress.activeLessonId || 'l-101',
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' })
-      .then(({ error }) => {
+    Promise.resolve(
+      supabase
+        .from('user_journey_progress')
+        .upsert({
+          user_id: targetUid,
+          completed_lessons: completedLessonIds,
+          completed_bosses: completedBossIds,
+          lesson_details: progress.completedLessons || {},
+          unlocked_levels: progress.unlockedLevelNumber || 1,
+          active_lesson_id: progress.activeLessonId || 'l-101',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' })
+    )
+      .then(({ error } = {}) => {
         if (error) console.warn('Supabase journey sync notice:', error.message);
       })
       .catch(() => {});
@@ -307,10 +309,11 @@ export function saveUserJourneyProgress(progress, user = null) {
         };
       });
 
-      supabase
-        .from('user_lesson_progress')
-        .upsert(lessonRows, { onConflict: 'user_id,lesson_id' })
-        .catch(() => {});
+      Promise.resolve(
+        supabase
+          .from('user_lesson_progress')
+          .upsert(lessonRows, { onConflict: 'user_id,lesson_id' })
+      ).catch(() => {});
     }
   }
 }
@@ -1280,7 +1283,8 @@ export function getAllRoadmapVocabulary() {
 
   LEARNING_LESSONS.forEach(lesson => {
     const chTitle = chapterMap[lesson.chapterId] || '';
-    const levelLabel = lesson.levelId === 'lvl-1' ? 'HSK 1' : lesson.levelId === 'lvl-2' ? 'HSK 2' : 'HSK 3';
+    const levelMap = { 'lvl-1': 'HSK 1', 'lvl-2': 'HSK 2', 'lvl-3': 'HSK 3', 'lvl-4': 'HSK 4', 'lvl-5': 'HSK 5', 'lvl-6': 'HSK 6' };
+    const levelLabel = levelMap[lesson.levelId] || 'HSK 1';
 
     // 1. Vocabulary in step2_vocabulary
     (lesson.step2_vocabulary || []).forEach((v, idx) => {

@@ -1,4 +1,4 @@
-// Helper for managing Documents, Materials, and Custom Content in HanziGo
+/// Helper for managing Documents, Materials, and Custom Content in HanziGo
 import { triggerCloudSync } from '../supabase/services.js';
 
 export const CURRENT_MATERIALS_VERSION = 'v2.1_academic';

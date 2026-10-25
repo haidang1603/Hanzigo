@@ -29,13 +29,18 @@ import { sendTutorMessage } from '../services/aiTutorService';
 import ListeningPracticeView from '../components/depth/ListeningPracticeView';
 import GrammarEngineView from '../components/depth/GrammarEngineView';
 import AiTutorChatView from '../components/depth/AiTutorChatView';
+import RoleplayStudioModal from '../components/learning/RoleplayStudioModal';
+import { SPECIAL_ROLEPLAY_SCENARIOS } from '../utils/roleplayScenarioBuilder';
 
 const STORAGE_KEY = 'hanzigo_ai_chat_history';
 
 export default function ConversationPage({ user, openAuthModal }) {
-  const [activeDepthTab, setActiveDepthTab] = useState('tutor'); // 'tutor' | 'conversation' | 'listening' | 'grammar'
+  const [activeDepthTab, setActiveDepthTab] = useState('roleplay'); // 'roleplay' | 'tutor' | 'listening' | 'grammar'
+  const [roleplaySubMode, setRoleplaySubMode] = useState('studio'); // 'studio' | 'dialogues'
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedScenarioId, setSelectedScenarioId] = useState(ALL_CONVERSATION_SCENARIOS[0].id);
+  const [selectedRoleplayScenario, setSelectedRoleplayScenario] = useState(SPECIAL_ROLEPLAY_SCENARIOS[0]);
+  const [isRoleplayModalOpen, setIsRoleplayModalOpen] = useState(false);
   const [targetHskLevel, setTargetHskLevel] = useState(user?.hskLevel || 'HSK 1');
   const [trackMistakesConsent, setTrackMistakesConsent] = useState(true);
 
@@ -425,29 +430,32 @@ export default function ConversationPage({ user, openAuthModal }) {
         </div>
       </div>
 
-      {/* Segmented Mode Switcher */}
-      <div className="flex flex-wrap items-center justify-center gap-2 bg-white dark:bg-[#1E293B] p-2 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm max-w-2xl mx-auto">
+      {/* Segmented Mode Switcher - 4 Clean, Non-overlapping Pillars */}
+      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 bg-white dark:bg-[#1E293B] p-1.5 sm:p-2 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm max-w-2xl mx-auto">
         {[
-          { id: 'tutor', label: '🎓 Gia Sư AI Lão Sư (RAG)' },
-          { id: 'conversation', label: '💬 Hội Thoại AI Tiểu Hàm' },
-          { id: 'listening', label: '🎧 Listening Practice' },
-          { id: 'grammar', label: '🧱 Grammar Engine' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              playClickSound();
-              setActiveDepthTab(tab.id);
-            }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeDepthTab === tab.id
-                ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/30 scale-[1.02]'
-                : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+          { id: 'roleplay', label: '🎭 Hội Thoại Nhập Vai' },
+          { id: 'tutor', label: '🎓 Gia Sư AI Lão Sư' },
+          { id: 'listening', label: '🎧 Luyện Nghe' },
+          { id: 'grammar', label: '🧱 Ngữ Pháp' }
+        ].map((tab) => {
+          const isSelected = activeDepthTab === tab.id || (tab.id === 'roleplay' && activeDepthTab === 'conversation');
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                playClickSound();
+                setActiveDepthTab(tab.id);
+              }}
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+                isSelected
+                  ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/30 scale-[1.02]'
+                  : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* MODE: AI TUTOR RAG (LÃO SƯ HANZIGO) */}
@@ -455,21 +463,115 @@ export default function ConversationPage({ user, openAuthModal }) {
         <AiTutorChatView user={user} openAuthModal={openAuthModal} />
       )}
 
-      {/* MODE: LISTENING PRACTICE */}
-      {activeDepthTab === 'listening' && (
-        <ListeningPracticeView />
-      )}
+      {/* MODE: CONTEXTUAL AI ROLEPLAY STUDIO & SCENARIOS */}
+      {(activeDepthTab === 'roleplay' || activeDepthTab === 'conversation') && (
+        <div className="space-y-6">
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-transparent border border-orange-200/60 dark:border-orange-900/40">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-bold text-[#E85D3F] mb-1">
+                  <Sparkles size={16} />
+                  <span>PHÒNG THỰC HÀNH GIAO TIẾP NHẬP VAI AI</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white">
+                  Thực Hành Giao Tiếp Hai Chiều Với AI
+                </h2>
+                <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-1 max-w-2xl">
+                  Luyện khẩu ngữ bằng giọng nói (Push-to-Talk) và chữ viết, hoàn thành 3 nhiệm vụ sư phạm, nhận góp ý sửa lỗi ngữ pháp tức thì và nghe giọng đọc Neural HD chuẩn Bắc Kinh.
+                </p>
+              </div>
 
-      {/* MODE: GRAMMAR ENGINE */}
-      {activeDepthTab === 'grammar' && (
-        <GrammarEngineView />
-      )}
+              {/* Sub-mode Switcher */}
+              <div className="flex items-center bg-white/90 dark:bg-[#1E293B] p-1 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] shrink-0 self-start md:self-center shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => { playClickSound(); setRoleplaySubMode('studio'); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    roleplaySubMode === 'studio'
+                      ? 'bg-[#E85D3F] text-white shadow-xs'
+                      : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                  }`}
+                >
+                  🎭 Nhập vai Đời thực
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { playClickSound(); setRoleplaySubMode('dialogues'); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    roleplaySubMode === 'dialogues'
+                      ? 'bg-[#E85D3F] text-white shadow-xs'
+                      : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                  }`}
+                >
+                  💬 Đối thoại Mẫu
+                </button>
+              </div>
+            </div>
+          </div>
 
-      {/* MODE: CONVERSATION AI */}
-      {activeDepthTab === 'conversation' && (
-        <>
-          {/* Category Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          {/* Sub-mode 1: 6 Studio Scenario Cards */}
+          {roleplaySubMode === 'studio' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {SPECIAL_ROLEPLAY_SCENARIOS.map((scen) => (
+                <div 
+                  key={scen.id}
+                  className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-md hover:border-[#E85D3F] transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-3xl p-2.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+                        {scen.avatar}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-orange-100 text-[#E85D3F] dark:bg-orange-950/60 dark:text-orange-300">
+                        {scen.hskLevel}
+                      </span>
+                    </div>
+
+                    <h3 className="text-base font-bold text-[#243447] dark:text-white">
+                      {scen.title}
+                    </h3>
+                    <div className="text-xs font-semibold text-[#E85D3F] mb-2">
+                      {scen.chineseTitle}
+                    </div>
+                    <p className="text-xs text-[#748092] dark:text-[#94A3B8] line-clamp-2 mb-3">
+                      {scen.aiPersona.role}
+                    </p>
+
+                    <div className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8] mb-1.5">
+                      3 Nhiệm vụ chính:
+                    </div>
+                    <ul className="text-xs text-[#243447] dark:text-[#CBD5E1] space-y-1 mb-4">
+                      {scen.missionObjectives.map((m) => (
+                        <li key={m.id} className="flex items-start gap-1.5 text-[11px]">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span className="line-clamp-1">{m.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setSelectedRoleplayScenario(scen);
+                      setIsRoleplayModalOpen(true);
+                    }}
+                    className="w-full py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md shadow-[#E85D3F]/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                  >
+                    <span>Bắt đầu Nhập vai</span>
+                    <Sparkles size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Sub-mode 2: Dialogue Scenarios with Xiao Han */}
+          {roleplaySubMode === 'dialogues' && (
+            <div className="space-y-4">
+              {/* Category Filter Tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
             {SCENARIO_CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
@@ -783,7 +885,19 @@ export default function ConversationPage({ user, openAuthModal }) {
         </form>
 
       </div>
-        </>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MODE: LISTENING PRACTICE */}
+      {activeDepthTab === 'listening' && (
+        <ListeningPracticeView />
+      )}
+
+      {/* MODE: GRAMMAR ENGINE */}
+      {activeDepthTab === 'grammar' && (
+        <GrammarEngineView />
       )}
 
       {/* History Manager Modal */}
@@ -875,6 +989,15 @@ export default function ConversationPage({ user, openAuthModal }) {
         </div>
       )}
 
+      {/* Roleplay Studio Modal Integration */}
+      {isRoleplayModalOpen && (
+        <RoleplayStudioModal
+          isOpen={isRoleplayModalOpen}
+          onClose={() => setIsRoleplayModalOpen(false)}
+          scenario={selectedRoleplayScenario}
+          user={user}
+        />
+      )}
     </div>
   );
 }

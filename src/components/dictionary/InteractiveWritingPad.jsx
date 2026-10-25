@@ -18,6 +18,7 @@ import {
   Check
 } from 'lucide-react';
 import { playClickSound, playSuccessSound } from '../../utils/audio';
+import { captureWeakVocabulary } from '../../utils/srsEngine.js';
 
 const BRUSH_SIZES = [
   { id: 'thin', label: 'Mảnh', size: 6 },
@@ -118,6 +119,9 @@ export default function InteractiveWritingPad({
             onMistake: (strokeData) => {
               setQuizState(prev => {
                 const newMistakes = prev.mistakes + 1;
+                if (newMistakes === 3 && character) {
+                  captureWeakVocabulary(character, 'writing_mistake');
+                }
                 return {
                   ...prev,
                   mistakes: newMistakes,
@@ -131,6 +135,10 @@ export default function InteractiveWritingPad({
               try {
                 confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
               } catch {}
+
+              if (summary.totalMistakes >= 3 && character) {
+                captureWeakVocabulary(character, 'writing_mistake');
+              }
 
               const finalScore = Math.max(50, Math.round(100 - (summary.totalMistakes * 12)));
               setQuizState(prev => ({

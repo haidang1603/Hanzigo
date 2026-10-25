@@ -20,6 +20,8 @@ import {
 } from '../data/hskStructureData.js';
 import { supabase } from '../supabase/config.js';
 import { awardXp } from '../utils/gamification.js';
+import { captureWeakVocabulary } from '../utils/srsEngine.js';
+import { calculateHskCbtScore } from '../utils/examScoringEngine.js';
 
 export {
   getHskStructure,
@@ -164,7 +166,15 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
   if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
     try {
       const headers = { 'Content-Type': 'application/json' };
-      const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('sb-access-token') || localStorage.getItem('supabase.auth.token'))) || null;
+      let token = (typeof localStorage !== 'undefined' && (localStorage.getItem('sb-access-token') || localStorage.getItem('supabase.auth.token'))) || null;
+      if (!token && supabase?.auth) {
+        try {
+          const { data } = await supabase.auth.getSession();
+          if (data?.session?.access_token) {
+            token = data.session.access_token;
+          }
+        } catch {}
+      }
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
@@ -345,13 +355,26 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
   const maxScore = fullExam.max_score || 200;
   const passingScore = fullExam.passing_score || Math.round(maxScore * 0.6);
   
+  // Chấm điểm theo chuẩn CBT đa kỹ năng 200/300 điểm
+  const cbtScoring = calculateHskCbtScore({
+    exam: fullExam,
+    submittedAnswers,
+    timeSpentSeconds
+  });
+
   // Tính điểm tỷ lệ theo max_score
   const totalMaxRawPoints = questions.reduce((acc, cur) => acc + cur.points, 0);
   const estimatedScore = totalMaxRawPoints > 0 
     ? Math.round((totalScore / totalMaxRawPoints) * maxScore)
     : totalScore;
 
-  const passed = estimatedScore >= passingScore;
+  const passed = (fullExam.skill_category === 'mixed' && cbtScoring.maxScore === maxScore)
+    ? cbtScoring.passed
+    : estimatedScore >= passingScore;
+
+  const finalScore = (fullExam.skill_category === 'mixed' && cbtScoring.maxScore === maxScore)
+    ? cbtScoring.totalScore
+    : estimatedScore;
 
   const attemptResult = {
     id: attemptId,
@@ -364,7 +387,8 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
     anonymousSessionId: anonSessionId,
     timeSpentSeconds,
     submittedAnswers,
-    score: estimatedScore,
+    score: finalScore,
+    cbtScore: cbtScoring.totalScore,
     maxScore,
     passingScore,
     passed,
@@ -375,6 +399,10 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
     unansweredCount,
     subjectiveCount,
     skillBreakdown: skillStats,
+    sectionsBreakdown: cbtScoring.sectionsBreakdown,
+    strongestSkill: cbtScoring.strongestSkill,
+    weakestSkill: cbtScoring.weakestSkill,
+    recommendations: cbtScoring.recommendations,
     detailedResults,
     isEstimatedScore: true,
     disclaimer: 'Điểm số luyện tập mô phỏng theo chuẩn CTI của HanziGo, không thay thế chứng chỉ khảo thí chính thức.',
@@ -646,6 +674,14 @@ export function recordMistakesFromAttempt(attemptResult, user = null) {
           updatedAt: new Date().toISOString()
         });
       }
+
+      // Tự động đẩy từ vựng / chữ Hán làm sai vào hàng đợi SRS
+      try {
+        const targetWord = q.targetWord || (q.prompt && q.prompt.match(/[\u4e00-\u9fa5]{1,6}/)?.[0]);
+        if (targetWord) {
+          captureWeakVocabulary(targetWord, 'exam_mistake', user);
+        }
+      } catch {}
     });
 
     localStorage.setItem(STORAGE_MISTAKES_KEY, JSON.stringify(updatedList.slice(0, 100)));

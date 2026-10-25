@@ -4,9 +4,11 @@ import {
   ExternalLink,
   AlertTriangle,
   Lightbulb,
-  Printer
+  Printer,
+  Layers
 } from 'lucide-react';
 import AudioButton from '../AudioButton';
+import { getHanziDecomposition } from '../../data/hanziDecomposition.js';
 
 export default function CharacterDetailCard({
   detail,
@@ -36,6 +38,12 @@ export default function CharacterDetailCard({
     relatedWords,
     example
   } = detail;
+
+  const idsDecomp = getHanziDecomposition(char);
+  const effectiveComponents = (components && components.length > 0) ? components : (idsDecomp?.components || []);
+  const effectiveMnemonic = mnemonic || idsDecomp?.mnemonic;
+  const effectiveStructureSymbol = structure?.symbol || idsDecomp?.structureType?.symbol || '';
+  const effectiveStructureName = structure?.name || idsDecomp?.structureType?.name || 'Đơn thể';
 
   return (
     <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-6 border border-[#F1E5D8] dark:border-[#334155] shadow-sm space-y-6">
@@ -144,18 +152,18 @@ export default function CharacterDetailCard({
           </span>
         </div>
 
-        {/* Cấu trúc chữ */}
+        {/* Cấu trúc chữ (IDS) */}
         <div className="p-3 rounded-xl bg-[#FFF9F2] dark:bg-[#0F172A] border border-[#F1E5D8] dark:border-[#334155]">
           <span className="text-[11px] font-semibold text-[#64748B] dark:text-[#94A3B8] block mb-1">
-            Cấu trúc chữ
+            Cấu trúc chữ (IDS)
           </span>
           <div className="flex items-center gap-1.5 font-bold text-xs text-[#243447] dark:text-[#F3F4F6] truncate">
-            {structure && structure.symbol && (
-              <span className="px-1 py-0.5 rounded-sm bg-gray-200 dark:bg-gray-700 font-mono text-[11px]">
-                {structure.symbol}
+            {effectiveStructureSymbol && (
+              <span className="px-1 py-0.5 rounded-sm bg-[#E85D3F]/10 text-[#E85D3F] font-mono text-[11px]">
+                {effectiveStructureSymbol}
               </span>
             )}
-            <span className="truncate">{structure ? structure.name.split('(')[0] : 'Đơn thể'}</span>
+            <span className="truncate">{effectiveStructureName.split('(')[0]}</span>
           </div>
         </div>
 
@@ -171,26 +179,34 @@ export default function CharacterDetailCard({
       </div>
 
       {/* 3. Chiết tự & Mẹo nhớ câu chuyện */}
-      {mnemonic && (
+      {effectiveMnemonic && (
         <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/5 to-rose-500/5 border border-amber-500/20">
           <div className="flex items-center gap-2 mb-1.5 text-xs font-bold text-amber-700 dark:text-amber-400">
             <Lightbulb className="w-4 h-4 text-amber-500" />
             <span>Mẹo chiết tự & Câu chuyện ghi nhớ</span>
           </div>
           <p className="text-sm text-[#243447] dark:text-[#E2E8F0] leading-relaxed">
-            {mnemonic}
+            {effectiveMnemonic}
           </p>
         </div>
       )}
 
-      {/* 4. Thành phần cấu tạo (Components Breakdown) */}
-      {components && components.length > 0 && (
+      {/* 4. Thành phần cấu tạo (IDS Components Breakdown) */}
+      {effectiveComponents && effectiveComponents.length > 0 && (
         <div>
-          <h4 className="text-xs font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-2.5">
-            Thành phần cấu tạo chữ (Components)
-          </h4>
+          <div className="flex items-center justify-between mb-2.5">
+            <h4 className="text-xs font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-[#E85D3F]" />
+              <span>Thành phần cấu tạo chữ (IDS Breakdown)</span>
+            </h4>
+            {idsDecomp?.ids && (
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-bold">
+                {idsDecomp.ids}
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {components.map((comp, idx) => (
+            {effectiveComponents.map((comp, idx) => (
               <div 
                 key={idx}
                 className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 flex items-center gap-3"

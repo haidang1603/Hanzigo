@@ -24,7 +24,8 @@ import {
   Award,
   LogOut,
   Settings,
-  Shield
+  Shield,
+  Search
 } from 'lucide-react';
 import { playClickSound } from '../utils/audio';
 import StreakModal from './learning/StreakModal';
@@ -40,7 +41,8 @@ export default function Navbar({
   darkMode,
   setDarkMode,
   soundEnabled,
-  setSoundEnabled
+  setSoundEnabled,
+  onOpenCommandPalette
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [practiceOpen, setPracticeOpen] = useState(false);
@@ -92,6 +94,13 @@ export default function Navbar({
       desc: 'Giao tiếp phản xạ theo tình huống', 
       icon: MessageSquare, 
       color: 'text-rose-500 bg-rose-500/10' 
+    },
+    { 
+      id: 'reader', 
+      label: 'Đọc hiểu & NLP', 
+      desc: 'Bài đọc HSK, Pinyin ngữ cảnh & phân tích từ', 
+      icon: BookOpen, 
+      color: 'text-orange-500 bg-orange-500/10' 
     },
   ];
 
@@ -165,7 +174,7 @@ export default function Navbar({
           </div>
 
           {/* Desktop Navigation Links - Compact, Neat & Never Wraps */}
-          <nav className="hidden lg:flex items-center gap-1 shrink-0">
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 shrink-0">
             {coreNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -173,7 +182,7 @@ export default function Navbar({
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-2 rounded-xl text-xs xl:text-sm font-bold whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-xl text-xs xl:text-sm font-bold whitespace-nowrap transition-all duration-150 cursor-pointer ${
                     isActive
                       ? 'bg-[#E85D3F] text-white shadow-sm shadow-[#E85D3F]/30'
                       : 'text-[#243447] dark:text-[#CBD5E1] hover:text-[#E85D3F] dark:hover:text-white hover:bg-white/80 dark:hover:bg-[#1E293B]'
@@ -195,7 +204,7 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={() => setPracticeOpen(prev => !prev)}
-                className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-2 rounded-xl text-xs xl:text-sm font-bold whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-xl text-xs xl:text-sm font-bold whitespace-nowrap transition-all duration-150 cursor-pointer ${
                   isPracticeActive
                     ? 'bg-[#E85D3F] text-white shadow-sm shadow-[#E85D3F]/30'
                     : practiceOpen
@@ -203,9 +212,12 @@ export default function Navbar({
                       : 'text-[#243447] dark:text-[#CBD5E1] hover:text-[#E85D3F] dark:hover:text-white hover:bg-white/80 dark:hover:bg-[#1E293B]'
                 }`}
               >
-                <GraduationCap size={16} className={isPracticeActive ? 'text-white' : 'text-[#748092] dark:text-[#94A3B8]'} />
-                <span>{isPracticeActive ? activePractice?.label : 'Luyện tập'}</span>
-                <ChevronDown size={14} className={`transition-transform duration-200 ${practiceOpen ? 'rotate-180' : ''}`} />
+                <GraduationCap size={15} className={isPracticeActive ? 'text-white' : 'text-[#748092] dark:text-[#94A3B8]'} />
+                <span>Luyện tập</span>
+                {isPracticeActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                )}
+                <ChevronDown size={13} className={`transition-transform duration-200 ${practiceOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {practiceOpen && (
@@ -266,7 +278,7 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={() => setMoreOpen(prev => !prev)}
-                className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-2 rounded-xl text-xs xl:text-sm font-bold whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-xl text-xs xl:text-sm font-bold whitespace-nowrap transition-all duration-150 cursor-pointer ${
                   isMoreActive
                     ? 'bg-[#E85D3F] text-white shadow-sm shadow-[#E85D3F]/30'
                     : moreOpen
@@ -275,8 +287,11 @@ export default function Navbar({
                 }`}
               >
                 <Layers size={15} className={isMoreActive ? 'text-white' : 'text-[#748092] dark:text-[#94A3B8]'} />
-                <span>{isMoreActive ? activeMore?.label : 'Khám phá'}</span>
-                <ChevronDown size={14} className={`transition-transform duration-200 ${moreOpen ? 'rotate-180' : ''}`} />
+                <span>Khám phá</span>
+                {isMoreActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                )}
+                <ChevronDown size={13} className={`transition-transform duration-200 ${moreOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {moreOpen && (
@@ -324,9 +339,22 @@ export default function Navbar({
           </nav>
 
           {/* Right Action Tools & User Profile */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 xl:gap-2 shrink-0">
             
-            {/* Streak & EXP Badges */}
+            {/* Global Dictionary Search (Cmd/Ctrl + K) */}
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound();
+                if (onOpenCommandPalette) onOpenCommandPalette();
+              }}
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#334155] text-gray-500 hover:text-[#E85D3F] hover:border-[#E85D3F] text-xs font-semibold shadow-2xs transition-all active:scale-95 cursor-pointer"
+              title="Tra cứu từ điển toàn cục (Ctrl + K / Cmd + K)"
+            >
+              <Search size={14} className="text-[#E85D3F]" />
+              <span className="hidden 2xl:inline">Tra từ...</span>
+              <kbd className="hidden sm:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400">Ctrl K</kbd>
+            </button>
             {user && (
               <>
                 <button 
@@ -335,60 +363,61 @@ export default function Navbar({
                     setStreakModalOpen(true);
                   }}
                   title="Nhấn để xem Lịch trình chuỗi & Phần thưởng 🔥"
-                  className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] border border-[#F4B942]/40 hover:border-[#F4B942] text-[#D97706] dark:text-amber-400 text-xs font-bold shadow-xs whitespace-nowrap shrink-0 transition-all cursor-pointer hover:scale-105 active:scale-95 group"
+                  className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] border border-[#F4B942]/40 hover:border-[#F4B942] text-[#D97706] dark:text-amber-400 text-xs font-bold shadow-xs whitespace-nowrap shrink-0 transition-all cursor-pointer hover:scale-105 active:scale-95 group"
                 >
-                  <Flame size={14} className="text-[#F4B942] fill-[#F4B942] group-hover:animate-bounce" />
+                  <Flame size={13} className="text-[#F4B942] fill-[#F4B942] group-hover:animate-bounce" />
                   <span>{streak} ngày</span>
                 </button>
 
                 <button 
                   onClick={() => handleNavClick('leaderboard')}
                   title="Bảng Vàng vinh danh cao thủ XP"
-                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border border-[#E85D3F]/30 text-[#E85D3F] hover:bg-[#E85D3F] hover:text-white text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer group shadow-xs hover:scale-105 active:scale-95"
+                  className="hidden md:flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border border-[#E85D3F]/30 text-[#E85D3F] hover:bg-[#E85D3F] hover:text-white text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer group shadow-xs hover:scale-105 active:scale-95"
                 >
                   <Trophy size={13} className="text-amber-500 group-hover:text-amber-200 fill-amber-500 transition-colors" />
-                  <span>{xp} XP</span>
+                  <span>{xp >= 10000 ? `${(xp / 1000).toFixed(1)}k` : xp} XP</span>
                 </button>
               </>
             )}
 
-            {/* Sound Toggle */}
-            <button
-              onClick={() => {
-                setSoundEnabled(!soundEnabled);
-                playClickSound();
-              }}
-              title={soundEnabled ? 'Âm thanh bật' : 'Âm thanh tắt'}
-              className="p-1.5 rounded-xl text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] border border-transparent hover:border-[#F1E5D8] dark:hover:border-[#2B3A4F] transition-colors cursor-pointer shrink-0"
-            >
-              {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} className="text-red-400" />}
-            </button>
+            {/* Quick Controls: Sound & Dark Mode */}
+            <div className="flex items-center bg-gray-100/70 dark:bg-gray-800/70 rounded-xl p-0.5 border border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70">
+              <button
+                onClick={() => {
+                  setSoundEnabled(!soundEnabled);
+                  playClickSound();
+                }}
+                title={soundEnabled ? 'Âm thanh bật' : 'Âm thanh tắt'}
+                className="p-1.5 rounded-lg text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] hover:text-[#E85D3F] transition-colors cursor-pointer shrink-0"
+              >
+                {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} className="text-red-400" />}
+              </button>
 
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={() => {
-                setDarkMode(!darkMode);
-                playClickSound();
-              }}
-              title={darkMode ? 'Chế độ sáng' : 'Chế độ tối'}
-              className="p-1.5 rounded-xl text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] border border-transparent hover:border-[#F1E5D8] dark:hover:border-[#2B3A4F] transition-colors cursor-pointer shrink-0"
-            >
-              {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
-            </button>
+              <button
+                onClick={() => {
+                  setDarkMode(!darkMode);
+                  playClickSound();
+                }}
+                title={darkMode ? 'Chế độ sáng' : 'Chế độ tối'}
+                className="p-1.5 rounded-lg text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] hover:text-[#E85D3F] transition-colors cursor-pointer shrink-0"
+              >
+                {darkMode ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} />}
+              </button>
+            </div>
 
             {/* Teacher Portal Button (Teacher or Admin) */}
             {isTeacher && (
               <button
                 onClick={() => handleNavClick('teacher')}
                 title="Cổng Giáo viên (Teacher Dashboard)"
-                className={`px-2 xl:px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
+                className={`p-1.5 2xl:px-2.5 2xl:py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
                   activeTab === 'teacher'
                     ? 'bg-[#E85D3F] text-white border-[#E85D3F] shadow-sm shadow-[#E85D3F]/30'
                     : 'bg-orange-500/10 text-[#E85D3F] dark:text-orange-400 border-orange-500/20 hover:bg-orange-500/20'
                 }`}
               >
                 <GraduationCap size={15} />
-                <span className="hidden sm:inline">Giáo viên</span>
+                <span className="hidden 2xl:inline">Giáo viên</span>
               </button>
             )}
 
@@ -397,14 +426,14 @@ export default function Navbar({
               <button
                 onClick={() => handleNavClick('admin')}
                 title="Trang quản trị (Admin)"
-                className={`px-2 xl:px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
+                className={`p-1.5 2xl:px-2.5 2xl:py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
                   activeTab === 'admin'
                     ? 'bg-[#E85D3F] text-white border-[#E85D3F] shadow-sm shadow-[#E85D3F]/30'
                     : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
                 }`}
               >
                 <ShieldCheck size={15} />
-                <span className="hidden sm:inline">Admin</span>
+                <span className="hidden 2xl:inline">Admin</span>
               </button>
             )}
 
@@ -438,7 +467,7 @@ export default function Navbar({
                     );
                   })()}
 
-                  <div className="hidden xl:block text-left whitespace-nowrap">
+                  <div className="hidden 2xl:block text-left whitespace-nowrap">
                     <p className="text-xs font-bold text-[#243447] dark:text-white leading-tight truncate max-w-[85px]">
                       {user.name}
                     </p>

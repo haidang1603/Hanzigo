@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   Search, 
@@ -20,7 +20,16 @@ import {
   PenTool,
   Mic,
   Flame,
-  Keyboard
+  Keyboard,
+  Calendar,
+  TrendingUp,
+  AlertTriangle,
+  Layers,
+  BookOpen,
+  BookmarkPlus,
+  BookmarkCheck,
+  Info,
+  ExternalLink
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { playClickSound, playSuccessSound, playErrorSound } from '../utils/audio';
@@ -28,10 +37,11 @@ import { VOCABULARY_LIST, TOPIC_FILTERS } from '../data/chineseData';
 import { getStoredCustomVocab, saveCustomVocab, deleteCustomVocab } from '../utils/materialsStorage';
 import { triggerCloudSync, getVocabularyFromDb, addVocabularyToDb } from '../supabase/services';
 import { awardXp, getUserStorageKey, getLocalDateString } from '../utils/gamification';
-import { calculateNextSrsReview, SRS_QUALITY } from '../utils/srsEngine';
+import { calculateNextSrsReview, SRS_QUALITY, calculateSrsStats, isCardDueForReview, captureWeakVocabulary } from '../utils/srsEngine';
 import { saveUserVocabSrsCard, syncUserVocabSrsFromCloud, updateDailyMissionProgress } from '../services';
 import AiContextBadge from '../components/personalization/AiContextBadge.jsx';
 import { getPersonalizedExercises } from '../services/aiGateway.js';
+import { searchDictionaryPaginated, formatDictionaryItemForDisplay } from '../services/dictionaryService.js';
 
 const STORAGE_REMEMBERED = 'hanzigo_vocab_remembered';
 const STORAGE_REVIEW = 'hanzigo_vocab_review';
@@ -168,7 +178,77 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
   const [selectedHsk, setSelectedHsk] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'remembered', 'review', 'custom'
   const [lengthFilter, setLengthFilter] = useState('all'); // 'all', 'single', 'compound'
-  const [viewMode, setViewMode] = useState('flashcard'); // 'flashcard', 'grid', 'quiz'
+  const [viewMode, setViewMode] = useState('flashcard'); // 'flashcard', 'grid', 'quiz', 'dictionary'
+
+  // Phase 16: Kho từ điển mở rộng quy mô lớn (120.000+ từ)
+  const [dictQuery, setDictQuery] = useState('');
+  const [dictHsk, setDictHsk] = useState('ALL');
+  const [dictPage, setDictPage] = useState(1);
+  const [dictPageSize] = useState(24);
+  const [dictResults, setDictResults] = useState([]);
+  const [dictTotal, setDictTotal] = useState(0);
+  const [dictTotalPages, setDictTotalPages] = useState(1);
+  const [dictLoading, setDictLoading] = useState(false);
+  const [dictSource, setDictSource] = useState('cloud');
+  const [selectedDictWord, setSelectedDictWord] = useState(null);
+  const [savedDictWords, setSavedDictWords] = useState(new Set());
+
+  // Hiệu ứng tải dữ liệu phân trang kho từ điển 120.000 từ khi mở tab dictionary
+  useEffect(() => {
+    if (viewMode !== 'dictionary') return;
+    let isCancelled = false;
+    setDictLoading(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await searchDictionaryPaginated({
+          query: dictQuery,
+          hskLevel: dictHsk,
+          page: dictPage,
+          pageSize: dictPageSize
+        });
+        if (!isCancelled && res) {
+          setDictResults(res.entries || []);
+          setDictTotal(res.totalCount || 0);
+          setDictTotalPages(res.totalPages || 1);
+          setDictSource(res.source || 'cloud');
+          setDictLoading(false);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.warn('Error fetching paginated dictionary:', err);
+          setDictLoading(false);
+        }
+      }
+    }, 200);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [viewMode, dictQuery, dictHsk, dictPage, dictPageSize]);
+
+  // Lưu từ điển vào Flashcard / SRS cá nhân (không tải 120k từ vào DB người dùng)
+  const handleSaveDictToSrs = (e, item) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    playClickSound();
+    try {
+      saveCustomVocab({
+        hanzi: item.hanzi || item.simplified,
+        pinyin: item.pinyin,
+        hanviet: item.hanviet,
+        meaning: item.meaningVi || (item.definitions?.[0] ? `(Định nghĩa) ${item.definitions[0]}` : item.meaningEn),
+        level: item.level || 'Tự chọn',
+        topic: item.topic || 'Từ điển CC-CEDICT'
+      });
+      captureWeakVocabulary(item, 'dictionary', user);
+      awardXp(10, user, `dict_save_${item.hanzi || item.simplified}`);
+      playSuccessSound();
+      setSavedDictWords(prev => new Set([...prev, item.hanzi || item.simplified]));
+    } catch (err) {
+      console.warn('Error saving dictionary item to SRS:', err);
+    }
+  };
 
   // Master vocabulary state initialized lazily from storage + static data
   const [allVocabList, setAllVocabList] = useState(() => {
@@ -212,6 +292,7 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
   // Flashcard interaction state
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const isRatingRef = useRef(false);
 
   // Spaced Repetition status tracking (persisted in localStorage per user)
   const [rememberedIds, setRememberedIds] = useState(() => {
@@ -269,6 +350,30 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
     return () => { isMounted = false; };
   }, [user]);
 
+  // Synchronize immediately when words are captured from Reader, Command Palette or Quiz
+  useEffect(() => {
+    const handleSrsUpdate = () => {
+      try {
+        const key = getUserStorageKey(STORAGE_SRS_STATE, user);
+        const saved = localStorage.getItem(key) || (user ? null : localStorage.getItem(STORAGE_SRS_STATE));
+        if (saved) setSrsMap(JSON.parse(saved));
+        const custom = getStoredCustomVocab().map(normalizeVocab);
+        const map = new Map();
+        VOCABULARY_LIST.map(normalizeVocab).forEach(item => map.set(item.hanzi, item));
+        allVocabList.forEach(item => map.set(item.hanzi, item));
+        custom.forEach(item => map.set(item.hanzi, item));
+        setAllVocabList(Array.from(map.values()));
+      } catch {}
+    };
+
+    window.addEventListener('hanzigo_srs_updated', handleSrsUpdate);
+    window.addEventListener('hanzigo_vocab_saved', handleSrsUpdate);
+    return () => {
+      window.removeEventListener('hanzigo_srs_updated', handleSrsUpdate);
+      window.removeEventListener('hanzigo_vocab_saved', handleSrsUpdate);
+    };
+  }, [user, allVocabList]);
+
   // Add Custom Vocabulary Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [newHanzi, setNewHanzi] = useState('');
@@ -315,6 +420,15 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
     return counts;
   }, [allVocabList]);
 
+  // SRS Analytics & 7-day forecast
+  const srsStats = useMemo(() => {
+    const cards = allVocabList.map(v => ({
+      ...v,
+      ...(srsMap[v.hanzi] || {})
+    }));
+    return calculateSrsStats(cards);
+  }, [allVocabList, srsMap]);
+
   // Filtered vocabularies
   const filteredVocab = useMemo(() => {
     return allVocabList.filter((item) => {
@@ -340,6 +454,10 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
         matchesStatus = !!item.isCustom;
       } else if (statusFilter === 'srs_priority') {
         matchesStatus = reviewIds.includes(item.id) || !rememberedIds.includes(item.id);
+      } else if (statusFilter === 'due') {
+        matchesStatus = isCardDueForReview(srsMap[item.hanzi] || item);
+      } else if (statusFilter === 'leeches') {
+        matchesStatus = (srsMap[item.hanzi]?.lapseCount || srsMap[item.hanzi]?.lapse_count || 0) >= 3;
       }
 
       let matchesLength = true;
@@ -351,9 +469,21 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
 
       return matchesSearch && matchesTopic && matchesHsk && matchesStatus && matchesLength;
     });
-  }, [allVocabList, searchTerm, selectedTopic, selectedHsk, statusFilter, lengthFilter, rememberedIds, reviewIds]);
+  }, [allVocabList, searchTerm, selectedTopic, selectedHsk, statusFilter, lengthFilter, rememberedIds, reviewIds, srsMap]);
 
   const currentCard = filteredVocab[currentIndex] || filteredVocab[0];
+
+  // Dynamic estimated next review intervals for current card across 4 SM-2 grades
+  const srsPreview = useMemo(() => {
+    if (!currentCard) return { again: 1, hard: 1, good: 1, easy: 4 };
+    const cur = srsMap[currentCard.hanzi] || { repetitions: 0, intervalDays: 1, easeFactor: 2.50 };
+    return {
+      again: calculateNextSrsReview(cur, SRS_QUALITY.AGAIN).intervalDays,
+      hard: calculateNextSrsReview(cur, SRS_QUALITY.HARD).intervalDays,
+      good: calculateNextSrsReview(cur, SRS_QUALITY.GOOD).intervalDays,
+      easy: calculateNextSrsReview(cur, SRS_QUALITY.EASY).intervalDays
+    };
+  }, [currentCard, srsMap]);
 
   // Flip card
   const handleFlip = useCallback(() => {
@@ -393,9 +523,12 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
     }
   }, [user]);
 
-  // Handle SM-2 Spaced Repetition Rating
+  // Handle SM-2 Spaced Repetition Rating (4-tier standard with double-click protection)
   const handleSrsRate = useCallback((card, quality) => {
-    if (!card) return;
+    if (!card || isRatingRef.current) return;
+    isRatingRef.current = true;
+    setTimeout(() => { isRatingRef.current = false; }, 350);
+
     const currentSrs = srsMap[card.hanzi] || { repetitions: 0, intervalDays: 1, easeFactor: 2.50 };
     const nextSrs = calculateNextSrsReview(currentSrs, quality);
 
@@ -410,7 +543,8 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
 
     if (quality >= SRS_QUALITY.GOOD) {
       playSuccessSound();
-      awardXp(10, user, `vocab_srs_${card.hanzi}_${getLocalDateString()}`);
+      const xpEarned = quality === SRS_QUALITY.EASY ? 15 : 10;
+      awardXp(xpEarned, user, `vocab_srs_${card.hanzi}_${getLocalDateString()}`);
       updateDailyMissionProgress('vocab_review', 1, user);
       
       setRememberedIds(prev => {
@@ -432,6 +566,9 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
       });
     } else {
       playClickSound();
+      if (quality === SRS_QUALITY.HARD) {
+        awardXp(5, user, `vocab_srs_hard_${card.hanzi}_${getLocalDateString()}`);
+      }
       updateDailyMissionProgress('vocab_review', 1, user);
 
       setReviewIds(prev => {
@@ -443,14 +580,16 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
         return next;
       });
 
-      setRememberedIds(prev => {
-        const next = prev.filter(item => item !== card.id);
-        try {
-          const key = getUserStorageKey(STORAGE_REMEMBERED, user);
-          localStorage.setItem(key, JSON.stringify(next));
-        } catch {}
-        return next;
-      });
+      if (quality === SRS_QUALITY.AGAIN) {
+        setRememberedIds(prev => {
+          const next = prev.filter(item => item !== card.id);
+          try {
+            const key = getUserStorageKey(STORAGE_REMEMBERED, user);
+            localStorage.setItem(key, JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+      }
     }
 
     // Sync to Supabase user_vocab_srs table
@@ -501,9 +640,13 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
         e.preventDefault();
         handlePrevCard();
       } else if (e.key === '1' || e.key === 'r' || e.key === 'R') {
-        if (currentCard) handleMarkReview(currentCard.id);
-      } else if (e.key === '2' || e.key === 'm' || e.key === 'M') {
-        if (currentCard) handleMarkRemembered(currentCard.id);
+        if (currentCard) handleSrsRate(currentCard, SRS_QUALITY.AGAIN);
+      } else if (e.key === '2') {
+        if (currentCard) handleSrsRate(currentCard, SRS_QUALITY.HARD);
+      } else if (e.key === '3' || e.key === 'm' || e.key === 'M') {
+        if (currentCard) handleSrsRate(currentCard, SRS_QUALITY.GOOD);
+      } else if (e.key === '4') {
+        if (currentCard) handleSrsRate(currentCard, SRS_QUALITY.EASY);
       }
     };
 
@@ -641,12 +784,15 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
     playClickSound();
     if (filteredVocab.length === 0) return;
 
-    const headers = ['Chữ Hán', 'Pinyin', 'Hán-Việt', 'Nghĩa', 'Cấp độ', 'Chủ đề', 'Bộ thủ', 'Số nét', 'Chiết tự', 'Ví dụ'];
+    const headers = ['Chữ Hán (Giản thể)', 'Chữ Phồn thể', 'Pinyin', 'Hán-Việt', 'Từ loại', 'Nghĩa tiếng Việt', 'Tiếng Anh (CC-CEDICT)', 'Cấp độ', 'Chủ đề', 'Bộ thủ', 'Số nét', 'Chiết tự', 'Ví dụ'];
     const rows = filteredVocab.map(v => [
       `"${v.hanzi}"`,
+      `"${v.traditional || v.hanzi}"`,
       `"${v.pinyin}"`,
       `"${v.hanviet}"`,
+      `"${v.pos || ''}"`,
       `"${v.meaning}"`,
+      `"${v.en || ''}"`,
       `"${v.level}"`,
       `"${v.topic}"`,
       `"${v.radical}"`,
@@ -787,6 +933,132 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
         </div>
       </div>
 
+      {/* SRS Analytics & 7-Day Spaced Repetition Forecast Widget */}
+      <div className="bg-gradient-to-br from-amber-50/80 via-white to-orange-50/50 dark:from-[#1E293B] dark:via-[#1A2234] dark:to-[#172033] p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-3">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-orange-100 text-orange-600 dark:bg-orange-950/60 dark:text-orange-400">
+              <TrendingUp size={16} />
+            </span>
+            <h2 className="text-sm sm:text-base font-bold text-[#243447] dark:text-white">
+              Tiến Độ Ôn Tập SM-2 & Dự Báo 7 Ngày
+            </h2>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-[#748092] dark:text-[#94A3B8]">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Tự động đồng bộ Offline & Cloud</span>
+          </div>
+        </div>
+
+        {/* 5 SRS Metric Badges */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              playClickSound();
+              setStatusFilter('due');
+              setCurrentIndex(0);
+            }}
+            className={`p-3 rounded-2xl border text-left transition-all ${
+              statusFilter === 'due'
+                ? 'bg-red-500 text-white border-red-500 shadow-md scale-[1.02]'
+                : 'bg-white dark:bg-[#131B24] border-red-200 dark:border-red-900/40 hover:border-red-400'
+            }`}
+          >
+            <div className="text-[11px] font-semibold opacity-80 flex items-center justify-between">
+              <span>⏰ Hôm nay cần ôn</span>
+            </div>
+            <div className={`text-xl font-black mt-1 ${statusFilter === 'due' ? 'text-white' : 'text-red-600 dark:text-red-400'}`}>
+              {srsStats.dueCount}
+            </div>
+          </button>
+
+          <div className="p-3 rounded-2xl bg-white dark:bg-[#131B24] border border-blue-200 dark:border-blue-900/40 text-left">
+            <div className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">
+              🆕 Thẻ mới (New)
+            </div>
+            <div className="text-xl font-black text-blue-600 dark:text-blue-400 mt-1">
+              {srsStats.newCount}
+            </div>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-white dark:bg-[#131B24] border border-amber-200 dark:border-amber-900/40 text-left">
+            <div className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">
+              🔄 Đang ôn (Learning)
+            </div>
+            <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1">
+              {srsStats.reviewCount}
+            </div>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-white dark:bg-[#131B24] border border-emerald-200 dark:border-emerald-900/40 text-left">
+            <div className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">
+              ✅ Đã thuộc vững
+            </div>
+            <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+              {srsStats.masteredCount}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              playClickSound();
+              setStatusFilter('leeches');
+              setCurrentIndex(0);
+            }}
+            className={`p-3 rounded-2xl border text-left transition-all ${
+              statusFilter === 'leeches'
+                ? 'bg-purple-600 text-white border-purple-600 shadow-md scale-[1.02]'
+                : 'bg-white dark:bg-[#131B24] border-purple-200 dark:border-purple-900/40 hover:border-purple-400'
+            }`}
+          >
+            <div className="text-[11px] font-semibold opacity-80 flex items-center justify-between">
+              <span>⚠️ Hay quên (Leeches)</span>
+            </div>
+            <div className={`text-xl font-black mt-1 ${statusFilter === 'leeches' ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`}>
+              {srsStats.leechCount}
+            </div>
+          </button>
+        </div>
+
+        {/* 7-Day Forecast Micro Bar Chart */}
+        <div className="pt-2">
+          <div className="text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-2 flex items-center gap-1.5">
+            <Calendar size={13} />
+            <span>Dự báo số thẻ đến hạn trong 7 ngày tới:</span>
+          </div>
+          <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center">
+            {srsStats.forecast7Days.map((item, idx) => {
+              const maxCount = Math.max(...srsStats.forecast7Days.map(f => f.count), 5);
+              const heightPercent = Math.max(15, Math.round((item.count / maxCount) * 100));
+              return (
+                <div key={idx} className="flex flex-col items-center">
+                  <span className="text-[10px] font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
+                    {item.count}
+                  </span>
+                  <div className="w-full h-12 bg-black/5 dark:bg-white/5 rounded-lg flex items-end justify-center p-1 overflow-hidden">
+                    <div 
+                      className={`w-full rounded transition-all duration-300 ${
+                        item.isToday 
+                          ? 'bg-[#E85D3F]' 
+                          : item.count > 0 
+                            ? 'bg-amber-400 dark:bg-amber-500' 
+                            : 'bg-transparent'
+                      }`}
+                      style={{ height: `${item.count > 0 ? heightPercent : 4}%` }}
+                    />
+                  </div>
+                  <span className={`text-[10px] mt-1 font-semibold ${item.isToday ? 'text-[#E85D3F] font-bold' : 'text-[#748092] dark:text-[#94A3B8]'}`}>
+                    {item.dayLabel}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* Search, Filter Toolbar & View Mode Switcher */}
       <div className="space-y-4 bg-white dark:bg-[#1E293B] p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
         
@@ -868,6 +1140,8 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
           <div className="flex items-center gap-1 bg-[#FFF9F2] dark:bg-[#131B24] p-1 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] w-full sm:w-auto overflow-x-auto">
             {[
               { id: 'all', label: 'Tất cả' },
+              { id: 'due', label: `⏰ Cần ôn (${srsStats.dueCount})` },
+              { id: 'leeches', label: `⚠️ Hay quên (${srsStats.leechCount})` },
               { id: 'custom', label: `🌟 Tự thêm (${customVocabCount})` },
               { id: 'remembered', label: 'Đã nhớ' },
               { id: 'review', label: 'Cần ôn' },
@@ -940,6 +1214,22 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
               <Zap size={15} />
               <span className="hidden sm:inline">Trắc nghiệm</span>
             </button>
+
+            <button
+              onClick={() => {
+                playClickSound();
+                setViewMode('dictionary');
+              }}
+              title="Tra cứu kho từ điển quy mô lớn CC-CEDICT (120.000 từ)"
+              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                viewMode === 'dictionary' 
+                  ? 'bg-[#E85D3F] text-white shadow-sm' 
+                  : 'text-[#748092] hover:text-[#243447]'
+              }`}
+            >
+              <BookOpen size={15} />
+              <span className="hidden sm:inline">Từ điển 120.000 từ</span>
+            </button>
           </div>
 
         </div>
@@ -1010,25 +1300,53 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
         
         /* Empty State */
         <div className="text-center py-16 bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-4 max-w-xl mx-auto p-6 shadow-sm">
-          <span className="text-4xl">📚</span>
-          <div className="space-y-1">
-            <h3 className="text-base font-bold text-[#243447] dark:text-white">
-              Không tìm thấy từ vựng nào phù hợp
-            </h3>
-            <p className="text-xs text-[#748092]">
-              Bạn chưa có từ vựng thuộc nhóm này, hoặc từ khóa tìm kiếm chưa chính xác.
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              playClickSound();
-              setShowAddModal(true);
-            }}
-            className="px-5 py-2.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold shadow-md hover:bg-[#CB4529] transition-all inline-flex items-center gap-1.5"
-          >
-            <Plus size={16} />
-            <span>Thêm từ vựng mới này ngay</span>
-          </button>
+          {statusFilter === 'due' ? (
+            <>
+              <span className="text-4xl">🎉</span>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-[#243447] dark:text-white">
+                  Đã hoàn thành toàn bộ thẻ cần ôn hôm nay!
+                </h3>
+                <p className="text-xs text-[#748092]">
+                  Không còn từ vựng nào đến hạn ôn tập SRS lúc này. Bạn có thể học thêm bài mới trên Lộ trình hoặc chuyển sang chế độ ôn tập tất cả.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    setStatusFilter('all');
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold shadow-md hover:bg-[#CB4529] transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCw size={15} />
+                  <span>Ôn tập tự do (Tất cả từ vựng)</span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="text-4xl">📚</span>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-[#243447] dark:text-white">
+                  Không tìm thấy từ vựng nào phù hợp
+                </h3>
+                <p className="text-xs text-[#748092]">
+                  Bạn chưa có từ vựng thuộc nhóm này, hoặc từ khóa tìm kiếm chưa chính xác.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setShowAddModal(true);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold shadow-md hover:bg-[#CB4529] transition-all inline-flex items-center gap-1.5"
+              >
+                <Plus size={16} />
+                <span>Thêm từ vựng mới này ngay</span>
+              </button>
+            </>
+          )}
         </div>
 
       ) : viewMode === 'flashcard' && currentCard ? (
@@ -1076,9 +1394,16 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
               {/* FRONT OF FLASHCARD */}
               <div className="absolute inset-0 backface-hidden bg-gradient-to-b from-white to-[#FFF9F2] dark:from-[#1E293B] dark:to-[#131B24] rounded-3xl p-8 flex flex-col justify-between items-center text-center">
                 <div className="w-full flex items-center justify-between">
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706]">
-                    {currentCard.level}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706]">
+                      {currentCard.level}
+                    </span>
+                    {currentCard.pos && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/40">
+                        {currentCard.pos}
+                      </span>
+                    )}
+                  </div>
                   <AudioButton text={currentCard.hanzi} size="md" />
                 </div>
 
@@ -1086,6 +1411,11 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
                   <div className="font-['Noto_Serif_SC'] text-7xl sm:text-8xl font-black text-[#243447] dark:text-white tracking-wide">
                     {currentCard.hanzi}
                   </div>
+                  {currentCard.traditional && currentCard.traditional !== currentCard.hanzi && (
+                    <p className="text-xs font-medium text-[#748092] dark:text-[#94A3B8]">
+                      Phồn thể: <span className="font-['Noto_Serif_SC'] font-bold text-[#E85D3F]">{currentCard.traditional}</span>
+                    </p>
+                  )}
                   <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
                     Bộ thủ: {currentCard.radical} • {currentCard.strokes} nét
                   </p>
@@ -1104,18 +1434,35 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
                     <span className="font-['Noto_Serif_SC'] text-3xl font-black text-[#243447] dark:text-white">
                       {currentCard.hanzi}
                     </span>
+                    {currentCard.traditional && currentCard.traditional !== currentCard.hanzi && (
+                      <span className="font-['Noto_Serif_SC'] text-sm font-semibold text-gray-400">
+                        ({currentCard.traditional})
+                      </span>
+                    )}
                     <span className="text-lg font-bold text-[#E85D3F]">
                       {currentCard.pinyin}
                     </span>
                   </div>
-                  <AudioButton text={currentCard.hanzi} size="sm" />
+                  <div className="flex items-center gap-2">
+                    {currentCard.pos && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/50">
+                        {currentCard.pos}
+                      </span>
+                    )}
+                    <AudioButton text={currentCard.hanzi} size="sm" />
+                  </div>
                 </div>
 
                 <div className="space-y-3 my-auto py-2">
                   <div>
                     <span className="text-[11px] text-[#748092] dark:text-[#94A3B8] block">Nghĩa tiếng Việt:</span>
                     <p className="text-lg font-bold text-[#45B97C]">{currentCard.meaning}</p>
-                    <p className="text-xs text-[#748092]">Âm Hán-Việt: <span className="font-semibold text-[#243447] dark:text-white">{currentCard.hanviet}</span></p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-[#748092]">
+                      <p>Âm Hán-Việt: <span className="font-semibold text-[#243447] dark:text-white">{currentCard.hanviet}</span></p>
+                      {currentCard.en && (
+                        <p>Tiếng Anh (CC-CEDICT): <span className="font-medium text-[#243447] dark:text-gray-300">{currentCard.en}</span></p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
@@ -1214,58 +1561,88 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
 
           {/* SM-2 SRS Card Status Indicator */}
           {currentCard && (
-            <div className="px-3 py-1.5 rounded-xl bg-white/70 dark:bg-[#1E293B]/70 border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-[11px] text-[#748092] dark:text-[#94A3B8]">
-              <span className="flex items-center gap-1.5 font-bold">
-                <Sparkles size={13} className="text-[#E85D3F]" />
-                <span>
-                  SRS: {srsMap[currentCard.hanzi]?.stage === 2 
-                    ? '🏆 Đã thuần thục' 
-                    : srsMap[currentCard.hanzi]?.stage === 1 
-                      ? '🔄 Đang trong chu kỳ ôn' 
-                      : '🆕 Từ mới học'}
+            <div className="px-3 py-2 rounded-2xl bg-white/80 dark:bg-[#1E293B]/80 border border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#748092] dark:text-[#94A3B8] shadow-2xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="flex items-center gap-1.5 font-bold">
+                  <Sparkles size={13} className="text-[#E85D3F]" />
+                  <span>
+                    SRS: {srsMap[currentCard.hanzi]?.stage === 2 
+                      ? '🏆 Đã thuần thục' 
+                      : srsMap[currentCard.hanzi]?.stage === 1 
+                        ? '🔄 Đang ôn tập' 
+                        : '🆕 Thẻ mới'}
+                  </span>
                 </span>
-              </span>
-              <span>
-                Ôn liên tiếp: <strong>{srsMap[currentCard.hanzi]?.repetitions || 0}</strong> lần • Khoảng cách: <strong>{srsMap[currentCard.hanzi]?.intervalDays || 1}</strong> ngày
-              </span>
+                {(srsMap[currentCard.hanzi]?.lapseCount || srsMap[currentCard.hanzi]?.lapse_count || 0) >= 3 && (
+                  <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20 text-[10px]">
+                    ⚠️ Hay quên ({srsMap[currentCard.hanzi]?.lapseCount || srsMap[currentCard.hanzi]?.lapse_count} lần)
+                  </span>
+                )}
+                {srsMap[currentCard.hanzi]?.sourceContext && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold text-[10px]">
+                    {srsMap[currentCard.hanzi]?.sourceContext === 'quiz_mistake' ? '🎯 Quiz làm sai' :
+                     srsMap[currentCard.hanzi]?.sourceContext === 'writing_mistake' ? '✍️ Nét viết cần ôn' :
+                     srsMap[currentCard.hanzi]?.sourceContext === 'smart_reader' ? '📖 Smart Reader' :
+                     srsMap[currentCard.hanzi]?.sourceContext === 'dictionary' ? '🔍 Tra từ điển' : '📚 Bài học'}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-3 text-[11px]">
+                <span>Lặp: <strong>{srsMap[currentCard.hanzi]?.repetitions || 0}</strong> lần</span>
+                <span>Cách: <strong>{srsMap[currentCard.hanzi]?.intervalDays || 1}</strong> ngày</span>
+                <span>EF: <strong>{(srsMap[currentCard.hanzi]?.easeFactor || 2.5).toFixed(2)}</strong></span>
+              </div>
             </div>
           )}
 
-          {/* Action Buttons: 3-tier SM-2 SRS Rating */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          {/* Action Buttons: 4-tier SM-2 SRS Rating */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+            {/* 1. Again (q=1) */}
             <button
-              onClick={() => handleSrsRate(currentCard, SRS_QUALITY.FORGOT)}
-              className="py-3 px-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-[#FEF7E9] border border-[#F4B942]/60 text-[#D97706] font-bold text-xs shadow-sm transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 cursor-pointer"
+              onClick={() => handleSrsRate(currentCard, SRS_QUALITY.AGAIN)}
+              className="py-3 px-2 rounded-2xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 font-bold text-xs shadow-xs transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 cursor-pointer"
             >
               <div className="flex items-center gap-1.5">
-                <Clock size={14} />
-                <span>1. Quên / Khó</span>
+                <Clock size={14} className="text-rose-500" />
+                <span>1. Quên (Again)</span>
               </div>
-              <span className="text-[10px] opacity-75 font-normal">Ôn lại sau 1 ngày</span>
+              <span className="text-[10px] text-rose-600/75 dark:text-rose-400 font-normal">Ôn sau {srsPreview.again} ngày</span>
             </button>
 
+            {/* 2. Hard (q=3) */}
+            <button
+              onClick={() => handleSrsRate(currentCard, SRS_QUALITY.HARD)}
+              className="py-3 px-2 rounded-2xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 border border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-300 font-bold text-xs shadow-xs transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5">
+                <RotateCw size={14} className="text-amber-500" />
+                <span>2. Khó (Hard)</span>
+              </div>
+              <span className="text-[10px] text-amber-600/75 dark:text-amber-400 font-normal">Ôn sau {srsPreview.hard} ngày</span>
+            </button>
+
+            {/* 3. Good (q=4) */}
             <button
               onClick={() => handleSrsRate(currentCard, SRS_QUALITY.GOOD)}
-              className="py-3 px-3 rounded-2xl bg-gradient-to-r from-[#45B97C] to-[#2E8B57] text-white font-bold text-xs shadow-md shadow-[#45B97C]/25 hover:opacity-95 transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 cursor-pointer"
+              className="py-3 px-2 rounded-2xl bg-gradient-to-r from-[#45B97C] to-[#2E8B57] text-white font-bold text-xs shadow-md shadow-[#45B97C]/25 hover:opacity-95 transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 cursor-pointer"
             >
               <div className="flex items-center gap-1.5">
                 <Check size={14} />
-                <span>2. Nhớ tốt</span>
+                <span>3. Tốt (Good)</span>
               </div>
-              <span className="text-[10px] text-white/80 font-normal">
-                Ôn sau {srsMap[currentCard.hanzi]?.repetitions === 0 ? '1' : srsMap[currentCard.hanzi]?.repetitions === 1 ? '6' : Math.round((srsMap[currentCard.hanzi]?.intervalDays || 1) * (srsMap[currentCard.hanzi]?.easeFactor || 2.5))} ngày
-              </span>
+              <span className="text-[10px] text-white/80 font-normal">Ôn sau {srsPreview.good} ngày</span>
             </button>
 
+            {/* 4. Easy (q=5) */}
             <button
               onClick={() => handleSrsRate(currentCard, SRS_QUALITY.EASY)}
-              className="py-3 px-3 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white font-bold text-xs shadow-md shadow-[#E85D3F]/25 transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 cursor-pointer"
+              className="py-3 px-2 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-xs shadow-md shadow-[#E85D3F]/25 hover:opacity-95 transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 cursor-pointer"
             >
               <div className="flex items-center gap-1.5">
                 <Zap size={14} />
-                <span>3. Rất dễ</span>
+                <span>4. Dễ (Easy)</span>
               </div>
-              <span className="text-[10px] text-white/80 font-normal">Tăng tốc độ nhớ sâu</span>
+              <span className="text-[10px] text-white/80 font-normal">Ôn sau {srsPreview.easy} ngày</span>
             </button>
           </div>
 
@@ -1427,7 +1804,7 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
           })}
         </div>
 
-      ) : (
+      ) : viewMode === 'quiz' ? (
 
         /* 3. QUICK QUIZ REFLEX MODE */
         <div className="max-w-xl mx-auto p-8 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl text-center space-y-6">
@@ -1536,6 +1913,343 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
           )}
         </div>
 
+      ) : (
+
+        /* 4. PHASE 16: KHO TỪ ĐIỂN MỞ RỘNG QUY MÔ LỚN (120.000+ TỪ CC-CEDICT) */
+        <div className="space-y-6">
+          
+          {/* Dictionary Search & Filter Bar */}
+          <div className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="relative w-full md:w-96">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
+                <input
+                  type="text"
+                  placeholder="Tra cứu chữ Hán, Pinyin hoặc nghĩa..."
+                  value={dictQuery}
+                  onChange={(e) => {
+                    setDictQuery(e.target.value);
+                    setDictPage(1);
+                  }}
+                  className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                />
+                {dictQuery && (
+                  <button
+                    onClick={() => { setDictQuery(''); setDictPage(1); }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {/* HSK Filter for Dictionary */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-bold text-[#748092] mr-1">Bộ lọc HSK:</span>
+                {['ALL', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5-6'].map(lvl => (
+                  <button
+                    key={lvl}
+                    onClick={() => {
+                      playClickSound();
+                      setDictHsk(lvl);
+                      setDictPage(1);
+                    }}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      dictHsk === lvl
+                        ? 'bg-[#E85D3F] text-white shadow-xs'
+                        : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] hover:text-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F]'
+                    }`}
+                  >
+                    {lvl === 'ALL' ? 'Tất cả' : lvl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Results metadata count bar */}
+            <div className="flex flex-wrap items-center justify-between text-xs text-[#748092] dark:text-[#94A3B8] pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">
+                  Tìm thấy <strong className="text-[#243447] dark:text-white">{dictTotal.toLocaleString()}</strong> mục từ
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-mono">
+                  {dictSource === 'cloud_rpc' ? '⚡ PostgreSQL GIN Trigram' : dictSource === 'cloud_table' ? '☁️ Supabase Cloud' : '📦 Dữ liệu chuẩn hóa'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>Trang <strong>{dictPage}</strong> / {dictTotalPages}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Dictionary Results Grid */}
+          {dictLoading ? (
+            <div className="py-16 text-center bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#E85D3F] border-t-transparent mb-3" />
+              <p className="text-xs font-bold text-[#748092]">Đang tải dữ liệu từ kho từ điển 120.000 mục từ...</p>
+            </div>
+          ) : dictResults.length === 0 ? (
+            <div className="py-16 text-center bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3">
+              <span className="text-4xl">🔍</span>
+              <h3 className="text-base font-bold text-[#243447] dark:text-white">Không tìm thấy từ vựng phù hợp</h3>
+              <p className="text-xs text-[#748092] max-w-md mx-auto">
+                Hãy thử tìm bằng Pinyin không dấu, chữ Hán giản thể/phồn thể hoặc kiểm tra lại cấp độ HSK đã chọn.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {dictResults.map((item, idx) => {
+                  const isSaved = savedDictWords.has(item.hanzi || item.simplified);
+                  return (
+                    <div
+                      key={item.id || idx}
+                      className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:border-[#E85D3F] hover:shadow-md transition-all flex flex-col justify-between space-y-3 group"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {item.level && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                                {item.level}
+                              </span>
+                            )}
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${
+                              item.qualityStatus === 'verified_human'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                            }`}>
+                              {item.qualityStatus === 'verified_human' ? '✓ Đã kiểm duyệt' : 'CC-CEDICT'}
+                            </span>
+                          </div>
+                          <AudioButton text={item.hanzi || item.simplified} size="sm" />
+                        </div>
+
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-['Noto_Serif_SC'] text-3xl font-black text-[#243447] dark:text-white">
+                            {item.hanzi || item.simplified}
+                          </span>
+                          {item.traditional && item.traditional !== (item.hanzi || item.simplified) && (
+                            <span className="font-['Noto_Serif_SC'] text-sm text-slate-400" title="Chữ phồn thể">
+                              ({item.traditional})
+                            </span>
+                          )}
+                          <span className="text-sm font-bold text-[#E85D3F]">{item.pinyin}</span>
+                        </div>
+
+                        {item.hanviet && (
+                          <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400 mt-1">
+                            Hán-Việt: {item.hanviet}
+                          </p>
+                        )}
+
+                        {item.meaningVi ? (
+                          <p className="text-xs font-bold text-[#45B97C] mt-1 line-clamp-2">
+                            {item.meaningVi}
+                          </p>
+                        ) : null}
+
+                        {item.meaningEn ? (
+                          <p className="text-[11px] text-[#748092] dark:text-[#94A3B8] mt-1 line-clamp-2 italic">
+                            {item.meaningEn}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      {/* Card Action Buttons */}
+                      <div className="pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2">
+                        <button
+                          onClick={() => {
+                            playClickSound();
+                            setSelectedDictWord(item);
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-[11px] font-bold text-[#243447] dark:text-white transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Info size={13} />
+                          <span>Chi tiết</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => handleSaveDictToSrs(e, item)}
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                            isSaved
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                              : 'bg-[#E85D3F] hover:bg-[#CB4529] text-white shadow-xs active:scale-95'
+                          }`}
+                        >
+                          {isSaved ? <BookmarkCheck size={13} /> : <BookmarkPlus size={13} />}
+                          <span>{isSaved ? 'Đã lưu SRS' : '+ Thêm Flashcard'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-center gap-2 pt-4">
+                <button
+                  disabled={dictPage <= 1}
+                  onClick={() => {
+                    playClickSound();
+                    setDictPage(1);
+                  }}
+                  className="px-3 py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] disabled:opacity-30 disabled:cursor-not-allowed hover:text-[#243447] cursor-pointer"
+                >
+                  « Trang đầu
+                </button>
+                <button
+                  disabled={dictPage <= 1}
+                  onClick={() => {
+                    playClickSound();
+                    setDictPage(prev => Math.max(1, prev - 1));
+                  }}
+                  className="p-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] disabled:opacity-30 disabled:cursor-not-allowed hover:text-[#243447] cursor-pointer"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-xs font-bold px-3 py-2 bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300 rounded-xl border border-orange-200 dark:border-orange-800">
+                  Trang {dictPage} / {dictTotalPages}
+                </span>
+                <button
+                  disabled={dictPage >= dictTotalPages}
+                  onClick={() => {
+                    playClickSound();
+                    setDictPage(prev => Math.min(dictTotalPages, prev + 1));
+                  }}
+                  className="p-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] disabled:opacity-30 disabled:cursor-not-allowed hover:text-[#243447] cursor-pointer"
+                >
+                  <ChevronRight size={16} />
+                </button>
+                <button
+                  disabled={dictPage >= dictTotalPages}
+                  onClick={() => {
+                    playClickSound();
+                    setDictPage(dictTotalPages);
+                  }}
+                  className="px-3 py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] disabled:opacity-30 disabled:cursor-not-allowed hover:text-[#243447] cursor-pointer"
+                >
+                  Trang cuối »
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* MODAL: DICTIONARY WORD DETAIL */}
+      {selectedDictWord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-lg w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
+              <div>
+                <div className="flex items-baseline gap-3">
+                  <span className="font-['Noto_Serif_SC'] text-4xl font-black text-[#243447] dark:text-white">
+                    {selectedDictWord.hanzi || selectedDictWord.simplified}
+                  </span>
+                  {selectedDictWord.traditional && selectedDictWord.traditional !== (selectedDictWord.hanzi || selectedDictWord.simplified) && (
+                    <span className="font-['Noto_Serif_SC'] text-lg text-slate-400" title="Chữ phồn thể">
+                      ({selectedDictWord.traditional})
+                    </span>
+                  )}
+                  <AudioButton text={selectedDictWord.hanzi || selectedDictWord.simplified} size="md" />
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-base font-bold text-[#E85D3F]">{selectedDictWord.pinyin}</span>
+                  {selectedDictWord.hanviet && (
+                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                      • {selectedDictWord.hanviet}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedDictWord(null)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Badges */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {selectedDictWord.level && (
+                <span className="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-xs font-bold">
+                  {selectedDictWord.level}
+                </span>
+              )}
+              {selectedDictWord.pos && (
+                <span className="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 text-xs font-bold">
+                  {selectedDictWord.pos}
+                </span>
+              )}
+              <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold ${
+                selectedDictWord.qualityStatus === 'verified_human'
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+              }`}>
+                {selectedDictWord.qualityStatus === 'verified_human' ? '✓ Nghĩa tiếng Việt đã kiểm duyệt' : 'Nguồn CC-CEDICT (CC BY-SA 4.0)'}
+              </span>
+            </div>
+
+            {/* Meanings */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#748092]">Ý nghĩa & Định nghĩa:</h4>
+              {selectedDictWord.meaningVi && (
+                <p className="text-sm font-bold text-[#45B97C] bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-2xl border border-emerald-200 dark:border-emerald-800">
+                  {selectedDictWord.meaningVi}
+                </p>
+              )}
+              {selectedDictWord.definitions && selectedDictWord.definitions.length > 0 ? (
+                <ul className="space-y-1 pl-4 list-disc text-xs text-[#243447] dark:text-slate-300">
+                  {selectedDictWord.definitions.map((def, dIdx) => (
+                    <li key={dIdx}>{def}</li>
+                  ))}
+                </ul>
+              ) : selectedDictWord.meaningEn ? (
+                <p className="text-xs italic text-[#748092]">{selectedDictWord.meaningEn}</p>
+              ) : null}
+            </div>
+
+            {/* Chiết tự & Bộ thủ nếu có */}
+            {selectedDictWord.decomposition && (
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1 text-xs">
+                <span className="font-bold text-[#243447] dark:text-white">Chiết tự & Kết cấu:</span>
+                <p className="text-[#748092] dark:text-slate-400">
+                  {selectedDictWord.decomposition.structureType} • Chuỗi IDS: <code className="font-mono text-amber-600">{selectedDictWord.decomposition.idsSequence}</code>
+                </p>
+              </div>
+            )}
+
+            {/* Modal Actions */}
+            <div className="pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDictWord(null);
+                  if (onSelectWriting) onSelectWriting(selectedDictWord);
+                  else setActiveTab?.('writing');
+                }}
+                className="px-3 py-2 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 text-xs font-bold flex items-center gap-1.5 hover:bg-orange-100 transition-colors cursor-pointer"
+              >
+                <PenTool size={14} />
+                <span>Tập viết chữ</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  handleSaveDictToSrs(e, selectedDictWord);
+                }}
+                className="px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 ml-auto cursor-pointer"
+              >
+                <BookmarkPlus size={14} />
+                <span>+ Thêm vào Flashcard SRS</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* MODAL: ADD CUSTOM VOCABULARY */}

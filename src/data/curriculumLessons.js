@@ -981,7 +981,8 @@ export const CURRICULUM_60_LESSONS = [
       { id: 'v-110-3', hanzi: '朋友', pinyin: 'péngyou', hanviet: 'Bằng hữu', meaning: 'Bạn bè', radical: '月 (Nguyệt)', example: { hanzi: '我们是好朋友。', pinyin: 'Wǒmen shì hǎo péngyou.', meaning: 'Chúng tôi là bạn tốt.' } }
     ],
     step3_hanzi: [
-      { hanzi: '友', pinyin: 'yǒu', meaning: 'Bạn bè (Hữu)', strokesCount: 4, strokeOrderText: 'Ngang -> Phẩy -> Nét bộ Hựu (又)', components: 'Bộ Hựu (又)', mnemonic: 'Hai bàn tay nắm lấy nhau tượng trưng cho tình bạn thân thiết.' }
+      { hanzi: '友', pinyin: 'yǒu', meaning: 'Bạn bè (Hữu)', strokesCount: 4, strokeOrderText: 'Ngang -> Phẩy -> Nét bộ Hựu (又)', components: 'Bộ Hựu (又)', mnemonic: 'Hai bàn tay nắm lấy nhau tượng trưng cho tình bạn thân thiết.' },
+      { hanzi: '朋', pinyin: 'péng', meaning: 'Bạn bè (Bằng)', strokesCount: 8, strokeOrderText: 'Phẩy -> Ngang gập móc -> Ngang -> Ngang (hai chữ Nguyệt 月 ghép lại)', components: 'Hai chữ Nguyệt (月)', mnemonic: 'Hai vầng trăng song hành bên nhau tựa đôi bạn tri kỷ gắn bó.' }
     ],
     step4_grammar: {
       formula: 'Cụm từ giao tế kinh điển: 很高兴认识你！ (Hěn gāoxìng rènshi nǐ!)',
@@ -4290,6 +4291,15 @@ export const CURRICULUM_60_LESSONS = [
         "strokeOrderText": "Bộ Nhân đứng (亻) -> Chữ Đình (亭)",
         "components": "亻 + 亭",
         "mnemonic": "Con người (亻) bước vào ngôi đình (亭) dừng chân nghỉ ngơi."
+      },
+      {
+        "hanzi": "车",
+        "pinyin": "chē",
+        "meaning": "Xe cộ (Xa)",
+        "strokesCount": 4,
+        "strokeOrderText": "Ngang -> Phẩy gập -> Ngang -> Sổ",
+        "components": "Chữ Tượng hình Xe",
+        "mnemonic": "Hình chiếc xe nhìn từ trên cao với bánh xe và trục giữa thẳng đứng."
       }
     ],
     "step4_grammar": {
@@ -5390,6 +5400,15 @@ export const CURRICULUM_60_LESSONS = [
         "strokeOrderText": "Ngang trên -> Sổ -> Sổ -> Ngang dưới -> Phẩy -> Chấm",
         "components": "艹 + 八",
         "mnemonic": "Hai bàn tay cùng chung tay góp sức lại."
+      },
+      {
+        "hanzi": "块",
+        "pinyin": "kuài",
+        "meaning": "Đồng tệ, mảnh, cục (Khối)",
+        "strokesCount": 7,
+        "strokeOrderText": "Bộ Thổ (土) -> Ngang gập móc -> Phẩy -> Chấm (chữ Quyết 夬)",
+        "components": "土 + 夬",
+        "mnemonic": "Mảnh đất bạc nén (土) đúc thành thỏi bạc dùng để thanh toán (块)."
       }
     ],
     "step4_grammar": {
@@ -9001,6 +9020,15 @@ export const CURRICULUM_60_LESSONS = [
         "strokeOrderText": "Bộ Xích (彳) bên trái -> Chữ Đắc (㝵) bên phải",
         "components": "彳 + 㝵",
         "mnemonic": "Bước chân đi (Xích) tìm được ánh mặt trời ban mai (Đán) và tấc đất (Thốn)."
+      },
+      {
+        "hanzi": "懂",
+        "pinyin": "dǒng",
+        "meaning": "Hiểu, nắm bắt (Đổng)",
+        "strokesCount": 15,
+        "strokeOrderText": "Bộ Tâm đứng (忄) -> Bộ Thảo (艹) -> Chữ Trọng (重)",
+        "components": "忄 + 董",
+        "mnemonic": "Trái tim (忄) luôn quan sát giám sát sâu sắc trọng yếu để thấu triệt tỏ tường (懂)."
       }
     ],
     "step4_grammar": {
@@ -11784,7 +11812,20 @@ export const CURRICULUM_60_LESSONS = [
   }
 ];
 
-// Helper: Find lesson by id from curriculum dataset
+// =========================================================================
+// HSK 4 - 6 ADVANCED PEDAGOGICAL CURRICULUM (60 LESSONS: l-401 to l-620)
+// =========================================================================
+import { CURRICULUM_HSK4_6_LESSONS } from './curriculumLessonsHsk4to6.js';
+export { CURRICULUM_HSK4_6_LESSONS };
+
+// Full 120 lessons across all 24 chapters (Levels 1 to 6)
+export const CURRICULUM_ALL_LESSONS = [
+  ...CURRICULUM_60_LESSONS,
+  ...CURRICULUM_HSK4_6_LESSONS
+];
+
+// Helper: Find lesson by id from curriculum dataset (searches all 120 lessons)
 export function getCurriculumLessonById(lessonId) {
-  return CURRICULUM_60_LESSONS.find(l => l.id === lessonId);
+  return CURRICULUM_ALL_LESSONS.find(l => l.id === lessonId);
 }
+

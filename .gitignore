@@ -27,3 +27,8 @@ dist-ssr
 *.sw?
 supabase/.temp/
 scratch/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class

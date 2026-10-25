@@ -12,14 +12,38 @@ export default function AudioButton({
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
 
+  const [hasError, setHasError] = useState(false);
+
   const handlePlay = (e) => {
     e.stopPropagation();
     playClickSound();
+    setHasError(false);
     setIsPlaying(true);
-    speakChinese(text, rate);
-    setTimeout(() => {
+
+    const safetyTimer = setTimeout(() => {
       setIsPlaying(false);
-    }, 1200);
+    }, 4000);
+
+    const result = speakChinese(text, {
+      rate,
+      onStart: () => setIsPlaying(true),
+      onEnd: () => {
+        clearTimeout(safetyTimer);
+        setIsPlaying(false);
+      },
+      onError: (err) => {
+        clearTimeout(safetyTimer);
+        setIsPlaying(false);
+        setHasError(true);
+        console.warn('[AudioButton] Lỗi phát âm:', err);
+      }
+    });
+
+    if (result && !result.success) {
+      clearTimeout(safetyTimer);
+      setIsPlaying(false);
+      setHasError(true);
+    }
   };
 
   const sizeClasses = {
@@ -45,10 +69,10 @@ export default function AudioButton({
     <button
       type="button"
       onClick={handlePlay}
-      title={`Nghe phát âm: ${text}`}
+      title={hasError ? `Chưa phát được âm thanh cho '${text}' (Vui lòng kiểm tra âm lượng hoặc gói giọng đọc tiếng Trung zh-CN)` : `Nghe phát âm: ${text}`}
       className={`inline-flex items-center justify-center gap-1.5 rounded-full font-medium transition-all duration-200 active:scale-95 ${
         label ? 'px-3 py-1.5' : sizeClasses[size]
-      } ${variantStyles[variant]} ${isPlaying ? 'ring-2 ring-[#E85D3F] ring-offset-2 animate-pulse' : ''} ${className}`}
+      } ${hasError ? 'bg-rose-100 text-rose-600 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-300' : variantStyles[variant]} ${isPlaying ? 'ring-2 ring-[#E85D3F] ring-offset-2 animate-pulse' : ''} ${className}`}
     >
       <Volume2 size={iconSizes[size]} className={isPlaying ? 'animate-bounce' : ''} />
       {label && <span>{label}</span>}

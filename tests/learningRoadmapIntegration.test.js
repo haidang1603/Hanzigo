@@ -35,8 +35,8 @@ if (typeof globalThis.localStorage === 'undefined') {
   };
 }
 
-test('1. CURRICULUM INTEGRITY: All 60 Lessons are authentic with complete 9-step schema', () => {
-  assert.equal(LEARNING_LESSONS.length, 60, 'Must have exactly 60 fully authored lessons for Levels 1-3');
+test('1. CURRICULUM INTEGRITY: All 120 Lessons are authentic with complete 9-step schema', () => {
+  assert.equal(LEARNING_LESSONS.length, 120, 'Must have exactly 120 fully authored lessons for Levels 1-6');
 
   const lessonIds = new Set();
   LEARNING_LESSONS.forEach((lesson) => {

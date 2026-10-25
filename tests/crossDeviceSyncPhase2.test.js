@@ -47,10 +47,10 @@ import {
 // 1. LESSON DATA INTEGRITY & AUDIT VERIFICATION
 // =========================================================================
 
-test('PHASE 2 - 1: Curriculum integrity verifies 7 levels, 24 chapters, and 60 pedagogical 9-step lessons', () => {
+test('PHASE 2 - 1: Curriculum integrity verifies 7 levels, 24 chapters, and 120 pedagogical 9-step lessons', () => {
   assert.equal(LEARNING_LEVELS.length, 7, 'Must have 7 HSK levels (HSK 1 to HSK 7-9)');
   assert.equal(LEARNING_CHAPTERS.length, 24, 'Must have 24 chapters');
-  assert.equal(LEARNING_LESSONS.length, 60, 'Must have 60 authored lessons with 9 steps');
+  assert.equal(LEARNING_LESSONS.length, 120, 'Must have 120 authored lessons with 9 steps across 24 chapters');
   assert.equal(BOSS_CHALLENGES.length, 12, 'Must have 12 boss challenges');
 
   // Verify each lesson has all 9 pedagogical steps
@@ -302,6 +302,6 @@ test('PHASE 2 - 9: Offline / Network disconnect during sync saves locally withou
 test('PHASE 2 - 10: fetchLessonsFromDb falls back seamlessly to bundle when database is offline or empty', async () => {
   const lessons = await fetchLessonsFromDb();
   assert.ok(Array.isArray(lessons));
-  assert.equal(lessons.length, 60, 'Must fallback to 60 authored lessons without throwing error');
+  assert.equal(lessons.length, 120, 'Must fallback to 120 authored lessons without throwing error');
   assert.equal(lessons[0].id, 'l-101');
 });

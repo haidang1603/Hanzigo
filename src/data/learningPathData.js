@@ -587,11 +587,14 @@ export const LEARNING_CHAPTERS = [
 ];
 
 // =========================================================================
-// CURRICULUM 60 PEDAGOGICAL LESSONS (LEVELS 1 - 3: 60 COMPLETE LESSONS)
+// CURRICULUM 120 PEDAGOGICAL LESSONS (LEVELS 1 - 6: 120 COMPLETE LESSONS)
 // Strictly follows docs/HANZIGO_CHINESE_CURRICULUM.md v2.0
+// Covers HSK 1 to HSK 6 across all 24 chapters without any fallback lessons
 // =========================================================================
-import { CURRICULUM_60_LESSONS } from './curriculumLessons.js';
-export const LEARNING_LESSONS = CURRICULUM_60_LESSONS;
+import { CURRICULUM_ALL_LESSONS, CURRICULUM_60_LESSONS, CURRICULUM_HSK4_6_LESSONS } from './curriculumLessons.js';
+export { CURRICULUM_60_LESSONS, CURRICULUM_HSK4_6_LESSONS };
+export const LEARNING_LESSONS = CURRICULUM_ALL_LESSONS;
+
 
 // =========================================================================
 // 12 BOSS CHALLENGES (INTERACTIVE MULTI-STAGE SCENARIO COMBAT)

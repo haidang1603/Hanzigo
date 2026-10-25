@@ -31,6 +31,26 @@ export async function getPublicHskResources({
   search = '',
   sortBy = 'recently_verified'
 } = {}) {
+  // 1. Thử gọi API Serverless /api/hsk/resources nếu chạy trên browser
+  if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
+    try {
+      const params = new URLSearchParams();
+      if (level && level !== 'all') params.set('level', level);
+      if (category && category !== 'all') params.set('category', category);
+      if (skill && skill !== 'all') params.set('skill', skill);
+      if (format && format !== 'all') params.set('format', format);
+      if (search) params.set('search', search);
+
+      const res = await window.fetch(`/api/hsk/resources?${params.toString()}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.success && Array.isArray(json.resources) && json.resources.length > 0) {
+          return json.resources;
+        }
+      }
+    } catch {}
+  }
+
   let list = [...HSK_RESOURCES].filter(r => r.is_published && r.review_status === 'published');
 
   // Thử đọc từ Supabase nếu có cấu hình

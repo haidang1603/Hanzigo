@@ -249,9 +249,9 @@ test('Roadmap Vocabulary Integration: synchronizes 60 curriculum lessons into pr
 
   // 3. Verify roadmap lessons list with vocabulary count
   const lessonsWithCount = getRoadmapLessonsWithVocabCount();
-  assert.equal(lessonsWithCount.length, 60, 'Must have exactly 60 roadmap lessons with counts');
+  assert.equal(lessonsWithCount.length, 120, 'Must have exactly 120 roadmap lessons with counts across 24 chapters');
   const lessonsWithVocab = lessonsWithCount.filter(l => l.vocabCount > 0);
-  assert.ok(lessonsWithVocab.length >= 58, 'At least 58 lessons should have vocabulary');
+  assert.ok(lessonsWithVocab.length >= 118, 'At least 118 lessons should have vocabulary');
 
   // 4. Verify lesson-specific filtering
   const lesson1Vocab = getRoadmapVocabularyByLesson('l-101');

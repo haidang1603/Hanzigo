@@ -1,0 +1,76 @@
+{
+  "execution_date": "2026-10-25T14:55:29.089616+00:00",
+  "source_file": "scripts/cedict_1_0_ts_utf-8_mdbg/cedict_ts.u8",
+  "source_license": "CC BY-SA 4.0 (Creative Commons Attribution-ShareAlike 4.0)",
+  "source_publisher": "MDBG / CC-CEDICT Community",
+  "statistics": {
+    "total_raw_lines": 125344,
+    "parsed_lines": 125314,
+    "unique_entries": 124164,
+    "multi_line_consolidated": 1150,
+    "skipped_records": [],
+    "human_verified_count": 588
+  },
+  "sample_entries": [
+    {
+      "simplified": "110",
+      "traditional": "110",
+      "pinyin_tone": "yāo yāo líng",
+      "pinyin_number": "yao1 yao1 ling2",
+      "pinyin_clean": "yaoyaoling",
+      "english_meanings": "the emergency number for law enforcement in Mainland China and Taiwan",
+      "definitions": [
+        "the emergency number for law enforcement in Mainland China and Taiwan"
+      ],
+      "vietnamese_meaning": "",
+      "hanviet": null,
+      "pos": "n/v/adj",
+      "examples": [],
+      "hsk_level": null,
+      "frequency_rank": 999999,
+      "source_id": "cc_cedict",
+      "source_license": "CC BY-SA 4.0",
+      "quality_status": "community_standard"
+    },
+    {
+      "simplified": "119",
+      "traditional": "119",
+      "pinyin_tone": "yāo yāo jiǔ",
+      "pinyin_number": "yao1 yao1 jiu3",
+      "pinyin_clean": "yaoyaojiu",
+      "english_meanings": "the emergency number for firefighting services in Mainland China",
+      "definitions": [
+        "the emergency number for firefighting services in Mainland China"
+      ],
+      "vietnamese_meaning": "",
+      "hanviet": null,
+      "pos": "n/v/adj",
+      "examples": [],
+      "hsk_level": null,
+      "frequency_rank": 999999,
+      "source_id": "cc_cedict",
+      "source_license": "CC BY-SA 4.0",
+      "quality_status": "community_standard"
+    },
+    {
+      "simplified": "11区",
+      "traditional": "11區",
+      "pinyin_tone": "11 Qū",
+      "pinyin_number": "11 Qu1",
+      "pinyin_clean": "qu",
+      "english_meanings": "(ACG) Japan (from the anime \"Code Geass\", in which Japan was renamed Area 11)",
+      "definitions": [
+        "(ACG) Japan (from the anime \"Code Geass\", in which Japan was renamed Area 11)"
+      ],
+      "vietnamese_meaning": "",
+      "hanviet": null,
+      "pos": "n/v/adj",
+      "examples": [],
+      "hsk_level": null,
+      "frequency_rank": 999999,
+      "source_id": "cc_cedict",
+      "source_license": "CC BY-SA 4.0",
+      "quality_status": "community_standard"
+    }
+  ]
+}

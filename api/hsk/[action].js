@@ -29,11 +29,20 @@ import resourcesHandler from '../_handlers/hsk/resources.js';
 import importHandler from '../_handlers/hsk/import.js';
 import reviewHandler from '../_handlers/hsk/review.js';
 import reportHandler from '../_handlers/hsk/report.js';
+import { handleVerifyCertificate, handleIssueCertificate } from '../_handlers/hsk/certificate.js';
 
 export default async function handler(req, res) {
   const urlPath = req.url ? req.url.split('?')[0] : '';
   const pathAction = urlPath.split('/').filter(Boolean).pop();
   const action = req.query?.action || pathAction;
+
+  if (action === 'verify-certificate') {
+    return handleVerifyCertificate(req, res);
+  }
+
+  if (action === 'issue-certificate') {
+    return handleIssueCertificate(req, res);
+  }
 
   if (action === 'exams') {
     return examsHandler(req, res);

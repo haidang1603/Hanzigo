@@ -33,6 +33,22 @@ import {
   getUserDailyGoalMinutes, 
   saveUserDailyGoalMinutes 
 } from '../services/learningPathService.js';
+import { 
+  calculateScholarRank, 
+  evaluateAcademicBadges,
+  getLocalDateStringInTz 
+} from '../utils/gamificationEngine.js';
+import { calculate4SkillCompetency } from '../utils/competencyAnalytics.js';
+import { 
+  checkGraduationEligibility, 
+  issueHskCertificate,
+  getUserIssuedCertificates,
+  CERTIFICATES_STORAGE_KEY 
+} from '../utils/certificateEngine.js';
+import CompetencyAnalyticsPanel from '../components/analytics/CompetencyAnalyticsPanel.jsx';
+import CertificateGeneratorModal from '../components/certificate/CertificateGeneratorModal.jsx';
+import CertificateVerificationModal from '../components/certificate/CertificateVerificationModal.jsx';
+
 
 // Preset avatar collection
 const PRESET_AVATARS = [
@@ -116,7 +132,8 @@ export default function ProfilePage({
     try {
       const key = getUserStorageKey('hanzigo_vocab_remembered', user);
       const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_vocab_remembered'));
-      return s ? JSON.parse(s) : [];
+      const parsed = s ? JSON.parse(s) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -126,7 +143,8 @@ export default function ProfilePage({
     try {
       const key = getUserStorageKey('hanzigo_completed_lessons', user);
       const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_completed_lessons'));
-      return s ? JSON.parse(s) : [];
+      const parsed = s ? JSON.parse(s) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -136,7 +154,8 @@ export default function ProfilePage({
     try {
       const key = getUserStorageKey('hanzigo_pronounce_history', user);
       const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_pronounce_history'));
-      return s ? JSON.parse(s) : [];
+      const parsed = s ? JSON.parse(s) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -146,7 +165,8 @@ export default function ProfilePage({
     try {
       const key = getUserStorageKey('hanzigo_custom_writing_chars', user);
       const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_custom_writing_chars'));
-      return s ? JSON.parse(s) : [];
+      const parsed = s ? JSON.parse(s) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -162,24 +182,193 @@ export default function ProfilePage({
   const totalXp = useMemo(() => calculateTotalXp(user), [user, gamificationTick]);
   const levelInfo = useMemo(() => getUserLevelInfo(totalXp), [totalXp]);
 
-  // Real Dynamic Achievements verified by authentic learning events
-  const dynamicAchievements = useMemo(() => {
-    return evaluateUserAchievements(user);
-  }, [user, completedLessonIds.length, rememberedIds.length, pronounceHistory.length, customWritingChars.length, streakCount]);
+  // Phase 12: 10 Scholar Ranks & 18 Academic Badges
+  const scholarRank = useMemo(() => calculateScholarRank(totalXp), [totalXp]);
 
-  // Heatmap: 12 weeks of 7 days (84 days) with streak tail highlighted
-  const heatmapData = useMemo(() => {
-    return Array.from({ length: 84 }, (_, index) => {
-      const daysFromEnd = 83 - index;
-      if (daysFromEnd === 0 && streakStatus.hasStudiedToday) {
-        return { level: 4 };
-      }
-      if (daysFromEnd < streakCount) {
-        return { level: Math.min(4, Math.max(1, (daysFromEnd % 3) + 2)) };
-      }
-      return { level: 0 };
+  // Exam attempts from local/cloud
+  const examAttempts = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('hanzigo_hsk_attempts');
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+    } catch {
+      return [];
+    }
+  }, [gamificationTick]);
+
+  // 4-Skill Competency calculation (Pure mathematical formulation)
+  const targetHskLevel = useMemo(() => {
+    const raw = user?.level || 'HSK 1 - Sơ cấp';
+    const match = raw.match(/HSK\s*([1-6])/i);
+    return match ? `HSK ${match[1]}` : 'HSK 1';
+  }, [user?.level]);
+
+  const roleplayHistory = useMemo(() => {
+    try {
+      const key = getUserStorageKey('hanzigo_roleplay_history', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_roleplay_history'));
+      const parsed = s ? JSON.parse(s) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }, [user, gamificationTick]);
+
+  const smartReaderHistory = useMemo(() => {
+    try {
+      const key = getUserStorageKey('hanzigo_reader_completed', user);
+      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_reader_completed'));
+      const parsed = s ? JSON.parse(s) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }, [user, gamificationTick]);
+
+  const competencyScores = useMemo(() => {
+    const examListening = examAttempts
+      .map(a => a?.skillBreakdown?.listening?.accuracy ?? (a?.passed ? a?.accuracyPercentage : null))
+      .filter(n => typeof n === 'number' && !isNaN(n));
+    const examReading = examAttempts
+      .map(a => a?.skillBreakdown?.reading?.accuracy ?? (a?.passed ? a?.accuracyPercentage : null))
+      .filter(n => typeof n === 'number' && !isNaN(n));
+
+    const realPronounceScores = pronounceHistory
+      .map(p => (typeof p === 'object' && typeof p?.score === 'number' ? p.score : null))
+      .filter(s => s !== null);
+
+    const realWritingScores = customWritingChars
+      .map(c => (typeof c === 'object' && typeof c?.score === 'number' ? c.score : null))
+      .filter(s => s !== null);
+
+    const completedMissionsCount = roleplayHistory.reduce((acc, r) => acc + (r?.completedMissions?.length || r?.missionsCompleted || 0), 0);
+    const totalMissionsCount = roleplayHistory.reduce((acc, r) => acc + (r?.totalMissions || 3), 0);
+
+    return calculate4SkillCompetency({
+      targetLevel: targetHskLevel,
+      completedAudioSteps: Math.min(20, completedLessonIds.length),
+      totalTargetAudioSteps: 20,
+      examListeningScores: examListening,
+      blindAudioSessionsCount: Math.min(10, completedLessonIds.length),
+      pronunciationScores: realPronounceScores,
+      roleplayCompletedMissions: completedMissionsCount,
+      roleplayTotalMissions: totalMissionsCount,
+      matureSrsCardsCount: rememberedIds.length,
+      examReadingScores: examReading,
+      smartReaderCompletedArticles: smartReaderHistory.length,
+      writingStrokeScores: realWritingScores,
+      uniqueCharsPracticedCount: customWritingChars.length
     });
-  }, [streakCount, streakStatus.hasStudiedToday]);
+  }, [targetHskLevel, completedLessonIds, examAttempts, pronounceHistory, rememberedIds, customWritingChars, roleplayHistory, smartReaderHistory]);
+
+  // Phase 12: 18 Academic Badges
+  const academicBadges = useMemo(() => {
+    const graduations = {};
+    ['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].forEach(lvl => {
+      const eligibility = checkGraduationEligibility({
+        hskLevel: lvl,
+        completedLessonIds,
+        examAttempts
+      });
+      if (eligibility.isEligible) {
+        graduations[lvl] = true;
+      }
+    });
+
+    const hasPerfect = examAttempts.some(a => a && ((a.accuracyPercentage || a.score) >= 100));
+    const maxExam = examAttempts.reduce((max, a) => Math.max(max, (a && (a.accuracyPercentage || a.score)) || 0), 0);
+
+    return evaluateAcademicBadges({
+      currentStreak: streakCount,
+      longestStreak: streakCount,
+      hskGraduations: graduations,
+      hskLessonCounts: { [targetHskLevel]: completedLessonIds.length },
+      highScoreWritingCharsCount: customWritingChars.filter(c => (typeof c === 'object' && c && (c.score || 0) >= 90)).length,
+      matureSrsCardsCount: rememberedIds.length,
+      smartReaderCompletedCount: smartReaderHistory.length,
+      roleplayFullMissionsCount: roleplayHistory.filter(r => (r?.completedMissions?.length || 0) >= 3 || r?.allCompleted).length,
+      hasPerfectExamScore: hasPerfect,
+      maxExamPercentage: maxExam,
+      completedLessonsTotal: completedLessonIds.length,
+      vocabRememberedTotal: rememberedIds.length,
+      highAccuracyListeningCount: Math.min(completedLessonIds.length, 30)
+    });
+  }, [streakCount, completedLessonIds, examAttempts, targetHskLevel, customWritingChars, rememberedIds, smartReaderHistory, roleplayHistory]);
+
+  // 365-day Activity Log synthesized from user progress & test attempts
+  const activityLog = useMemo(() => {
+    const log = {};
+    const todayStr = getLocalDateStringInTz(new Date());
+    if (streakCount > 0 && todayStr) {
+      log[todayStr] = { count: Math.max(1, completedLessonIds.length), xp: Math.min(totalXp, 100) };
+    }
+    examAttempts.forEach(att => {
+      const dateStr = (att?.created_at || att?.date || '').slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        if (!log[dateStr]) log[dateStr] = { count: 0, xp: 0 };
+        log[dateStr].count += 1;
+        log[dateStr].xp += att.score || 50;
+      }
+    });
+    return log;
+  }, [streakCount, completedLessonIds.length, totalXp, examAttempts]);
+
+  // Direct navigation router for analytics recommendations
+  const handleAnalyticsNavigate = (rawTab) => {
+    const tab = String(rawTab || '').replace(/^\//, '');
+    let target = tab;
+    if (tab === 'learning-path') target = 'roadmap';
+    if (tab === 'srs') target = 'vocabulary';
+    if (setActiveTab) {
+      setActiveTab(target);
+    } else {
+      window.location.hash = `#${target}`;
+    }
+  };
+
+  // Certificates list & modal state
+  const [issuedCertificates, setIssuedCertificates] = useState([]);
+  const [selectedCertForView, setSelectedCertForView] = useState(null);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const [certActionMessage, setCertActionMessage] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+    getUserIssuedCertificates(user).then(certs => {
+      if (isMounted && Array.isArray(certs)) {
+        setIssuedCertificates(certs);
+      }
+    }).catch(() => {
+      try {
+        const raw = localStorage.getItem(CERTIFICATES_STORAGE_KEY);
+        if (raw && isMounted) {
+          setIssuedCertificates(JSON.parse(raw));
+        }
+      } catch {}
+    });
+    return () => { isMounted = false; };
+  }, [user, gamificationTick]);
+
+  const handleClaimCertificate = async (level) => {
+    playClickSound();
+    const result = await issueHskCertificate({
+      user,
+      hskLevel: level,
+      completedLessonIds,
+      examAttempts,
+      issueDate: new Date()
+    });
+
+    if (result.success) {
+      playSuccessSound();
+      setSelectedCertForView(result.certificate);
+      setIssuedCertificates(prev => [result.certificate, ...prev.filter(c => c.id !== result.certificate.id)]);
+      setCertActionMessage(`Chúc mừng bạn đã nhận Chứng nhận Tốt nghiệp ${level}!`);
+    } else {
+      alert(`Chưa đủ điều kiện: ${result.details?.join('\n') || result.message}`);
+    }
+  };
+
 
   const handleOpenEditModal = () => {
     playClickSound();
@@ -776,81 +965,177 @@ export default function ProfilePage({
         </div>
       </div>
 
-      {/* Learning Activity Heatmap */}
+      {/* =========================================================================
+          PHASE 12: COMPETENCY ANALYTICS PANEL & RADAR CHART
+          ========================================================================= */}
+      <CompetencyAnalyticsPanel
+        competencyScores={competencyScores}
+        activityLog={activityLog}
+        targetLevel={targetHskLevel}
+        streak={streakCount}
+        scholarRank={scholarRank}
+        onNavigate={handleAnalyticsNavigate}
+      />
+
+      {/* =========================================================================
+          PHASE 12: 18 ACADEMIC ACHIEVEMENT BADGES
+          ========================================================================= */}
       <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-[#243447] dark:text-white flex items-center gap-2">
-            <Calendar size={16} className="text-[#E85D3F]" />
-            <span>Lịch sử học tập 12 tuần gần nhất</span>
+            <Award size={18} className="text-[#F4B942]" />
+            <span>Bộ 18 Huy Hiệu Học Thuật ({academicBadges.filter(a => a.isUnlocked).length}/18)</span>
           </h3>
-          <span className="text-xs text-[#748092]">Đều đặn mỗi ngày</span>
+          <span className="text-xs text-[#748092]">Theo chuẩn khảo thí & chuyên cần</span>
         </div>
 
-        {/* Heatmap Grid */}
-        <div className="overflow-x-auto pb-2">
-          <div className="grid grid-rows-7 grid-flow-col gap-1.5 min-w-[500px]">
-            {heatmapData.map((d, i) => {
-              const bgColors = [
-                'bg-gray-100 dark:bg-gray-800',
-                'bg-[#FDEEEB] dark:bg-[#2D1E1B]',
-                'bg-[#F7A693]',
-                'bg-[#E85D3F]',
-                'bg-[#CB4529]'
-              ];
-              return (
-                <div 
-                  key={i}
-                  className={`w-3.5 h-3.5 rounded-sm ${bgColors[d.level]} transition-colors`}
-                  title={`Ngày học cấp độ ${d.level}`}
-                />
-              );
-            })}
-          </div>
-        </div>
-        
-        <div className="flex items-center justify-end gap-2 text-[10px] text-[#748092]">
-          <span>Ít</span>
-          <div className="flex items-center gap-1">
-            <div className="w-2.5 h-2.5 rounded-sm bg-gray-100 dark:bg-gray-800" />
-            <div className="w-2.5 h-2.5 rounded-sm bg-[#FDEEEB]" />
-            <div className="w-2.5 h-2.5 rounded-sm bg-[#F7A693]" />
-            <div className="w-2.5 h-2.5 rounded-sm bg-[#E85D3F]" />
-          </div>
-          <span>Nhiều</span>
-        </div>
-      </div>
-
-      {/* Badges Collection Showcase */}
-      <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-[#243447] dark:text-white flex items-center gap-2">
-            <Award size={16} className="text-[#F4B942]" />
-            <span>Kho Huy Hiệu Thành Tích ({dynamicAchievements.filter(a => a.unlocked).length}/{dynamicAchievements.length})</span>
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {dynamicAchievements.map((ach) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          {academicBadges.map((badge) => (
             <div 
-              key={ach.id}
-              className={`p-4 rounded-2xl border text-center transition-all ${
-                ach.unlocked 
-                  ? 'bg-[#FFF9F2] dark:bg-[#131B24] border-[#F4B942]/40 shadow-sm' 
-                  : 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800 opacity-40 grayscale'
+              key={badge.id}
+              className={`p-3.5 rounded-2xl border text-center transition-all ${
+                badge.isUnlocked 
+                  ? 'bg-gradient-to-b from-[#FFFDF9] to-[#FFF5F2] dark:from-[#1E293B] dark:to-[#172231] border-amber-300 dark:border-amber-900/60 shadow-sm' 
+                  : 'bg-gray-50/80 dark:bg-gray-900/40 border-gray-200 dark:border-gray-800 opacity-50 grayscale'
               }`}
             >
-              <span className="text-3xl block mb-2">{ach.icon}</span>
-              <p className="text-xs font-bold text-[#243447] dark:text-white">{ach.name}</p>
-              <p className="text-[10px] text-[#748092] mt-1">{ach.desc}</p>
-              {ach.unlocked && (
-                <span className="inline-block mt-2 text-[9px] font-bold text-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] px-2 py-0.5 rounded-full">
-                  Đã mở khóa
-                </span>
-              )}
+              <span className="text-3xl block mb-1.5">{badge.icon}</span>
+              <p className="text-xs font-black text-[#243447] dark:text-white truncate">{badge.title}</p>
+              <p className="text-[10px] text-[#E85D3F] font-bold">{badge.chineseTitle}</p>
+              <p className="text-[9px] text-[#748092] mt-1 line-clamp-2">{badge.description}</p>
+              
+              <div className="mt-2">
+                {badge.isUnlocked ? (
+                  <span className="inline-block text-[9px] font-black text-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] px-2 py-0.5 rounded-full">
+                    Đã mở khóa
+                  </span>
+                ) : (
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-[#E85D3F] h-full rounded-full" 
+                      style={{ width: `${badge.progress}%` }} 
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* =========================================================================
+          PHASE 12: VERIFIABLE HSK CERTIFICATES SECTION
+          ========================================================================= */}
+      <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-black text-[#243447] dark:text-white flex items-center gap-2">
+              <span className="text-xl">📜</span>
+              <span>Chứng Nhận Tốt Nghiệp HSK Chuẩn Quốc Tế</span>
+            </h3>
+            <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-0.5">
+              Cấp phát chứng nhận hoàn thành khi học viên đạt đủ 20/20 bài học và vượt qua kỳ thi Mock Exam (≥ 80%).
+            </p>
+          </div>
+
+          <button
+            onClick={() => setIsVerificationModalOpen(true)}
+            className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+          >
+            <span>Tra cứu mã chứng nhận</span>
+          </button>
+        </div>
+
+        {certActionMessage && (
+          <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
+            <CheckCircle2 size={16} />
+            <span>{certActionMessage}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map((lvl) => {
+            const eligibility = checkGraduationEligibility({
+              hskLevel: lvl,
+              completedLessonIds,
+              examAttempts
+            });
+
+            const issued = (Array.isArray(issuedCertificates) ? issuedCertificates : []).find(c => c && c.hskLevel === lvl);
+
+            return (
+              <div
+                key={lvl}
+                className={`p-5 rounded-2xl border transition-all ${
+                  issued 
+                    ? 'border-emerald-300 bg-emerald-50/30 dark:border-emerald-800 dark:bg-emerald-950/20' 
+                    : eligibility.isEligible
+                      ? 'border-amber-300 bg-amber-50/30 dark:border-amber-800 dark:bg-amber-950/20'
+                      : 'border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/30'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-black px-2 py-0.5 rounded-md bg-[#E85D3F] text-white">
+                    {lvl}
+                  </span>
+                  {issued ? (
+                    <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                      <CheckCircle2 size={13} /> Đã cấp bằng
+                    </span>
+                  ) : eligibility.isEligible ? (
+                    <span className="text-[11px] font-bold text-amber-600">Đủ điều kiện nhận</span>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 font-semibold">Đang tích lũy</span>
+                  )}
+                </div>
+
+                <h4 className="font-bold text-sm text-[#243447] dark:text-white mb-1">
+                  Chứng nhận Hoàn thành {lvl}
+                </h4>
+
+                <div className="text-[11px] text-slate-500 space-y-1 mb-4">
+                  <div className="flex justify-between">
+                    <span>Bài học ({eligibility.completedLessons}/20):</span>
+                    <strong className={eligibility.isLessonsCompleted ? 'text-emerald-600' : 'text-slate-600'}>
+                      {eligibility.lessonsProgressPercent}%
+                    </strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Điểm thi thử:</span>
+                    <strong className={eligibility.hasPassedExam ? 'text-emerald-600' : 'text-slate-600'}>
+                      {eligibility.bestExamPercentage}% (Chuẩn ≥80%)
+                    </strong>
+                  </div>
+                </div>
+
+                {issued ? (
+                  <button
+                    onClick={() => setSelectedCertForView(issued)}
+                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer"
+                  >
+                    Xem & In Chứng Nhận A4
+                  </button>
+                ) : eligibility.isEligible ? (
+                  <button
+                    onClick={() => handleClaimCertificate(lvl)}
+                    className="w-full py-2 bg-gradient-to-r from-amber-500 to-[#E85D3F] text-white rounded-xl text-xs font-bold shadow-md cursor-pointer active:scale-95 transition-transform"
+                  >
+                    Nhận Chứng Nhận Ngay ✨
+                  </button>
+                ) : (
+                  <button
+                    disabled
+                    className="w-full py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 rounded-xl text-xs font-semibold cursor-not-allowed"
+                  >
+                    Chưa đủ điều kiện
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
 
       {/* Account Settings Form */}
       <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-6">
@@ -1092,6 +1377,20 @@ export default function ProfilePage({
         onLogout={onLogout}
       />
 
+      {/* Phase 12: Certificate Generator & Preview Modal (Canvas 2x & A4 Print) */}
+      <CertificateGeneratorModal
+        isOpen={Boolean(selectedCertForView)}
+        onClose={() => setSelectedCertForView(null)}
+        certificate={selectedCertForView}
+      />
+
+      {/* Phase 12: Public Certificate Verification Modal */}
+      <CertificateVerificationModal
+        isOpen={isVerificationModalOpen}
+        onClose={() => setIsVerificationModalOpen(false)}
+      />
+
     </div>
   );
 }
+
