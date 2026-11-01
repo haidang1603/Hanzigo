@@ -197,15 +197,63 @@ export function ensureSimulationSeed() {
     return;
   }
 
-  const defaultClasses = [];
-  const defaultMembers = [];
+  const defaultClasses = [
+    {
+      id: 'cls-hsk1-foundation',
+      teacher_id: 'user_teacher_demo',
+      name: 'HSK 1 - Nhập môn Giao tiếp & Phát âm',
+      description: 'Lớp học nền tảng dành cho người mới bắt đầu. Tập trung phát âm chuẩn Pinyin và 150 từ vựng cốt lõi.',
+      hsk_level: 'HSK 1',
+      class_code: 'HZG-7K2P9',
+      max_students: 30,
+      status: 'active',
+      created_at: new Date(Date.now() - 15 * 86400000).toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: 'cls-hsk2-intermediate',
+      teacher_id: 'user_teacher_demo',
+      name: 'HSK 2 - Tăng tốc Hội thoại Hằng ngày',
+      description: 'Mở rộng 300 từ vựng và cấu trúc ngữ pháp thông dụng trong sinh hoạt và công việc.',
+      hsk_level: 'HSK 2',
+      class_code: 'HZG-9M4X2',
+      max_students: 25,
+      status: 'active',
+      created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ];
+
+  // Default guest student enrolled in foundation class so student portal is never empty
+  const defaultMembers = [
+    {
+      id: 'mem-default-student-1',
+      classroom_id: 'cls-hsk1-foundation',
+      student_id: 'user_guest',
+      student_name: 'Học viên HanziGo',
+      student_avatar: null,
+      student_email: 'student@hanzigo.com',
+      hsk_level: 'HSK 1',
+      joined_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+      status: 'active',
+      last_active: new Date().toISOString(),
+      xp: 0,
+      streak: 0,
+      words_learned: 0,
+      lessons_completed: 0,
+      study_hours: 0
+    }
+  ];
+
   const defaultAssignments = [];
   const defaultSubmissions = [];
   const defaultAnnouncements = [];
   const defaultMaterials = [];
 
-  setLocalItem(STORAGE_KEYS.CLASSROOMS, []);
-  setLocalItem(STORAGE_KEYS.MEMBERS, []);
+  // Filter out any classrooms that were explicitly deleted by the user
+  const freshClasses = defaultClasses.filter(c => !deletedIds.includes(c.id) && !deletedIds.includes(String(c.id)));
+  setLocalItem(STORAGE_KEYS.CLASSROOMS, freshClasses);
+  setLocalItem(STORAGE_KEYS.MEMBERS, defaultMembers);
   setLocalItem(STORAGE_KEYS.ASSIGNMENTS, []);
   setLocalItem(STORAGE_KEYS.SUBMISSIONS, []);
   setLocalItem(STORAGE_KEYS.ANNOUNCEMENTS, []);

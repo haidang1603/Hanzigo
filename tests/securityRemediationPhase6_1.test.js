@@ -403,10 +403,11 @@ test('PHASE 6.1 — SEC-01: RPC atomic_join_live_session Security Invariants', a
   await t.test('Migration SQL specifies auth.uid() bound to p_user_id for authenticated role', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
-    const migrationPath = path.resolve('supabase/migrations/20261016_phase6_1_security_and_hsk_remediation.sql');
-    assert.ok(fs.existsSync(migrationPath), 'Migration file must exist');
+    const legacyMigration = path.resolve('supabase/migrations/20261016_phase6_1_security_and_hsk_remediation.sql');
+    const schemaPath = fs.existsSync(legacyMigration) ? legacyMigration : path.resolve('supabase/schema.sql');
+    assert.ok(fs.existsSync(schemaPath), 'Schema file must exist');
 
-    const sqlContent = fs.readFileSync(migrationPath, 'utf8');
+    const sqlContent = fs.readFileSync(schemaPath, 'utf8');
     assert.match(sqlContent, /IF auth\.uid\(\) IS NULL OR auth\.uid\(\) != p_user_id THEN/i, 'Must check auth.uid() == p_user_id');
     assert.match(sqlContent, /Không thể tham gia phòng học thay mặt người dùng khác/i);
     assert.match(sqlContent, /REVOKE EXECUTE ON FUNCTION public\.atomic_join_live_session/i);
@@ -416,8 +417,9 @@ test('PHASE 6.1 — SEC-01: RPC atomic_join_live_session Security Invariants', a
   await t.test('Migration SQL creates v_hsk_questions_public without correct answers', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
-    const migrationPath = path.resolve('supabase/migrations/20261016_phase6_1_security_and_hsk_remediation.sql');
-    const sqlContent = fs.readFileSync(migrationPath, 'utf8');
+    const legacyMigration = path.resolve('supabase/migrations/20261016_phase6_1_security_and_hsk_remediation.sql');
+    const schemaPath = fs.existsSync(legacyMigration) ? legacyMigration : path.resolve('supabase/schema.sql');
+    const sqlContent = fs.readFileSync(schemaPath, 'utf8');
 
     assert.match(sqlContent, /CREATE VIEW public\.v_hsk_questions_public/i);
     assert.match(sqlContent, /REVOKE SELECT ON TABLE public\.hsk_questions FROM anon/i);
