@@ -197,164 +197,19 @@ export function ensureSimulationSeed() {
     return;
   }
 
-  const defaultClasses = [
-    {
-      id: 'cls-hsk1-foundation',
-      teacher_id: 'user_teacher_demo',
-      name: 'HSK 1 - Nhập môn Giao tiếp & Phát âm',
-      description: 'Lớp học nền tảng dành cho người mới bắt đầu. Tập trung phát âm chuẩn Pinyin và 150 từ vựng cốt lõi.',
-      hsk_level: 'HSK 1',
-      class_code: 'HZG-7K2P9',
-      max_students: 30,
-      status: 'active',
-      created_at: new Date(Date.now() - 15 * 86400000).toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: 'cls-hsk2-intermediate',
-      teacher_id: 'user_teacher_demo',
-      name: 'HSK 2 - Tăng tốc Hội thoại Hằng ngày',
-      description: 'Mở rộng 300 từ vựng và cấu trúc ngữ pháp thông dụng trong sinh hoạt và công việc.',
-      hsk_level: 'HSK 2',
-      class_code: 'HZG-9M4X2',
-      max_students: 25,
-      status: 'active',
-      created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ];
-
-  // Default guest student enrolled in foundation class so student portal is never empty
-  const defaultMembers = [
-    {
-      id: 'mem-default-student-1',
-      classroom_id: 'cls-hsk1-foundation',
-      student_id: 'user_guest',
-      student_name: 'Học viên HanziGo',
-      student_avatar: null,
-      student_email: 'student@hanzigo.com',
-      hsk_level: 'HSK 1',
-      joined_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-      status: 'active',
-      last_active: new Date().toISOString(),
-      xp: 50,
-      streak: 1,
-      words_learned: 20,
-      lessons_completed: 2,
-      study_hours: 1.5
-    }
-  ];
-
-  const defaultAssignments = [
-    {
-      id: 'asg-vocab-1',
-      classroom_id: 'cls-hsk1-foundation',
-      teacher_id: 'user_teacher_demo',
-      title: 'Luyện tập 20 Từ vựng HSK 1 về Gia đình & Đại từ',
-      description: 'Học và kiểm tra nghĩa của các từ: 爸爸, 妈妈, 哥哥, 姐姐, 我, 你, 他, 她...',
-      content_type: 'Vocabulary',
-      content: {
-        questions: [
-          { id: 'q1', type: 'choice', prompt: 'Từ nào có nghĩa là "Bố / Cha"?', options: ['爸爸 (bàba)', '妈妈 (māma)', '老师 (lǎoshī)', '朋友 (péngyou)'], correctIndex: 0 },
-          { id: 'q2', type: 'choice', prompt: 'Nghĩa của "Chúng tôi / Chúng ta" là gì?', options: ['我们', '他们', '你们', '老师'], correctIndex: 0 },
-          { id: 'q3', type: 'choice', prompt: 'Pinyin đúng của "谢谢" là:', options: ['xièxie', 'zàijiàn', 'bù kèqi', 'duìbuqǐ'], correctIndex: 0 }
-        ]
-      },
-      due_date: new Date(Date.now() + 3 * 86400000).toISOString(),
-      published: true,
-      created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: 'asg-write-1',
-      classroom_id: 'cls-hsk1-foundation',
-      teacher_id: 'user_teacher_demo',
-      title: 'Tập viết chữ Hán: Quy tắc bút thuận các chữ cơ bản',
-      description: 'Luyện viết 5 chữ: 一, 二, 三, 人, 大. Chú ý thứ tự nét từ trên xuống dưới, từ trái sang phải.',
-      content_type: 'Writing',
-      content: {
-        promptText: 'Hãy viết lại các chữ 一, 二, 三, 人, 大 và ghi chú nét bút.',
-        targetCharacters: ['一', '二', '三', '人', '大']
-      },
-      due_date: new Date(Date.now() + 5 * 86400000).toISOString(),
-      published: true,
-      created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: 'asg-speak-1',
-      classroom_id: 'cls-hsk1-foundation',
-      teacher_id: 'user_teacher_demo',
-      title: 'Ghi âm phát âm 4 Thanh điệu cơ bản',
-      description: 'Đọc to và ghi âm các từ mā, má, mǎ, mà để giáo viên nghe và sửa phát âm.',
-      content_type: 'Speaking',
-      content: {
-        practicePinyin: 'mā - má - mǎ - mà'
-      },
-      due_date: new Date(Date.now() - 1 * 86400000).toISOString(),
-      published: true,
-      created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ];
-
-  // No mock submissions by default
+  const defaultClasses = [];
+  const defaultMembers = [];
+  const defaultAssignments = [];
   const defaultSubmissions = [];
+  const defaultAnnouncements = [];
+  const defaultMaterials = [];
 
-  const defaultAnnouncements = [
-    {
-      id: 'ann-1',
-      classroom_id: 'cls-hsk1-foundation',
-      teacher_id: 'user_teacher_demo',
-      title: 'Chào mừng cả lớp đến với khóa HSK 1!',
-      content: 'Chào các bạn! Chúng ta sẽ cùng nhau chinh phục 150 từ vựng và đỗ HSK 1 với điểm số cao nhất. Hãy hoàn thành các bài tập đúng hạn nhé!',
-      pinned: true,
-      created_at: new Date(Date.now() - 14 * 86400000).toISOString(),
-      updated_at: new Date(Date.now() - 14 * 86400000).toISOString()
-    },
-    {
-      id: 'ann-2',
-      classroom_id: 'cls-hsk1-foundation',
-      teacher_id: 'user_teacher_demo',
-      title: 'Nhắc nhở nộp bài tập phát âm 4 Thanh điệu',
-      content: 'Các bạn chưa nộp bài tập ghi âm vui lòng hoàn thành trước 23h59 hôm nay để thầy kịp nghe và nhận xét nhé.',
-      pinned: false,
-      created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-      updated_at: new Date(Date.now() - 2 * 86400000).toISOString()
-    }
-  ];
-
-  const defaultMaterials = [
-    {
-      id: 'mat-1',
-      classroom_id: 'cls-hsk1-foundation',
-      teacher_id: 'user_teacher_demo',
-      title: 'Giáo trình Chuẩn HSK 1 - PDF Màu',
-      description: 'Sách bài học đầy đủ kèm pinyin và dịch nghĩa tiếng Việt.',
-      file_url: 'https://example.com/materials/hsk1-standard.pdf',
-      file_type: 'pdf',
-      created_at: new Date(Date.now() - 14 * 86400000).toISOString()
-    },
-    {
-      id: 'mat-2',
-      classroom_id: 'cls-hsk1-foundation',
-      teacher_id: 'user_teacher_demo',
-      title: 'File Audio Nghe Pinyin & Thanh điệu HSK 1',
-      description: 'Tệp âm thanh chuẩn giọng Bắc Kinh để luyện phát âm.',
-      file_url: 'https://example.com/materials/hsk1-pinyin-audio.mp3',
-      file_type: 'audio',
-      created_at: new Date(Date.now() - 10 * 86400000).toISOString()
-    }
-  ];
-
-  // Filter out any classrooms that were explicitly deleted by the user
-  const freshClasses = defaultClasses.filter(c => !deletedIds.includes(c.id) && !deletedIds.includes(String(c.id)));
-  setLocalItem(STORAGE_KEYS.CLASSROOMS, freshClasses);
-  setLocalItem(STORAGE_KEYS.MEMBERS, defaultMembers);
-  setLocalItem(STORAGE_KEYS.ASSIGNMENTS, defaultAssignments);
-  setLocalItem(STORAGE_KEYS.SUBMISSIONS, defaultSubmissions);
-  setLocalItem(STORAGE_KEYS.ANNOUNCEMENTS, defaultAnnouncements);
-  setLocalItem(STORAGE_KEYS.MATERIALS, defaultMaterials);
+  setLocalItem(STORAGE_KEYS.CLASSROOMS, []);
+  setLocalItem(STORAGE_KEYS.MEMBERS, []);
+  setLocalItem(STORAGE_KEYS.ASSIGNMENTS, []);
+  setLocalItem(STORAGE_KEYS.SUBMISSIONS, []);
+  setLocalItem(STORAGE_KEYS.ANNOUNCEMENTS, []);
+  setLocalItem(STORAGE_KEYS.MATERIALS, []);
   setLocalItem(STORAGE_KEYS.SEED_FLAG, true);
 }
 

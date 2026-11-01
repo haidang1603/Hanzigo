@@ -653,6 +653,69 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     }
   };
 
+  // Purge all mock/demo testing data from localStorage
+  const handlePurgeAllMockData = () => {
+    if (!window.confirm('CẢNH BÁO: Thao tác này sẽ xóa toàn bộ số liệu thử nghiệm, lịch sử thi thử HSK, điểm phát âm, tin nhắn chat đàm thoại và tiến độ streak/XP trên trình duyệt này để đưa về trạng thái người dùng mới hoàn toàn. Bạn có chắc chắn không?')) {
+      return;
+    }
+
+    try {
+      const keysToPurge = [
+        'hanzigo_pronounce_history',
+        'hanzigo_pronounce_scores',
+        'hanzigo_custom_pronounce_list',
+        'hanzigo_hsk_attempts',
+        'hanzigo_hsk_history',
+        'hanzigo_hsk_mistakes',
+        'hanzigo_hsk_analytics',
+        'hanzigo_chat_history',
+        'hanzigo_streak_count',
+        'hanzigo_streak_data',
+        'hanzigo_total_xp',
+        'hanzigo_daily_missions',
+        'hanzigo_study_minutes_map',
+        'hanzigo_completed_lessons',
+        'hanzigo_remembered_words',
+        'hanzigo_pronounce_count',
+        'hanzigo_classrooms',
+        'hanzigo_class_members',
+        'hanzigo_class_assignments',
+        'hanzigo_class_submissions',
+        'hanzigo_class_announcements',
+        'hanzigo_live_sessions',
+        'hanzigo_live_participants'
+      ];
+
+      // Xóa tất cả các key chung và các key có tiền tố gắn với user ID
+      keysToPurge.forEach(k => {
+        try { localStorage.removeItem(k); } catch {}
+      });
+
+      // Quét toàn bộ localStorage để dọn sạch các key liên quan đến hanzigo
+      const allKeys = Object.keys(localStorage);
+      allKeys.forEach(k => {
+        if (
+          k.includes('_pronounce_') || 
+          k.includes('_hsk_') || 
+          k.includes('_streak_') || 
+          k.includes('_chat_') || 
+          k.includes('hanzigo_class_') ||
+          k.includes('cls-hsk') ||
+          k.includes('demo-stu')
+        ) {
+          try { localStorage.removeItem(k); } catch {}
+        }
+      });
+
+      showToast('Đã xóa sạch toàn bộ dữ liệu & số liệu mock trên thiết bị thành công!');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (e) {
+      showToast('Lỗi khi xóa dữ liệu: ' + e.message);
+    }
+  };
+
   // Export JSON Backup
   const handleExportData = () => {
     playClickSound();
@@ -1699,10 +1762,28 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 </p>
                 <button
                   onClick={handleResetMaterials}
-                  className="px-5 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-[#243447] dark:text-white text-xs font-bold flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-[#243447] dark:text-white text-xs font-bold flex items-center gap-2 cursor-pointer"
                 >
                   <RefreshCw size={15} />
                   <span>Khôi phục mẫu chuẩn</span>
+                </button>
+              </div>
+
+              {/* Danger Zone: Xóa sạch dữ liệu mock và số liệu thử nghiệm */}
+              <div className="sm:col-span-2 p-5 rounded-2xl bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 space-y-3">
+                <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                  <Trash2 size={18} />
+                  <h4 className="font-bold text-sm">Vùng nguy hiểm: Dọn sạch số liệu thử nghiệm & Mock Data</h4>
+                </div>
+                <p className="text-xs text-rose-700/80 dark:text-rose-300/80 leading-relaxed">
+                  Xóa toàn bộ điểm phát âm thử nghiệm, lịch sử thi thử HSK, lịch sử đàm thoại chat, streak, XP và các lớp học demo trên trình duyệt này để đưa tài khoản về trạng thái người dùng mới hoàn toàn.
+                </p>
+                <button
+                  onClick={handlePurgeAllMockData}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/25 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                >
+                  <Trash2 size={15} />
+                  <span>Xóa sạch toàn bộ dữ liệu & số liệu mock</span>
                 </button>
               </div>
             </div>

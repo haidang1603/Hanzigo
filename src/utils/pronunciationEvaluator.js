@@ -96,15 +96,18 @@ export function evaluateRealPronunciation({
   // Trung bình mỗi âm tiết tiếng Trung phát âm chuẩn mất khoảng 350ms - 550ms
   const idealMinDuration = totalChars * 300;
   const idealMaxDuration = totalChars * 900;
-  let fluencyScore = 80;
+  let fluencyScore = 78;
 
   if (audioDurationMs > 0) {
     if (audioDurationMs >= idealMinDuration && audioDurationMs <= idealMaxDuration) {
-      fluencyScore = 95;
+      // Tính độ lệch so với thời lượng vàng ~450ms/chữ để điểm phân hóa tự nhiên thay vì luôn 95
+      const idealCenter = totalChars * 450;
+      const deviationRatio = Math.min(1, Math.abs(audioDurationMs - idealCenter) / idealCenter);
+      fluencyScore = Math.max(70, Math.min(96, Math.round(96 - (deviationRatio * 20))));
     } else if (audioDurationMs < idealMinDuration) {
-      fluencyScore = 65; // Phát âm quá vội
+      fluencyScore = Math.max(50, Math.round(55 + (audioDurationMs / idealMinDuration) * 15)); // Phát âm quá vội
     } else {
-      fluencyScore = 70; // Phát âm quá ngập ngừng kéo dài
+      fluencyScore = Math.max(50, Math.round(75 - Math.min(25, ((audioDurationMs - idealMaxDuration) / 1000) * 10))); // Kéo dài quá
     }
   }
 
@@ -141,14 +144,21 @@ export function evaluateRealPronunciation({
   }
 
   // 8. Tính độ nhất quán (Pronunciation Consistency)
-  // Đánh giá dựa trên tỷ lệ chuẩn hóa và phân bố thời gian trên từng âm tiết
   const perCharDuration = audioDurationMs > 0 ? audioDurationMs / totalChars : 400;
   const timingDeviation = Math.abs(perCharDuration - 450);
-  let consistencyScore = Math.max(60, Math.min(100, Math.round(100 - (timingDeviation / 15))));
-  if (accuracyScore === 100) consistencyScore = Math.max(88, consistencyScore);
+  let consistencyScore = Math.max(55, Math.min(98, Math.round(95 - (timingDeviation / 18))));
+  if (accuracyScore === 100) consistencyScore = Math.max(82, consistencyScore);
 
-  // 9. Tính điểm tổng hợp có trọng số
-  const overall = Math.round(accuracyScore * 0.75 + fluencyScore * 0.25);
+  // 9. Tính điểm thanh điệu dự kiến & điểm tổng hợp phân hóa chân thực
+  // Giảm bớt thiên vị 93 điểm: Điểm tổng hợp kết hợp accuracy, fluency và nhịp điệu
+  let overall = 0;
+  if (accuracyScore === 0) {
+    overall = 0;
+  } else {
+    // Nếu đúng 100% chữ, điểm giao động linh hoạt theo tốc độ nói và trường độ thực từ 86 đến 98
+    const baseScore = accuracyScore * 0.70 + fluencyScore * 0.20 + (consistencyScore * 0.10);
+    overall = Math.max(15, Math.min(98, Math.round(baseScore)));
+  }
 
   // 10. Nhận xét định tính trung thực
   let rank = 'Cần luyện thêm';

@@ -16,6 +16,7 @@ import {
   HelpCircle,
   Eye,
   EyeOff,
+  Languages,
   Flame,
   Award,
   Layers,
@@ -96,7 +97,8 @@ export default function InteractiveLessonPlayer({
   // Step 5: Listening speed & toggles
   const [isSlowAudio, setIsSlowAudio] = useState(false);
   const [showPinyin, setShowPinyin] = useState(true);
-  const [showTranslation] = useState(true);
+  const [showTranslation, setShowTranslation] = useState(false); // Mặc định ẩn bản dịch để học viên tự luyện nghe/đọc
+  const [revealedTranslations, setRevealedTranslations] = useState({}); // Lưu các dòng được người dùng click mở dịch riêng lẻ
 
   // Step 6: Speaking state
   const [isRecording, setIsRecording] = useState(false);
@@ -1199,10 +1201,22 @@ export default function InteractiveLessonPlayer({
 
                     <button
                       onClick={() => setShowPinyin(!showPinyin)}
-                      className="p-1.5 rounded-xl border border-[#F1E5D8] text-[#748092]"
-                      title="Bật/Tắt Pinyin"
+                      className="p-1.5 rounded-xl border border-[#F1E5D8] text-[#748092] hover:text-[#E85D3F] transition-colors"
+                      title={showPinyin ? 'Ẩn Pinyin' : 'Hiện Pinyin'}
                     >
                       {showPinyin ? <Eye size={15} /> : <EyeOff size={15} />}
+                    </button>
+
+                    <button
+                      onClick={() => setShowTranslation(!showTranslation)}
+                      className={`p-1.5 rounded-xl border transition-colors ${
+                        showTranslation 
+                          ? 'border-[#E85D3F] bg-[#FDEEEB] text-[#E85D3F]' 
+                          : 'border-[#F1E5D8] text-[#748092] hover:text-[#E85D3F]'
+                      }`}
+                      title={showTranslation ? 'Ẩn toàn bộ nghĩa tiếng Việt' : 'Hiện toàn bộ nghĩa tiếng Việt'}
+                    >
+                      <Languages size={15} />
                     </button>
                   </div>
                 </div>
@@ -1218,28 +1232,54 @@ export default function InteractiveLessonPlayer({
 
                 {/* Dialogue lines */}
                 <div className="space-y-3 pt-2">
-                  {lesson.step5_listening.dialogue.map((line, idx) => (
-                    <div key={idx} className="p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#E85D3F] text-white text-xs font-bold flex items-center justify-center shrink-0">
-                        {line.speaker}
-                      </div>
-                      <div className="flex-1 space-y-0.5">
-                        <div className="font-bold text-[#243447] dark:text-white text-sm">{line.hanzi}</div>
-                        {showPinyin && (
-                          <div className="text-[#E85D3F] font-mono text-[11px]">{line.pinyin}</div>
-                        )}
-                        {showTranslation && (
-                          <div className="text-[#748092] text-[11px]">{line.meaning}</div>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleSpeak(line.hanzi)}
-                        className="text-[#748092] hover:text-[#E85D3F] p-1"
+                  {lesson.step5_listening.dialogue.map((line, idx) => {
+                    const isLineRevealed = Boolean(showTranslation || revealedTranslations[idx]);
+                    return (
+                      <div 
+                        key={idx} 
+                        className="p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-start gap-3 transition-colors hover:border-[#E85D3F]/40 cursor-pointer"
+                        onClick={() => {
+                          setRevealedTranslations(prev => ({
+                            ...prev,
+                            [idx]: !prev[idx]
+                          }));
+                        }}
+                        title="Bấm vào câu để hiện / ẩn dịch nghĩa"
                       >
-                        <Volume2 size={16} />
-                      </button>
-                    </div>
-                  ))}
+                        <div className="w-8 h-8 rounded-full bg-[#E85D3F] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                          {line.speaker}
+                        </div>
+                        <div className="flex-1 space-y-0.5 select-none">
+                          <div className="font-bold text-[#243447] dark:text-white text-sm flex items-center gap-2 flex-wrap">
+                            <span>{line.hanzi}</span>
+                            {!isLineRevealed && (
+                              <span className="text-[10px] text-[#748092] dark:text-[#94A3B8] font-normal italic bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded-md">
+                                👆 Chạm để xem dịch
+                              </span>
+                            )}
+                          </div>
+                          {showPinyin && (
+                            <div className="text-[#E85D3F] font-mono text-[11px]">{line.pinyin}</div>
+                          )}
+                          {isLineRevealed ? (
+                            <div className="text-[#748092] dark:text-[#94A3B8] text-[11px] pt-1 animate-in fade-in duration-150">
+                              {line.meaning}
+                            </div>
+                          ) : null}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSpeak(line.hanzi);
+                          }}
+                          className="text-[#748092] hover:text-[#E85D3F] p-1 shrink-0"
+                          title="Nghe phát âm câu này"
+                        >
+                          <Volume2 size={16} />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Comprehension Question */}

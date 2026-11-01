@@ -1,18 +1,93 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Send, 
   Globe, 
   Mail, 
   ShieldCheck, 
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
-import { speakChinese } from '../utils/audio';
+import { speakChinese, playSuccessSound, playClickSound, playErrorSound } from '../utils/audio';
+import { recordAuditLog, AUDIT_CATEGORIES, AUDIT_SEVERITY } from '../services/auditLogService';
 
 export default function Footer({ setActiveTab }) {
+  const [emailInput, setEmailInput] = useState('');
+  const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'already' | 'error'
+  const [errorMessage, setErrorMessage] = useState('');
+
   const handleNav = (tab) => {
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    const cleanEmail = emailInput.trim().toLowerCase();
+
+    // Kiểm tra định dạng email cơ bản
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      playErrorSound();
+      setStatus('error');
+      setErrorMessage('Vui lòng nhập địa chỉ email hợp lệ.');
+      return;
+    }
+
+    playClickSound();
+    setStatus('loading');
+    setErrorMessage('');
+
+    try {
+      // 1. Kiểm tra trong danh sách đã đăng ký cục bộ
+      const STORAGE_KEY = 'hanzigo_newsletter_subscribers';
+      let existingList = [];
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) existingList = JSON.parse(stored);
+      } catch {}
+
+      if (existingList.some(item => (typeof item === 'string' ? item : item.email) === cleanEmail)) {
+        setStatus('already');
+        playSuccessSound();
+        return;
+      }
+
+      // 2. Lưu vào danh sách subscribers
+      const newEntry = {
+        email: cleanEmail,
+        subscribedAt: new Date().toISOString(),
+        source: 'footer_newsletter'
+      };
+      existingList.unshift(newEntry);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(existingList));
+      } catch {}
+
+      // 3. Ghi audit log lên hệ thống
+      recordAuditLog({
+        action: 'NEWSLETTER_SUBSCRIBE',
+        category: AUDIT_CATEGORIES.AUTH,
+        severity: AUDIT_SEVERITY.INFO,
+        actorId: 'anonymous_visitor',
+        targetId: cleanEmail,
+        metadata: {
+          subscribedAt: newEntry.subscribedAt,
+          source: 'footer_daily_lesson'
+        }
+      });
+
+      playSuccessSound();
+      setStatus('success');
+      setEmailInput('');
+    } catch (err) {
+      console.warn('Lỗi đăng ký newsletter:', err);
+      playErrorSound();
+      setStatus('error');
+      setErrorMessage('Không thể hoàn tất đăng ký lúc này. Vui lòng thử lại sau.');
+    }
   };
 
   return (
@@ -114,24 +189,91 @@ export default function Footer({ setActiveTab }) {
             <p className="text-xs text-[#94A3B8]">
               Đăng ký nhận mẹo nhớ chữ Hán và từ vựng thông dụng gửi vào hòm thư mỗi sáng.
             </p>
-            <form onSubmit={(e) => { e.preventDefault(); alert('Cảm ơn bạn đã đăng ký nhận bài học!'); }} className="space-y-2">
-              <input 
-                type="email" 
-                placeholder="Nhập email của bạn..." 
-                required
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-[#1E293B] border border-[#2B3A4F] text-white placeholder-[#64748B] focus:outline-none focus:border-[#E85D3F]"
-              />
-              <button
-                type="submit"
-                className="w-full py-2 px-3 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-xs font-bold text-white transition-colors flex items-center justify-center gap-1.5"
-              >
-                <span>Đăng ký miễn phí</span>
-                <Send size={14} />
-              </button>
-              <p className="text-[10px] text-[#64748B] leading-tight">
-                * Thông báo quyền riêng tư: Email chỉ dùng để gửi bài học hàng ngày, không chia sẻ cho bên thứ ba. Hủy đăng ký bất kỳ lúc nào.
-              </p>
-            </form>
+
+            {status === 'success' ? (
+              <div className="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs space-y-1 animate-in fade-in duration-200">
+                <div className="flex items-center gap-1.5 font-bold">
+                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+                  <span>Đăng ký thành công!</span>
+                </div>
+                <p className="text-[11px] text-white/80 leading-relaxed">
+                  Cảm ơn bạn! Mẹo nhớ chữ Hán và bài học bổ ích sẽ được gửi tới bạn đều đặn mỗi sáng.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setStatus('idle')}
+                  className="text-[10px] text-emerald-400 underline font-semibold mt-1 inline-block cursor-pointer"
+                >
+                  Đăng ký thêm email khác
+                </button>
+              </div>
+            ) : status === 'already' ? (
+              <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs space-y-1 animate-in fade-in duration-200">
+                <div className="flex items-center gap-1.5 font-bold">
+                  <CheckCircle2 size={16} className="text-amber-400 shrink-0" />
+                  <span>Email đã có trong danh sách!</span>
+                </div>
+                <p className="text-[11px] text-white/80 leading-relaxed">
+                  Email của bạn đã được đăng ký nhận bài học hàng ngày từ trước. Hãy kiểm tra hòm thư vào 7h sáng mỗi ngày nhé!
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setStatus('idle')}
+                  className="text-[10px] text-amber-400 underline font-semibold mt-1 inline-block cursor-pointer"
+                >
+                  Đăng ký email khác
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubscribe} className="space-y-2">
+                <div className="relative">
+                  <input 
+                    type="email" 
+                    value={emailInput}
+                    onChange={(e) => {
+                      setEmailInput(e.target.value);
+                      if (status === 'error') setStatus('idle');
+                    }}
+                    placeholder="Nhập email của bạn..." 
+                    required
+                    disabled={status === 'loading'}
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#1E293B] border transition-colors text-white placeholder-[#64748B] focus:outline-none ${
+                      status === 'error' 
+                        ? 'border-rose-500 focus:border-rose-400 ring-1 ring-rose-500/30' 
+                        : 'border-[#2B3A4F] focus:border-[#E85D3F]'
+                    }`}
+                  />
+                </div>
+
+                {status === 'error' && (
+                  <div className="flex items-center gap-1.5 text-rose-400 text-[11px] animate-in fade-in">
+                    <AlertCircle size={13} className="shrink-0" />
+                    <span>{errorMessage}</span>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={status === 'loading'}
+                  className="w-full py-2.5 px-3 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] disabled:opacity-60 text-xs font-bold text-white transition-all shadow-md shadow-[#E85D3F]/20 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  {status === 'loading' ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>Đang xử lý đăng ký...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Đăng ký miễn phí</span>
+                      <Send size={14} />
+                    </>
+                  )}
+                </button>
+                <p className="text-[10px] text-[#64748B] leading-tight">
+                  * Thông báo quyền riêng tư: Email chỉ dùng để gửi bài học hàng ngày, không chia sẻ cho bên thứ ba. Hủy đăng ký bất kỳ lúc nào.
+                </p>
+              </form>
+            )}
           </div>
         </div>
 

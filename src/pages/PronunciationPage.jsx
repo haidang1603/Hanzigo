@@ -30,6 +30,7 @@ import { triggerCloudSync, getPronunciationItemsFromDb, addPronunciationItemToDb
 import { awardXp, getUserStorageKey, getLocalDateString } from '../utils/gamification';
 import { updateDailyMissionProgress } from '../services';
 import { evaluateRealPronunciation } from '../utils/pronunciationEvaluator';
+import { scorePronunciationWithAi } from '../services/aiPronunciationService';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
 import { PRONUNCIATION_ITEMS_BY_LEVEL } from '../data/practiceLevelData';
 
@@ -217,6 +218,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
 
   // Recording, MediaRecorder & Audio Visualizer State
   const [isRecording, setIsRecording] = useState(false);
+  const [isEvaluatingWithAi, setIsEvaluatingWithAi] = useState(false);
   const [recordingScore, setRecordingScore] = useState(null);
   const [speechError, setSpeechError] = useState(null);
   const [userAudioUrl, setUserAudioUrl] = useState(null);
@@ -585,53 +587,78 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
     cleanupAudioRecording();
   };
 
-  // Real speech evaluation comparing target with spoken transcript
-  const evaluatePronunciation = (targetHanzi, targetPinyin, spoken, durationMs) => {
-    const result = evaluateRealPronunciation({
-      targetHanzi,
-      targetPinyin,
-      spokenTranscript: spoken,
-      audioDurationMs: durationMs
-    });
+  // Real speech evaluation comparing target with spoken transcript via AI
+  const evaluatePronunciation = async (targetHanzi, targetPinyin, spoken, durationMs) => {
+    setIsEvaluatingWithAi(true);
 
-    if (result.overall >= 75) {
-      try {
-        confetti({
-          particleCount: result.overall >= 90 ? 70 : 35,
-          spread: 60,
-          origin: { y: 0.6 }
-        });
-      } catch (err) {
-        console.warn('Confetti error:', err);
-      }
-      playSuccessSound();
-    } else {
-      playClickSound();
+    let audioBlob = null;
+    if (audioChunksRef.current && audioChunksRef.current.length > 0) {
+      audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
     }
 
-    if (result.xpEarned > 0) {
-      awardXp(result.xpEarned, null, `pronounce_${targetHanzi}`);
-    }
+    try {
+      // Gọi Gemini AI thẩm định ngữ âm & thanh điệu thực tế
+      const result = await scorePronunciationWithAi({
+        targetHanzi,
+        targetPinyin,
+        spokenTranscript: spoken,
+        audioBlob,
+        audioDurationMs: durationMs
+      });
 
-    setRecordingScore(result);
-    saveHistoryResult(result);
+      setIsEvaluatingWithAi(false);
 
-    // Save best score for this item
-    setSavedScores(prev => {
-      const prevBest = prev[targetHanzi] || 0;
-      const updated = {
-        ...prev,
-        [targetHanzi]: Math.max(prevBest, result.overall)
-      };
-      try {
-        localStorage.setItem('hanzigo_pronounce_scores', JSON.stringify(updated));
-      } catch (e) {
-        console.warn('Save scores error:', e);
+      if (result.overall >= 75) {
+        try {
+          confetti({
+            particleCount: result.overall >= 90 ? 70 : 35,
+            spread: 60,
+            origin: { y: 0.6 }
+          });
+        } catch (err) {
+          console.warn('Confetti error:', err);
+        }
+        playSuccessSound();
+      } else {
+        playClickSound();
       }
-      return updated;
-    });
 
-    triggerCloudSync();
+      if (result.xpEarned > 0) {
+        awardXp(result.xpEarned, null, `pronounce_${targetHanzi}`);
+      }
+
+      setRecordingScore(result);
+      saveHistoryResult(result);
+
+      // Save best score for this item
+      setSavedScores(prev => {
+        const prevBest = prev[targetHanzi] || 0;
+        const updated = {
+          ...prev,
+          [targetHanzi]: Math.max(prevBest, result.overall)
+        };
+        try {
+          localStorage.setItem('hanzigo_pronounce_scores', JSON.stringify(updated));
+        } catch (e) {
+          console.warn('Save scores error:', e);
+        }
+        return updated;
+      });
+
+      triggerCloudSync();
+    } catch (err) {
+      console.error('Lỗi khi chấm điểm AI:', err);
+      setIsEvaluatingWithAi(false);
+      // Fallback cục bộ
+      const fallback = evaluateRealPronunciation({
+        targetHanzi,
+        targetPinyin,
+        spokenTranscript: spoken,
+        audioDurationMs: durationMs
+      });
+      setRecordingScore(fallback);
+      saveHistoryResult(fallback);
+    }
   };
 
   // Tone Quiz handlers
@@ -1293,12 +1320,18 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
 
                 <div>
                   <p className="text-sm font-bold text-[#243447] dark:text-white">
-                    {isRecording ? '🎙️ Đang nghe giọng bạn... (Bấm micro để dừng)' : 'Chạm vào micro để bắt đầu phát âm'}
+                    {isRecording 
+                      ? '🎙️ Đang nghe giọng bạn... (Bấm micro để dừng)' 
+                      : isEvaluatingWithAi 
+                      ? '🧠 Gemini AI đang phân tích cao độ & thanh điệu...' 
+                      : 'Chạm vào micro để bắt đầu phát âm'}
                   </p>
                   <p className="text-xs text-[#748092] mt-0.5">
                     {isRecording 
-                      ? `Hãy phát âm to, rõ: "${selectedItem.hanzi}"` 
-                      : 'AI sẽ phân tích độ chính xác từ vựng, thanh điệu và độ lưu loát'}
+                      ? `Hãy phát âm to, rõ: "${activeTargetHanzi}"` 
+                      : isEvaluatingWithAi
+                      ? 'Đang gửi giọng nói tới mô hình đa phương thức để thẩm định từng âm tiết'
+                      : 'Gemini AI thẩm định khách quan thanh điệu, ngữ âm thực tế (không cố định 93đ)'}
                   </p>
                 </div>
 
@@ -1346,6 +1379,11 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                           <Award size={14} />
                           <span>{recordingScore.rankBadge}</span>
                         </span>
+                        {recordingScore.isAiScored && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/70 px-2 py-0.5 rounded-lg border border-purple-300 dark:border-purple-800">
+                            ✨ Gemini AI Thẩm Âm Thực
+                          </span>
+                        )}
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/70 px-2 py-0.5 rounded-lg border border-amber-300 dark:border-amber-800">
                           <Sparkles size={12} />
                           +{recordingScore.xpEarned} XP
@@ -1354,6 +1392,12 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                       <p className="text-xs text-[#243447] dark:text-[#E2E8F0] font-medium leading-relaxed">
                         {recordingScore.feedback}
                       </p>
+                      {recordingScore.articulatoryTip && (
+                        <div className="mt-1 p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-[11px] text-purple-900 dark:text-purple-200">
+                          <strong>💡 Mẹo khẩu hình từ chuyên gia: </strong>
+                          {recordingScore.articulatoryTip}
+                        </div>
+                      )}
                     </div>
 
                     <div className="shrink-0 text-center">
