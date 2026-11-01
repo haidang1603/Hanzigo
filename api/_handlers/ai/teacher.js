@@ -13,9 +13,9 @@
  *    3. generate_lesson_plan: Topic & Duration -> 7-phase pedagogical lesson plan
  */
 
-import { checkRateLimitAndQuota } from '../_utils/distributedRateLimiter.js';
-import { verifyRequestAuth } from '../_utils/supabaseServer.js';
-import { callUnifiedAiProvider } from '../_utils/aiProviderAdapter.js';
+import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
+import { verifyRequestAuth } from '../../_utils/supabaseServer.js';
+import { callUnifiedAiProvider } from '../../_utils/aiProviderAdapter.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;

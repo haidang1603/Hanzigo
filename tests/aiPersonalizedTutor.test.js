@@ -21,7 +21,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import tutorHandler from '../api/ai/tutor.js';
+import tutorHandler from '../api/_handlers/ai/tutor.js';
 import {
   getLearnerPreferences,
   saveLearnerPreferences,

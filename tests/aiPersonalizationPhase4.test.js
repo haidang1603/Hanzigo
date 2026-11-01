@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { buildUnifiedLearnerProfile } from '../src/services/unifiedLearningProfileService.js';
 import { generateLearningRecommendations } from '../src/services/learningRecommendationEngine.js';
-import personalizeEndpointHandler, { detectAbuseOrInjection } from '../api/ai/personalize.js';
+import personalizeEndpointHandler, { detectAbuseOrInjection } from '../api/_handlers/ai/personalize.js';
 import { extractStructuredJson } from '../api/_utils/aiProviderAdapter.js';
 import { getAiCoachRecommendation } from '../src/services/aiLearningCoachService.js';
 import { invokeAiPersonalization } from '../src/services/aiGateway.js';

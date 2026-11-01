@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import handler from '../api/newsletter/subscribe.js';
+import handler from '../api/_handlers/newsletter/subscribe.js';
 
 test('Newsletter API: GET returns today featured lesson', async () => {
   const req = {

@@ -28,8 +28,8 @@ import {
 } from '../src/services/liveClassroomService.js';
 
 import { sanitizeUserErrorMessage } from '../src/utils/errorSanitizer.js';
-import aiChatHandler from '../api/ai/chat.js';
-import aiTeacherHandler from '../api/ai/teacher.js';
+import aiChatHandler from '../api/_handlers/ai/chat.js';
+import aiTeacherHandler from '../api/_handlers/ai/teacher.js';
 import { checkRateLimitAndQuota as checkDistributedRateLimit, resetMemoryRateLimits } from '../api/_utils/distributedRateLimiter.js';
 import { evaluateRealPronunciation } from '../src/utils/pronunciationEvaluator.js';
 import { computeClassAnalytics, getAtRiskStudents } from '../src/services/teacherAnalyticsService.js';

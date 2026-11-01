@@ -10,7 +10,7 @@
  * =========================================================================
  */
 
-import { getSupabaseAdminClient } from '../_utils/supabaseServer.js';
+import { getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
 
 // Memory rate-limiting fallback (5 submissions / 15 minutes per IP)
 const rateLimitMap = new Map();

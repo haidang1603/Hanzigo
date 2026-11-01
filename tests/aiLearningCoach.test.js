@@ -13,7 +13,7 @@ import {
 } from '../src/services/aiLearningCoachService.js';
 
 import { getLocalDateString } from '../src/utils/gamification.js';
-import coachEndpointHandler from '../api/ai/coach.js';
+import coachEndpointHandler from '../api/_handlers/ai/coach.js';
 
 // Polyfill localStorage in Node test environment
 if (typeof globalThis.localStorage === 'undefined') {

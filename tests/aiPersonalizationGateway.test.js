@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import personalizeEndpointHandler, { detectAbuseOrInjection } from '../api/ai/personalize.js';
+import personalizeEndpointHandler, { detectAbuseOrInjection } from '../api/_handlers/ai/personalize.js';
 import { 
   getLearnerPreferences, 
   saveLearnerPreferences, 

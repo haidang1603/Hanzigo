@@ -9,7 +9,7 @@ import {
 import roleplayHandler, { 
   detectAbuseOrInjection, 
   generateOfflinePedagogicalReply 
-} from '../api/ai/roleplay.js';
+} from '../api/_handlers/ai/roleplay.js';
 
 // Mock request / response helper
 function createMockHttp(options = {}) {

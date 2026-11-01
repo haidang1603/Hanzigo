@@ -27,14 +27,14 @@
  * =========================================================================
  */
 
-import { checkRateLimitAndQuota } from '../_utils/distributedRateLimiter.js';
-import { verifyRequestAuth, getSupabaseAdminClient } from '../_utils/supabaseServer.js';
-import { callUnifiedAiProvider } from '../_utils/aiProviderAdapter.js';
+import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
+import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { callUnifiedAiProvider } from '../../_utils/aiProviderAdapter.js';
 import {
   retrieveRagKnowledge,
   formatKnowledgeForPrompt,
   normalizeQueryForRetrieval
-} from '../_utils/ragRetriever.js';
+} from '../../_utils/ragRetriever.js';
 
 // Các giới hạn an toàn
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;  // 1 phút

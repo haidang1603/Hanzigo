@@ -44,8 +44,8 @@ import {
 } from '../src/services/auditLogService.js';
 
 import iceServersHandler from '../api/_webrtc/ice-servers.js';
-import aiChatHandler from '../api/ai/chat.js';
-import aiTeacherHandler from '../api/ai/teacher.js';
+import aiChatHandler from '../api/_handlers/ai/chat.js';
+import aiTeacherHandler from '../api/_handlers/ai/teacher.js';
 
 // Mock Response for Serverless handlers
 function createMockRes() {

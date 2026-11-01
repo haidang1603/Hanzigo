@@ -21,7 +21,7 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
 
-import tutorHandler from '../api/ai/tutor.js';
+import tutorHandler from '../api/_handlers/ai/tutor.js';
 import {
   generateDeterministicEmbedding,
   generateQueryEmbedding,

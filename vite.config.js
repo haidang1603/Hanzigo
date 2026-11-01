@@ -12,11 +12,11 @@ for (const [k, v] of Object.entries(_initialEnv)) {
 
 import iceServersHandler from './api/_webrtc/ice-servers.js'
 import livekitTokenHandler from './api/_webrtc/livekit-token.js'
-import personalizeHandler from './api/ai/personalize.js'
-import chatHandler from './api/ai/chat.js'
-import teacherHandler from './api/ai/teacher.js'
-import coachHandler from './api/ai/coach.js'
-import tutorHandler from './api/ai/tutor.js'
+import personalizeHandler from './api/_handlers/ai/personalize.js'
+import chatHandler from './api/_handlers/ai/chat.js'
+import teacherHandler from './api/_handlers/ai/teacher.js'
+import coachHandler from './api/_handlers/ai/coach.js'
+import tutorHandler from './api/_handlers/ai/tutor.js'
 
 // In-memory shared registry for local dev classroom sync across browsers/tabs
 const sharedDevClassrooms = [
