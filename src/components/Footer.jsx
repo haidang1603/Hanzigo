@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Send, 
   Globe, 
@@ -12,10 +12,13 @@ import {
   BookOpen,
   Volume2,
   X,
-  Edit3
+  Edit3,
+  Shuffle
 } from 'lucide-react';
 import { speakChinese, playSuccessSound, playClickSound, playErrorSound } from '../utils/audio';
 import { recordAuditLog, AUDIT_CATEGORIES, AUDIT_SEVERITY } from '../services/auditLogService';
+import { getDailyQuote, getRandomQuote } from '../data/dailyQuotesData';
+import { fetchDailyQuotes, getNextRandomQuote, calculateQuoteOfTheDay } from '../services/dailyQuotesService';
 
 const DEFAULT_WELCOME_LESSON = {
   character: '好',
@@ -38,6 +41,24 @@ export default function Footer({ setActiveTab }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [todayLesson, setTodayLesson] = useState(DEFAULT_WELCOME_LESSON);
   const [showLessonModal, setShowLessonModal] = useState(false);
+  const [currentQuote, setCurrentQuote] = useState(() => getDailyQuote());
+  const [quotesPool, setQuotesPool] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchDailyQuotes().then(quotes => {
+      if (isMounted && quotes && quotes.length > 0) {
+        setQuotesPool(quotes);
+        setCurrentQuote(calculateQuoteOfTheDay(quotes));
+      }
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, []);
+
+  const handleNextQuote = () => {
+    playClickSound();
+    setCurrentQuote(prev => getNextRandomQuote(prev?.id, quotesPool));
+  };
 
   const handleNav = (tab) => {
     setActiveTab(tab);
@@ -147,35 +168,67 @@ export default function Footer({ setActiveTab }) {
   };
 
   return (
-    <footer className="bg-[#243447] text-white pt-16 pb-12 border-t border-[#1B2636] relative overflow-hidden">
+    <footer className="bg-[#111923] text-white pt-16 pb-12 border-t border-[#1E293B] relative overflow-hidden">
       {/* Decorative background watermark */}
-      <div className="absolute right-4 bottom-4 font-['Noto_Serif_SC'] text-9xl font-black text-white/[0.03] select-none pointer-events-none">
+      <div className="absolute right-4 bottom-2 font-['Noto_Serif_SC'] text-[10rem] font-black text-white/[0.02] select-none pointer-events-none">
         汉语
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Top Highlight Banner */}
-        <div className="p-6 sm:p-8 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] shadow-xl mb-14 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-1.5 text-center md:text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold">
-              <Sparkles size={14} />
-              <span>Châm ngôn mỗi ngày</span>
+        {/* Top Highlight Banner: Redesigned Asian-Modern Cultural Quote Card */}
+        <div className="mb-14 p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#1E293B]/90 via-[#182330]/95 to-[#131C26]/90 border border-[#F4B942]/20 hover:border-[#F4B942]/40 shadow-2xl shadow-black/40 relative overflow-hidden backdrop-blur-md transition-all group">
+          {/* Subtle warm ambient glows */}
+          <div className="absolute -top-16 -left-16 w-44 h-44 rounded-full bg-[#E85D3F]/10 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -right-16 w-44 h-44 rounded-full bg-[#F4B942]/10 blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            
+            {/* Quote Body */}
+            <div className="space-y-2 text-center lg:text-left flex-1 min-w-0">
+              <div className="inline-flex items-center gap-2 flex-wrap justify-center lg:justify-start">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E85D3F]/15 border border-[#E85D3F]/30 text-[#E85D3F] dark:text-[#F87171] text-xs font-bold shadow-xs">
+                  <Sparkles size={13} className="text-[#F4B942]" />
+                  <span>Châm ngôn Hán ngữ mỗi ngày</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleNextQuote}
+                  className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 hover:text-white text-[11px] font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs border border-white/10"
+                  title="Bấm để đổi và khám phá thêm các câu châm ngôn ý nghĩa khác"
+                >
+                  <Shuffle size={12} />
+                  <span>Đổi câu khác</span>
+                </button>
+              </div>
+
+              {/* Chinese Calligraphy Characters */}
+              <h3 className="text-2xl sm:text-3xl font-black font-['Noto_Serif_SC'] tracking-wider text-amber-100 drop-shadow-sm">
+                {currentQuote.hanzi}
+              </h3>
+
+              {/* Pinyin, Meaning & Author */}
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+                <span className="font-semibold text-[#F4B942] mr-1.5">{currentQuote.pinyin}</span>
+                <span>— <span className="italic text-slate-200 font-medium">"{currentQuote.meaning}"</span></span>
+                {currentQuote.author && (
+                  <span className="text-xs text-slate-400 ml-2 font-normal">({currentQuote.author})</span>
+                )}
+              </p>
             </div>
-            <h3 className="text-xl sm:text-2xl font-bold font-['Noto_Serif_SC'] tracking-wide">
-              千里之行，始于足下
-            </h3>
-            <p className="text-sm text-white/90 font-medium">
-              Qiānlǐ zhī xíng, shǐ yú zúxià — <span className="italic">"Hành trình vạn dặm bắt đầu từ một bước chân."</span>
-            </p>
+
+            {/* Pronounce Action Button */}
+            <button
+              type="button"
+              onClick={() => speakChinese(currentQuote.hanzi)}
+              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-xs sm:text-sm shadow-lg shadow-[#E85D3F]/25 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 whitespace-nowrap cursor-pointer shrink-0 self-center lg:self-center"
+              title={`Nghe phát âm chuẩn: "${currentQuote.hanzi}"`}
+            >
+              <Volume2 size={16} />
+              <span>Nghe phát âm chuẩn</span>
+              <ArrowRight size={15} />
+            </button>
           </div>
-          <button
-            onClick={() => speakChinese('千里之行，始于足下')}
-            className="px-5 py-2.5 rounded-xl bg-white text-[#E85D3F] font-bold text-sm shadow-md hover:bg-[#FFF9F2] hover:scale-105 transition-all flex items-center gap-2 whitespace-nowrap"
-          >
-            <span>Nghe phát âm</span>
-            <ArrowRight size={16} />
-          </button>
         </div>
 
         {/* Main Footer Links */}
@@ -210,39 +263,47 @@ export default function Footer({ setActiveTab }) {
 
           {/* Links 1 */}
           <div className="space-y-3">
-            <h4 className="text-sm font-bold uppercase tracking-wider text-[#F4B942]">
-              Khóa học & Lộ trình
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#F4B942] flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#F4B942]" />
+              <span>Khóa học & Lộ trình</span>
             </h4>
-            <ul className="space-y-2 text-sm text-[#94A3B8]">
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white transition-colors">Nhập môn Pinyin & Bút thuận</button></li>
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white transition-colors">Khóa HSK 1 - 150 từ cơ bản</button></li>
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white transition-colors">Khóa HSK 2 - Sơ cấp đàm thoại</button></li>
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white transition-colors">Khóa HSK 3 - 4 Giao tiếp công sở</button></li>
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white transition-colors">Luyện thi HSK 5-6 Chuyên sâu</button></li>
+            <ul className="space-y-2 text-xs sm:text-sm text-[#94A3B8]">
+              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Nhập môn Pinyin & Bút thuận</button></li>
+              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Khóa HSK 1 - 150 từ cơ bản</button></li>
+              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Khóa HSK 2 - Sơ cấp đàm thoại</button></li>
+              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Khóa HSK 3 - 4 Giao tiếp công sở</button></li>
+              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Luyện thi HSK 5-6 Chuyên sâu</button></li>
             </ul>
           </div>
 
           {/* Links 2 */}
           <div className="space-y-3">
-            <h4 className="text-sm font-bold uppercase tracking-wider text-[#F4B942]">
-              Tính năng nổi bật
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#F4B942] flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E85D3F]" />
+              <span>Tính năng nổi bật</span>
             </h4>
-            <ul className="space-y-2 text-sm text-[#94A3B8]">
-              <li><button onClick={() => handleNav('materials')} className="hover:text-white transition-colors text-[#F4B942] font-semibold">Thư viện Tài liệu & Giáo trình</button></li>
-              <li><button onClick={() => handleNav('vocabulary')} className="hover:text-white transition-colors">Flashcard 3D thông minh SRS</button></li>
-              <li><button onClick={() => handleNav('pronunciation')} className="hover:text-white transition-colors">Luyện phát âm & Nhận diện giọng</button></li>
-              <li><button onClick={() => handleNav('writing')} className="hover:text-white transition-colors">Canvas tập viết chữ Hán mễ tự</button></li>
-              <li><button onClick={() => handleNav('conversation')} className="hover:text-white transition-colors">Hội thoại AI Tiểu Hàm</button></li>
-              <li><button onClick={() => handleNav('community')} className="hover:text-white transition-colors">Cộng đồng & Tìm bạn luyện nói</button></li>
+            <ul className="space-y-2 text-xs sm:text-sm text-[#94A3B8]">
+              <li><button onClick={() => handleNav('materials')} className="hover:text-white hover:translate-x-1 transition-all text-left text-[#F4B942] font-semibold">Thư viện Tài liệu & Giáo trình</button></li>
+              <li><button onClick={() => handleNav('vocabulary')} className="hover:text-white hover:translate-x-1 transition-all text-left">Flashcard 3D thông minh SRS</button></li>
+              <li><button onClick={() => handleNav('pronunciation')} className="hover:text-white hover:translate-x-1 transition-all text-left">Luyện phát âm & Nhận diện giọng</button></li>
+              <li><button onClick={() => handleNav('writing')} className="hover:text-white hover:translate-x-1 transition-all text-left">Canvas tập viết chữ Hán mễ tự</button></li>
+              <li><button onClick={() => handleNav('conversation')} className="hover:text-white hover:translate-x-1 transition-all text-left">Hội thoại AI Tiểu Hàm</button></li>
+              <li><button onClick={() => handleNav('community')} className="hover:text-white hover:translate-x-1 transition-all text-left">Cộng đồng & Tìm bạn luyện nói</button></li>
             </ul>
           </div>
 
           {/* Newsletter Subscribe */}
           <div className="space-y-3">
-            <h4 className="text-sm font-bold uppercase tracking-wider text-[#F4B942]">
-              Nhận bài học mỗi ngày
-            </h4>
-            <p className="text-xs text-[#94A3B8]">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#F4B942] flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#45B97C]" />
+                <span>Nhận bài học mỗi ngày</span>
+              </h4>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                07:00 AM
+              </span>
+            </div>
+            <p className="text-xs text-[#94A3B8] leading-relaxed">
               Đăng ký nhận mẹo nhớ chữ Hán và từ vựng thông dụng gửi vào hòm thư mỗi sáng.
             </p>
 
@@ -331,7 +392,7 @@ export default function Footer({ setActiveTab }) {
                 <button
                   type="submit"
                   disabled={status === 'loading'}
-                  className="w-full py-2.5 px-3 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] disabled:opacity-60 text-xs font-bold text-white transition-all shadow-md shadow-[#E85D3F]/20 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] disabled:opacity-60 text-xs font-bold text-white transition-all shadow-md shadow-[#E85D3F]/20 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 >
                   {status === 'loading' ? (
                     <>
@@ -368,9 +429,12 @@ export default function Footer({ setActiveTab }) {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-[#94A3B8] gap-4">
           <p>© 2026 HanziGo. Dự án giáo dục phi thương mại dành cho người Việt.</p>
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-            <button onClick={() => handleNav('admin')} className="text-[#E85D3F] font-bold hover:underline flex items-center gap-1 cursor-pointer">
-              <ShieldCheck size={14} />
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            <button 
+              onClick={() => handleNav('admin')} 
+              className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-[#E85D3F] font-semibold text-[11px] transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <ShieldCheck size={13} className="text-[#E85D3F]" />
               <span>Quản trị viên (Admin)</span>
             </button>
             <a 

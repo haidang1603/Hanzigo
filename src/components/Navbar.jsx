@@ -101,7 +101,7 @@ export default function Navbar({
       desc: 'Bài đọc HSK, Pinyin ngữ cảnh & phân tích từ', 
       icon: BookOpen, 
       color: 'text-orange-500 bg-orange-500/10' 
-    },
+    }
   ];
 
   // Explore & Community items grouped under "Khám phá"

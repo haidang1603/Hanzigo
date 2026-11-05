@@ -280,15 +280,16 @@ export function recordStudyActivity(user = null) {
     } catch {}
   }
 
+  const isGuest = !targetUser?.uid && !targetUser?.id && !targetUser?.email;
   const dateKey = getUserStorageKey('hanzigo_last_study_date', targetUser);
   const streakKey = getUserStorageKey('hanzigo_streak_count', targetUser);
 
   try {
-    const rawDate = localStorage.getItem(dateKey) || localStorage.getItem('hanzigo_last_study_date') || targetUser?.last_study_date || targetUser?.lastActiveDate;
+    const rawDate = localStorage.getItem(dateKey) || (isGuest ? localStorage.getItem('hanzigo_last_study_date') : null) || targetUser?.last_study_date || targetUser?.lastActiveDate;
     const lastDate = normalizeDateString(rawDate);
 
     const rawStreak = localStorage.getItem(streakKey);
-    const rawGlobalStreak = localStorage.getItem('hanzigo_streak_count');
+    const rawGlobalStreak = isGuest ? localStorage.getItem('hanzigo_streak_count') : null;
     const userStreak = typeof targetUser?.streak === 'number' ? targetUser.streak : 0;
     let currentStreak = Math.max(
       rawStreak ? parseInt(rawStreak, 10) || 0 : 0,
@@ -315,16 +316,20 @@ export function recordStudyActivity(user = null) {
     }
 
     localStorage.setItem(dateKey, today);
-    localStorage.setItem('hanzigo_last_study_date', today);
     localStorage.setItem(streakKey, String(currentStreak));
-    localStorage.setItem('hanzigo_streak_count', String(currentStreak));
+    if (isGuest) {
+      localStorage.setItem('hanzigo_last_study_date', today);
+      localStorage.setItem('hanzigo_streak_count', String(currentStreak));
+    }
 
     // Update longest streak
     const longestKey = getUserStorageKey('hanzigo_longest_streak', targetUser);
     const prevLongest = parseInt(localStorage.getItem(longestKey) || '0', 10);
     if (currentStreak > prevLongest) {
       localStorage.setItem(longestKey, String(currentStreak));
-      localStorage.setItem('hanzigo_longest_streak', String(currentStreak));
+      if (isGuest) {
+        localStorage.setItem('hanzigo_longest_streak', String(currentStreak));
+      }
     }
 
     // Update cached user object if applicable
@@ -368,16 +373,17 @@ export function getStreakStatus(user = null) {
     } catch {}
   }
 
+  const isGuest = !targetUser?.uid && !targetUser?.id && !targetUser?.email;
   const dateKey = getUserStorageKey('hanzigo_last_study_date', targetUser);
   const streakKey = getUserStorageKey('hanzigo_streak_count', targetUser);
 
   try {
     const today = getLocalDateString();
-    const rawDate = localStorage.getItem(dateKey) || localStorage.getItem('hanzigo_last_study_date') || targetUser?.last_study_date || targetUser?.lastActiveDate;
+    const rawDate = localStorage.getItem(dateKey) || (isGuest ? localStorage.getItem('hanzigo_last_study_date') : null) || targetUser?.last_study_date || targetUser?.lastActiveDate;
     let lastDate = normalizeDateString(rawDate);
 
     const rawStreak = localStorage.getItem(streakKey);
-    const rawGlobalStreak = localStorage.getItem('hanzigo_streak_count');
+    const rawGlobalStreak = isGuest ? localStorage.getItem('hanzigo_streak_count') : null;
     const userStreak = typeof targetUser?.streak === 'number' && !isNaN(targetUser.streak) ? targetUser.streak : null;
 
     let candidateStreak = 0;
@@ -399,7 +405,9 @@ export function getStreakStatus(user = null) {
     if (!lastDate) {
       try {
         localStorage.setItem(streakKey, '0');
-        localStorage.setItem('hanzigo_streak_count', '0');
+        if (isGuest) {
+          localStorage.setItem('hanzigo_streak_count', '0');
+        }
         if (targetUser && targetUser.streak !== 0) {
           targetUser.streak = 0;
           const saved = localStorage.getItem('hanzigo_user');
@@ -428,7 +436,9 @@ export function getStreakStatus(user = null) {
     // TH 3: Tài khoản đã off 1 ngày trở lên (hôm qua không điểm danh/không học) -> Chuỗi quay về 0!
     try {
       localStorage.setItem(streakKey, '0');
-      localStorage.setItem('hanzigo_streak_count', '0');
+      if (isGuest) {
+        localStorage.setItem('hanzigo_streak_count', '0');
+      }
       if (targetUser) {
         targetUser.streak = 0;
         const saved = localStorage.getItem('hanzigo_user');
@@ -574,15 +584,20 @@ export function consumeStreakFreeze(user = null) {
     localStorage.setItem(freezeKey, String(current - 1));
     // Protect today's streak by marking today with shield protection
     const today = getLocalDateString();
+    const isGuest = !targetUser?.uid && !targetUser?.id && !targetUser?.email;
     const dateKey = getUserStorageKey('hanzigo_last_study_date', targetUser);
     const streakKey = getUserStorageKey('hanzigo_streak_count', targetUser);
     localStorage.setItem(dateKey, today);
-    localStorage.setItem('hanzigo_last_study_date', today);
-    const rawStreak = localStorage.getItem(streakKey) || localStorage.getItem('hanzigo_streak_count');
+    if (isGuest) {
+      localStorage.setItem('hanzigo_last_study_date', today);
+    }
+    const rawStreak = localStorage.getItem(streakKey) || (isGuest ? localStorage.getItem('hanzigo_streak_count') : null);
     const storedStreak = parseInt(rawStreak || '0', 10);
     const preservedStreak = Math.max(1, storedStreak, typeof targetUser?.streak === 'number' ? targetUser.streak : 0);
     localStorage.setItem(streakKey, String(preservedStreak));
-    localStorage.setItem('hanzigo_streak_count', String(preservedStreak));
+    if (isGuest) {
+      localStorage.setItem('hanzigo_streak_count', String(preservedStreak));
+    }
 
     if (targetUser) {
       try {

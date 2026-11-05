@@ -237,7 +237,106 @@ export const HETERONYM_COMPOUND_RULES = {
   '慢慢地': ['màn', 'màn', 'de'],
   '认真地': ['rèn', 'zhēn', 'de'],
   '努力地': ['nǔ', 'lì', 'de'],
-  '飞快地': ['fēi', 'kuài', 'de']
+  '飞快地': ['fēi', 'kuài', 'de'],
+
+  // 会: huì (biết, họp, sẽ) vs kuài (kế toán)
+  '会计': ['kuài', 'jì'],
+  '财会': ['cái', 'kuài'],
+  '开会': ['kāi', 'huì'],
+  '会议': ['huì', 'yì'],
+  '学会': ['xué', 'huì'],
+  '不会': ['bú', 'huì'],
+  '机会': ['jī', 'huì'],
+
+  // 调: diào (điều tra, âm điệu) vs tiáo (điều hòa, điều chỉnh)
+  '调查': ['diào', 'chá'],
+  '调动': ['diào', 'dòng'],
+  '声调': ['shēng', 'diào'],
+  '音调': ['yīn', 'diào'],
+  '强调': ['qiáng', 'diào'],
+  '空调': ['kōng', 'tiáo'],
+  '调整': ['tiáo', 'zhěng'],
+  '调解': ['tiáo', 'jiě'],
+  '烹调': ['pēng', 'tiáo'],
+
+  // 种: zhǒng (loại, giống) vs zhòng (trồng trọt)
+  '种子': ['zhǒng', 'zi'],
+  '各种': ['gè', 'zhǒng'],
+  '这种': ['zhè', 'zhǒng'],
+  '那种': ['nà', 'zhǒng'],
+  '种族': ['zhǒng', 'zú'],
+  '种花': ['zhòng', 'huā'],
+  '种树': ['zhòng', 'shù'],
+  '种植': ['zhòng', 'zhí'],
+  '耕种': ['gēng', 'zhòng'],
+
+  // 教: jiào (lớp học, giáo dục) vs jiāo (dạy học)
+  '教室': ['jiào', 'shì'],
+  '教育': ['jiào', 'yù'],
+  '教授': ['jiào', 'shòu'],
+  '教师': ['jiào', 'shī'],
+  '教训': ['jiào', 'xun'],
+  '教书': ['jiāo', 'shū'],
+  '教课': ['jiāo', 'kè'],
+
+  // 没: méi (không có) vs mò (chìm, tịch thu)
+  '没有': ['méi', 'yǒu'],
+  '没事': ['méi', 'shì'],
+  '没关系': ['méi', 'guān', 'xi'],
+  '淹没': ['yān', 'mò'],
+  '沉没': ['chén', 'mò'],
+  '没收': ['mò', 'shōu'],
+
+  // 答: dá (trả lời) vs dā (đồng ý, hứa)
+  '回答': ['huí', 'dá'],
+  '答案': ['dá', '’àn'],
+  '答复': ['dá', 'fù'],
+  '报答': ['bào', 'dá'],
+  '答应': ['dā', 'ying'],
+
+  // 结: jié (kết thúc, kết hôn) vs jiē (chắc chắn, ra quả)
+  '结婚': ['jié', 'hūn'],
+  '结束': ['jié', 'shù'],
+  '结果': ['jié', 'guǒ'],
+  '总结': ['zǒng', 'jié'],
+  '团结': ['tuán', 'jié'],
+  '结实': ['jiē', 'shi'],
+  '结果子': ['jiē', 'guǒ', 'zi'],
+
+  // 假: jiǎ (giả tạo) vs jià (kỳ nghỉ)
+  '真假': ['zhēn', 'jiǎ'],
+  '假如': ['jiǎ', 'rú'],
+  '假设': ['jiǎ', 'shè'],
+  '假装': ['jiǎ', 'zhuāng'],
+  '放假': ['fàng', 'jià'],
+  '假期': ['jià', 'qī'],
+  '请假': ['qǐng', 'jià'],
+
+  // 倒: dǎo (ngã, sụp đổ) vs dào (rót, lùi xe)
+  '摔倒': ['shuāi', 'dǎo'],
+  '倒下': ['dǎo', 'xià'],
+  '倒闭': ['dǎo', 'bì'],
+  '倒车': ['dào', 'chē'],
+  '倒水': ['dào', 'shuǐ'],
+  '倒退': ['dào', 'tuì'],
+  '倒是': ['dào', 'shi'],
+
+  // 难: nán (khó) vs nàn (tai nạn)
+  '困难': ['kùn', 'nan'],
+  '很难': ['hěn', 'nán'],
+  '难过': ['nán', 'guò'],
+  '难受': ['nán', 'shòu'],
+  '灾难': ['zāi', 'nàn'],
+  '难民': ['nàn', 'mín'],
+  '遇难': ['yù', 'nàn'],
+
+  // 待: dài (đối đãi, chờ) vs dāi (ở lại)
+  '等待': ['děng', 'dài'],
+  '招待': ['zhāo', 'dài'],
+  '对待': ['duì', 'dài'],
+  '待遇': ['dài', 'yù'],
+  '待会儿': ['dāi', 'huìr'],
+  '待在家里': ['dāi', 'zài', 'jiā', 'lǐ']
 };
 
 // =========================================================================
@@ -534,7 +633,10 @@ Object.keys(HETERONYM_COMPOUND_RULES).forEach(word => {
   '只要', '以便', '为了', '从而', '进而', '即使', '不管', '无论', '与其', '不如', 
   '一边', '一起', '一直', '已经', '正在', '将要', '曾经', '马上', '立刻', '渐渐',
   '人工智能', '移动支付', '共享单车', '电子商务', '社交媒体', '气候变化', '绿色发展', 
-  '全生命周期', '可持续发展', '道法自然', '形而上学', '知足不辱', '和谐共生'
+  '全生命周期', '可持续发展', '道法自然', '形而上学', '知足不辱', '和谐共生',
+  '脑机接口', '神经调控', '颠覆性', '临床医疗', '本体论', '意识形态', '哲学反思',
+  '现代', '技术', '速度', '跨越', '关于', '人类', '主体', '意识', '哲学', '反思',
+  '传统', '文化', '保护', '环境', '经济', '社会', '发展', '生活', '工作', '学习'
 ].forEach(w => SEGMENTATION_SET.add(w));
 
 // =========================================================================
@@ -722,6 +824,19 @@ export function segmentSentenceWithPinyin(sentence, charPinyinArray) {
     // Tra cứu dữ liệu giàu (Enrichment)
     const localMeta = VOCAB_LOOKUP_MAP.get(wordText);
     const decomp = getHanziDecomposition(wordText[0]);
+    const posInfo = tagTokenPos(wordText, localMeta);
+
+    // Xác định cấp HSK mặc định nếu không có trong từ điển cơ bản
+    let defaultLevel = 'HSK 1';
+    if (matchLen >= 4) {
+      defaultLevel = 'HSK 6';
+    } else if (matchLen === 3) {
+      defaultLevel = 'HSK 5';
+    } else if (matchLen === 2) {
+      defaultLevel = 'HSK 4';
+    } else if (!COMMON_CHAR_PINYIN_MAP[wordText]) {
+      defaultLevel = 'HSK 3';
+    }
 
     tokens.push({
       raw: wordText,
@@ -734,8 +849,11 @@ export function segmentSentenceWithPinyin(sentence, charPinyinArray) {
       hanviet: localMeta?.hanviet || tokenHanviets.join(' ').trim(),
       meaningVi: localMeta?.meaning || (matchLen === 1 ? COMMON_CHAR_PINYIN_MAP[wordText]?.meaning || 'Đang cập nhật' : 'Từ ghép tiếng Trung'),
       meaningEn: localMeta?.en || '',
-      pos: localMeta?.pos || (matchLen === 1 ? 'Ký tự đơn' : 'Từ ghép'),
-      level: localMeta?.level || (matchLen === 1 ? 'HSK 1' : 'HSK 2'),
+      pos: posInfo.label,
+      posCode: posInfo.code,
+      posLabel: posInfo.label,
+      posColor: posInfo.color,
+      level: localMeta?.level || defaultLevel,
       traditional: localMeta?.traditional || wordText,
       decomposition: decomp,
       mnemonic: localMeta?.mnemonic || decomp?.mnemonic || '',
@@ -751,7 +869,401 @@ export function segmentSentenceWithPinyin(sentence, charPinyinArray) {
 }
 
 // =========================================================================
-// 6. PHÂN TÍCH TOÀN BỘ ĐOẠN VĂN (FULL TEXT ANALYZER)
+// 6. TỪ LOẠI (PART-OF-SPEECH) & NHẬN DIỆN CẤU TRÚC NGỮ PHÁP (GRAMMAR PATTERNS)
+// =========================================================================
+
+export const CHINESE_POS_MAP = {
+  n: { label: 'Danh từ', color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300' },
+  v: { label: 'Động từ', color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300' },
+  adj: { label: 'Tính từ', color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300' },
+  adv: { label: 'Phó từ', color: 'text-purple-600 bg-purple-50 dark:bg-purple-950/40 dark:text-purple-300' },
+  pron: { label: 'Đại từ', color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-300' },
+  prep: { label: 'Giới từ', color: 'text-sky-600 bg-sky-50 dark:bg-sky-950/40 dark:text-sky-300' },
+  conj: { label: 'Liên từ', color: 'text-pink-600 bg-pink-50 dark:bg-pink-950/40 dark:text-pink-300' },
+  m: { label: 'Lượng từ', color: 'text-teal-600 bg-teal-50 dark:bg-teal-950/40 dark:text-teal-300' },
+  num: { label: 'Số từ', color: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-950/40 dark:text-cyan-300' },
+  part: { label: 'Trợ từ', color: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-300' },
+  idiom: { label: 'Thành ngữ', color: 'text-orange-600 bg-orange-50 dark:bg-orange-950/40 dark:text-orange-300' },
+  other: { label: 'Từ vựng', color: 'text-gray-600 bg-gray-50 dark:bg-gray-800 dark:text-gray-300' }
+};
+
+const PRONOUNS = new Set([
+  '我', '你', '您', '他', '她', '它', '我们', '你们', '他们', '她们', '它们',
+  '自己', '大家', '谁', '什么', '哪', '哪儿', '哪里', '这', '这儿', '这里',
+  '那', '那儿', '那里', '怎么', '怎样', '为什么', '各自', '某人', '彼此'
+]);
+
+const CONJUNCTIONS = new Set([
+  '和', '跟', '与', '同', '及', '以及', '或者', '还是', '但', '但是', '可是',
+  '不过', '虽然', '尽管', '因为', '所以', '因此', '如果', '要是', '只要', '只有',
+  '不仅', '不但', '而且', '并且', '接着', '然后', '由于', '哪怕', '既然'
+]);
+
+const PREPOSITIONS = new Set([
+  '在', '从', '往', '向', '到', '对', '对于', '关于', '给', '比', '被', '叫',
+  '让', '把', '替', '为', '为了', '按照', '根据', '沿着', '自从', '通过', '随着'
+]);
+
+const PARTICLES = new Set([
+  '的', '得', '地', '了', '着', '过', '吗', '呢', '吧', '啊', '呀', '罢', '嘛', '啦'
+]);
+
+const ADVERBS = new Set([
+  '不', '没', '没有', '很', '非常', '最', '太', '真', '更', '越', '都', '也',
+  '还', '再', '又', '就', '刚', '刚才', '正在', '正', '已经', '曾经', '马上',
+  '立刻', '常常', '经常', '一直', '总是', '互相', '特别', '极其', '倒', '却',
+  '难道', '究竟', '几乎', '大概', '也许', '稍微', '挺', '格外', '分外', '猛然'
+]);
+
+const MEASURE_WORDS = new Set([
+  '个', '本', '支', '张', '件', '条', '把', '只', '头', '匹', '瓶', '杯', '碗',
+  '斤', '公斤', '米', '块', '双', '套', '辆', '架', '栋', '扇', '家', '次', '遍',
+  '趟', '顿', '番', '阵', '节', '封', '篇', '群', '股', '所', '口', '名', '份'
+]);
+
+/**
+ * Gán nhãn từ loại (Part-of-Speech Tagging) cho từ vựng tiếng Trung
+ * @param {string} wordText
+ * @param {Object} [localMeta]
+ */
+export function tagTokenPos(wordText, localMeta) {
+  if (PRONOUNS.has(wordText)) return { code: 'pron', label: 'Đại từ', color: CHINESE_POS_MAP.pron.color };
+  if (CONJUNCTIONS.has(wordText)) return { code: 'conj', label: 'Liên từ', color: CHINESE_POS_MAP.conj.color };
+  if (PREPOSITIONS.has(wordText)) return { code: 'prep', label: 'Giới từ', color: CHINESE_POS_MAP.prep.color };
+  if (PARTICLES.has(wordText)) return { code: 'part', label: 'Trợ từ', color: CHINESE_POS_MAP.part.color };
+  if (ADVERBS.has(wordText)) return { code: 'adv', label: 'Phó từ', color: CHINESE_POS_MAP.adv.color };
+  if (MEASURE_WORDS.has(wordText)) return { code: 'm', label: 'Lượng từ', color: CHINESE_POS_MAP.m.color };
+  if (/^[零一二两三四五六七八九十百千万亿0-9]+$/.test(wordText)) return { code: 'num', label: 'Số từ', color: CHINESE_POS_MAP.num.color };
+  if (wordText.length === 4 && localMeta?.pos?.toLowerCase().includes('thành ngữ')) {
+    return { code: 'idiom', label: 'Thành ngữ', color: CHINESE_POS_MAP.idiom.color };
+  }
+
+  if (localMeta?.pos) {
+    const rawPos = localMeta.pos.toLowerCase();
+    if (rawPos.includes('danh') || rawPos === 'n' || rawPos === 'noun') return { code: 'n', label: 'Danh từ', color: CHINESE_POS_MAP.n.color };
+    if (rawPos.includes('động') || rawPos === 'v' || rawPos === 'verb') return { code: 'v', label: 'Động từ', color: CHINESE_POS_MAP.v.color };
+    if (rawPos.includes('tính') || rawPos === 'adj') return { code: 'adj', label: 'Tính từ', color: CHINESE_POS_MAP.adj.color };
+    if (rawPos.includes('phó') || rawPos === 'adv') return { code: 'adv', label: 'Phó từ', color: CHINESE_POS_MAP.adv.color };
+    if (rawPos.includes('đại') || rawPos === 'pron') return { code: 'pron', label: 'Đại từ', color: CHINESE_POS_MAP.pron.color };
+    if (rawPos.includes('giới') || rawPos === 'prep') return { code: 'prep', label: 'Giới từ', color: CHINESE_POS_MAP.prep.color };
+    if (rawPos.includes('liên') || rawPos === 'conj') return { code: 'conj', label: 'Liên từ', color: CHINESE_POS_MAP.conj.color };
+    if (rawPos.includes('lượng') || rawPos === 'm') return { code: 'm', label: 'Lượng từ', color: CHINESE_POS_MAP.m.color };
+    if (rawPos.includes('thành ngữ') || rawPos === 'idiom') return { code: 'idiom', label: 'Thành ngữ', color: CHINESE_POS_MAP.idiom.color };
+    return { code: 'other', label: localMeta.pos, color: CHINESE_POS_MAP.other.color };
+  }
+
+  return { code: 'other', label: wordText.length === 1 ? 'Ký tự đơn' : 'Từ ghép', color: CHINESE_POS_MAP.other.color };
+}
+
+export const GRAMMAR_PATTERNS_CATALOG = [
+  {
+    id: 'ba_structure',
+    name: 'Câu chữ 把 (Câu xử trí)',
+    pattern: /把[^，。！？\n]+[动写做放买搬开关洗扫吃喝打拿扔送到给借修带去回][^，。！？\n]*/g,
+    explanation: 'Dùng để nhấn mạnh hành động tác động lên tân ngữ và kết quả tạo ra: S + 把 + O + V + Thành phần khác.',
+    level: 'HSK 3'
+  },
+  {
+    id: 'bei_structure',
+    name: 'Câu bị động chữ 被',
+    pattern: /[被叫让][^，。！？\n]+[打破偷吃骑打丢碎骂骗走开洗抢][^，。！？\n]*/g,
+    explanation: 'Diễn tả chủ ngữ chịu tác động mang tính khách quan hoặc kết quả bất lợi: S + 被 (tác nhân) + V + Bổ ngữ.',
+    level: 'HSK 3'
+  },
+  {
+    id: 'bi_comparison',
+    name: 'Câu so sánh chữ 比',
+    pattern: /[^，。！？\n]+比[^，。！？\n]+(快|慢|大|小|多|少|高|矮|贵|便宜|好|漂亮|严重|聪明|远|近|暖和|冷)[^，。！？\n]*/g,
+    explanation: 'So sánh mức độ sai khác giữa hai đối tượng A và B: A + 比 + B + Hình dung từ (+ Bổ ngữ mức độ).',
+    level: 'HSK 2'
+  },
+  {
+    id: 'bujin_erqie',
+    name: 'Cấu trúc tăng tiến (不仅...而且...)',
+    pattern: /(不仅|不但)[^。！？\n]+?(而且|还|也)[^。！？\n]*/g,
+    explanation: 'Biểu thị quan hệ tăng tiến về ngữ nghĩa: Không những... mà còn...',
+    level: 'HSK 3'
+  },
+  {
+    id: 'zhiyao_jiu',
+    name: 'Cấu trúc điều kiện đầy đủ (只要...就...)',
+    pattern: /只要[^。！？\n]+?就[^。！？\n]*/g,
+    explanation: 'Chỉ cần thỏa mãn điều kiện phía trước thì phía sau tất yếu sẽ xảy ra: Chỉ cần... thì...',
+    level: 'HSK 3'
+  },
+  {
+    id: 'zhiyou_cai',
+    name: 'Cấu trúc điều kiện duy nhất (只有...才...)',
+    pattern: /只有[^。！？\n]+?才[^。！？\n]*/g,
+    explanation: 'Nhấn mạnh điều kiện duy nhất cần có để đạt được kết quả: Chỉ có... mới...',
+    level: 'HSK 4'
+  },
+  {
+    id: 'suiran_danshi',
+    name: 'Cấu trúc chuyển ngoặt nhượng bộ (虽然...但是...)',
+    pattern: /(虽然|尽管)[^。！？\n]+?(但是|可是|但|却)[^。！？\n]*/g,
+    explanation: 'Biểu thị quan hệ nhượng bộ và đối lập ý nghĩa: Tuy rằng... nhưng mà...',
+    level: 'HSK 3'
+  },
+  {
+    id: 'yinwei_suoyi',
+    name: 'Cấu trúc nguyên nhân - hệ quả (因为...所以...)',
+    pattern: /因为[^。！？\n]+?所以[^。！？\n]*/g,
+    explanation: 'Chỉ rõ nguyên nhân dẫn tới kết quả tương ứng: Bởi vì... cho nên...',
+    level: 'HSK 2'
+  },
+  {
+    id: 'shi_de',
+    name: 'Cấu trúc nhấn mạnh 是...的',
+    pattern: /是[^，。！？\n]+的/g,
+    explanation: 'Nhấn mạnh thời gian, địa điểm, phương thức hoặc đối tượng của một hành động đã diễn ra.',
+    level: 'HSK 2'
+  },
+  {
+    id: 'yibian_yibian',
+    name: 'Cấu trúc hành động song hành (一边...一边...)',
+    pattern: /一边[^，。！？\n]+一边[^，。！？\n]+/g,
+    explanation: 'Diễn tả hai động tác hoặc trạng thái cùng diễn ra song song: Vừa... vừa...',
+    level: 'HSK 2'
+  },
+  {
+    id: 'yue_lai_yue',
+    name: 'Cấu trúc biến đổi mức độ (越来越... / 越...越...)',
+    pattern: /越(来)?越[^，。！？\n]+|越[^，。！？\n]+越[^，。！？\n]+/g,
+    explanation: 'Diễn tả sự tăng tiến mức độ theo thời gian hoặc theo điều kiện: Càng ngày càng... / Càng... càng...',
+    level: 'HSK 2'
+  },
+  {
+    id: 'lian_dou',
+    name: 'Cấu trúc nhấn mạnh cực độ (连...都/也...)',
+    pattern: /连[^。！？\n]+?(都|也)[^。！？\n]*/g,
+    explanation: 'Nhấn mạnh một sự việc cực đoan hoặc hiển nhiên nhất để làm nổi bật mệnh đề sau: Ngay cả... cũng...',
+    level: 'HSK 4'
+  }
+];
+
+/**
+ * Trích xuất các mẫu cấu trúc ngữ pháp tiêu biểu trong văn bản
+ * @param {string} text
+ * @returns {Array<Object>}
+ */
+export function extractGrammarPatterns(text = '') {
+  if (!text || typeof text !== 'string') return [];
+  const results = [];
+  const seenPatterns = new Set();
+
+  GRAMMAR_PATTERNS_CATALOG.forEach(def => {
+    const regex = new RegExp(def.pattern.source, def.pattern.flags);
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const matchedSpan = match[0].trim();
+      const key = `${def.id}-${matchedSpan}`;
+      if (!seenPatterns.has(key) && matchedSpan.length >= 3) {
+        seenPatterns.add(key);
+        results.push({
+          id: def.id,
+          name: def.name,
+          matchedText: matchedSpan,
+          explanation: def.explanation,
+          level: def.level,
+          startIndex: match.index,
+          endIndex: match.index + matchedSpan.length
+        });
+      }
+    }
+  });
+
+  return results.slice(0, 10);
+}
+
+/**
+ * Tính toán độ khó văn bản (Readability Score) và cấp độ HSK khuyến nghị
+ * @param {string} text
+ * @param {Array<Object>} allTokens
+ * @param {Object} hskStats
+ */
+export function calculateReadabilityScore(text = '', allTokens = [], hskStats = {}) {
+  if (!text || typeof text !== 'string' || allTokens.length === 0) {
+    return {
+      hskScore: 1.0,
+      recommendedLevel: 'HSK 1 - Sơ cấp',
+      estimatedReadingTimeMinutes: 1,
+      typeTokenRatio: 0,
+      avgSentenceLength: 0,
+      advancedWordRatio: 0
+    };
+  }
+
+  const chineseTokens = allTokens.filter(t => t.isChinese);
+  const totalTokens = chineseTokens.length;
+  if (totalTokens === 0) {
+    return {
+      hskScore: 1.0,
+      recommendedLevel: 'HSK 1 - Sơ cấp',
+      estimatedReadingTimeMinutes: 1,
+      typeTokenRatio: 0,
+      avgSentenceLength: 0,
+      advancedWordRatio: 0
+    };
+  }
+
+  const uniqueWords = new Set(chineseTokens.map(t => t.raw));
+  const typeTokenRatio = Math.round((uniqueWords.size / totalTokens) * 100) / 100;
+
+  const sentences = text.split(/[。！？!?\n]+/).filter(s => s.trim().length > 0);
+  const totalChars = chineseTokens.reduce((sum, t) => sum + t.raw.length, 0);
+  const avgSentenceLength = sentences.length > 0 ? Math.round(totalChars / sentences.length) : totalChars;
+
+  let weightedSum = 0;
+  let weightedCount = 0;
+  let advancedWords = 0;
+
+  const LEVEL_WEIGHTS = {
+    'HSK 1': 1.0,
+    'HSK 2': 2.0,
+    'HSK 3': 3.0,
+    'HSK 4': 4.0,
+    'HSK 5': 5.0,
+    'HSK 6': 6.0,
+    'HSK 5-6': 5.5,
+    'HSK 3-4': 3.5,
+    'HSK 1-2': 1.5
+  };
+
+  chineseTokens.forEach(t => {
+    let w = LEVEL_WEIGHTS[t.level];
+    if (!w) {
+      if (t.level?.includes('6')) w = 6.0;
+      else if (t.level?.includes('5')) w = 5.0;
+      else if (t.level?.includes('4')) w = 4.0;
+      else if (t.level?.includes('3')) w = 3.0;
+      else if (t.level?.includes('2')) w = 2.0;
+      else if (t.raw.length >= 2) w = 4.5;
+      else w = 1.0;
+    }
+    weightedSum += w;
+    weightedCount += 1;
+    if (w >= 3.5) advancedWords += 1;
+  });
+
+  const rawScore = weightedCount > 0 ? weightedSum / weightedCount : 1.0;
+  const sentenceComplexityBonus = avgSentenceLength > 25 ? 0.3 : 0;
+  const advancedRatio = totalTokens > 0 ? advancedWords / totalTokens : 0;
+  const advancedBonus = advancedRatio * 1.2;
+
+  const hskScore = Math.min(6.0, Math.max(1.0, Math.round((rawScore + sentenceComplexityBonus + advancedBonus) * 10) / 10));
+
+  let recommendedLevel = 'HSK 1 - Sơ cấp';
+  if (hskScore >= 5.2) recommendedLevel = 'HSK 6 - Cao cấp chuyên sâu';
+  else if (hskScore >= 4.2) recommendedLevel = 'HSK 5 - Cao cấp ứng dụng';
+  else if (hskScore >= 3.2) recommendedLevel = 'HSK 4 - Trung cấp nâng cao';
+  else if (hskScore >= 2.2) recommendedLevel = 'HSK 3 - Trung cấp';
+  else if (hskScore >= 1.5) recommendedLevel = 'HSK 2 - Sơ cấp nâng cao';
+
+  const estimatedReadingTimeMinutes = Math.max(1, Math.ceil(totalChars / 150));
+
+  return {
+    hskScore,
+    recommendedLevel,
+    estimatedReadingTimeMinutes,
+    typeTokenRatio,
+    avgSentenceLength,
+    advancedWordRatio: Math.round(advancedRatio * 100)
+  };
+}
+
+const STOP_WORDS = new Set([
+  '的', '了', '在', '是', '我', '有', '和', '就', '不', '人', '都', '一', '一个',
+  '上', '也', '很', '到', '说', '要', '去', '你', '会', '着', '没有', '看', '好',
+  '自己', '这', '那', '我们', '他们', '她们', '它', '把', '被', '让', '给', '从',
+  '地', '得', '过', '吗', '呢', '吧', '啊', '呀', '但', '但是', '因为', '所以'
+]);
+
+/**
+ * Trích xuất từ khóa chủ đạo và thành ngữ 4 chữ trong bài
+ * @param {string} text
+ * @param {Array<Object>} allTokens
+ */
+export function extractKeyTermsAndChengyu(text = '', allTokens = []) {
+  const chineseTokens = allTokens.filter(t => t.isChinese);
+  const freqMap = new Map();
+  const chengyuList = [];
+  const seenChengyu = new Set();
+
+  chineseTokens.forEach(t => {
+    if (t.raw.length === 4 && (t.pos === 'Thành ngữ' || t.level === 'HSK 5' || t.level === 'HSK 6' || /[\u4e00-\u9fa5]{4}/.test(t.raw))) {
+      if (t.meaningVi && t.meaningVi !== 'Từ ghép tiếng Trung' && !seenChengyu.has(t.raw)) {
+        seenChengyu.add(t.raw);
+        chengyuList.push({
+          hanzi: t.raw,
+          pinyin: t.pinyin,
+          meaning: t.meaningVi,
+          level: t.level
+        });
+      }
+    }
+
+    if (t.raw.length >= 2 && !STOP_WORDS.has(t.raw)) {
+      const current = freqMap.get(t.raw) || { count: 0, token: t };
+      current.count += 1;
+      freqMap.set(t.raw, current);
+    }
+  });
+
+  const sortedKeywords = Array.from(freqMap.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8)
+    .map(item => ({
+      hanzi: item.token.raw,
+      pinyin: item.token.pinyin,
+      meaning: item.token.meaningVi,
+      level: item.token.level,
+      pos: item.token.posLabel || item.token.pos,
+      frequency: item.count
+    }));
+
+  return {
+    topKeywords: sortedKeywords,
+    chengyuList: chengyuList.slice(0, 5)
+  };
+}
+
+/**
+ * Trích xuất tóm tắt ý chính của bài đọc (Extractive Summarization)
+ * @param {string} text
+ * @param {Array<Object>} keyTerms
+ */
+export function generateExtractiveSummary(text = '', keyTerms = []) {
+  if (!text || typeof text !== 'string') return '';
+  const sentences = text
+    .split(/(?<=[。！？!?\n])/)
+    .map(s => s.trim())
+    .filter(s => s.length >= 8 && /[\u4e00-\u9fa5]/.test(s));
+
+  if (sentences.length <= 2) return sentences.join(' ');
+
+  const keywordSet = new Set(keyTerms.map(k => k.hanzi));
+
+  const scoredSentences = sentences.map((sentence, index) => {
+    let score = 0;
+    if (index === 0) score += 3;
+    keywordSet.forEach(kw => {
+      if (sentence.includes(kw)) score += 2;
+    });
+    if (sentence.length >= 15 && sentence.length <= 50) score += 1;
+    return { sentence, score, index };
+  });
+
+  const top2 = scoredSentences
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2)
+    .sort((a, b) => a.index - b.index);
+
+  return top2.map(item => item.sentence).join(' ');
+}
+
+// =========================================================================
+// 7. PHÂN TÍCH TOÀN BỘ ĐOẠN VĂN (FULL TEXT ANALYZER)
 // =========================================================================
 
 /**
@@ -763,7 +1275,20 @@ export function analyzeChineseText(text = '') {
   if (!text || typeof text !== 'string') {
     return {
       paragraphs: [],
-      stats: { totalChars: 0, chineseChars: 0, wordCount: 0, hskStats: {} }
+      stats: { 
+        totalChars: 0, 
+        chineseChars: 0, 
+        wordCount: 0, 
+        hskStats: {},
+        readability: { hskScore: 1.0, recommendedLevel: 'HSK 1 - Sơ cấp', estimatedReadingTimeMinutes: 1, typeTokenRatio: 0, avgSentenceLength: 0, advancedWordRatio: 0 },
+        grammarPatterns: [],
+        keyTerms: { topKeywords: [], chengyuList: [] },
+        summary: ''
+      },
+      readability: { hskScore: 1.0, recommendedLevel: 'HSK 1 - Sơ cấp', estimatedReadingTimeMinutes: 1, typeTokenRatio: 0, avgSentenceLength: 0, advancedWordRatio: 0 },
+      grammarPatterns: [],
+      keyTerms: { topKeywords: [], chengyuList: [] },
+      summary: ''
     };
   }
 
@@ -809,13 +1334,27 @@ export function analyzeChineseText(text = '') {
     });
   });
 
+  const allTokens = paragraphs.flatMap(p => p.tokens);
+  const grammarPatterns = extractGrammarPatterns(text);
+  const readability = calculateReadabilityScore(text, allTokens, hskStats);
+  const keyTermsResult = extractKeyTermsAndChengyu(text, allTokens);
+  const summary = generateExtractiveSummary(text, keyTermsResult.topKeywords);
+
   return {
     paragraphs,
     stats: {
       totalChars,
       chineseChars,
       wordCount: totalWords,
-      hskStats
-    }
+      hskStats,
+      readability,
+      grammarPatterns,
+      keyTerms: keyTermsResult,
+      summary
+    },
+    readability,
+    grammarPatterns,
+    keyTerms: keyTermsResult,
+    summary
   };
 }

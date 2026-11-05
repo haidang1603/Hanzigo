@@ -30,6 +30,8 @@ import {
   fetchLessonsFromDb
 } from '../src/services/learningPathService.js';
 
+import { getStreakStatus, recordStudyActivity } from '../src/utils/gamification.js';
+
 import { 
   calculateNextSrsReview, 
   SRS_QUALITY, 
@@ -304,4 +306,19 @@ test('PHASE 2 - 10: fetchLessonsFromDb falls back seamlessly to bundle when data
   assert.ok(Array.isArray(lessons));
   assert.equal(lessons.length, 120, 'Must fallback to 120 authored lessons without throwing error');
   assert.equal(lessons[0].id, 'l-101');
+});
+
+test('PHASE 2 - 11: Cross-Account Streak Isolation: Account B never inherits Account A streak', () => {
+  localStorage.clear();
+  const userA = { id: 'user-a-1111', uid: 'user-a-1111', email: 'userA@example.com', streak: 10 };
+  const userB = { id: 'user-b-2222', uid: 'user-b-2222', email: 'userB@example.com', streak: 0 };
+
+  // User A studies and reaches streak
+  recordStudyActivity(userA);
+  const streakA = getStreakStatus(userA);
+  assert.ok(streakA.streak >= 1);
+
+  // User B (different account with 0 streak) checks status
+  const streakB = getStreakStatus(userB);
+  assert.equal(streakB.streak, 0, 'User B must strictly have 0 streak, not inheriting User A');
 });

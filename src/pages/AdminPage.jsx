@@ -26,7 +26,12 @@ import {
   Crown,
   Activity,
   Check,
-  Cpu
+  Cpu,
+  BarChart3,
+  Filter,
+  Sparkles,
+  AlertTriangle,
+  Volume2
 } from 'lucide-react';
 import AiMonitoringDashboard from '../components/admin/AiMonitoringDashboard';
 import { 
@@ -54,9 +59,9 @@ import {
   deleteMaterialFromDb,
   updateUserProfile
 } from '../supabase/services';
-import { playClickSound, playSuccessSound } from '../utils/audio';
+import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
 
-// Helper to identify and purge fake/demo accounts
+// Helper to filter demo/mock dummy accounts
 function isDemoUser(u) {
   if (!u) return true;
   const id = String(u.id || '');
@@ -78,18 +83,18 @@ function isDemoUser(u) {
 
 function checkIsAdmin(user) {
   if (!user) return false;
-  return user.role === 'admin' && user.status !== 'blocked';
+  return (user.role === 'admin' || user.isAdmin === true) && user.status !== 'blocked';
 }
 
 export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
-  // Current active admin sub-tab: 'users' | 'materials' | 'vocab' | 'lessons' | 'backup'
-  const [adminTab, setAdminTab] = useState('users');
+  // Current active admin sub-tab: 'overview' | 'users' | 'materials' | 'vocab' | 'lessons' | 'ai_metrics' | 'backup'
+  const [adminTab, setAdminTab] = useState('overview');
 
-  // Strict Admin verification
+  // Verify Admin role
   const isAdmin = checkIsAdmin(user);
   const currentRole = isAdmin ? 'admin' : (user?.role || 'student');
 
-  // 1. Users Management State - Only real users (Current user & real DB profiles)
+  // 1. Users Directory State
   const [usersList, setUsersList] = useState(() => {
     try {
       const saved = localStorage.getItem('hanzigo_admin_users_directory');
@@ -106,9 +111,9 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   });
 
   const [userSearch, setUserSearch] = useState('');
-  const [userRoleFilter, setUserRoleFilter] = useState('all'); // 'all' | 'admin' | 'moderator' | 'student'
-  const [userStatusFilter, setUserStatusFilter] = useState('all'); // 'all' | 'active' | 'blocked'
-  const [userSortBy, setUserSortBy] = useState('xp'); // 'xp' | 'streak' | 'date' | 'name'
+  const [userRoleFilter, setUserRoleFilter] = useState('all');
+  const [userStatusFilter, setUserStatusFilter] = useState('all');
+  const [userSortBy, setUserSortBy] = useState('xp');
 
   // User Modals State
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
@@ -120,13 +125,13 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     role: 'student',
     level: 'HSK 1 - Sơ cấp',
     status: 'active',
-    xp: 50,
-    streak: 1
+    xp: 0,
+    streak: 0
   });
 
-  // Admin Name Editing State
+  // Admin Profile Name Editing State
   const [isEditingAdminName, setIsEditingAdminName] = useState(false);
-  const [adminNameInput, setAdminNameInput] = useState(user?.name || 'Lê Hải Đăng');
+  const [adminNameInput, setAdminNameInput] = useState(user?.name || 'Quản trị viên');
   const [isSavingAdminName, setIsSavingAdminName] = useState(false);
 
   useEffect(() => {
@@ -135,12 +140,12 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     }
   }, [user?.name, isEditingAdminName]);
 
-  // 2. Materials Management State
+  // 2. Materials State
   const [materials, setMaterials] = useState(() => getStoredMaterials());
   const [matSearch, setMatSearch] = useState('');
   const [matCategoryFilter, setMatCategoryFilter] = useState('Tất cả');
   const [matLevelFilter, setMatLevelFilter] = useState('Tất cả');
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isMatFormOpen, setIsMatFormOpen] = useState(false);
   const [editingMatId, setEditingMatId] = useState(null);
   const [matForm, setMatForm] = useState({
     title: '',
@@ -166,6 +171,8 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
 
   // 3. Custom Vocab State
   const [customVocab, setCustomVocab] = useState(() => getStoredCustomVocab());
+  const [vocabSearch, setVocabSearch] = useState('');
+  const [vocabHskFilter, setVocabHskFilter] = useState('all');
   const [vocabFormOpen, setVocabFormOpen] = useState(false);
   const [vocabForm, setVocabForm] = useState({
     hanzi: '',
@@ -192,10 +199,10 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     grammarPoints: ''
   });
 
-  // Notifications
+  // Toast Notification
   const [toastMsg, setToastMsg] = useState(null);
 
-  // Sync users with Supabase on mount
+  // Sync users from Supabase on mount
   useEffect(() => {
     async function loadCloudProfiles() {
       try {
@@ -203,9 +210,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
         if (Array.isArray(cloudProfiles) && cloudProfiles.length > 0) {
           setUsersList(prev => {
             const combinedMap = new Map();
-            // Start with current local users (clean demo users)
             prev.filter(u => !isDemoUser(u)).forEach(u => combinedMap.set(u.email || u.id, u));
-            // Merge cloud profiles (clean demo users)
             cloudProfiles.filter(cp => !isDemoUser(cp)).forEach(cp => {
               const key = cp.email || cp.id;
               const existing = combinedMap.get(key) || {};
@@ -257,7 +262,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
         } else {
           const newEntry = {
             id: user.uid || user.id || `user-${Date.now()}`,
-            name: user.name || 'Học viên HanziGo',
+            name: user.name || 'Quản trị viên HanziGo',
             email: user.email,
             role: currentRole,
             level: user.level || 'HSK 1 - Sơ cấp',
@@ -277,7 +282,6 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     }
   }, [user, currentRole]);
 
-  // Persist usersList changes
   const saveUsersList = (newList) => {
     setUsersList(newList);
     try {
@@ -287,11 +291,12 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
 
   const showToast = (message, type = 'success') => {
     setToastMsg({ message, type });
-    playSuccessSound();
+    if (type === 'success') playSuccessSound();
+    else playErrorSound();
     setTimeout(() => setToastMsg(null), 3500);
   };
 
-  // Save edited Admin Name to local state, localStorage & Supabase
+  // Save Admin Name
   const handleSaveAdminName = async (e) => {
     if (e) e.preventDefault();
     const newName = adminNameInput.trim();
@@ -300,91 +305,52 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       return;
     }
     setIsSavingAdminName(true);
+    const updatedUser = { ...(user || {}), name: newName };
 
-    const updatedUser = {
-      ...(user || {}),
-      name: newName
-    };
-
-    // 1. Update localStorage
     try {
       localStorage.setItem('hanzigo_user', JSON.stringify(updatedUser));
-    } catch (err) {
-      console.warn('LocalStorage save error:', err);
-    }
+    } catch {}
 
-    // 2. Sync to Supabase profiles
     const uid = user?.uid || user?.id;
     if (uid) {
       try {
         await updateUserProfile(uid, { name: newName });
-      } catch (err) {
-        console.warn('Supabase profile name sync warning:', err);
-      }
+      } catch {}
     }
 
-    // 3. Update global user in App.jsx
-    if (onUpdateUser) {
-      onUpdateUser(updatedUser);
-    }
+    if (onUpdateUser) onUpdateUser(updatedUser);
 
-    // 4. Update in local directory if present
     setUsersList(prev => prev.map(u => 
-      (u.id === uid || u.email === user?.email || (user?.email && u.email?.toLowerCase() === user.email.toLowerCase()))
-        ? { ...u, name: newName }
-        : u
+      (u.id === uid || u.email === user?.email) ? { ...u, name: newName } : u
     ));
 
     setIsSavingAdminName(false);
     setIsEditingAdminName(false);
-    showToast(`Đã đổi tên quản trị viên thành: "${newName}" thành công!`);
+    showToast(`Đã đổi tên quản trị viên thành: "${newName}"!`);
   };
 
-  // -------------------------------------------------------------
-  // USER MANAGEMENT ACTIONS
-  // -------------------------------------------------------------
+  // User Actions
   const handleChangeUserRole = async (targetUser, newRole) => {
-    if (currentRole !== 'admin') {
-      alert('Chỉ Quản trị viên (Admin) mới có quyền thay đổi vai trò người dùng!');
-      return;
-    }
     playClickSound();
     const updated = usersList.map(u => u.id === targetUser.id ? { ...u, role: newRole } : u);
     saveUsersList(updated);
-    
-    // Sync to Supabase
     await updateUserRoleAndStatusInDb(targetUser.id, { role: newRole });
-
-    // Update active user state if modifying self
     if (user && (user.id === targetUser.id || user.email === targetUser.email)) {
-      if (onUpdateUser) {
-        onUpdateUser({ ...user, role: newRole });
-      }
+      if (onUpdateUser) onUpdateUser({ ...user, role: newRole });
     }
     showToast(`Đã đổi quyền cho ${targetUser.name} thành ${newRole.toUpperCase()}!`);
   };
 
   const handleToggleUserStatus = async (targetUser) => {
-    if (currentRole !== 'admin') {
-      alert('Chỉ Quản trị viên (Admin) mới có quyền khóa/mở khóa tài khoản!');
-      return;
-    }
     playClickSound();
     const nextStatus = targetUser.status === 'blocked' ? 'active' : 'blocked';
     const updated = usersList.map(u => u.id === targetUser.id ? { ...u, status: nextStatus } : u);
     saveUsersList(updated);
-
-    // Sync to Supabase
     await updateUserRoleAndStatusInDb(targetUser.id, { status: nextStatus });
-
     showToast(`Đã ${nextStatus === 'blocked' ? 'khóa' : 'mở khóa'} tài khoản: ${targetUser.name}!`);
   };
 
   const handleDeleteUser = async (targetUser) => {
-    if (currentRole !== 'admin') {
-      alert('Chỉ Quản trị viên (Admin) mới có quyền xóa người dùng!');
-      return;
-    }
     if (window.confirm(`Xác nhận xóa tài khoản "${targetUser.name}" (${targetUser.email}) khỏi hệ thống?`)) {
       playClickSound();
       const updated = usersList.filter(u => u.id !== targetUser.id);
@@ -397,7 +363,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     if (!newUserForm.name.trim() || !newUserForm.email.trim()) {
-      alert('Vui lòng nhập họ tên và email người dùng!');
+      alert('Vui lòng nhập họ tên và email!');
       return;
     }
     playClickSound();
@@ -407,8 +373,8 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       email: newUserForm.email.trim(),
       role: newUserForm.role,
       level: newUserForm.level,
-      xp: Number(newUserForm.xp) || 50,
-      streak: Number(newUserForm.streak) || 1,
+      xp: Number(newUserForm.xp) || 0,
+      streak: Number(newUserForm.streak) || 0,
       wordsLearned: 0,
       status: newUserForm.status,
       avatar: null,
@@ -424,16 +390,10 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       role: 'student',
       level: 'HSK 1 - Sơ cấp',
       status: 'active',
-      xp: 50,
-      streak: 1
+      xp: 0,
+      streak: 0
     });
     showToast(`Đã tạo tài khoản mới: ${created.name}!`);
-  };
-
-  const handleOpenEditUser = (u) => {
-    playClickSound();
-    setEditingUser(u);
-    setIsEditUserModalOpen(true);
   };
 
   const handleSaveEditUser = async (e) => {
@@ -451,13 +411,10 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       streak: editingUser.streak
     });
     setIsEditUserModalOpen(false);
-    setEditingUser(null);
-    showToast(`Cập nhật thông tin ${editingUser.name} thành công!`);
+    showToast(`Đã lưu thay đổi cho tài khoản ${editingUser.name}!`);
   };
 
-  // -------------------------------------------------------------
-  // MATERIAL ACTIONS
-  // -------------------------------------------------------------
+  // Materials Actions
   const handleOpenCreateMat = () => {
     playClickSound();
     setEditingMatId(null);
@@ -466,137 +423,106 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       category: 'Giáo trình chuẩn',
       level: 'HSK 1',
       format: 'PDF',
-      fileSize: '15 MB',
+      fileSize: '10 MB',
       author: 'HanziGo Biên soạn',
-      publisher: 'Đại học Ngôn ngữ Bắc Kinh (BLCU)',
+      publisher: 'BLCU Press / CTI',
       sourceUrl: '',
       skills: 'Từ vựng, Ngữ pháp',
       language: 'Song ngữ Trung - Việt',
       license: 'Bản quyền Giáo trình (Trích dẫn học thuật)',
       verificationStatus: 'verified_official',
       relatedLessonId: 'Module 1.1',
-      verificationNotes: 'Tài liệu chuẩn mực phục vụ đào tạo.',
+      verificationNotes: '',
       description: '',
       downloadUrl: '',
       tags: '',
       isFeatured: false,
       isHidden: false
     });
-    setIsFormOpen(true);
+    setIsMatFormOpen(true);
   };
 
   const handleOpenEditMat = (mat) => {
     playClickSound();
     setEditingMatId(mat.id);
     setMatForm({
-      title: mat.title,
-      category: mat.category,
-      level: mat.level,
-      format: mat.format,
-      fileSize: mat.fileSize || '10 MB',
-      author: mat.author || 'HanziGo Biên soạn',
-      publisher: mat.publisher || mat.author || 'HanziGo',
-      sourceUrl: mat.sourceUrl || mat.downloadUrl || '',
-      skills: Array.isArray(mat.skills) ? mat.skills.join(', ') : (mat.skills || 'Từ vựng, Ngữ pháp'),
-      language: mat.language || 'Song ngữ Trung - Việt',
-      license: mat.license || 'Trích dẫn học thuật',
-      verificationStatus: mat.verificationStatus || 'curated',
-      relatedLessonId: mat.relatedLessonId || '',
-      verificationNotes: mat.verificationNotes || '',
-      description: mat.description || '',
-      downloadUrl: mat.downloadUrl || '',
-      tags: Array.isArray(mat.tags) ? mat.tags.join(', ') : (mat.tags || ''),
-      isFeatured: Boolean(mat.isFeatured),
-      isHidden: Boolean(mat.isHidden)
+      ...mat,
+      tags: Array.isArray(mat.tags) ? mat.tags.join(', ') : (mat.tags || '')
     });
-    setIsFormOpen(true);
+    setIsMatFormOpen(true);
   };
 
   const handleSaveMaterial = async (e) => {
     e.preventDefault();
-    if (!matForm.title.trim() || (!matForm.downloadUrl.trim() && !matForm.sourceUrl.trim())) {
-      alert('Vui lòng điền tiêu đề tài liệu và đường dẫn tải / xem!');
+    if (!matForm.title.trim()) {
+      alert('Vui lòng nhập tiêu đề tài liệu!');
       return;
     }
+    playClickSound();
+    const tagsArray = typeof matForm.tags === 'string'
+      ? matForm.tags.split(',').map(t => t.trim()).filter(Boolean)
+      : matForm.tags;
 
-    const tagsArray = matForm.tags
-      ? matForm.tags.split(',').map((t) => t.trim()).filter(Boolean)
-      : [matForm.level, matForm.format];
-
-    const skillsArray = matForm.skills
-      ? matForm.skills.split(/[,，]/).map((s) => s.trim()).filter(Boolean)
-      : ['Từ vựng', 'Ngữ pháp'];
-
-    const payload = {
-      ...matForm,
-      publisher: matForm.publisher.trim() || matForm.author.trim(),
-      sourceUrl: matForm.sourceUrl.trim() || matForm.downloadUrl.trim(),
-      downloadUrl: matForm.downloadUrl.trim() || matForm.sourceUrl.trim(),
-      skills: skillsArray,
-      tags: tagsArray
-    };
+    const payload = { ...matForm, tags: tagsArray };
 
     if (editingMatId) {
       const updated = updateMaterial(editingMatId, payload);
       setMaterials(updated);
-      await updateMaterialInDb(editingMatId, payload);
-      showToast('Cập nhật tài liệu thành công!');
+      await updateMaterialInDb(editingMatId, payload).catch(() => {});
+      showToast(`Đã cập nhật tài liệu: ${payload.title}!`);
     } else {
       const updated = saveMaterial(payload);
       setMaterials(updated);
-      await addMaterialToDb(payload);
-      showToast('Thêm tài liệu mới vào hệ thống thành công!');
+      await addMaterialToDb(payload).catch(() => {});
+      showToast(`Đã thêm tài liệu mới: ${payload.title}!`);
     }
-
-    setIsFormOpen(false);
-    setEditingMatId(null);
+    setIsMatFormOpen(false);
   };
 
   const handleDeleteMaterial = async (id, title) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa tài liệu: "${title}"?`)) {
+    if (window.confirm(`Xác nhận xóa tài liệu "${title}" khỏi hệ thống?`)) {
       playClickSound();
       const updated = deleteMaterial(id);
       setMaterials(updated);
-      await deleteMaterialFromDb(id);
-      showToast('Đã xóa tài liệu khỏi hệ thống!');
+      await deleteMaterialFromDb(id).catch(() => {});
+      showToast(`Đã xóa tài liệu: ${title}!`);
     }
   };
 
-  const handleTogglePinMaterial = (mat) => {
+  const handleToggleMaterialFeatured = (mat) => {
     playClickSound();
     const updated = updateMaterial(mat.id, { isFeatured: !mat.isFeatured });
     setMaterials(updated);
-    showToast(`${mat.isFeatured ? 'Bỏ ghim' : 'Ghim nổi bật'} tài liệu: ${mat.title}!`);
+    showToast(`Đã ${!mat.isFeatured ? 'ghim nổi bật' : 'bỏ ghim'} tài liệu: ${mat.title}`);
   };
 
-  const handleToggleHideMaterial = (mat) => {
+  const handleToggleMaterialHidden = (mat) => {
     playClickSound();
     const updated = updateMaterial(mat.id, { isHidden: !mat.isHidden });
     setMaterials(updated);
-    showToast(`${mat.isHidden ? 'Đã hiển thị' : 'Đã tạm ẩn'} tài liệu: ${mat.title}!`);
+    showToast(`Đã ${!mat.isHidden ? 'ẩn' : 'hiển thị'} tài liệu: ${mat.title}`);
   };
 
   const handleResetMaterials = () => {
-    if (window.confirm('Khôi phục danh sách tài liệu chuẩn mặc định của HanziGo?')) {
+    if (window.confirm('Khôi phục danh sách tài liệu về bộ 20 tài liệu chuẩn ban đầu?')) {
       playClickSound();
-      const def = resetMaterials();
-      setMaterials(def);
+      const reset = resetMaterials();
+      setMaterials(reset);
       showToast('Đã khôi phục kho tài liệu chuẩn!');
     }
   };
 
-  // -------------------------------------------------------------
-  // VOCAB ACTIONS
-  // -------------------------------------------------------------
+  // Vocab Actions
   const handleSaveVocab = (e) => {
     e.preventDefault();
     if (!vocabForm.hanzi.trim() || !vocabForm.meaning.trim()) {
-      alert('Vui lòng điền chữ Hán và ý nghĩa tiếng Việt!');
+      alert('Vui lòng nhập chữ Hán và ý nghĩa!');
       return;
     }
+    playClickSound();
     const updated = saveCustomVocab(vocabForm);
     setCustomVocab(updated);
-    showToast(`Đã thêm từ vựng mới: ${vocabForm.hanzi}!`);
+    showToast(`Đã thêm từ vựng: ${vocabForm.hanzi} (${vocabForm.pinyin})!`);
     setVocabFormOpen(false);
     setVocabForm({
       hanzi: '',
@@ -621,18 +547,17 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     }
   };
 
-  // -------------------------------------------------------------
-  // LESSON ACTIONS
-  // -------------------------------------------------------------
+  // Lesson Actions
   const handleSaveLesson = (e) => {
     e.preventDefault();
     if (!lessonForm.title.trim()) {
       alert('Vui lòng nhập tên bài học!');
       return;
     }
+    playClickSound();
     const updated = saveCustomLesson(lessonForm);
     setCustomLessons(updated);
-    showToast(`Đã thêm bài học mới: ${lessonForm.title}!`);
+    showToast(`Đã thêm bài học: ${lessonForm.title}!`);
     setLessonFormOpen(false);
     setLessonForm({
       title: '',
@@ -653,9 +578,9 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     }
   };
 
-  // Purge all mock/demo testing data from localStorage
+  // Purge Mock Data
   const handlePurgeAllMockData = () => {
-    if (!window.confirm('CẢNH BÁO: Thao tác này sẽ xóa toàn bộ số liệu thử nghiệm, lịch sử thi thử HSK, điểm phát âm, tin nhắn chat đàm thoại và tiến độ streak/XP trên trình duyệt này để đưa về trạng thái người dùng mới hoàn toàn. Bạn có chắc chắn không?')) {
+    if (!window.confirm('CẢNH BÁO: Thao tác này sẽ xóa toàn bộ số liệu thử nghiệm, lịch sử thi thử HSK, điểm phát âm, và chat đàm thoại trên trình duyệt này để đưa về trạng thái sạch sẽ. Bạn có chắc chắn không?')) {
       return;
     }
 
@@ -669,50 +594,15 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
         'hanzigo_hsk_mistakes',
         'hanzigo_hsk_analytics',
         'hanzigo_chat_history',
-        'hanzigo_streak_count',
-        'hanzigo_streak_data',
-        'hanzigo_total_xp',
         'hanzigo_daily_missions',
-        'hanzigo_study_minutes_map',
-        'hanzigo_completed_lessons',
-        'hanzigo_remembered_words',
-        'hanzigo_pronounce_count',
-        'hanzigo_classrooms',
-        'hanzigo_class_members',
-        'hanzigo_class_assignments',
-        'hanzigo_class_submissions',
-        'hanzigo_class_announcements',
-        'hanzigo_live_sessions',
-        'hanzigo_live_participants'
+        'hanzigo_study_minutes_map'
       ];
-
-      // Xóa tất cả các key chung và các key có tiền tố gắn với user ID
       keysToPurge.forEach(k => {
         try { localStorage.removeItem(k); } catch {}
       });
-
-      // Quét toàn bộ localStorage để dọn sạch các key liên quan đến hanzigo
-      const allKeys = Object.keys(localStorage);
-      allKeys.forEach(k => {
-        if (
-          k.includes('_pronounce_') || 
-          k.includes('_hsk_') || 
-          k.includes('_streak_') || 
-          k.includes('_chat_') || 
-          k.includes('hanzigo_class_') ||
-          k.includes('cls-hsk') ||
-          k.includes('demo-stu')
-        ) {
-          try { localStorage.removeItem(k); } catch {}
-        }
-      });
-
-      showToast('Đã xóa sạch toàn bộ dữ liệu & số liệu mock trên thiết bị thành công!');
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      showToast('Đã xóa sạch toàn bộ số liệu rác thử nghiệm thành công!');
     } catch (e) {
-      showToast('Lỗi khi xóa dữ liệu: ' + e.message);
+      showToast('Lỗi: ' + e.message, 'error');
     }
   };
 
@@ -720,7 +610,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   const handleExportData = () => {
     playClickSound();
     const backupData = {
-      version: '2.0',
+      version: '3.0',
       timestamp: new Date().toISOString(),
       materials,
       users: usersList,
@@ -731,7 +621,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `HanziGo_Admin_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `HanziGo_Backup_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     showToast('Đã xuất file sao lưu dữ liệu toàn hệ thống!');
   };
@@ -740,16 +630,16 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   const filteredUsers = useMemo(() => {
     return usersList.filter(u => {
       const matchSearch = !userSearch.trim() || 
-        u.name.toLowerCase().includes(userSearch.toLowerCase()) || 
-        u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
-        u.level.toLowerCase().includes(userSearch.toLowerCase());
+        (u.name && u.name.toLowerCase().includes(userSearch.toLowerCase())) || 
+        (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase())) ||
+        (u.level && u.level.toLowerCase().includes(userSearch.toLowerCase()));
       const matchRole = userRoleFilter === 'all' || u.role === userRoleFilter;
       const matchStatus = userStatusFilter === 'all' || u.status === userStatusFilter;
       return matchSearch && matchRole && matchStatus;
     }).sort((a, b) => {
       if (userSortBy === 'xp') return (b.xp || 0) - (a.xp || 0);
       if (userSortBy === 'streak') return (b.streak || 0) - (a.streak || 0);
-      if (userSortBy === 'name') return a.name.localeCompare(b.name);
+      if (userSortBy === 'name') return (a.name || '').localeCompare(b.name || '');
       return (b.joinedDate || '').localeCompare(a.joinedDate || '');
     });
   }, [usersList, userSearch, userRoleFilter, userStatusFilter, userSortBy]);
@@ -767,80 +657,53 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     }).sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
   }, [materials, matSearch, matCategoryFilter, matLevelFilter]);
 
+  // Filtered Vocab
+  const filteredVocab = useMemo(() => {
+    return customVocab.filter(v => {
+      const matchSearch = !vocabSearch.trim() || 
+        v.hanzi.toLowerCase().includes(vocabSearch.toLowerCase()) ||
+        v.pinyin.toLowerCase().includes(vocabSearch.toLowerCase()) ||
+        v.meaning.toLowerCase().includes(vocabSearch.toLowerCase()) ||
+        (v.hanviet && v.hanviet.toLowerCase().includes(vocabSearch.toLowerCase()));
+      const matchHsk = vocabHskFilter === 'all' || v.hsk === vocabHskFilter;
+      return matchSearch && matchHsk;
+    });
+  }, [customVocab, vocabSearch, vocabHskFilter]);
+
   // Total User Stats
   const userStats = useMemo(() => {
     const total = usersList.length;
     const admins = usersList.filter(u => u.role === 'admin').length;
     const teachers = usersList.filter(u => u.role === 'teacher').length;
-    const mods = usersList.filter(u => u.role === 'moderator').length;
     const active = usersList.filter(u => u.status === 'active').length;
     const blocked = usersList.filter(u => u.status === 'blocked').length;
     const totalXp = usersList.reduce((acc, cur) => acc + (cur.xp || 0), 0);
-    return { total, admins, teachers, mods, active, blocked, totalXp };
+    return { total, admins, teachers, active, blocked, totalXp };
   }, [usersList]);
 
-  // -------------------------------------------------------------
-  // ACCESS GATE IF NOT AUTHORIZED ADMIN
-  // -------------------------------------------------------------
-  if (!isAdmin) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-20 animate-in fade-in duration-300">
-        <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-8 sm:p-12 text-center space-y-6">
-          <div className="w-20 h-20 mx-auto rounded-3xl bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/20 shadow-inner">
-            <Lock size={40} />
-          </div>
+  // Navigation tab definitions
+  const adminTabsList = [
+    { id: 'overview', label: 'Tổng quan & KPI', icon: BarChart3 },
+    { id: 'users', label: `Người dùng (${usersList.length})`, icon: Users },
+    { id: 'materials', label: `Kho Tài liệu (${materials.length})`, icon: FileText },
+    { id: 'vocab', label: `Từ vựng (${customVocab.length})`, icon: Layers },
+    { id: 'lessons', label: `Bài học (${customLessons.length})`, icon: BookOpen },
+    { id: 'ai_metrics', label: 'Giám sát AI & Chi phí', icon: Cpu },
+    { id: 'backup', label: 'Sao lưu & Dọn dẹp', icon: Upload }
+  ];
 
-          <div className="space-y-3 max-w-lg mx-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-xs font-bold border border-rose-200 dark:border-rose-900">
-              <Shield size={14} />
-              <span>Khu vực Quản trị Bảo mật (Admin Only)</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white">
-              Quyền Truy Cập Bị Giới Hạn
-            </h2>
-            <p className="text-sm text-[#748092] dark:text-[#94A3B8] leading-relaxed">
-              Trang này chỉ dành riêng cho tài khoản Quản trị viên hệ thống HanziGo (<strong className="text-[#E85D3F]">lehaidang16032006@gmail.com</strong>).
-            </p>
-            {user ? (
-              <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-                Tài khoản hiện tại của bạn: <span className="font-semibold text-[#243447] dark:text-white">{user.email}</span> (Không có quyền quản trị).
-              </p>
-            ) : (
-              <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
-                Bạn chưa đăng nhập. Vui lòng đăng nhập với tài khoản Quản trị viên để truy cập.
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <button
-              onClick={() => setActiveTab('home')}
-              className="px-6 py-3 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-lg shadow-[#E85D3F]/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <ArrowRight size={16} className="rotate-180" />
-              <span>Quay về Trang chủ</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // -------------------------------------------------------------
-  // MAIN ADMIN DASHBOARD
-  // -------------------------------------------------------------
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
       
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-[#243447] text-white text-xs sm:text-sm font-bold shadow-2xl border border-white/10 animate-in slide-in-from-bottom duration-300">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-5 py-3.5 rounded-2xl bg-[#243447] text-white text-xs sm:text-sm font-bold shadow-2xl border border-white/10 animate-in slide-in-from-bottom duration-300">
           <CheckCircle2 size={18} className="text-[#45B97C]" />
           <span>{toastMsg.message}</span>
         </div>
       )}
 
-      {/* 1. Header Banner & RBAC Role Switcher */}
+      {/* 1. Header Banner */}
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E293B] text-white p-6 sm:p-8 border border-white/10 shadow-xl">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           
@@ -848,25 +711,20 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wide uppercase bg-[#E85D3F]/20 text-[#E85D3F] border border-[#E85D3F]/30">
                 <ShieldCheck size={14} />
-                Trung Tâm Quản Trị Hệ Thống
+                Bảng Điều Khiển Quản Trị Hệ Thống
               </span>
 
-              {/* Current Role Badge */}
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
-                currentRole === 'admin'
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                  : 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
-              }`}>
-                {currentRole === 'admin' ? <Crown size={13} /> : <Shield size={13} />}
-                <span>Vai trò: {currentRole === 'admin' ? 'Quản trị viên (Toàn quyền)' : 'Kiểm duyệt viên (Moderator)'}</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                <Crown size={13} />
+                <span>Toàn quyền quản trị viên</span>
               </span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">
-              Quản Lý Người Dùng & Kho Tài Liệu
+              Trung Tâm Quản Trị HanziGo
             </h1>
             <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-              Theo dõi và phân quyền học viên, quản lý tài liệu học tiếng Trung, duyệt bài học và sao lưu dữ liệu toàn diện trên nền tảng HanziGo.
+              Theo dõi toàn diện học viên, quản lý kho tài liệu, chỉnh sửa ngân hàng từ vựng, điều chỉnh bài học và giám sát tải AI theo thời gian thực.
             </p>
           </div>
 
@@ -875,7 +733,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             {isEditingAdminName ? (
               <form 
                 onSubmit={handleSaveAdminName}
-                className="p-2 px-3.5 rounded-2xl bg-white/15 backdrop-blur-md border border-emerald-400/40 flex items-center gap-2.5 shadow-xl shadow-black/25 animate-in fade-in zoom-in-95 duration-200"
+                className="p-2 px-3.5 rounded-2xl bg-white/15 backdrop-blur-md border border-emerald-400/40 flex items-center gap-2.5 shadow-xl animate-in fade-in duration-200"
               >
                 <div className="w-8 h-8 rounded-full bg-emerald-500/25 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-400/30">
                   <Crown size={16} />
@@ -888,25 +746,25 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     placeholder="Nhập họ và tên..."
                     autoFocus
                     maxLength={40}
-                    className="px-3 py-1.5 rounded-xl bg-black/60 border border-white/20 text-white text-xs font-bold focus:outline-none focus:border-emerald-400 w-36 sm:w-48 placeholder-gray-400"
+                    className="px-3 py-1.5 rounded-xl bg-black/60 border border-white/20 text-white text-xs font-bold focus:outline-none focus:border-emerald-400 w-36 sm:w-44"
                   />
                   <button
                     type="submit"
                     disabled={isSavingAdminName}
-                    title="Lưu tên mới"
-                    className="p-1.5 px-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white transition-all cursor-pointer flex items-center justify-center disabled:opacity-50 shadow-md font-bold text-xs gap-1"
+                    title="Lưu tên"
+                    className="p-1.5 px-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white transition-all cursor-pointer flex items-center justify-center font-bold text-xs gap-1"
                   >
                     <Check size={14} />
-                    <span className="hidden sm:inline">Lưu</span>
+                    <span>Lưu</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setAdminNameInput(user?.name || 'Lê Hải Đăng');
+                      setAdminNameInput(user?.name || 'Quản trị viên');
                       setIsEditingAdminName(false);
                     }}
                     title="Hủy"
-                    className="p-1.5 px-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-gray-300 transition-all cursor-pointer flex items-center justify-center text-xs"
+                    className="p-1.5 px-2 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 transition-all cursor-pointer flex items-center justify-center text-xs"
                   >
                     <X size={14} />
                   </button>
@@ -918,25 +776,25 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   <Crown size={17} />
                 </div>
                 <div className="text-left min-w-0">
-                  <p className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">Quản trị viên xác thực:</p>
+                  <p className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">Quản trị viên:</p>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs sm:text-sm font-black text-white truncate max-w-[150px] sm:max-w-[210px]">
-                      {user?.name || 'Lê Hải Đăng'}
+                    <p className="text-xs sm:text-sm font-black text-white truncate max-w-[160px]">
+                      {user?.name || 'Quản trị viên HanziGo'}
                     </p>
                     <button
                       type="button"
                       onClick={() => {
-                        setAdminNameInput(user?.name || 'Lê Hải Đăng');
+                        setAdminNameInput(user?.name || 'Quản trị viên');
                         setIsEditingAdminName(true);
                       }}
-                      title="Chỉnh sửa họ tên quản trị viên"
-                      className="p-1 rounded-lg bg-white/10 hover:bg-emerald-500/30 text-gray-300 hover:text-emerald-300 transition-all cursor-pointer flex items-center justify-center"
+                      title="Chỉnh sửa họ tên"
+                      className="p-1 rounded-lg bg-white/10 hover:bg-emerald-500/30 text-gray-300 hover:text-emerald-300 transition-all cursor-pointer"
                     >
                       <Edit3 size={12} />
                     </button>
                   </div>
-                  <p className="text-[10px] font-medium text-gray-400 truncate max-w-[180px] sm:max-w-[230px]">
-                    {user?.email || 'lehaidang16032006@gmail.com'}
+                  <p className="text-[10px] font-medium text-gray-400 truncate max-w-[180px]">
+                    {user?.email || 'admin@hanzigo.com'}
                   </p>
                 </div>
               </div>
@@ -947,14 +805,14 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
               <Download size={15} />
-              <span>Sao lưu dữ liệu</span>
+              <span>Xuất sao lưu</span>
             </button>
           </div>
         </div>
 
         {/* System Overview KPI Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/10">
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5">
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
             <p className="text-xs text-[#94A3B8] font-semibold flex items-center gap-1.5">
               <Users size={14} className="text-[#E85D3F]" />
               <span>Tổng học viên</span>
@@ -962,26 +820,26 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             <p className="text-2xl font-black text-white mt-1">{userStats.total}</p>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5">
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
             <p className="text-xs text-[#94A3B8] font-semibold flex items-center gap-1.5">
               <Crown size={14} className="text-emerald-400" />
-              <span>Quản trị & Mod</span>
+              <span>Quản trị & Giáo viên</span>
             </p>
-            <p className="text-2xl font-black text-emerald-400 mt-1">{userStats.admins + userStats.mods}</p>
+            <p className="text-2xl font-black text-emerald-400 mt-1">{userStats.admins + userStats.teachers}</p>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5">
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
             <p className="text-xs text-[#94A3B8] font-semibold flex items-center gap-1.5">
               <FileText size={14} className="text-[#F4B942]" />
-              <span>Tài liệu hệ thống</span>
+              <span>Tài liệu & Bài học</span>
             </p>
-            <p className="text-2xl font-black text-[#F4B942] mt-1">{materials.length}</p>
+            <p className="text-2xl font-black text-[#F4B942] mt-1">{materials.length + customLessons.length}</p>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5">
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
             <p className="text-xs text-[#94A3B8] font-semibold flex items-center gap-1.5">
               <Activity size={14} className="text-sky-400" />
-              <span>Tổng điểm tích lũy</span>
+              <span>Tổng XP tích lũy</span>
             </p>
             <p className="text-2xl font-black text-sky-400 mt-1">{userStats.totalXp.toLocaleString()} XP</p>
           </div>
@@ -990,99 +848,168 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
 
       {/* 2. Admin Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-2 overflow-x-auto">
-        <button
-          onClick={() => {
-            playClickSound();
-            setAdminTab('users');
-          }}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-            adminTab === 'users'
-              ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
-              : 'text-[#748092] dark:text-[#94A3B8] hover:bg-black/5 dark:hover:bg-white/5'
-          }`}
-        >
-          <Users size={16} />
-          <span>Quản lý Người dùng ({usersList.length})</span>
-        </button>
-
-        <button
-          onClick={() => {
-            playClickSound();
-            setAdminTab('materials');
-          }}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-            adminTab === 'materials'
-              ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
-              : 'text-[#748092] dark:text-[#94A3B8] hover:bg-black/5 dark:hover:bg-white/5'
-          }`}
-        >
-          <FileText size={16} />
-          <span>Kho Tài liệu & Giáo trình ({materials.length})</span>
-        </button>
-
-        <button
-          onClick={() => {
-            playClickSound();
-            setAdminTab('vocab');
-          }}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-            adminTab === 'vocab'
-              ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
-              : 'text-[#748092] dark:text-[#94A3B8] hover:bg-black/5 dark:hover:bg-white/5'
-          }`}
-        >
-          <Layers size={16} />
-          <span>Từ vựng tùy chỉnh ({customVocab.length})</span>
-        </button>
-
-        <button
-          onClick={() => {
-            playClickSound();
-            setAdminTab('lessons');
-          }}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-            adminTab === 'lessons'
-              ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
-              : 'text-[#748092] dark:text-[#94A3B8] hover:bg-black/5 dark:hover:bg-white/5'
-          }`}
-        >
-          <BookOpen size={16} />
-          <span>Bài học lộ trình ({customLessons.length})</span>
-        </button>
-
-        <button
-          onClick={() => {
-            playClickSound();
-            setAdminTab('backup');
-          }}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-            adminTab === 'backup'
-              ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
-              : 'text-[#748092] dark:text-[#94A3B8] hover:bg-black/5 dark:hover:bg-white/5'
-          }`}
-        >
-          <Upload size={16} />
-          <span>Sao lưu & Hệ thống</span>
-        </button>
-
-        <button
-          onClick={() => {
-            playClickSound();
-            setAdminTab('ai_metrics');
-          }}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-            adminTab === 'ai_metrics'
-              ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
-              : 'text-[#748092] dark:text-[#94A3B8] hover:bg-black/5 dark:hover:bg-white/5'
-          }`}
-        >
-          <Cpu size={16} />
-          <span>Giám sát AI & Chi phí</span>
-        </button>
+        {adminTabsList.map((t) => {
+          const Icon = t.icon;
+          const isActive = adminTab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => {
+                playClickSound();
+                setAdminTab(t.id);
+              }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
+                isActive
+                  ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
+                  : 'text-[#748092] dark:text-[#94A3B8] hover:bg-black/5 dark:hover:bg-white/5'
+              }`}
+            >
+              <Icon size={16} />
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ============================================================== */}
-      {/* TAB 1: USER MANAGEMENT (QUẢN LÝ NGƯỜI DÙNG & PHÂN QUYỀN) */}
+      {/* TAB 0: OVERVIEW & SYSTEM ANALYTICS */}
+      {/* ============================================================== */}
+      {adminTab === 'overview' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Quick Summary Card 1 */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">Tình trạng tài khoản</span>
+                <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
+                  <UserCheck size={18} />
+                </span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-black text-[#243447] dark:text-white">
+                  {userStats.active} <span className="text-xs text-[#45B97C] font-bold">hoạt động</span>
+                </p>
+                <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
+                  {userStats.blocked} tài khoản đang bị tạm khóa
+                </p>
+              </div>
+              <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-[#45B97C] h-2 rounded-full" 
+                  style={{ width: `${userStats.total ? (userStats.active / userStats.total) * 100 : 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Quick Summary Card 2 */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">Dung lượng học liệu</span>
+                <span className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+                  <FileText size={18} />
+                </span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-black text-[#243447] dark:text-white">
+                  {materials.length} <span className="text-xs text-[#D97706] font-bold">tài liệu PDF & Audio</span>
+                </p>
+                <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
+                  {materials.filter(m => m.isFeatured).length} tài liệu được ghim nổi bật
+                </p>
+              </div>
+              <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+                <div className="bg-amber-500 h-2 rounded-full" style={{ width: '85%' }} />
+              </div>
+            </div>
+
+            {/* Quick Summary Card 3 */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">Hệ thống AI Lão Sư</span>
+                <span className="p-2 rounded-xl bg-purple-500/10 text-purple-500">
+                  <Cpu size={18} />
+                </span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-black text-[#243447] dark:text-white">
+                  Hoạt động <span className="text-xs text-purple-500 font-bold">100% Sẵn sàng</span>
+                </p>
+                <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
+                  xKiro Free Tier & Dự phòng Gemini tự động
+                </p>
+              </div>
+              <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+                <div className="bg-purple-500 h-2 rounded-full" style={{ width: '100%' }} />
+              </div>
+            </div>
+
+          </div>
+
+          {/* Quick Shortcuts */}
+          <div className="p-6 rounded-3xl bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+            <h3 className="text-base font-black text-[#243447] dark:text-white mb-4 flex items-center gap-2">
+              <Sparkles size={18} className="text-[#E85D3F]" />
+              <span>Lối tắt quản trị nhanh</span>
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setAdminTab('users');
+                  setIsAddUserModalOpen(true);
+                }}
+                className="p-4 rounded-2xl bg-white dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-left hover:border-[#E85D3F] transition-all cursor-pointer group shadow-xs"
+              >
+                <Plus size={20} className="text-[#E85D3F] mb-2 group-hover:scale-110 transition-transform" />
+                <p className="text-xs font-bold text-[#243447] dark:text-white">Thêm học viên</p>
+                <p className="text-[10px] text-[#748092]">Tạo tài khoản mới</p>
+              </button>
+
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setAdminTab('materials');
+                  handleOpenCreateMat();
+                }}
+                className="p-4 rounded-2xl bg-white dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-left hover:border-[#E85D3F] transition-all cursor-pointer group shadow-xs"
+              >
+                <FileText size={20} className="text-[#D97706] mb-2 group-hover:scale-110 transition-transform" />
+                <p className="text-xs font-bold text-[#243447] dark:text-white">Thêm tài liệu</p>
+                <p className="text-[10px] text-[#748092]">Tải lên giáo trình</p>
+              </button>
+
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setAdminTab('vocab');
+                  setVocabFormOpen(true);
+                }}
+                className="p-4 rounded-2xl bg-white dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-left hover:border-[#E85D3F] transition-all cursor-pointer group shadow-xs"
+              >
+                <Layers size={20} className="text-[#45B97C] mb-2 group-hover:scale-110 transition-transform" />
+                <p className="text-xs font-bold text-[#243447] dark:text-white">Thêm từ vựng</p>
+                <p className="text-[10px] text-[#748092]">Bổ sung từ mới</p>
+              </button>
+
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setAdminTab('ai_metrics');
+                }}
+                className="p-4 rounded-2xl bg-white dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-left hover:border-[#E85D3F] transition-all cursor-pointer group shadow-xs"
+              >
+                <Cpu size={20} className="text-purple-500 mb-2 group-hover:scale-110 transition-transform" />
+                <p className="text-xs font-bold text-[#243447] dark:text-white">Xem tải AI</p>
+                <p className="text-[10px] text-[#748092]">Giám sát token</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* TAB 1: USER MANAGEMENT */}
       {/* ============================================================== */}
       {adminTab === 'users' && (
         <div className="space-y-6 animate-in fade-in duration-200">
@@ -1104,23 +1031,16 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               </div>
 
               {/* Action: Add User */}
-              {currentRole === 'admin' ? (
-                <button
-                  onClick={() => {
-                    playClickSound();
-                    setIsAddUserModalOpen(true);
-                  }}
-                  className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"
-                >
-                  <Plus size={16} />
-                  <span>Tạo tài khoản học viên</span>
-                </button>
-              ) : (
-                <div className="px-3 py-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-center gap-1.5">
-                  <Shield size={14} />
-                  <span>Chế độ xem (Mod)</span>
-                </div>
-              )}
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setIsAddUserModalOpen(true);
+                }}
+                className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
+              >
+                <Plus size={16} />
+                <span>Tạo tài khoản học viên</span>
+              </button>
             </div>
 
             {/* Filter Pills */}
@@ -1131,13 +1051,12 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   { id: 'all', label: 'Tất cả' },
                   { id: 'admin', label: 'Quản trị viên' },
                   { id: 'teacher', label: 'Giáo viên' },
-                  { id: 'moderator', label: 'Kiểm duyệt viên' },
                   { id: 'student', label: 'Học viên' }
                 ].map(r => (
                   <button
                     key={r.id}
                     onClick={() => setUserRoleFilter(r.id)}
-                    className={`px-3 py-1 rounded-xl font-bold transition-all ${
+                    className={`px-3 py-1 rounded-xl font-bold transition-all cursor-pointer ${
                       userRoleFilter === r.id
                         ? 'bg-[#E85D3F] text-white'
                         : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] dark:text-[#94A3B8] hover:bg-black/5'
@@ -1158,7 +1077,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   <button
                     key={s.id}
                     onClick={() => setUserStatusFilter(s.id)}
-                    className={`px-3 py-1 rounded-xl font-bold transition-all ${
+                    className={`px-3 py-1 rounded-xl font-bold transition-all cursor-pointer ${
                       userStatusFilter === s.id
                         ? 'bg-[#243447] dark:bg-white text-white dark:text-[#243447]'
                         : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] dark:text-[#94A3B8] hover:bg-black/5'
@@ -1194,180 +1113,112 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     <th className="p-4 text-center">Chuỗi ngày</th>
                     <th className="p-4 text-right">Điểm XP</th>
                     <th className="p-4 text-center">Trạng thái</th>
-                    <th className="p-4 pr-6 text-right">Thao tác quản trị</th>
+                    <th className="p-4 pr-6 text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F1E5D8] dark:divide-[#2B3A4F]">
                   {filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-12 text-center text-[#748092]">
-                        {usersList.length === 0 ? (
-                          <div className="space-y-3 max-w-sm mx-auto">
-                            <Users size={32} className="mx-auto text-[#748092]/50" />
-                            <p className="font-bold text-[#243447] dark:text-white text-base">Chưa có học viên nào</p>
-                            <p className="text-xs">Học viên khi đăng ký hoặc đăng nhập sẽ tự động hiển thị trong danh bạ quản trị này.</p>
-                            {currentRole === 'admin' && (
-                              <button
-                                onClick={() => setIsAddUserModalOpen(true)}
-                                className="px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm"
-                              >
-                                <Plus size={14} />
-                                <span>Tạo tài khoản học viên mới</span>
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          'Không tìm thấy học viên nào phù hợp với bộ lọc tìm kiếm.'
-                        )}
+                      <td colSpan="7" className="p-8 text-center text-[#748092] dark:text-[#94A3B8]">
+                        Không tìm thấy học viên nào phù hợp với bộ lọc tìm kiếm.
                       </td>
                     </tr>
                   ) : (
                     filteredUsers.map((u) => {
-                      const isAdmin = u.role === 'admin';
-                      const isTeacher = u.role === 'teacher';
-                      const isMod = u.role === 'moderator';
-                      const isBlocked = u.status === 'blocked';
-
+                      const isSelf = user && (user.id === u.id || user.email === u.email);
                       return (
-                        <tr 
-                          key={u.id}
-                          className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
-                        >
-                          {/* User Name & Email */}
+                        <tr key={u.id} className="hover:bg-[#FFFDF9] dark:hover:bg-white/5 transition-colors">
                           <td className="p-4 pl-6">
                             <div className="flex items-center gap-3">
-                              {u.avatar ? (
-                                <img 
-                                  src={u.avatar} 
-                                  alt={u.name}
-                                  className="w-10 h-10 rounded-2xl object-cover border border-[#F1E5D8] dark:border-[#2B3A4F]" 
-                                />
-                              ) : (
-                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#E85D3F] to-[#CB4529] text-white font-black flex items-center justify-center text-sm shadow-sm">
-                                  {u.name.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                              <div>
-                                <p className="font-bold text-[#243447] dark:text-white flex items-center gap-1.5">
-                                  <span>{u.name}</span>
-                                  {user && (user.id === u.id || user.email === u.email) && (
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-bold">
+                              <div className="w-9 h-9 rounded-full bg-[#E85D3F]/10 text-[#E85D3F] font-black flex items-center justify-center shrink-0 border border-[#E85D3F]/20">
+                                {u.avatar ? (
+                                  <img src={u.avatar} alt={u.name} className="w-full h-full rounded-full object-cover" />
+                                ) : (
+                                  u.name ? u.name.charAt(0).toUpperCase() : 'U'
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-bold text-[#243447] dark:text-white truncate flex items-center gap-1.5">
+                                  <span>{u.name || 'Học viên'}</span>
+                                  {isSelf && (
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 font-bold">
                                       Bạn
                                     </span>
                                   )}
                                 </p>
-                                <p className="text-xs text-[#748092] dark:text-[#94A3B8]">{u.email}</p>
+                                <p className="text-[11px] text-[#748092] dark:text-[#94A3B8] truncate">{u.email}</p>
                               </div>
                             </div>
                           </td>
 
-                          {/* Role Badge & Quick Switch */}
                           <td className="p-4">
-                            {currentRole === 'admin' ? (
-                              <select
-                                value={u.role}
-                                onChange={(e) => handleChangeUserRole(u, e.target.value)}
-                                className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                                  isAdmin
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
-                                    : isTeacher
-                                    ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
-                                    : isMod
-                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800'
-                                    : 'bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
-                                }`}
-                              >
-                                <option value="admin">👑 Admin (Quản trị)</option>
-                                <option value="teacher">👨‍🏫 Teacher (Giáo viên)</option>
-                                <option value="moderator">🛡️ Moderator (Kiểm duyệt)</option>
-                                <option value="student">🎓 Student (Học viên)</option>
-                              </select>
-                            ) : (
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border ${
-                                isAdmin
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                  : isTeacher
-                                  ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300'
-                                  : isMod
-                                  ? 'bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-300'
-                                  : 'bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300'
-                              }`}>
-                                {isAdmin ? <Crown size={12} /> : isTeacher ? <Users size={12} /> : isMod ? <Shield size={12} /> : null}
-                                <span>{isAdmin ? 'Admin' : isTeacher ? 'Giáo viên' : isMod ? 'Moderator' : 'Học viên'}</span>
-                              </span>
-                            )}
+                            <select
+                              value={u.role || 'student'}
+                              disabled={isSelf}
+                              onChange={(e) => handleChangeUserRole(u, e.target.value)}
+                              className="px-2.5 py-1 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-[#243447] dark:text-white cursor-pointer disabled:opacity-60"
+                            >
+                              <option value="student">Học viên</option>
+                              <option value="teacher">Giáo viên</option>
+                              <option value="admin">Quản trị viên</option>
+                            </select>
                           </td>
 
-                          {/* Study Level */}
-                          <td className="p-4">
-                            <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white">
-                              {u.level}
-                            </span>
+                          <td className="p-4 font-semibold text-[#243447] dark:text-[#CBD5E1]">
+                            {u.level || 'HSK 1 - Sơ cấp'}
                           </td>
 
-                          {/* Streak */}
-                          <td className="p-4 text-center">
-                            <span className="font-bold text-[#E85D3F] flex items-center justify-center gap-1">
-                              🔥 {u.streak || 0}
-                            </span>
+                          <td className="p-4 text-center font-bold text-[#D97706]">
+                            🔥 {u.streak || 0}
                           </td>
 
-                          {/* XP */}
-                          <td className="p-4 text-right font-black text-[#45B97C]">
+                          <td className="p-4 text-right font-black text-[#E85D3F]">
                             {(u.xp || 0).toLocaleString()} XP
                           </td>
 
-                          {/* Status */}
                           <td className="p-4 text-center">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                              isBlocked
-                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
-                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                              u.status === 'blocked'
+                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
                             }`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${isBlocked ? 'bg-rose-500' : 'bg-emerald-500'}`} />
-                              <span>{isBlocked ? 'Đã khóa' : 'Hoạt động'}</span>
+                              {u.status === 'blocked' ? 'Bị khóa' : 'Hoạt động'}
                             </span>
                           </td>
 
-                          {/* Actions */}
                           <td className="p-4 pr-6 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              
-                              {/* Edit User Button */}
+                            <div className="flex items-center justify-end gap-2">
                               <button
-                                onClick={() => handleOpenEditUser(u)}
-                                className="p-1.5 rounded-lg text-gray-500 hover:text-[#E85D3F] hover:bg-black/5 dark:hover:bg-white/5 transition-all"
-                                title="Chỉnh sửa thông tin học viên"
+                                onClick={() => {
+                                  playClickSound();
+                                  setEditingUser(u);
+                                  setIsEditUserModalOpen(true);
+                                }}
+                                title="Sửa thông tin"
+                                className="p-1.5 rounded-lg text-gray-500 hover:text-[#E85D3F] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
                               >
                                 <Edit3 size={15} />
                               </button>
 
-                              {/* Lock / Unlock Toggle Button */}
-                              {currentRole === 'admin' && (
-                                <button
-                                  onClick={() => handleToggleUserStatus(u)}
-                                  className={`p-1.5 rounded-lg transition-all ${
-                                    isBlocked
-                                      ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
-                                      : 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30'
-                                  }`}
-                                  title={isBlocked ? 'Mở khóa tài khoản' : 'Tạm khóa tài khoản'}
-                                >
-                                  {isBlocked ? <Unlock size={15} /> : <Lock size={15} />}
-                                </button>
-                              )}
+                              {!isSelf && (
+                                <>
+                                  <button
+                                    onClick={() => handleToggleUserStatus(u)}
+                                    title={u.status === 'blocked' ? 'Mở khóa' : 'Khóa tài khoản'}
+                                    className="p-1.5 rounded-lg text-gray-500 hover:text-amber-500 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+                                  >
+                                    {u.status === 'blocked' ? <Unlock size={15} /> : <Lock size={15} />}
+                                  </button>
 
-                              {/* Delete User Button */}
-                              {currentRole === 'admin' && (
-                                <button
-                                  onClick={() => handleDeleteUser(u)}
-                                  className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
-                                  title="Xóa tài khoản vĩnh viễn"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
+                                  <button
+                                    onClick={() => handleDeleteUser(u)}
+                                    title="Xóa tài khoản"
+                                    className="p-1.5 rounded-lg text-gray-500 hover:text-rose-500 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                </>
                               )}
-
                             </div>
                           </td>
                         </tr>
@@ -1377,32 +1228,18 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 </tbody>
               </table>
             </div>
-
-            {/* Table Footer Summary */}
-            <div className="p-4 bg-[#FFF9F2] dark:bg-[#131B24] border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-wrap items-center justify-between gap-3 text-xs text-[#748092] dark:text-[#94A3B8]">
-              <span>Hiển thị <strong>{filteredUsers.length}</strong> / <strong>{usersList.length}</strong> tài khoản học viên</span>
-              <div className="flex items-center gap-4">
-                <span>🟢 {userStats.active} Đang hoạt động</span>
-                <span>🔴 {userStats.blocked} Bị khóa</span>
-                <span>👑 {userStats.admins} Quản trị viên</span>
-                <span>👨‍🏫 {userStats.teachers || 0} Giáo viên</span>
-              </div>
-            </div>
           </div>
+
         </div>
       )}
 
       {/* ============================================================== */}
-      {/* TAB 2: MATERIALS MANAGEMENT (QUẢN LÝ KHO TÀI LIỆU) */}
+      {/* TAB 2: MATERIALS HUB */}
       {/* ============================================================== */}
       {adminTab === 'materials' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          
-          {/* Materials Filter and Action Toolbar */}
           <div className="bg-white dark:bg-[#1E293B] p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-              
-              {/* Search input */}
               <div className="relative flex-1">
                 <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
                 <input 
@@ -1414,11 +1251,10 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 />
               </div>
 
-              {/* Add Material Button */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleOpenCreateMat}
-                  className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center justify-center gap-2 active:scale-95 whitespace-nowrap"
+                  className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer whitespace-nowrap"
                 >
                   <Plus size={16} />
                   <span>Thêm tài liệu mới</span>
@@ -1426,7 +1262,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
 
                 <button
                   onClick={handleResetMaterials}
-                  className="px-3.5 py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:bg-[#131B24] dark:hover:bg-gray-800 text-[#748092] dark:text-[#94A3B8] text-xs font-bold transition-all"
+                  className="px-3.5 py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:bg-[#131B24] dark:hover:bg-gray-800 text-[#748092] dark:text-[#94A3B8] text-xs font-bold transition-all cursor-pointer"
                   title="Khôi phục kho mẫu chuẩn"
                 >
                   <RefreshCw size={15} />
@@ -1442,7 +1278,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   <button
                     key={c}
                     onClick={() => setMatCategoryFilter(c)}
-                    className={`px-3 py-1 rounded-xl font-bold transition-all ${
+                    className={`px-3 py-1 rounded-xl font-bold transition-all cursor-pointer ${
                       matCategoryFilter === c
                         ? 'bg-[#E85D3F] text-white'
                         : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] dark:text-[#94A3B8] hover:bg-black/5'
@@ -1468,158 +1304,75 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             </div>
           </div>
 
-          {/* Materials Table */}
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs sm:text-sm">
-                <thead>
-                  <tr className="bg-[#FFF9F2] dark:bg-[#131B24] border-b border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] dark:text-[#94A3B8] font-bold">
-                    <th className="p-4 pl-6">Tài liệu & Giáo trình</th>
-                    <th className="p-4">Danh mục</th>
-                    <th className="p-4">Cấp độ</th>
-                    <th className="p-4">Định dạng & Dung lượng</th>
-                    <th className="p-4 text-center">Nổi bật / Trạng thái</th>
-                    <th className="p-4 pr-6 text-right">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#F1E5D8] dark:divide-[#2B3A4F]">
-                  {filteredMaterials.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="p-12 text-center text-[#748092]">
-                        Không tìm thấy tài liệu nào phù hợp với bộ lọc tìm kiếm.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredMaterials.map((m) => (
-                      <tr 
-                        key={m.id}
-                        className={`hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors ${
-                          m.isHidden ? 'opacity-50' : ''
-                        }`}
-                      >
-                        {/* Title, Publisher & License */}
-                        <td className="p-4 pl-6 max-w-sm">
-                          <div className="space-y-1">
-                            <p className="font-bold text-[#243447] dark:text-white flex items-center gap-1.5">
-                              {m.isFeatured && (
-                                <Star size={14} className="text-amber-500 fill-amber-500 shrink-0" />
-                              )}
-                              <span>{m.title}</span>
-                            </p>
-                            <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
-                              <span className="font-semibold text-[#E85D3F]">
-                                🏛️ {m.publisher || m.author || 'HanziGo'}
-                              </span>
-                              {m.license && (
-                                <span className="text-[#748092] dark:text-[#94A3B8]">
-                                  • 📜 {m.license}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-[#748092] dark:text-[#94A3B8] line-clamp-1">
-                              {m.description || 'Tài liệu chuẩn'}
-                            </p>
-                          </div>
-                        </td>
+          {/* Materials Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMaterials.map((mat) => (
+              <div 
+                key={mat.id}
+                className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow relative overflow-hidden"
+              >
+                {mat.isFeatured && (
+                  <div className="absolute top-0 right-0 bg-[#E85D3F] text-white text-[10px] font-black px-3 py-0.5 rounded-bl-xl shadow-xs">
+                    Nổi bật
+                  </div>
+                )}
 
-                        {/* Category */}
-                        <td className="p-4 font-semibold text-[#748092] dark:text-[#94A3B8]">
-                          {m.category}
-                        </td>
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-0.5 rounded-lg bg-orange-100 text-[#E85D3F] dark:bg-orange-950/50 text-[10px] font-bold">
+                      {mat.category}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-[#748092] dark:text-gray-300 text-[10px] font-bold">
+                      {mat.level}
+                    </span>
+                  </div>
 
-                        {/* Level */}
-                        <td className="p-4">
-                          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C]">
-                            {m.level}
-                          </span>
-                        </td>
+                  <h3 className="font-bold text-[#243447] dark:text-white text-base line-clamp-2">
+                    {mat.title}
+                  </h3>
+                  <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1">
+                    Tác giả: {mat.author || 'HanziGo'} • {mat.format || 'PDF'}
+                  </p>
+                  <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 line-clamp-2">
+                    {mat.description}
+                  </p>
+                </div>
 
-                        {/* Format & Size */}
-                        <td className="p-4">
-                          <div className="space-y-0.5">
-                            <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white">
-                              {m.format}
-                            </span>
-                            <p className="text-[11px] text-[#748092] dark:text-[#94A3B8]">{m.fileSize || '10 MB'}</p>
-                          </div>
-                        </td>
+                <div className="pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleToggleMaterialFeatured(mat)}
+                      title={mat.isFeatured ? 'Bỏ nổi bật' : 'Ghim nổi bật'}
+                      className={`p-1.5 rounded-lg cursor-pointer ${mat.isFeatured ? 'text-[#F4B942]' : 'text-gray-400 hover:text-[#F4B942]'}`}
+                    >
+                      <Star size={16} className={mat.isFeatured ? 'fill-current' : ''} />
+                    </button>
+                    <button
+                      onClick={() => handleToggleMaterialHidden(mat)}
+                      title={mat.isHidden ? 'Hiển thị' : 'Ẩn'}
+                      className={`p-1.5 rounded-lg cursor-pointer ${mat.isHidden ? 'text-rose-500' : 'text-gray-400 hover:text-emerald-500'}`}
+                    >
+                      {mat.isHidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
 
-                        {/* Featured and Visibility Toggles */}
-                        <td className="p-4 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => handleTogglePinMaterial(m)}
-                              className={`p-1.5 rounded-lg transition-all ${
-                                m.isFeatured 
-                                  ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400' 
-                                  : 'text-gray-400 hover:bg-black/5 dark:hover:bg-white/5'
-                              }`}
-                              title={m.isFeatured ? 'Bỏ ghim nổi bật' : 'Ghim nổi bật cho học viên'}
-                            >
-                              <Star size={14} className={m.isFeatured ? 'fill-amber-500' : ''} />
-                            </button>
-
-                            <button
-                              onClick={() => handleToggleHideMaterial(m)}
-                              className={`p-1.5 rounded-lg transition-all ${
-                                m.isHidden
-                                  ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
-                                  : 'text-gray-400 hover:bg-black/5 dark:hover:bg-white/5'
-                              }`}
-                              title={m.isHidden ? 'Hiển thị tài liệu' : 'Ẩn tài liệu'}
-                            >
-                              {m.isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
-                            </button>
-                          </div>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="p-4 pr-6 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {/* Direct Open Link */}
-                            {m.downloadUrl && (
-                              <a
-                                href={m.downloadUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 rounded-lg text-gray-500 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-all"
-                                title="Mở link tải / xem tài liệu"
-                              >
-                                <ExternalLink size={15} />
-                              </a>
-                            )}
-
-                            {/* Edit Button */}
-                            <button
-                              onClick={() => handleOpenEditMat(m)}
-                              className="p-1.5 rounded-lg text-gray-500 hover:text-[#E85D3F] hover:bg-black/5 dark:hover:bg-white/5 transition-all"
-                              title="Chỉnh sửa tài liệu"
-                            >
-                              <Edit3 size={15} />
-                            </button>
-
-                            {/* Delete Button */}
-                            <button
-                              onClick={() => handleDeleteMaterial(m.id, m.title)}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
-                              title="Xóa tài liệu"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Table Footer */}
-            <div className="p-4 bg-[#FFF9F2] dark:bg-[#131B24] border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-wrap items-center justify-between gap-3 text-xs text-[#748092] dark:text-[#94A3B8]">
-              <span>Hiển thị <strong>{filteredMaterials.length}</strong> / <strong>{materials.length}</strong> tài liệu</span>
-              <span>⭐ {materials.filter(m => m.isFeatured).length} Tài liệu được ghim nổi bật</span>
-            </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleOpenEditMat(mat)}
+                      className="px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-[#E85D3F] hover:text-white text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMaterial(mat.id, mat.title)}
+                      className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -1629,44 +1382,81 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       {/* ============================================================== */}
       {adminTab === 'vocab' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#1E293B] p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
-            <div>
-              <h3 className="text-base font-black text-[#243447] dark:text-white">Từ vựng tự biên soạn</h3>
-              <p className="text-xs text-[#748092] dark:text-[#94A3B8]">Thêm từ mới vào từ điển hệ thống để học viên cùng luyện tập.</p>
+          <div className="bg-white dark:bg-[#1E293B] p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
+              <input 
+                type="text"
+                value={vocabSearch}
+                onChange={(e) => setVocabSearch(e.target.value)}
+                placeholder="Tìm chữ Hán, Pinyin, Hán-Việt, ý nghĩa..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+              />
             </div>
-            <button
-              onClick={() => {
-                playClickSound();
-                setVocabFormOpen(true);
-              }}
-              className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center justify-center gap-2 active:scale-95"
-            >
-              <Plus size={16} />
-              <span>Thêm từ vựng mới</span>
-            </button>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={vocabHskFilter}
+                onChange={(e) => setVocabHskFilter(e.target.value)}
+                className="px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
+              >
+                <option value="all">Mọi cấp độ HSK</option>
+                <option value="hsk1">HSK 1</option>
+                <option value="hsk2">HSK 2</option>
+                <option value="hsk3">HSK 3</option>
+                <option value="hsk4">HSK 4</option>
+                <option value="hsk5">HSK 5</option>
+                <option value="hsk6">HSK 6</option>
+              </select>
+
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setVocabFormOpen(true);
+                }}
+                className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+              >
+                <Plus size={16} />
+                <span>Thêm từ vựng</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {customVocab.map((v) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredVocab.map((v) => (
               <div 
-                key={v.id} 
-                className="bg-white dark:bg-[#1E293B] p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-start justify-between gap-4"
+                key={v.id}
+                className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-center justify-between"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-black text-[#E85D3F]">{v.hanzi}</span>
-                    <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">({v.pinyin})</span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-12 h-12 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] font-['Noto_Serif_SC'] text-2xl font-black flex items-center justify-center shrink-0">
+                    {v.hanzi}
                   </div>
-                  <p className="text-sm font-bold text-[#243447] dark:text-white">{v.meaning}</p>
-                  <p className="text-xs text-[#748092] dark:text-[#94A3B8]">{v.topic} • {v.hsk?.toUpperCase()}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-[#243447] dark:text-white truncate">
+                      {v.pinyin} <span className="text-xs font-semibold text-[#D97706]">({v.hanviet || 'Hán-Việt'})</span>
+                    </p>
+                    <p className="text-xs text-[#748092] dark:text-[#94A3B8] truncate">{v.meaning}</p>
+                    <span className="text-[10px] font-bold text-[#E85D3F] uppercase">{v.hsk}</span>
+                  </div>
                 </div>
-                <button
-                  onClick={() => handleDeleteVocab(v.id, v.hanzi)}
-                  className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
-                  title="Xóa từ vựng"
-                >
-                  <Trash2 size={16} />
-                </button>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => speakChinese(v.hanzi)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-[#E85D3F] cursor-pointer"
+                    title="Nghe phát âm"
+                  >
+                    <Volume2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteVocab(v.id, v.hanzi)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 cursor-pointer"
+                    title="Xóa từ"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1674,24 +1464,23 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       )}
 
       {/* ============================================================== */}
-      {/* TAB 4: CUSTOM LESSONS */}
+      {/* TAB 4: LESSONS MANAGEMENT */}
       {/* ============================================================== */}
       {adminTab === 'lessons' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#1E293B] p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
-            <div>
-              <h3 className="text-base font-black text-[#243447] dark:text-white">Bài học lộ trình tùy chỉnh</h3>
-              <p className="text-xs text-[#748092] dark:text-[#94A3B8]">Tạo bài giảng mới tích hợp vào chặng học HSK của ứng dụng.</p>
-            </div>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-black text-[#243447] dark:text-white">
+              Danh Sách Bài Học Bổ Sung ({customLessons.length})
+            </h3>
             <button
               onClick={() => {
                 playClickSound();
                 setLessonFormOpen(true);
               }}
-              className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center justify-center gap-2 active:scale-95"
+              className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center gap-2 cursor-pointer"
             >
               <Plus size={16} />
-              <span>Thêm bài học mới</span>
+              <span>Tạo bài học mới</span>
             </button>
           </div>
 
@@ -1699,25 +1488,28 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             {customLessons.map((l) => (
               <div 
                 key={l.id}
-                className="bg-white dark:bg-[#1E293B] p-6 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-start justify-between gap-4"
+                className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between space-y-3"
               >
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#E85D3F]/10 text-[#E85D3F]">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-orange-100 dark:bg-orange-950/40 text-[#E85D3F]">
                       {l.level}
                     </span>
-                    <span className="text-xs text-[#748092]">{l.duration} phút • {l.xp} XP</span>
+                    <span className="text-xs text-[#748092]">+{l.xp} XP</span>
                   </div>
-                  <h4 className="text-base font-black text-[#243447] dark:text-white">{l.title}</h4>
-                  <p className="text-xs text-[#748092] dark:text-[#94A3B8]">{l.description}</p>
+                  <h4 className="text-base font-bold text-[#243447] dark:text-white">{l.title}</h4>
+                  <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1">{l.description}</p>
                 </div>
-                <button
-                  onClick={() => handleDeleteLesson(l.id, l.title)}
-                  className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
-                  title="Xóa bài học"
-                >
-                  <Trash2 size={16} />
-                </button>
+
+                <div className="pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
+                  <span className="text-xs text-[#748092]">Thời lượng: {l.duration} phút</span>
+                  <button
+                    onClick={() => handleDeleteLesson(l.id, l.title)}
+                    className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1725,77 +1517,61 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       )}
 
       {/* ============================================================== */}
-      {/* TAB 5: BACKUP & SYSTEM */}
-      {/* ============================================================== */}
-      {adminTab === 'backup' && (
-        <div className="space-y-6 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1E293B] p-8 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-6">
-            <div>
-              <h3 className="text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
-                <Upload size={20} className="text-[#E85D3F]" />
-                <span>Sao Lưu & Đồng Bộ Hệ Thống</span>
-              </h3>
-              <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-1">
-                Xuất toàn bộ cơ sở dữ liệu học tập gồm Người dùng, Kho tài liệu, Từ vựng và Bài giảng để lưu trữ an toàn hoặc chuyển giao dữ liệu.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3">
-                <h4 className="font-bold text-[#243447] dark:text-white text-sm">Xuất bản sao lưu (Export JSON)</h4>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-                  Tải về tệp JSON chứa tất cả {materials.length} tài liệu, {usersList.length} người dùng, {customVocab.length} từ vựng tùy chỉnh.
-                </p>
-                <button
-                  onClick={handleExportData}
-                  className="px-5 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md shadow-[#E85D3F]/25 flex items-center gap-2"
-                >
-                  <Download size={15} />
-                  <span>Tải file sao lưu ngay</span>
-                </button>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3">
-                <h4 className="font-bold text-[#243447] dark:text-white text-sm">Khôi phục kho tài liệu chuẩn</h4>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-                  Đặt lại danh mục giáo trình HSK, sách ngữ pháp và tài liệu mẫu chính thức của HanziGo.
-                </p>
-                <button
-                  onClick={handleResetMaterials}
-                  className="px-5 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-[#243447] dark:text-white text-xs font-bold flex items-center gap-2 cursor-pointer"
-                >
-                  <RefreshCw size={15} />
-                  <span>Khôi phục mẫu chuẩn</span>
-                </button>
-              </div>
-
-              {/* Danger Zone: Xóa sạch dữ liệu mock và số liệu thử nghiệm */}
-              <div className="sm:col-span-2 p-5 rounded-2xl bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 space-y-3">
-                <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
-                  <Trash2 size={18} />
-                  <h4 className="font-bold text-sm">Vùng nguy hiểm: Dọn sạch số liệu thử nghiệm & Mock Data</h4>
-                </div>
-                <p className="text-xs text-rose-700/80 dark:text-rose-300/80 leading-relaxed">
-                  Xóa toàn bộ điểm phát âm thử nghiệm, lịch sử thi thử HSK, lịch sử đàm thoại chat, streak, XP và các lớp học demo trên trình duyệt này để đưa tài khoản về trạng thái người dùng mới hoàn toàn.
-                </p>
-                <button
-                  onClick={handlePurgeAllMockData}
-                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/25 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
-                >
-                  <Trash2 size={15} />
-                  <span>Xóa sạch toàn bộ dữ liệu & số liệu mock</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ============================================================== */}
-      {/* TAB 6: AI MONITORING & COST (GIÁM SÁT AI & CHI PHÍ) */}
+      {/* TAB 5: AI MONITORING & COST */}
       {/* ============================================================== */}
       {adminTab === 'ai_metrics' && (
         <AiMonitoringDashboard />
+      )}
+
+      {/* ============================================================== */}
+      {/* TAB 6: BACKUP & SYSTEM PURGE */}
+      {/* ============================================================== */}
+      {adminTab === 'backup' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Export Card */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                <Download size={24} />
+              </div>
+              <h3 className="text-lg font-black text-[#243447] dark:text-white">
+                Xuất Toàn Bộ Dữ Liệu Hệ Thống
+              </h3>
+              <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
+                Tải về toàn bộ danh sách người dùng, kho tài liệu, từ vựng và bài học dưới dạng file JSON chuẩn hóa để lưu trữ hoặc di chuyển máy chủ.
+              </p>
+              <button
+                onClick={handleExportData}
+                className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer"
+              >
+                <Download size={16} />
+                <span>Tải file backup JSON</span>
+              </button>
+            </div>
+
+            {/* Clean Mock Data Card */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-rose-200 dark:border-rose-950/60 shadow-sm space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-lg font-black text-[#243447] dark:text-white">
+                Dọn Dẹp Dữ Liệu Thử Nghiệm (Purge)
+              </h3>
+              <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
+                Xóa sạch các số liệu rác, lịch sử thi thử HSK và tin nhắn chat test trên trình duyệt để đưa hệ thống về trạng thái sạch sẽ.
+              </p>
+              <button
+                onClick={handlePurgeAllMockData}
+                className="px-6 py-3 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer"
+              >
+                <Trash2 size={16} />
+                <span>Xóa dữ liệu rác trên thiết bị</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
       )}
 
       {/* ============================================================== */}
@@ -1804,7 +1580,6 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       {isAddUserModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-lg w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6">
-            
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <h3 className="text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
                 <UserCheck size={20} className="text-[#E85D3F]" />
@@ -1812,7 +1587,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               </h3>
               <button 
                 onClick={() => setIsAddUserModalOpen(false)}
-                className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-black/5 dark:hover:bg-white/5"
+                className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -1850,63 +1625,33 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Phân quyền (Role)
+                    Phân quyền vai trò
                   </label>
                   <select
                     value={newUserForm.role}
                     onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   >
-                    <option value="student">🎓 Học viên (Student)</option>
-                    <option value="teacher">👨‍🏫 Giáo viên (Teacher)</option>
-                    <option value="moderator">🛡️ Kiểm duyệt (Moderator)</option>
-                    <option value="admin">👑 Quản trị viên (Admin)</option>
+                    <option value="student">Học viên</option>
+                    <option value="teacher">Giáo viên</option>
+                    <option value="admin">Quản trị viên</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Cấp độ học ban đầu
+                    Cấp độ HSK khởi đầu
                   </label>
                   <select
                     value={newUserForm.level}
                     onChange={(e) => setNewUserForm({ ...newUserForm, level: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   >
-                    <option value="Nhập môn - Pinyin">Nhập môn - Pinyin</option>
                     <option value="HSK 1 - Sơ cấp">HSK 1 - Sơ cấp</option>
-                    <option value="HSK 2 - Sơ cấp nâng cao">HSK 2 - Sơ cấp nâng cao</option>
-                    <option value="HSK 3 - Trung cấp 1">HSK 3 - Trung cấp 1</option>
-                    <option value="HSK 4 - Trung cấp 2">HSK 4 - Trung cấp 2</option>
-                    <option value="HSK 5 - Cao cấp 1">HSK 5 - Cao cấp 1</option>
-                    <option value="HSK 6 - Cao cấp 2">HSK 6 - Cao cấp 2</option>
+                    <option value="HSK 2 - Cơ bản">HSK 2 - Cơ bản</option>
+                    <option value="HSK 3 - Trung cấp">HSK 3 - Trung cấp</option>
+                    <option value="HSK 4 - Độc lập">HSK 4 - Độc lập</option>
                   </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Điểm XP khởi tạo
-                  </label>
-                  <input 
-                    type="number"
-                    value={newUserForm.xp}
-                    onChange={(e) => setNewUserForm({ ...newUserForm, xp: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Chuỗi Streak ban đầu
-                  </label>
-                  <input 
-                    type="number"
-                    value={newUserForm.streak}
-                    onChange={(e) => setNewUserForm({ ...newUserForm, streak: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
-                  />
                 </div>
               </div>
 
@@ -1914,13 +1659,13 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 <button
                   type="button"
                   onClick={() => setIsAddUserModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#748092] hover:bg-black/5 dark:hover:bg-white/5"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#748092] hover:bg-black/5 cursor-pointer"
                 >
                   Hủy bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md shadow-[#E85D3F]/30"
+                  className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md cursor-pointer"
                 >
                   Tạo tài khoản
                 </button>
@@ -1936,15 +1681,14 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       {isEditUserModalOpen && editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-lg w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6">
-            
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <h3 className="text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
                 <Edit3 size={20} className="text-[#E85D3F]" />
-                <span>Chỉnh Sửa Thông Tin Học Viên</span>
+                <span>Chỉnh Sửa Học Viên</span>
               </h3>
               <button 
                 onClick={() => setIsEditUserModalOpen(false)}
-                className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-black/5 dark:hover:bg-white/5"
+                className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -1960,37 +1704,25 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   required
                   value={editingUser.name}
                   onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                  Địa chỉ Email
-                </label>
-                <input 
-                  type="email"
-                  disabled
-                  value={editingUser.email}
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
+                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Phân quyền (Role)
+                    Cấp độ HSK
                   </label>
                   <select
-                    disabled={currentRole !== 'admin'}
-                    value={editingUser.role}
-                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                    value={editingUser.level}
+                    onChange={(e) => setEditingUser({ ...editingUser, level: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   >
-                    <option value="student">🎓 Học viên</option>
-                    <option value="teacher">👨‍🏫 Giáo viên</option>
-                    <option value="moderator">🛡️ Kiểm duyệt</option>
-                    <option value="admin">👑 Quản trị viên</option>
+                    <option value="HSK 1 - Sơ cấp">HSK 1 - Sơ cấp</option>
+                    <option value="HSK 2 - Cơ bản">HSK 2 - Cơ bản</option>
+                    <option value="HSK 3 - Trung cấp">HSK 3 - Trung cấp</option>
+                    <option value="HSK 4 - Độc lập">HSK 4 - Độc lập</option>
+                    <option value="HSK 5 - Cao cấp">HSK 5 - Cao cấp</option>
                   </select>
                 </div>
 
@@ -1999,51 +1731,37 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     Trạng thái
                   </label>
                   <select
-                    disabled={currentRole !== 'admin'}
                     value={editingUser.status}
                     onChange={(e) => setEditingUser({ ...editingUser, status: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   >
-                    <option value="active">🟢 Đang hoạt động</option>
-                    <option value="blocked">🔴 Tạm khóa</option>
+                    <option value="active">Hoạt động</option>
+                    <option value="blocked">Khóa</option>
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Cấp độ HSK
-                  </label>
-                  <input 
-                    type="text"
-                    value={editingUser.level}
-                    onChange={(e) => setEditingUser({ ...editingUser, level: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
-                  />
-                </div>
-
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
                     Điểm XP
                   </label>
                   <input 
                     type="number"
-                    value={editingUser.xp}
+                    value={editingUser.xp || 0}
                     onChange={(e) => setEditingUser({ ...editingUser, xp: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Chuỗi Streak
+                    Chuỗi ngày streak
                   </label>
                   <input 
                     type="number"
-                    value={editingUser.streak}
+                    value={editingUser.streak || 0}
                     onChange={(e) => setEditingUser({ ...editingUser, streak: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   />
                 </div>
               </div>
@@ -2052,13 +1770,13 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 <button
                   type="button"
                   onClick={() => setIsEditUserModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#748092] hover:bg-black/5 dark:hover:bg-white/5"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#748092] hover:bg-black/5 cursor-pointer"
                 >
-                  Hủy bỏ
+                  Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md shadow-[#E85D3F]/30"
+                  className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md cursor-pointer"
                 >
                   Lưu thay đổi
                 </button>
@@ -2071,304 +1789,127 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       {/* ============================================================== */}
       {/* MODAL 3: ADD / EDIT MATERIAL MODAL */}
       {/* ============================================================== */}
-      {isFormOpen && (
+      {isMatFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-2xl w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
-            
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-xl w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <h3 className="text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
-                {editingMatId ? <Edit3 size={20} className="text-[#E85D3F]" /> : <FileText size={20} className="text-[#E85D3F]" />}
-                <span>{editingMatId ? 'Chỉnh Sửa Tài Liệu Học' : 'Thêm Tài Liệu Mới Vào Kho'}</span>
+                <FileText size={20} className="text-[#E85D3F]" />
+                <span>{editingMatId ? 'Cập Nhật Tài Liệu' : 'Thêm Tài Liệu Mới'}</span>
               </h3>
-              <button 
-                onClick={() => setIsFormOpen(false)}
-                className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-black/5 dark:hover:bg-white/5"
-              >
-                <X size={18} />
+              <button onClick={() => setIsMatFormOpen(false)} className="cursor-pointer">
+                <X size={18} className="text-gray-400" />
               </button>
             </div>
 
             <form onSubmit={handleSaveMaterial} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                  Tiêu đề tài liệu / Tên sách giáo trình *
-                </label>
+                <label className="block text-xs font-bold text-[#748092] mb-1">Tiêu đề tài liệu *</label>
                 <input 
-                  type="text"
-                  required
+                  type="text" 
+                  required 
                   value={matForm.title}
                   onChange={(e) => setMatForm({ ...matForm, title: e.target.value })}
-                  placeholder="Ví dụ: Giáo trình Chuẩn HSK 4 - Trọn bộ bài học & Audio"
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  placeholder="Ví dụ: Giáo trình Chuẩn HSK 1"
+                  className="w-full px-4 py-2 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Danh mục tài liệu
-                  </label>
+                  <label className="block text-xs font-bold text-[#748092] mb-1">Danh mục</label>
                   <select
                     value={matForm.category}
                     onChange={(e) => setMatForm({ ...matForm, category: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   >
                     {MATERIAL_CATEGORIES.filter(c => c !== 'Tất cả').map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Trình độ HSK
-                  </label>
+                  <label className="block text-xs font-bold text-[#748092] mb-1">Cấp độ</label>
                   <select
                     value={matForm.level}
                     onChange={(e) => setMatForm({ ...matForm, level: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   >
                     {MATERIAL_LEVELS.filter(l => l !== 'Tất cả').map(l => (
                       <option key={l} value={l}>{l}</option>
                     ))}
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Định dạng file
-                  </label>
-                  <select
-                    value={matForm.format}
-                    onChange={(e) => setMatForm({ ...matForm, format: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
-                  >
-                    {MATERIAL_FORMATS.map(f => (
-                      <option key={f} value={f}>{f}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Tác giả biên soạn
-                  </label>
-                  <input 
-                    type="text"
-                    value={matForm.author}
-                    onChange={(e) => setMatForm({ ...matForm, author: e.target.value })}
-                    placeholder="Khoa Ngôn ngữ BLCU / HanziGo"
-                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Nhà xuất bản / Tổ chức phát hành
-                  </label>
-                  <input 
-                    type="text"
-                    value={matForm.publisher}
-                    onChange={(e) => setMatForm({ ...matForm, publisher: e.target.value })}
-                    placeholder="BLCU Press / CTI Chinesetest / Khổng Tử Học Viện"
-                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Kỹ năng trọng tâm (phân cách bởi dấu phẩy)
-                  </label>
-                  <input 
-                    type="text"
-                    value={matForm.skills}
-                    onChange={(e) => setMatForm({ ...matForm, skills: e.target.value })}
-                    placeholder="Nghe hiểu, Đọc hiểu, Ngữ pháp, Luyện thi HSK"
-                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Dung lượng / Quy mô tài liệu
-                  </label>
-                  <input 
-                    type="text"
-                    value={matForm.fileSize}
-                    onChange={(e) => setMatForm({ ...matForm, fileSize: e.target.value })}
-                    placeholder="Ví dụ: 150 trang, 25 MB hoặc 5 bộ đề"
-                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Trạng thái kiểm định nguồn gốc
-                  </label>
-                  <select
-                    value={matForm.verificationStatus}
-                    onChange={(e) => setMatForm({ ...matForm, verificationStatus: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
-                  >
-                    <option value="verified_official">🛡️ Chính thức CTI / Bộ GD</option>
-                    <option value="verified_oer">✅ Giáo dục Mở OER / CC</option>
-                    <option value="academic_reference">🏛️ Đại học BLCU / Học thuật</option>
-                    <option value="curated">⭐ Tuyển chọn nội bộ</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Giấy phép / Bản quyền
-                  </label>
-                  <input 
-                    type="text"
-                    value={matForm.license}
-                    onChange={(e) => setMatForm({ ...matForm, license: e.target.value })}
-                    placeholder="CC BY-NC-SA, Trích dẫn học thuật..."
-                    className="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Module Lộ trình liên kết
-                  </label>
-                  <input 
-                    type="text"
-                    value={matForm.relatedLessonId}
-                    onChange={(e) => setMatForm({ ...matForm, relatedLessonId: e.target.value })}
-                    placeholder="Module 1.1 (Bài 101-105)"
-                    className="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Đường dẫn nguồn gốc phát hành (Source URL) *
-                  </label>
-                  <input 
-                    type="url"
-                    required
-                    value={matForm.sourceUrl}
-                    onChange={(e) => setMatForm({ ...matForm, sourceUrl: e.target.value })}
-                    placeholder="https://chinesetest.cn... hoặc link trang gốc"
-                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Đường dẫn tải xuống / Xem file trực tiếp
-                  </label>
-                  <input 
-                    type="url"
-                    value={matForm.downloadUrl}
-                    onChange={(e) => setMatForm({ ...matForm, downloadUrl: e.target.value })}
-                    placeholder="https://drive.google.com/file/... hoặc link tải"
-                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
-                  />
-                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                  Ghi chú thẩm định học thuật & Kiểm tra nguồn
-                </label>
-                <input 
-                  type="text"
-                  value={matForm.verificationNotes}
-                  onChange={(e) => setMatForm({ ...matForm, verificationNotes: e.target.value })}
-                  placeholder="Đã đối chiếu với khung HSK và tài liệu chuẩn của Hanban / CTI..."
-                  className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                  Mô tả chi tiết nội dung tài liệu
-                </label>
+                <label className="block text-xs font-bold text-[#748092] mb-1">Mô tả tóm tắt</label>
                 <textarea 
-                  rows={3}
+                  rows={2}
                   value={matForm.description}
                   onChange={(e) => setMatForm({ ...matForm, description: e.target.value })}
-                  placeholder="Tóm tắt nội dung chính, hướng dẫn học tập và lợi ích của tài liệu này đối với học viên..."
-                  className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  placeholder="Nội dung, phương pháp và đối tượng học..."
+                  className="w-full px-4 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Ngôn ngữ thể hiện
-                  </label>
+                  <label className="block text-xs font-bold text-[#748092] mb-1">Link tải (URL)</label>
                   <input 
-                    type="text"
-                    value={matForm.language}
-                    onChange={(e) => setMatForm({ ...matForm, language: e.target.value })}
-                    placeholder="Song ngữ Trung - Việt / Tiếng Trung Giản thể"
-                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                    type="url"
+                    value={matForm.downloadUrl || ''}
+                    onChange={(e) => setMatForm({ ...matForm, downloadUrl: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full px-4 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Thẻ phân loại (Tags, cách nhau bởi dấu phẩy)
-                  </label>
+                  <label className="block text-xs font-bold text-[#748092] mb-1">Dung lượng / Định dạng</label>
                   <input 
                     type="text"
-                    value={matForm.tags}
-                    onChange={(e) => setMatForm({ ...matForm, tags: e.target.value })}
-                    placeholder="Giáo trình, Đàm thoại, Có Audio, Luyện thi"
-                    className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                    value={matForm.fileSize || '10 MB'}
+                    onChange={(e) => setMatForm({ ...matForm, fileSize: e.target.value })}
+                    placeholder="10 MB"
+                    className="w-full px-4 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   />
                 </div>
               </div>
 
-              {/* Toggles */}
-              <div className="flex flex-wrap items-center gap-6 p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+              <div className="flex items-center gap-6 pt-2">
                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-[#243447] dark:text-white">
                   <input 
                     type="checkbox"
                     checked={matForm.isFeatured}
                     onChange={(e) => setMatForm({ ...matForm, isFeatured: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#E85D3F] focus:ring-[#E85D3F]"
+                    className="rounded text-[#E85D3F]"
                   />
-                  <span>⭐ Ghim tài liệu nổi bật lên đầu trang</span>
+                  <span>Ghim nổi bật</span>
                 </label>
-
                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-[#243447] dark:text-white">
                   <input 
                     type="checkbox"
                     checked={matForm.isHidden}
                     onChange={(e) => setMatForm({ ...matForm, isHidden: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#E85D3F] focus:ring-[#E85D3F]"
+                    className="rounded text-[#E85D3F]"
                   />
-                  <span>👁️‍🗨️ Tạm ẩn tài liệu (Chỉ Admin nhìn thấy)</span>
+                  <span>Tạm ẩn</span>
                 </label>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
                 <button
                   type="button"
-                  onClick={() => setIsFormOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#748092] hover:bg-black/5 dark:hover:bg-white/5"
+                  onClick={() => setIsMatFormOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#748092] cursor-pointer"
                 >
-                  Hủy bỏ
+                  Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md shadow-[#E85D3F]/30"
+                  className="px-6 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md cursor-pointer"
                 >
-                  {editingMatId ? 'Lưu cập nhật' : 'Thêm tài liệu ngay'}
+                  {editingMatId ? 'Lưu cập nhật' : 'Thêm tài liệu'}
                 </button>
               </div>
             </form>
@@ -2381,13 +1922,13 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       {/* ============================================================== */}
       {vocabFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-lg w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-lg w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-5">
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <h3 className="text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
                 <Layers size={20} className="text-[#E85D3F]" />
-                <span>Thêm Từ Vựng Mới Vào Hệ Thống</span>
+                <span>Thêm Từ Vựng Mới</span>
               </h3>
-              <button onClick={() => setVocabFormOpen(false)}>
+              <button onClick={() => setVocabFormOpen(false)} className="cursor-pointer">
                 <X size={18} className="text-gray-400" />
               </button>
             </div>
@@ -2402,18 +1943,46 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     value={vocabForm.hanzi}
                     onChange={(e) => setVocabForm({ ...vocabForm, hanzi: e.target.value })}
                     placeholder="你好"
-                    className="w-full px-4 py-2.5 rounded-xl text-lg font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#E85D3F]"
+                    className="w-full px-4 py-2 rounded-xl text-lg font-black border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#E85D3F]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#748092] mb-1">Pinyin phiên âm</label>
+                  <label className="block text-xs font-bold text-[#748092] mb-1">Pinyin</label>
                   <input 
                     type="text" 
                     value={vocabForm.pinyin}
                     onChange={(e) => setVocabForm({ ...vocabForm, pinyin: e.target.value })}
                     placeholder="nǐ hǎo"
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                    className="w-full px-4 py-2 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#748092] mb-1">Hán-Việt</label>
+                  <input 
+                    type="text" 
+                    value={vocabForm.hanviet}
+                    onChange={(e) => setVocabForm({ ...vocabForm, hanviet: e.target.value })}
+                    placeholder="Nhĩ Hảo"
+                    className="w-full px-4 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#748092] mb-1">Cấp độ HSK</label>
+                  <select
+                    value={vocabForm.hsk}
+                    onChange={(e) => setVocabForm({ ...vocabForm, hsk: e.target.value })}
+                    className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  >
+                    <option value="hsk1">HSK 1</option>
+                    <option value="hsk2">HSK 2</option>
+                    <option value="hsk3">HSK 3</option>
+                    <option value="hsk4">HSK 4</option>
+                    <option value="hsk5">HSK 5</option>
+                    <option value="hsk6">HSK 6</option>
+                  </select>
                 </div>
               </div>
 
@@ -2425,7 +1994,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   value={vocabForm.meaning}
                   onChange={(e) => setVocabForm({ ...vocabForm, meaning: e.target.value })}
                   placeholder="Xin chào"
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  className="w-full px-4 py-2 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                 />
               </div>
 
@@ -2433,13 +2002,13 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 <button
                   type="button"
                   onClick={() => setVocabFormOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#748092]"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#748092] cursor-pointer"
                 >
-                  Hủy bỏ
+                  Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md"
+                  className="px-6 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md cursor-pointer"
                 >
                   Lưu từ vựng
                 </button>
@@ -2454,13 +2023,13 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       {/* ============================================================== */}
       {lessonFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-lg w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-lg w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-5">
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <h3 className="text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
                 <BookOpen size={20} className="text-[#E85D3F]" />
                 <span>Thêm Bài Học Mới</span>
               </h3>
-              <button onClick={() => setLessonFormOpen(false)}>
+              <button onClick={() => setLessonFormOpen(false)} className="cursor-pointer">
                 <X size={18} className="text-gray-400" />
               </button>
             </div>
@@ -2474,7 +2043,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   value={lessonForm.title}
                   onChange={(e) => setLessonForm({ ...lessonForm, title: e.target.value })}
                   placeholder="Bài 5: Đi lại & Đặt vé tàu cao tốc"
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  className="w-full px-4 py-2 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                 />
               </div>
 
@@ -2484,7 +2053,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   <select
                     value={lessonForm.level}
                     onChange={(e) => setLessonForm({ ...lessonForm, level: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   >
                     <option value="Nhập môn">Nhập môn</option>
                     <option value="HSK 1">HSK 1</option>
@@ -2501,7 +2070,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     type="number" 
                     value={lessonForm.duration}
                     onChange={(e) => setLessonForm({ ...lessonForm, duration: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   />
                 </div>
               </div>
@@ -2509,11 +2078,11 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               <div>
                 <label className="block text-xs font-bold text-[#748092] mb-1">Mô tả tóm tắt</label>
                 <textarea 
-                  rows={3}
+                  rows={2}
                   value={lessonForm.description}
                   onChange={(e) => setLessonForm({ ...lessonForm, description: e.target.value })}
                   placeholder="Mô tả nội dung bài học..."
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  className="w-full px-4 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                 />
               </div>
 
@@ -2521,13 +2090,13 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 <button
                   type="button"
                   onClick={() => setLessonFormOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#748092]"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#748092] cursor-pointer"
                 >
-                  Hủy bỏ
+                  Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md"
+                  className="px-6 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md cursor-pointer"
                 >
                   Lưu bài học
                 </button>

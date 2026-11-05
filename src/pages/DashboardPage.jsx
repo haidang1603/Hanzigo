@@ -55,6 +55,13 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   const userName = user ? (user.name ? user.name.split(' ').pop() : 'Bạn') : 'Bạn';
   const [gamificationTick, setGamificationTick] = useState(0);
 
+  const greetingTime = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Chào buổi sáng';
+    if (hour < 18) return 'Chào buổi chiều';
+    return 'Chào buổi tối';
+  }, []);
+
   useEffect(() => {
     const handleGamificationUpdated = () => setGamificationTick(t => t + 1);
     window.addEventListener('hanzigo_gamification_updated', handleGamificationUpdated);
@@ -461,7 +468,7 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
           )}
 
           <h1 className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white">
-            Chào {userName}, hôm nay bạn muốn học gì? 👋
+            {greetingTime}, {userName}! Hôm nay bạn muốn học gì? 👋
           </h1>
           <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] leading-relaxed">
             {actualWordsLearned > 0 || completedLessonIds.length > 0
@@ -553,64 +560,98 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
         {/* Words Learned */}
         <div 
           onClick={() => setActiveTab('vocabulary')}
-          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-center gap-4 hover:border-[#E85D3F] transition-all cursor-pointer group"
+          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between gap-3 hover:border-[#E85D3F] transition-all cursor-pointer group"
         >
-          <div className="w-13 h-13 rounded-2xl bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] flex items-center justify-center text-2xl p-3">
-            <BookOpen size={26} className="text-[#E85D3F]" />
+          <div className="flex items-center gap-4">
+            <div className="w-13 h-13 rounded-2xl bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] flex items-center justify-center text-2xl p-3 shrink-0">
+              <BookOpen size={26} className="text-[#E85D3F]" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Từ vựng đã nhớ</p>
+              <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
+                {actualWordsLearned} từ
+              </p>
+              <p className="text-[10px] text-[#45B97C] font-semibold truncate">
+                Spaced Repetition SRS
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Từ vựng đã nhớ</p>
-            <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-              {actualWordsLearned} từ
-            </p>
-            <p className="text-[10px] text-[#45B97C] font-semibold">
-              Spaced Repetition SRS
-            </p>
+          <div className="w-full bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] rounded-lg px-2 py-1 text-[10px] font-bold text-[#E85D3F] flex items-center justify-between">
+            <span>Mở kho Flashcard</span>
+            <ArrowRight size={11} />
           </div>
         </div>
 
-        {/* Study Time / XP */}
+        {/* Study Time / XP with Level Progress */}
         <div 
           onClick={() => {
             playClickSound();
             setActiveTab('leaderboard');
           }}
-          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-center gap-4 hover:border-[#E85D3F] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between gap-2.5 hover:border-[#E85D3F] hover:-translate-y-0.5 transition-all cursor-pointer group"
           title="Nhấn để xem Bảng Vàng vinh danh cao thủ XP ⚡"
         >
-          <div className="w-13 h-13 rounded-2xl bg-[#EFF6FF] dark:bg-[#131B24] text-[#3B82F6] flex items-center justify-center text-2xl p-3 group-hover:scale-105 transition-transform">
-            <Zap size={26} className="text-[#3B82F6] fill-[#3B82F6]/30" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Kinh nghiệm</p>
-              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
-                Lv.{levelInfo.level} {levelInfo.badge}
-              </span>
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-[#EFF6FF] dark:bg-[#131B24] text-[#3B82F6] flex items-center justify-center text-xl p-2.5 group-hover:scale-105 transition-transform shrink-0">
+              <Zap size={22} className="text-[#3B82F6] fill-[#3B82F6]/30" />
             </div>
-            <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">{calculatedTotalXp} XP</p>
-            <p className="text-[10px] text-[#3B82F6] font-semibold truncate">
-              {levelInfo.title}
-            </p>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Kinh nghiệm</p>
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 shrink-0">
+                  Lv.{levelInfo.level} {levelInfo.badge}
+                </span>
+              </div>
+              <p className="text-lg sm:text-xl font-black text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors leading-tight">
+                {calculatedTotalXp.toLocaleString()} XP
+              </p>
+            </div>
+          </div>
+          
+          {/* XP Progress Bar to next level */}
+          <div className="space-y-1">
+            <div className="w-full bg-blue-100 dark:bg-blue-950/60 h-1.5 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300"
+                style={{ width: `${Math.max(8, levelInfo.currentProgressPercent || 0)}%` }}
+              />
+            </div>
+            <div className="flex justify-between items-center text-[9px] text-[#748092] dark:text-[#94A3B8] font-semibold">
+              <span className="truncate max-w-[90px]">{levelInfo.title}</span>
+              <span>{levelInfo.xpToNextLevel > 0 ? `Còn ${levelInfo.xpToNextLevel} XP lên cấp` : 'Đỉnh phong'}</span>
+            </div>
           </div>
         </div>
 
         {/* Roadmap Progress */}
         <div 
           onClick={() => setActiveTab('roadmap')}
-          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-center gap-4 hover:border-[#E85D3F] transition-all cursor-pointer group"
+          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between gap-2.5 hover:border-[#E85D3F] transition-all cursor-pointer group"
         >
-          <div className="w-13 h-13 rounded-2xl bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] flex items-center justify-center text-2xl p-3">
-            <Compass size={26} className="text-[#45B97C]" />
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] flex items-center justify-center text-xl p-2.5 shrink-0">
+              <Compass size={22} className="text-[#45B97C]" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Tiến độ lộ trình</p>
+              <p className="text-lg sm:text-xl font-black text-[#243447] dark:text-white group-hover:text-[#45B97C] transition-colors leading-tight">
+                {overallRoadmapProgress}%
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Tiến độ lộ trình</p>
-            <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white group-hover:text-[#45B97C] transition-colors">
-              {overallRoadmapProgress}%
-            </p>
-            <p className="text-[10px] text-[#45B97C] font-semibold">
-              {completedLessonIds.length} bài học hoàn thành
-            </p>
+
+          {/* Roadmap Progress Bar */}
+          <div className="space-y-1">
+            <div className="w-full bg-emerald-100 dark:bg-emerald-950/60 h-1.5 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-[#45B97C] rounded-full transition-all duration-300"
+                style={{ width: `${Math.max(5, overallRoadmapProgress)}%` }}
+              />
+            </div>
+            <div className="flex justify-between items-center text-[9px] text-[#748092] dark:text-[#94A3B8] font-semibold">
+              <span>{completedLessonIds.length} bài học hoàn thành</span>
+              <span className="text-[#45B97C]">Lộ trình HSK</span>
+            </div>
           </div>
         </div>
 
@@ -1196,6 +1237,26 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
                 <div>
                   <p className="text-xs font-bold text-[#243447] dark:text-white">Thư viện giáo trình & đề thi</p>
                   <p className="text-[10px] text-[#748092]">Kho tài liệu PDF & file nghe MP3</p>
+                </div>
+              </div>
+              <ArrowRight size={14} className="text-[#748092] group-hover:text-[#E85D3F] group-hover:translate-x-1 transition-transform" />
+            </button>
+
+            {/* HSK Exam Center Shortcut */}
+            <button
+              onClick={() => {
+                playClickSound();
+                setActiveTab('exam-center');
+              }}
+              className="w-full p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:border-[#E85D3F] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-left transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-sm">
+                  <GraduationCap size={17} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#243447] dark:text-white">Thi thử HSK Chuẩn Quốc Tế</p>
+                  <p className="text-[10px] text-[#748092]">Mô phỏng thi máy CBT & tính điểm thật</p>
                 </div>
               </div>
               <ArrowRight size={14} className="text-[#748092] group-hover:text-[#E85D3F] group-hover:translate-x-1 transition-transform" />

@@ -11,6 +11,7 @@
 
 import { EXPANDED_MOCK_EXAMS, EXPANDED_MOCK_QUESTIONS } from './hskMockExamsExpanded.js';
 import { REAL_SIMULATION_QUESTIONS } from './hskRealExamQuestions.js';
+import { OFFICIAL_PUBLIC_EXAMS, OFFICIAL_PUBLIC_QUESTIONS } from './hskOfficialPublicExams.js';
 
 const BASE_HSK_EXAMS = [
   {
@@ -992,7 +993,7 @@ const BASE_HSK_QUESTIONS = [
   // EXAM: hsk1-reading-02 (Đề Luyện Chuyên Sâu Đọc Hiểu & Từ Vựng HSK 1 - 10 câu)
   // =========================================================================
   {
-    id: 'q-hsk1-02-01',
+    id: 'q-hsk1-read02-01',
     exam_id: 'hsk1-reading-02',
     part_type: 'reading',
     part_number: 1,
@@ -1012,7 +1013,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk1-02-02',
+    id: 'q-hsk1-read02-02',
     exam_id: 'hsk1-reading-02',
     part_type: 'reading',
     part_number: 1,
@@ -1032,7 +1033,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk1-02-03',
+    id: 'q-hsk1-read02-03',
     exam_id: 'hsk1-reading-02',
     part_type: 'reading',
     part_number: 1,
@@ -1052,7 +1053,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk1-02-04',
+    id: 'q-hsk1-read02-04',
     exam_id: 'hsk1-reading-02',
     part_type: 'reading',
     part_number: 1,
@@ -1072,7 +1073,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk1-02-05',
+    id: 'q-hsk1-read02-05',
     exam_id: 'hsk1-reading-02',
     part_type: 'reading',
     part_number: 2,
@@ -1093,7 +1094,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk1-02-06',
+    id: 'q-hsk1-read02-06',
     exam_id: 'hsk1-reading-02',
     part_type: 'reading',
     part_number: 2,
@@ -1114,7 +1115,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk1-02-07',
+    id: 'q-hsk1-read02-07',
     exam_id: 'hsk1-reading-02',
     part_type: 'reading',
     part_number: 2,
@@ -1135,7 +1136,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk1-02-08',
+    id: 'q-hsk1-read02-08',
     exam_id: 'hsk1-reading-02',
     part_type: 'reading',
     part_number: 3,
@@ -1156,7 +1157,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk1-02-09',
+    id: 'q-hsk1-read02-09',
     exam_id: 'hsk1-reading-02',
     part_type: 'reading',
     part_number: 3,
@@ -1177,7 +1178,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk1-02-10',
+    id: 'q-hsk1-read02-10',
     exam_id: 'hsk1-reading-02',
     part_type: 'reading',
     part_number: 3,
@@ -1202,7 +1203,7 @@ const BASE_HSK_QUESTIONS = [
   // EXAM: hsk2-listening-02 (Đề Luyện Nghe Hiểu Phản Xạ Nhanh HSK 2 - 10 câu)
   // =========================================================================
   {
-    id: 'q-hsk2-02-01',
+    id: 'q-hsk2-lis02-01',
     exam_id: 'hsk2-listening-02',
     part_type: 'listening',
     part_number: 1,
@@ -1223,7 +1224,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk2-02-02',
+    id: 'q-hsk2-lis02-02',
     exam_id: 'hsk2-listening-02',
     part_type: 'listening',
     part_number: 1,
@@ -1244,7 +1245,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk2-02-03',
+    id: 'q-hsk2-lis02-03',
     exam_id: 'hsk2-listening-02',
     part_type: 'listening',
     part_number: 1,
@@ -1265,7 +1266,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk2-02-04',
+    id: 'q-hsk2-lis02-04',
     exam_id: 'hsk2-listening-02',
     part_type: 'listening',
     part_number: 1,
@@ -1286,7 +1287,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk2-02-05',
+    id: 'q-hsk2-lis02-05',
     exam_id: 'hsk2-listening-02',
     part_type: 'listening',
     part_number: 2,
@@ -1307,7 +1308,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk2-02-06',
+    id: 'q-hsk2-lis02-06',
     exam_id: 'hsk2-listening-02',
     part_type: 'listening',
     part_number: 2,
@@ -1328,7 +1329,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk2-02-07',
+    id: 'q-hsk2-lis02-07',
     exam_id: 'hsk2-listening-02',
     part_type: 'listening',
     part_number: 2,
@@ -1349,7 +1350,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk2-02-08',
+    id: 'q-hsk2-lis02-08',
     exam_id: 'hsk2-listening-02',
     part_type: 'listening',
     part_number: 3,
@@ -1370,7 +1371,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk2-02-09',
+    id: 'q-hsk2-lis02-09',
     exam_id: 'hsk2-listening-02',
     part_type: 'listening',
     part_number: 3,
@@ -1391,7 +1392,7 @@ const BASE_HSK_QUESTIONS = [
     points: 10
   },
   {
-    id: 'q-hsk2-02-10',
+    id: 'q-hsk2-lis02-10',
     exam_id: 'hsk2-listening-02',
     part_type: 'listening',
     part_number: 3,
@@ -1685,12 +1686,16 @@ const BASE_HSK_QUESTIONS = [
   }
 ];
 
-export const HSK_EXAMS = [...BASE_HSK_EXAMS, ...EXPANDED_MOCK_EXAMS];
+export const HSK_EXAMS = [
+  ...BASE_HSK_EXAMS,
+  ...OFFICIAL_PUBLIC_EXAMS,
+  ...EXPANDED_MOCK_EXAMS
+];
 
 // Các bộ đề đã được nâng cấp toàn diện quy chuẩn thi thật (40 câu, 35 câu, 30 câu...)
 const REAL_SIMULATION_EXAM_IDS = new Set([
   'hsk1-mock-01',
-  'hsk1-official-ref-01',
+  'hsk1-official-sample-01',
   'hsk2-mock-01',
   'hsk3-mock-01',
   'hsk4-mock-01',
@@ -1703,11 +1708,23 @@ const curatedBaseQuestions = BASE_HSK_QUESTIONS.filter(q => !REAL_SIMULATION_EXA
 
 export const HSK_QUESTIONS = [
   ...REAL_SIMULATION_QUESTIONS,
+  ...OFFICIAL_PUBLIC_QUESTIONS,
   ...curatedBaseQuestions,
   ...EXPANDED_MOCK_QUESTIONS
 ];
 
+export const DYNAMIC_EXAMS = new Map();
+
+export function registerDynamicExam(exam) {
+  if (!exam || !exam.id) return;
+  DYNAMIC_EXAMS.set(exam.id, exam);
+  return exam;
+}
+
 export function getFullExamById(examId) {
+  if (DYNAMIC_EXAMS.has(examId)) {
+    return DYNAMIC_EXAMS.get(examId);
+  }
   const exam = HSK_EXAMS.find(e => e.id === examId);
   if (!exam) return null;
   const questions = HSK_QUESTIONS.filter(q => q.exam_id === examId)
@@ -1717,37 +1734,47 @@ export function getFullExamById(examId) {
 
 // Helper: BẢO MẬT TUYỆT ĐỐI — Tước bỏ đáp án & lời giải trước khi đưa ra màn hình thi
 export function getSanitizedExamForTaking(examId) {
-  const exam = HSK_EXAMS.find(e => e.id === examId);
+  let exam = null;
+  let rawQuestions = [];
+  if (DYNAMIC_EXAMS.has(examId)) {
+    const dyn = DYNAMIC_EXAMS.get(examId);
+    exam = dyn;
+    rawQuestions = dyn.questions || [];
+  } else {
+    exam = HSK_EXAMS.find(e => e.id === examId);
+    if (!exam) return null;
+    rawQuestions = HSK_QUESTIONS.filter(q => q.exam_id === examId)
+      .sort((a, b) => a.question_number - b.question_number);
+  }
   if (!exam) return null;
-  const questions = HSK_QUESTIONS.filter(q => q.exam_id === examId)
-    .sort((a, b) => a.question_number - b.question_number)
-    .map(q => ({
-      id: q.id,
-      exam_id: q.exam_id,
-      section: q.section || q.part_type || 'reading',
-      part_type: q.part_type || q.section || 'reading',
-      part_number: q.part_number || 1,
-      question_number: q.question_number || 1,
-      question_type: q.question_type || q.questionType || 'multiple_choice',
-      questionType: q.questionType || q.question_type || 'multiple_choice',
-      prompt: q.prompt,
-      pinyin: q.pinyin,
-      translation: q.translation,
-      audio_url: q.audio_url || q.audioUrl || '',
-      audioUrl: q.audioUrl || q.audio_url || '',
-      audio_script: q.audio_script || q.audioScript || '',
-      audioScript: q.audioScript || q.audio_script || '',
-      options: q.options || [],
-      words: q.words || q.scrambledWords || [],
-      scrambledWords: q.scrambledWords || q.words || [],
-      writing_criteria: q.writing_criteria || [],
-      min_words: q.min_words || 0,
-      max_words: q.max_words || 0,
-      is_subjective: !!q.is_subjective,
-      points: q.points || 10,
-      relatedVocab: q.relatedVocab || []
-      // BẢO MẬT TUYỆT ĐỐI: Không bao gồm correct_option_index, correct_order, accepted_answers, sample_answer và explanation ở đây!
-    }));
+
+  const questions = rawQuestions.map(q => ({
+    id: q.id,
+    exam_id: q.exam_id || exam.id,
+    section: q.section || q.part_type || 'reading',
+    part_type: q.part_type || q.section || 'reading',
+    part_number: q.part_number || 1,
+    question_number: q.question_number || 1,
+    question_type: q.question_type || q.questionType || 'multiple_choice',
+    questionType: q.questionType || q.question_type || 'multiple_choice',
+    prompt: q.prompt,
+    pinyin: q.pinyin,
+    translation: q.translation,
+    audio_url: q.audio_url || q.audioUrl || '',
+    audioUrl: q.audioUrl || q.audio_url || '',
+    audio_script: q.audio_script || q.audioScript || '',
+    audioScript: q.audioScript || q.audio_script || '',
+    options: q.options || [],
+    words: q.words || q.scrambledWords || [],
+    scrambledWords: q.scrambledWords || q.words || [],
+    writing_criteria: q.writing_criteria || [],
+    min_words: q.min_words || 0,
+    max_words: q.max_words || 0,
+    is_subjective: !!q.is_subjective,
+    points: q.points || 10,
+    relatedVocab: q.relatedVocab || []
+    // BẢO MẬT TUYỆT ĐỐI: Không bao gồm correct_option_index, correct_order, accepted_answers, sample_answer và explanation ở đây!
+  }));
   return { ...exam, questions };
 }
 

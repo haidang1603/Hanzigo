@@ -1424,20 +1424,10 @@ export default function TeacherDashboardPage({
                   <button
                     onClick={() => handleClearDemoStudents()}
                     className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
-                    title="Xóa tất cả tài khoản học viên thử nghiệm đã tạo"
+                    title="Xóa tất cả tài khoản học viên thử nghiệm còn sót lại"
                   >
                     <Trash2 size={13} />
-                    <span>Xóa học viên thử nghiệm</span>
-                  </button>
-                )}
-
-                {classrooms.length > 0 && (
-                  <button
-                    onClick={() => handleAddDemoStudent()}
-                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#45B97C] to-[#2E8B57] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-sm shadow-[#45B97C]/25 flex items-center gap-1.5 whitespace-nowrap"
-                  >
-                    <Plus size={14} />
-                    <span>Thêm học viên thử nghiệm</span>
+                    <span>Xóa dữ liệu học viên thử nghiệm cũ</span>
                   </button>
                 )}
               </div>
@@ -1465,20 +1455,27 @@ export default function TeacherDashboardPage({
                     <div>
                       <h3 className="text-base font-bold text-[#243447] dark:text-white">Chưa có học viên nào tham gia lớp</h3>
                       <p className="text-xs text-[#748092] mt-1 max-w-md mx-auto">
-                        Học viên có thể nhập mã mời để vào lớp. Bạn cũng có thể bấm nút bên dưới để tạo học viên thử nghiệm và kiểm tra tính năng quản lý lớp.
+                        Hãy cung cấp mã lớp học cho học viên của bạn để các em nhập mã và tham gia vào lớp.
                       </p>
                     </div>
                     {classrooms.length > 0 ? (
                       <button
-                        onClick={() => handleAddDemoStudent()}
-                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#45B97C] to-[#2E8B57] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md shadow-[#45B97C]/25"
+                        onClick={() => {
+                          const code = classrooms[0]?.class_code;
+                          if (code) {
+                            navigator.clipboard?.writeText(code);
+                            showToast(`Đã sao chép mã lớp: ${code}`);
+                          }
+                        }}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md shadow-[#E85D3F]/25 flex items-center gap-1.5 mx-auto"
                       >
-                        + Thêm học viên thử nghiệm vào lớp
+                        <Copy size={13} />
+                        <span>Sao chép mã lớp ({classrooms[0]?.class_code})</span>
                       </button>
                     ) : (
                       <button
                         onClick={() => setCreateClassModalOpen(true)}
-                        className="px-5 py-2.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md"
+                        className="px-5 py-2.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md mx-auto"
                       >
                         Tạo lớp học trước
                       </button>
@@ -1770,14 +1767,20 @@ export default function TeacherDashboardPage({
                     <div>
                       <h3 className="text-sm font-bold text-[#243447] dark:text-white">Chưa có học viên nào trong lớp này</h3>
                       <p className="text-xs text-[#748092] mt-1 max-w-md mx-auto">
-                        Cung cấp mã mời <strong className="font-mono text-[#E85D3F]">{currentClass.class_code}</strong> cho học viên để tham gia, hoặc thêm học viên thử nghiệm để kiểm tra tính năng.
+                        Cung cấp mã mời <strong className="font-mono text-[#E85D3F]">{currentClass.class_code}</strong> cho học viên để tham gia vào lớp.
                       </p>
                     </div>
                     <button
-                      onClick={() => handleAddDemoStudent(currentClass.id)}
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#45B97C] to-[#2E8B57] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md shadow-[#45B97C]/25"
+                      onClick={() => {
+                        if (currentClass.class_code) {
+                          navigator.clipboard?.writeText(currentClass.class_code);
+                          showToast(`Đã sao chép mã lớp: ${currentClass.class_code}`);
+                        }
+                      }}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white text-xs font-bold hover:opacity-95 cursor-pointer shadow-md shadow-[#E85D3F]/25 flex items-center gap-1.5 mx-auto"
                     >
-                      + Thêm học viên thử nghiệm vào lớp
+                      <Copy size={13} />
+                      <span>Sao chép mã lớp ({currentClass.class_code})</span>
                     </button>
                   </div>
                 ) : (

@@ -79,18 +79,20 @@ export async function triggerCloudSync(uid = null, explicitXp = null) {
       }
     }
 
-    // Check streak and last study date
+    // Check streak and last study date (strictly isolated by targetUid)
     let streakVal = null;
     try {
-      const rawStreak = localStorage.getItem(`hanzigo_streak_count_${targetUid}`) || localStorage.getItem('hanzigo_streak_count');
+      const rawStreak = localStorage.getItem(`hanzigo_streak_count_${targetUid}`) || (targetUid ? null : localStorage.getItem('hanzigo_streak_count'));
       if (rawStreak !== null && rawStreak !== undefined) {
         streakVal = parseInt(rawStreak, 10);
+      } else if (typeof targetUser?.streak === 'number') {
+        streakVal = targetUser.streak;
       }
     } catch {}
 
     let lastStudyDateVal = null;
     try {
-      lastStudyDateVal = localStorage.getItem(`hanzigo_last_study_date_${targetUid}`) || localStorage.getItem('hanzigo_last_study_date') || targetUser?.last_study_date;
+      lastStudyDateVal = localStorage.getItem(`hanzigo_last_study_date_${targetUid}`) || (targetUid ? null : localStorage.getItem('hanzigo_last_study_date')) || targetUser?.last_study_date;
     } catch {}
 
     // Calculate or resolve authentic XP
@@ -163,13 +165,16 @@ export async function loadAllUserDataFromDb(uid) {
       .maybeSingle();
 
     if (profile) {
-      if (typeof profile.streak === 'number') {
-        localStorage.setItem(`hanzigo_streak_count_${uid}`, String(profile.streak));
-        localStorage.setItem('hanzigo_streak_count', String(profile.streak));
-      }
+      const effectiveStreak = typeof profile.streak === 'number' ? profile.streak : 0;
+      localStorage.setItem(`hanzigo_streak_count_${uid}`, String(effectiveStreak));
+      localStorage.setItem('hanzigo_streak_count', String(effectiveStreak));
+
       if (profile.last_study_date) {
         localStorage.setItem(`hanzigo_last_study_date_${uid}`, String(profile.last_study_date));
         localStorage.setItem('hanzigo_last_study_date', String(profile.last_study_date));
+      } else {
+        localStorage.removeItem(`hanzigo_last_study_date_${uid}`);
+        localStorage.removeItem('hanzigo_last_study_date');
       }
       if (typeof profile.longest_streak === 'number') {
         localStorage.setItem(`hanzigo_longest_streak_${uid}`, String(profile.longest_streak));

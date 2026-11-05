@@ -686,24 +686,16 @@ export function HskAdminImportModal({ isOpen, onClose, user }) {
                 </span>
                 <div className="flex items-center space-x-2 text-xs">
                   <span className="text-slate-400 text-[11px]">Nạp mẫu:</span>
-                  <button
-                    onClick={() => handleLoadSample('HSK 1')}
-                    className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-amber-100 hover:text-amber-800 cursor-pointer"
-                  >
-                    HSK 1
-                  </button>
-                  <button
-                    onClick={() => handleLoadSample('HSK 2')}
-                    className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-amber-100 hover:text-amber-800 cursor-pointer"
-                  >
-                    HSK 2
-                  </button>
-                  <button
-                    onClick={() => handleLoadSample('HSK 3')}
-                    className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-amber-100 hover:text-amber-800 cursor-pointer"
-                  >
-                    HSK 3
-                  </button>
+                  {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map(lvl => (
+                    <button
+                      key={lvl}
+                      type="button"
+                      onClick={() => handleLoadSample(lvl)}
+                      className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-amber-100 hover:text-amber-800 cursor-pointer"
+                    >
+                      {lvl}
+                    </button>
+                  ))}
                 </div>
               </div>
 

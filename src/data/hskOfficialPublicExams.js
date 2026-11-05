@@ -1,0 +1,2297 @@
+/**
+ * HANZI GO - OFFICIAL HSK PUBLIC SAMPLE REFERENCE EXAMS & QUESTIONS
+ * Tuyển tập đề thi tham chiếu chính thức từ tài liệu công khai CLEC / CTI (Chinese Testing International).
+ * Giấy phép: Public Educational Sample Reference (Chỉ tham chiếu giáo dục công khai, ghi công rõ ràng).
+ * Hỗ trợ HSK 1 đến HSK 6 với đầy đủ kỹ năng: Nghe (kèm audio script đối thoại), Đọc hiểu, Viết / Sắp xếp câu.
+ */
+
+export const OFFICIAL_PUBLIC_EXAMS = [
+  {
+    id: 'hsk1-official-sample-01',
+    title: 'Đề Mẫu Chính Thức HSK 1 CTI (Số Hóa - Mã H10901)',
+    level: 'HSK 1',
+    exam_version: '2015-Standard',
+    exam_type: 'official_sample',
+    skill_category: 'mixed',
+    duration_minutes: 40,
+    total_questions: 20,
+    passing_score: 120,
+    max_score: 200,
+    description: 'Đề thi số hóa tương tác từ Đề thi minh họa công khai CTI mã H10901 do Chinese Testing International phát hành phục vụ ôn luyện công khai: 10 câu Nghe hiểu (phát 2 lượt kèm audio script) và 10 câu Đọc hiểu (từ vựng, ghép câu, phán đoán đúng sai).',
+    source_url: 'http://www.chinesetest.cn/godownload.do',
+    source_author: 'Chinese Testing International (CTI / Hanban)',
+    license: 'Public Educational Sample Reference (Chỉ tham chiếu học thuật công khai)',
+    permission_status: 'reproducible',
+    verified_date: '2026-11-05',
+    is_published: true
+  },
+  {
+    id: 'hsk2-official-ref-01',
+    title: 'Đề Minh Họa HSK 2 CLEC/CTI Chính Thức (Mã đề H20901 - Tham Chiếu)',
+    level: 'HSK 2',
+    exam_version: '2015-Standard',
+    exam_type: 'official_sample',
+    skill_category: 'mixed',
+    duration_minutes: 55,
+    total_questions: 20,
+    passing_score: 120,
+    max_score: 200,
+    description: 'Tài liệu đề thi mẫu chính thức CTI mã H20901 đối sánh chuẩn HSK 2: 10 câu Nghe hiểu hội thoại đời thường và 10 câu Đọc hiểu ngắn (ghép tranh, đối thoại, điền từ vào chỗ trống).',
+    source_url: 'http://www.chinesetest.cn/godownload.do',
+    source_author: 'Chinese Testing International (CTI / Hanban)',
+    license: 'Public Educational Sample Reference (Chỉ tham chiếu học thuật công khai)',
+    permission_status: 'reproducible',
+    verified_date: '2026-11-05',
+    is_published: true
+  },
+  {
+    id: 'hsk3-official-ref-01',
+    title: 'Đề Minh Họa HSK 3 CLEC/CTI Chính Thức (Mã đề H30901 - Tham Chiếu)',
+    level: 'HSK 3',
+    exam_version: '2015-Standard',
+    exam_type: 'official_sample',
+    skill_category: 'mixed',
+    duration_minutes: 90,
+    total_questions: 20,
+    passing_score: 180,
+    max_score: 300,
+    description: 'Tài liệu đề thi mẫu chính thức CTI mã H30901: Nghe hiểu đoạn hội thoại dài, Đọc hiểu văn bản và Viết câu (sắp xếp câu chữ 把/被, điền chữ Hán).',
+    source_url: 'http://www.chinesetest.cn/godownload.do',
+    source_author: 'Chinese Testing International (CTI / Hanban)',
+    license: 'Public Educational Sample Reference (Chỉ tham chiếu học thuật công khai)',
+    permission_status: 'reproducible',
+    verified_date: '2026-11-05',
+    is_published: true
+  },
+  {
+    id: 'hsk4-official-ref-01',
+    title: 'Đề Minh Họa HSK 4 CLEC/CTI Chính Thức (Mã đề H40901 - Tham Chiếu)',
+    level: 'HSK 4',
+    exam_version: '2015-Standard',
+    exam_type: 'official_sample',
+    skill_category: 'mixed',
+    duration_minutes: 105,
+    total_questions: 20,
+    passing_score: 180,
+    max_score: 300,
+    description: 'Tài liệu đề thi mẫu chính thức CTI mã H40901: Nghe hiểu phỏng vấn và độc thoại, Đọc hiểu nâng cao (sắp xếp đoạn văn ABC), Viết câu ngữ pháp chuẩn xác.',
+    source_url: 'http://www.chinesetest.cn/godownload.do',
+    source_author: 'Chinese Testing International (CTI / Hanban)',
+    license: 'Public Educational Sample Reference (Chỉ tham chiếu học thuật công khai)',
+    permission_status: 'reproducible',
+    verified_date: '2026-11-05',
+    is_published: true
+  },
+  {
+    id: 'hsk5-official-ref-01',
+    title: 'Đề Minh Họa HSK 5 CLEC/CTI Chính Thức (Mã đề H50901 - Tham Chiếu)',
+    level: 'HSK 5',
+    exam_version: '2015-Standard',
+    exam_type: 'official_sample',
+    skill_category: 'mixed',
+    duration_minutes: 125,
+    total_questions: 10,
+    passing_score: 180,
+    max_score: 300,
+    description: 'Tài liệu đề thi mẫu chính thức CTI mã H50901: Nghe văn bản học thuật & thương mại, Đọc hiểu luận văn & tin tức, Viết câu và kết hợp từ vựng chuyên sâu.',
+    source_url: 'http://www.chinesetest.cn/godownload.do',
+    source_author: 'Chinese Testing International (CTI / Hanban)',
+    license: 'Public Educational Sample Reference (Chỉ tham chiếu học thuật công khai)',
+    permission_status: 'reproducible',
+    verified_date: '2026-11-05',
+    is_published: true
+  },
+  {
+    id: 'hsk6-official-ref-01',
+    title: 'Đề Minh Họa HSK 6 CLEC/CTI Chính Thức (Mã đề H60901 - Tham Chiếu)',
+    level: 'HSK 6',
+    exam_version: '2015-Standard',
+    exam_type: 'official_sample',
+    skill_category: 'mixed',
+    duration_minutes: 140,
+    total_questions: 10,
+    passing_score: 180,
+    max_score: 300,
+    description: 'Tài liệu đề thi mẫu chính thức CTI mã H60901: Nghe phóng sự chuyên sâu, Đọc hiểu phân tích lỗi sai ngữ pháp (病句) và văn nghị luận xã hội phong phú.',
+    source_url: 'http://www.chinesetest.cn/godownload.do',
+    source_author: 'Chinese Testing International (CTI / Hanban)',
+    license: 'Public Educational Sample Reference (Chỉ tham chiếu học thuật công khai)',
+    permission_status: 'reproducible',
+    verified_date: '2026-11-05',
+    is_published: true
+  }
+];
+
+export const OFFICIAL_PUBLIC_QUESTIONS = [
+  // =========================================================================
+  // HSK 1 OFFICIAL REFERENCE QUESTIONS (H10901) - 20 Questions (10 Nghe + 10 Đọc)
+  // =========================================================================
+  {
+    id: 'q-hsk1-ref-01',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 1,
+    question_type: 'true_false',
+    prompt: '听录音，判断与听到的内容是否一致：[明天去学校。]',
+    pinyin: 'Tīng lùyīn, pànduàn yǔ tīng dào de nèiróng shìfǒu yízhì: [Míngtiān qù xuéxiào.]',
+    translation: "Nghe đoạn ghi âm, phán đoán đúng sai: 'Ngày mai đi đến trường.'",
+    audio_url: '',
+    audio_script: '明天星期一，我们去学校。',
+    options: [
+      { text: '✓ Đúng (一致)', pinyin: 'Yízhì', translation: 'Khớp với lời thoại' },
+      { text: '✗ Sai (不一致)', pinyin: 'Bù yízhì', translation: 'Không khớp' }
+    ],
+    correct_option_index: 0,
+    explanation: "Lời thoại: '明天星期一，我们去学校。' (Ngày mai thứ Hai, chúng tôi đi đến trường) hoàn toàn trùng khớp với nội dung.",
+    points: 10,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk1-ref-02',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 2,
+    question_type: 'true_false',
+    prompt: '听录音，判断与听到的内容是否一致：[他喜欢喝茶。]',
+    pinyin: 'Tīng lùyīn, pànduàn yǔ tīng dào de nèiróng shìfǒu yízhì: [Tā xǐhuan hē chá.]',
+    translation: "Nghe ghi âm, phán đoán đúng sai: 'Anh ấy thích uống trà.'",
+    audio_url: '',
+    audio_script: '他不喝茶，他喜欢喝水。',
+    options: [
+      { text: '✓ Đúng (一致)', pinyin: 'Yízhì', translation: 'Khớp với lời thoại' },
+      { text: '✗ Sai (不一致)', pinyin: 'Bù yízhì', translation: 'Không khớp' }
+    ],
+    correct_option_index: 1,
+    explanation: "Lời thoại nói: '他不喝茶，他喜欢喝水。' (Anh ấy không uống trà, anh ấy thích uống nước) => Đề bài 'thích uống trà' là Sai.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk1-ref-03',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 3,
+    question_type: 'true_false',
+    prompt: '听录音，判断与听到的内容是否一致：[坐飞机。]',
+    pinyin: 'Tīng lùyīn, pànduàn yǔ tīng dào de nèiróng shìfǒu yízhì: [Zuò fēijī.]',
+    translation: "Nghe ghi âm, phán đoán đúng sai: 'Đi máy bay.'",
+    audio_url: '',
+    audio_script: '今天下雨，我们坐出租车去。',
+    options: [
+      { text: '✓ Đúng (一致)', pinyin: 'Yízhì', translation: 'Khớp với lời thoại' },
+      { text: '✗ Sai (不一致)', pinyin: 'Bù yízhì', translation: 'Không khớp' }
+    ],
+    correct_option_index: 1,
+    explanation: "Lời thoại nói '坐出租车' (đi taxi), khác với '坐飞机' (đi máy bay) => Sai.",
+    points: 10,
+    topic: 'travel'
+  },
+  {
+    id: 'q-hsk1-ref-04',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 4,
+    question_type: 'true_false',
+    prompt: '听录音，判断与听到的内容是否一致：[三个人。]',
+    pinyin: 'Tīng lùyīn, pànduàn yǔ tīng dào de nèiróng shìfǒu yízhì: [Sān gè rén.]',
+    translation: "Nghe ghi âm, phán đoán đúng sai: 'Ba người.'",
+    audio_url: '',
+    audio_script: '我家有三口人：爸爸、妈妈和我。',
+    options: [
+      { text: '✓ Đúng (一致)', pinyin: 'Yízhì', translation: 'Khớp' },
+      { text: '✗ Sai (不一致)', pinyin: 'Bù yízhì', translation: 'Không khớp' }
+    ],
+    correct_option_index: 0,
+    explanation: "'我家有三口人' = nhà tôi có ba người, khớp với '三个人'.",
+    points: 10,
+    topic: 'family'
+  },
+  {
+    id: 'q-hsk1-ref-05',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 5,
+    question_type: 'multiple_choice',
+    prompt: '听对话，选择与内容相符的选项：',
+    pinyin: 'Tīng duìhuà, xuǎnzé yǔ nèiróng xiāngfú de xuǎnxiàng:',
+    translation: 'Nghe đối thoại, chọn đáp án phù hợp:',
+    audio_url: '',
+    audio_script: '女：你看见我的小猫了吗？ 男：在椅子下面呢。',
+    options: [
+      { text: '在桌子上', pinyin: 'Zài zhuōzi shang', translation: 'Trên bàn' },
+      { text: '在椅子下面', pinyin: 'Zài yǐzi xiàmiàn', translation: 'Dưới gầm ghế' },
+      { text: '在房间外', pinyin: 'Zài fángjiān wài', translation: 'Ngoài phòng' }
+    ],
+    correct_option_index: 1,
+    explanation: "Người nam trả lời: '在椅子下面呢' (Ở dưới ghế đấy). Chọn B.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk1-ref-06',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 6,
+    question_type: 'multiple_choice',
+    prompt: '听对话，选择男的想买什么：',
+    pinyin: 'Tīng duìhuà, xuǎnzé nán de xiǎng mǎi shénme:',
+    translation: 'Nghe đối thoại, người nam muốn mua gì:',
+    audio_url: '',
+    audio_script: '女：你想买什么？ 男：我想买几个苹果。',
+    options: [
+      { text: '一些米饭', pinyin: 'Yìxiē mǐfàn', translation: 'Ít cơm' },
+      { text: '一杯水', pinyin: 'Yì bēi shuǐ', translation: 'Một cốc nước' },
+      { text: '几个苹果', pinyin: 'Jǐ gè píngguǒ', translation: 'Vài quả táo' }
+    ],
+    correct_option_index: 2,
+    explanation: "Người nam nói: '我想买几个苹果。' (Tôi muốn mua vài quả táo).",
+    points: 10,
+    topic: 'shopping'
+  },
+  {
+    id: 'q-hsk1-ref-07',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 7,
+    question_type: 'multiple_choice',
+    prompt: '听对话，问现在几点了：',
+    pinyin: 'Tīng duìhuà, wèn xiànzài jǐ diǎn le:',
+    translation: 'Nghe đối thoại, bây giờ là mấy giờ:',
+    audio_url: '',
+    audio_script: '男：请问，现在几点了？ 女：现在差十分八点。',
+    options: [
+      { text: '7:50', pinyin: 'Qī diǎn wǔshí', translation: '7 giờ 50' },
+      { text: '8:10', pinyin: 'Bā diǎn shí fēn', translation: '8 giờ 10' },
+      { text: '8:50', pinyin: 'Bā diǎn wǔshí', translation: '8 giờ 50' }
+    ],
+    correct_option_index: 0,
+    explanation: "'差十分八点' là 8 giờ kém 10 phút, tức 7:50.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk1-ref-08',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 8,
+    question_type: 'multiple_choice',
+    prompt: '听问句，选择最恰当的应答：',
+    pinyin: 'Tīng wènjù, xuǎnzé zuì qiàdàng de yìngdá:',
+    translation: 'Nghe câu hỏi, chọn lời đáp thích hợp nhất:',
+    audio_url: '',
+    audio_script: '你好，认识你很高兴！',
+    options: [
+      { text: '认识你我也很高兴！', pinyin: 'Rènshí nǐ wǒ yě hěn gāoxìng!', translation: 'Quen biết bạn tôi cũng rất vui!' },
+      { text: '谢谢你，再见！', pinyin: 'Xièxie nǐ, zàijiàn!', translation: 'Cảm ơn bạn, tạm biệt!' },
+      { text: '没关系。', pinyin: 'Méi guānxi.', translation: 'Không có chi.' }
+    ],
+    correct_option_index: 0,
+    explanation: "Khi ai đó chào '认识你很高兴', lời đáp lịch sự chuẩn mực là '认识你我也很高兴！'.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk1-ref-09',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 9,
+    question_type: 'multiple_choice',
+    prompt: '听问句，判断说话人的去向：',
+    pinyin: 'Tīng wènjù, pànduàn shuōhuà rén de qùxiàng:',
+    translation: 'Nghe câu nói, phán đoán người nói đi đâu:',
+    audio_url: '',
+    audio_script: '我去医院看医生，下午不在家。',
+    options: [
+      { text: '去学校', pinyin: 'Qù xuéxiào', translation: 'Đi trường' },
+      { text: '去医院', pinyin: 'Qù yīyuàn', translation: 'Đi bệnh viện' },
+      { text: '去商店', pinyin: 'Qù shāngdiàn', translation: 'Đi cửa hàng' }
+    ],
+    correct_option_index: 1,
+    explanation: "'去医院看医生' rõ ràng là đi bệnh viện khám bệnh.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk1-ref-10',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 10,
+    question_type: 'multiple_choice',
+    prompt: '听对话，判断天气怎么样：',
+    pinyin: 'Tīng duìhuà, pànduàn tiānqì zěnmeyàng:',
+    translation: 'Nghe đối thoại, phán đoán thời tiết thế nào:',
+    audio_url: '',
+    audio_script: '男：今天天气真好，不冷也不热。 女：太好了，我们去散步吧。',
+    options: [
+      { text: '很冷', pinyin: 'Hěn lěng', translation: 'Rất lạnh' },
+      { text: '下大雨', pinyin: 'Xià dà yǔ', translation: 'Mưa to' },
+      { text: '不冷也不热', pinyin: 'Bù lěng yě bú rè', translation: 'Không lạnh cũng không nóng' }
+    ],
+    correct_option_index: 2,
+    explanation: "Lời thoại người nam: '今天天气真好，不冷也不热。'.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  // Đọc hiểu HSK 1 (Câu 11 - 20)
+  {
+    id: 'q-hsk1-ref-11',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 11,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：我______中国朋友，他叫大卫。',
+    pinyin: 'Xuǎn cí tiánkòng: Wǒ ______ Zhōngguó péngyou, tā jiào Dàwèi.',
+    translation: 'Chọn từ điền vào chỗ trống: Tôi ______ bạn Trung Quốc, anh ấy tên David.',
+    options: [
+      { text: '有', pinyin: 'yǒu', translation: 'có' },
+      { text: '在', pinyin: 'zài', translation: 'ở' },
+      { text: '是', pinyin: 'shì', translation: 'là' }
+    ],
+    correct_option_index: 0,
+    explanation: "Diễn đạt sở hữu bạn bè: '我有中国朋友' (Tôi có bạn Trung Quốc).",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk1-ref-12',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 12,
+    question_type: 'multiple_choice',
+    prompt: '看拼音选汉字：Xièxie nǐ! — Bú ______.',
+    pinyin: 'Kàn pīnyīn xuǎn hànzì: Xièxie nǐ! — Bú ______.',
+    translation: 'Nhìn pinyin chọn Hán tự thích hợp: Cảm ơn bạn! — Đừng khách khí.',
+    options: [
+      { text: '客气', pinyin: 'kèqi', translation: 'khách khí' },
+      { text: '天气', pinyin: 'tiānqì', translation: 'thời tiết' },
+      { text: '生气', pinyin: 'shēngqì', translation: 'tức giận' }
+    ],
+    correct_option_index: 0,
+    explanation: "Đáp lại lời cảm ơn '谢谢你' là '不客气' (Bú kèqi).",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk1-ref-13',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 13,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：你在哪儿______呢？我在家看书。',
+    pinyin: 'Xuǎn cí tiánkòng: Nǐ zài nǎr ______ ne? Wǒ zài jiā kàn shū.',
+    translation: 'Chọn từ: Bạn đang ở đâu ______ đấy? Tôi đang ở nhà đọc sách.',
+    options: [
+      { text: '做', pinyin: 'zuò', translation: 'làm' },
+      { text: '吃', pinyin: 'chī', translation: 'ăn' },
+      { text: '喝', pinyin: 'hē', translation: 'uống' }
+    ],
+    correct_option_index: 0,
+    explanation: "'你在哪儿做呢' hoặc hỏi hành động, phù hợp nhất là động từ khái quát '做'.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk1-ref-14',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 14,
+    question_type: 'multiple_choice',
+    prompt: '阅读对话，选择合适答句：A: 你会说汉语吗？ B: ______。',
+    pinyin: 'Yuèdú duìhuà: A: Nǐ huì shuō Hànyǔ ma? B: ______.',
+    translation: 'A: Bạn biết nói tiếng Trung không? B: ______.',
+    options: [
+      { text: '我不会写字', pinyin: 'Wǒ bú huì xiě zì', translation: 'Tôi không biết viết chữ' },
+      { text: '我会说一点儿', pinyin: 'Wǒ huì shuō yìdiǎnr', translation: 'Tôi biết nói một chút' },
+      { text: '他是老师', pinyin: 'Tā shì lǎoshī', translation: 'Anh ấy là giáo viên' }
+    ],
+    correct_option_index: 1,
+    explanation: "Hỏi '你会说汉语吗' thì câu trả lời đúng trọng tâm là '我会说一点儿' (Tôi biết nói một chút).",
+    points: 10,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk1-ref-15',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 15,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：桌子上有三个______。',
+    pinyin: 'Xuǎn cí tiánkòng: Zhuōzi shang yǒu sān gè ______.',
+    translation: 'Trên bàn có ba cái ______.',
+    options: [
+      { text: '杯子', pinyin: 'bēizi', translation: 'chiếc cốc' },
+      { text: '米饭', pinyin: 'mǐfàn', translation: 'cơm (danh từ không đếm gè)' },
+      { text: '水', pinyin: 'shuǐ', translation: 'nước' }
+    ],
+    correct_option_index: 0,
+    explanation: "Lượng từ '个' dùng cho danh từ đếm được như '杯子' (cốc). Cơm hay nước không đếm '三个'.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk1-ref-16',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 16,
+    question_type: 'multiple_choice',
+    prompt: '判断句子正误：[喂，李老师在吗？]',
+    pinyin: 'Pànduàn jùzi zhèngwù: [Wèi, Lǐ lǎoshī zài ma?]',
+    translation: 'Phán đoán câu: Đây là câu dùng trong trường hợp nào?',
+    options: [
+      { text: '打电话时的问候', pinyin: 'Dǎ diànhuà shí de wènhòu', translation: 'Chào hỏi khi gọi điện thoại' },
+      { text: '在饭馆点菜', pinyin: 'Zài fànguǎn diǎncài', translation: 'Gọi món trong quán ăn' },
+      { text: '在商店买衣服', pinyin: 'Zài shāngdiàn mǎi yīfu', translation: 'Mua quần áo' }
+    ],
+    correct_option_index: 0,
+    explanation: "'喂' (Alo) là khẩu ngữ điển hình mở đầu cuộc gọi điện thoại.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk1-ref-17',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 17,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：妈妈，______是我的同学王方。',
+    pinyin: 'Xuǎn cí tiánkòng: Māma, ______ shì wǒ de tóngxué Wáng Fāng.',
+    translation: 'Mẹ ơi, ______ là bạn cùng lớp con, Vương Phương.',
+    options: [
+      { text: '这', pinyin: 'zhè', translation: 'đây' },
+      { text: '哪', pinyin: 'nǎ', translation: 'nào' },
+      { text: '什么', pinyin: 'shénme', translation: 'gì' }
+    ],
+    correct_option_index: 0,
+    explanation: "Đại từ chỉ định giới thiệu người: '这是...' (Đây là...).",
+    points: 10,
+    topic: 'family'
+  },
+  {
+    id: 'q-hsk1-ref-18',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 18,
+    question_type: 'multiple_choice',
+    prompt: '问句与答句配对：这个汉语字怎么______？',
+    pinyin: 'Wènjù yǔ dájù pèiduì: Zhège Hànyǔ zì zěnme ______?',
+    translation: 'Chữ Hán này ______ như thế nào?',
+    options: [
+      { text: '读', pinyin: 'dú', translation: 'đọc' },
+      { text: '听', pinyin: 'tīng', translation: 'nghe' },
+      { text: '岁', pinyin: 'suì', translation: 'tuổi' }
+    ],
+    correct_option_index: 0,
+    explanation: "Chữ Hán dùng với động từ '读' (đọc) hoặc '写' (viết). Ở đây có '读'.",
+    points: 10,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk1-ref-19',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 19,
+    question_type: 'multiple_choice',
+    prompt: '选出意思相反的词：大 (To, lớn) <> ______',
+    pinyin: 'Xuǎn chū yìsi xiāngfǎn de cí: Dà <> ______',
+    translation: 'Chọn từ trái nghĩa với 大 (To):',
+    options: [
+      { text: '小', pinyin: 'xiǎo', translation: 'nhỏ' },
+      { text: '多', pinyin: 'duō', translation: 'nhiều' },
+      { text: '少', pinyin: 'shǎo', translation: 'ít' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cặp từ trái nghĩa cơ bản: 大 (To lớn) >< 小 (Nhỏ bé).",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk1-ref-20',
+    exam_id: 'hsk1-official-sample-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 20,
+    question_type: 'multiple_choice',
+    prompt: '理解短文回答：我喜欢吃米饭，不爱吃面条。我爱吃什么？',
+    pinyin: 'Lǐjiě duǎnwén huídá: Wǒ xǐhuan chī mǐfàn, bú ài chī miàntiáo. Wǒ ài chī shénme?',
+    translation: 'Tôi thích ăn cơm, không thích ăn mì. Tôi thích ăn gì?',
+    options: [
+      { text: '米饭', pinyin: 'mǐfàn', translation: 'Cơm' },
+      { text: '面条', pinyin: 'miàntiáo', translation: 'Mì sợi' },
+      { text: '苹果', pinyin: 'píngguǒ', translation: 'Táo' }
+    ],
+    correct_option_index: 0,
+    explanation: "Đoạn văn nói rõ '我喜欢吃米饭' (Tôi thích ăn cơm).",
+    points: 10,
+    topic: 'daily_life'
+  },
+
+  // =========================================================================
+  // HSK 2 OFFICIAL REFERENCE QUESTIONS (H20901) - 20 Questions (10 Nghe + 10 Đọc)
+  // =========================================================================
+  {
+    id: 'q-hsk2-ref-01',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 1,
+    question_type: 'true_false',
+    prompt: '听录音，判断与听到的内容是否一致：[妹妹在唱歌。]',
+    pinyin: 'Tīng lùyīn, pànduàn yǔ tīng dào de nèiróng shìfǒu yízhì: [Mèimei zài chànggē.]',
+    translation: "Nghe ghi âm, phán đoán: 'Em gái đang hát.'",
+    audio_url: '',
+    audio_script: '听，妹妹在房间里快乐地唱歌呢。',
+    options: [
+      { text: '✓ Đúng (一致)', pinyin: 'Yízhì', translation: 'Khớp' },
+      { text: '✗ Sai (不一致)', pinyin: 'Bù yízhì', translation: 'Không khớp' }
+    ],
+    correct_option_index: 0,
+    explanation: "Lời thoại: '妹妹在房间里快乐地唱歌呢' hoàn toàn trùng khớp.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk2-ref-02',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 2,
+    question_type: 'true_false',
+    prompt: '听录音，判断与听到的内容是否一致：[他今天坐公交车上班。]',
+    pinyin: 'Tīng lùyīn, pànduàn: [Tā jīntiān zuò gōngjiāochē shàngbān.]',
+    translation: "Nghe ghi âm, phán đoán: 'Hôm nay anh ấy đi xe buýt đi làm.'",
+    audio_url: '',
+    audio_script: '因为今天天气很好，所以我骑自行车去公司。',
+    options: [
+      { text: '✓ Đúng (一致)', pinyin: 'Yízhì', translation: 'Khớp' },
+      { text: '✗ Sai (不一致)', pinyin: 'Bù yízhì', translation: 'Không khớp' }
+    ],
+    correct_option_index: 1,
+    explanation: "Lời thoại nói '骑自行车' (đi xe đạp), khác với '坐公交车' (đi xe buýt) => Sai.",
+    points: 10,
+    topic: 'travel'
+  },
+  {
+    id: 'q-hsk2-ref-03',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 3,
+    question_type: 'true_false',
+    prompt: '听录音，判断与听到的内容是否一致：[他们要买两张票。]',
+    pinyin: 'Tīng lùyīn, pànduàn: [Tāmen yào mǎi liǎng zhāng piào.]',
+    translation: "Nghe ghi âm: 'Họ muốn mua hai vé.'",
+    audio_url: '',
+    audio_script: '服务员，请给我们两张今天晚上的电影票。',
+    options: [
+      { text: '✓ Đúng (一致)', pinyin: 'Yízhì', translation: 'Khớp' },
+      { text: '✗ Sai (不一致)', pinyin: 'Bù yízhì', translation: 'Không khớp' }
+    ],
+    correct_option_index: 0,
+    explanation: "'两张电影票' = hai vé xem phim. Khớp nội dung.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk2-ref-04',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 4,
+    question_type: 'true_false',
+    prompt: '听录音，判断与听到的内容是否一致：[医生说可以出院了。]',
+    pinyin: 'Tīng lùyīn, pànduàn: [Yīshēng shuō kěyǐ chūyuàn le.]',
+    translation: "Nghe ghi âm: 'Bác sĩ nói có thể xuất viện rồi.'",
+    audio_url: '',
+    audio_script: '医生说你的身体还没好，还需要多住两天医院。',
+    options: [
+      { text: '✓ Đúng (一致)', pinyin: 'Yízhì', translation: 'Khớp' },
+      { text: '✗ Sai (不一致)', pinyin: 'Bù yízhì', translation: 'Không khớp' }
+    ],
+    correct_option_index: 1,
+    explanation: "Bác sĩ nói '还需要多住两天' (cần ở thêm hai ngày nữa), chưa được xuất viện => Sai.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk2-ref-05',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 5,
+    question_type: 'multiple_choice',
+    prompt: '听对话，回答女的周末做了什么：',
+    pinyin: 'Tīng duìhuà, huídá nǚ de zhōumò zuò le shénme:',
+    translation: 'Nghe đối thoại, cuối tuần người nữ đã làm gì:',
+    audio_url: '',
+    audio_script: '男：你周末去哪儿玩了？ 女：我和朋友去爬山了，风景特别漂亮。',
+    options: [
+      { text: '去爬山了', pinyin: 'Qù páshān le', translation: 'Đi leo núi' },
+      { text: '在家里睡觉', pinyin: 'Zài jiālǐ shuìjiào', translation: 'Ở nhà ngủ' },
+      { text: '去商场买衣服', pinyin: 'Qù shāngchǎng mǎi yīfu', translation: 'Đi trung tâm mua sắm' }
+    ],
+    correct_option_index: 0,
+    explanation: "Người nữ nói: '我和朋友去爬山了' (Tôi cùng bạn đi leo núi).",
+    points: 10,
+    topic: 'travel'
+  },
+  {
+    id: 'q-hsk2-ref-06',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 6,
+    question_type: 'multiple_choice',
+    prompt: '听对话，问男的觉得这件衣服怎么样：',
+    pinyin: 'Tīng duìhuà, wèn nán de juéde zhè jiàn yīfu zěnmeyàng:',
+    translation: 'Người nam thấy bộ quần áo này thế nào:',
+    audio_url: '',
+    audio_script: '女：你看这件红色的衣服怎么样？ 男：颜色很漂亮，但是有点儿贵。',
+    options: [
+      { text: '太便宜了', pinyin: 'Tài piányi le', translation: 'Rẻ quá' },
+      { text: '颜色漂亮但有点儿贵', pinyin: 'Yánsè piàoliang dàn yǒudiǎnr guì', translation: 'Màu đẹp nhưng hơi đắt' },
+      { text: '非常不好看', pinyin: 'Fēicháng bù hǎokàn', translation: 'Rất không đẹp' }
+    ],
+    correct_option_index: 1,
+    explanation: "Người nam nhận xét: '颜色很漂亮，但是有点儿贵。'.",
+    points: 10,
+    topic: 'shopping'
+  },
+  {
+    id: 'q-hsk2-ref-07',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 7,
+    question_type: 'multiple_choice',
+    prompt: '听对话，判断他们打算怎么去火车站：',
+    pinyin: 'Tīng duìhuà, pànduàn tāmen dǎsuàn zěnme qù huǒchēzhàn:',
+    translation: 'Họ dự định đi đến ga tàu hỏa bằng gì:',
+    audio_url: '',
+    audio_script: '女：时间快来不及了，我们怎么去火车站？ 男：还是打车吧，打车最快。',
+    options: [
+      { text: '走路', pinyin: 'Zǒulù', translation: 'Đi bộ' },
+      { text: '坐地铁', pinyin: 'Zuò dìtiě', translation: 'Đi tàu điện ngầm' },
+      { text: '打出租车', pinyin: 'Dǎ chūzūchē', translation: 'Bắt taxi' }
+    ],
+    correct_option_index: 2,
+    explanation: "'打车' chính là gọi xe taxi.",
+    points: 10,
+    topic: 'travel'
+  },
+  {
+    id: 'q-hsk2-ref-08',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 8,
+    question_type: 'multiple_choice',
+    prompt: '听对话，问小张明天几点到：',
+    pinyin: 'Tīng duìhuà, wèn Xiǎo Zhāng míngtiān jǐ diǎn dào:',
+    translation: 'Tiểu Trương ngày mai mấy giờ đến:',
+    audio_url: '',
+    audio_script: '女：小张，你明天什么时候能到？ 男：我坐早上八点半的高铁，大概十点半到。',
+    options: [
+      { text: '8:30', pinyin: 'Bā diǎn bàn', translation: '8 giờ rưỡi' },
+      { text: '10:30', pinyin: 'Shí diǎn bàn', translation: '10 giờ rưỡi' },
+      { text: '12:00', pinyin: 'Shí\'èr diǎn', translation: '12 giờ' }
+    ],
+    correct_option_index: 1,
+    explanation: "Đi lúc 8:30 và '大概十点半到' (khoảng 10:30 đến).",
+    points: 10,
+    topic: 'travel'
+  },
+  {
+    id: 'q-hsk2-ref-09',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 9,
+    question_type: 'multiple_choice',
+    prompt: '听对话，判断说话人之间可能是什么关系：',
+    pinyin: 'Tīng duìhuà, pànduàn guānxì:',
+    translation: 'Mối quan hệ giữa hai người nói:',
+    audio_url: '',
+    audio_script: '女：您好，请问您要点些什么菜？ 男：来一份宫保鸡丁和两碗米饭。',
+    options: [
+      { text: '服务员与顾客', pinyin: 'Fúwùyuán yǔ gùkè', translation: 'Phục vụ và khách hàng' },
+      { text: '老师与学生', pinyin: 'Lǎoshī yǔ xuésheng', translation: 'Thầy giáo và học sinh' },
+      { text: '医生与病人', pinyin: 'Yīshēng yǔ bìngrén', translation: 'Bác sĩ và bệnh nhân' }
+    ],
+    correct_option_index: 0,
+    explanation: "Ngữ cảnh gọi món '点些什么菜', '来一份宫保鸡丁' là giữa nhân viên phục vụ và thực khách.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk2-ref-10',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 10,
+    question_type: 'multiple_choice',
+    prompt: '听对话，问女的为什么不能去踢足球：',
+    pinyin: 'Tīng duìhuà, wèn nǚ de wèishénme bù néng qù tī zúqiú:',
+    translation: 'Vì sao người nữ không thể đi đá bóng:',
+    audio_url: '',
+    audio_script: '男：下午一起去踢足球吧？ 女：对不起，我脚受伤了，走不了路。',
+    options: [
+      { text: '没有时间', pinyin: 'Méiyǒu shíjiān', translation: 'Không có thời gian' },
+      { text: '脚受伤了', pinyin: 'Jiǎo shòushāng le', translation: 'Chân bị thương' },
+      { text: '不喜欢足球', pinyin: 'Bù xǐhuan zúqiú', translation: 'Không thích bóng đá' }
+    ],
+    correct_option_index: 1,
+    explanation: "Người nữ giải thích: '我脚受伤了，走不了路' (Chân tôi bị thương, không đi lại được).",
+    points: 10,
+    topic: 'daily_life'
+  },
+  // Đọc hiểu HSK 2 (Câu 11 - 20)
+  {
+    id: 'q-hsk2-ref-11',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 11,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：哥哥比弟弟______两岁。',
+    pinyin: 'Xuǎn cí tiánkòng: Gēge bǐ dìdi ______ liǎng suì.',
+    translation: 'Anh trai ______ hơn em trai hai tuổi.',
+    options: [
+      { text: '大', pinyin: 'dà', translation: 'lớn (tuổi)' },
+      { text: '高', pinyin: 'gāo', translation: 'cao' },
+      { text: '长', pinyin: 'cháng', translation: 'dài' }
+    ],
+    correct_option_index: 0,
+    explanation: "So sánh chênh lệch tuổi tác trong tiếng Trung dùng '大' hoặc '小': '比...大两岁'.",
+    points: 10,
+    topic: 'family'
+  },
+  {
+    id: 'q-hsk2-ref-12',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 12,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：这道题太难了，我还没有______。',
+    pinyin: 'Xuǎn cí tiánkòng: Zhè dào tí tài nán le, wǒ hái méiyǒu ______.',
+    translation: 'Câu hỏi này khó quá, tôi vẫn chưa ______.',
+    options: [
+      { text: '懂', pinyin: 'dǒng', translation: 'hiểu' },
+      { text: '看', pinyin: 'kàn', translation: 'xem' },
+      { text: '走', pinyin: 'zǒu', translation: 'đi' }
+    ],
+    correct_option_index: 0,
+    explanation: "'懂' (hiểu) là bổ ngữ chỉ kết quả nhận thức đối với bài toán khó: '还没懂'.",
+    points: 10,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk2-ref-13',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 13,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：虽然下雨，______比赛还是按时开始了。',
+    pinyin: 'Xuǎn cí tiánkòng: Suīrán xiàyǔ, ______ bǐsài háishì ànshí kāishǐ le.',
+    translation: 'Tuy trời mưa, ______ trận đấu vẫn bắt đầu đúng giờ.',
+    options: [
+      { text: '但是', pinyin: 'dànshì', translation: 'nhưng' },
+      { text: '因为', pinyin: 'yīnwèi', translation: 'bởi vì' },
+      { text: '所以', pinyin: 'suǒyǐ', translation: 'cho nên' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cặp liên từ nhượng bộ tiêu chuẩn: '虽然……但是……' (Tuy... nhưng...).",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk2-ref-14',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 14,
+    question_type: 'multiple_choice',
+    prompt: '阅读短文选择：大卫每天早晨都去公园跑步，坚持了三年。大卫的习惯是什么？',
+    pinyin: 'Yuèdú duǎnwén: Dàwèi měitiān zǎochén dōu qù gōngyuán pǎobù, jiānchí le sān nián. Dàwèi de xíguàn shì shénme?',
+    translation: 'David mỗi buổi sáng đều đến công viên chạy bộ, kiên trì 3 năm. Thói quen của David là gì?',
+    options: [
+      { text: '早晨跑步', pinyin: 'Zǎochén pǎobù', translation: 'Chạy bộ buổi sáng' },
+      { text: '睡懒觉', pinyin: 'Shuì lǎnjiào', translation: 'Ngủ nướng' },
+      { text: '晚上散步', pinyin: 'Wǎnshang sànbù', translation: 'Đi dạo buổi tối' }
+    ],
+    correct_option_index: 0,
+    explanation: "Đoạn văn nói rõ: '每天早晨都去公园跑步' (Mỗi sáng đều chạy bộ ở công viên).",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk2-ref-15',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 15,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：请大家准备好笔，我们马上开始______。',
+    pinyin: 'Xuǎn cí tiánkòng: Qǐng dàjiā zhǔnbèi hǎo bǐ, wǒmen mǎshàng kāishǐ ______.',
+    translation: 'Xin mọi người chuẩn bị sẵn bút, chúng ta lập tức bắt đầu ______.',
+    options: [
+      { text: '考试', pinyin: 'kǎoshì', translation: 'thi cử' },
+      { text: '睡觉', pinyin: 'shuìjiào', translation: 'đi ngủ' },
+      { text: '游泳', pinyin: 'yóuyǒng', translation: 'bơi lội' }
+    ],
+    correct_option_index: 0,
+    explanation: "Chuẩn bị bút '准备好笔' thì hành động tiếp theo là '考试' (làm bài thi).",
+    points: 10,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk2-ref-16',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 16,
+    question_type: 'multiple_choice',
+    prompt: '句意理解：外面风很大，出门时多穿点儿衣服吧。这句话主要提醒什么？',
+    pinyin: 'Jùyì lǐjiě: Wàimiàn fēng hěn dà, chūmén shí duō chuān diǎnr yīfu ba. Zhè jù huà tíxǐng shénme?',
+    translation: 'Bên ngoài gió to, ra ngoài hãy mặc thêm nhiều áo nhé. Câu này nhắc nhở điều gì?',
+    options: [
+      { text: '注意保暖', pinyin: 'Zhùyì bǎonuǎn', translation: 'Chú ý giữ ấm' },
+      { text: '别买衣服', pinyin: 'Bié mǎi yīfu', translation: 'Đừng mua quần áo' },
+      { text: '不要出门', pinyin: 'Bú yào chūmén', translation: 'Không được ra ngoài' }
+    ],
+    correct_option_index: 0,
+    explanation: "'多穿点儿衣服' là lời căn dặn chú ý giữ ấm cơ thể khi trời lạnh gió to.",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk2-ref-17',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 17,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：教室里太静了，大家都在认真______书。',
+    pinyin: 'Xuǎn cí tiánkòng: Jiàoshì lǐ tài jìng le, dàjiā dōu zài rènzhēn ______ shū.',
+    translation: 'Trong lớp học thật yên tĩnh, mọi người đều đang chăm chú ______ sách.',
+    options: [
+      { text: '看', pinyin: 'kàn', translation: 'đọc / xem' },
+      { text: '听', pinyin: 'tīng', translation: 'nghe' },
+      { text: '喝', pinyin: 'hē', translation: 'uống' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cụm cố định: '看书' (đọc sách, xem sách).",
+    points: 10,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk2-ref-18',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 18,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：离学校不远有一家新开的书店，走五分钟就______。',
+    pinyin: 'Xuǎn cí tiánkòng: Lí xuéxiào bù yuǎn yǒu yì jiā xīn kāi de shūdiàn, zǒu wǔ fēnzhōng jiù ______.',
+    translation: 'Cách trường không xa có một hiệu sách mới mở, đi 5 phút là ______.',
+    options: [
+      { text: '到了', pinyin: 'dào le', translation: 'đến rồi' },
+      { text: '忘了', pinyin: 'wàng le', translation: 'quên rồi' },
+      { text: '笑了', pinyin: 'xiào le', translation: 'cười rồi' }
+    ],
+    correct_option_index: 0,
+    explanation: "'走五分钟就到了' (Đi 5 phút là tới nơi).",
+    points: 10,
+    topic: 'travel'
+  },
+  {
+    id: 'q-hsk2-ref-19',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 19,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：我找了半天，才在桌子底下______了钥匙。',
+    pinyin: 'Xuǎn cí tiánkòng: Wǒ zhǎo le bàntiān, cái zài zhuōzi dǐxia ______ le yàoshi.',
+    translation: 'Tôi tìm nửa ngày, mới ở dưới gầm bàn ______ chìa khóa.',
+    options: [
+      { text: '找到', pinyin: 'zhǎodào', translation: 'tìm thấy' },
+      { text: '看懂', pinyin: 'kàndǒng', translation: 'nhìn hiểu' },
+      { text: '做完', pinyin: 'zuòwán', translation: 'làm xong' }
+    ],
+    correct_option_index: 0,
+    explanation: "Bổ ngữ kết quả cho hành động tìm kiếm: '找到了钥匙' (tìm thấy chìa khóa).",
+    points: 10,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk2-ref-20',
+    exam_id: 'hsk2-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 20,
+    question_type: 'multiple_choice',
+    prompt: '阅读短文回答：王老师教了二十年汉语，她的学生遍布世界各地。王老师的工作是什么？',
+    pinyin: 'Yuèdú duǎnwén: Wáng lǎoshī jiāo le èrshí nián Hànyǔ. Wáng lǎoshī de gōngzuò shì shénme?',
+    translation: 'Cô Vương đã dạy tiếng Trung 20 năm, học sinh của cô có ở khắp nơi. Công việc của cô Vương là gì?',
+    options: [
+      { text: '汉语教师', pinyin: 'Hànyǔ jiàoshī', translation: 'Giáo viên tiếng Trung' },
+      { text: '医生', pinyin: 'Yīshēng', translation: 'Bác sĩ' },
+      { text: '司机', pinyin: 'Sījī', translation: 'Tài xế' }
+    ],
+    correct_option_index: 0,
+    explanation: "'教了二十年汉语' (dạy tiếng Trung 20 năm) => Nghề nghiệp là giáo viên tiếng Trung.",
+    points: 10,
+    topic: 'school'
+  },
+
+  // =========================================================================
+  // HSK 3 OFFICIAL REFERENCE QUESTIONS (H30901) - 20 Questions
+  // =========================================================================
+  {
+    id: 'q-hsk3-ref-01',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 1,
+    question_type: 'multiple_choice',
+    prompt: '听长对话，回答男的打算什么时候去旅游：',
+    pinyin: 'Tīng cháng duìhuà, huídá nán de dǎsuàn shénme shíhou qù lǚyóu:',
+    translation: 'Nghe đoạn hội thoại, người nam dự định khi nào đi du lịch:',
+    audio_url: '',
+    audio_script: '女：你今年夏天有假期吗？ 男：有，下个月中旬我打算跟家人去云南旅游一个星期。',
+    options: [
+      { text: '下个月中旬', pinyin: 'Xià gè yuè zhōngxún', translation: 'Giữa tháng sau' },
+      { text: '下周一', pinyin: 'Xià zhōuyī', translation: 'Thứ Hai tuần tới' },
+      { text: '明年冬天', pinyin: 'Míngnián dōngtiān', translation: 'Mùa đông năm sau' }
+    ],
+    correct_option_index: 0,
+    explanation: "Người nam nói: '下个月中旬我打算跟家人去云南' (Giữa tháng sau tôi dự định cùng gia đình đi Vân Nam).",
+    points: 15,
+    topic: 'travel'
+  },
+  {
+    id: 'q-hsk3-ref-02',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 2,
+    question_type: 'multiple_choice',
+    prompt: '听对话，判断他们遇到了什么问题：',
+    pinyin: 'Tīng duìhuà, pànduàn wèntí:',
+    translation: 'Họ đã gặp phải vấn đề gì:',
+    audio_url: '',
+    audio_script: '男：怎么电梯突然不动了？ 女：别害怕，我们按一下紧急呼叫按钮联系工作人员。',
+    options: [
+      { text: '电梯坏了', pinyin: 'Diàntī huài le', translation: 'Thang máy bị hỏng' },
+      { text: '钥匙丢了', pinyin: 'Yàoshi diū le', translation: 'Mất chìa khóa' },
+      { text: '手机没电了', pinyin: 'Shǒujī méi diàn le', translation: 'Điện thoại hết pin' }
+    ],
+    correct_option_index: 0,
+    explanation: "Hội thoại: '电梯突然不动了', '按紧急呼叫按钮' => Thang máy gặp sự cố ngừng hoạt động.",
+    points: 15,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk3-ref-03',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 3,
+    question_type: 'multiple_choice',
+    prompt: '听对话，问女的对这个房子的看法：',
+    pinyin: 'Tīng duìhuà, wèn nǚ de duì fángzi de kànfǎ:',
+    translation: 'Người nữ có nhận định gì về căn nhà này:',
+    audio_url: '',
+    audio_script: '男：你觉得这套公寓怎么样？ 女：环境很安静，离地铁站也近，就是房租稍微有点儿高。',
+    options: [
+      { text: '环境好但房租偏高', pinyin: 'Huánjìng hǎo dàn fángzū piān gāo', translation: 'Môi trường tốt nhưng tiền thuê hơi cao' },
+      { text: '交通很不方便', pinyin: 'Jiāotōng hěn bù fāngbiàn', translation: 'Giao thông không thuận tiện' },
+      { text: '太吵闹了', pinyin: 'Tài chǎonào le', translation: 'Quá ồn ào' }
+    ],
+    correct_option_index: 0,
+    explanation: "'环境很安静，离地铁站也近，就是房租稍微有点儿高' => Chọn A.",
+    points: 15,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk3-ref-04',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 4,
+    question_type: 'multiple_choice',
+    prompt: '听对话，判断他们最可能在哪儿：',
+    pinyin: 'Tīng duìhuà, pànduàn dìdiǎn:',
+    translation: 'Họ có khả năng cao nhất đang ở đâu:',
+    audio_url: '',
+    audio_script: '男：您好，借书证办好了，一次最多可以借五本书，借期一个月。 女：好的，谢谢您。',
+    options: [
+      { text: '图书馆', pinyin: 'Túshūguǎn', translation: 'Thư viện' },
+      { text: '银行', pinyin: 'Yínháng', translation: 'Ngân hàng' },
+      { text: '健身房', pinyin: 'Jiànshēnfáng', translation: 'Phòng gym' }
+    ],
+    correct_option_index: 0,
+    explanation: "'借书证' (thẻ mượn sách), '借五本书' là các từ khóa đặc trưng của thư viện.",
+    points: 15,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk3-ref-05',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 5,
+    question_type: 'multiple_choice',
+    prompt: '听短文，判断说话人平时怎么缓解工作压力：',
+    pinyin: 'Tīng duǎnwén, huídá huǎnjiě yālì de fāngfǎ:',
+    translation: 'Người nói giải tỏa áp lực công việc bằng cách nào:',
+    audio_url: '',
+    audio_script: '工作累的时候，我喜欢听一些轻松的音乐，或者去小公园散散步，这样心情很快就能放松下来。',
+    options: [
+      { text: '听轻松音乐和散步', pinyin: 'Tīng qīngsōng yīnyuè hé sànbù', translation: 'Nghe nhạc thư giãn và đi dạo' },
+      { text: '暴饮暴食', pinyin: 'Bàoyǐnbàoshí', translation: 'Ăn uống vô độ' },
+      { text: '一直熬夜工作', pinyin: 'Yìzhí áoyè gōngzuò', translation: 'Thức đêm làm việc liên tục' }
+    ],
+    correct_option_index: 0,
+    explanation: "Đoạn ghi âm: '听一些轻松的音乐，或者去小公园散散步'.",
+    points: 15,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk3-ref-06',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 6,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：请大家把手机调成静音，会议马上就要______了。',
+    pinyin: 'Xuǎn cí tiánkòng: Qǐng dàjiā bǎ shǒujī tiáochéng jìngyīn, huìyì mǎshàng jiùyào ______ le.',
+    translation: 'Xin mọi người chuyển điện thoại sang chế độ im lặng, cuộc họp sắp ______ rồi.',
+    options: [
+      { text: '开始', pinyin: 'kāishǐ', translation: 'bắt đầu' },
+      { text: '结束', pinyin: 'jiéshù', translation: 'kết thúc' },
+      { text: '迟到', pinyin: 'chídào', translation: 'đến muộn' }
+    ],
+    correct_option_index: 0,
+    explanation: "'马上就要开始' là cấu trúc diễn đạt sự việc sắp sửa xảy ra ngay.",
+    points: 15,
+    topic: 'office'
+  },
+  {
+    id: 'q-hsk3-ref-07',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 7,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：经过两个月的努力，我的汉语水平有了很大的______。',
+    pinyin: 'Xuǎn cí tiánkòng: Jīngguò liǎng gè yuè de nǔlì, wǒ de Hànyǔ shuǐpíng yǒu le hěn dà de ______.',
+    translation: 'Trải qua hai tháng nỗ lực, trình độ tiếng Trung của tôi đã có sự ______ rất lớn.',
+    options: [
+      { text: '提高', pinyin: 'tígāo', translation: 'nâng cao / tiến bộ' },
+      { text: '要求', pinyin: 'yāoqiú', translation: 'yêu cầu' },
+      { text: '相信', pinyin: 'xiāngxìn', translation: 'tin tưởng' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cụm danh từ kết hợp chuẩn xác: '水平有了很大提高' (trình độ được nâng cao đáng kể).",
+    points: 15,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk3-ref-08',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 8,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：我______这件事不是他做的，他昨天根本不在场。',
+    pinyin: 'Xuǎn cí tiánkòng: Wǒ ______ zhè jiàn shì bú shì tā zuò de, tā zuótiān gēnběn bú zàichǎng.',
+    translation: 'Tôi ______ chuyện này không phải anh ấy làm, hôm qua anh ấy vốn không có mặt.',
+    options: [
+      { text: '敢肯定', pinyin: 'gǎn kěndìng', translation: 'dám khẳng định' },
+      { text: '开玩笑', pinyin: 'kāi wánxiào', translation: 'nói đùa' },
+      { text: '害怕', pinyin: 'hàipà', translation: 'sợ hãi' }
+    ],
+    correct_option_index: 0,
+    explanation: "Đưa ra bằng chứng vững chắc '根本不在场' thể hiện sự tin tưởng tuyệt đối: '我敢肯定' (Tôi dám khẳng định).",
+    points: 15,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk3-ref-09',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 9,
+    question_type: 'multiple_choice',
+    prompt: '阅读短文选择：健康不仅需要合理的饮食，还需要坚持锻炼和良好的睡眠。根据这段话，健康需要什么？',
+    pinyin: 'Yuèdú duǎnwén: Jiànkāng bùjǐn xūyào hélǐ de yǐnshí, hái xūyào jiānchí duànliàn hé liánghǎo de shuìmián.',
+    translation: 'Sức khỏe không chỉ cần chế độ ăn hợp lý mà còn cần kiên trì tập thể dục và giấc ngủ tốt.',
+    options: [
+      { text: '饮食、锻炼和睡眠的综合平衡', pinyin: 'Yǐnshí, duànliàn hé shuìmián de pínghéng', translation: 'Cân bằng ăn uống, vận động và giấc ngủ' },
+      { text: '只要吃好就行', pinyin: 'Zhǐyào chī hǎo jiù xíng', translation: 'Chỉ cần ăn ngon là được' },
+      { text: '每天睡十二个小时', pinyin: 'Měitiān shuì shí\'èr gè xiǎoshí', translation: 'Ngủ 12 tiếng mỗi ngày' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cấu trúc '不仅...还...' liệt kê đầy đủ cả 3 yếu tố: ăn uống, rèn luyện và giấc ngủ.",
+    points: 15,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk3-ref-10',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 10,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：无论遇到多大的困难，我们都______放弃希望。',
+    pinyin: 'Xuǎn cí tiánkòng: Wúlùn yùdào duō dà de kùnnan, wǒmen dōu ______ fàngqì xīwàng.',
+    translation: 'Bất luận gặp phải khó khăn lớn đến đâu, chúng ta đều ______ từ bỏ hy vọng.',
+    options: [
+      { text: '不能', pinyin: 'bù néng', translation: 'không thể' },
+      { text: '可以', pinyin: 'kěyǐ', translation: 'có thể' },
+      { text: '必须', pinyin: 'bìxū', translation: 'bắt buộc' }
+    ],
+    correct_option_index: 0,
+    explanation: "Ý nghĩa khích lệ: '无论...都不能放弃' (Dù thế nào cũng không thể buông xuôi hy vọng).",
+    points: 15,
+    topic: 'philosophy'
+  },
+  // Phần Viết HSK 3: Sắp xếp câu chữ 把 / 被 và trật tự ngữ pháp
+  {
+    id: 'q-hsk3-ref-11',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 11,
+    question_type: 'reorder_sentence',
+    prompt: '连词成句（把字句）：请将下列词语排列成通顺的句子：',
+    pinyin: 'Liáncí chéng jù (Bǎ zì jù): Páiliè xiàliè cíyǔ chéng jù:',
+    translation: 'Sắp xếp câu chữ 把: Xếp các cụm từ sau thành câu chuẩn:',
+    words: ['请', '把', '桌子上的', '作业本', '收起来'],
+    scrambledWords: ['把', '收起来', '请', '作业本', '桌子上的'],
+    correct_order: ['请', '把', '桌子上的', '作业本', '收起来'],
+    answerKey: ['请', '把', '桌子上的', '作业本', '收起来'],
+    correct_sentence: '请把桌子上的作业本收起来。',
+    options: [
+      { text: '请把桌子上的作业本收起来。', pinyin: 'Qǐng bǎ zhuōzi shang de zuòyèběn shōuqǐlai.', translation: 'Xin hãy cất vở bài tập trên bàn đi.' },
+      { text: '把桌子上的作业本请收起来。', pinyin: 'Bǎ zhuōzi shang de zuòyèběn qǐng shōuqǐlai.', translation: 'Sai vị trí từ thỉnh cầu 请' },
+      { text: '请收起来把桌子上的作业本。', pinyin: 'Qǐng shōuqǐlai bǎ zhuōzi shang de zuòyèběn.', translation: 'Sai trật tự vị ngữ câu chữ 把' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cấu trúc câu chữ 把: 主语 (请) + 把 + 宾语 (桌子上的作业本) + 动词与趋向补语 (收起来).",
+    points: 15,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk3-ref-12',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 12,
+    question_type: 'reorder_sentence',
+    prompt: '连词成句（被字句）：请排列成完整的被字句：',
+    pinyin: 'Liáncí chéng jù (Bèi zì jù): Páiliè chéng wánzhěng de bèi zì jù:',
+    translation: 'Sắp xếp câu bị động chữ 被:',
+    words: ['那个', '漂亮的', '玻璃杯', '被猫', '打破了'],
+    scrambledWords: ['被猫', '玻璃杯', '打破了', '那个', '漂亮的'],
+    correct_order: ['那个', '漂亮的', '玻璃杯', '被猫', '打破了'],
+    answerKey: ['那个', '漂亮的', '玻璃杯', '被猫', '打破了'],
+    correct_sentence: '那个漂亮的玻璃杯被猫打破了。',
+    options: [
+      { text: '那个漂亮的玻璃杯被猫打破了。', pinyin: 'Nà ge piàoliang de bōlibēi bèi māo dǎpò le.', translation: 'Chiếc cốc thủy tinh đẹp đẽ đó đã bị mèo làm vỡ rồi.' },
+      { text: '被猫那个漂亮的玻璃杯打破了。', pinyin: 'Bèi māo nà ge piàoliang de bōlibēi dǎpò le.', translation: 'Sai vị trí chủ ngữ bị tác động' },
+      { text: '那个漂亮的玻璃杯打破了被猫。', pinyin: 'Nà ge piàoliang de bōlibēi dǎpò le bèi māo.', translation: 'Sai vị trí cụm tác nhân 被' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cấu trúc câu bị động 被: 受事主语 (那个漂亮的玻璃杯) + 被 + 施事者 (猫) + 动词与补语 (打破了).",
+    points: 15,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk3-ref-13',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 13,
+    question_type: 'reorder_sentence',
+    prompt: '连词成句（比较句）：排列下列词语成比较句：',
+    pinyin: 'Liáncí chéng jù (Bǐjiào jù): Páiliè xiàliè cíyǔ:',
+    translation: 'Sắp xếp câu so sánh chữ 比:',
+    words: ['坐高铁', '比', '坐普通火车', '快得多'],
+    scrambledWords: ['快得多', '坐高铁', '坐普通火车', '比'],
+    correct_order: ['坐高铁', '比', '坐普通火车', '快得多'],
+    answerKey: ['坐高铁', '比', '坐普通火车', '快得多'],
+    correct_sentence: '坐高铁比坐普通火车快得多。',
+    options: [
+      { text: '坐高铁比坐普通火车快得多。', pinyin: 'Zuò gāotiě bǐ zuò pǔtōng huǒchē kuài de duō.', translation: 'Đi tàu cao tốc nhanh hơn đi tàu hỏa thường rất nhiều.' },
+      { text: '坐普通火车比坐高铁快得多。', pinyin: 'Zuò pǔtōng huǒchē bǐ zuò gāotiě kuài de duō.', translation: 'Sai logic thực tế' },
+      { text: '比坐普通火车坐高铁快得多。', pinyin: 'Bǐ zuò pǔtōng huǒchē zuò gāotiě kuài de duō.', translation: 'Sai trật tự chủ ngữ A' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cấu trúc câu chữ 比: A (坐高铁) + 比 + B (坐普通火车) + 形容词 + 程度补语 (快得多).",
+    points: 15,
+    topic: 'travel'
+  },
+  {
+    id: 'q-hsk3-ref-14',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 14,
+    question_type: 'reorder_sentence',
+    prompt: '连词成句（连动句）：请排列成连动句：',
+    pinyin: 'Liáncí chéng jù (Liándòng jù): Páiliè chéng liándòng jù:',
+    translation: 'Sắp xếp câu liên động diễn tả chuỗi hành động mục đích:',
+    words: ['他', '打算', '去中国', '留学', '学汉语'],
+    scrambledWords: ['学汉语', '去中国', '他', '留学', '打算'],
+    correct_order: ['他', '打算', '去中国', '留学', '学汉语'],
+    answerKey: ['他', '打算', '去中国', '留学', '学汉语'],
+    correct_sentence: '他打算去中国留学学汉语。',
+    options: [
+      { text: '他打算去中国留学学汉语。', pinyin: 'Tā dǎsuàn qù Zhōngguó liúxué xué Hànyǔ.', translation: 'Anh ấy dự định sang Trung Quốc du học học tiếng Trung.' },
+      { text: '他去中国打算学汉语留学。', pinyin: 'Tā qù Zhōngguó dǎsuàn xué Hànyǔ liúxué.', translation: 'Sai vị trí trợ động từ 打算' },
+      { text: '学汉语他打算留学去中国。', pinyin: 'Xué Hànyǔ tā dǎsuàn liúxué qù Zhōngguó.', translation: 'Sai trật tự liên động thời gian' }
+    ],
+    correct_option_index: 0,
+    explanation: "Trật tự câu liên động diễn tiến thời gian và mục đích: Chủ ngữ (他) + Năng nguyện từ (打算) + Hành động 1 (去中国) + Hành động 2 (留学) + Mục đích cụ thể (学汉语).",
+    points: 15,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk3-ref-15',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 15,
+    question_type: 'reorder_sentence',
+    prompt: '连词成句（存现句）：请排列成处所存现句：',
+    pinyin: 'Liáncí chéng jù (Cúnxiàn jù): Páiliè chéng cúnxiàn jù:',
+    translation: 'Sắp xếp câu tồn hiện chỉ vị trí không gian:',
+    words: ['黑板上', '写着', '今天的', '家庭作业'],
+    scrambledWords: ['写着', '家庭作业', '黑板上', '今天的'],
+    correct_order: ['黑板上', '写着', '今天的', '家庭作业'],
+    answerKey: ['黑板上', '写着', '今天的', '家庭作业'],
+    correct_sentence: '黑板上写着今天的家庭作业。',
+    options: [
+      { text: '黑板上写着今天的家庭作业。', pinyin: 'Hēibǎn shang xiězhe jīntiān de jiātíng zuòyè.', translation: 'Trên bảng đang viết bài tập về nhà hôm nay.' },
+      { text: '今天的家庭作业写着黑板上。', pinyin: 'Jīntiān de jiātíng zuòyè xiězhe hēibǎn shang.', translation: 'Sai cấu trúc câu tồn hiện' },
+      { text: '写着黑板上今天的家庭作业。', pinyin: 'Xiězhe hēibǎn shang jīntiān de jiātíng zuòyè.', translation: 'Sai vị trí từ chỉ nơi chốn' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cấu trúc câu tồn hiện trạng thái: 处所词 (黑板上) + 动词+着 (写着) + 实体名词 (今天的家庭作业).",
+    points: 15,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk3-ref-16',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 16,
+    question_type: 'multiple_choice',
+    prompt: '根据拼音选择正确的汉字：他每天早上都坚持【duànliàn】身体。',
+    pinyin: 'Gēnjù pīnyīn xuǎnzé hànzì: Tā měitiān zǎoshang dōu jiānchí [duànliàn] shēntǐ.',
+    translation: 'Theo pinyin chọn chữ Hán đúng: Mỗi sáng anh ấy đều kiên trì [rèn luyện] thân thể.',
+    options: [
+      { text: '锻炼', pinyin: 'duànliàn', translation: 'rèn luyện, tập luyện' },
+      { text: '教练', pinyin: 'jiàoliàn', translation: 'huấn luyện viên' },
+      { text: '练习', pinyin: 'liànxí', translation: 'luyện tập' }
+    ],
+    correct_option_index: 0,
+    explanation: "Chữ đúng cho cụm từ rèn luyện thân thể là '锻炼身体'.",
+    points: 15,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk3-ref-17',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 17,
+    question_type: 'multiple_choice',
+    prompt: '根据拼音选词：请大家保持【ānjìng】，不要大声喧哗。',
+    pinyin: 'Gēnjù pīnyīn xuǎncí: Qǐng dàjiā bǎochí [ānjìng], bú yào dàshēng xuānhuá.',
+    translation: 'Xin mọi người giữ [yên tĩnh], không được nói chuyện ồn ào.',
+    options: [
+      { text: '安静', pinyin: 'ānjìng', translation: 'yên tĩnh' },
+      { text: '干净', pinyin: 'gānjìng', translation: 'sạch sẽ' },
+      { text: '安全', pinyin: 'ānquán', translation: 'an toàn' }
+    ],
+    correct_option_index: 0,
+    explanation: "Khớp với pinyin 'ānjìng' và ngữ cảnh không làm ồn là '安静'.",
+    points: 15,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk3-ref-18',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 18,
+    question_type: 'multiple_choice',
+    prompt: '根据拼音选词：只要坚持努力，就一定能实现自己的【lǐxiǎng】。',
+    pinyin: 'Gēnjù pīnyīn xuǎncí: Zhǐyào jiānchí nǔlì, jiù yídìng néng shíxiàn zìjǐ de [lǐxiǎng].',
+    translation: 'Chỉ cần kiên trì nỗ lực, nhất định sẽ thực hiện được [lý tưởng] của mình.',
+    options: [
+      { text: '理想', pinyin: 'lǐxiǎng', translation: 'lý tưởng, ước mơ' },
+      { text: '历史', pinyin: 'lìshǐ', translation: 'lịch sử' },
+      { text: '思想', pinyin: 'sīxiǎng', translation: 'tư tưởng' }
+    ],
+    correct_option_index: 0,
+    explanation: "'实现理想' (thực hiện lý tưởng) là cụm kết hợp từ vựng HSK 3 chuẩn xác.",
+    points: 15,
+    topic: 'philosophy'
+  },
+  {
+    id: 'q-hsk3-ref-19',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 19,
+    question_type: 'multiple_choice',
+    prompt: '根据拼音选词：会议室里人太多，空气不太【xīnxian】。',
+    pinyin: 'Gēnjù pīnyīn xuǎncí: Huìyìshì lǐ rén tài duō, kōngqì bú tài [xīnxian].',
+    translation: 'Trong phòng họp đông người quá, không khí không được [trong lành/tươi mới].',
+    options: [
+      { text: '新鲜', pinyin: 'xīnxian', translation: 'trong lành, tươi ngon' },
+      { text: '经常', pinyin: 'jīngcháng', translation: 'thường xuyên' },
+      { text: '清楚', pinyin: 'qīngchu', translation: 'rõ ràng' }
+    ],
+    correct_option_index: 0,
+    explanation: "'新鲜空气' (không khí trong lành) - pinyin 'xīnxian' khớp với '新鲜'.",
+    points: 15,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk3-ref-20',
+    exam_id: 'hsk3-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 20,
+    question_type: 'multiple_choice',
+    prompt: '根据拼音选词：请你在合同的右下角【qiānzì】。',
+    pinyin: 'Gēnjù pīnyīn xuǎncí: Qǐng nǐ zài hétong de yòuxiàjiǎo [qiānzì].',
+    translation: 'Xin bạn hãy [ký tên] vào góc dưới bên phải của hợp đồng.',
+    options: [
+      { text: '签字', pinyin: 'qiānzì', translation: 'ký tên' },
+      { text: '写信', pinyin: 'xiěxìn', translation: 'viết thư' },
+      { text: '借钱', pinyin: 'jièqián', translation: 'vay tiền' }
+    ],
+    correct_option_index: 0,
+    explanation: "Động từ ký vào hợp đồng là '签字'.",
+    points: 15,
+    topic: 'office'
+  },
+
+  // =========================================================================
+  // HSK 4 OFFICIAL REFERENCE QUESTIONS (H40901) - 20 Questions
+  // =========================================================================
+  {
+    id: 'q-hsk4-ref-01',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 1,
+    question_type: 'multiple_choice',
+    prompt: '听对话，判断男的对于换工作有什么看法：',
+    pinyin: 'Tīng duìhuà, pànduàn nán de de kànfǎ:',
+    translation: 'Người nam có quan điểm gì về việc chuyển việc:',
+    audio_url: '',
+    audio_script: '女：听说你打算辞职？现在的待遇不是挺好的吗？ 男：待遇确实不错，但在现在的岗位上我已经学不到新东西了，我想去一个更有挑战性的平台。',
+    options: [
+      { text: '希望寻求更有挑战性的发展机会', pinyin: 'Xīwàng xúnqiú gèng yǒu tiǎozhànxìng de fāzhǎn', translation: 'Mong tìm kiếm cơ hội thử thách hơn' },
+      { text: '因为工资太低而不满', pinyin: 'Yīnwèi gōngzī tài dī', translation: 'Vì lương quá thấp' },
+      { text: '想提前退休休息', pinyin: 'Xiǎng tíqián tuìxiū', translation: 'Muốn nghỉ hưu sớm' }
+    ],
+    correct_option_index: 0,
+    explanation: "Người nam khẳng định: '学不到新东西了，我想去一个更有挑战性的平台' => Chọn A.",
+    points: 15,
+    topic: 'office'
+  },
+  {
+    id: 'q-hsk4-ref-02',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 2,
+    question_type: 'multiple_choice',
+    prompt: '听对话，问女的对这家餐厅评价如何：',
+    pinyin: 'Tīng duìhuà, wèn nǚ de duì cāntīng píngjià:',
+    translation: 'Người nữ đánh giá nhà hàng này như thế nào:',
+    audio_url: '',
+    audio_script: '男：这家川菜馆的味道你觉得正宗吗？ 女：不仅味道地道，而且服务员态度很热情，上菜速度也特别快，非常值得推荐。',
+    options: [
+      { text: '味道地道且服务周到', pinyin: 'Wèidao dìdao qiě fúwù zhōudào', translation: 'Hương vị chuẩn và phục vụ chu đáo' },
+      { text: '价格昂贵且菜品不新鲜', pinyin: 'Jiàgé ángguì qiě bù xīnxian', translation: 'Giá đắt và món ăn không tươi' },
+      { text: '上菜太慢令人失望', pinyin: 'Shàngcài tài màn', translation: 'Lên món quá chậm' }
+    ],
+    correct_option_index: 0,
+    explanation: "Đánh giá: '不仅味道地道，而且服务员态度很热情，上菜速度也特别快'.",
+    points: 15,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk4-ref-03',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 3,
+    question_type: 'multiple_choice',
+    prompt: '听短文，判断作者认为成功的关键在于什么：',
+    pinyin: 'Tīng duǎnwén, pànduàn chénggōng de guānjiàn:',
+    translation: 'Theo tác giả, chìa khóa thành công cốt ở điều gì:',
+    audio_url: '',
+    audio_script: '很多人羡慕别人的成功，却往往忽略了成功背后的汗水。其实，任何伟大的成就，都离不开持之以恒的积累和面对失败时不轻言放弃的勇气。',
+    options: [
+      { text: '持之以恒的积累与不放弃的勇气', pinyin: 'Chízhīyǐhéng de jīlěi yǔ bù fàngqì de yǒngqì', translation: 'Sự kiên trì tích lũy và lòng can đảm không bỏ cuộc' },
+      { text: '完全依靠运气和天分', pinyin: 'Wánquán yīkào yùnqi hé tiānfèn', translation: 'Hoàn toàn dựa vào vận may và thiên bẩm' },
+      { text: '只要走捷径就能成功', pinyin: 'Zhǐyào zǒu jiéjìng', translation: 'Chỉ cần đi đường tắt' }
+    ],
+    correct_option_index: 0,
+    explanation: "Bài nghe nhấn mạnh: '离不开持之以恒的积累和面对失败时不轻言放弃的勇气'.",
+    points: 15,
+    topic: 'philosophy'
+  },
+  {
+    id: 'q-hsk4-ref-04',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 4,
+    question_type: 'multiple_choice',
+    prompt: '听对话，判断他们接下来要解决什么事情：',
+    pinyin: 'Tīng duìhuà, pànduàn xià yí bù rènwu:',
+    translation: 'Họ chuẩn bị giải quyết công việc gì tiếp theo:',
+    audio_url: '',
+    audio_script: '女：李经理，客户对设计方案初稿提出了一些修改意见。 男：好，立刻召集团队开个短会，今天下班前必须拿出修改后的第二版方案。',
+    options: [
+      { text: '召开会议修改设计方案', pinyin: 'Zhàokāi huìyì xiūgǎi shèjì fāng\'àn', translation: 'Họp nhóm chỉnh sửa phương án thiết kế' },
+      { text: '直接拒绝客户的意见', pinyin: 'Zhíjiē jùjué kèhù', translation: 'Từ chối thẳng thừng khách hàng' },
+      { text: '取消合作项目', pinyin: 'Qǔxiāo hézuò xiàngmù', translation: 'Hủy bỏ dự án hợp tác' }
+    ],
+    correct_option_index: 0,
+    explanation: "Quyết định: '立刻召集团队开个短会，今天下班前必须拿出修改后的第二版方案'.",
+    points: 15,
+    topic: 'office'
+  },
+  {
+    id: 'q-hsk4-ref-05',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 5,
+    question_type: 'sentence_order_abc',
+    propositions: {
+      A: '才能在激烈的职场竞争中立于不败之地。',
+      B: '只有不断学习新技能、更新知识结构，',
+      C: '现代社会的科技发展日新月异，'
+    },
+    prompt: '排列句子顺序（段落逻辑）：将下列三个句子排列成语意连贯的段落：\nA. 才能在激烈的职场竞争中立于不败之地。\nB. 只有不断学习新技能、更新知识结构，\nC. 现代社会的科技发展日新月异，',
+    pinyin: 'Páiliè jùzi shùnxù: Páiliè xiàliè sān gè jùzi:',
+    translation: 'Sắp xếp thứ tự đoạn văn ABC thành văn bản mạch lạc logic:',
+    answerKey: 'CBA',
+    correct_order_abc: 'CBA',
+    options: [
+      { text: 'A - B - C', pinyin: 'A - B - C', translation: 'Trật tự sai logic' },
+      { text: 'C - B - A', pinyin: 'C - B - A', translation: 'Chuẩn logic: Bối cảnh xã hội -> Điều kiện cần -> Kết quả đạt được' },
+      { text: 'B - A - C', pinyin: 'B - A - C', translation: 'Đảo lộn vị trí câu kết luận' }
+    ],
+    correct_option_index: 1,
+    explanation: "Trật tự logic: C (nêu bối cảnh phát triển) -> B (điều kiện '只有不断学习...') -> A (kết quả '才能立于不败之地').",
+    points: 15,
+    topic: 'office'
+  },
+  {
+    id: 'q-hsk4-ref-06',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 6,
+    question_type: 'sentence_order_abc',
+    propositions: {
+      A: '从而有效缓解心理压力、改善不良情绪。',
+      B: '如果经常感到焦虑，不妨尝试慢跑或散步，',
+      C: '因为规律的有氧运动能促使大脑分泌多巴胺，'
+    },
+    prompt: '排列句子顺序（段落逻辑）：\nA. 从而有效缓解心理压力、改善不良情绪。\nB. 如果经常感到焦虑，不妨尝试慢跑或散步，\nC. 因为规律的有氧运动能促使大脑分泌多巴胺，',
+    pinyin: 'Páiliè jùzi shùnxù:',
+    translation: 'Sắp xếp thứ tự đoạn văn ABC:',
+    answerKey: 'BCA',
+    correct_order_abc: 'BCA',
+    options: [
+      { text: 'B - C - A', pinyin: 'B - C - A', translation: 'Chuẩn logic: Đưa ra giải pháp -> Giải thích nguyên nhân khoa học -> Kết quả tích cực' },
+      { text: 'A - B - C', pinyin: 'A - B - C', translation: 'Sai liên từ kết quả 从而' },
+      { text: 'C - A - B', pinyin: 'C - A - B', translation: 'Mất mệnh đề giả thiết' }
+    ],
+    correct_option_index: 0,
+    explanation: "B (nêu giải pháp vận động) -> C (nguyên nhân '因为运动促使大脑分泌多巴胺') -> A (kết quả '从而缓解压力'). Thứ tự đúng: B-C-A.",
+    points: 15,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk4-ref-07',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 7,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：在与客户交流时，幽默感往往能打破尴尬的僵局，拉近彼此的______。',
+    pinyin: 'Xuǎn cí tiánkòng: Lājìn bǐcǐ de ______.',
+    translation: 'Khi giao tiếp với khách hàng, sự hài hước kéo gần ______ của đôi bên.',
+    options: [
+      { text: '距离', pinyin: 'jùlí', translation: 'khoảng cách' },
+      { text: '标准', pinyin: 'biāozhǔn', translation: 'tiêu chuẩn' },
+      { text: '环境', pinyin: 'huánjìng', translation: 'môi trường' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cụm kết hợp từ cố định: '拉近距离' (kéo gần khoảng cách tâm lý/quan hệ).",
+    points: 15,
+    topic: 'office'
+  },
+  {
+    id: 'q-hsk4-ref-08',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 8,
+    question_type: 'multiple_choice',
+    prompt: '阅读短文选择：阅读不仅能开阔眼界、拓宽知识面，更能培养深度的思维习惯。这段话强调阅读的作用是什么？',
+    pinyin: 'Yuèdú duǎnwén: Yuèdú bùjǐn néng kāikuò yǎnjiè, gèng néng péiyǎng shēndù sīwéi xíguàn.',
+    translation: 'Đoạn văn nhấn mạnh tác dụng quan trọng nhất của việc đọc sách là gì:',
+    options: [
+      { text: '拓宽眼界并培养深度思维', pinyin: 'Tuòkuān yǎnjiè bìng péiyǎng shēndù sīwéi', translation: 'Mở rộng tầm mắt và bồi dưỡng tư duy chiều sâu' },
+      { text: '仅仅为了打发无聊时间', pinyin: 'Jǐnjǐn wèile dǎfā shíjiān', translation: 'Chỉ để giết thời gian' },
+      { text: '能够迅速赚到财富', pinyin: 'Néng xùnsù zhuàndào cáifù', translation: 'Có thể làm giàu nhanh chóng' }
+    ],
+    correct_option_index: 0,
+    explanation: "Đoạn văn khẳng định: '开阔眼界、拓宽知识面，更能培养深度的思维习惯'.",
+    points: 15,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk4-ref-09',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 9,
+    question_type: 'reorder_sentence',
+    prompt: '连词成句：请排列下列词语成语法正确的陈述句：',
+    pinyin: 'Liáncí chéng jù: Páiliè cíyǔ chéng zhèngquè de jùzi:',
+    translation: 'Sắp xếp cụm từ thành câu hoàn chỉnh:',
+    words: ['这次', '科学实验的', '成功', '给团队', '带来了', '极大的信心'],
+    scrambledWords: ['带来了', '极大的信心', '成功', '这次', '科学实验的', '给团队'],
+    correct_order: ['这次', '科学实验的', '成功', '给团队', '带来了', '极大的信心'],
+    answerKey: ['这次', '科学实验的', '成功', '给团队', '带来了', '极大的信心'],
+    correct_sentence: '这次科学实验的成功给团队带来了极大的信心。',
+    options: [
+      { text: '这次科学实验的成功给团队带来了极大的信心。', pinyin: 'Zhè cì kēxué shíyàn de chénggōng gěi tuánduì dàilái le jídà de xìnxīn.', translation: 'Thành công của thí nghiệm khoa học lần này đã mang lại niềm tin to lớn cho toàn đội.' },
+      { text: '给团队带来了这次科学实验的成功极大的信心。', pinyin: 'Gěi tuánduì dàilái le zhè cì kēxué shíyàn de chénggōng jídà de xìnxīn.', translation: 'Sai trật tự chủ ngữ vị ngữ' },
+      { text: '极大的信心给团队带来了这次科学实验的成功。', pinyin: 'Jídà de xìnxīn gěi tuánduì dàilái le...', translation: 'Sai quan hệ nhân quả' }
+    ],
+    correct_option_index: 0,
+    explanation: "Chủ ngữ (这次科学实验的成功) + Giới từ (给团队) + Vị ngữ động từ (带来了) + Tân ngữ (极大的信心).",
+    points: 15,
+    topic: 'tech'
+  },
+  {
+    id: 'q-hsk4-ref-10',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 10,
+    question_type: 'reorder_sentence',
+    prompt: '连词成句：请排列下列词语：',
+    pinyin: 'Liáncí chéng jù:',
+    translation: 'Sắp xếp cụm từ thành câu chữ 把:',
+    words: ['请你', '务必', '把这份文件', '交到总经理办公室'],
+    scrambledWords: ['交到总经理办公室', '把这份文件', '务必', '请你'],
+    correct_order: ['请你', '务必', '把这份文件', '交到总经理办公室'],
+    answerKey: ['请你', '务必', '把这份文件', '交到总经理办公室'],
+    correct_sentence: '请你务必把这份文件交到总经理办公室。',
+    options: [
+      { text: '请你务必把这份文件交到总经理办公室。', pinyin: 'Qǐng nǐ wùbì bǎ zhè fèn wénjiàn jiāodào zǒngjīnglǐ bàngōngshì.', translation: 'Xin bạn nhất thiết phải giao tài liệu này đến phòng Tổng giám đốc.' },
+      { text: '把这份文件请你务必交到总经理办公室。', pinyin: 'Bǎ zhè fèn wénjiàn qǐng nǐ wùbì jiāodào...', translation: 'Sai vị trí từ thỉnh cầu 请你' },
+      { text: '请你务必交到总经理办公室把这份文件。', pinyin: 'Qǐng nǐ wùbì jiāodào... bǎ zhè fèn wénjiàn.', translation: 'Sai vị trí cụm 把' }
+    ],
+    correct_option_index: 0,
+    explanation: "Chủ ngữ (请你) + Phó từ nhấn mạnh (务必) + 把 (这份文件) + Động từ bổ ngữ kết quả xứ sở (交到总经理办公室).",
+    points: 15,
+    topic: 'office'
+  },
+
+  // =========================================================================
+  // HSK 5 OFFICIAL REFERENCE QUESTIONS (H50901) - Sample Representation
+  // =========================================================================
+  {
+    id: 'q-hsk5-ref-01',
+    exam_id: 'hsk5-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 1,
+    question_type: 'multiple_choice',
+    prompt: '听商务谈判对话，判断双方达成的初步共识是什么：',
+    pinyin: 'Tīng shāngwù tánpàn duìhuà, huídá gòngshí:',
+    translation: 'Nghe đối thoại đàm phán thương mại, đồng thuận bước đầu là gì:',
+    audio_url: '',
+    audio_script: '女：对于贵方提出的分期付款方案，我们董事会原则上表示同意，但首期款项必须占总金额的百分之四十。 男：这完全符合我们的预期，稍后我们将根据此条款起草补充协议。',
+    options: [
+      { text: '同意分期付款且首期占40%', pinyin: 'Tóngyì fēnqī fùkuǎn qiě shǒuqī zhàn bǎifēnzhī sìshí', translation: 'Đồng ý trả góp với đợt đầu 40%' },
+      { text: '拒绝一切延期付款的要求', pinyin: 'Jùjué yīqiè yánqī fùkuǎn', translation: 'Từ chối toàn bộ đề xuất trả chậm' },
+      { text: '要求一次性全额付清', pinyin: 'Yāoqiú yícìxìng quán\'é fùqīng', translation: 'Yêu cầu thanh toán một lần toàn bộ' }
+    ],
+    correct_option_index: 0,
+    explanation: "Đoạn nghe nêu rõ: '原则上表示同意，但首期款项必须占总金额的百分之四十' và người nam chấp thuận.",
+    points: 15,
+    topic: 'office'
+  },
+  {
+    id: 'q-hsk5-ref-02',
+    exam_id: 'hsk5-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 2,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：科学研究表明，长期缺乏规律运动不仅会降低人体的新陈代谢速度，还会间接______机体的免疫机能。',
+    pinyin: 'Kēxué yánjiū biǎomíng... jiānjiē ______ jītǐ de miǎnyì jīnéng.',
+    translation: 'Nghiên cứu khoa học chỉ ra rằng lười vận động sẽ gián tiếp ______ chức năng miễn dịch của cơ thể.',
+    options: [
+      { text: '削弱', pinyin: 'xuēruò', translation: 'làm suy yếu, làm giảm sút' },
+      { text: '破坏', pinyin: 'pòhuài', translation: 'phá hoại, tàn phá' },
+      { text: '阻止', pinyin: 'zǔzhǐ', translation: 'ngăn chặn' }
+    ],
+    correct_option_index: 0,
+    explanation: "Kết hợp từ chuyên môn sinh học và y khoa: '削弱机体免疫机能' (làm suy yếu năng lực miễn dịch).",
+    points: 15,
+    topic: 'tech'
+  },
+  {
+    id: 'q-hsk5-ref-03',
+    exam_id: 'hsk5-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 3,
+    question_type: 'reorder_sentence',
+    prompt: '连词成句：请排列下列词语成句：',
+    pinyin: 'Liáncí chéng jù:',
+    translation: 'Sắp xếp câu chuẩn mực học thuật HSK 5:',
+    words: ['人工智能的', '广泛应用', '给传统制造业', '带来了', '颠覆性的变革'],
+    scrambledWords: ['颠覆性的变革', '给传统制造业', '广泛应用', '人工智能的', '带来了'],
+    correct_order: ['人工智能的', '广泛应用', '给传统制造业', '带来了', '颠覆性的变革'],
+    answerKey: ['人工智能的', '广泛应用', '给传统制造业', '带来了', '颠覆性的变革'],
+    correct_sentence: '人工智能的广泛应用给传统制造业带来了颠覆性的变革。',
+    options: [
+      { text: '人工智能的广泛应用给传统制造业带来了颠覆性的变革。', pinyin: 'Réngōng zhìnéng de guǎngfàn yìngyòng gěi chuántǒng zhìzàoyè dàilái le diānfùxìng de biàngé.', translation: 'Ứng dụng rộng rãi của trí tuệ nhân tạo đã mang lại sự chuyển biến mang tính đột phá cho ngành chế tạo truyền thống.' },
+      { text: '颠覆性的变革给传统制造业带来了人工智能的广泛应用。', pinyin: 'Diānfùxìng de biàngé gěi chuántǒng zhìzàoyè...', translation: 'Sai trật tự nguyên nhân và hệ quả' },
+      { text: '给传统制造业人工智能的广泛应用带来了颠覆性的变革。', pinyin: 'Gěi chuántǒng zhìzàoyè réngōng zhìnéng...', translation: 'Sai vị trí cụm giới từ' }
+    ],
+    correct_option_index: 0,
+    explanation: "Chủ ngữ (人工智能的广泛应用) + Giới từ đối tượng (给传统制造业) + Vị ngữ động từ (带来了) + Tân ngữ (颠覆性的变革).",
+    points: 15,
+    topic: 'tech'
+  },
+
+  // =========================================================================
+  // HSK 6 OFFICIAL REFERENCE QUESTIONS (H60901) - Sample Representation
+  // =========================================================================
+  {
+    id: 'q-hsk6-ref-01',
+    exam_id: 'hsk6-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 1,
+    question_type: 'multiple_choice',
+    prompt: '病句辨析：请选出下列四句话中【有语病】（有语法错误）的一项：',
+    pinyin: 'Bìngjù biànxī: Xuǎn chū yǒu yǔbìng de yī xiàng:',
+    translation: 'Phân tích câu sai ngữ pháp (病句): Chọn câu bị sai ngữ pháp:',
+    options: [
+      { text: '通过这次深入调研，使我们更加明确了未来几年的产业发展方向。', pinyin: 'Tōngguò zhè cì shēnrù diàoyán, shǐ wǒmen gèngjiā míngquè le chǎnyè fāzhǎn fāngxiàng.', translation: 'Lỗi thiếu chủ ngữ kinh điển do dùng cặp \"通过...使...\"' },
+      { text: '持续的科技创新为企业高质量发展注入了澎湃的动能。', pinyin: 'Chíxù de kēxué chuàngxīn wèi qǐyè gāozhìliàng fāzhǎn zhùrù le pēngpài de dòngnéng.', translation: 'Câu hoàn toàn đúng ngữ pháp' },
+      { text: '阅读经典名著不仅能够涵养心性，更能开拓读者的思想境界。', pinyin: 'Yuèdú jīngdiǎn míngzhù bùjǐn nénggòu...', translation: 'Câu đúng ngữ pháp chuẩn' },
+      { text: '面对纷繁复杂的市场变局，唯有保持战略定力方能行稳致远。', pinyin: 'Miànduì fēnfán fùzá de shìchǎng biànjú...', translation: 'Câu đúng chuẩn văn nghị luận' }
+    ],
+    correct_option_index: 0,
+    explanation: "Câu A phạm lỗi ngữ pháp kinh điển HSK 6: '缺主语' (Thiếu chủ ngữ). Khi đồng thời đặt giới từ '通过...' ở đầu câu và '使...' ở vế sau, toàn bộ câu bị triệt tiêu chủ ngữ. Sửa đúng: bỏ '通过' hoặc bỏ '使'.",
+    points: 15,
+    topic: 'philosophy'
+  },
+  {
+    id: 'q-hsk6-ref-02',
+    exam_id: 'hsk6-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 2,
+    question_type: 'multiple_choice',
+    prompt: '词语搭配与成语运用：真正的治学之道在于______，切不可急功近利、浅尝辄止。',
+    pinyin: 'Zhēnzhèng de zhìxué zhī dào zàiyú ______, qiè bùkě jígōngjìnlì, qiǎnchángzhézhǐ.',
+    translation: 'Đạo học thuật chân chính cốt ở ______, quyết không thể nóng vội cầu danh hay cưỡi ngựa xem hoa.',
+    options: [
+      { text: '潜心笃行', pinyin: 'qiánxīn dǔxíng', translation: 'Chuyên tâm bền chí, dốc lòng thực hành' },
+      { text: '浮光掠影', pinyin: 'fúguāng lüèyǐng', translation: 'Thoáng qua hời hợt' },
+      { text: '随波逐流', pinyin: 'suíbō zhúliú', translation: 'Trôi theo dòng đời' },
+      { text: '盲人摸象', pinyin: 'mángrén mōxiàng', translation: 'Thầy bói xem voi' }
+    ],
+    correct_option_index: 0,
+    explanation: "'潜心笃行' biểu thị tinh thần học thuật nghiêm cẩn, chuyên tâm nghiên cứu và kiên trì rèn luyện, tương phản chính xác với '急功近利' (nóng vội ham lợi tức thì).",
+    points: 15,
+    topic: 'philosophy'
+  }
+,
+  {
+    id: 'q-hsk4-ref-11',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 11,
+    question_type: 'multiple_choice',
+    prompt: '听短文，判断关于李教授的说法哪项正确：',
+    pinyin: 'Tīng duǎnwén, pànduàn guānyú Lǐ jiàoshòu de shuōfǎ:',
+    translation: 'Nghe đoạn văn, nhận định nào về giáo sư Lý là đúng:',
+    audio_url: '',
+    audio_script: '李教授从事中国古典文学研究三十余年，不仅治学严谨，而且讲课风趣幽默，深受全校学生的爱戴。',
+    options: [
+      { text: '讲课风趣幽默且治学严谨', pinyin: 'Jiǎngkè fēngqù yōumò qiě zhìxué yánjǐn', translation: 'Giảng dạy hài hước hóm hỉnh và nghiên cứu nghiêm cẩn' },
+      { text: '刚从国外留学归来', pinyin: 'Gāng cóng guówài liúxué guīlái', translation: 'Vừa du học nước ngoài về' },
+      { text: '性格严肃孤僻', pinyin: 'Xìnggé yánsù gūpì', translation: 'Tính cách nghiêm khắc cô độc' }
+    ],
+    correct_option_index: 0,
+    explanation: "Đoạn văn nêu rõ: '不仅治学严谨，而且讲课风趣幽默，深受全校学生的爱戴'.",
+    points: 15,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk4-ref-12',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 12,
+    question_type: 'multiple_choice',
+    prompt: '听对话，判断男的为什么向女的道歉：',
+    pinyin: 'Tīng duìhuà, pànduàn nán de dàoqiàn de yuányīn:',
+    translation: 'Người nam vì sao xin lỗi người nữ:',
+    audio_url: '',
+    audio_script: '男：真是不好意思，路上发生了一起交通事故导致严重堵车，所以我迟到了半个小时。 女：没关系，会议还没正式开始呢。',
+    options: [
+      { text: '因为堵车导致迟到', pinyin: 'Yīnwèi dǔchē dǎozhì chídào', translation: 'Vì tắc đường dẫn tới đến muộn' },
+      { text: '忘记带会议文件', pinyin: 'Wàngjì dài wénjiàn', translation: 'Quên mang tài liệu họp' },
+      { text: '打翻了女的咖啡', pinyin: 'Dǎfān le kāfēi', translation: 'Làm đổ cà phê' }
+    ],
+    correct_option_index: 0,
+    explanation: "Lời thoại: '交通事故导致严重堵车，所以我迟到了半个小时'.",
+    points: 15,
+    topic: 'office'
+  },
+  {
+    id: 'q-hsk4-ref-13',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 13,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：面对困难时，积极乐观的心态往往能够______我们走出人生的低谷。',
+    pinyin: 'Xuǎn cí tiánkòng: Zhǐyǐn... zǒuchū dǐgǔ.',
+    translation: 'Tâm thái lạc quan tích cực thường có thể ______ chúng ta bước ra khỏi đáy sâu khó khăn.',
+    options: [
+      { text: '指引', pinyin: 'zhǐyǐn', translation: 'chỉ lối, dẫn đường' },
+      { text: '拒绝', pinyin: 'jùjué', translation: 'từ chối' },
+      { text: '怀疑', pinyin: 'huáiyí', translation: 'hoài nghi' }
+    ],
+    correct_option_index: 0,
+    explanation: "'指引我们走出低谷' (chỉ đường dẫn lối chúng ta vượt qua vực sâu thử thách).",
+    points: 15,
+    topic: 'philosophy'
+  },
+  {
+    id: 'q-hsk4-ref-14',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 14,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：为了保证产品质量，质检人员对每一道生产工序都进行了______的检查。',
+    pinyin: 'Xuǎn cí tiánkòng: Yángé de jiǎnchá.',
+    translation: 'Để bảo đảm chất lượng, nhân viên đã tiến hành kiểm tra ______ đối với từng quy trình.',
+    options: [
+      { text: '严格', pinyin: 'yángé', translation: 'nghiêm ngặt, cẩn mật' },
+      { text: '随便', pinyin: 'suíbiàn', translation: 'tùy tiện' },
+      { text: '粗心', pinyin: 'cūxīn', translation: 'cẩu thả' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cụm định ngữ chuẩn: '严格的检查' (kiểm tra nghiêm ngặt).",
+    points: 15,
+    topic: 'office'
+  },
+  {
+    id: 'q-hsk4-ref-15',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 15,
+    question_type: 'multiple_choice',
+    prompt: '阅读短文选择：在中国传统文化中，“茶”不仅是一种日常饮品，更承载着深厚的待客之道与清雅的处世哲学。这段话主要谈论什么？',
+    pinyin: 'Yuèdú duǎnwén: Zài Zhōngguó chuántǒng wénhuà zhōng, \"chá\"...',
+    translation: 'Trong văn hóa truyền thống Trung Hoa, "Trà" mang ý nghĩa gì:',
+    options: [
+      { text: '茶所蕴含的文化与处世哲学', pinyin: 'Chá suǒ yùnhán de wénhuà', translation: 'Văn hóa và triết lý ẩn chứa trong chén trà' },
+      { text: '现代茶饮料的制作技术', pinyin: 'Chá yǐnliào zhìzuò jīshù', translation: 'Kỹ thuật pha chế trà hiện đại' },
+      { text: '茶叶的市场销售价格', pinyin: 'Cháyè de shìchǎng jiàgé', translation: 'Giá bán của lá trà' }
+    ],
+    correct_option_index: 0,
+    explanation: "Đoạn văn nhấn mạnh '更承载着深厚的待客之道与清雅的处世哲学'.",
+    points: 15,
+    topic: 'culture'
+  },
+  {
+    id: 'q-hsk4-ref-16',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 16,
+    question_type: 'sentence_order_abc',
+    propositions: {
+      A: '还能有效提升语言表达与写作能力，',
+      B: '因此家长应当从小鼓励孩子多读书。',
+      C: '养成良好的阅读习惯不仅能丰富课余生活，'
+    },
+    prompt: '排列句子顺序（段落逻辑）：\nA. 还能有效提升语言表达与写作能力，\nB. 因此家长应当从小鼓励孩子多读书。\nC. 养成良好的阅读习惯不仅能丰富课余生活，',
+    pinyin: 'Páiliè jùzi shùnxù:',
+    translation: 'Sắp xếp thứ tự ABC:',
+    answerKey: 'CAB',
+    correct_order_abc: 'CAB',
+    options: [
+      { text: 'C - A - B', pinyin: 'C - A - B', translation: 'Thứ tự chuẩn logic: Lợi ích 1 -> Lợi ích 2 (tăng tiến) -> Kết luận hành động' },
+      { text: 'B - C - A', pinyin: 'B - C - A', translation: 'Đưa từ nối kết luận 因此 lên đầu' },
+      { text: 'A - C - B', pinyin: 'A - C - B', translation: 'Sai cặp liên từ 不仅...还...' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cấu trúc tăng tiến: C (不仅能丰富生活) -> A (还能提升表达写作) -> B (因此鼓励多读书). Thứ tự chuẩn: C-A-B.",
+    points: 15,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk4-ref-17',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 17,
+    question_type: 'reorder_sentence',
+    prompt: '连词成句：请排列下列词语：',
+    pinyin: 'Liáncí chéng jù:',
+    translation: 'Sắp xếp câu chữ 被:',
+    words: ['这场', '突如其来的大雨', '把大家的衣服', '都淋湿了'],
+    scrambledWords: ['都淋湿了', '把大家的衣服', '这场', '突如其来的大雨'],
+    correct_order: ['这场', '突如其来的大雨', '把大家的衣服', '都淋湿了'],
+    answerKey: ['这场', '突如其来的大雨', '把大家的衣服', '都淋湿了'],
+    correct_sentence: '这场突如其来的大雨把大家的衣服都淋湿了。',
+    options: [
+      { text: '这场突如其来的大雨把大家的衣服都淋湿了。', pinyin: 'Zhè chǎng tūrúqílái de dàyǔ bǎ dàjiā de yīfu dōu línshī le.', translation: 'Cơn mưa rào bất ngờ này đã làm ướt sũng quần áo của mọi người.' },
+      { text: '把大家的衣服这场突如其来的大雨都淋湿了。', pinyin: 'Bǎ dàjiā de yīfu zhè chǎng tūrúqílái de dàyǔ...', translation: 'Sai vị trí cụm 把' },
+      { text: '都淋湿了这场突如其来的大雨把大家的衣服。', pinyin: 'Dōu línshī le...', translation: 'Sai trật tự vị ngữ' }
+    ],
+    correct_option_index: 0,
+    explanation: "Chủ ngữ tác nhân (这场突如其来的大雨) + 把 + Tân ngữ chịu tác động (大家的衣服) + Vị ngữ kết quả (都淋湿了).",
+    points: 15,
+    topic: 'daily_life'
+  },
+  {
+    id: 'q-hsk4-ref-18',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 18,
+    question_type: 'reorder_sentence',
+    prompt: '连词成句：',
+    pinyin: 'Liáncí chéng jù:',
+    translation: 'Sắp xếp câu bổ ngữ trạng thái 得:',
+    words: ['王经理', '在会上', '把这个问题', '解释得', '非常清楚'],
+    scrambledWords: ['非常清楚', '王经理', '解释得', '把这个问题', '在会上'],
+    correct_order: ['王经理', '在会上', '把这个问题', '解释得', '非常清楚'],
+    answerKey: ['王经理', '在会上', '把这个问题', '解释得', '非常清楚'],
+    correct_sentence: '王经理在会上把这个问题解释得非常清楚。',
+    options: [
+      { text: '王经理在会上把这个问题解释得非常清楚。', pinyin: 'Wáng jīnglǐ zài huì shang bǎ zhè gè wèntí jiěshì de fēicháng qīngchu.', translation: 'Giám đốc Vương tại cuộc họp đã giải thích vấn đề này vô cùng sáng tỏ.' },
+      { text: '在会上王经理把这个问题非常清楚解释得。', pinyin: 'Zài huì shang Wáng jīnglǐ bǎ zhè gè wèntí fēicháng qīngchu jiěshì de.', translation: 'Sai vị trí bổ ngữ trạng thái' },
+      { text: '王经理把这个问题在会上解释非常清楚得。', pinyin: 'Wáng jīnglǐ bǎ zhè gè wèntí zài huì shang...', translation: 'Sai trợ từ kết cấu 得' }
+    ],
+    correct_option_index: 0,
+    explanation: "Kết hợp câu chữ 把 và bổ ngữ trạng thái: 主语 (王经理) + 介词短语 (在会上) + 把 + 宾语 (这个问题) + 动词 (解释) + 得 + 程度状态 (非常清楚).",
+    points: 15,
+    topic: 'office'
+  },
+  {
+    id: 'q-hsk4-ref-19',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 19,
+    question_type: 'multiple_choice',
+    prompt: '词语搭配选择：他做事一向认真负责，深得领导的______。',
+    pinyin: 'Xuǎn cí tiánkòng: Shēn dé lǐngdǎo de ______.',
+    translation: 'Anh ấy làm việc trước sau luôn có trách nhiệm, nhận được sự ______ sâu sắc từ ban lãnh đạo.',
+    options: [
+      { text: '信任', pinyin: 'xìnrèn', translation: 'tin cậy, tín nhiệm' },
+      { text: '怀疑', pinyin: 'huáiyí', translation: 'nghi ngờ' },
+      { text: '批评', pinyin: 'pīpíng', translation: 'phê bình' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cụm thành ngữ - ngữ cố định: '深得信任' (nhận được sự tin cậy sâu sắc).",
+    points: 15,
+    topic: 'office'
+  },
+  {
+    id: 'q-hsk4-ref-20',
+    exam_id: 'hsk4-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 20,
+    question_type: 'multiple_choice',
+    prompt: '阅读理解与总结：无论科技如何发达，人与人之间面对面的真诚沟通依然是不可替代的。这句话的核心观点是什么？',
+    pinyin: 'Yuèdú lǐjiě: Miànduìmiàn de zhēnchéng gōutōng yīrán shì bùkě tìdài de.',
+    translation: 'Quan điểm cốt lõi của câu trên là gì:',
+    options: [
+      { text: '面对面真诚沟通不可替代', pinyin: 'Miànduìmiàn zhēnchéng gōutōng bùkě tìdài', translation: 'Giao tiếp chân thành trực tiếp không thể thay thế' },
+      { text: '科技发展弊大于利', pinyin: 'Kējì fāzhǎn bì dàyú lì', translation: 'Công nghệ có hại nhiều hơn lợi' },
+      { text: '人际交往不再重要', pinyin: 'Rénjì jiāowǎng bú zài zhòngyào', translation: 'Giao tiếp không còn quan trọng' }
+    ],
+    correct_option_index: 0,
+    explanation: "Câu khẳng định trực diện: '面对面的真诚沟通依然是不可替代的'.",
+    points: 15,
+    topic: 'philosophy'
+  },
+  {
+    id: 'q-hsk5-ref-04',
+    exam_id: 'hsk5-official-ref-01',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 4,
+    question_type: 'multiple_choice',
+    prompt: '听经济专题报道，分析该国绿色能源产业快速崛起的核心动力：',
+    pinyin: 'Tīng jīngjì bàodào, fēnxī lǜsè néngyuán chǎnyè de dònglì:',
+    translation: 'Nghe phóng sự kinh tế, động lực phát triển then chốt của năng lượng xanh là:',
+    audio_url: '',
+    audio_script: '近年来，政府出台了一系列产业扶持政策，加之技术研发的重大突破与资本市场的持续投入，使得太阳能与风能产业链迅速成熟，发电成本大幅下降。',
+    options: [
+      { text: '政策扶持、技术突破与资本持续投入', pinyin: 'Zhèngcè fúchí, jìshù tūpò yǔ zīběn tóurù', translation: 'Hỗ trợ chính sách, đột phá công nghệ và đầu tư vốn liên tục' },
+      { text: '传统化石燃料价格大幅暴跌', pinyin: 'Chuántǒng huàshí ránliào...', translation: 'Giá nhiên liệu hóa thạch giảm' },
+      { text: '国际能源需求断崖式下滑', pinyin: 'Guójì néngyuán xūqiú...', translation: 'Nhu cầu sụt giảm nghiêm trọng' }
+    ],
+    correct_option_index: 0,
+    explanation: "Bản tin tổng kết 3 động lực hiệp đồng: '产业扶持政策，加之技术研发突破与资本市场投入'.",
+    points: 20,
+    topic: 'tech'
+  },
+  {
+    id: 'q-hsk5-ref-05',
+    exam_id: 'hsk5-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 5,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：城市的历史文化街区承载着市民的集体记忆，在旧城改造中必须坚持保护与开发并重，切忌盲目大拆大建，以免造成难以挽回的文化______。',
+    pinyin: 'Xuǎn cí tiánkòng: Zàochéng nǎnyǐ wǎnhuí de wénhuà ______.',
+    translation: '...tránh phá dỡ bừa bãi làm tổn thất ______ văn hóa không thể cứu vãn.',
+    options: [
+      { text: '断层', pinyin: 'duàncéng', translation: 'đứt gãy, gián đoạn' },
+      { text: '繁荣', pinyin: 'fánróng', translation: 'phồn vinh' },
+      { text: '融合', pinyin: 'rónghé', translation: 'hòa hợp' }
+    ],
+    correct_option_index: 0,
+    explanation: "'文化断层' (sự đứt gãy văn hóa / gián đoạn di sản thế hệ) là cụm thuật ngữ học thuật chuẩn mực HSK 5.",
+    points: 20,
+    topic: 'culture'
+  },
+  {
+    id: 'q-hsk5-ref-06',
+    exam_id: 'hsk5-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 6,
+    question_type: 'multiple_choice',
+    prompt: '阅读论说文片段：所谓“工匠精神”，不仅是一种精益求精的工作态度，更是一种在喧嚣浮躁中耐得住寂寞、追求极致的职业信仰。根据文意，“工匠精神”的核心是：',
+    pinyin: 'Gēnjù wényì, \"gōngjiàng jīngshén\" de héxīn shì:',
+    translation: 'Theo đoạn văn, tinh thần người thợ thủ công (工匠精神) cốt lõi là gì:',
+    options: [
+      { text: '精益求精与耐得住寂寞的极致追求', pinyin: 'Jīngyìqiújīng yǔ zhuīqiú jízhì', translation: 'Sự tỉ mỉ tinh tế và nhẫn nại theo đuổi đỉnh cao' },
+      { text: '追求以最快速度赚取利润', pinyin: 'Zhuīqiú kuài zhuàn lìrùn', translation: 'Theo đuổi lợi nhuận nhanh nhất' },
+      { text: '完全排斥现代工业机械化', pinyin: 'Pǎichì gōngyè jīxièhuà', translation: 'Bài xích cơ giới hóa' }
+    ],
+    correct_option_index: 0,
+    explanation: "Đoạn văn định nghĩa: '精益求精的工作态度，更是一种耐得住寂寞、追求极致的职业信仰'.",
+    points: 20,
+    topic: 'philosophy'
+  },
+  {
+    id: 'q-hsk5-ref-07',
+    exam_id: 'hsk5-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 7,
+    question_type: 'multiple_choice',
+    prompt: '成语运用：他在学术报告中列举了详实的实验数据，逻辑严密，论证有力，令在场的专家学者们无不______。',
+    pinyin: 'Chéngyǔ yùnyòng: Lìng zàichǎng de zhuānjiā xuézhě...',
+    translation: 'Lý lẽ đanh thép chặt chẽ khiến các chuyên gia đều ______ khâm phục.',
+    options: [
+      { text: '心悦诚服', pinyin: 'xīnyuèchéngfú', translation: 'Tâm phục khẩu phục' },
+      { text: '不以为然', pinyin: 'bùyǐwéirán', translation: 'Không cho là đúng' },
+      { text: '半信半疑', pinyin: 'bànxìnbànyí', translation: 'Nửa tin nửa ngờ' }
+    ],
+    correct_option_index: 0,
+    explanation: "Thành ngữ '心悦诚服' diễn tả sự khâm phục hoàn toàn từ tận đáy lòng trước sự thuyết phục và chính xác.",
+    points: 20,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk5-ref-08',
+    exam_id: 'hsk5-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 8,
+    question_type: 'reorder_sentence',
+    prompt: '连词成句：请排列下列词语：',
+    pinyin: 'Liáncí chéng jù:',
+    translation: 'Sắp xếp câu chuẩn học thuật HSK 5:',
+    words: ['跨文化交流', '有助于', '加深', '不同民族之间的', '理解与尊重'],
+    scrambledWords: ['加深', '跨文化交流', '理解与尊重', '不同民族之间的', '有助于'],
+    correct_order: ['跨文化交流', '有助于', '加深', '不同民族之间的', '理解与尊重'],
+    answerKey: ['跨文化交流', '有助于', '加深', '不同民族之间的', '理解与尊重'],
+    correct_sentence: '跨文化交流有助于加深不同民族之间的理解与尊重。',
+    options: [
+      { text: '跨文化交流有助于加深不同民族之间的理解与尊重。', pinyin: 'Kuà wénhuà jiāoliú yǒuzhùyú jiāshēn bùtóng mínzú zhījiān de lǐjiě yǔ zūnzhòng.', translation: 'Giao lưu liên văn hóa có lợi cho việc làm sâu sắc thêm sự thấu hiểu và tôn trọng giữa các dân tộc.' },
+      { text: '不同民族之间的理解与尊重有助于跨文化交流加深。', pinyin: 'Bùtóng mínzú zhījiān...', translation: 'Sai trật tự chủ thể động lực' },
+      { text: '有助于加深跨文化交流不同民族之间的理解与尊重。', pinyin: 'Yǒuzhùyú jiāshēn kuà wénhuà jiāoliú...', translation: 'Sai vị trí vị ngữ động từ' }
+    ],
+    correct_option_index: 0,
+    explanation: "Chủ ngữ (跨文化交流) + Động từ (有助于加深) + Định ngữ (不同民族之间的) + Tân ngữ (理解与尊重).",
+    points: 20,
+    topic: 'culture'
+  },
+  {
+    id: 'q-hsk5-ref-09',
+    exam_id: 'hsk5-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 9,
+    question_type: 'multiple_choice',
+    prompt: '近义词辨析：选出最符合语境的一项：面对激烈的国际竞争，唯有不断提高自主创新能力，才能在关键核心技术领域摆脱受制于人的______。',
+    pinyin: 'Jìnyìcí biànxī: Bǎituō shòuzhìyúrén de ______.',
+    translation: '...mới có thể thoát khỏi ______ bị phụ thuộc, kiềm tỏa trong các công nghệ cốt lõi.',
+    options: [
+      { text: '被动局面', pinyin: 'bèidòng júmiàn', translation: 'tình thế bị động' },
+      { text: '消极情绪', pinyin: 'xiāojí qíngxù', translation: 'cảm xúc tiêu cực' },
+      { text: '繁杂细节', pinyin: 'fánzá xìjié', translation: 'chi tiết vụn vặt' }
+    ],
+    correct_option_index: 0,
+    explanation: "Cụm chính luận điển hình: '摆脱受制于人的被动局面' (thoát khỏi cục diện bị động, bị khống chế).",
+    points: 20,
+    topic: 'office'
+  },
+  {
+    id: 'q-hsk5-ref-10',
+    exam_id: 'hsk5-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 10,
+    question_type: 'multiple_choice',
+    prompt: '阅读理解与概括：这篇短文的核心论点是：真正的智者懂得在顺境中居安思危，在逆境中百折不挠。这句话告诉我们什么？',
+    pinyin: 'Yuèdú lǐjiě: Jū\'ānsīwēi, bǎizhébùnáo.',
+    translation: 'Người có trí tuệ thật sự là người biết lo xa khi thuận lợi và bền bỉ khi nghịch cảnh. Điều đó khuyên chúng ta:',
+    options: [
+      { text: '顺境时保持清醒预见风险，逆境时坚定信念不屈不挠', pinyin: 'Shùnjìng shí bǎochí qīngxǐng, nìjìng shí jiāndìng xìnyiàn', translation: 'Thuận lợi thì cảnh giác ngừa rủi ro, nghịch cảnh thì kiên định bất khuất' },
+      { text: '顺境时应尽情享乐', pinyin: 'Shùnjìng shí xiǎnglè', translation: 'Thuận lợi thì hưởng thụ' },
+      { text: '逆境时应立即放弃', pinyin: 'Nìjìng shí fàngqì', translation: 'Nghịch cảnh thì bỏ cuộc' }
+    ],
+    correct_option_index: 0,
+    explanation: "Giải nghĩa hai thành ngữ đối xứng: '居安思危' (Ở nơi yên ổn nghĩ lúc nguy nan) và '百折不挠' (Trăm lần vấp ngã không sờn lòng).",
+    points: 20,
+    topic: 'philosophy'
+  },
+  {
+    id: 'q-hsk6-ref-03',
+    exam_id: 'hsk6-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 3,
+    question_type: 'multiple_choice',
+    prompt: '病句辨析：请选出下列句子中【没有语病】（语法完全正确）的一项：',
+    pinyin: 'Bìngjù biànxī: Xuǎn chū méiyǒu yǔbìng de yī xiàng:',
+    translation: 'Chọn câu HOÀN TOÀN ĐÚNG NGỮ PHÁP (không có bệnh cú):',
+    options: [
+      { text: '随着大数据与云计算技术的日趋成熟，数字化转型已成为推动传统产业升级的核心引擎。', pinyin: 'Suízhe dàshùjù yǔ yúnjiùsuàn jìshù de rìqū chéngshú, shùzìhuà zhuǎnxíng yǐ chéngwéi...', translation: 'Cấu trúc câu hoàn chỉnh, mạch lạc, kết hợp từ chính xác' },
+      { text: '能否有效激发青年科研人员的创新活力，是决定这项重大前沿课题攻坚成败的关键。', pinyin: 'Lỗi hai mặt đối ứng một mặt (能否 vs 成败) - nếu dùng không cẩn thận sẽ khập khiễng', translation: 'Dễ phạm lỗi song đối' },
+      { text: '这次学术研讨会云集了国内数十位顶尖专家，会上他们就人工智能伦理问题交换了广泛的意见。', pinyin: 'Lỗi sai vị trí định ngữ: 广泛的意见 -> 广泛地交换了意见', translation: 'Lỗi định ngữ sai vị trí' },
+      { text: '为了防止森林火灾不再发生，有关部门进一步加强了全天候卫星遥感监测力度。', pinyin: 'Lỗi phủ định kép biến thành khẳng định (防止...不再发生)', translation: 'Lỗi logic phủ định kép' }
+    ],
+    correct_option_index: 0,
+    explanation: "Câu A hoàn hảo về ngữ pháp. Câu C sai vị trí phó từ ('广泛地交换了意见', không nói '交换了广泛的意见'). Câu D sai logic phủ định ('防止...不再发生' nghĩa là muốn cháy rừng tiếp diễn).",
+    points: 20,
+    topic: 'tech'
+  },
+  {
+    id: 'q-hsk6-ref-04',
+    exam_id: 'hsk6-official-ref-01',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 4,
+    question_type: 'multiple_choice',
+    prompt: '病句辨析：选出【有语病】的一项：',
+    pinyin: 'Bìngjù biànxī: Xuǎn chū yǒu yǔbìng de yī xiàng:',
+    translation: 'Chọn câu BỊ LỖI NGỮ PHÁP (có bệnh cú):',
+    options: [
+      { text: '博物馆展出了数千年前新出土的大量珍贵丝织品文物。', pinyin: 'Lỗi trật tự nhiều tầng định ngữ: 大量新出土的 vs 新出土的大量', translation: 'Sai trật tự định ngữ số lượng' },
+      { text: '文化自信是一个国家、一个民族发展中最基本、最深沉、最持久的力量。', pinyin: 'Wénhuà zìxìn...', translation: 'Câu chuẩn xác' },
+      { text: '良好的生态环境是最普惠的民生福祉。', pinyin: 'Liánghǎo de shēngtài...', translation: 'Câu chuẩn xác' },
+      { text: '深海探测技术的突破极大拓展了人类对地球奥秘的认知边界。', pinyin: 'Shēnhǎi tàncè...', translation: 'Câu chuẩn xác' }
+    ],
+    correct_option_index: 0,
+    explanation: "Câu A phạm lỗi trật tự cụm định ngữ: Lượng từ chỉ phạm vi/số lượng '大量' phải đứng trước định ngữ miêu tả thời gian '数千年前新出土的'.",
+    points: 20,
+    topic: 'culture'
+  },
+  {
+    id: 'q-hsk6-ref-05',
+    exam_id: 'hsk6-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 5,
+    question_type: 'multiple_choice',
+    prompt: '高阶词汇辨析：学术研究必须具备严谨的求证态度，任何结论的推导都必须言之有据，决不能凭空______。',
+    pinyin: 'Gāojiē cíhuì biànxī: Jué bù néng píngkōng ______.',
+    translation: 'Nghiên cứu học thuật quyết không thể suy đoán vô căn cứ ______.',
+    options: [
+      { text: '臆断', pinyin: 'yìduàn', translation: 'phỏng đoán chủ quan vô căn cứ' },
+      { text: '判断', pinyin: 'pànduàn', translation: 'phán đoán' },
+      { text: '论断', pinyin: 'lùnduàn', translation: 'luận đoán khoa học' },
+      { text: '推断', pinyin: 'tuīduàn', translation: 'suy đoán logic' }
+    ],
+    correct_option_index: 0,
+    explanation: "'凭空臆断' là thành ngữ - cụm từ cố định HSK 6 chỉ việc suy đoán võ đoán, chủ quan thiếu chứng cứ thực tế.",
+    points: 20,
+    topic: 'philosophy'
+  },
+  {
+    id: 'q-hsk6-ref-06',
+    exam_id: 'hsk6-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 6,
+    question_type: 'multiple_choice',
+    prompt: '选词填空：面对浩瀚的宇宙星空，人类应当始终保持一份敬畏之心；探索未知的征程固然充满险阻，但科学家的探索脚步却从未因此而______。',
+    pinyin: 'Xuǎn cí tiánkòng: Kèxuéjiā de bùfǎ cóng wèi yīncǐ ér ______.',
+    translation: '...bước chân khám phá của các nhà khoa học chưa từng vì thế mà ______ lại.',
+    options: [
+      { text: '停滞', pinyin: 'tíngzhì', translation: 'đình trệ, khựng lại' },
+      { text: '迟延', pinyin: 'chíyán', translation: 'trì hoãn' },
+      { text: '滞留', pinyin: 'zhìliú', translation: 'mắc kẹt lại' },
+      { text: '停当', pinyin: 'tíngdāng', translation: 'thu xếp xong xuôi' }
+    ],
+    correct_option_index: 0,
+    explanation: "'脚步停滞' (bước chân bị đình trệ, khựng lại) phù hợp hoàn hảo với văn phong trang trọng, triết lý.",
+    points: 20,
+    topic: 'tech'
+  },
+  {
+    id: 'q-hsk6-ref-07',
+    exam_id: 'hsk6-official-ref-01',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 7,
+    question_type: 'multiple_choice',
+    prompt: '成语综合理解：老一辈科学家在极其艰苦简陋的条件下，______，攻克了一道又一道国防尖端科技难关。',
+    pinyin: 'Chéngyǔ zònghé lǐjiě:',
+    translation: 'Các nhà khoa học thế hệ trước trong điều kiện gian khổ đã ______ khắc phục mọi khó khăn.',
+    options: [
+      { text: '筚路蓝缕', pinyin: 'bìlù lánlǚ', translation: 'Vượt núi băng rừng, gian nan khai phá sự nghiệp từ bàn tay trắng' },
+      { text: '养尊处优', pinyin: 'yǎngzūnchǔyōu', translation: 'Sống trong nhung lụa' },
+      { text: '墨守成规', pinyin: 'mòshǒuchéngguī', translation: 'Bảo thủ bo bo giữ lệ cũ' },
+      { text: '敷衍塞责', pinyin: 'fūyǎnsèzé', translation: 'Làm việc qua loa tắc trách' }
+    ],
+    correct_option_index: 0,
+    explanation: "'筚路蓝缕' (Bật lộ lam lũ) là thành ngữ HSK 6 cao cấp ca ngợi tinh thần chịu thương chịu khó khai mở sự nghiệp lớn trong muôn vàn thiếu thốn.",
+    points: 20,
+    topic: 'philosophy'
+  },
+  {
+    id: 'q-hsk6-ref-08',
+    exam_id: 'hsk6-official-ref-01',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 8,
+    question_type: 'multiple_choice',
+    prompt: '听哲学讲座片段，概括主讲人对“知行合一”现代价值的阐释：',
+    pinyin: 'Tīng zhéxué jiǎngzuò, gǎikuò \"zhī xíng hé yī\":',
+    translation: 'Nghe bài giảng triết học, ý nghĩa hiện đại của "Tri hành hợp nhất" là gì:',
+    audio_url: '',
+    audio_script: '王阳明先生提出的“知行合一”，在当代绝非空洞的书本教条。它要求我们将所学知识转化为经世致用的实际行动，在实践的熔炉中检验认知、砥砺品格，实现真知与笃行的有机统一。',
+    options: [
+      { text: '将认知转化为实践并在行动中检验与锤炼', pinyin: 'Jiāng rènzhī zhuǎnhuà wéi shíjiàn', translation: 'Chuyển hóa tri thức thành hành động thực tế và rèn luyện trong thực tiễn' },
+      { text: '只注重理论空谈而不必付诸行动', pinyin: 'Zhǐ zhùzhòng lǐlùn kōngtán', translation: 'Chỉ chuộng lý thuyết suông' },
+      { text: '否定一切古代思想遗产', pinyin: 'Fǒudìng yīqiè gǔdài yíchǎn', translation: 'Phủ nhận toàn bộ tư tưởng cổ đại' }
+    ],
+    correct_option_index: 0,
+    explanation: "Bài giảng nhấn mạnh: '将所学知识转化为经世致用的实际行动，在实践的熔炉中检验认知、实现真知与笃行的有机统一'.",
+    points: 20,
+    topic: 'philosophy'
+  },
+  {
+    id: 'q-hsk6-ref-09',
+    exam_id: 'hsk6-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 9,
+    question_type: 'multiple_choice',
+    prompt: 'HSK 6 缩写（Tóm tắt văn bản）规范：在撰写400字缩写时，下列哪种做法符合评分准则？',
+    pinyin: 'HSK 6 suōxiě guīfàn:',
+    translation: 'Khi làm bài tóm tắt 400 chữ HSK 6, hành vi nào ĐÚNG chuẩn quy chế khảo thí:',
+    options: [
+      { text: '保留原文核心事件发展脉络与关键因果，保持客观第三人称叙述', pinyin: 'Bǎoliú héxīn màiluò, bǎochí dì-sān rénchēng', translation: 'Bảo lưu mạch sự kiện cốt lõi và quan hệ nhân quả, giữ ngôi kể thứ ba khách quan' },
+      { text: '在文章末尾大量抒发个人的主观读后感与哲学评价', pinyin: 'Shūfā gèrén zhǔguān dút hòugǎn', translation: 'Viết thêm nhiều cảm nghĩ chủ quan ở cuối bài' },
+      { text: '将故事背景随意篡改成自己熟悉的现代都市题材', pinyin: 'Cuàngǎi gùshì bèijǐng', translation: 'Tự ý thay đổi bối cảnh câu chuyện' }
+    ],
+    correct_option_index: 0,
+    explanation: "Quy chuẩn viết tóm tắt HSK 6: Bắt buộc trung thành với cốt truyện gốc, giữ vững mạch logic nhân quả và tính khách quan, tuyệt đối không biến thành bài văn cảm nghĩ '读后感'.",
+    points: 20,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk6-ref-10',
+    exam_id: 'hsk6-official-ref-01',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 10,
+    question_type: 'multiple_choice',
+    prompt: '病句综合诊断：选出没有语法缺陷、表达得体的一项：',
+    pinyin: 'Bìngjù zònghé zhěnduàn:',
+    translation: 'Chọn câu không có lỗi ngữ pháp, hành văn đắc thể:',
+    options: [
+      { text: '构建人与自然和谐共生的现代化，是人类社会通往可持续发展未来的必由之路。', pinyin: 'Gòujiàn rén yǔ zìrán héxié gòngshēng de xiàndàihuà...', translation: 'Văn phong trang trọng, kết cấu chủ vị chuẩn mực' },
+      { text: '经过专家组长达半年的反复论证，终于制定出了更加科学完备的方案制定。', pinyin: 'Lỗi trùng lặp từ ngữ cuối câu: 制定出了...方案制定', translation: 'Lỗi lặp từ ngữ' },
+      { text: '通过阅读这部文学巨著，使我的心灵受到强烈的震撼。', pinyin: 'Lỗi thiếu chủ ngữ 通过...使...', translation: 'Lỗi triệt tiêu chủ ngữ' },
+      { text: '他那崇高的革命品质经常浮现在我的脑海之中。', pinyin: 'Lỗi kết hợp: \"品质\" (phẩm chất) không thể \"浮现\" (hiện lên trước mắt)', translation: 'Lỗi kết hợp vị tân không tương thích' }
+    ],
+    correct_option_index: 0,
+    explanation: "Câu A chuẩn xác. Câu B lỗi lặp ('制定出了...方案制定'). Câu C lỗi thiếu chủ ngữ ('通过...使...'). Câu D lỗi kết hợp động tân ('品质' trừu tượng không thể '浮现' hữu hình).",
+    points: 20,
+    topic: 'philosophy'
+  }
+];

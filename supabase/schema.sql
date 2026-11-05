@@ -270,6 +270,19 @@ CREATE TABLE IF NOT EXISTS public.user_saved_materials (
   CONSTRAINT uq_user_material UNIQUE (user_id, material_id)
 );
 
+-- 2.10. daily_quotes: Ngân hàng châm ngôn, danh ngôn tiếng Trung mỗi ngày
+CREATE TABLE IF NOT EXISTS public.daily_quotes (
+  id SERIAL PRIMARY KEY,
+  hanzi TEXT NOT NULL,
+  pinyin TEXT NOT NULL,
+  meaning TEXT NOT NULL,
+  author TEXT DEFAULT '',
+  hsk_level TEXT DEFAULT 'HSK 1',
+  is_hidden BOOLEAN DEFAULT false,
+  likes_count INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- =========================================================================
 -- 3. CHỈ MỤC TỐI ƯU HIỆU NĂNG (INDEXES)
 -- =========================================================================
@@ -287,6 +300,7 @@ CREATE INDEX IF NOT EXISTS idx_user_vocab_srs_stage ON public.user_vocab_srs(use
 CREATE INDEX IF NOT EXISTS idx_user_lesson_user ON public.user_lesson_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_study_logs_user_date ON public.user_study_logs(user_id, study_date);
 CREATE INDEX IF NOT EXISTS idx_ai_messages_conv ON public.ai_messages(conversation_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_daily_quotes_level ON public.daily_quotes(hsk_level, is_hidden);
 
 -- =========================================================================
 -- 4. HÀM BẢO MẬT & TRIGGER BẢO VỆ PHÂN QUYỀN
@@ -380,6 +394,7 @@ ALTER TABLE public.user_study_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ai_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ai_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_saved_materials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_quotes ENABLE ROW LEVEL SECURITY;
 
 -- 5.1 Profiles
 DROP POLICY IF EXISTS "profiles_select_public" ON public.profiles;
@@ -470,6 +485,15 @@ CREATE POLICY "ai_messages_owner_all" ON public.ai_messages FOR ALL USING (auth.
 
 DROP POLICY IF EXISTS "user_saved_materials_owner_all" ON public.user_saved_materials;
 CREATE POLICY "user_saved_materials_owner_all" ON public.user_saved_materials FOR ALL USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
+
+-- 5.3.2 Daily Proverbs & Quotes
+DROP POLICY IF EXISTS "daily_quotes_select_public" ON public.daily_quotes;
+CREATE POLICY "daily_quotes_select_public" ON public.daily_quotes 
+  FOR SELECT USING (is_hidden = false OR public.is_admin());
+
+DROP POLICY IF EXISTS "daily_quotes_admin_all" ON public.daily_quotes;
+CREATE POLICY "daily_quotes_admin_all" ON public.daily_quotes 
+  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- 5.4 Community
 DROP POLICY IF EXISTS "community_posts_select" ON public.community_posts;

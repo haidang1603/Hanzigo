@@ -3,19 +3,21 @@ import assert from 'node:assert/strict';
 import { 
   GRADED_READERS_DATA, 
   getGradedReadersByLevel, 
-  getGradedReaderById 
+  getGradedReaderById,
+  getGradedReadersByTopic,
+  getAllReaderTopics
 } from '../src/data/gradedReadersData.js';
 import { analyzeChineseText } from '../src/utils/chineseNlpEngine.js';
 
 test('SMART CHINESE READER — GRADED READERS DATA INTEGRITY', async (t) => {
 
-  await t.test('1. Must contain at least 12 graded readers covering HSK 1 to HSK 6', () => {
-    assert.ok(GRADED_READERS_DATA.length >= 12, 'Must have at least 12 graded readers');
+  await t.test('1. Must contain at least 24 graded readers covering HSK 1 to HSK 6 (4 readers/level)', () => {
+    assert.ok(GRADED_READERS_DATA.length >= 24, `Must have at least 24 graded readers. Currently: ${GRADED_READERS_DATA.length}`);
     
     const levels = ['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'];
     levels.forEach(lvl => {
       const readersAtLevel = getGradedReadersByLevel(lvl);
-      assert.ok(readersAtLevel.length >= 2, `Level ${lvl} must have at least 2 readers`);
+      assert.ok(readersAtLevel.length >= 4, `Level ${lvl} must have at least 4 readers. Currently: ${readersAtLevel.length}`);
     });
   });
 
@@ -42,13 +44,16 @@ test('SMART CHINESE READER — GRADED READERS DATA INTEGRITY', async (t) => {
 
   await t.test('3. Query helper functions return correct filtered results', () => {
     const hsk1List = getGradedReadersByLevel('HSK 1');
-    assert.equal(hsk1List.length, 2);
+    assert.equal(hsk1List.length, 4);
     assert.equal(hsk1List[0].level, 'HSK 1');
     assert.equal(hsk1List[1].level, 'HSK 1');
 
     const specificReader = getGradedReaderById('gr-101');
     assert.ok(specificReader);
     assert.equal(specificReader.titleZh, '小明的一天');
+
+    const topics = getAllReaderTopics();
+    assert.ok(topics.length >= 8, 'Must extract distinct topics');
 
     const nonexistent = getGradedReaderById('nonexistent-id');
     assert.equal(nonexistent, null);

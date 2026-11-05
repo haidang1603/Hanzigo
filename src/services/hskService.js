@@ -11,7 +11,14 @@
  * =========================================================================
  */
 
-import { HSK_EXAMS, HSK_QUESTIONS, getFullExamById, getSanitizedExamForTaking } from '../data/hskExamsData.js';
+import { 
+  HSK_EXAMS, 
+  HSK_QUESTIONS, 
+  getFullExamById, 
+  getSanitizedExamForTaking,
+  registerDynamicExam,
+  DYNAMIC_EXAMS
+} from '../data/hskExamsData.js';
 import { 
   getHskStructure, 
   getAllHskLevels, 
@@ -65,7 +72,7 @@ export function getOrCreateAnonymousSessionId() {
 /**
  * Lấy danh sách đề thi theo bộ lọc
  */
-export async function getHskExams({ level = 'all', skill = 'all', type = 'all', query = '' } = {}) {
+export async function getHskExams({ level = 'all', skill = 'all', type = 'all', topic = 'all', query = '' } = {}) {
   // Ưu tiên đọc từ local dataset chuẩn
   let exams = [...HSK_EXAMS].filter(e => e.is_published);
 
@@ -79,6 +86,10 @@ export async function getHskExams({ level = 'all', skill = 'all', type = 'all', 
 
   if (type && type !== 'all') {
     exams = exams.filter(e => e.exam_type.toLowerCase() === type.toLowerCase());
+  }
+
+  if (topic && topic !== 'all') {
+    exams = exams.filter(e => e.topic === topic || (e.description && e.description.toLowerCase().includes(topic.toLowerCase())));
   }
 
   if (query && query.trim()) {
@@ -886,32 +897,274 @@ export async function getMistakePracticeExam({ mistakeIds = [], user = null, lev
 
   if (selected.length === 0) return null;
 
-  return {
-    id: 'mistake-practice-' + Date.now(),
+  const examId = 'mistake-practice-' + Date.now();
+  const totalPoints = selected.length * 10;
+  const fullExam = {
+    id: examId,
     title: `Luyện Tập Sổ Tay Câu Sai (${selected.length} câu)`,
     level: selected[0]?.level || 'Tổng hợp',
     exam_type: 'mock',
     skill_category: 'mixed',
     duration_minutes: Math.max(10, Math.ceil(selected.length * 1.5)),
     total_questions: selected.length,
-    max_score: selected.length * 10,
-    passing_score: Math.round(selected.length * 10 * 0.8),
+    max_score: totalPoints,
+    passing_score: Math.round(totalPoints * 0.8),
     description: 'Chế độ luyện tập chuyên sâu các câu hỏi từng làm sai hoặc bỏ trống để khắc sâu kiến thức.',
+    source_url: 'https://hanzigo.com/hsk/mistakes',
+    source_author: 'Hệ Thống HanziGo',
+    license: 'CC BY-NC-SA 4.0',
+    permission_status: 'original_content',
+    verified_date: new Date().toISOString().split('T')[0],
     is_published: true,
     questions: selected.map((m, idx) => ({
       id: m.questionId,
-      exam_id: m.examId,
+      exam_id: examId,
       question_number: idx + 1,
-      part_type: m.partType,
+      part_type: m.partType || 'reading',
+      part_number: 1,
+      prompt: m.prompt,
+      pinyin: m.pinyin,
+      translation: m.translation,
+      options: m.options,
+      correct_option_index: m.correctAnswerIndex,
+      explanation: m.explanation,
+      points: 10
+    }))
+  };
+
+  registerDynamicExam(fullExam);
+
+  // Trả về bản sanitized tước bỏ hoàn toàn đáp án & giải thích cho client
+  return {
+    ...fullExam,
+    questions: selected.map((m, idx) => ({
+      id: m.questionId,
+      exam_id: examId,
+      question_number: idx + 1,
+      part_type: m.partType || 'reading',
       part_number: 1,
       prompt: m.prompt,
       pinyin: m.pinyin,
       translation: m.translation,
       options: m.options,
       points: 10
-      // BẢO MẬT: Tuyệt đối không để lộ correct_option_index và explanation khi làm bài!
     }))
   };
+}
+
+/**
+ * =========================================================================
+ * PHASE 18: DANH MỤC CHỦ ĐỀ & BỘ SINH ĐỀ THI THÍCH ỨNG / NGẪU NHIÊN
+ * =========================================================================
+ */
+
+export const HSK_TOPICS_CATALOG = [
+  { id: 'daily_life', label: 'Giao tiếp & Đời sống hàng ngày', icon: '☕' },
+  { id: 'school', label: 'Học tập & Nhà trường', icon: '📚' },
+  { id: 'office', label: 'Công sở & Thương mại', icon: '💼' },
+  { id: 'shopping', label: 'Mua sắm & Tiêu dùng', icon: '🛍️' },
+  { id: 'travel', label: 'Giao thông & Du lịch', icon: '✈️' },
+  { id: 'family', label: 'Gia đình & Xã hội', icon: '👨‍👩‍👧' },
+  { id: 'tech', label: 'Khoa học & Công nghệ', icon: '💻' },
+  { id: 'culture', label: 'Văn hóa & Lịch sử', icon: '🏮' },
+  { id: 'philosophy', label: 'Triết lý & Nhân sinh', icon: '🌱' }
+];
+
+/**
+ * Lấy danh sách chủ đề đề thi kèm số lượng câu hỏi thực tế trong hệ thống
+ */
+export function getAvailableExamTopics(level = 'all') {
+  return HSK_TOPICS_CATALOG.map(t => {
+    const count = HSK_QUESTIONS.filter(q => {
+      const qLevel = q.level || q.hskLevel || (
+        q.exam_id?.startsWith('hsk1') ? 'HSK 1' :
+        q.exam_id?.startsWith('hsk2') ? 'HSK 2' :
+        q.exam_id?.startsWith('hsk3') ? 'HSK 3' :
+        q.exam_id?.startsWith('hsk4') ? 'HSK 4' :
+        q.exam_id?.startsWith('hsk5') ? 'HSK 5' :
+        q.exam_id?.startsWith('hsk6') ? 'HSK 6' : null
+      );
+      if (level !== 'all' && qLevel !== level) return false;
+      return q.topic === t.id;
+    }).length;
+    return { ...t, questionCount: count };
+  });
+}
+
+/**
+ * CHẾ ĐỘ 5: BỘ SINH ĐỀ THI NGẪU NHIÊN TỰ ĐỘNG (ADAPTIVE RANDOM EXAM GENERATOR)
+ * Lấy mẫu câu hỏi ngẫu nhiên không trùng lặp từ ngân hàng 417 câu hỏi thật,
+ * cân đối tỷ lệ kỹ năng (Nghe, Đọc, Viết) và thiết lập thời gian làm bài chuẩn xác.
+ */
+export function generateRandomExam({ 
+  level = 'HSK 1', 
+  questionCount = 20, 
+  skills = ['listening', 'reading', 'writing'],
+  topic = 'all'
+} = {}) {
+  const pool = HSK_QUESTIONS.filter(q => {
+    const qLevel = q.level || q.hskLevel || (
+      q.exam_id?.startsWith('hsk1') ? 'HSK 1' :
+      q.exam_id?.startsWith('hsk2') ? 'HSK 2' :
+      q.exam_id?.startsWith('hsk3') ? 'HSK 3' :
+      q.exam_id?.startsWith('hsk4') ? 'HSK 4' :
+      q.exam_id?.startsWith('hsk5') ? 'HSK 5' :
+      q.exam_id?.startsWith('hsk6') ? 'HSK 6' : null
+    );
+    if (level !== 'all' && qLevel !== level) return false;
+
+    const qPart = q.part_type || q.section || 'reading';
+    if (skills.length > 0 && !skills.includes(qPart)) return false;
+
+    if (topic && topic !== 'all' && q.topic !== topic) return false;
+
+    return true;
+  });
+
+  if (pool.length === 0) {
+    throw new Error(`Không đủ câu hỏi trong ngân hàng cho cấp độ ${level} với tiêu chí đã chọn.`);
+  }
+
+  const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
+
+  const bySkill = {
+    listening: pool.filter(q => (q.part_type || q.section) === 'listening'),
+    reading: pool.filter(q => (q.part_type || q.section) === 'reading'),
+    writing: pool.filter(q => (q.part_type || q.section) === 'writing')
+  };
+
+  const activeSkills = skills.filter(s => bySkill[s] && bySkill[s].length > 0);
+  const targetPerSkill = Math.max(1, Math.floor(questionCount / (activeSkills.length || 1)));
+
+  const selectedSet = new Set();
+  const selectedQuestions = [];
+
+  activeSkills.forEach(s => {
+    const shuffled = shuffle(bySkill[s]);
+    const needed = Math.min(shuffled.length, targetPerSkill);
+    for (let i = 0; i < needed; i++) {
+      if (!selectedSet.has(shuffled[i].id)) {
+        selectedSet.add(shuffled[i].id);
+        selectedQuestions.push(shuffled[i]);
+      }
+    }
+  });
+
+  if (selectedQuestions.length < questionCount) {
+    const remaining = shuffle(pool.filter(q => !selectedSet.has(q.id)));
+    const needed = Math.min(remaining.length, questionCount - selectedQuestions.length);
+    for (let i = 0; i < needed; i++) {
+      selectedSet.add(remaining[i].id);
+      selectedQuestions.push(remaining[i]);
+    }
+  }
+
+  const skillOrder = { listening: 1, reading: 2, writing: 3 };
+  selectedQuestions.sort((a, b) => {
+    const orderA = skillOrder[a.part_type || a.section || 'reading'] || 2;
+    const orderB = skillOrder[b.part_type || b.section || 'reading'] || 2;
+    return orderA - orderB;
+  });
+
+  const totalPoints = selectedQuestions.reduce((sum, q) => sum + (q.points || 10), 0);
+  const examId = `random-${level.toLowerCase().replace(/\s+/g, '')}-${Date.now()}`;
+
+  const normalizedQuestions = selectedQuestions.map((q, idx) => ({
+    ...q,
+    original_exam_id: q.exam_id,
+    exam_id: examId,
+    question_number: idx + 1
+  }));
+
+  const randomExam = {
+    id: examId,
+    title: `Đề Thi Ngẫu Nhiên ${level} (${normalizedQuestions.length} câu)`,
+    level,
+    exam_version: '2015-Standard',
+    exam_type: 'random',
+    skill_category: skills.length === 1 ? skills[0] : 'mixed',
+    duration_minutes: Math.max(15, Math.ceil(normalizedQuestions.length * 1.5)),
+    total_questions: normalizedQuestions.length,
+    passing_score: Math.round(totalPoints * 0.6),
+    max_score: totalPoints,
+    description: `Đề thi ngẫu nhiên thích ứng cấp độ ${level} được sinh tự động từ ngân hàng câu hỏi HanziGo, cân đối giữa các kỹ năng và không lặp câu hỏi.`,
+    source_url: 'https://hanzigo.com/hsk/practice/random',
+    source_author: 'Hệ Thống Khảo Thí Tự Động HanziGo',
+    license: 'CC BY-NC-SA 4.0',
+    permission_status: 'original_content',
+    verified_date: new Date().toISOString().split('T')[0],
+    is_published: true,
+    questions: normalizedQuestions
+  };
+
+  registerDynamicExam(randomExam);
+  return randomExam;
+}
+
+/**
+ * CHẾ ĐỘ 3: BỘ ĐỀ LUYỆN TẬP THEO CHỦ ĐỀ (TOPIC-BASED DRILL GENERATOR)
+ */
+export function generateTopicExam({ 
+  level = 'HSK 1', 
+  topic = 'daily_life', 
+  questionCount = 10 
+} = {}) {
+  const pool = HSK_QUESTIONS.filter(q => {
+    const qLevel = q.level || q.hskLevel || (
+      q.exam_id?.startsWith('hsk1') ? 'HSK 1' :
+      q.exam_id?.startsWith('hsk2') ? 'HSK 2' :
+      q.exam_id?.startsWith('hsk3') ? 'HSK 3' :
+      q.exam_id?.startsWith('hsk4') ? 'HSK 4' :
+      q.exam_id?.startsWith('hsk5') ? 'HSK 5' :
+      q.exam_id?.startsWith('hsk6') ? 'HSK 6' : null
+    );
+    if (level !== 'all' && qLevel !== level) return false;
+    return q.topic === topic;
+  });
+
+  const available = pool.length > 0 ? pool : HSK_QUESTIONS.filter(q => q.topic === topic);
+  if (available.length === 0) {
+    throw new Error(`Chưa có câu hỏi cho chủ đề: ${topic}`);
+  }
+
+  const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
+  const selected = shuffle(available).slice(0, Math.min(questionCount, available.length));
+  
+  const foundTopic = HSK_TOPICS_CATALOG.find(t => t.id === topic);
+  const topicLabel = foundTopic?.label || topic;
+  const examId = `topic-${topic}-${level.toLowerCase().replace(/\s+/g, '')}-${Date.now()}`;
+  const totalPoints = selected.reduce((sum, q) => sum + (q.points || 10), 0);
+
+  const normalizedQuestions = selected.map((q, idx) => ({
+    ...q,
+    original_exam_id: q.exam_id,
+    exam_id: examId,
+    question_number: idx + 1
+  }));
+
+  const topicExam = {
+    id: examId,
+    title: `Đề Chuyên Đề: ${topicLabel} (${level})`,
+    level,
+    exam_version: '2015-Standard',
+    exam_type: 'topic',
+    skill_category: 'mixed',
+    duration_minutes: Math.max(10, Math.ceil(normalizedQuestions.length * 1.5)),
+    total_questions: normalizedQuestions.length,
+    passing_score: Math.round(totalPoints * 0.6),
+    max_score: totalPoints,
+    description: `Bộ đề ôn tập chuyên sâu theo chủ đề ${topicLabel} giúp củng cố toàn diện vốn từ và mẫu câu tương ứng.`,
+    source_url: 'https://hanzigo.com/hsk/practice/topic',
+    source_author: 'Ban Học Thuật HanziGo',
+    license: 'CC BY-NC-SA 4.0',
+    permission_status: 'original_content',
+    verified_date: new Date().toISOString().split('T')[0],
+    is_published: true,
+    questions: normalizedQuestions
+  };
+
+  registerDynamicExam(topicExam);
+  return topicExam;
 }
 
 /**

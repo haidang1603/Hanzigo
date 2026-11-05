@@ -17,11 +17,22 @@ import {
   X,
   Aperture,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Brain,
+  Compass,
+  Tag,
+  CheckCheck,
+  BookOpenCheck
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton.jsx';
 import { analyzeChineseText } from '../utils/chineseNlpEngine.js';
-import { GRADED_READERS_DATA, getGradedReadersByLevel, getGradedReaderById } from '../data/gradedReadersData.js';
+import { 
+  GRADED_READERS_DATA, 
+  getGradedReadersByLevel, 
+  getGradedReaderById,
+  getAllReaderTopics,
+  getGradedReadersByTopic
+} from '../data/gradedReadersData.js';
 import { saveCustomVocab, getStoredCustomVocab } from '../utils/materialsStorage.js';
 import { awardXp } from '../utils/gamification.js';
 import { playClickSound, playSuccessSound, speakChinese } from '../utils/audio.js';
@@ -67,7 +78,9 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar }) 
   // Mode: 'graded' (Bài đọc HSK) hoặc 'custom' (Dán văn bản)
   const [activeMode, setActiveMode] = useState('graded');
   const [selectedHskFilter, setSelectedHskFilter] = useState('all');
+  const [selectedTopicFilter, setSelectedTopicFilter] = useState('all');
   const [activeReaderId, setActiveReaderId] = useState('gr-101');
+  const [nlpTab, setNlpTab] = useState('grammar'); // 'grammar', 'keywords', 'readability', 'summary'
   
   // Custom text input state
   const [customInput, setCustomInput] = useState('');
@@ -209,10 +222,52 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar }) 
     }
   };
 
-  // Danh sách bài đọc phân cấp theo filter
+  // Danh sách chủ đề đọc hiểu duy nhất
+  const allReaderTopics = useMemo(() => {
+    return getAllReaderTopics();
+  }, []);
+
+  // Danh sách bài đọc phân cấp theo filter cấp độ và chủ đề
   const filteredGradedReaders = useMemo(() => {
-    return getGradedReadersByLevel(selectedHskFilter);
-  }, [selectedHskFilter]);
+    let list = GRADED_READERS_DATA;
+    if (selectedHskFilter !== 'all') {
+      list = list.filter(r => r.level === selectedHskFilter);
+    }
+    if (selectedTopicFilter !== 'all') {
+      list = list.filter(r => r.topic === selectedTopicFilter);
+    }
+    return list;
+  }, [selectedHskFilter, selectedTopicFilter]);
+
+  // Lưu toàn bộ từ vựng trọng tâm bài đọc vào Flashcard SRS
+  const handleSaveAllHighlights = (highlights = []) => {
+    if (!highlights || highlights.length === 0) return;
+    playClickSound();
+    let addedCount = 0;
+    const newMap = { ...savedWordsMap };
+
+    highlights.forEach(v => {
+      saveCustomVocab({
+        id: `srs-highlight-${Date.now()}-${v.hanzi}`,
+        hanzi: v.hanzi,
+        pinyin: v.pinyin,
+        hanviet: v.hanviet,
+        meaning: v.meaning,
+        level: currentGradedReader?.level || 'HSK 1',
+        topic: currentGradedReader?.topic || 'Bài đọc thông minh',
+        source: `Bài đọc: ${currentGradedReader?.titleZh}`,
+        strokes: v.hanzi.length * 6,
+        mnemonic: 'Từ vựng trọng tâm trích xuất từ bài đọc phân cấp HanziGo.'
+      });
+      newMap[v.hanzi] = true;
+      addedCount++;
+    });
+
+    setSavedWordsMap(newMap);
+    awardXp(25, user, `save_all_highlights_${activeReaderId}`);
+    playSuccessSound();
+    showToast(`✓ Đã lưu toàn bộ ${addedCount} từ vựng trọng tâm vào Flashcard SRS (+25 XP)!`);
+  };
 
   return (
     <div className="w-full max-w-[1500px] mx-auto px-3 sm:px-6 lg:px-8 py-6 space-y-8">
@@ -235,7 +290,7 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar }) 
           </h1>
 
           <p className="text-sm sm:text-base text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
-            Khám phá 12 bài đọc văn hóa phân cấp HSK 1–6 hoặc phân tích bất kỳ đoạn văn nào của bạn. Bấm vào từ bất kỳ để xem Pinyin ngữ cảnh, âm Hán-Việt, chiết tự IDS và lưu vào Flashcard ôn tập lặp lại ngắt quãng (SM-2).
+            Khám phá 24 bài đọc văn hóa phân cấp HSK 1–6 hoặc phân tích bất kỳ đoạn văn nào của bạn. Bấm vào từ bất kỳ để xem Pinyin ngữ cảnh, âm Hán-Việt, chiết tự IDS, ngữ pháp chuyên sâu và lưu vào Flashcard ôn tập lặp lại ngắt quãng (SM-2).
           </p>
 
           {/* Mode Tabs: Graded Readers vs Custom Text Input */}
@@ -250,7 +305,7 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar }) 
               }`}
             >
               <Layers className="w-4 h-4" />
-              <span>Kho Bài đọc HSK 1–6 (12 bài)</span>
+              <span>Kho Bài đọc HSK 1–6 (24 bài)</span>
             </button>
 
             <button
@@ -272,28 +327,66 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar }) 
       {/* 2. Sub-Control Area: Level Selection or Custom Input Bar */}
       {activeMode === 'graded' ? (
         <div className="space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="space-y-3 p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-gray-700 shadow-xs">
             {/* HSK Level Filter Pills */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-1">Cấp độ:</span>
-              {['all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map(lvl => (
-                <button
-                  key={lvl}
-                  type="button"
-                  onClick={() => { playClickSound(); setSelectedHskFilter(lvl); }}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                    selectedHskFilter === lvl
-                      ? 'bg-[#E85D3F] text-white shadow-xs'
-                      : 'bg-white dark:bg-[#1E293B] text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  {lvl === 'all' ? 'Tất cả' : lvl}
-                </button>
-              ))}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1">
+                  <Layers size={13} className="text-[#E85D3F]" />
+                  Cấp độ:
+                </span>
+                {['all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map(lvl => (
+                  <button
+                    key={lvl}
+                    type="button"
+                    onClick={() => { playClickSound(); setSelectedHskFilter(lvl); }}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      selectedHskFilter === lvl
+                        ? 'bg-[#E85D3F] text-white shadow-xs'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {lvl === 'all' ? 'Tất cả cấp độ' : lvl}
+                  </button>
+                ))}
+              </div>
+
+              <div className="text-xs font-semibold text-gray-500">
+                Hiển thị <span className="text-[#E85D3F] font-bold">{filteredGradedReaders.length}</span> bài đọc
+              </div>
             </div>
 
-            <div className="text-xs text-gray-500">
-              Hiển thị {filteredGradedReaders.length} bài đọc
+            {/* Topic Filter Pills */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-gray-100 dark:border-gray-800 text-xs">
+              <span className="font-bold text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1">
+                <Compass size={13} className="text-[#E85D3F]" />
+                Chủ đề:
+              </span>
+              <button
+                type="button"
+                onClick={() => { playClickSound(); setSelectedTopicFilter('all'); }}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  selectedTopicFilter === 'all'
+                    ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 font-bold shadow-xs'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+                }`}
+              >
+                Tất cả chủ đề
+              </button>
+              {allReaderTopics.map(tpc => (
+                <button
+                  key={tpc}
+                  type="button"
+                  onClick={() => { playClickSound(); setSelectedTopicFilter(tpc); }}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
+                    selectedTopicFilter === tpc
+                      ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 font-bold shadow-xs'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+                  }`}
+                >
+                  {tpc}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -561,6 +654,100 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar }) 
                 </p>
               </div>
             )}
+
+            {/* 3.1. Từ vựng trọng tâm bài đọc (Vocabulary Highlights) */}
+            {activeMode === 'graded' && currentGradedReader?.vocabularyHighlights && currentGradedReader.vocabularyHighlights.length > 0 && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 dark:bg-gray-800/80 border border-slate-200 dark:border-gray-700 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-[#E85D3F]" />
+                    <h4 className="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200">
+                      Từ vựng trọng tâm bài đọc ({currentGradedReader.vocabularyHighlights.length} từ)
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveAllHighlights(currentGradedReader.vocabularyHighlights)}
+                    className="px-3 py-1.5 rounded-xl bg-[#E85D3F] hover:bg-[#D4482A] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                  >
+                    <BookmarkPlus size={13} />
+                    <span>Lưu tất cả vào Flashcard SRS</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+                  {currentGradedReader.vocabularyHighlights.map((vocab, vIdx) => {
+                    const isSaved = !!savedWordsMap[vocab.hanzi];
+                    return (
+                      <div
+                        key={vIdx}
+                        className="p-2.5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700/80 flex items-start justify-between gap-2 hover:border-[#E85D3F]/40 transition-all"
+                      >
+                        <div 
+                          className="cursor-pointer space-y-0.5 flex-1"
+                          onClick={() => {
+                            const foundTok = nlpAnalysis.tokens.find(t => t.raw === vocab.hanzi);
+                            if (foundTok) {
+                              setInspectedWord(foundTok);
+                            } else {
+                              setInspectedWord({
+                                raw: vocab.hanzi,
+                                pinyin: vocab.pinyin,
+                                hanviet: vocab.hanviet,
+                                meaningVi: vocab.meaning,
+                                level: currentGradedReader.level,
+                                chars: vocab.hanzi.split('')
+                              });
+                            }
+                          }}
+                        >
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="font-['Noto_Serif_SC'] text-base font-black text-gray-900 dark:text-white">
+                              {vocab.hanzi}
+                            </span>
+                            <span className="text-xs font-bold text-[#E85D3F]">
+                              {vocab.pinyin}
+                            </span>
+                          </div>
+                          {vocab.hanviet && (
+                            <div className="text-[11px] text-amber-700 dark:text-amber-300 font-medium">
+                              Âm: {vocab.hanviet}
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-1">
+                            {vocab.meaning}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-1">
+                          <AudioButton text={vocab.hanzi} size="sm" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleSaveToFlashcard({
+                                raw: vocab.hanzi,
+                                pinyin: vocab.pinyin,
+                                hanviet: vocab.hanviet,
+                                meaningVi: vocab.meaning,
+                                level: currentGradedReader.level
+                              });
+                            }}
+                            className={`p-1 rounded-lg text-xs transition-colors cursor-pointer ${
+                              isSaved
+                                ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40'
+                                : 'text-gray-400 hover:text-[#E85D3F] hover:bg-orange-50 dark:hover:bg-gray-800'
+                            }`}
+                            title={isSaved ? 'Đã lưu' : 'Lưu Flashcard'}
+                          >
+                            {isSaved ? <BookmarkCheck size={14} /> : <BookmarkPlus size={14} />}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 4. Reading Comprehension Quizzes (Cho chế độ Graded Reader) */}
@@ -685,9 +872,11 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar }) 
                       {inspectedWord.level}
                     </span>
                   )}
-                  {inspectedWord.pos && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/40">
-                      {inspectedWord.pos}
+                  {(inspectedWord.posLabel || inspectedWord.pos) && (
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-md border ${
+                      inspectedWord.posColor || 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/40'
+                    }`}>
+                      {inspectedWord.posLabel || inspectedWord.pos}
                     </span>
                   )}
                   {inspectedWord.hanviet && (
@@ -794,42 +983,260 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar }) 
             )}
           </div>
 
-          {/* Reading Statistics Card */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-gray-700 shadow-xs space-y-3">
-            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Phân bố độ khó văn bản (HSK Distribution)
-            </h4>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
-                <span className="text-gray-400 block text-[10px]">Tổng ký tự:</span>
-                <span className="text-base font-black text-gray-800 dark:text-gray-200">{nlpAnalysis.stats.chineseChars} chữ</span>
+          {/* NLP Insights & Phân tích chuyên sâu */}
+          <div className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#E85D3F]">
+                <Brain size={16} />
+                <span>NLP Engine Insights</span>
               </div>
-              <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
-                <span className="text-gray-400 block text-[10px]">Số lượng từ vựng:</span>
-                <span className="text-base font-black text-[#E85D3F]">{nlpAnalysis.stats.wordCount} từ</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/60 text-[#E85D3F]">
+                  HSK {nlpAnalysis.readability.hskScore.toFixed(1)} / 6.0
+                </span>
               </div>
             </div>
 
-            <div className="space-y-1.5 pt-1">
-              {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map(lvl => {
-                const count = nlpAnalysis.stats.hskStats[lvl] || 0;
-                const pct = nlpAnalysis.stats.wordCount > 0 ? Math.round((count / nlpAnalysis.stats.wordCount) * 100) : 0;
-                if (count === 0) return null;
+            {/* Readability Quick Metrics Banner */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="p-2.5 rounded-xl bg-orange-50/60 dark:bg-gray-800/60 border border-orange-100 dark:border-gray-700">
+                <span className="text-gray-500 dark:text-gray-400 block text-[10px]">Cấp độ khuyến nghị:</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-white">
+                  {nlpAnalysis.readability.recommendedLevel}
+                </span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-blue-50/60 dark:bg-gray-800/60 border border-blue-100 dark:border-gray-700">
+                <span className="text-gray-500 dark:text-gray-400 block text-[10px]">Thời gian đọc:</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-white">
+                  ~{nlpAnalysis.readability.estimatedReadingMinutes} phút
+                </span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-emerald-50/60 dark:bg-gray-800/60 border border-emerald-100 dark:border-gray-700">
+                <span className="text-gray-500 dark:text-gray-400 block text-[10px]">Độ đa dạng từ (TTR):</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-white">
+                  {nlpAnalysis.readability.ttr}
+                </span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-purple-50/60 dark:bg-gray-800/60 border border-purple-100 dark:border-gray-700">
+                <span className="text-gray-500 dark:text-gray-400 block text-[10px]">Độ dài câu TB:</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-white">
+                  {nlpAnalysis.readability.avgSentenceLength} chữ / câu
+                </span>
+              </div>
+            </div>
 
-                return (
-                  <div key={lvl} className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-gray-600 dark:text-gray-400">{lvl}:</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-[#E85D3F] h-full" style={{ width: `${pct}%` }} />
+            {/* Subtabs Switcher */}
+            <div className="flex items-center gap-1 border-b border-gray-100 dark:border-gray-800 pb-2 text-xs overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => { playClickSound(); setNlpTab('grammar'); }}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  nlpTab === 'grammar'
+                    ? 'bg-[#E85D3F] text-white shadow-xs'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                Ngữ pháp ({nlpAnalysis.grammarPatterns.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => { playClickSound(); setNlpTab('keywords'); }}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  nlpTab === 'keywords'
+                    ? 'bg-[#E85D3F] text-white shadow-xs'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                Từ khóa & Thành ngữ
+              </button>
+              <button
+                type="button"
+                onClick={() => { playClickSound(); setNlpTab('summary'); }}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  nlpTab === 'summary'
+                    ? 'bg-[#E85D3F] text-white shadow-xs'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                Tóm tắt
+              </button>
+              <button
+                type="button"
+                onClick={() => { playClickSound(); setNlpTab('readability'); }}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  nlpTab === 'readability'
+                    ? 'bg-[#E85D3F] text-white shadow-xs'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                Phân bố HSK
+              </button>
+            </div>
+
+            {/* Subtab Content 1: Grammar Patterns */}
+            {nlpTab === 'grammar' && (
+              <div className="space-y-3 pt-1">
+                {nlpAnalysis.grammarPatterns.length > 0 ? (
+                  nlpAnalysis.grammarPatterns.map((pat, pIdx) => (
+                    <div 
+                      key={pIdx}
+                      className="p-3 rounded-2xl bg-gray-50/70 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/80 space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-xs text-gray-900 dark:text-white">
+                          {pat.name}
+                        </span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${HSK_BADGE_COLORS[pat.level] || HSK_BADGE_COLORS['Khác']}`}>
+                          {pat.level}
+                        </span>
                       </div>
-                      <span className="text-[11px] font-bold text-gray-500 w-8 text-right">{count}</span>
+                      <p className="text-[11px] text-[#E85D3F] font-medium">
+                        {pat.nameVi}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                        {pat.description}
+                      </p>
+                      {pat.occurrences && pat.occurrences.length > 0 && (
+                        <div className="text-[11px] font-mono text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 p-2 rounded-xl border border-gray-200 dark:border-gray-700/60">
+                          <span className="text-gray-400 font-sans block text-[10px] mb-0.5">Xuất hiện trong bài:</span>
+                          <span className="font-['Noto_Serif_SC'] text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                            "{pat.occurrences[0].match}"
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400">
+                    Chưa phát hiện cấu trúc ngữ pháp phức hợp trong đoạn này. Đoạn văn chủ yếu dùng các câu đơn cơ bản.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Subtab Content 2: Keywords & Chengyu */}
+            {nlpTab === 'keywords' && (
+              <div className="space-y-3 pt-1">
+                {/* Thành ngữ 4 chữ (Chengyu) */}
+                {nlpAnalysis.keyTerms.chengyuList.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                      <Sparkles size={12} />
+                      Thành ngữ 4 chữ (Chengyu) phát hiện:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {nlpAnalysis.keyTerms.chengyuList.map((cy, cIdx) => (
+                        <div
+                          key={cIdx}
+                          onClick={() => {
+                            const found = nlpAnalysis.tokens.find(t => t.raw === cy.word);
+                            if (found) setInspectedWord(found);
+                          }}
+                          className="px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800 text-xs font-['Noto_Serif_SC'] font-bold flex items-center gap-1.5 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900 transition-colors"
+                        >
+                          <span>{cy.word}</span>
+                          <span className="text-[10px] font-sans text-amber-600 dark:text-amber-400 font-normal">
+                            ({cy.count}x)
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                )}
+
+                {/* Top Keywords */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 block">
+                    Từ khóa cốt lõi & Từ loại (POS):
+                  </span>
+                  <div className="space-y-1.5">
+                    {nlpAnalysis.keyTerms.topKeywords.slice(0, 8).map((kw, kIdx) => (
+                      <div
+                        key={kIdx}
+                        onClick={() => {
+                          const found = nlpAnalysis.tokens.find(t => t.raw === kw.word);
+                          if (found) setInspectedWord(found);
+                        }}
+                        className="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 hover:border-orange-300 text-xs cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-['Noto_Serif_SC'] text-sm font-bold text-gray-900 dark:text-white">
+                            {kw.word}
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 border border-blue-200/50">
+                            {kw.posLabel}
+                          </span>
+                          {kw.level && (
+                            <span className="text-[10px] text-gray-400 font-semibold">
+                              {kw.level}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] font-bold text-[#E85D3F]">
+                          {kw.count} lần
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Subtab Content 3: Extractive Summary */}
+            {nlpTab === 'summary' && (
+              <div className="space-y-2 pt-1">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-1">
+                  <BookOpenCheck size={13} />
+                  Câu cốt lõi trích xuất tự động (Extractive Summary):
+                </span>
+                <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/30 border border-purple-200/60 dark:border-purple-800/40 space-y-2">
+                  <p className="font-['Noto_Serif_SC'] text-xs sm:text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
+                    {nlpAnalysis.summary || 'Chưa đủ dữ liệu văn bản để trích xuất câu tóm tắt.'}
+                  </p>
+                  {nlpAnalysis.summary && (
+                    <div className="flex items-center justify-end pt-1">
+                      <AudioButton text={nlpAnalysis.summary} size="sm" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Subtab Content 4: Readability & HSK Distribution */}
+            {nlpTab === 'readability' && (
+              <div className="space-y-3 pt-1">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                    <span className="text-gray-400 block text-[10px]">Tổng ký tự:</span>
+                    <span className="text-sm font-black text-gray-800 dark:text-gray-200">{nlpAnalysis.stats.chineseChars} chữ</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                    <span className="text-gray-400 block text-[10px]">Số lượng từ vựng:</span>
+                    <span className="text-sm font-black text-[#E85D3F]">{nlpAnalysis.stats.wordCount} từ</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map(lvl => {
+                    const count = nlpAnalysis.stats.hskStats[lvl] || 0;
+                    const pct = nlpAnalysis.stats.wordCount > 0 ? Math.round((count / nlpAnalysis.stats.wordCount) * 100) : 0;
+                    if (count === 0) return null;
+
+                    return (
+                      <div key={lvl} className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-gray-600 dark:text-gray-400">{lvl}:</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-[#E85D3F] h-full" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-[11px] font-bold text-gray-500 w-8 text-right">{count}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

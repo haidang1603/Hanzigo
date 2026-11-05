@@ -524,6 +524,512 @@ Chỉ khi rót thêm trí tuệ sinh thái phương Đông vào tư duy lý tín
         explanation: 'Trong Hán ngữ cổ, "đãi" (殆) nghĩa là nguy hại, nguy hiểm ("biết điểm dừng thì không gặp hiểm nguy").'
       }
     ]
+  },
+
+  // ==========================================
+  // EXPANDED READERS (HSK 1 - HSK 6)
+  // ==========================================
+
+  // --- HSK 1 (Bổ sung 2 bài) ---
+  {
+    id: 'gr-103',
+    level: 'HSK 1',
+    titleZh: '去中国超市买东西',
+    titleVi: 'Đi siêu thị Trung Quốc mua sắm',
+    topic: 'Mua sắm & Đời sống',
+    readTimeMinutes: 2,
+    wordCount: 125,
+    contentZh: `今天下午，我和同学王方一起去大超市。
+超市里有很多东西，有苹果、西瓜、茶和牛奶。
+苹果很好吃，也不贵。王方想买六个红苹果和两瓶水。
+我想买三本书和一个漂亮的杯子。
+我们一共花了五十块钱。售货员很高兴，对我们说“谢谢，再见”。
+去超市买东西真方便。`,
+    translationVi: `Chiều hôm nay, tôi cùng bạn học Vương Phương đến siêu thị lớn.
+Trong siêu thị có rất nhiều đồ, có táo, dưa hấu, trà và sữa bò.
+Táo rất ngon và cũng không đắt. Vương Phương muốn mua 6 quả táo đỏ và 2 chai nước.
+Tôi muốn mua 3 quyển sách và một chiếc cốc đẹp.
+Chúng tôi tổng cộng tiêu hết 50 tệ. Nhân viên bán hàng rất vui, nói với chúng tôi: "Cảm ơn, tạm biệt".
+Đi siêu thị mua sắm thật là thuận tiện.`,
+    vocabularyHighlights: [
+      { hanzi: '超市', pinyin: 'chāoshì', hanviet: 'Siêu thị', meaning: 'Siêu thị' },
+      { hanzi: '西瓜', pinyin: 'xīguā', hanviet: 'Tây qua', meaning: 'Dưa hấu' },
+      { hanzi: '一共', pinyin: 'yígòng', hanviet: 'Nhất cộng', meaning: 'Tổng cộng' },
+      { hanzi: '方便', pinyin: 'fāngbiàn', hanviet: 'Phương tiện', meaning: 'Thuận tiện, tiện lợi' }
+    ],
+    questions: [
+      {
+        question: '王方在超市想买什么？ (Vương Phương muốn mua gì ở siêu thị?)',
+        options: ['六个红苹果和两瓶水 (6 quả táo đỏ và 2 chai nước)', '三本书和一个杯子 (3 quyển sách và 1 chiếc cốc)', '西瓜和牛奶 (Dưa hấu và sữa bò)', '只有茶 (Chỉ có trà)'],
+        answerIndex: 0,
+        explanation: 'Trong bài có câu rõ ràng: "王方想买六个红苹果和两瓶水".'
+      },
+      {
+        question: '他们买东西一共花了多少钱？ (Họ mua đồ tổng cộng hết bao nhiêu tiền?)',
+        options: ['三十块钱 (30 tệ)', '四十块钱 (40 tệ)', '五十块钱 (50 tệ)', '一百块钱 (100 tệ)'],
+        answerIndex: 2,
+        explanation: 'Đoạn văn viết: "我们一共花了五十块钱" (Chúng tôi tiêu hết tổng cộng 50 tệ).'
+      }
+    ]
+  },
+  {
+    id: 'gr-104',
+    level: 'HSK 1',
+    titleZh: '我可爱的小狗点点',
+    titleVi: 'Chú chó cưng Điểm Điểm của tôi',
+    topic: 'Thú cưng & Tình cảm',
+    readTimeMinutes: 2,
+    wordCount: 118,
+    contentZh: `我家有一只小狗，它的名字叫点点。
+点点身上的毛是黄色的，眼睛很大，耳朵很小。
+每天早上我起床的时候，它都在门外等我。
+它喜欢吃肉，也喜欢在草地上飞快地跑。
+下午放学回家，它看见我就会摇尾巴，非常高兴。
+点点不仅是我的好朋友，也是我们家的一员。`,
+    translationVi: `Nhà tôi có một chú chó nhỏ, tên của nó là Điểm Điểm.
+Lông trên người Điểm Điểm màu vàng, mắt rất to, tai rất nhỏ.
+Mỗi buổi sáng khi tôi thức dậy, nó đều đợi tôi ở ngoài cửa.
+Nó thích ăn thịt, cũng thích chạy thật nhanh trên bãi cỏ.
+Chiều tan học về nhà, nó nhìn thấy tôi là vẫy đuôi, vô cùng mừng rỡ.
+Điểm Điểm không chỉ là người bạn thân của tôi, mà còn là một thành viên trong gia đình tôi.`,
+    vocabularyHighlights: [
+      { hanzi: '名字', pinyin: 'míngzi', hanviet: 'Danh tự', meaning: 'Tên gọi' },
+      { hanzi: '黄色', pinyin: 'huángsè', hanviet: 'Hoàng sắc', meaning: 'Màu vàng' },
+      { hanzi: '起床', pinyin: 'qǐchuáng', hanviet: 'Khởi sàng', meaning: 'Thức dậy' },
+      { hanzi: '看见', pinyin: 'kànjiàn', hanviet: 'Khán kiến', meaning: 'Nhìn thấy' }
+    ],
+    questions: [
+      {
+        question: '点点身上的毛是什么颜色的？ (Lông trên người Điểm Điểm có màu gì?)',
+        options: ['白色的 (Màu trắng)', '黑色的 (Màu đen)', '黄色的 (Màu vàng)', '灰色的 (Màu xám)'],
+        answerIndex: 2,
+        explanation: 'Bài viết nêu rõ: "点点身上的毛是黄色的" (Lông của Điểm Điểm màu vàng).'
+      },
+      {
+        question: '点点看见我回家的时候会做什么？ (Điểm Điểm làm gì khi thấy tôi về nhà?)',
+        options: ['睡觉 (Đi ngủ)', '摇尾巴，非常高兴 (Vẫy đuôi, rất mừng rỡ)', '跑去商店 (Chạy ra cửa hàng)', '大声叫 (Sủa lớn)'],
+        answerIndex: 1,
+        explanation: 'Trong bài có câu: "它看见我就会摇尾巴，非常高兴".'
+      }
+    ]
+  },
+
+  // --- HSK 2 (Bổ sung 2 bài) ---
+  {
+    id: 'gr-203',
+    level: 'HSK 2',
+    titleZh: '体验四川麻辣火锅',
+    titleVi: 'Trải nghiệm lẩu cay Tứ Xuyên',
+    topic: 'Ẩm thực truyền thống',
+    readTimeMinutes: 3,
+    wordCount: 195,
+    contentZh: `上个星期五晚上，我和几个留学生朋友一起去吃正宗的四川火锅。
+这家饭馆在市中心，生意非常好，服务员很热情。
+我们点了一个鸳鸯锅：一边是红红的麻辣汤底，另一边是不辣的牛肉清汤。
+四川火锅里的辣椒和花椒很多，闻起来特别香。
+我们点了羊肉卷、豆腐、新鲜蔬菜和面条。
+虽然辣得大家一边喝冰水一边擦汗，但是味道真是太好吃了！
+吃火锅不仅能尝到美味的中国菜，还能和朋友们一边聊天一边享受快乐的时光。`,
+    translationVi: `Tối thứ Sáu tuần trước, tôi và mấy người bạn du học sinh cùng nhau đi ăn lẩu Tứ Xuyên chính gốc.
+Nhà hàng này nằm ở trung tâm thành phố, buôn bán rất phát đạt, nhân viên phục vụ rất nhiệt tình.
+Chúng tôi gọi một nồi lẩu uyên ương: một bên là nước lẩu cay xè đỏ rực, bên kia là nước lẩu thịt bò thanh đạm không cay.
+Ớt và hoa tiêu trong lẩu Tứ Xuyên rất nhiều, ngửi mùi thơm nức mũi.
+Chúng tôi gọi thịt cừu cuộn, đậu phụ, rau tươi và mì sợi.
+Tuy rằng cay đến mức mọi người vừa uống nước đá vừa lau mồ hôi, nhưng mùi vị quả thực quá ngon!
+Ăn lẩu không chỉ nếm được món ăn Trung Hoa thơm ngon, mà còn có thể cùng bạn bè vừa trò chuyện vừa tận hưởng khoảnh khắc vui vẻ.`,
+    vocabularyHighlights: [
+      { hanzi: '正宗', pinyin: 'zhèngzōng', hanviet: 'Chính tông', meaning: 'Chính gốc, truyền thống' },
+      { hanzi: '热情', pinyin: 'rèqíng', hanviet: 'Nhiệt tình', meaning: 'Nhiệt tình' },
+      { hanzi: '虽然', pinyin: 'suīrán', hanviet: 'Tuy nhiên', meaning: 'Tuy rằng' },
+      { hanzi: '味道', pinyin: 'wèidào', hanviet: 'Vị đạo', meaning: 'Mùi vị' }
+    ],
+    questions: [
+      {
+        question: '他们点了什么样的火锅？ (Họ đã gọi loại lẩu nào?)',
+        options: ['只有辣锅 (Chỉ có nồi cay)', '鸳鸯锅（一边辣一边不辣） (Nồi uyên ương: một bên cay một bên không)', '只有海鲜锅 (Chỉ có lẩu hải sản)', '甜品锅 (Nồi đồ ngọt)'],
+        answerIndex: 1,
+        explanation: 'Đoạn văn viết rõ: "我们点了一个鸳鸯锅：一边是红红的麻辣汤底，另一边是不辣的牛肉清汤".'
+      },
+      {
+        question: '大家吃火锅时的感受是什么？ (Cảm nhận của mọi người khi ăn lẩu là gì?)',
+        options: ['一点儿也不辣 (Chẳng cay chút nào)', '味道不好吃 (Vị không ngon)', '虽然辣但太好吃了，大家很开心 (Tuy cay nhưng quá ngon, mọi người rất vui)', '太贵了不想吃 (Quá đắt không muốn ăn)'],
+        answerIndex: 2,
+        explanation: 'Trong bài có câu: "虽然辣得大家一边喝冰水一边擦汗，但是味道真是太好吃了！".'
+      }
+    ]
+  },
+  {
+    id: 'gr-204',
+    level: 'HSK 2',
+    titleZh: '在大学图书馆借书',
+    titleVi: 'Mượn sách tại thư viện đại học',
+    topic: 'Học đường & Sinh hoạt',
+    readTimeMinutes: 3,
+    wordCount: 185,
+    contentZh: `我们大学的图书馆是一座六层高的白色大楼，环境非常安静。
+每天都有很多学生在里面看书、写作业和复习功课。
+今天下午，我拿着学生卡去三楼借阅汉语学习资料。
+三楼的书架上整齐地摆满了各种各样的语言类图书和词典。
+我找了半个小时，终于借到了两本关于HSK考试的辅导书。
+图书馆的老师告诉我，每本书可以借一个月，如果看不完，还可以在网上申请续借。
+我很喜欢在图书馆学习，因为这里能让我集中精力。`,
+    translationVi: `Thư viện trường đại học của chúng tôi là một tòa nhà màu trắng cao 6 tầng, môi trường vô cùng yên tĩnh.
+Mỗi ngày đều có rất nhiều sinh viên bên trong đọc sách, làm bài tập và ôn tập bài vở.
+Chiều hôm nay, tôi cầm thẻ sinh viên lên tầng 3 để mượn tài liệu học tiếng Trung.
+Trên giá sách tầng 3 xếp đầy ngay ngắn đủ loại sách ngôn ngữ và từ điển.
+Tôi tìm mất nửa tiếng đồng hồ, cuối cùng đã mượn được hai cuốn sách hướng dẫn về kỳ thi HSK.
+Thầy cô ở thư viện nói với tôi rằng, mỗi cuốn sách được mượn 1 tháng, nếu đọc chưa xong còn có thể đăng ký gia hạn trực tuyến.
+Tôi rất thích học tập ở thư viện, vì nơi đây giúp tôi tập trung tinh thần.`,
+    vocabularyHighlights: [
+      { hanzi: '环境', pinyin: 'huánjìng', hanviet: 'Hoàn cảnh', meaning: 'Môi trường xung quanh' },
+      { hanzi: '资料', pinyin: 'zīliào', hanviet: 'Tư liệu', meaning: 'Tài liệu' },
+      { hanzi: '终于', pinyin: 'zhōngyú', hanviet: 'Chung vu', meaning: 'Cuối cùng' },
+      { hanzi: '集中', pinyin: 'jízhōng', hanviet: 'Tập trung', meaning: 'Tập trung' }
+    ],
+    questions: [
+      {
+        question: '作者去图书馆三楼借了什么书？ (Tác giả lên tầng 3 thư viện mượn sách gì?)',
+        options: ['两本关于HSK考试的辅导书 (2 cuốn sách ôn thi HSK)', '故事书 (Sách truyện)', '数学书 (Sách toán học)', '音乐书 (Sách âm nhạc)'],
+        answerIndex: 0,
+        explanation: 'Đoạn văn nêu rõ: "终于借到了两本关于HSK考试的辅导书".'
+      },
+      {
+        question: '图书馆借的书如果一个月看不完可以怎么办？ (Nếu sách mượn 1 tháng đọc chưa xong thì làm thế nào?)',
+        options: ['必须马上还 (Phải trả ngay lập tức)', '交罚款 (Nộp tiền phạt)', '在网上申请续借 (Đăng ký gia hạn trên mạng)', '送给朋友 (Tặng cho bạn bè)'],
+        answerIndex: 2,
+        explanation: 'Trong bài có câu: "如果看不完，还可以在网上申请续借" (nếu đọc chưa xong, còn có thể lên mạng xin gia hạn).'
+      }
+    ]
+  },
+
+  // --- HSK 3 (Bổ sung 2 bài) ---
+  {
+    id: 'gr-303',
+    level: 'HSK 3',
+    titleZh: '参加中国朋友的传统婚礼',
+    titleVi: 'Dự đám cưới truyền thống của bạn Trung Quốc',
+    topic: 'Phong tục & Lễ hội',
+    readTimeMinutes: 4,
+    wordCount: 260,
+    contentZh: `上个周末，我受邀参加了中国大学好友张伟的婚礼。这是我第一次亲身体验中国的传统婚俗，感觉特别新奇。
+整个婚礼现场布置得喜气洋洋，到处都挂着大红色的双喜字和漂亮的鲜花。
+新郎穿着笔挺的西装，新娘则穿着红色的秀禾服，头上戴着金色的头饰，看起来美丽而庄重。
+在婚礼仪式上，新郎新娘恭敬地给双方父母敬茶，感谢父母多年的养育之恩。父母喝了茶，给新人送上了大红色的红包，祝他们百年好合、白头偕老。
+客人们围坐在大圆桌旁，品尝着丰盛的婚宴菜肴，彼此碰杯祝福。
+参加这次婚礼，让我深刻感受到了中国文化中对家庭和谐与亲情孝道的高度重视。`,
+    translationVi: `Cuối tuần trước, tôi được mời tham dự đám cưới của người bạn đại học Trung Quốc Trương Vĩ. Đây là lần đầu tiên tôi trực tiếp trải nghiệm phong tục hôn lễ truyền thống của Trung Quốc, cảm thấy vô cùng mới lạ.
+Toàn bộ hội trường hôn lễ được bài trí ngập tràn không khí vui tươi hỷ sự, khắp nơi treo chữ Song Hỷ màu đỏ thắm và hoa tươi rực rỡ.
+Chú rể mặc âu phục tề chỉnh, cô dâu diện bộ Hỷ phục Tú Hòa đỏ thắm, trên đầu cài trâm vàng, trông vừa xinh đẹp vừa trang trọng.
+Trong nghi thức hôn lễ, cô dâu chú rể cung kính dâng trà cho cha mẹ hai bên, cảm tạ công ơn nuôi dưỡng nhiều năm của đấng sinh thành. Cha mẹ uống trà và trao tặng cặp đôi những phong bao lì xì đỏ thắm, chúc hai con trăm năm hạnh phúc, bạc đầu giai lão.
+Các vị khách quây quần bên những bàn tròn lớn, thưởng thức các món ăn tiệc cưới thịnh soạn, cùng nâng ly chúc mừng nhau.
+Tham dự đám cưới lần này giúp tôi cảm nhận sâu sắc sự coi trọng cao độ đối với hòa thuận gia đình và chữ hiếu trong văn hóa Trung Hoa.`,
+    vocabularyHighlights: [
+      { hanzi: '婚礼', pinyin: 'hūnlǐ', hanviet: 'Hôn lễ', meaning: 'Đám cưới, hôn lễ' },
+      { hanzi: '庄重', pinyin: 'zhuāngzhòng', hanviet: 'Trang trọng', meaning: 'Trang trọng, nghiêm trang' },
+      { hanzi: '丰盛', pinyin: 'fēngshèng', hanviet: 'Phong thịnh', meaning: 'Thịnh soạn, dồi dào' },
+      { hanzi: '孝道', pinyin: 'xiàodào', hanviet: 'Hiếu đạo', meaning: 'Đạo hiếu, lòng hiếu thảo' }
+    ],
+    questions: [
+      {
+        question: '新娘在婚礼上穿了什么服装？ (Cô dâu mặc trang phục gì trong đám cưới?)',
+        options: ['白色的婚纱 (Váy cưới màu trắng)', '红色的秀禾服 (Áo Tú Hòa màu đỏ truyền thống)', '普通便服 (Quần áo bình thường)', '运动服 (Quần áo thể thao)'],
+        answerIndex: 1,
+        explanation: 'Bài viết chỉ rõ: "新娘则穿着红色的秀禾服，头上戴着金色的头饰".'
+      },
+      {
+        question: '新人敬茶后，父母送给他们什么祝福？ (Sau khi dâng trà, cha mẹ trao cho cặp đôi lời chúc gì?)',
+        options: ['百年好合、白头偕老 (Trăm năm hạnh phúc, bạc đầu giai lão)', '一路平安 (Thuận buồm xuôi gió)', '生意兴隆 (Buôn may bán đắt)', '早日毕业 (Sớm ngày tốt nghiệp)'],
+        answerIndex: 0,
+        explanation: 'Trong bài có câu: "祝他们百年好合、白头偕老".'
+      }
+    ]
+  },
+  {
+    id: 'gr-304',
+    level: 'HSK 3',
+    titleZh: '保护大熊猫的生态志愿者',
+    titleVi: 'Tình nguyện viên bảo vệ gấu trúc sinh thái',
+    topic: 'Tự nhiên & Động vật',
+    readTimeMinutes: 4,
+    wordCount: 275,
+    contentZh: `大熊猫是中国特有的珍稀动物，被誉为中国的“国宝”。去年暑假，我报名参加了四川卧龙自然保护区的志愿者活动。
+在保护区里，我们的主要工作是帮助饲养员清理熊猫的圈舍、搬运新鲜的竹子和制作营养窝窝头。
+大熊猫每天大部分的时间都在吃竹子和睡觉。它们走路时摇摇晃晃的，吃竹子时两只手捧着，样子憨态可掬，非常惹人喜爱。
+保护区的专家向我们解释，由于气候变化和人类活动的干扰，大熊猫的野生栖息地曾经变得非常零碎。
+近年来，中国政府建立了大熊猫国家公园，将破碎的栖息地连接起来，大熊猫的种群数量才逐渐恢复。
+这段难忘的志愿者经历，让我明白了保护野生动物就是保护人类赖以生存的自然家园。`,
+    translationVi: `Gấu trúc lớn là loài động vật quý hiếm đặc hữu của Trung Quốc, được tôn vinh là "Quốc bảo" của đất nước này. Kỳ nghỉ hè năm ngoái, tôi đăng ký tham gia hoạt động tình nguyện viên tại Khu bảo tồn thiên nhiên Ngọa Long, Tứ Xuyên.
+Ở khu bảo tồn, công việc chính của chúng tôi là giúp đỡ nhân viên chăm sóc dọn dẹp chuồng nuôi gấu trúc, vận chuyển tre trúc tươi và làm bánh dinh dưỡng bổ sung.
+Phần lớn thời gian mỗi ngày gấu trúc đều dành cho việc ăn tre và ngủ. Chúng đi đứng lắc lư khập khiễng, khi ăn tre thì hai tay ôm lấy, bộ dạng ngây ngô đáng yêu vô cùng.
+Các chuyên gia của khu bảo tồn giải thích với chúng tôi rằng, do biến đổi khí hậu và sự can thiệp từ hoạt động của con người, môi trường sống tự nhiên của gấu trúc từng bị chia cắt manh mún.
+Những năm gần đây, chính phủ Trung Quốc đã thành lập Công viên Quốc gia Gấu trúc, kết nối các vùng sinh thái bị chia cắt, số lượng quần thể gấu trúc mới dần dần được phục hồi.
+Kinh nghiệm tình nguyện khó quên này giúp tôi thấu hiểu rằng bảo vệ động vật hoang dã chính là bảo vệ ngôi nhà chung tự nhiên mà con người đang nương tựa để sinh tồn.`,
+    vocabularyHighlights: [
+      { hanzi: '国宝', pinyin: 'guóbǎo', hanviet: 'Quốc bảo', meaning: 'Báu vật quốc gia' },
+      { hanzi: '憨态可掬', pinyin: 'hāntài-kějū', hanviet: 'Hàm thái khả cúc', meaning: 'Dáng vẻ ngây thơ đáng yêu' },
+      { hanzi: '栖息地', pinyin: 'qīxīdì', hanviet: 'Tê tức địa', meaning: 'Môi trường sống, nơi cư trú' },
+      { hanzi: '逐渐', pinyin: 'zhújiàn', hanviet: 'Trục tiệm', meaning: 'Dần dần, từng bước' }
+    ],
+    questions: [
+      {
+        question: '志愿者的主要工作内容是什么？ (Nhiệm vụ chính của tình nguyện viên là gì?)',
+        options: ['清理圈舍、搬运竹子和制作营养窝窝头 (Dọn chuồng, chuyển tre tươi và làm bánh dinh dưỡng)', '给大熊猫看病 (Khám bệnh cho gấu trúc)', '拍摄商业电影 (Quay phim thương mại)', '砍伐森林 (Chặt phá rừng)'],
+        answerIndex: 0,
+        explanation: 'Đoạn văn viết: "我们的主要工作是帮助饲养员清理熊猫的圈舍、搬运新鲜的竹子和制作营养窝窝头".'
+      },
+      {
+        question: '中国政府近年采取了什么措施恢复大熊猫数量？ (Chính phủ TQ đã áp dụng biện pháp gì gần đây để phục hồi số lượng gấu trúc?)',
+        options: ['建立了大熊猫国家公园，连接破碎栖息地 (Thành lập Công viên quốc gia Gấu trúc, kết nối môi trường sống)', '把所有熊猫送出国 (Gửi tất cả gấu trúc ra nước ngoài)', '禁止游客参观 (Cấm du khách tham quan)', '人工饲养所有野生动物 (Nuôi nhốt nhân tạo tất cả động vật)'],
+        answerIndex: 0,
+        explanation: 'Bài viết giải thích: "近年来，中国政府建立了大熊猫国家公园，将破碎的栖息地连接起来".'
+      }
+    ]
+  },
+
+  // --- HSK 4 (Bổ sung 2 bài) ---
+  {
+    id: 'gr-403',
+    level: 'HSK 4',
+    titleZh: '移动支付如何深刻改变现代生活',
+    titleVi: 'Thanh toán di động thay đổi sâu sắc đời sống hiện đại',
+    topic: 'Công nghệ & Tiện ích',
+    readTimeMinutes: 5,
+    wordCount: 310,
+    contentZh: `在中国生活，哪怕出门不带一分现金和银行卡，只要随身携带一部智能手机，人们的生活几乎不会受到任何影响。从乘坐公交地铁、超市购物，到街头买煎饼、缴纳水电煤气费，扫描二维码已经成为全民通用的支付方式。
+移动支付的普及不仅极大地提升了社会交易的效率，缩短了排队等候的时间，还从源头上减少了假币流通和现金被盗的风险。
+对于商家而言，数字收银系统能够自动记录流水账目，极大方便了日常的财务统计与库存管理。
+然而，随着数字社会的全面到来，如何帮助不熟悉智能手机的老年群体跨越“数字鸿沟”，也逐渐成为全社会共同关注的课题。
+许多公共服务窗口和商户依然保留了人工现金通道，以确保每个人都能享受到社会的温度与便利。
+移动支付不仅是一项科技创新，更体现了现代社会效率与人文关怀之间的平衡智慧。`,
+    translationVi: `Sống tại Trung Quốc, cho dù ra ngoài không mang theo một đồng tiền mặt hay thẻ ngân hàng nào, chỉ cần mang theo một chiếc điện thoại thông minh bên mình, cuộc sống của mọi người gần như không bị ảnh hưởng chút nào. Từ việc đi xe buýt tàu điện ngầm, mua sắm siêu thị, cho đến mua bánh rán ven đường, nộp tiền điện nước, quét mã QR đã trở thành phương thức thanh toán toàn dân phổ cập.
+Sự phổ biến của thanh toán di động không chỉ nâng cao vượt bậc hiệu quả giao dịch xã hội, rút ngắn thời gian xếp hàng chờ đợi, mà còn giảm thiểu tận gốc rủi ro lưu thông tiền giả và mất cắp tiền mặt.
+Đối với người kinh doanh, hệ thống thu ngân kỹ thuật số có thể tự động ghi chép các giao dịch phát sinh, mang lại sự tiện lợi to lớn cho việc thống kê tài chính và quản lý kho hàng ngày.
+Tuy nhiên, cùng với sự xuất hiện toàn diện của xã hội số, làm thế nào để hỗ trợ nhóm người cao tuổi chưa quen thuộc với điện thoại thông minh vượt qua "hố ngăn cách kỹ thuật số" cũng dần trở thành chủ đề được toàn xã hội quan tâm sâu sắc.
+Rất nhiều quầy dịch vụ công cộng và cửa hàng vẫn tiếp tục duy trì làn giao dịch tiền mặt truyền thống, nhằm đảm bảo mỗi cá nhân đều có thể cảm nhận được sự ấm áp và tiện lợi của xã hội.
+Thanh toán di động không đơn thuần là một cải tiến công nghệ, mà còn thể hiện trí tuệ cân bằng giữa hiệu quả thời đại số và sự sẻ chia nhân văn.`,
+    vocabularyHighlights: [
+      { hanzi: '携带', pinyin: 'xiédài', hanviet: 'Huề đới', meaning: 'Mang theo bên mình' },
+      { hanzi: '普及', pinyin: 'pǔjí', hanviet: 'Phổ cập', meaning: 'Phổ cập, lan rộng' },
+      { hanzi: '数字鸿沟', pinyin: 'shùzì hónggōu', hanviet: 'Số tự hồng câu', meaning: 'Khoảng cách kỹ thuật số' },
+      { hanzi: '人文关怀', pinyin: 'rénwén guānhuái', hanviet: 'Nhân văn quan hoài', meaning: 'Sự quan tâm nhân văn' }
+    ],
+    questions: [
+      {
+        question: '移动支付为现代社会带来了哪些显著优势？ (Thanh toán di động đem lại lợi ích nổi bật nào?)',
+        options: ['提升交易效率，减少现金被盗和假币风险 (Tăng hiệu suất giao dịch, giảm rủi ro tiền giả và trộm cắp)', '增加现金使用量 (Tăng lượng tiền mặt sử dụng)', '必须每天去银行排队 (Hàng ngày phải ra ngân hàng xếp hàng)', '使购物变得更加繁琐 (Làm cho việc mua sắm phức tạp hơn)'],
+        answerIndex: 0,
+        explanation: 'Đoạn văn phân tích: "提升了社会交易的效率，缩短了排队等候的时间，还从源头上减少了假币流通和现金被盗的风险".'
+      },
+      {
+        question: '为了照顾不熟悉智能手机的老年人，社会采取了什么措施？ (Để chăm lo người cao tuổi không thạo smartphone, xã hội đã làm gì?)',
+        options: ['禁止老年人出门 (Cấm người già ra đường)', '保留人工现金通道 (Duy trì quầy phục vụ tiền mặt truyền thống)', '取消所有移动支付 (Hủy bỏ mọi thanh toán di động)', '强迫老年人购买最新款手机 (Ép người già mua smartphone mới nhất)'],
+        answerIndex: 1,
+        explanation: 'Bài viết nêu rõ: "许多公共服务窗口和商户依然保留了人工现金通道，以确保每个人都能享受到社会的温度与便利".'
+      }
+    ]
+  },
+  {
+    id: 'gr-404',
+    level: 'HSK 4',
+    titleZh: '职场新人的沟通智慧与团队协作',
+    titleVi: 'Trí tuệ giao tiếp và phối hợp nhóm của người mới đi làm',
+    topic: 'Công sở & Kỹ năng',
+    readTimeMinutes: 5,
+    wordCount: 320,
+    contentZh: `走出大学校门迈入职场，面对崭新的工作环境与人际关系，许多职场新人都难免会产生迷茫与焦虑。其实，在现代企业中，除了扎实的专业能力之外，良好的沟通态度和团队协作意识往往起着决定性的作用。
+首先，积极倾听是有效沟通的前提。在接受领导安排任务或听取同事建议时，应当认真记录要点，遇到不明确的地方及时礼貌地确认，避免因主观臆断而导致工作方向出现偏差。
+其次，善于汇报工作进度同样至关重要。定期向团队同步阶段性成果与遇到的困难，既体现了高度的责任心，也能争取到及时的团队资源支持。
+最后，团队协作讲究“取长补短”。每个人都有自己的专长与局限，懂得虚心向经验丰富的同事请教，同时在他人需要帮助时主动伸出援手，才能在团队中建立起牢固的信任基石。
+保持终身学习的谦逊心态，把每一次挑战当作自我提升的契机，是职场新人稳步成长的必由之路。`,
+    translationVi: `Rời khỏi cổng trường đại học bước chân vào chốn công sở, đối diện với môi trường làm việc và các mối quan hệ nhân sự hoàn toàn mới, nhiều người mới đi làm khó tránh khỏi cảm giác hoang mang và lo âu. Thực ra, trong các doanh nghiệp hiện đại, bên cạnh năng lực chuyên môn vững vàng, thái độ giao tiếp chuẩn mực và ý thức phối hợp nhóm thường đóng vai trò mang tính quyết định.
+Trước hết, tích cực lắng nghe là tiền đề của giao tiếp hiệu quả. Khi tiếp nhận nhiệm vụ do cấp trên giao phó hoặc lắng nghe ý kiến của đồng nghiệp, cần ghi chép cẩn thận các điểm mấu chốt, khi gặp chỗ chưa rõ ràng phải kịp thời xác nhận lại một cách lịch sự, tránh vì phán đoán chủ quan mà khiến phương hướng công việc bị lệch lạc.
+Thứ hai, chủ động báo cáo tiến độ công việc cũng quan trọng không kém. Định kỳ đồng bộ thành quả từng giai đoạn và những khó khăn gặp phải với tập thể, vừa thể hiện tinh thần trách nhiệm cao, vừa tranh thủ được sự hỗ trợ tài nguyên kịp thời từ đội ngũ.
+Sau cùng, làm việc nhóm đòi hỏi sự "bổ khuyết điểm yếu, phát huy điểm mạnh". Mỗi người đều có thế mạnh và giới hạn riêng, biết khiêm tốn học hỏi từ các đồng nghiệp giàu kinh nghiệm, đồng thời chủ động đưa tay giúp đỡ khi người khác cần, mới có thể xây dựng nền móng tin cậy vững chắc trong tập thể.
+Giữ vững tâm thái khiêm tốn học hỏi trọn đời, coi mỗi thách thức là cơ hội tự hoàn thiện, chính là con đường tất yếu để người mới đi làm trưởng thành vững chắc.`,
+    vocabularyHighlights: [
+      { hanzi: '沟通', pinyin: 'gōutōng', hanviet: 'Câu thông', meaning: 'Giao tiếp, trao đổi' },
+      { hanzi: '协作', pinyin: 'xiézuò', hanviet: 'Hiệp tác', meaning: 'Hợp tác, phối hợp' },
+      { hanzi: '取长补短', pinyin: 'qǔcháng-bǔduǎn', hanviet: 'Thủ trường bổ đoản', meaning: 'Lấy sở trường bù đắp sở đoản' },
+      { hanzi: '谦逊', pinyin: 'qiānxùn', hanviet: 'Khiêm tốn', meaning: 'Khiêm nhường, lễ độ' }
+    ],
+    questions: [
+      {
+        question: '有效沟通的首要前提是什么？ (Tiền đề quan trọng đầu tiên của giao tiếp hiệu quả là gì?)',
+        options: ['积极倾听并及时确认要点 (Tích cực lắng nghe và kịp thời xác nhận điểm mấu chốt)', '只管自己说话，不听别人 (Chỉ nói phần mình, không nghe người khác)', '尽量不与同事交流 (Hạn chế tối đa tiếp xúc với đồng nghiệp)', '任何事情都自己做决定 (Mọi việc đều tự ý quyết định)'],
+        answerIndex: 0,
+        explanation: 'Bài viết khẳng định: "积极倾听是有效沟通的前提……应当认真记录要点，遇到不明确的地方及时礼貌地确认".'
+      },
+      {
+        question: '文中提到的“取长补短”在团队中体现为？ (Thành ngữ "thủ trường bổ đoản" được thể hiện như thế nào trong đội nhóm?)',
+        options: ['互相指责对方的缺点 (Chỉ trích khuyết điểm của nhau)', '虚心请教并主动协助他人，建立信任 (Khiêm tốn học hỏi và chủ động hỗ trợ người khác để xây dựng niềm tin)', '各自独立完成所有工作 (Ai làm việc nấy độc lập)', '隐藏自己的真实能力 (Che giấu năng lực thật)'],
+        answerIndex: 1,
+        explanation: 'Trong bài có câu: "懂得虚心向经验丰富的同事请教，同时在他人需要帮助时主动伸出援手，才能在团队中建立起牢固的信任基石".'
+      }
+    ]
+  },
+
+  // --- HSK 5 (Bổ sung 2 bài) ---
+  {
+    id: 'gr-503',
+    level: 'HSK 5',
+    titleZh: '“共享经济”的崛起、重塑与反思',
+    titleVi: 'Sự trỗi dậy, tái cấu trúc và phản tư về kinh tế chia sẻ',
+    topic: 'Kinh tế & Xã hội',
+    readTimeMinutes: 6,
+    wordCount: 380,
+    contentZh: `在过去十年间，“共享经济”犹如一股席卷全球的飓风，借助移动互联网的平台算法与大数据调度，深刻重塑了人们的出行、住宿、办公乃至日常消费模式。从街头随处可见的共享单车，到处处可见的共享充电宝与联合办公空间，闲置资源的整合与共享极大地降低了个人持有资产的边际成本，践行了集约利用资源的绿色低碳理念。
+然而，在经历资本疯狂追捧与野蛮生长的狂潮之后，共享经济的弊端也随之暴露。盲目投放过量单车导致城市公共空间被严重侵占，用户押金难退与平台破产倒闭频发，甚至在某些领域出现了“以共享之名行租赁之实”的价格垄断与大数据杀熟现象。
+面对行业阵痛，监管部门相继出台了系列规范政策，推动共享经济从粗放式扩张转向高质量精细化运营。
+实践证明，共享经济的生命力不在于资本炒作的虚假繁荣，而在于能否真正解决社会痛点、提升公共福祉，并在商业利润与社会公共利益之间构筑长久平衡的良性生态。`,
+    translationVi: `Trong suốt một thập kỷ qua, "kinh tế chia sẻ" tựa như một cơn bão quét qua toàn cầu, nhờ vào thuật toán nền tảng của internet di động và năng lực điều phối dữ liệu lớn, đã tái định hình sâu sắc mô hình đi lại, lưu trú, văn phòng làm việc cho đến tiêu dùng hàng ngày của con người. Từ những chiếc xe đạp chia sẻ có thể bắt gặp ở bất cứ góc phố nào, cho tới sạc pin chia sẻ và không gian làm việc chung (co-working space), việc tích hợp và chia sẻ tài nguyên nhàn rỗi đã giảm thiểu đáng kể chi phí cận biên của việc sở hữu tài sản cá nhân, thực thi triết lý xanh giảm phát thải carbon thông qua sử dụng tập trung tài nguyên.
+Tuy nhiên, sau khi trải qua làn sóng săn đón cuồng nhiệt của các dòng vốn đầu tư và sự tăng trưởng hoang dã tự phát, những mặt trái bất cập của kinh tế chia sẻ cũng dần lộ diện. Việc thả trôi xe đạp ồ ạt quá mức dẫn tới không gian công cộng đô thị bị xâm lấn nghiêm trọng, tình trạng người dùng khó đòi lại tiền đặt cọc và các nền tảng tuyên bố phá sản xảy ra liên miên, thậm chí ở một vài lĩnh vực đã xuất hiện hiện tượng độc quyền giá cả và phân biệt giá bằng thuật toán (big data price discrimination) "dưới danh nghĩa chia sẻ nhưng thực chất là kinh doanh cho thuê".
+Đối diện với những cơn đau đớn chuyển mình của ngành, các cơ quan giám sát đã liên tục ban hành hàng loạt chính sách quy chuẩn, thúc đẩy kinh tế chia sẻ chuyển hướng từ mở rộng quy mô thô thiển sang vận hành tinh gọn chất lượng cao.
+Thực tiễn chứng minh rằng, sức sống đích thực của kinh tế chia sẻ không nằm ở sự phồn vinh ảo tưởng được thổi phồng bởi dòng vốn đầu cơ, mà nằm ở việc liệu có thể giải quyết thực chất các vấn đề nhức nhối của xã hội, nâng cao phúc lợi chung và kiến tạo một hệ sinh thái lành mạnh cân bằng lâu dài giữa lợi nhuận kinh doanh và lợi ích công cộng xã hội.`,
+    vocabularyHighlights: [
+      { hanzi: '边际成本', pinyin: 'biānjì chéngběn', hanviet: 'Biên tế thành bản', meaning: 'Chi phí cận biên (Marginal cost)' },
+      { hanzi: '野蛮生长', pinyin: 'yěmán shēngzhǎng', hanviet: 'Dã manh sinh trưởng', meaning: 'Tăng trưởng hoang dã, tự phát thiếu kiểm soát' },
+      { hanzi: '大数据杀熟', pinyin: 'dàshùjù shāshú', hanviet: 'Đại số tự sát thục', meaning: 'Phân biệt giá đối với khách hàng quen dựa vào Big Data' },
+      { hanzi: '良性生态', pinyin: 'liángxìng shēngtài', hanviet: 'Lương tính sinh thái', meaning: 'Hệ sinh thái lành mạnh, bền vững' }
+    ],
+    questions: [
+      {
+        question: '“共享经济”最初展现的核心价值体现在哪里？ (Giá trị cốt lõi ban đầu của kinh tế chia sẻ thể hiện ở đâu?)',
+        options: ['盘活闲置资源，降低边际成本，践行低碳集约理念 (Tận dụng tài nguyên nhàn rỗi, giảm chi phí cận biên, thực thi lối sống xanh)', '完全替代所有传统制造业 (Thay thế toàn bộ ngành chế tạo truyền thống)', '消除市场中的一切商业竞争 (Xóa bỏ mọi cạnh tranh thương mại)', '让所有人都不需要工作 (Khiến mọi người không cần đi làm)'],
+        answerIndex: 0,
+        explanation: 'Đoạn 1 nêu: "闲置资源的整合与共享极大地降低了个人持有资产的边际成本，践行了集约利用资源的绿色低碳理念".'
+      },
+      {
+        question: '共享经济未来实现长远健康发展的关键是什么？ (Chìa khóa để kinh tế chia sẻ phát triển lành mạnh dài lâu là gì?)',
+        options: ['继续进行无节制的资本盲目扩张 (Tiếp tục mở rộng vốn mù quáng)', '在商业盈利与社会公共利益之间构筑长久平衡 (Kiến tạo sự cân bằng lâu dài giữa lợi nhuận kinh doanh và lợi ích công cộng)', '彻底关闭所有共享平台 (Đóng cửa toàn bộ nền tảng chia sẻ)', '完全取消政府的监管与引导 (Xóa bỏ hoàn toàn sự giám sát của chính phủ)'],
+        answerIndex: 1,
+        explanation: 'Đoạn kết luận: "能否真正解决社会痛点、提升公共福祉，并在商业利润与社会公共利益之间构筑长久平衡的良性生态".'
+      }
+    ]
+  },
+  {
+    id: 'gr-504',
+    level: 'HSK 5',
+    titleZh: '传统非遗手工艺在数字时代的现代新生',
+    titleVi: 'Sức sống mới của di sản thủ công phi vật thể trong kỷ nguyên số',
+    topic: 'Nghệ thuật & Di sản',
+    readTimeMinutes: 6,
+    wordCount: 395,
+    contentZh: `中国非物质文化遗产凝聚了中华民族数千年来的匠人智慧与审美意趣。然而，随着流水线工业生产与现代生活节奏的冲击，诸如苏绣、景泰蓝、古法造纸以及皮影戏等传统手工艺，曾一度面临技艺断代、后继乏人以及市场萎缩的濒危困境。
+令人振奋的是，互联网数字技术的普及为这些古老技艺的传承开辟了崭新的生机。年轻一代的非遗传承人打破了“酒香不怕巷子深”的守旧思维，巧妙利用短视频平台与沉浸式直播，将一件件工艺品从选材、雕琢到成型的细腻全过程原汁原味地呈现给全球受众。
+繁复的工序与精益求精的工匠精神，在数字镜头下焕发出令人叹为观止的艺术震撼力。
+此外，非遗文创产品更与现代潮流设计紧密结合，推出了一系列深受年轻人追捧的“国潮”联名周边与虚拟数字藏品。
+这种“活态传承”不仅让古老的非遗技艺摆脱了作为博物馆冷清展品的命运，更使其以鲜活自信的姿态重新融入了当代公众的生活日常。`,
+    translationVi: `Di sản văn hóa phi vật thể của Trung Quốc kết tinh trí tuệ của bao thế hệ nghệ nhân bậc thầy và gu thẩm mỹ tao nhã suốt hàng nghìn năm của dân tộc. Tuy nhiên, trước sức ép của dây chuyền sản xuất công nghiệp hàng loạt và nhịp sống hiện đại hối hả, các môn thủ công truyền thống như thêu Tô Châu, tráng men Cảnh Thái Lam, làm giấy thủ công cổ truyền và nghệ thuật múa rối bóng từng có thời điểm đối mặt với tình cảnh ngặt nghèo đứt gãy truyền thừa, thiếu hụt người kế nghiệp và thị trường bị thu hẹp teo tóp.
+Điều đáng mừng là, sự phổ biến của công nghệ kỹ thuật số trên Internet đã mở ra một sức sống hoàn toàn mới cho sự bảo tồn tiếp nối của các ngón nghề cổ xưa này. Thế hệ kế thừa trẻ tuổi đã phá vỡ tư duy bảo thủ "rượu thơm chẳng ngại ngõ sâu", khéo léo vận dụng các nền tảng video ngắn và phát sóng trực tiếp (livestream) tương tác sống động, mang toàn bộ quá trình tinh xảo từ khâu tuyển chọn nguyên liệu, chạm khắc cho tới khi hoàn thiện một tác phẩm nghệ thuật giới thiệu nguyên vẹn tới khán giả toàn cầu.
+Những công đoạn phức tạp cùng tinh thần nghệ nhân tỉ mỉ cầu toàn, dưới ống kính kỹ thuật số đã toát lên sức rung động nghệ thuật khiến người xem phải trầm trồ thán phục.
+Thêm vào đó, các sản phẩm sáng tạo văn hóa di sản phi vật thể còn kết hợp chặt chẽ với các thiết kế trào lưu hiện đại, cho ra mắt hàng loạt ấn phẩm "Quốc triều" (Guochao) liên kết thương hiệu và bộ sưu tập kỹ thuật số ảo được giới trẻ săn đón nồng nhiệt.
+Mô hình "bảo tồn sống động" này không chỉ giúp các ngón nghề di sản phi vật thể cổ xưa thoát khỏi số phận nằm im lìm thành hiện vật lạnh lẽo nơi viện bảo tàng, mà còn giúp chúng trở lại hòa nhập vào đời sống sinh hoạt thường nhật của công chúng đương đại bằng tư thái tràn đầy sức sống và tự tin.`,
+    vocabularyHighlights: [
+      { hanzi: '非物质文化遗产', pinyin: 'fēiwùzhì wénhuà yíchǎn', hanviet: 'Phi vật chất văn hóa di sản', meaning: 'Di sản văn hóa phi vật thể (Intangible cultural heritage)' },
+      { hanzi: '工匠精神', pinyin: 'gōngjiàng jīngshén', hanviet: 'Công tượng tinh thần', meaning: 'Tinh thần nghệ nhân tỉ mỉ, cầu toàn' },
+      { hanzi: '叹为观止', pinyin: 'tànwéiguānzhǐ', hanviet: 'Thán vi quan chỉ', meaning: 'Khen ngợi hết lời, trầm trồ thán phục' },
+      { hanzi: '活态传承', pinyin: 'huótài chuánchéng', hanviet: 'Hoạt thái truyền thừa', meaning: 'Kế thừa và bảo tồn sống động trong đời thực' }
+    ],
+    questions: [
+      {
+        question: '年轻一代传承人如何利用互联网技术让传统非遗走出困境？ (Thế hệ kế thừa trẻ tuổi đã dùng công nghệ internet như thế nào để giúp di sản thoát khó khăn?)',
+        options: ['利用短视频与直播呈现精湛制作工序，结合国潮设计 (Dùng video ngắn, livestream quay công đoạn chế tác tinh xảo và phối hợp thiết kế Guochao)', '放弃所有手工技艺，全部改为机器生产 (Bỏ hết thủ công, chuyển sang máy móc 100%)', '提高价格让普通人买不起 (Tăng giá thật cao để người thường không mua được)', '拒绝让大众了解非遗的秘密 (Từ chối cho công chúng biết bí quyết di sản)'],
+        answerIndex: 0,
+        explanation: 'Bài viết nêu: "年轻一代的非遗传承人……巧妙利用短视频平台与沉浸式直播，将一件件工艺品从选材、雕琢到成型的细腻全过程原汁原味地呈现给全球受众……非遗文创产品更与现代潮流设计紧密结合".'
+      },
+      {
+        question: '“活态传承”的深远意义在于？ (Ý nghĩa sâu xa của mô hình "bảo tồn sống động" là gì?)',
+        options: ['把文物锁在地下室 (Khóa cổ vật trong tầng hầm)', '让非遗脱离冷清展品命运，以鲜活姿态融入现代日常生活 (Giúp di sản thoát cảnh hiện vật lạnh lẽo, hòa nhập vào đời sống hàng ngày một cách sống động)', '只允许少数专家研究 (Chỉ cho phép vài chuyên gia nghiên cứu)', '让传统手艺彻底成为历史 (Để thủ công truyền thống hoàn toàn thành dĩ vãng)'],
+        answerIndex: 1,
+        explanation: 'Đoạn kết nhấn mạnh: "不仅让古老的非遗技艺摆脱了作为博物馆冷清展品的命运，更使其以鲜活自信的姿态重新融入了当代公众的生活日常".'
+      }
+    ]
+  },
+
+  // --- HSK 6 (Bổ sung 2 bài) ---
+  {
+    id: 'gr-603',
+    level: 'HSK 6',
+    titleZh: '庄子《逍遥游》的精神自由境界与现代人焦虑解药',
+    titleVi: 'Cảnh giới tự do tinh thần trong Tiêu Dao Du của Trang Tử và phương thuốc cho âu lo hiện đại',
+    topic: 'Triết học cổ điển & Tâm lý',
+    readTimeMinutes: 7,
+    wordCount: 460,
+    contentZh: `战国哲人庄周所开创之庄子哲学，以其奇诡跌宕的浪漫寓言与洞烛幽微的辨证思辨，为中华精神世界注入了最富诗意与超越性的自由灵魂。《庄子·内篇》开宗明义之《逍遥游》，借由“北冥有鱼，其名为鲲……化而为鸟，其名为鹏”的宏阔意象，展开了一场关于生命何以摆脱现实羁绊、抵达绝对自由之境的心灵求索。
+庄子深刻地洞察到，世人之所以终日营营役役、焦虑不堪，根源在于主体心灵深陷于世俗功名、利禄、是非、物欲等外在条件的沉重“有待”之中。无论是列子御风而行的轻巧，亦或蜩与学鸠对大鹏南溟之举的嘲弄，皆未能脱离对外部特定环境与物质依托的执念束缚。
+唯有破除以自我为中心的逼仄成见，做到“至人无己，神人无功，圣人无名”，方能超脱相对价值之樊篱，乘天地之正，御六气之辩，游于无穷之境。
+置身于当下高度内卷、功利浮躁与技术异化的现代工业社会，人们被海量碎片化信息与无休止的竞争指标所裹挟，精神内耗与异化感空前加剧。
+重读庄子，并非倡导不负责任的消极遁世与虚无放弃，而是启示我们应当在喧嚣尘世中保有心斋虚静的精神退守空间。
+当我们能够以超拔物外的大格局俯瞰得失荣辱，便能在心灵深处构筑起一座风雨不动的定力之舟，安顿好那颗在数字洪流中颠簸流离的心灵。`,
+    translationVi: `Triết học Trang Tử do triết nhân thời Chiến Quốc Trang Chu khởi xướng, bằng những câu chuyện ngụ ngôn lãng mạn bay bổng kỳ ảo cùng tư duy biện chứng soi tỏ cội nguồn sâu thẳm, đã thổi vào thế giới tinh thần Trung Hoa một linh hồn tự do đậm chất thi ca và siêu việt nhất. Tác phẩm "Tiêu Dao Du" mở đầu thiên Nội Thiên của sách "Trang Tử", mượn hình tượng kỳ vĩ bao la "Biển Bắc có con cá, tên nó là Côn... hóa thành loài chim, tên gọi là Bằng", mở ra một cuộc kiếm tìm nơi cõi lòng về việc sinh mệnh làm sao để thoát khỏi xiềng xích ràng buộc của hiện thực để chạm tới cảnh giới tự do tuyệt đối.
+Trang Tử nhìn thấu một cách sâu sắc rằng, sở dĩ con người thế gian suốt ngày tất bật bươn chải nhọc nhằn, ngập tràn trong âu lo sợ hãi, căn nguyên là bởi tâm khảm của chủ thể đã lún sâu vào sự "hữu đãi" (lệ thuộc có điều kiện) nặng nề đối với công danh, phú quý, thị phi và dục vọng vật chất thế tục bên ngoài. Cho dẫu là sự bay bổng nhẹ nhàng cưỡi gió của Liệt Tử, hay tiếng cười giễu cợt của ve sầu và chim cưu trước chuyến bay vượt biển phương Nam nghìn dặm của chim Bằng, thảy đều chưa thể thoát ly khỏi sự ràng buộc chấp niệm vào môi trường đặc thù và chỗ dựa vật chất bên ngoài.
+Chỉ khi nào phá vỡ được những thành kiến hạn hẹp hẹp hòi lấy cái tôi làm trung tâm, đạt tới cảnh giới "Chí nhân vô kỷ, Thần nhân vô công, Thánh nhân vô danh" (Bậc chí nhân không chấp vào cái tôi bản ngã, bậc thần nhân không màng chiến công hiển hách, bậc thánh nhân không màng danh tiếng lưu truyền), mới có thể siêu thoát khỏi hàng rào giá trị tương đối, cưỡi lên sự chính đạo của trời đất, điều khiển sự biến hóa của lục khí vũ trụ, thảnh thơi du ngoạn giữa chốn vô cùng vô tận.
+Đắm chìm giữa một xã hội công nghiệp hiện đại cạnh tranh khốc liệt (nội quyển), thực dụng nông nổi và tha hóa bởi công nghệ như ngày nay, con người bị cuốn phăng bởi lượng thông tin vỡ vụn khổng lồ và các chỉ số cạnh tranh không hồi kết, sự tiêu hao nội tâm và cảm giác tha hóa chưa từng có tăng cao tột độ.
+Đọc lại Trang Tử, tuyệt nhiên chẳng phải cổ súy cho thái độ trốn đời yếm thế tiêu cực hay buông xuôi vô trách nhiệm, mà là thức tỉnh soi sáng cho chúng ta biết giữ lại cho mình một khoảng trời tĩnh tại "Tâm trai hư tĩnh" (lòng thanh tịnh trống không) nơi chốn trần ai náo nhiệt.
+Khi chúng ta có thể phóng tầm mắt từ một đại cục cao rộng siêu thoát ngoại vật để cúi nhìn mọi được mất vinh nhục phù du, ta mới có thể kiến tạo nơi sâu thẳm tâm hồn một con thuyền định lực bất chuyển trước mưa sa gió giật, vỗ về an định được trái tim đang trôi dạt chao đảo giữa dòng lũ cuộn trào của thời đại số.`,
+    vocabularyHighlights: [
+      { hanzi: '逍遥游', pinyin: 'xiāoyáoyóu', hanviet: 'Tiêu dao du', meaning: 'Du ngoạn tự do tự tại, cảnh giới siêu thoát tuyệt đối' },
+      { hanzi: '至人无己', pinyin: 'zhìrén wújǐ', hanviet: 'Chí nhân vô kỷ', meaning: 'Bậc chí nhân buông bỏ mọi chấp niệm vị kỷ về cái tôi' },
+      { hanzi: '内卷', pinyin: 'nèijuǎn', hanviet: 'Nội quyển', meaning: 'Sự cạnh tranh khốc liệt triệt tiêu lẫn nhau (Involution)' },
+      { hanzi: '精神内耗', pinyin: 'jīngshén nèihào', hanviet: 'Tinh thần nội hao', meaning: 'Sự hao mòn năng lượng tâm lý do dằn vặt lo âu nội tại' }
+    ],
+    questions: [
+      {
+        question: '庄子认为世人终日焦虑不堪的深层原因是什么？ (Trang Tử cho rằng nguyên nhân sâu xa khiến con người âu lo khôn nguôi là gì?)',
+        options: ['心灵沉溺于功名利禄等外在条件的“有待”与执念中 (Tâm hồn chìm đắm trong sự lệ thuộc có điều kiện "hữu đãi" vào công danh phú quý ngoại tại)', '没有考上好大学 (Không đỗ đại học tốt)', '身体缺乏足够的体育锻炼 (Cơ thể thiếu vận động)', '科技发展太慢 (Khoa học phát triển quá chậm)'],
+        answerIndex: 0,
+        explanation: 'Đoạn 2 nêu rõ: "根源在于主体心灵深陷于世俗功名、利禄、是非、物欲等外在条件的沉重‘有待’之中……皆未能脱离对外部特定环境与物质依托的执念束缚".'
+      },
+      {
+        question: '在现代社会重读《逍遥游》具有什么积极的现实启示？ (Đọc lại Tiêu Dao Du trong xã hội hiện đại mang lại bài học tích cực nào?)',
+        options: ['放弃所有工作彻底隐居山林 (Bỏ hết công việc trốn vào rừng sâu)', '在喧嚣中保有心斋虚静的退守空间，以超拔格局安顿心灵 (Giữ gìn khoảng trời thanh tịnh trong tâm, nhìn nhận cuộc sống bằng đại cục để an định cõi lòng)', '完全否定科学技术与社会进步 (Phủ nhận hoàn toàn khoa học kỹ thuật và tiến bộ xã hội)', '鼓励人们参与更残酷的恶性竞争 (Khuyến khích cạnh tranh tàn nhẫn hơn)'],
+        answerIndex: 1,
+        explanation: 'Đoạn kết luận: "并非倡导不负责任的消极遁世……而是启示我们应当在喧嚣尘世中保有心斋虚静的精神退守空间。当我们能够以超拔物外的大格局俯瞰得失荣辱，便能在心灵深处构筑起一座风雨不动的定力之舟".'
+      }
+    ]
+  },
+  {
+    id: 'gr-604',
+    level: 'HSK 6',
+    titleZh: '脑机接口、合成生物学与人类意识边界的哲学追问',
+    titleVi: 'Giao diện não - máy, sinh học tổng hợp và truy vấn triết học về ranh giới ý thức loài người',
+    topic: 'Khoa học tiên phong & Đạo đức công nghệ',
+    readTimeMinutes: 8,
+    wordCount: 475,
+    contentZh: `步入二十一世纪第三个十年，以侵入式脑机接口、神经调控芯片、基因编辑与合成生物学为代表的前沿颠覆性科技，正以前所未有的加速度跨越基础理论研究的门槛，全面向临床医疗应用乃至人机融合演进。
+当微型电极阵列能够直接转译人类大脑皮层的神经电信号并实现跨设备意念交互，当生物合成技术能够人工重组生命遗传密码乃至人造多细胞器官，人类正无可逆转地站立在重塑自身生物学躯体与认知范式的临界奇点之上。
+科技赋能赋予了人类攻克帕金森病、高位截瘫、渐冻症等神经退行性绝症的磅礴曙光，然而其内蕴的哲学悖论与伦理风险亦如悬顶之达摩克利斯之剑。
+当硅基算法算力深度介入人类的思维加工与记忆存储，人类主体性意识的本体论边界究竟在何处？由意识上传与记忆修改所衍生出的“我还是不是我”的同一性困境，将彻底动摇人类沿袭数千年的自我认同基石。
+更为严峻的是，生物技术与算力资源的阶层化垄断，恐将把传统的社会贫富差距固化并放大为生物物种层面的“基因鸿沟”与“认知特权”。
+面对狂飙突进的科学狂想，人类文明亟须构建具有全球普遍约束力的科技伦理宪章与法治防火墙。
+科学旨在探索“能够做什么”，而人文哲学则必须坚守“应当做什么”的终极良知底线，确保科技伟力始终航行在增进全人类共同福祉的向善航道之中。`,
+    translationVi: `Bước vào thập niên thứ ba của thế kỷ hai mươi mốt, các công nghệ mang tính đột phá mang tính cách mạng đại diện bởi giao diện não - máy (BCI) xâm lấn, chip điều hòa thần kinh, chỉnh sửa gen và sinh học tổng hợp, đang vượt qua ngưỡng cửa nghiên cứu lý thuyết cơ bản với gia tốc chưa từng thấy, tiến thẳng tới ứng dụng y tế lâm sàng và thậm chí là sự tiến hóa hợp nhất giữa con người và máy móc.
+Khi các cụm vi điện cực có thể trực tiếp giải mã tín hiệu điện thần kinh trên vỏ não người để thực hiện tương tác ý nghĩ xuyên thiết bị, khi công nghệ sinh học tổng hợp có thể tái cấu trúc mã di truyền sinh mệnh nhân tạo cho tới tạo lập các cơ quan đa tế bào nhân tạo, nhân loại đang đứng trước một điểm kỳ dị (singularity) không thể đảo ngược trong việc tái cấu trúc cơ thể sinh học và hệ hình nhận thức của chính mình.
+Sự trao quyền của khoa học công nghệ mang lại ánh rạng đông rực rỡ để nhân loại chinh phục các căn bệnh thoái hóa thần kinh nan y như bệnh Parkinson, liệt tứ chi, xơ cứng teo cơ một bên (ALS), thế nhưng nghịch lý triết học và rủi ro đạo đức tiềm ẩn trong đó cũng tựa như thanh gươm Damocles treo lơ lửng trên đầu.
+Khi sức mạnh tính toán của thuật toán nền tảng silicon can thiệp sâu sắc vào quá trình xử lý tư duy và lưu trữ ký ức của con người, thì ranh giới bản thể luận của ý thức chủ thể con người rốt cuộc sẽ nằm ở đâu? Khủng hoảng về tính đồng nhất bản ngã (identity crisis) bắt nguồn từ việc tải ý thức lên đám mây và chỉnh sửa ký ức: "Ta có còn là chính ta hay không?", sẽ làm lung lay triệt để nền tảng nhận thức bản ngã mà con người đã kế thừa qua hàng thiên niên kỷ.
+Nghiêm trọng hơn nữa, sự độc quyền hóa theo giai tầng đối với công nghệ sinh học và tài nguyên tính toán rất có nguy cơ sẽ biến hố sâu ngăn cách giàu nghèo xã hội truyền thống thành một "hố sâu gen" và "đặc quyền nhận thức" mang tính giống loài sinh học.
+Đối diện với những cuồng vọng khoa học đang lao nhanh như vũ bão, văn minh nhân loại cấp thiết phải xây dựng một bản hiến chương đạo đức công nghệ và bức tường lửa pháp lý có tính ràng buộc phổ quát toàn cầu.
+Khoa học nhằm khám phá "có thể làm được những gì", trong khi triết học nhân văn bắt buộc phải kiên định giữ vững lằn ranh lương tri tối thượng "nên làm những gì", đảm bảo sức mạnh vĩ đại của công nghệ luôn được định hướng di chuyển trên hải trình hướng thiện nhằm nâng cao phúc lợi chung của toàn thể nhân loại.`,
+    vocabularyHighlights: [
+      { hanzi: '脑机接口', pinyin: 'nǎojī jiēkǒu', hanviet: 'Não cơ tiếp khẩu', meaning: 'Giao diện não - máy (Brain-Computer Interface - BCI)' },
+      { hanzi: '同一性困境', pinyin: 'tóngyīxìng kùnjìng', hanviet: 'Đồng nhất tính khốn cảnh', meaning: 'Nghịch lý đồng nhất bản ngã triết học (Identity dilemma)' },
+      { hanzi: '达摩克利斯之剑', pinyin: 'dámókèlìsī zhī jiàn', hanviet: 'Đạt ma khắc lợi tư chi kiếm', meaning: 'Thanh kiếm Damocles (Hiểm họa ngầm treo lơ lửng)' },
+      { hanzi: '科技向善', pinyin: 'kējì xiàngshàn', hanviet: 'Khoa kỹ hướng thiện', meaning: 'Công nghệ phục vụ điều thiện và phúc lợi con người (Tech for Good)' }
+    ],
+    questions: [
+      {
+        question: '前沿脑机接口与神经技术在哲学伦理上面临的最深刻挑战是什么？ (Thách thức triết học đạo đức sâu sắc nhất của giao diện não máy là gì?)',
+        options: ['动摇人类主体意识边界与“同一性”自我认同，以及可能加剧生物学阶层不平等 (Làm lung lay ranh giới ý thức chủ thể, khủng hoảng bản ngã và nguy cơ bất bình đẳng sinh học)', '制造芯片成本太低 (Chi phí sản xuất chip quá rẻ)', '无法治疗任何疾病 (Không chữa được bệnh gì)', '计算机运行速度变慢 (Tốc độ máy tính bị chậm đi)'],
+        answerIndex: 0,
+        explanation: 'Đoạn 4 & 5 nêu rõ: "动摇人类沿袭数千年的自我认同基石……恐将把传统的社会贫富差距固化并放大为生物物种层面的‘基因鸿沟’与‘认知特权’".'
+      },
+      {
+        question: '文中提出人文哲学在面对科技狂飙时必须坚守的底线是？ (Triết học nhân văn bắt buộc phải kiên định giữ vững lằn ranh nào?)',
+        options: ['全面阻挠所有科学实验 (Ngăn chặn toàn bộ thí nghiệm khoa học)', '坚守“应当做什么”的终极良知底线，确保科技向善 (Giữ vững lằn ranh lương tri "nên làm gì", bảo đảm công nghệ hướng thiện vì con người)', '任由资本自由无序发展 (Mặc kệ tư bản tự do bành trướng)', '放弃一切道德法律约束 (Từ bỏ mọi quy chuẩn đạo đức luật pháp)'],
+        answerIndex: 1,
+        explanation: 'Đoạn kết luận khẳng định: "科学旨在探索‘能够做什么’，而人文哲学则必须坚守‘应当做什么’的终极良知底线，确保科技伟力始终航行在增进全人类共同福祉的向善航道之中".'
+      }
+    ]
   }
 ];
 
@@ -534,4 +1040,17 @@ export function getGradedReadersByLevel(level = 'all') {
 
 export function getGradedReaderById(id) {
   return GRADED_READERS_DATA.find(item => item.id === id) || null;
+}
+
+export function getGradedReadersByTopic(topic = 'all') {
+  if (!topic || topic === 'all') return GRADED_READERS_DATA;
+  return GRADED_READERS_DATA.filter(item => item.topic === topic);
+}
+
+export function getAllReaderTopics() {
+  const topics = new Set();
+  GRADED_READERS_DATA.forEach(r => {
+    if (r.topic) topics.add(r.topic);
+  });
+  return Array.from(topics);
 }

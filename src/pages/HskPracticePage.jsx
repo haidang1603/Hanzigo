@@ -42,7 +42,8 @@ import {
   Trash2,
   Check,
   Zap,
-  Target
+  Target,
+  Dices
 } from 'lucide-react';
 import { 
   getHskExams, 
@@ -64,7 +65,11 @@ import {
   getMistakePracticeExam,
   generateStudyAnalytics,
   generateStudyRecommendations,
-  mergeLocalAttemptsToUser
+  mergeLocalAttemptsToUser,
+  generateRandomExam,
+  generateTopicExam,
+  getAvailableExamTopics,
+  HSK_TOPICS_CATALOG
 } from '../services/hskService';
 import { speakChinese } from '../utils/audio';
 import SentenceReorderQuestion from '../components/hsk/SentenceReorderQuestion.jsx';
@@ -79,6 +84,7 @@ export default function HskPracticePage({
 }) {
   const [reportTarget, setReportTarget] = useState(null);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [randomModalOpen, setRandomModalOpen] = useState(false);
 
   // Navigation helper
   const navigateTo = (view, id = null) => {
@@ -138,6 +144,7 @@ export default function HskPracticePage({
       {currentView === 'home' && (
         <HskHomeView 
           onNavigate={navigateTo} 
+          onOpenRandomModal={() => setRandomModalOpen(true)}
         />
       )}
 
@@ -150,6 +157,7 @@ export default function HskPracticePage({
       {currentView === 'exams' && (
         <HskExamsListView 
           onNavigate={navigateTo} 
+          onOpenRandomModal={() => setRandomModalOpen(true)}
         />
       )}
 
@@ -221,6 +229,204 @@ export default function HskPracticePage({
         onClose={() => setAdminModalOpen(false)} 
         user={user} 
       />
+
+      {/* Modal Tạo đề thi ngẫu nhiên thích ứng (Chế độ 5) */}
+      <HskRandomExamModal
+        isOpen={randomModalOpen}
+        onClose={() => setRandomModalOpen(false)}
+        onNavigate={navigateTo}
+      />
+    </div>
+  );
+}
+
+// =========================================================================
+// MODAL TẠO ĐỀ THI NGẪU NHIÊN THÍCH ỨNG (CHẾ ĐỘ 5)
+// =========================================================================
+function HskRandomExamModal({ isOpen, onClose, onNavigate }) {
+  const [level, setLevel] = useState('HSK 1');
+  const [questionCount, setQuestionCount] = useState(15);
+  const [skills, setSkills] = useState(['listening', 'reading', 'writing']);
+  const [selectedTopic, setSelectedTopic] = useState('all');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  if (!isOpen) return null;
+
+  const toggleSkill = (skill) => {
+    if (skills.includes(skill)) {
+      if (skills.length === 1) return;
+      setSkills(skills.filter(s => s !== skill));
+    } else {
+      setSkills([...skills, skill]);
+    }
+  };
+
+  const handleGenerate = () => {
+    try {
+      setIsGenerating(true);
+      setErrorMsg('');
+      const exam = generateRandomExam({
+        level,
+        questionCount,
+        skills,
+        topic: selectedTopic
+      });
+      onClose();
+      onNavigate('take', exam.id);
+    } catch (err) {
+      setErrorMsg(err.message || 'Không thể tạo đề thi ngẫu nhiên với tiêu chí này.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-[#E85D3F] flex items-center justify-center font-bold text-xl">
+              🎲
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                Tạo Đề Thi Ngẫu Nhiên
+              </h3>
+              <p className="text-xs text-slate-500">
+                Trích xuất câu hỏi thật cân bằng độ khó & kỹ năng
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        {errorMsg && (
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+            {errorMsg}
+          </div>
+        )}
+
+        {/* Chọn cấp độ HSK */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+            1. Chọn Cấp Độ HSK:
+          </label>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map(lvl => (
+              <button
+                key={lvl}
+                type="button"
+                onClick={() => setLevel(lvl)}
+                className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  level === lvl
+                    ? 'bg-[#E85D3F] text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                {lvl}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Chọn số lượng câu */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+            2. Số lượng câu hỏi:
+          </label>
+          <div className="grid grid-cols-4 gap-2">
+            {[10, 15, 20, 25].map(cnt => (
+              <button
+                key={cnt}
+                type="button"
+                onClick={() => setQuestionCount(cnt)}
+                className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  questionCount === cnt
+                    ? 'bg-[#E85D3F] text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                {cnt} câu
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Chọn kỹ năng */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+            3. Phân bổ kỹ năng:
+          </label>
+          <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
+            {[
+              { id: 'listening', label: '🎧 Nghe hiểu' },
+              { id: 'reading', label: '📖 Đọc hiểu' },
+              { id: 'writing', label: '✍️ Viết & Sắp xếp' }
+            ].map(sk => {
+              const active = skills.includes(sk.id);
+              return (
+                <button
+                  key={sk.id}
+                  type="button"
+                  onClick={() => toggleSkill(sk.id)}
+                  className={`py-2.5 px-3 rounded-xl border transition-all text-center cursor-pointer ${
+                    active
+                      ? 'border-[#E85D3F] bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] font-bold'
+                      : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-300'
+                  }`}
+                >
+                  {sk.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Chủ đề */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+            4. Chủ đề bài học:
+          </label>
+          <select
+            value={selectedTopic}
+            onChange={e => setSelectedTopic(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium focus:outline-none focus:border-[#E85D3F]"
+          >
+            <option value="all">Tất cả chủ đề (Ngẫu nhiên tổng hợp)</option>
+            {HSK_TOPICS_CATALOG.map(t => (
+              <option key={t.id} value={t.id}>
+                {t.icon} {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-colors cursor-pointer"
+          >
+            Đóng
+          </button>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="flex-1 py-3 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+          >
+            <Dices className="w-4 h-4" />
+            {isGenerating ? 'Đang tạo...' : 'Bắt đầu làm bài'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -228,7 +434,7 @@ export default function HskPracticePage({
 // =========================================================================
 // 1. HOME VIEW: Tổng quan & Chọn cấp độ HSK 1 - 6
 // =========================================================================
-function HskHomeView({ onNavigate }) {
+function HskHomeView({ onNavigate, onOpenRandomModal }) {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pastAttempts, setPastAttempts] = useState([]);
@@ -312,7 +518,7 @@ function HskHomeView({ onNavigate }) {
             <span className="text-amber-200">Không Cần Đăng Nhập</span>
           </h1>
           <p className="text-white/90 text-base sm:text-lg mb-8 leading-relaxed">
-            Hệ thống đề thi mô phỏng chuẩn quốc tế từ HSK 1 đến HSK 4: Đầy đủ phần thi Nghe hiểu (kèm Audio bản ngữ) và Đọc hiểu, tự động tính điểm theo thang chuẩn và cung cấp lời giải thích chi tiết bằng tiếng Việt.
+            Hệ thống đề thi mô phỏng chuẩn quốc tế từ HSK 1 đến HSK 6: Đầy đủ 26 đề thi chuẩn hóa & 417 câu hỏi thực chiến, tự động tính điểm theo thang chuẩn và cung cấp lời giải thích chi tiết bằng tiếng Việt.
           </p>
           <div className="flex flex-wrap gap-4">
             <button
@@ -323,19 +529,144 @@ function HskHomeView({ onNavigate }) {
               Khám phá toàn bộ đề thi ({exams.length})
             </button>
             <button
-              onClick={() => onNavigate('structure')}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-amber-400 text-slate-950 font-bold text-base shadow-lg hover:bg-amber-300 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              onClick={onOpenRandomModal}
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 font-black text-base shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
-              <ShieldCheck className="w-5 h-5 text-slate-950" />
+              <Dices className="w-5 h-5 text-slate-950" />
+              Thi ngẫu nhiên 🎲
+            </button>
+            <button
+              onClick={() => onNavigate('structure')}
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-base shadow-sm transition-all cursor-pointer border border-white/20"
+            >
+              <ShieldCheck className="w-5 h-5 text-amber-300" />
               Tra cứu Cấu trúc Đề HSK
             </button>
-            <a
-              href="#copyright-info"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-semibold text-base transition-colors"
+          </div>
+        </div>
+      </div>
+
+      {/* 5 CHẾ ĐỘ THI & LUYỆN TẬP TOÀN DIỆN (PHASE 18) */}
+      <div className="mb-12">
+        <div className="mb-6">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#E85D3F] bg-orange-100 dark:bg-orange-950/60 px-3 py-1 rounded-full">
+            Đa Dạng Phương Pháp
+          </span>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white mt-2">
+            5 Chế Độ Luyện Thi HSK Toàn Diện
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Từ thi thử áp lực phòng thi thật, luyện sâu từng phân môn, ôn theo chủ đề đến sinh đề ngẫu nhiên thông minh
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Chế độ 1 */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/60 text-red-600 flex items-center justify-center font-bold text-lg mb-3">
+                ⏱️
+              </div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5 group-hover:text-[#E85D3F]">
+                1. Thi thử toàn phần
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                Mô phỏng 100% thời gian thi thật CTI, đếm ngược tự động nộp bài, tước bỏ đáp án chống gian lận.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigate('exams')}
+              className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-[#E85D3F] hover:text-white transition-colors cursor-pointer"
             >
-              <Info className="w-5 h-5 text-emerald-300" />
-              Minh bạch bản quyền & Nguồn đề
-            </a>
+              Chọn đề thi ngay
+            </button>
+          </div>
+
+          {/* Chế độ 2 */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center font-bold text-lg mb-3">
+                🎧
+              </div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5 group-hover:text-[#E85D3F]">
+                2. Luyện tập từng phần
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                Chuyên sâu Nghe hiểu, Đọc hiểu hoặc Viết. Xem ngay lời giải chi tiết và audio script từng câu.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigate('exams')}
+              className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-[#E85D3F] hover:text-white transition-colors cursor-pointer"
+            >
+              Luyện theo kỹ năng
+            </button>
+          </div>
+
+          {/* Chế độ 3 */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center font-bold text-lg mb-3">
+                🎯
+              </div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5 group-hover:text-[#E85D3F]">
+                3. Luyện theo chủ đề
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                Đời sống, Mua sắm, Du lịch, Công sở, Khoa học... Tích lũy vốn từ theo tình huống ứng dụng thực tế.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigate('exams')}
+              className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-[#E85D3F] hover:text-white transition-colors cursor-pointer"
+            >
+              Lọc theo chủ đề
+            </button>
+          </div>
+
+          {/* Chế độ 4 */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center font-bold text-lg mb-3">
+                📓
+              </div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5 group-hover:text-[#E85D3F]">
+                4. Sổ tay câu sai
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                Tự động thu thập các câu trả lời sai từ các bài thi. Cho phép luyện lại đến khi đạt 100% độ hiểu.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigate('mistakes')}
+              className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-[#E85D3F] hover:text-white transition-colors cursor-pointer"
+            >
+              Mở sổ câu sai
+            </button>
+          </div>
+
+          {/* Chế độ 5 */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border-2 border-orange-400 dark:border-orange-500/60 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group relative overflow-hidden">
+            <div className="absolute -right-6 -top-6 w-16 h-16 bg-orange-500/10 rounded-full pointer-events-none" />
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-[#E85D3F] flex items-center justify-center font-bold text-lg mb-3">
+                🎲
+              </div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5 group-hover:text-[#E85D3F] flex items-center gap-1.5">
+                5. Thi ngẫu nhiên
+                <span className="text-[10px] bg-red-500 text-white font-black px-1.5 py-0.5 rounded">Mới</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                Tự động sinh đề thi mới không trùng lặp từ 417 câu hỏi thật. Tùy biến số lượng câu và kỹ năng.
+              </p>
+            </div>
+            <button
+              onClick={onOpenRandomModal}
+              className="w-full py-2 rounded-xl bg-[#E85D3F] text-white text-xs font-bold hover:bg-[#CB4529] shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
+            >
+              <Dices className="w-3.5 h-3.5" />
+              Tạo đề ngay
+            </button>
           </div>
         </div>
       </div>
@@ -538,12 +869,13 @@ function HskHomeView({ onNavigate }) {
 // =========================================================================
 // 2. EXAM LIST VIEW: Bộ lọc & Khám phá đề thi
 // =========================================================================
-function HskExamsListView({ onNavigate }) {
+function HskExamsListView({ onNavigate, onOpenRandomModal }) {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [levelFilter, setLevelFilter] = useState('all');
   const [skillFilter, setSkillFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [topicFilter, setTopicFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -552,28 +884,38 @@ function HskExamsListView({ onNavigate }) {
       level: levelFilter,
       skill: skillFilter,
       type: typeFilter,
+      topic: topicFilter,
       query: searchQuery
     }).then(data => {
       setExams(data);
       setLoading(false);
     });
-  }, [levelFilter, skillFilter, typeFilter, searchQuery]);
+  }, [levelFilter, skillFilter, typeFilter, topicFilter, searchQuery]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
-      <div className="mb-8">
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <button
+            onClick={() => onNavigate('home')}
+            className="text-xs font-bold text-slate-500 hover:text-[#E85D3F] flex items-center gap-1 mb-3"
+          >
+            <ArrowLeft className="w-4 h-4" /> Về trang luyện thi HSK
+          </button>
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white">
+            Thư Viện Đề Thi Thử HSK
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            26 đề thi chuẩn hóa & 417 câu hỏi thực chiến, phân loại theo cấp độ, kỹ năng và chủ đề
+          </p>
+        </div>
         <button
-          onClick={() => onNavigate('home')}
-          className="text-xs font-bold text-slate-500 hover:text-[#E85D3F] flex items-center gap-1 mb-3"
+          onClick={onOpenRandomModal}
+          className="px-5 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-rose-600 text-white font-black text-xs shadow-md shadow-orange-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer shrink-0 self-start md:self-auto"
         >
-          <ArrowLeft className="w-4 h-4" /> Về trang luyện thi HSK
+          <Dices className="w-4 h-4" />
+          <span>Sinh Đề Ngẫu Nhiên 🎲</span>
         </button>
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white">
-          Thư Viện Đề Thi Thử HSK
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Lọc theo cấp độ, kỹ năng (Nghe, Đọc, Ngữ pháp) và dạng đề thi
-        </p>
       </div>
 
       {/* Filter Bar */}
@@ -655,6 +997,35 @@ function HskExamsListView({ onNavigate }) {
             ))}
           </div>
         </div>
+
+        {/* Topic Filter Row */}
+        <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
+          <span className="text-slate-400 font-semibold">Chủ đề:</span>
+          <button
+            onClick={() => setTopicFilter('all')}
+            className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+              topicFilter === 'all'
+                ? 'bg-[#E85D3F] text-white font-bold'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+            }`}
+          >
+            Tất cả chủ đề
+          </button>
+          {HSK_TOPICS_CATALOG.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTopicFilter(t.id)}
+              className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                topicFilter === t.id
+                  ? 'bg-[#E85D3F] text-white font-bold'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              <span>{t.icon}</span>
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Exam Grid */}
@@ -683,6 +1054,12 @@ function HskExamsListView({ onNavigate }) {
                       <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 font-bold text-[10px] flex items-center gap-1">
                         <Flame className="w-3 h-3 text-rose-600" />
                         Chuẩn thi thật CTI
+                      </span>
+                    )}
+                    {exam.topic && (
+                      <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300 font-bold text-[10px] flex items-center gap-1">
+                        <span>{HSK_TOPICS_CATALOG.find(t => t.id === exam.topic)?.icon || '🎯'}</span>
+                        <span>{HSK_TOPICS_CATALOG.find(t => t.id === exam.topic)?.label.split('&')[0].trim() || exam.topic}</span>
                       </span>
                     )}
                   </div>
@@ -2905,9 +3282,13 @@ function HskMistakesView({ user, onNavigate }) {
           </button>
           {unmasteredCount > 0 && (
             <button
-              onClick={() => {
-                // Khởi chạy bài thi từ câu sai
-                onNavigate('take', 'hsk1-mock-01'); // fallback to active mock exam
+              onClick={async () => {
+                const practice = await getMistakePracticeExam({ user, level: levelFilter });
+                if (practice) {
+                  onNavigate('take', practice.id);
+                } else {
+                  alert('Không có câu hỏi cần ôn tập.');
+                }
               }}
               className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20 transition-all flex items-center space-x-1.5 cursor-pointer shrink-0"
             >

@@ -41,7 +41,8 @@ import {
   Bell,
   Share2,
   Radio,
-  Play
+  Play,
+  ArrowUpRight
 } from 'lucide-react';
 import { 
   getClassroomsForStudent, 
@@ -57,6 +58,7 @@ import {
   removeStudentFromClass,
   subscribeToClassroomRealtime
 } from '../services/classroomService';
+import { getDailyQuote } from '../data/dailyQuotesData';
 import { getActiveSessionForClass, createClassSession, endLiveSession, liveEventBus } from '../services/liveClassroomService';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
 import { awardXp } from '../utils/gamification';
@@ -122,21 +124,22 @@ const DEFAULT_THEME = {
   label: 'Khóa học'
 };
 
-// Preset demo classrooms for 1-click exploration
-const PRESET_DEMO_CLASSES = [
+// Guidelines for student enrollment
+const ENROLLMENT_GUIDELINES = [
   {
-    code: 'HZG-7K2P9',
-    level: 'HSK 1',
-    name: 'HSK 1 - Nhập môn Giao tiếp & Phát âm',
-    teacher: 'Giáo viên HanziGo',
-    desc: 'Luyện âm chuẩn, 150 từ vựng và câu giao tiếp căn bản.'
+    step: '1',
+    title: 'Nhận mã từ giáo viên',
+    desc: 'Giáo viên hoặc trung tâm cấp mã gồm 5 ký tự (ví dụ: HZG-XXXXX hoặc chỉ cần nhập 5 ký tự sau).'
   },
   {
-    code: 'HZG-9M4X2',
-    level: 'HSK 2',
-    name: 'HSK 2 - Tăng tốc Hội thoại Hằng ngày',
-    teacher: 'Giáo viên HanziGo',
-    desc: '300 từ vựng cốt lõi, mẫu câu phản xạ trong đời sống.'
+    step: '2',
+    title: 'Kiểm tra thông tin',
+    desc: 'Hệ thống tự động tra cứu giáo viên phụ trách, trình độ HSK và sĩ số lớp học trước khi xác nhận.'
+  },
+  {
+    step: '3',
+    title: 'Học tập & Tương tác',
+    desc: 'Nộp bài tập về nhà, nhận lời phê chi tiết, tải giáo trình và tham gia lớp học trực tuyến qua video.'
   }
 ];
 
@@ -160,9 +163,11 @@ export default function ClassroomPage({
 
   // Toast feedback state
   const [toast, setToast] = useState(null);
-  const showToast = useCallback((msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+  const showToast = useCallback((msg, type = 'success') => {
+    setToast({ msg, type });
+    if (type === 'success') playSuccessSound();
+    else playErrorSound();
+    setTimeout(() => setToast(null), 3200);
   }, []);
 
   // Primary data states
@@ -176,13 +181,13 @@ export default function ClassroomPage({
   const [peers, setPeers] = useState([]);
   const [submissionsMap, setSubmissionsMap] = useState({});
   const [activeLiveSession, setActiveLiveSession] = useState(null);
-  const [liveSessionsMap, setLiveSessionsMap] = useState({}); // { [classId]: session | undefined }
+  const [liveSessionsMap, setLiveSessionsMap] = useState({});
   const [copiedCode, setCopiedCode] = useState(false);
 
   // Search & Filter state
   const [assignmentFilter, setAssignmentFilter] = useState('all'); // 'all' | 'pending' | 'submitted' | 'graded'
   const [classSearchTerm, setClassSearchTerm] = useState('');
-  const [levelFilter, setLevelFilter] = useState('ALL'); // 'ALL' | 'LIVE' | 'HSK 1' | 'HSK 2' | ...
+  const [levelFilter, setLevelFilter] = useState('ALL');
 
   // Join class form states
   const [inputCode, setInputCode] = useState('');
@@ -197,7 +202,7 @@ export default function ClassroomPage({
   const [writingNotes, setWritingNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Announcement reaction counts stored locally
+  // Announcement reaction counts
   const [reactionsMap, setReactionsMap] = useState(() => {
     try {
       const saved = localStorage.getItem('hanzigo_announcement_reactions');
@@ -220,13 +225,16 @@ export default function ClassroomPage({
     });
   }, []);
 
-  // Dynamic greeting based on time of day
+  // Proverb & Greeting
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     const name = user?.name || user?.user_metadata?.name || 'Học viên';
-    if (hour < 12) return { text: `Chào buổi sáng, ${name}!`, proverb: '千里之行，始于足下 — Vạn dặm khởi từ một bước' };
-    if (hour < 18) return { text: `Chào buổi chiều, ${name}!`, proverb: '敏而好学，不耻下问 — Chăm học, không ngại hỏi han' };
-    return { text: `Chào buổi tối, ${name}!`, proverb: '温故而知新，可以为师矣 — Ôn cũ biết mới' };
+    const quote = getDailyQuote();
+    const timeGreeting = hour < 12 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
+    return {
+      text: `${timeGreeting}, ${name}!`,
+      proverb: `${quote.hanzi} (${quote.pinyin}) — ${quote.meaning}`
+    };
   }, [user]);
 
   // Load student classrooms
@@ -237,7 +245,6 @@ export default function ClassroomPage({
       const list = await getClassroomsForStudent(studentId);
       setMyClasses(list || []);
 
-      // Preload live sessions for ALL enrolled classes → enables LIVE badge on list view
       const sessionChecks = await Promise.allSettled(
         (list || []).map(cls => getActiveSessionForClass(cls.id))
       );
@@ -267,7 +274,6 @@ export default function ClassroomPage({
         setPeers(peerList || []);
         setActiveLiveSession(liveSes || null);
 
-        // Load submissions for all assignments in parallel
         const subMap = {};
         const asgs = asgList || [];
         const subs = await Promise.all(asgs.map(asg => getStudentSubmission(asg.id, studentId)));
@@ -287,7 +293,7 @@ export default function ClassroomPage({
     loadStudentData();
   }, [loadStudentData]);
 
-  // Real-time classroom sync (sessions, assignments, announcements, materials, peers)
+  // Real-time classroom events
   useEffect(() => {
     if (!classId) return;
 
@@ -321,7 +327,6 @@ export default function ClassroomPage({
       }
     });
 
-    // Fallback polling mỗi 5s
     const interval = setInterval(async () => {
       try {
         const liveSes = await getActiveSessionForClass(classId);
@@ -338,7 +343,7 @@ export default function ClassroomPage({
     };
   }, [classId]);
 
-  // Poll live sessions cho TẤT CẢ lớp mỗi 5s → hiện LIVE badge trên list view
+  // Polling for live sessions across all classes
   useEffect(() => {
     if (myClasses.length === 0) return;
 
@@ -368,7 +373,7 @@ export default function ClassroomPage({
     setJoinError('');
     setLookedUpClass(null);
     if (!code) {
-      setJoinError('Vui lòng nhập mã lớp học.');
+      setJoinError('Vui lòng nhập mã lớp học gồm 5 ký tự.');
       return;
     }
 
@@ -376,12 +381,12 @@ export default function ClassroomPage({
     try {
       const found = await lookupClassroomByCode(code);
       if (!found) {
-        setJoinError('Không tìm thấy lớp học với mã này. Vui lòng kiểm tra lại.');
+        setJoinError('Không tìm thấy lớp học với mã này. Hãy kiểm tra lại mã giáo viên cung cấp.');
       } else {
         setLookedUpClass(found);
       }
     } catch {
-      setJoinError('Lỗi khi tra cứu mã lớp học.');
+      setJoinError('Có lỗi xảy ra khi tra cứu mã lớp.');
     } finally {
       setLookingUp(false);
     }
@@ -396,7 +401,6 @@ export default function ClassroomPage({
     try {
       const res = await joinClassByCode(lookedUpClass.class_code, user);
       if (res.success) {
-        playSuccessSound();
         awardXp(15);
         try {
           confetti({
@@ -441,7 +445,6 @@ export default function ClassroomPage({
 
       const res = await submitAssignment(payload);
       if (res.success) {
-        playSuccessSound();
         awardXp(20);
         try {
           confetti({
@@ -453,7 +456,7 @@ export default function ClassroomPage({
 
         showToast(
           res.submission.status === 'graded'
-            ? `🎉 Nộp bài thành công! Điểm trắc nghiệm tự động: ${res.submission.score}/100 (+20 XP)`
+            ? `🎉 Nộp bài thành công! Điểm trắc nghiệm: ${res.submission.score}/100 (+20 XP)`
             : 'Đã nộp bài tập thành công! Giáo viên sẽ sớm chấm điểm (+20 XP).'
         );
         setActiveAssignment(null);
@@ -461,11 +464,11 @@ export default function ClassroomPage({
         setWritingNotes('');
         loadStudentData();
       } else {
-        showToast(res.error || 'Lỗi khi nộp bài.');
+        showToast(res.error || 'Lỗi khi nộp bài.', 'error');
       }
     } catch (err) {
       console.error('Submit error:', err);
-      showToast('Có lỗi xảy ra trong quá trình nộp bài.');
+      showToast('Có lỗi xảy ra trong quá trình nộp bài.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -478,16 +481,15 @@ export default function ClassroomPage({
     const studentId = user?.uid || user?.id || 'user_guest';
     const res = await removeStudentFromClass(currentClass.id, studentId);
     if (res.success) {
-      playSuccessSound();
       showToast(`Đã rời khỏi lớp "${currentClass.name}".`);
       navigateTo('list');
       loadStudentData();
     } else {
-      showToast(res.error || 'Lỗi khi rời lớp học.');
+      showToast(res.error || 'Lỗi khi rời lớp học.', 'error');
     }
   };
 
-  // Copy class code to clipboard
+  // Copy class code
   const handleCopyClassCode = (code) => {
     playClickSound();
     navigator.clipboard.writeText(code);
@@ -496,7 +498,7 @@ export default function ClassroomPage({
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  // Compute student summary statistics across classes
+  // Summary stats
   const stats = useMemo(() => {
     const totalClasses = myClasses.length;
     let pendingHomework = 0;
@@ -527,20 +529,14 @@ export default function ClassroomPage({
   const filteredAssignments = useMemo(() => {
     return assignments.filter(asg => {
       const sub = submissionsMap[asg.id];
-      if (assignmentFilter === 'pending') {
-        return !sub || sub.status === 'pending';
-      }
-      if (assignmentFilter === 'submitted') {
-        return sub && sub.status === 'submitted';
-      }
-      if (assignmentFilter === 'graded') {
-        return sub && sub.status === 'graded';
-      }
+      if (assignmentFilter === 'pending') return !sub || sub.status === 'pending';
+      if (assignmentFilter === 'submitted') return sub && sub.status === 'submitted';
+      if (assignmentFilter === 'graded') return sub && sub.status === 'graded';
       return true;
     });
   }, [assignments, submissionsMap, assignmentFilter]);
 
-  // Filtered classes by search term and level filter
+  // Filtered classes
   const filteredClasses = useMemo(() => {
     let result = myClasses;
 
@@ -567,20 +563,17 @@ export default function ClassroomPage({
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-200">
-          <div className="px-4 py-3 rounded-2xl bg-[#243447] text-white text-xs sm:text-sm font-bold shadow-2xl flex items-center gap-2 border border-white/10">
-            <CheckCircle2 size={16} className="text-[#45B97C]" />
-            <span>{toast}</span>
+          <div className="px-5 py-3 rounded-2xl bg-[#243447] text-white text-xs sm:text-sm font-bold shadow-2xl flex items-center gap-2.5 border border-white/10">
+            <CheckCircle2 size={18} className={toast.type === 'error' ? 'text-rose-400' : 'text-[#45B97C]'} />
+            <span>{toast.msg}</span>
           </div>
         </div>
       )}
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
-        {/* ========================================================== */}
-        {/* 1. HERO HEADER BANNER (ASIAN-MODERN SCHOLAR PORTAL) */}
-        {/* ========================================================== */}
+        {/* 1. HERO HEADER BANNER */}
         <div className="relative overflow-hidden p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#991B1B] text-white shadow-2xl">
-          {/* Subtle Asian background clouds / circles */}
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-1/3 -mb-20 w-80 h-80 rounded-full bg-rose-400/20 blur-3xl pointer-events-none" />
 
@@ -588,7 +581,7 @@ export default function ClassroomPage({
             <div className="space-y-3 max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 text-white text-xs font-bold backdrop-blur-md border border-white/20 shadow-xs">
                 <GraduationCap size={14} className="text-amber-300" />
-                <span>Không gian Lớp học & Giảng đường Số HanziGo</span>
+                <span>Không Gian Lớp Học Trực Tuyến & Giảng Đường Số</span>
               </div>
               
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
@@ -603,7 +596,6 @@ export default function ClassroomPage({
                   : `${greeting.text} ${greeting.proverb}`}
               </p>
               
-              {/* Quick Summary Pill Badges */}
               <div className="flex flex-wrap items-center gap-2.5 pt-1 text-xs">
                 <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5">
                   🏫 <strong>{myClasses.length}</strong> lớp đã tham gia
@@ -622,13 +614,13 @@ export default function ClassroomPage({
                 ) : (
                   <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-amber-200">
                     <Sparkles size={12} className="text-amber-300" />
-                    <span>Lộ trình HSK tiêu chuẩn kết hợp phòng học trực tuyến</span>
+                    <span>Lộ trình HSK chuẩn kết hợp phòng học tương tác trực tuyến</span>
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Header Right Action Buttons */}
+            {/* Header Right Actions */}
             <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-3 shrink-0">
               {subRoute !== 'list' && (
                 <button
@@ -653,7 +645,7 @@ export default function ClassroomPage({
               {subRoute !== 'join' && (
                 <button
                   onClick={() => navigateTo('join')}
-                  className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-gray-900 font-black text-xs sm:text-sm shadow-xl hover:scale-105 active:scale-100 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+                  className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-black text-xs sm:text-sm shadow-xl hover:scale-105 active:scale-100 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
                 >
                   <Plus size={16} />
                   <span>Nhập mã vào lớp (+15 XP)</span>
@@ -662,15 +654,12 @@ export default function ClassroomPage({
             </div>
           </div>
 
-          {/* Decorative Calligraphy Watermark */}
           <div className="absolute right-6 -bottom-8 font-['Noto_Serif_SC'] text-8xl sm:text-9xl font-black text-white/10 select-none pointer-events-none">
             敏而好学
           </div>
         </div>
 
-        {/* ========================================================== */}
-        {/* 2. GAMIFIED STUDENT OVERVIEW KPI CARDS */}
-        {/* ========================================================== */}
+        {/* 2. STUDENT KPI OVERVIEW CARDS */}
         {subRoute === 'list' && myClasses.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-md transition-all flex items-center gap-3.5">
@@ -688,12 +677,12 @@ export default function ClassroomPage({
                 <Radio size={20} className={Object.values(liveSessionsMap).filter(Boolean).length > 0 ? "animate-pulse" : ""} />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8] truncate">Phòng học Live</p>
+                <p className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8] truncate">Phòng Live</p>
                 <p className="text-xl font-black text-[#243447] dark:text-white">
                   {Object.values(liveSessionsMap).filter(Boolean).length > 0 ? (
-                    <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                    <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 font-bold">
                       <span>{Object.values(liveSessionsMap).filter(Boolean).length}</span>
-                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600">Đang Live</span>
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600">Đang phát</span>
                     </span>
                   ) : (
                     <span className="text-[#748092]">Chưa mở</span>
@@ -707,7 +696,7 @@ export default function ClassroomPage({
                 <CheckCircle2 size={20} />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8] truncate">Tỷ lệ nộp bài</p>
+                <p className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8] truncate">Tỷ lệ hoàn thành</p>
                 <p className="text-xl font-black text-[#243447] dark:text-white">{stats.completionRate}%</p>
               </div>
             </div>
@@ -726,9 +715,7 @@ export default function ClassroomPage({
           </div>
         )}
 
-        {/* ========================================================== */}
-        {/* 3. TEACHER STUDIO BANNER (GIÁO VIÊN & ADMIN) */}
-        {/* ========================================================== */}
+        {/* 3. TEACHER STUDIO BANNER */}
         {(user?.role === 'teacher' || user?.role === 'admin') && (
           <div className="p-5 rounded-3xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-orange-500/10 border border-purple-500/20 dark:border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
             <div className="flex items-center gap-3.5">
@@ -737,11 +724,11 @@ export default function ClassroomPage({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-purple-600 dark:text-purple-400 uppercase tracking-wider">Cổng Quản Trị Giáo Viên • Teacher AI Studio</span>
+                  <span className="text-xs font-black text-purple-600 dark:text-purple-400 uppercase tracking-wider">Cổng Quản Trị Giáo Viên • Teacher Studio</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-600 text-white font-black uppercase">Quyền Giáo Viên</span>
                 </div>
                 <p className="text-xs text-[#243447] dark:text-[#E2E8F0] font-semibold mt-0.5">
-                  Quản lý học sinh chuyên sâu, nhận diện 7 chiều rủi ro học tập, tự động sinh đề bài 5 kỹ năng và soạn giáo án chuẩn HSK.
+                  Quản lý học sinh, giao bài tập tự động, chấm điểm bài nộp và quản lý các buổi học trực tuyến.
                 </p>
               </div>
             </div>
@@ -758,7 +745,7 @@ export default function ClassroomPage({
         )}
 
         {/* ========================================================== */}
-        {/* VIEW 1: JOIN CLASS BY CODE (/classroom/join) */}
+        {/* VIEW 1: JOIN CLASS BY CODE */}
         {/* ========================================================== */}
         {subRoute === 'join' && (
           <div className="max-w-2xl mx-auto py-2 space-y-6 animate-in fade-in duration-200">
@@ -771,11 +758,10 @@ export default function ClassroomPage({
                   Nhập Mã Lớp Học
                 </h2>
                 <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-                  Nhận mã mời gồm 5 ký tự từ giáo viên của bạn (ví dụ: <span className="font-mono font-bold text-[#E85D3F]">HZG-7K2P9</span> hoặc chỉ cần nhập <span className="font-mono font-bold text-[#E85D3F]">7K2P9</span>)
+                  Nhận mã mời từ giáo viên của bạn (ví dụ: <span className="font-mono font-bold text-[#E85D3F]">HZG-7K2P9</span> hoặc chỉ cần nhập <span className="font-mono font-bold text-[#E85D3F]">7K2P9</span>)
                 </p>
               </div>
 
-              {/* Input Code Field */}
               <div className="space-y-3">
                 <div className="flex gap-2">
                   <input
@@ -803,7 +789,6 @@ export default function ClassroomPage({
                 )}
               </div>
 
-              {/* Preview card when class found */}
               {lookedUpClass && (
                 <div className="p-6 rounded-3xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-4 animate-in zoom-in-95 duration-150">
                   <div className="flex items-center justify-between">
@@ -820,7 +805,7 @@ export default function ClassroomPage({
                       {lookedUpClass.name}
                     </h3>
                     <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1 leading-relaxed">
-                      {lookedUpClass.description || 'Lớp học không có mô tả chi tiết.'}
+                      {lookedUpClass.description || 'Lớp học rèn luyện phản xạ, ngữ pháp và đàm thoại tiếng Trung.'}
                     </p>
                   </div>
 
@@ -846,43 +831,27 @@ export default function ClassroomPage({
               )}
             </div>
 
-            {/* Quick Presets / Recommendations */}
-            <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-3">
+            {/* Enrollment Instructions Guide */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-xs font-bold text-[#243447] dark:text-white">
                 <Bookmark size={15} className="text-[#E85D3F]" />
-                <span>Lớp học tiêu chuẩn gợi ý (Tham gia nhanh 1-Click)</span>
+                <span>Quy trình tham gia lớp học trực tuyến</span>
               </div>
               <p className="text-[11px] text-[#748092] dark:text-[#94A3B8]">
-                Nếu bạn chưa có mã lớp từ giáo viên riêng, bạn có thể tham gia ngay các lớp học nền tảng sau để trải nghiệm:
+                Lớp học trên HanziGo kết nối trực tiếp bạn với giáo viên để nộp bài tập, nhận nhận xét chi tiết và tham gia các buổi học tương tác thời gian thực:
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {PRESET_DEMO_CLASSES.map(cls => (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                {ENROLLMENT_GUIDELINES.map(g => (
                   <div 
-                    key={cls.code}
-                    className="p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-col justify-between space-y-2.5 hover:border-[#E85D3F] transition-colors"
+                    key={g.step}
+                    className="p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-col space-y-1.5"
                   >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-100 dark:bg-orange-950/60 text-[#E85D3F]">
-                          {cls.level}
-                        </span>
-                        <span className="font-mono text-xs font-bold text-[#748092]">{cls.code}</span>
-                      </div>
-                      <h4 className="text-xs font-bold text-[#243447] dark:text-white mt-1.5 line-clamp-1">{cls.name}</h4>
-                      <p className="text-[10px] text-[#748092] dark:text-[#94A3B8] mt-0.5 line-clamp-2">{cls.desc}</p>
+                    <div className="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-950/60 text-[#E85D3F] text-xs font-black flex items-center justify-center">
+                      {g.step}
                     </div>
-
-                    <button
-                      onClick={() => {
-                        setInputCode(cls.code);
-                        handleLookupCode(cls.code);
-                      }}
-                      className="w-full py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#E85D3F]/40 hover:bg-[#E85D3F] hover:text-white text-[#E85D3F] text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1"
-                    >
-                      <span>Chọn mã lớp này</span>
-                      <ChevronRight size={12} />
-                    </button>
+                    <h4 className="text-xs font-bold text-[#243447] dark:text-white mt-1">{g.title}</h4>
+                    <p className="text-[10px] text-[#748092] dark:text-[#94A3B8] leading-relaxed">{g.desc}</p>
                   </div>
                 ))}
               </div>
@@ -891,12 +860,11 @@ export default function ClassroomPage({
         )}
 
         {/* ========================================================== */}
-        {/* VIEW 2: MY CLASSROOMS LIST (/classroom) */}
+        {/* VIEW 2: MY CLASSROOMS LIST */}
         {/* ========================================================== */}
         {subRoute === 'list' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             
-            {/* Search and Level Filter Bar */}
             {myClasses.length > 0 && (
               <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
                 <div className="relative flex-1 max-w-md">
@@ -918,7 +886,6 @@ export default function ClassroomPage({
                   )}
                 </div>
 
-                {/* Level Filter Pills */}
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                   {[
                     { id: 'ALL', label: 'Tất cả' },
@@ -993,7 +960,6 @@ export default function ClassroomPage({
                           : 'border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl'
                       }`}
                     >
-                      {/* Top Header Card Banner with HSK Motif */}
                       <div className={`p-5 bg-gradient-to-r ${theme.gradient} text-white relative overflow-hidden`}>
                         <div className="absolute right-3 -bottom-4 font-['Noto_Serif_SC'] text-6xl font-black text-white/15 select-none pointer-events-none">
                           {theme.character}
@@ -1021,7 +987,6 @@ export default function ClassroomPage({
                         </h3>
                       </div>
 
-                      {/* Card Body */}
                       <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
                         <div className="space-y-3">
                           <p className="text-xs text-[#748092] dark:text-[#94A3B8] line-clamp-2 leading-relaxed">
@@ -1041,7 +1006,6 @@ export default function ClassroomPage({
                           </div>
                         </div>
 
-                        {/* Card Footer Actions */}
                         <div className="pt-3 border-t border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70 flex items-center justify-between gap-2 text-xs">
                           <button
                             onClick={() => handleCopyClassCode(cls.class_code)}
@@ -1107,7 +1071,7 @@ export default function ClassroomPage({
                       </h4>
                     </div>
                     <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-                      Giáo viên đang mở phòng học trực tuyến {activeLiveSession.active_participants_count ? `(${activeLiveSession.active_participants_count} người trong phòng)` : ''}. Vào phòng để tương tác và luyện đàm thoại ngay!
+                      Giáo viên đang mở phòng học trực tuyến {activeLiveSession.active_participants_count ? `(${activeLiveSession.active_participants_count} người trong phòng)` : ''}. Vào phòng để tương tác và luyện phát âm ngay!
                     </p>
                   </div>
                 </div>
@@ -1122,7 +1086,7 @@ export default function ClassroomPage({
                             setActiveLiveSession(null);
                             showToast('Đã kết thúc phiên học trực tuyến.');
                           } else {
-                            showToast(res.error || 'Không thể kết thúc phòng học.');
+                            showToast(res.error || 'Không thể kết thúc phòng học.', 'error');
                           }
                         }
                       }}
@@ -1177,7 +1141,7 @@ export default function ClassroomPage({
                       setActiveLiveSession(res.session);
                       window.location.hash = `#classroom/${currentClass.id}/live/${res.session.id}`;
                     } else {
-                      showToast(res?.error || 'Không thể mở phòng học.');
+                      showToast(res?.error || 'Không thể mở phòng học.', 'error');
                     }
                   }}
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white font-bold text-xs shadow-md shadow-[#E85D3F]/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95"
@@ -1248,13 +1212,9 @@ export default function ClassroomPage({
               })}
             </div>
 
-            {/* ========================================================== */}
             {/* TAB 1: ASSIGNMENTS */}
-            {/* ========================================================== */}
             {classTab === 'assignments' && (
               <div className="space-y-4">
-                
-                {/* Assignment Filter Pills & Progress Bar */}
                 {assignments.length > 0 && (
                   <div className="p-4 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1289,7 +1249,6 @@ export default function ClassroomPage({
                       </div>
                     </div>
 
-                    {/* Progress Bar */}
                     <div className="w-full bg-[#FFF9F2] dark:bg-[#131B24] h-2 rounded-full overflow-hidden border border-[#F1E5D8] dark:border-[#2B3A4F]">
                       <div 
                         className="bg-gradient-to-r from-[#E85D3F] to-[#45B97C] h-full rounded-full transition-all duration-500"
@@ -1337,7 +1296,6 @@ export default function ClassroomPage({
                               {asg.description}
                             </p>
 
-                            {/* Feedback if graded */}
                             {sub?.feedback && (
                               <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 leading-relaxed">
                                 <div className="flex items-center gap-1.5 font-bold mb-1">
@@ -1374,9 +1332,7 @@ export default function ClassroomPage({
               </div>
             )}
 
-            {/* ========================================================== */}
             {/* TAB 2: ANNOUNCEMENTS */}
-            {/* ========================================================== */}
             {classTab === 'announcements' && (
               <div className="space-y-4">
                 {announcements.length === 0 ? (
@@ -1412,7 +1368,6 @@ export default function ClassroomPage({
                         {ann.content}
                       </p>
 
-                      {/* Interactive Reactions */}
                       <div className="pl-10 pt-2 flex items-center gap-2">
                         {[
                           { emoji: 'heart', icon: Heart, label: 'Thả tim' },
@@ -1443,9 +1398,7 @@ export default function ClassroomPage({
               </div>
             )}
 
-            {/* ========================================================== */}
             {/* TAB 3: MATERIALS */}
-            {/* ========================================================== */}
             {classTab === 'materials' && (
               <div className="space-y-4">
                 {materials.length === 0 ? (
@@ -1482,9 +1435,7 @@ export default function ClassroomPage({
               </div>
             )}
 
-            {/* ========================================================== */}
             {/* TAB 4: PEERS */}
-            {/* ========================================================== */}
             {classTab === 'peers' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -1521,9 +1472,7 @@ export default function ClassroomPage({
 
       </div>
 
-      {/* ========================================================== */}
       {/* MODAL: ASSIGNMENT SUBMISSION PLAYER */}
-      {/* ========================================================== */}
       {activeAssignment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="max-w-xl w-full bg-white dark:bg-[#1E293B] rounded-3xl p-6 sm:p-8 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
@@ -1549,7 +1498,6 @@ export default function ClassroomPage({
             </p>
 
             <form onSubmit={handleSubmitAssignment} className="space-y-4 text-xs">
-              {/* If Quiz format */}
               {activeAssignment.content?.questions && activeAssignment.content.questions.length > 0 && (
                 <div className="space-y-3">
                   {activeAssignment.content.questions.map((q, qIdx) => {
@@ -1604,7 +1552,6 @@ export default function ClassroomPage({
                 </div>
               )}
 
-              {/* Freeform Writing / Notes input */}
               <div>
                 <label className="block font-bold text-[#748092] mb-1">
                   Nội dung bài làm / Lời nhắn gửi giáo viên:

@@ -85,16 +85,21 @@ export function AuthProvider({ children }) {
       setSessionVerified(true);
       localStorage.setItem('hanzigo_user', JSON.stringify(mergedUser));
 
-      if (typeof dbProfile?.streak === 'number' && dbProfile.streak > 0) {
-        localStorage.setItem(`hanzigo_streak_count_${authUser.id}`, String(dbProfile.streak));
-        localStorage.setItem('hanzigo_streak_count', String(dbProfile.streak));
-      }
+      const effectiveStreak = typeof dbProfile?.streak === 'number' ? dbProfile.streak : 0;
+      localStorage.setItem(`hanzigo_streak_count_${authUser.id}`, String(effectiveStreak));
+      localStorage.setItem('hanzigo_streak_count', String(effectiveStreak));
+
       if (dbProfile?.last_study_date) {
         localStorage.setItem(`hanzigo_last_study_date_${authUser.id}`, String(dbProfile.last_study_date));
         localStorage.setItem('hanzigo_last_study_date', String(dbProfile.last_study_date));
+      } else {
+        localStorage.removeItem(`hanzigo_last_study_date_${authUser.id}`);
+        localStorage.removeItem('hanzigo_last_study_date');
       }
       if (typeof dbProfile?.longest_streak === 'number') {
         localStorage.setItem(`hanzigo_longest_streak_${authUser.id}`, String(dbProfile.longest_streak));
+      } else {
+        localStorage.removeItem(`hanzigo_longest_streak_${authUser.id}`);
       }
 
       // Cross-Device Progress Hydration & Guest Progress Merge
@@ -249,6 +254,14 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('hanzigo_user');
     localStorage.removeItem('hanzigo_custom_avatar');
     localStorage.removeItem('hanzigo_user_bio');
+    // Purge un-scoped session keys so next account doesn't inherit prior user's streak or progress
+    localStorage.removeItem('hanzigo_streak_count');
+    localStorage.removeItem('hanzigo_last_study_date');
+    localStorage.removeItem('hanzigo_streak_data');
+    localStorage.removeItem('hanzigo_longest_streak');
+    localStorage.removeItem('hanzigo_total_xp');
+    localStorage.removeItem('hanzigo_bonus_xp');
+    localStorage.removeItem('hanzigo_active_tab');
   };
 
   const updateUser = useCallback((updater) => {
