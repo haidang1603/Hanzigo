@@ -4,7 +4,7 @@ import { playClickSound, playSuccessSound, playErrorSound } from '../utils/audio
 import { isSupabaseConfigured } from '../supabase/config';
 import { loginWithEmail, registerWithEmail, loginWithGoogle, generateUuid } from '../supabase/services';
 
-export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) {
+export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLoginSuccess, setActiveTab }) {
   const [mode, setMode] = useState(initialMode); // 'login' or 'register'
   const [selectedRole, setSelectedRole] = useState('student'); // 'student' | 'teacher'
   const [formData, setFormData] = useState({
@@ -17,6 +17,16 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
   const [agreeMarketing, setAgreeMarketing] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleLegalNav = (tab, e) => {
+    if (e.ctrlKey || e.metaKey || e.button === 1) return;
+    if (setActiveTab) {
+      e.preventDefault();
+      setActiveTab(tab);
+      onClose();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // Close on Escape key
   React.useEffect(() => {
@@ -48,7 +58,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
       return;
     }
 
-    if (mode === 'register' && !agreeTerms) {
+    if (!agreeTerms) {
       setError('Vui lòng đọc và tích chọn đồng ý với Điều khoản sử dụng & Chính sách bảo mật.');
       return;
     }
@@ -127,6 +137,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
 
   // Trigger Genuine Google OAuth Login
   const handleGoogleLogin = async () => {
+    if (!agreeTerms) {
+      playErrorSound();
+      setError('Vui lòng đọc và tích chọn đồng ý với Điều khoản sử dụng & Chính sách bảo mật trước khi tiếp tục.');
+      return;
+    }
+
     playClickSound();
     setLoading(true);
     setError('');
@@ -357,30 +373,80 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
                     * <strong>Thông báo thu thập:</strong> Email và họ tên chỉ dùng để định danh tài khoản, lưu bài học và cá nhân hóa lộ trình. HanziGo cam kết không chia sẻ dữ liệu cho bên thứ ba.
                   </div>
 
-                  <label className="flex items-start gap-2 text-xs text-[#243447] dark:text-gray-200 cursor-pointer select-none">
+                  <label className="flex items-start gap-2.5 text-xs text-[#243447] dark:text-gray-200 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={agreeTerms}
-                      onChange={(e) => setAgreeTerms(e.target.checked)}
-                      className="mt-0.5 rounded border-gray-300 text-[#E85D3F] focus:ring-[#E85D3F]"
+                      onChange={(e) => {
+                        setAgreeTerms(e.target.checked);
+                        if (error) setError('');
+                      }}
+                      className="mt-0.5 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-[#E85D3F] focus:ring-[#E85D3F] cursor-pointer"
                     />
-                    <span>
+                    <span className="leading-snug">
                       Tôi đồng ý với{' '}
-                      <a href="#terms" target="_blank" rel="noopener noreferrer" className="text-[#E85D3F] font-bold hover:underline">Điều khoản sử dụng</a>
+                      <a 
+                        href="#terms" 
+                        onClick={(e) => handleLegalNav('terms', e)}
+                        className="text-[#E85D3F] font-bold hover:underline"
+                      >
+                        Điều khoản sử dụng
+                      </a>
                       {' '}và{' '}
-                      <a href="#privacy" target="_blank" rel="noopener noreferrer" className="text-[#E85D3F] font-bold hover:underline">Chính sách bảo mật</a>
+                      <a 
+                        href="#privacy" 
+                        onClick={(e) => handleLegalNav('privacy', e)}
+                        className="text-[#E85D3F] font-bold hover:underline"
+                      >
+                        Chính sách bảo mật
+                      </a>
                       {' '}<span className="text-rose-500 font-bold">*</span>
                     </span>
                   </label>
 
-                  <label className="flex items-start gap-2 text-[11px] text-[#748092] dark:text-gray-400 cursor-pointer select-none">
+                  <label className="flex items-start gap-2.5 text-[11px] text-[#748092] dark:text-gray-400 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={agreeMarketing}
                       onChange={(e) => setAgreeMarketing(e.target.checked)}
-                      className="mt-0.5 rounded border-gray-300 text-[#E85D3F] focus:ring-[#E85D3F]"
+                      className="mt-0.5 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-[#E85D3F] focus:ring-[#E85D3F] cursor-pointer"
                     />
-                    <span>(Tùy chọn) Nhận mẹo nhớ chữ Hán và bài học qua email hàng sáng.</span>
+                    <span className="leading-snug">(Tùy chọn) Nhận mẹo nhớ chữ Hán và bài học qua email hàng sáng.</span>
+                  </label>
+                </div>
+              )}
+
+              {mode === 'login' && (
+                <div className="pt-1">
+                  <label className="flex items-start gap-2.5 text-xs text-[#243447] dark:text-gray-200 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreeTerms}
+                      onChange={(e) => {
+                        setAgreeTerms(e.target.checked);
+                        if (error) setError('');
+                      }}
+                      className="mt-0.5 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-[#E85D3F] focus:ring-[#E85D3F] cursor-pointer"
+                    />
+                    <span className="leading-snug">
+                      Tôi đồng ý với{' '}
+                      <a 
+                        href="#terms" 
+                        onClick={(e) => handleLegalNav('terms', e)}
+                        className="text-[#E85D3F] font-bold hover:underline"
+                      >
+                        Điều khoản sử dụng
+                      </a>
+                      {' '}và{' '}
+                      <a 
+                        href="#privacy" 
+                        onClick={(e) => handleLegalNav('privacy', e)}
+                        className="text-[#E85D3F] font-bold hover:underline"
+                      >
+                        Chính sách bảo mật
+                      </a>
+                      {' '}<span className="text-rose-500 font-bold">*</span>
+                    </span>
                   </label>
                 </div>
               )}

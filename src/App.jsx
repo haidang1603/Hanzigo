@@ -552,6 +552,7 @@ function MainApp() {
         onClose={() => setAuthModalOpen(false)}
         initialMode={authModalMode}
         onLoginSuccess={handleLoginSuccess}
+        setActiveTab={setActiveTab}
       />
 
       {/* 5. Cookie & Storage Consent Banner */}

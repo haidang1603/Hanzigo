@@ -23,3 +23,4 @@ export default async function handler(req, res) {
     error: `Newsletter endpoint không tồn tại: ${action || 'unknown'}`
   });
 }
+
