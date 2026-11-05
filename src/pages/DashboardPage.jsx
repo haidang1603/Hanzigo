@@ -36,6 +36,7 @@ import {
 import { 
   calculateTotalXp, 
   getStreakStatus, 
+  checkInDaily,
   getUserLevelInfo, 
   awardXp, 
   getUserStorageKey,
@@ -65,19 +66,33 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   }, []);
 
   const streakStatus = useMemo(() => getStreakStatus(user), [user, gamificationTick]);
-  const userStreak = useMemo(() => {
-    const s = streakStatus.streak || 0;
-    const uStreak = typeof user?.streak === 'number' && !isNaN(user.streak) ? user.streak : 0;
-    let localKeyVal = 0;
-    let globalVal = 0;
-    try {
-      const k = getUserStorageKey('hanzigo_streak_count', user);
-      localKeyVal = parseInt(localStorage.getItem(k) || '0', 10) || 0;
-      globalVal = parseInt(localStorage.getItem('hanzigo_streak_count') || '0', 10) || 0;
-    } catch {}
-    return Math.max(s, uStreak, localKeyVal, globalVal);
-  }, [streakStatus, user]);
+  const userStreak = streakStatus.streak || 0;
   const [streakModalOpen, setStreakModalOpen] = useState(false);
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [checkInToast, setCheckInToast] = useState(null);
+
+  const handleCheckIn = (e) => {
+    if (e) e.stopPropagation();
+    playClickSound();
+    setCheckInLoading(true);
+    const res = checkInDaily(user);
+    if (res.success) {
+      playSuccessSound();
+      try {
+        confetti({
+          particleCount: 45,
+          spread: 60,
+          origin: { y: 0.6 }
+        });
+      } catch {}
+      setCheckInToast({ success: true, message: res.message });
+      setTimeout(() => setCheckInToast(null), 4000);
+    } else {
+      setCheckInToast({ success: false, message: res.message });
+      setTimeout(() => setCheckInToast(null), 3500);
+    }
+    setCheckInLoading(false);
+  };
 
   // Daily study goal state (persisted in localStorage per user)
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState(() => {
@@ -255,7 +270,7 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
         const actionsToday = (completedLessonIds.length * 15) + (rememberedIds.length * 2) + (pronounceHistory.length * 3) + (customWritingChars.length * 3);
         const currentMins = prev[todayStr] !== undefined 
           ? prev[todayStr] 
-          : Math.max(actionsToday, userStreak > 0 ? 15 : 0);
+          : actionsToday;
         
         // Increment 0.25 min (15 seconds) each interval
         const nextMins = Math.round((currentMins + 0.25) * 10) / 10;
@@ -306,18 +321,12 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
       let mins = 0;
       if (isToday) {
         const savedToday = studyMinutesMap[todayStr];
-        mins = savedToday !== undefined ? savedToday : Math.max(actionsTodayMinutes, userStreak > 0 ? 15 : 0);
+        mins = savedToday !== undefined ? savedToday : actionsTodayMinutes;
       } else if (isPast) {
         if (studyMinutesMap[dateStr] !== undefined) {
           mins = studyMinutesMap[dateStr];
         } else {
-          // If this past day was within the user's active consecutive streak
-          const daysAgo = Math.round((todayStart.getTime() - dayStart.getTime()) / (1000 * 60 * 60 * 24));
-          if (daysAgo <= userStreak) {
-            mins = Math.max(15, 20 + ((i * 7) % 25));
-          } else {
-            mins = 0;
-          }
+          mins = 0;
         }
       } else {
         // Future day
@@ -478,6 +487,24 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
         </div>
       </div>
 
+      {/* Check-in Toast Feedback */}
+      {checkInToast && (
+        <div className={`p-4 rounded-2xl text-xs font-bold shadow-lg transition-all animate-in fade-in slide-in-from-top-2 flex items-center justify-between gap-3 ${
+          checkInToast.success 
+            ? 'bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200' 
+            : 'bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200'
+        }`}>
+          <span>{checkInToast.message}</span>
+          <button 
+            type="button" 
+            onClick={() => setCheckInToast(null)} 
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* 2. Key Metrics Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         
@@ -487,21 +514,40 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
             playClickSound();
             setStreakModalOpen(true);
           }}
-          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-center gap-4 hover:border-[#E85D3F] hover:-translate-y-0.5 transition-all cursor-pointer group"
-          title="Nhấn để xem Lịch trình chuỗi & Phần thưởng 🔥"
+          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between gap-3 hover:border-[#E85D3F] hover:-translate-y-0.5 transition-all cursor-pointer group relative overflow-hidden"
+          title="Nhấn để xem Lịch trình chuỗi & Điểm danh 🔥"
         >
-          <div className="w-13 h-13 rounded-2xl bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] flex items-center justify-center text-2xl font-bold p-3 group-hover:scale-105 transition-transform">
-            <Flame size={28} className="fill-[#F4B942] text-[#E85D3F]" />
+          <div className="flex items-center gap-4">
+            <div className="w-13 h-13 rounded-2xl bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] flex items-center justify-center text-2xl font-bold p-3 group-hover:scale-105 transition-transform shrink-0">
+              <Flame size={28} className="fill-[#F4B942] text-[#E85D3F]" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Chuỗi liên tiếp</p>
+              <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">{userStreak} ngày</p>
+              <p className={`text-[10px] font-semibold truncate ${streakStatus.hasStudiedToday ? 'text-[#45B97C]' : 'text-[#E85D3F]'}`}>
+                {streakStatus.hasStudiedToday 
+                  ? 'Đã điểm danh hôm nay ✅' 
+                  : (userStreak > 0 ? 'Chưa điểm danh hôm nay 🔥' : 'Điểm danh để bắt đầu')}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Chuỗi liên tiếp</p>
-            <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">{userStreak} ngày</p>
-            <p className={`text-[10px] font-semibold ${streakStatus.hasStudiedToday ? 'text-[#45B97C]' : 'text-[#E85D3F]'}`}>
-              {streakStatus.hasStudiedToday 
-                ? 'Đã học hôm nay ✅' 
-                : (userStreak > 0 ? 'Học hôm nay để giữ chuỗi 🔥' : 'Bắt đầu học hôm nay')}
-            </p>
-          </div>
+
+          {!streakStatus.hasStudiedToday ? (
+            <button
+              type="button"
+              onClick={handleCheckIn}
+              disabled={checkInLoading}
+              className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white font-bold text-[11px] shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95"
+              title="Điểm danh ngay để giữ và tăng chuỗi học (+15 XP)"
+            >
+              <Flame size={13} className="fill-white" />
+              <span>Điểm danh ngay (+15 XP)</span>
+            </button>
+          ) : (
+            <div className="text-[10px] font-bold text-[#45B97C] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg py-1 px-2 text-center">
+              ✓ Chuỗi hôm nay đã an toàn
+            </div>
+          )}
         </div>
 
         {/* Words Learned */}

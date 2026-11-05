@@ -120,16 +120,7 @@ function MainApp() {
   // Gamification state - synchronized across Navbar and Dashboard
   const getEffectiveStreak = (u) => {
     if (!u) return 0;
-    const s = getStreakStatus(u).streak || 0;
-    const uStreak = typeof u.streak === 'number' && !isNaN(u.streak) ? u.streak : 0;
-    let localKeyVal = 0;
-    let globalVal = 0;
-    try {
-      const k = getUserStorageKey('hanzigo_streak_count', u);
-      localKeyVal = parseInt(localStorage.getItem(k) || '0', 10) || 0;
-      globalVal = parseInt(localStorage.getItem('hanzigo_streak_count') || '0', 10) || 0;
-    } catch {}
-    return Math.max(s, uStreak, localKeyVal, globalVal);
+    return getStreakStatus(u).streak || 0;
   };
 
   const [streak, setStreak] = useState(() => getEffectiveStreak(user));

@@ -204,11 +204,7 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
     );
 
     const liveStreak = getStreakStatus(currentUser).streak;
-    const authoritativeStreak = Math.max(
-      liveStreak,
-      currentUser.streak || 0,
-      existing?.streak || 1
-    );
+    const authoritativeStreak = typeof liveStreak === 'number' ? liveStreak : 0;
 
     const mergedUser = {
       id: currentUser.uid || currentUser.id || existing?.id || 'current_user',

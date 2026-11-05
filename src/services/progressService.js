@@ -134,7 +134,7 @@ export async function triggerCloudSync(uid = null, explicitXp = null) {
         avatar: targetUser?.avatar || null,
         level: targetUser?.level || 'HSK 1 - Sơ cấp',
         xp: finalXp,
-        streak: streakVal ?? 1,
+        streak: typeof streakVal === 'number' ? streakVal : 0,
         wordsLearned: rememberedWords.length,
         role: targetUser?.role || 'student',
         status: 'active'

@@ -114,18 +114,7 @@ export default function ProfilePage({
   }, []);
 
   const streakStatus = useMemo(() => getStreakStatus(user), [user, gamificationTick]);
-  const streakCount = useMemo(() => {
-    const s = streakStatus.streak || 0;
-    const uStreak = typeof user?.streak === 'number' && !isNaN(user.streak) ? user.streak : 0;
-    let localKeyVal = 0;
-    let globalVal = 0;
-    try {
-      const k = getUserStorageKey('hanzigo_streak_count', user);
-      localKeyVal = parseInt(localStorage.getItem(k) || '0', 10) || 0;
-      globalVal = parseInt(localStorage.getItem('hanzigo_streak_count') || '0', 10) || 0;
-    } catch {}
-    return Math.max(s, uStreak, localKeyVal, globalVal);
-  }, [streakStatus, user]);
+  const streakCount = streakStatus.streak || 0;
 
   // Dynamic learning stats from storage for this specific user
   const rememberedIds = useMemo(() => {

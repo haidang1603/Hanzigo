@@ -31,6 +31,9 @@ import {
   awardXp, 
   calculateTotalXp, 
   getStreakStatus,
+  checkInDaily,
+  recordStudyActivity,
+  getLocalDateString,
   LEVEL_SYSTEM 
 } from '../src/utils/gamification.js';
 
@@ -313,4 +316,67 @@ test('PHASE 5 - 8. ANTI-CHEAT: Audits manipulated XP and generates deterministic
   assert.ok(token, 'Token must be generated');
   assert.equal(typeof token, 'string');
   assert.ok(token.length >= 6, 'Token must have sufficient cryptographic entropy');
+});
+
+test('PHASE 5 - 9. STREAK INTEGRITY & CHECK-IN: Strict decay on missed day and explicit check-in requirement', () => {
+  localStorage.clear();
+  const user = { uid: 'u-streak-test', id: 'u-streak-test', email: 'streak@test.com', streak: 0 };
+
+  // 1. Brand new user with NO prior check-in / study date -> streak is 0
+  const initialStatus = getStreakStatus(user);
+  assert.equal(initialStatus.streak, 0, 'New user without attendance must have 0 streak');
+  assert.equal(initialStatus.hasStudiedToday, false, 'hasStudiedToday must be false');
+
+  // 2. Day 1: User explicitly checks in today
+  const checkInDay1 = checkInDaily(user);
+  assert.equal(checkInDay1.success, true, 'Check-in must succeed');
+  assert.equal(checkInDay1.streak, 1, 'First check-in must yield 1 day streak');
+  assert.equal(checkInDay1.xpAwarded, 15, 'Must award 15 XP for check-in');
+
+  // Status must now show 1 day and hasStudiedToday = true
+  const statusAfterCheckIn = getStreakStatus(user);
+  assert.equal(statusAfterCheckIn.streak, 1, 'Streak is now 1');
+  assert.equal(statusAfterCheckIn.hasStudiedToday, true, 'hasStudiedToday is true after check-in');
+
+  // 3. Duplicate check-in on the same day must be rejected politely
+  const dupCheckIn = checkInDaily(user);
+  assert.equal(dupCheckIn.success, false, 'Duplicate check-in same day must return false');
+  assert.equal(dupCheckIn.alreadyCheckedIn, true, 'alreadyCheckedIn must be true');
+  assert.equal(dupCheckIn.streak, 1, 'Streak must remain unchanged');
+
+  // 4. Simulate consecutive day (Day 2): Yesterday was checked in
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = getLocalDateString(yesterday);
+  localStorage.setItem(`hanzigo_last_study_date_${user.id}`, yesterdayStr);
+  localStorage.setItem(`hanzigo_streak_count_${user.id}`, '1');
+
+  // At morning before checking in today:
+  const morningStatus = getStreakStatus(user);
+  assert.equal(morningStatus.streak, 1, 'Waiting for today with 1 day streak');
+  assert.equal(morningStatus.hasStudiedToday, false, 'Has not yet checked in today');
+
+  // Day 2 Check-in:
+  const checkInDay2 = checkInDaily(user);
+  assert.equal(checkInDay2.success, true);
+  assert.equal(checkInDay2.streak, 2, 'Consecutive day check-in increments streak to 2');
+
+  // 5. Simulate missing a day (Day 4: last check-in was 3 days ago)
+  const threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  const threeDaysAgoStr = getLocalDateString(threeDaysAgo);
+  localStorage.setItem(`hanzigo_last_study_date_${user.id}`, threeDaysAgoStr);
+  localStorage.setItem(`hanzigo_streak_count_${user.id}`, '2');
+  user.streak = 2; // Old profile stale streak
+
+  // Strict decay verification: streak MUST decay to 0!
+  const decayedStatus = getStreakStatus(user);
+  assert.equal(decayedStatus.streak, 0, 'Streak must strictly decay to 0 when learner missed days');
+  assert.equal(decayedStatus.hasStudiedToday, false);
+  assert.equal(localStorage.getItem(`hanzigo_streak_count_${user.id}`), '0', 'Storage streak must be reset to 0');
+
+  // 6. Checking in after streak decay restarts streak at 1 (not continuing from 2)
+  const restartCheckIn = checkInDaily(user);
+  assert.equal(restartCheckIn.success, true);
+  assert.equal(restartCheckIn.streak, 1, 'Check-in after decay must start a fresh streak of 1');
 });

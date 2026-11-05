@@ -19,6 +19,7 @@ import {
   getLongestStreak, 
   getStreakFreeze, 
   consumeStreakFreeze, 
+  checkInDaily,
   getWeeklyStudyDays,
   getUserStorageKey
 } from '../../utils/gamification';
@@ -37,19 +38,31 @@ export default function StreakModal({ user, isOpen, onClose, onNavigateTab }) {
   const [freezeCount, setFreezeCount] = useState(() => getStreakFreeze(user));
   const [freezeUsedToast, setFreezeUsedToast] = useState(false);
 
-  // Authoritative streak resolution across status, user object, and storage
-  const effectiveStreak = useMemo(() => {
-    const statusVal = streakStatus?.streak ?? 0;
-    const userVal = typeof user?.streak === 'number' && !isNaN(user.streak) ? user.streak : 0;
-    let localKeyVal = 0;
-    let globalVal = 0;
-    try {
-      const k = getUserStorageKey('hanzigo_streak_count', user);
-      localKeyVal = parseInt(localStorage.getItem(k) || '0', 10) || 0;
-      globalVal = parseInt(localStorage.getItem('hanzigo_streak_count') || '0', 10) || 0;
-    } catch {}
-    return Math.max(statusVal, userVal, localKeyVal, globalVal);
-  }, [streakStatus, user]);
+  // Authoritative streak resolution directly from current status
+  const effectiveStreak = streakStatus?.streak ?? 0;
+  const [checkInToast, setCheckInToast] = useState(null);
+
+  const handleCheckIn = () => {
+    playClickSound();
+    const res = checkInDaily(user);
+    if (res.success) {
+      playSuccessSound();
+      try {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.6 }
+        });
+      } catch {}
+      setStreakStatus(getStreakStatus(user));
+      setLongestStreak(getLongestStreak(user));
+      setCheckInToast({ success: true, message: res.message });
+      setTimeout(() => setCheckInToast(null), 4000);
+    } else {
+      setCheckInToast({ success: false, message: res.message });
+      setTimeout(() => setCheckInToast(null), 3000);
+    }
+  };
 
   const hasStudied = Boolean(streakStatus?.hasStudiedToday);
 
@@ -277,6 +290,16 @@ export default function StreakModal({ user, isOpen, onClose, onNavigateTab }) {
             </div>
           )}
 
+          {checkInToast && (
+            <div className={`p-3 rounded-xl border text-xs text-center font-bold animate-in fade-in ${
+              checkInToast.success
+                ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300'
+                : 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300'
+            }`}>
+              {checkInToast.message}
+            </div>
+          )}
+
           {/* Milestones Road */}
           <div className="space-y-2">
             <span className="text-xs font-bold text-[#243447] dark:text-white flex items-center gap-1.5">
@@ -332,14 +355,26 @@ export default function StreakModal({ user, isOpen, onClose, onNavigateTab }) {
               <span>Đóng</span>
             </button>
 
-            <button
-              type="button"
-              onClick={handleActionStudy}
-              className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-[#E85D3F]/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
-            >
-              <span>{hasStudied ? 'Tiếp tục luyện tập (+15 XP)' : 'Học bài ngay để tiếp lửa (+1 ngày)'}</span>
-              <ArrowRight size={14} />
-            </button>
+            {hasStudied ? (
+              <button
+                type="button"
+                onClick={handleActionStudy}
+                className="flex-1 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
+              >
+                <CheckCircle2 size={16} />
+                <span>✓ Đã điểm danh - Vào học tiếp</span>
+                <ArrowRight size={14} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleCheckIn}
+                className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-[#E85D3F]/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 animate-pulse"
+              >
+                <Flame size={16} className="fill-white" />
+                <span>Điểm danh ngay hôm nay (+15 XP)</span>
+              </button>
+            )}
           </div>
 
         </div>

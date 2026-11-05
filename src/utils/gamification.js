@@ -301,8 +301,8 @@ export function recordStudyActivity(user = null) {
     const yesterdayStr = getLocalDateString(yesterday);
 
     if (!lastDate) {
-      // Lần đầu tiên học
-      currentStreak = Math.max(1, currentStreak);
+      // Lần đầu tiên học hoặc điểm danh
+      currentStreak = 1;
     } else if (lastDate === today) {
       // Đã học hôm nay rồi -> giữ nguyên chuỗi
       if (currentStreak < 1) currentStreak = 1;
@@ -395,36 +395,42 @@ export function getStreakStatus(user = null) {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = getLocalDateString(yesterday);
 
-    // Nếu chưa từng có ngày học nào được lưu nhưng user đã có candidateStreak > 0 (từ cloud DB/profile)
-    if (!lastDate && candidateStreak > 0) {
-      lastDate = yesterdayStr;
-      try {
-        localStorage.setItem(dateKey, yesterdayStr);
-        localStorage.setItem('hanzigo_last_study_date', yesterdayStr);
-      } catch {}
-      return { streak: candidateStreak, hasStudiedToday: false };
-    }
-
-    // Nếu chưa từng có ngày học nào và candidateStreak là 0
+    // Nếu chưa từng có ngày học hoặc ngày điểm danh nào
     if (!lastDate) {
+      try {
+        localStorage.setItem(streakKey, '0');
+        localStorage.setItem('hanzigo_streak_count', '0');
+        if (targetUser && targetUser.streak !== 0) {
+          targetUser.streak = 0;
+          const saved = localStorage.getItem('hanzigo_user');
+          if (saved) {
+            const u = JSON.parse(saved);
+            if (u && (u.uid === targetUser.uid || u.email === targetUser.email || u.id === targetUser.id)) {
+              u.streak = 0;
+              localStorage.setItem('hanzigo_user', JSON.stringify(u));
+            }
+          }
+        }
+      } catch {}
       return { streak: 0, hasStudiedToday: false };
     }
 
-    // TH 1: Hôm nay đã học
+    // TH 1: Hôm nay đã học / điểm danh
     if (lastDate === today) {
       return { streak: Math.max(1, candidateStreak), hasStudiedToday: true };
     }
 
-    // TH 2: Hôm qua có học, hôm nay chưa học (giữ chuỗi chờ học hôm nay)
+    // TH 2: Hôm qua có học / điểm danh, hôm nay chưa điểm danh (giữ chuỗi chờ điểm danh hôm nay)
     if (lastDate === yesterdayStr) {
       return { streak: Math.max(1, candidateStreak), hasStudiedToday: false };
     }
 
-    // TH 3: Tài khoản đã off 1 ngày trở lên (hôm qua không học) -> Chuỗi quay về 0!
+    // TH 3: Tài khoản đã off 1 ngày trở lên (hôm qua không điểm danh/không học) -> Chuỗi quay về 0!
     try {
       localStorage.setItem(streakKey, '0');
       localStorage.setItem('hanzigo_streak_count', '0');
       if (targetUser) {
+        targetUser.streak = 0;
         const saved = localStorage.getItem('hanzigo_user');
         if (saved) {
           const u = JSON.parse(saved);
@@ -440,6 +446,67 @@ export function getStreakStatus(user = null) {
   } catch {
     return { streak: 0, hasStudiedToday: false };
   }
+}
+
+/**
+ * Daily Check-in (Điểm danh hàng ngày)
+ * Yêu cầu người dùng phải chủ động điểm danh hoặc học tập để duy trì chuỗi (Streak).
+ * - Nếu hôm nay đã điểm danh: báo đã điểm danh.
+ * - Nếu hôm nay chưa điểm danh:
+ *   + Ghi nhận ngày điểm danh là hôm nay.
+ *   + Tăng chuỗi nếu hôm qua đã điểm danh, hoặc khởi động chuỗi 1 ngày nếu mới / đứt chuỗi.
+ *   + Thưởng 15 XP điểm danh.
+ *   + Đồng bộ và phát sự kiện STREAK_UPDATED.
+ */
+export function checkInDaily(user = null) {
+  let targetUser = user;
+  if (!targetUser) {
+    try {
+      const saved = localStorage.getItem('hanzigo_user');
+      if (saved) targetUser = JSON.parse(saved);
+    } catch {}
+  }
+
+  const today = getLocalDateString();
+  const dateKey = getUserStorageKey('hanzigo_last_study_date', targetUser);
+  const rawDate = localStorage.getItem(dateKey) || localStorage.getItem('hanzigo_last_study_date') || targetUser?.last_study_date || targetUser?.lastActiveDate;
+  const lastDate = normalizeDateString(rawDate);
+
+  // Nếu hôm nay đã điểm danh hoặc đã học rồi
+  if (lastDate === today) {
+    const status = getStreakStatus(targetUser);
+    return {
+      success: false,
+      alreadyCheckedIn: true,
+      streak: status.streak,
+      message: 'Bạn đã điểm danh hôm nay rồi! Hãy quay lại vào ngày mai để tiếp tục duy trì chuỗi nhé. 🔥'
+    };
+  }
+
+  // Ghi nhận chuỗi ngày học / điểm danh
+  const newStreak = recordStudyActivity(targetUser);
+
+  // Thưởng 15 XP điểm danh hàng ngày
+  try {
+    awardXp(15, 'Điểm danh hàng ngày', targetUser);
+  } catch (err) {
+    console.warn('Checkin award XP notice:', err);
+  }
+
+  triggerCloudSync(targetUser?.uid || targetUser?.id);
+  broadcastGamificationUpdate('STREAK_UPDATED', { 
+    streak: newStreak, 
+    userId: targetUser?.uid || targetUser?.id,
+    action: 'CHECKIN_SUCCESS'
+  });
+
+  return {
+    success: true,
+    alreadyCheckedIn: false,
+    streak: newStreak,
+    xpAwarded: 15,
+    message: `Điểm danh thành công! Chuỗi học tập đạt ${newStreak} ngày liên tiếp (+15 XP) 🎉`
+  };
 }
 
 /**
