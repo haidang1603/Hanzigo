@@ -48,7 +48,7 @@ const MAX_OUTPUT_TOKENS = 750;           // Giới hạn độ dài output AI t�
 const ALLOWED_CONTEXT_TYPES = ['vocabulary', 'grammar', 'hanzi', 'conversation', 'general'];
 const ALLOWED_HSK_LEVELS = ['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7-9'];
 
-// Mẫu nhận diện Prompt Injection và tấn công can thiệp hệ thống
+// Mẫu nhận diện Prompt Injection và tấn công can thiệp hệ thống đa ngữ (Multilingual & XML Breaking)
 const INJECTION_PATTERNS = [
   /ignore\s+(all\s+)?(previous|prior)\s+(instructions|prompts)/i,
   /system\s+prompt\s+override/i,
@@ -57,7 +57,13 @@ const INJECTION_PATTERNS = [
   /bypass\s+security/i,
   /drop\s+table\s+/i,
   /<script\b[^>]*>/i,
-  /exec\s*\(/i
+  /exec\s*\(/i,
+  // Multilingual & XML tag breaking patterns (Task 25.02.1E)
+  /忽略.*(指令|提示|指示|prompt)/i,
+  /透露.*(密码|密钥|secret|api[_\s]?key|prompt)/i,
+  /bỏ\s+qua\s+(mọi\s+)?(chỉ\s+dẫn|quy\s+tắc|hướng\s+dẫn|prompt)/i,
+  /tiết\s+lộ\s+(secret|mật\s+khẩu|api[_\s]?key|system\s+prompt)/i,
+  /<\/(verified_knowledge|system|prompt)>/i
 ];
 
 function detectAbuseOrInjection(text) {
@@ -504,21 +510,9 @@ export default async function handler(req, res) {
         };
       }
     } else {
-      // Nếu xKiro gặp lỗi quota (429) và không cho phép fallback trả phí
-      if (aiResult.status === 429) {
-        return res.status(429).json({
-          error: 'Hạn mức miễn phí hàng ngày của xKiro AI đã hết. Vui lòng quay lại sau hoặc liên hệ quản trị viên.'
-        });
-      }
-
-      // Nếu xKiro gặp timeout (504)
-      if (aiResult.status === 504) {
-        return res.status(504).json({
-          error: 'Dịch vụ AI phản hồi quá thời gian chờ (Timeout). Vui lòng thử lại với câu hỏi ngắn hơn.'
-        });
-      }
-
-      // Fallback sư phạm an toàn: Sử dụng Deterministic Offline Tutor
+      // Khi AI Gateway không thành công (do 429 quota, 504 timeout, 404 model, hoặc cờ bảo vệ chi phí paidFallbackBlocked):
+      // Tuyệt đối không để ứng dụng crash hoặc gián đoạn học tập!
+      // Kích hoạt ngay bộ máy Sư phạm Ngoại tuyến (Deterministic Pedagogical Engine).
       tutorData = buildDeterministicTutorResponse({
         question: cleanQuestion,
         learnerLevel: effectiveHskLevel,

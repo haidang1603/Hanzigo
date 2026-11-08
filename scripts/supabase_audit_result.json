@@ -1,0 +1,238 @@
+{
+  "url": "https://woszblniatdvijwdkmpm.supabase.co",
+  "timestamp": "2026-11-08T13:38:49.095Z",
+  "results": {
+    "existing": [
+      {
+        "table": "ai_conversations",
+        "count": 0
+      },
+      {
+        "table": "ai_messages",
+        "count": 0
+      },
+      {
+        "table": "assignment_submissions",
+        "count": 0
+      },
+      {
+        "table": "assignments",
+        "count": 1
+      },
+      {
+        "table": "audio-cache",
+        "count": 0
+      },
+      {
+        "table": "audio_cache_logs",
+        "count": 0
+      },
+      {
+        "table": "audit_logs",
+        "count": 81
+      },
+      {
+        "table": "class_announcements",
+        "count": 0
+      },
+      {
+        "table": "class_materials",
+        "count": 0
+      },
+      {
+        "table": "class_members",
+        "count": 4
+      },
+      {
+        "table": "class_sessions",
+        "count": 0
+      },
+      {
+        "table": "classrooms",
+        "count": 2
+      },
+      {
+        "table": "community_comments",
+        "count": 2
+      },
+      {
+        "table": "community_migration_manifest",
+        "count": 0
+      },
+      {
+        "table": "community_moderation_logs",
+        "count": 0
+      },
+      {
+        "table": "community_posts",
+        "count": 2
+      },
+      {
+        "table": "community_reactions",
+        "count": 0
+      },
+      {
+        "table": "community_reports",
+        "count": 0
+      },
+      {
+        "table": "daily_quotes",
+        "count": 60
+      },
+      {
+        "table": "dictionary_entries",
+        "count": 125314
+      },
+      {
+        "table": "hanzi_decompositions",
+        "count": 325
+      },
+      {
+        "table": "hsk_attempts",
+        "count": 108
+      },
+      {
+        "table": "hsk_exam_structures",
+        "count": 14
+      },
+      {
+        "table": "hsk_exams",
+        "count": 27
+      },
+      {
+        "table": "hsk_mistakes",
+        "count": 591
+      },
+      {
+        "table": "hsk_questions",
+        "count": 417
+      },
+      {
+        "table": "hsk_reports",
+        "count": 0
+      },
+      {
+        "table": "hsk_resources",
+        "count": 0
+      },
+      {
+        "table": "issued_certificates",
+        "count": 0
+      },
+      {
+        "table": "learning_boss_challenges",
+        "count": 24
+      },
+      {
+        "table": "learning_chapters",
+        "count": 24
+      },
+      {
+        "table": "learning_lessons",
+        "count": 120
+      },
+      {
+        "table": "learning_levels",
+        "count": 7
+      },
+      {
+        "table": "lessons",
+        "count": 25
+      },
+      {
+        "table": "materials",
+        "count": 20
+      },
+      {
+        "table": "newsletter_subscribers",
+        "count": 0
+      },
+      {
+        "table": "profiles",
+        "count": 9
+      },
+      {
+        "table": "pronunciation_items",
+        "count": 60
+      },
+      {
+        "table": "rag_ingestion_audit_logs",
+        "count": 0
+      },
+      {
+        "table": "rag_knowledge_chunks",
+        "count": 455
+      },
+      {
+        "table": "rag_knowledge_sources",
+        "count": 1
+      },
+      {
+        "table": "reading_progress",
+        "count": 1
+      },
+      {
+        "table": "session_chat_messages",
+        "count": 0
+      },
+      {
+        "table": "session_participants",
+        "count": 0
+      },
+      {
+        "table": "srs_review_logs",
+        "count": 0
+      },
+      {
+        "table": "study_partners",
+        "count": 3
+      },
+      {
+        "table": "user_daily_missions",
+        "count": 0
+      },
+      {
+        "table": "user_journey_progress",
+        "count": 2
+      },
+      {
+        "table": "user_lesson_progress",
+        "count": 11
+      },
+      {
+        "table": "user_saved_materials",
+        "count": 0
+      },
+      {
+        "table": "user_skill_mastery",
+        "count": 0
+      },
+      {
+        "table": "user_srs_cards",
+        "count": 0
+      },
+      {
+        "table": "user_study_logs",
+        "count": 0
+      },
+      {
+        "table": "user_vocab_srs",
+        "count": 17
+      },
+      {
+        "table": "v_hsk_questions_public",
+        "count": 417
+      },
+      {
+        "table": "vocabulary",
+        "count": 805
+      },
+      {
+        "table": "writing_characters",
+        "count": 42
+      }
+    ],
+    "missing": [],
+    "errors": []
+  }
+}

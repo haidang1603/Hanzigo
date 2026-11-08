@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { isValidUuid } from './authService.js';
 import { sanitizeUserErrorMessage } from '../utils/errorSanitizer.js';
 import { recordAuditLog, AUDIT_CATEGORIES, AUDIT_SEVERITY } from './auditLogService.js';
+import { deleteMaterialFromStorage, getMaterialSignedUrl } from './storageService.js';
 
 // Keys for local simulation storage fallback
 const STORAGE_KEYS = {
@@ -1861,7 +1862,7 @@ export async function getMaterialsForClassroom(classroomId) {
   ensureSimulationSeed();
   if (!isSupabaseConfigured || !supabase || !isValidUuid(classroomId)) {
     const list = getLocalItem(STORAGE_KEYS.MATERIALS, []);
-    return list.filter(m => m.classroom_id === classroomId);
+    return list.filter(m => m.classroom_id === classroomId).map(normalizeClassMaterialRecord);
   }
 
   try {
@@ -1872,12 +1873,51 @@ export async function getMaterialsForClassroom(classroomId) {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(normalizeClassMaterialRecord);
   } catch (err) {
     console.warn('Supabase getMaterialsForClassroom notice, fallback:', err);
     const list = getLocalItem(STORAGE_KEYS.MATERIALS, []);
-    return list.filter(m => m.classroom_id === classroomId);
+    return list.filter(m => m.classroom_id === classroomId).map(normalizeClassMaterialRecord);
   }
+}
+
+/**
+ * Chuẩn hóa bản ghi material, giải mã metadata JSON trong description nếu có
+ */
+export function normalizeClassMaterialRecord(item) {
+  if (!item) return item;
+  let parsedMeta = null;
+  let cleanDesc = item.description || '';
+
+  if (typeof item.description === 'string' && item.description.startsWith('{') && item.description.endsWith('}')) {
+    try {
+      parsedMeta = JSON.parse(item.description);
+      cleanDesc = parsedMeta.note || '';
+    } catch {}
+  }
+
+  const isStorage = Boolean(
+    item.storage_path ||
+    parsedMeta?.storage_path ||
+    (item.file_url && item.file_url.startsWith('storage://'))
+  );
+
+  const storagePath = item.storage_path || parsedMeta?.storage_path || (
+    item.file_url && item.file_url.startsWith('storage://')
+      ? item.file_url.replace(/^storage:\/\/[^/]+\//, '')
+      : null
+  );
+
+  return {
+    ...item,
+    cleanDescription: cleanDesc,
+    isStorageFile: isStorage,
+    storageBucket: item.storage_bucket || parsedMeta?.storage_bucket || 'materials',
+    storagePath,
+    fileName: item.file_name || parsedMeta?.file_name || item.title,
+    mimeType: item.mime_type || parsedMeta?.mime_type || null,
+    fileSizeBytes: item.file_size_bytes || parsedMeta?.file_size_bytes || null
+  };
 }
 
 export async function uploadClassMaterial({
@@ -1886,23 +1926,41 @@ export async function uploadClassMaterial({
   title,
   description = '',
   fileUrl,
-  fileType = 'pdf'
+  fileType = 'pdf',
+  storagePath = null,
+  fileName = null,
+  mimeType = null,
+  fileSizeBytes = null
 }) {
   ensureSimulationSeed();
+
+  // Đóng gói metadata thành chuỗi an toàn
+  const metaObj = {
+    note: description ? description.trim() : '',
+    storage_path: storagePath,
+    storage_bucket: 'materials',
+    file_name: fileName || title.trim(),
+    mime_type: mimeType,
+    file_size_bytes: fileSizeBytes
+  };
+
+  const finalDescription = storagePath ? JSON.stringify(metaObj) : description.trim();
+  const finalFileUrl = fileUrl ? fileUrl.trim() : (storagePath ? `storage://materials/${storagePath}` : '');
+
   if (!isSupabaseConfigured || !supabase || !isValidUuid(classroomId)) {
     const newMat = {
       id: `mat-${Date.now()}`,
       classroom_id: classroomId,
       teacher_id: teacherId,
       title: title.trim(),
-      description: description.trim(),
-      file_url: fileUrl.trim(),
+      description: finalDescription,
+      file_url: finalFileUrl,
       file_type: fileType,
       created_at: new Date().toISOString()
     };
     const list = getLocalItem(STORAGE_KEYS.MATERIALS, []);
     setLocalItem(STORAGE_KEYS.MATERIALS, [newMat, ...list]);
-    return { success: true, material: newMat };
+    return { success: true, material: normalizeClassMaterialRecord(newMat) };
   }
 
   try {
@@ -1912,23 +1970,49 @@ export async function uploadClassMaterial({
         classroom_id: classroomId,
         teacher_id: teacherId,
         title: title.trim(),
-        description: description.trim(),
-        file_url: fileUrl.trim(),
+        description: finalDescription,
+        file_url: finalFileUrl,
         file_type: fileType
       })
       .select()
       .single();
 
     if (error) throw error;
-    return { success: true, material: data };
+    return { success: true, material: normalizeClassMaterialRecord(data) };
   } catch (err) {
     console.error('Supabase uploadClassMaterial error:', err);
     return { success: false, error: err.message };
   }
 }
 
-export async function deleteClassMaterial(materialId) {
+export async function deleteClassMaterial(materialId, storagePath = null) {
   ensureSimulationSeed();
+
+  // 1. Nếu có storagePath hoặc cần truy vấn storagePath trước khi xóa
+  let pathToDelete = storagePath;
+  if (!pathToDelete && isSupabaseConfigured && supabase && isValidUuid(materialId)) {
+    try {
+      const { data } = await supabase
+        .from('class_materials')
+        .select('description, file_url')
+        .eq('id', materialId)
+        .maybeSingle();
+
+      if (data) {
+        const norm = normalizeClassMaterialRecord(data);
+        if (norm.storagePath) pathToDelete = norm.storagePath;
+      }
+    } catch {}
+  }
+
+  // 2. Xóa object từ Supabase Storage nếu là file lưu trữ
+  if (pathToDelete) {
+    await deleteMaterialFromStorage(pathToDelete).catch(err => {
+      console.warn('Storage file deletion notice:', err);
+    });
+  }
+
+  // 3. Xóa record trong DB / Local simulation
   if (!isSupabaseConfigured || !supabase || !isValidUuid(materialId)) {
     const list = getLocalItem(STORAGE_KEYS.MATERIALS, []);
     setLocalItem(STORAGE_KEYS.MATERIALS, list.filter(m => m.id !== materialId));
@@ -1947,6 +2031,28 @@ export async function deleteClassMaterial(materialId) {
     console.error('Supabase deleteClassMaterial error:', err);
     return { success: false, error: err.message };
   }
+}
+
+/**
+ * Lấy Signed URL để xem hoặc tải tài liệu lớp học an toàn
+ */
+export async function getDownloadUrlForClassMaterial(material) {
+  if (!material) return null;
+  const norm = normalizeClassMaterialRecord(material);
+
+  if (norm.isStorageFile && norm.storagePath) {
+    const res = await getMaterialSignedUrl(norm.storagePath, 3600);
+    if (res.success && res.signedUrl) {
+      return res.signedUrl;
+    }
+  }
+
+  // Fallback về file_url nếu là HTTP(S) link
+  if (norm.file_url && (norm.file_url.startsWith('http://') || norm.file_url.startsWith('https://') || norm.file_url.startsWith('/'))) {
+    return norm.file_url;
+  }
+
+  return norm.file_url || null;
 }
 
 /**

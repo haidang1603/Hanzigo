@@ -25,7 +25,9 @@ import {
   LogOut,
   Settings,
   Shield,
-  Search
+  Search,
+  Headphones,
+  Target
 } from 'lucide-react';
 import { playClickSound } from '../utils/audio';
 import StreakModal from './learning/StreakModal';
@@ -67,6 +69,27 @@ export default function Navbar({
 
   // Specific skill training items grouped cleanly under "Luyện tập"
   const practiceItems = [
+    { 
+      id: 'grammar', 
+      label: 'Luyện ngữ pháp', 
+      desc: 'Cấu trúc câu, trật tự từ & giải thích HSK', 
+      icon: Sparkles, 
+      color: 'text-purple-500 bg-purple-500/10' 
+    },
+    { 
+      id: 'listening', 
+      label: 'Luyện nghe HSK', 
+      desc: 'Nghe phản xạ & chọn đáp án âm thanh', 
+      icon: Headphones, 
+      color: 'text-sky-500 bg-sky-500/10' 
+    },
+    { 
+      id: 'practice', 
+      label: 'Trung tâm luyện tập', 
+      desc: 'Tổng quan kỹ năng & bài tập theo cấp độ', 
+      icon: Target, 
+      color: 'text-teal-500 bg-teal-500/10' 
+    },
     { 
       id: 'vocabulary', 
       label: 'Từ vựng HSK', 
@@ -111,7 +134,7 @@ export default function Navbar({
     { id: 'community', label: 'Cộng đồng', desc: 'Hỏi đáp & Ghép bạn học', icon: Users },
   ];
 
-  const isPracticeActive = practiceItems.some(item => item.id === activeTab);
+  const isPracticeActive = practiceItems.some(item => item.id === activeTab) || activeTab === 'practice' || activeTab === 'grammar' || activeTab === 'listening';
   const activePractice = practiceItems.find(item => item.id === activeTab);
 
   const isMoreActive = moreItems.some(item => item.id === activeTab);
@@ -559,7 +582,7 @@ export default function Navbar({
                   Đăng nhập
                 </button>
                 <button
-                  onClick={() => handleNavClick('lesson')}
+                  onClick={() => handleNavClick('roadmap')}
                   className="px-3 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-md shadow-[#E85D3F]/25 hover:shadow-lg hover:shadow-[#E85D3F]/35 transition-all cursor-pointer whitespace-nowrap"
                 >
                   Bắt đầu học

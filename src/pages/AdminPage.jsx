@@ -31,55 +31,50 @@ import {
   Filter,
   Sparkles,
   AlertTriangle,
-  Volume2
+  Volume2,
+  ChevronLeft,
+  ChevronRight,
+  Key,
+  Loader2,
+  ShieldAlert
 } from 'lucide-react';
 import AiMonitoringDashboard from '../components/admin/AiMonitoringDashboard';
+import CommunityModerationDashboard from '../components/admin/CommunityModerationDashboard';
 import { 
-  getStoredMaterials, 
-  saveMaterial, 
-  updateMaterial, 
-  deleteMaterial, 
-  resetMaterials,
-  getStoredCustomVocab,
-  saveCustomVocab,
-  deleteCustomVocab,
-  getStoredCustomLessons,
-  saveCustomLesson,
-  deleteCustomLesson,
   MATERIAL_CATEGORIES,
   MATERIAL_LEVELS,
   MATERIAL_FORMATS
 } from '../utils/materialsStorage';
+import {
+  getCustomVocabularyFromDb,
+  addCustomVocabularyToDb,
+  updateCustomVocabularyInDb,
+  deleteCustomVocabularyFromDb,
+  checkVocabularyDuplicate,
+  migrateLocalStorageCustomVocab
+} from '../services/customVocabularyService';
+import {
+  getCustomLessonsFromDb,
+  addCustomLessonToDb,
+  updateCustomLessonInDb,
+  deleteCustomLessonFromDb,
+  checkLessonDuplicate,
+  migrateLocalStorageCustomLessons
+} from '../services/customLessonService';
 import { 
   getAllProfilesFromDb, 
   updateUserRoleAndStatusInDb, 
   deleteUserProfileFromDb,
+  updateUserProfile,
+  adminCreateUser
+} from '../supabase/services';
+import {
+  getMaterialsFromDb,
   addMaterialToDb,
   updateMaterialInDb,
-  deleteMaterialFromDb,
-  updateUserProfile
-} from '../supabase/services';
+  deleteMaterialFromDb
+} from '../services/materialsService';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
-
-// Helper to filter demo/mock dummy accounts
-function isDemoUser(u) {
-  if (!u) return true;
-  const id = String(u.id || '');
-  const email = String(u.email || '').toLowerCase();
-  const demoIds = ['user-admin-1', 'user-mod-1', 'user-stu-1', 'user-stu-2', 'user-stu-3', 'user-stu-4'];
-  const demoEmails = [
-    'hoang.tran@hanzigo.com',
-    'mai.nguyen@gmail.com',
-    'dat.le@outlook.com',
-    'quynhanh.pham@yahoo.com',
-    'thinh.vu.learner@gmail.com'
-  ];
-  return demoIds.includes(id) || 
-         demoEmails.includes(email) || 
-         id.startsWith('user-admin-') || 
-         id.startsWith('user-mod-') || 
-         id.startsWith('user-stu-');
-}
 
 function checkIsAdmin(user) {
   if (!user) return false;
@@ -95,25 +90,21 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   const currentRole = isAdmin ? 'admin' : (user?.role || 'student');
 
   // 1. Users Directory State
-  const [usersList, setUsersList] = useState(() => {
-    try {
-      const saved = localStorage.getItem('hanzigo_admin_users_directory');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter(u => !isDemoUser(u));
-          localStorage.setItem('hanzigo_admin_users_directory', JSON.stringify(cleaned));
-          return cleaned;
-        }
-      }
-    } catch {}
-    return [];
-  });
+  const [usersList, setUsersList] = useState([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [fetchUsersError, setFetchUsersError] = useState(null);
 
   const [userSearch, setUserSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState('all');
   const [userStatusFilter, setUserStatusFilter] = useState('all');
   const [userSortBy, setUserSortBy] = useState('xp');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  // Reset pagination when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [userSearch, userRoleFilter, userStatusFilter, userSortBy]);
 
   // User Modals State
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
@@ -122,12 +113,15 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   const [newUserForm, setNewUserForm] = useState({
     name: '',
     email: '',
+    password: '',
     role: 'student',
     level: 'HSK 1 - Sơ cấp',
     status: 'active',
     xp: 0,
     streak: 0
   });
+  const [isSubmittingNewUser, setIsSubmittingNewUser] = useState(false);
+  const [addUserError, setAddUserError] = useState('');
 
   // Admin Profile Name Editing State
   const [isEditingAdminName, setIsEditingAdminName] = useState(false);
@@ -140,8 +134,10 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     }
   }, [user?.name, isEditingAdminName]);
 
-  // 2. Materials State
-  const [materials, setMaterials] = useState(() => getStoredMaterials());
+  // 2. Materials State (Authoritative source: Supabase)
+  const [materials, setMaterials] = useState([]);
+  const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
+  const [materialsError, setMaterialsError] = useState(null);
   const [matSearch, setMatSearch] = useState('');
   const [matCategoryFilter, setMatCategoryFilter] = useState('Tất cả');
   const [matLevelFilter, setMatLevelFilter] = useState('Tất cả');
@@ -169,8 +165,12 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     isHidden: false
   });
 
-  // 3. Custom Vocab State
-  const [customVocab, setCustomVocab] = useState(() => getStoredCustomVocab());
+  // 3. Custom Vocab State (Supabase Authoritative DB)
+  const [customVocab, setCustomVocab] = useState([]);
+  const [isLoadingVocab, setIsLoadingVocab] = useState(false);
+  const [vocabError, setVocabError] = useState(null);
+  const [editingVocabId, setEditingVocabId] = useState(null);
+  const [isSavingVocab, setIsSavingVocab] = useState(false);
   const [vocabSearch, setVocabSearch] = useState('');
   const [vocabHskFilter, setVocabHskFilter] = useState('all');
   const [vocabFormOpen, setVocabFormOpen] = useState(false);
@@ -187,8 +187,14 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     memoryTip: ''
   });
 
-  // 4. Custom Lesson State
-  const [customLessons, setCustomLessons] = useState(() => getStoredCustomLessons());
+  // 4. Custom Lesson State (Supabase Authoritative DB)
+  const [customLessons, setCustomLessons] = useState([]);
+  const [isLoadingLessons, setIsLoadingLessons] = useState(false);
+  const [lessonsError, setLessonsError] = useState(null);
+  const [editingLessonId, setEditingLessonId] = useState(null);
+  const [isSavingLesson, setIsSavingLesson] = useState(false);
+  const [lessonSearch, setLessonSearch] = useState('');
+  const [lessonLevelFilter, setLessonLevelFilter] = useState('all');
   const [lessonFormOpen, setLessonFormOpen] = useState(false);
   const [lessonForm, setLessonForm] = useState({
     title: '',
@@ -202,91 +208,46 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   // Toast Notification
   const [toastMsg, setToastMsg] = useState(null);
 
+  // Fetch users directly from Supabase
+  const loadCloudProfiles = async () => {
+    setIsLoadingUsers(true);
+    setFetchUsersError(null);
+    try {
+      const cloudProfiles = await getAllProfilesFromDb();
+      if (Array.isArray(cloudProfiles)) {
+        const mapped = cloudProfiles.map(cp => ({
+          id: cp.id,
+          name: cp.name || cp.full_name || 'Học viên',
+          email: cp.email || '',
+          role: cp.role || 'student',
+          level: cp.level || 'HSK 1 - Sơ cấp',
+          xp: typeof cp.xp === 'number' ? cp.xp : 0,
+          streak: typeof cp.streak === 'number' ? cp.streak : 0,
+          wordsLearned: cp.words_learned || 0,
+          status: cp.status || 'active',
+          avatar: cp.avatar || cp.avatar_url || null,
+          joinedDate: cp.created_at ? cp.created_at.split('T')[0] : '2026-01-01',
+          lastActive: 'Gần đây'
+        }));
+        setUsersList(mapped);
+      } else {
+        setUsersList([]);
+      }
+    } catch (err) {
+      console.warn('Notice loading Supabase profiles:', err);
+      setFetchUsersError(err.message || 'Không thể tải danh sách người dùng từ máy chủ.');
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
   // Sync users from Supabase on mount
   useEffect(() => {
-    async function loadCloudProfiles() {
-      try {
-        const cloudProfiles = await getAllProfilesFromDb();
-        if (Array.isArray(cloudProfiles) && cloudProfiles.length > 0) {
-          setUsersList(prev => {
-            const combinedMap = new Map();
-            prev.filter(u => !isDemoUser(u)).forEach(u => combinedMap.set(u.email || u.id, u));
-            cloudProfiles.filter(cp => !isDemoUser(cp)).forEach(cp => {
-              const key = cp.email || cp.id;
-              const existing = combinedMap.get(key) || {};
-              combinedMap.set(key, {
-                ...existing,
-                id: cp.id,
-                name: cp.name || existing.name || 'Học viên',
-                email: cp.email || existing.email || '',
-                role: cp.role || existing.role || 'student',
-                level: cp.level || existing.level || 'HSK 1 - Sơ cấp',
-                xp: cp.xp !== undefined ? cp.xp : (existing.xp || 50),
-                streak: cp.streak !== undefined ? cp.streak : (existing.streak || 1),
-                wordsLearned: cp.words_learned || existing.wordsLearned || 0,
-                status: cp.status || existing.status || 'active',
-                avatar: cp.avatar || existing.avatar || null,
-                joinedDate: cp.created_at ? cp.created_at.split('T')[0] : (existing.joinedDate || '2026-01-01'),
-                lastActive: 'Gần đây'
-              });
-            });
-            const merged = Array.from(combinedMap.values());
-            localStorage.setItem('hanzigo_admin_users_directory', JSON.stringify(merged));
-            return merged;
-          });
-        }
-      } catch (err) {
-        console.warn('Notice loading Supabase profiles:', err);
-      }
-    }
     loadCloudProfiles();
   }, []);
 
-  // Sync current user into directory if missing
-  useEffect(() => {
-    if (user && user.email) {
-      setUsersList(prev => {
-        const cleaned = prev.filter(u => !isDemoUser(u));
-        const idx = cleaned.findIndex(u => u.email === user.email || u.id === user.uid || u.id === user.id);
-        if (idx >= 0) {
-          const updated = [...cleaned];
-          updated[idx] = {
-            ...updated[idx],
-            name: user.name || updated[idx].name,
-            level: user.level || updated[idx].level,
-            avatar: user.avatar || updated[idx].avatar,
-            role: currentRole
-          };
-          localStorage.setItem('hanzigo_admin_users_directory', JSON.stringify(updated));
-          return updated;
-        } else {
-          const newEntry = {
-            id: user.uid || user.id || `user-${Date.now()}`,
-            name: user.name || 'Quản trị viên HanziGo',
-            email: user.email,
-            role: currentRole,
-            level: user.level || 'HSK 1 - Sơ cấp',
-            xp: user.xp || 100,
-            streak: user.streak || 1,
-            wordsLearned: user.wordsLearned || 20,
-            status: 'active',
-            avatar: user.avatar || null,
-            joinedDate: new Date().toISOString().split('T')[0],
-            lastActive: 'Vừa xong'
-          };
-          const updated = [newEntry, ...cleaned];
-          localStorage.setItem('hanzigo_admin_users_directory', JSON.stringify(updated));
-          return updated;
-        }
-      });
-    }
-  }, [user, currentRole]);
-
   const saveUsersList = (newList) => {
     setUsersList(newList);
-    try {
-      localStorage.setItem('hanzigo_admin_users_directory', JSON.stringify(newList));
-    } catch {}
   };
 
   const showToast = (message, type = 'success') => {
@@ -329,12 +290,43 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     showToast(`Đã đổi tên quản trị viên thành: "${newName}"!`);
   };
 
+  // Generate strong random password
+  const handleGenerateRandomPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*';
+    let pwd = '';
+    for (let i = 0; i < 12; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewUserForm(prev => ({ ...prev, password: pwd }));
+    setShowNewUserPassword(true);
+  };
+
   // User Actions
   const handleChangeUserRole = async (targetUser, newRole) => {
+    const isSelf = user && (user.id === targetUser.id || user.email === targetUser.email || user.uid === targetUser.id);
+    if (isSelf) {
+      alert('Quản trị viên không thể tự thay đổi vai trò của chính mình!');
+      return;
+    }
+
+    if (newRole === 'admin') {
+      const confirmAdmin = window.confirm(
+        `CẢNH BÁO: Cấp quyền Quản trị viên (Admin) cho "${targetUser.name}" (${targetUser.email}) sẽ trao toàn bộ quyền kiểm soát hệ thống cho tài khoản này. Bạn có chắc chắn muốn tiếp tục?`
+      );
+      if (!confirmAdmin) return;
+    }
+
     playClickSound();
-    const updated = usersList.map(u => u.id === targetUser.id ? { ...u, role: newRole } : u);
-    saveUsersList(updated);
-    await updateUserRoleAndStatusInDb(targetUser.id, { role: newRole });
+    const oldUsers = [...usersList];
+    setUsersList(prev => prev.map(u => u.id === targetUser.id ? { ...u, role: newRole } : u));
+
+    const ok = await updateUserRoleAndStatusInDb(targetUser.id, { role: newRole });
+    if (!ok) {
+      setUsersList(oldUsers);
+      showToast('Cập nhật quyền thất bại trên máy chủ.', 'error');
+      return;
+    }
+
     if (user && (user.id === targetUser.id || user.email === targetUser.email)) {
       if (onUpdateUser) onUpdateUser({ ...user, role: newRole });
     }
@@ -342,63 +334,128 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   };
 
   const handleToggleUserStatus = async (targetUser) => {
+    const isSelf = user && (user.id === targetUser.id || user.email === targetUser.email || user.uid === targetUser.id);
+    if (isSelf) {
+      alert('Quản trị viên không thể tự khóa tài khoản của chính mình!');
+      return;
+    }
+
     playClickSound();
     const nextStatus = targetUser.status === 'blocked' ? 'active' : 'blocked';
-    const updated = usersList.map(u => u.id === targetUser.id ? { ...u, status: nextStatus } : u);
-    saveUsersList(updated);
-    await updateUserRoleAndStatusInDb(targetUser.id, { status: nextStatus });
+    const oldUsers = [...usersList];
+    setUsersList(prev => prev.map(u => u.id === targetUser.id ? { ...u, status: nextStatus } : u));
+
+    const ok = await updateUserRoleAndStatusInDb(targetUser.id, { status: nextStatus });
+    if (!ok) {
+      setUsersList(oldUsers);
+      showToast('Cập nhật trạng thái người dùng thất bại trên máy chủ.', 'error');
+      return;
+    }
+
     showToast(`Đã ${nextStatus === 'blocked' ? 'khóa' : 'mở khóa'} tài khoản: ${targetUser.name}!`);
   };
 
   const handleDeleteUser = async (targetUser) => {
-    if (window.confirm(`Xác nhận xóa tài khoản "${targetUser.name}" (${targetUser.email}) khỏi hệ thống?`)) {
-      playClickSound();
-      const updated = usersList.filter(u => u.id !== targetUser.id);
-      saveUsersList(updated);
-      await deleteUserProfileFromDb(targetUser.id);
-      showToast(`Đã xóa tài khoản: ${targetUser.name}!`);
+    const isSelf = user && (user.id === targetUser.id || user.email === targetUser.email || user.uid === targetUser.id);
+    if (isSelf) {
+      alert('Quản trị viên không thể tự xóa tài khoản của chính mình!');
+      return;
     }
+
+    if (!window.confirm(`CẢNH BÁO: Xác nhận xóa vĩnh viễn tài khoản "${targetUser.name}" (${targetUser.email}) khỏi hệ thống? Thao tác này không thể hoàn tác!`)) {
+      return;
+    }
+
+    playClickSound();
+    const oldUsers = [...usersList];
+    setUsersList(prev => prev.filter(u => u.id !== targetUser.id));
+
+    const ok = await deleteUserProfileFromDb(targetUser.id);
+    if (!ok) {
+      setUsersList(oldUsers);
+      showToast('Xóa tài khoản người dùng thất bại trên máy chủ.', 'error');
+      return;
+    }
+
+    showToast(`Đã xóa vĩnh viễn tài khoản: ${targetUser.name}!`);
   };
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
-    if (!newUserForm.name.trim() || !newUserForm.email.trim()) {
-      alert('Vui lòng nhập họ tên và email!');
+    setCreateUserError(null);
+
+    const name = newUserForm.name.trim();
+    const email = newUserForm.email.trim();
+    const role = newUserForm.role;
+    const password = (newUserForm.password || '').trim();
+    const level = newUserForm.level;
+
+    if (!name || !email) {
+      setCreateUserError('Vui lòng nhập đầy đủ họ tên và email!');
       return;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setCreateUserError('Địa chỉ email không đúng định dạng hợp lệ!');
+      return;
+    }
+
+    if (role !== 'student' && role !== 'teacher') {
+      setCreateUserError('Chỉ cho phép tạo tài khoản vai trò Học viên hoặc Giáo viên.');
+      return;
+    }
+
+    if (!password || password.length < 8) {
+      setCreateUserError('Mật khẩu khởi tạo phải chứa ít nhất 8 ký tự!');
+      return;
+    }
+
     playClickSound();
-    const created = {
-      id: `user-${Date.now()}`,
-      name: newUserForm.name.trim(),
-      email: newUserForm.email.trim(),
-      role: newUserForm.role,
-      level: newUserForm.level,
-      xp: Number(newUserForm.xp) || 0,
-      streak: Number(newUserForm.streak) || 0,
-      wordsLearned: 0,
-      status: newUserForm.status,
-      avatar: null,
-      joinedDate: new Date().toISOString().split('T')[0],
-      lastActive: 'Vừa tạo'
-    };
-    const updated = [created, ...usersList];
-    saveUsersList(updated);
-    setIsAddUserModalOpen(false);
-    setNewUserForm({
-      name: '',
-      email: '',
-      role: 'student',
-      level: 'HSK 1 - Sơ cấp',
-      status: 'active',
-      xp: 0,
-      streak: 0
-    });
-    showToast(`Đã tạo tài khoản mới: ${created.name}!`);
+    setIsCreatingUser(true);
+
+    try {
+      await adminCreateUser({
+        name,
+        email,
+        role,
+        password,
+        level,
+        status: 'active'
+      });
+
+      showToast(`Đã tạo thành công tài khoản cho ${name} (${email})!`);
+      setIsAddUserModalOpen(false);
+      setNewUserForm({
+        name: '',
+        email: '',
+        role: 'student',
+        password: '',
+        level: 'HSK 1 - Sơ cấp'
+      });
+      setShowNewUserPassword(false);
+
+      // Refresh real list from Supabase
+      await loadCloudProfiles();
+    } catch (err) {
+      console.error('adminCreateUser failed:', err);
+      setCreateUserError(err.message || 'Không thể tạo tài khoản trên máy chủ.');
+      playErrorSound();
+    } finally {
+      setIsCreatingUser(false);
+    }
   };
 
   const handleSaveEditUser = async (e) => {
     e.preventDefault();
-    if (!editingUser.name.trim()) return;
+    if (!editingUser || !editingUser.name.trim()) return;
+
+    const isSelf = user && (user.id === editingUser.id || user.email === editingUser.email || user.uid === editingUser.id);
+    if (isSelf && (editingUser.role !== 'admin' || editingUser.status !== 'active')) {
+      alert('Quản trị viên không thể tự thay đổi vai trò hoặc tự khóa tài khoản của chính mình!');
+      return;
+    }
+
     playClickSound();
     const updated = usersList.map(u => u.id === editingUser.id ? editingUser : u);
     saveUsersList(updated);
@@ -413,6 +470,94 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     setIsEditUserModalOpen(false);
     showToast(`Đã lưu thay đổi cho tài khoản ${editingUser.name}!`);
   };
+
+  // Fetch materials directly from Supabase DB (authoritative)
+  const loadMaterialsData = async () => {
+    setIsLoadingMaterials(true);
+    setMaterialsError(null);
+    try {
+      const dbItems = await getMaterialsFromDb();
+      if (Array.isArray(dbItems)) {
+        setMaterials(dbItems);
+      } else {
+        setMaterials([]);
+      }
+    } catch (err) {
+      console.error('Failed to load materials from DB:', err);
+      setMaterialsError('Không thể nạp danh sách tài liệu từ cơ sở dữ liệu.');
+    } finally {
+      setIsLoadingMaterials(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMaterialsData();
+    const handleRemoteMaterialsSync = () => {
+      loadMaterialsData();
+    };
+    window.addEventListener('hanzigo:materials_updated', handleRemoteMaterialsSync);
+    return () => window.removeEventListener('hanzigo:materials_updated', handleRemoteMaterialsSync);
+  }, []);
+
+  // Load Custom Vocab directly from Supabase DB (authoritative)
+  const loadCustomVocabData = async () => {
+    setIsLoadingVocab(true);
+    setVocabError(null);
+    try {
+      const items = await getCustomVocabularyFromDb();
+      setCustomVocab(Array.isArray(items) ? items : []);
+    } catch (err) {
+      console.error('Failed to load custom vocab from DB:', err);
+      setVocabError('Không thể nạp danh sách từ vựng bổ sung từ cơ sở dữ liệu.');
+    } finally {
+      setIsLoadingVocab(false);
+    }
+  };
+
+  // Load Custom Lessons directly from Supabase DB (authoritative)
+  const loadCustomLessonsData = async () => {
+    setIsLoadingLessons(true);
+    setLessonsError(null);
+    try {
+      const items = await getCustomLessonsFromDb();
+      setCustomLessons(Array.isArray(items) ? items : []);
+    } catch (err) {
+      console.error('Failed to load custom lessons from DB:', err);
+      setLessonsError('Không thể nạp danh sách bài học bổ sung từ cơ sở dữ liệu.');
+    } finally {
+      setIsLoadingLessons(false);
+    }
+  };
+
+  useEffect(() => {
+    const initializeCustomContent = async () => {
+      try {
+        await migrateLocalStorageCustomVocab(user);
+      } catch (err) {
+        console.warn('Custom vocab migration notice:', err);
+      }
+      try {
+        await migrateLocalStorageCustomLessons(user);
+      } catch (err) {
+        console.warn('Custom lessons migration notice:', err);
+      }
+      await Promise.all([loadCustomVocabData(), loadCustomLessonsData()]);
+    };
+
+    initializeCustomContent();
+
+    const handleRemoteVocabSync = () => loadCustomVocabData();
+    const handleRemoteLessonsSync = () => loadCustomLessonsData();
+
+    window.addEventListener('hanzigo:custom_vocab_updated', handleRemoteVocabSync);
+    window.addEventListener('hanzigo:custom_lessons_updated', handleRemoteLessonsSync);
+
+    return () => {
+      window.removeEventListener('hanzigo:custom_vocab_updated', handleRemoteVocabSync);
+      window.removeEventListener('hanzigo:custom_lessons_updated', handleRemoteLessonsSync);
+    };
+  }, [user]);
+
 
   // Materials Actions
   const handleOpenCreateMat = () => {
@@ -461,20 +606,23 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     playClickSound();
     const tagsArray = typeof matForm.tags === 'string'
       ? matForm.tags.split(',').map(t => t.trim()).filter(Boolean)
-      : matForm.tags;
+      : (Array.isArray(matForm.tags) ? matForm.tags : []);
 
     const payload = { ...matForm, tags: tagsArray };
 
-    if (editingMatId) {
-      const updated = updateMaterial(editingMatId, payload);
-      setMaterials(updated);
-      await updateMaterialInDb(editingMatId, payload).catch(() => {});
-      showToast(`Đã cập nhật tài liệu: ${payload.title}!`);
-    } else {
-      const updated = saveMaterial(payload);
-      setMaterials(updated);
-      await addMaterialToDb(payload).catch(() => {});
-      showToast(`Đã thêm tài liệu mới: ${payload.title}!`);
+    try {
+      if (editingMatId) {
+        await updateMaterialInDb(editingMatId, payload);
+        showToast(`Đã cập nhật tài liệu: ${payload.title}!`);
+      } else {
+        await addMaterialToDb(payload);
+        showToast(`Đã thêm tài liệu mới: ${payload.title}!`);
+      }
+      window.dispatchEvent(new CustomEvent('hanzigo:materials_updated'));
+      await loadMaterialsData();
+    } catch (err) {
+      console.error('Error saving material:', err);
+      showToast('Có lỗi xảy ra khi lưu tài liệu lên cơ sở dữ liệu.');
     }
     setIsMatFormOpen(false);
   };
@@ -482,48 +630,52 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   const handleDeleteMaterial = async (id, title) => {
     if (window.confirm(`Xác nhận xóa tài liệu "${title}" khỏi hệ thống?`)) {
       playClickSound();
-      const updated = deleteMaterial(id);
-      setMaterials(updated);
-      await deleteMaterialFromDb(id).catch(() => {});
-      showToast(`Đã xóa tài liệu: ${title}!`);
+      try {
+        await deleteMaterialFromDb(id);
+        window.dispatchEvent(new CustomEvent('hanzigo:materials_updated'));
+        await loadMaterialsData();
+        showToast(`Đã xóa tài liệu: ${title}!`);
+      } catch (err) {
+        console.error('Error deleting material:', err);
+        showToast('Có lỗi xảy ra khi xóa tài liệu.');
+      }
     }
   };
 
-  const handleToggleMaterialFeatured = (mat) => {
+  const handleToggleMaterialFeatured = async (mat) => {
     playClickSound();
-    const updated = updateMaterial(mat.id, { isFeatured: !mat.isFeatured });
-    setMaterials(updated);
-    showToast(`Đã ${!mat.isFeatured ? 'ghim nổi bật' : 'bỏ ghim'} tài liệu: ${mat.title}`);
-  };
-
-  const handleToggleMaterialHidden = (mat) => {
-    playClickSound();
-    const updated = updateMaterial(mat.id, { isHidden: !mat.isHidden });
-    setMaterials(updated);
-    showToast(`Đã ${!mat.isHidden ? 'ẩn' : 'hiển thị'} tài liệu: ${mat.title}`);
-  };
-
-  const handleResetMaterials = () => {
-    if (window.confirm('Khôi phục danh sách tài liệu về bộ 20 tài liệu chuẩn ban đầu?')) {
-      playClickSound();
-      const reset = resetMaterials();
-      setMaterials(reset);
-      showToast('Đã khôi phục kho tài liệu chuẩn!');
+    try {
+      await updateMaterialInDb(mat.id, { isFeatured: !mat.isFeatured });
+      window.dispatchEvent(new CustomEvent('hanzigo:materials_updated'));
+      await loadMaterialsData();
+      showToast(`Đã ${!mat.isFeatured ? 'ghim nổi bật' : 'bỏ ghim'} tài liệu: ${mat.title}`);
+    } catch (err) {
+      console.error('Error toggling featured material:', err);
     }
   };
 
-  // Vocab Actions
-  const handleSaveVocab = (e) => {
-    e.preventDefault();
-    if (!vocabForm.hanzi.trim() || !vocabForm.meaning.trim()) {
-      alert('Vui lòng nhập chữ Hán và ý nghĩa!');
-      return;
-    }
+  const handleToggleMaterialHidden = async (mat) => {
     playClickSound();
-    const updated = saveCustomVocab(vocabForm);
-    setCustomVocab(updated);
-    showToast(`Đã thêm từ vựng: ${vocabForm.hanzi} (${vocabForm.pinyin})!`);
-    setVocabFormOpen(false);
+    try {
+      await updateMaterialInDb(mat.id, { isHidden: !mat.isHidden });
+      window.dispatchEvent(new CustomEvent('hanzigo:materials_updated'));
+      await loadMaterialsData();
+      showToast(`Đã ${!mat.isHidden ? 'ẩn' : 'hiển thị'} tài liệu: ${mat.title}`);
+    } catch (err) {
+      console.error('Error toggling hidden material:', err);
+    }
+  };
+
+  const handleRefreshMaterials = async () => {
+    playClickSound();
+    await loadMaterialsData();
+    showToast('Đã làm mới danh sách tài liệu từ cơ sở dữ liệu!');
+  };
+
+  // Vocab Actions (Supabase DB Authoritative)
+  const handleOpenCreateVocab = () => {
+    playClickSound();
+    setEditingVocabId(null);
     setVocabForm({
       hanzi: '',
       pinyin: '',
@@ -536,29 +688,103 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       exampleMeaning: '',
       memoryTip: ''
     });
+    setVocabFormOpen(true);
   };
 
-  const handleDeleteVocab = (id, hanzi) => {
-    if (window.confirm(`Xóa từ vựng: ${hanzi}?`)) {
-      playClickSound();
-      const updated = deleteCustomVocab(id);
-      setCustomVocab(updated);
-      showToast('Đã xóa từ vựng!');
-    }
+  const handleOpenEditVocab = (v) => {
+    playClickSound();
+    setEditingVocabId(v.id);
+    setVocabForm({
+      hanzi: v.hanzi || '',
+      pinyin: v.pinyin || '',
+      hanviet: v.hanviet || '',
+      meaning: v.meaning || '',
+      hsk: v.hsk || 'hsk1',
+      topic: v.topic || 'Giao tiếp hàng ngày',
+      example: v.exampleSentence || v.example || '',
+      examplePinyin: v.examplePinyin || '',
+      exampleMeaning: v.exampleMeaning || '',
+      memoryTip: v.mnemonic || v.memoryTip || ''
+    });
+    setVocabFormOpen(true);
   };
 
-  // Lesson Actions
-  const handleSaveLesson = (e) => {
+  const handleSaveVocab = async (e) => {
     e.preventDefault();
-    if (!lessonForm.title.trim()) {
-      alert('Vui lòng nhập tên bài học!');
+    const cleanHanzi = (vocabForm.hanzi || '').trim();
+    const cleanMeaning = (vocabForm.meaning || '').trim();
+
+    if (!cleanHanzi || !cleanMeaning) {
+      alert('Vui lòng nhập chữ Hán và ý nghĩa!');
       return;
     }
+
+    setIsSavingVocab(true);
+    try {
+      const isDup = await checkVocabularyDuplicate(cleanHanzi, editingVocabId);
+      if (isDup) {
+        alert(`Từ vựng chữ Hán "${cleanHanzi}" đã tồn tại trong từ điển hệ thống hoặc danh sách bổ sung!`);
+        setIsSavingVocab(false);
+        return;
+      }
+
+      playClickSound();
+      if (editingVocabId) {
+        const updated = await updateCustomVocabularyInDb(editingVocabId, vocabForm);
+        setCustomVocab(prev => prev.map(item => String(item.id) === String(editingVocabId) ? updated : item));
+        showToast(`Đã cập nhật từ vựng: ${cleanHanzi}!`);
+      } else {
+        const created = await addCustomVocabularyToDb(vocabForm, user);
+        setCustomVocab(prev => [created, ...prev]);
+        showToast(`Đã thêm từ vựng: ${cleanHanzi} (${vocabForm.pinyin || ''})!`);
+      }
+
+      setVocabFormOpen(false);
+      setEditingVocabId(null);
+      setVocabForm({
+        hanzi: '',
+        pinyin: '',
+        hanviet: '',
+        meaning: '',
+        hsk: 'hsk1',
+        topic: 'Giao tiếp hàng ngày',
+        example: '',
+        examplePinyin: '',
+        exampleMeaning: '',
+        memoryTip: ''
+      });
+    } catch (err) {
+      console.error('Save vocab error:', err);
+      showToast(err.message || 'Lỗi lưu từ vựng!', 'error');
+    } finally {
+      setIsSavingVocab(false);
+    }
+  };
+
+  const handleDeleteVocab = async (id, hanzi) => {
+    if (window.confirm(`Xóa từ vựng: ${hanzi}? Dữ liệu sẽ được cập nhật trực tiếp trên cơ sở dữ liệu Supabase.`)) {
+      playClickSound();
+      try {
+        await deleteCustomVocabularyFromDb(id);
+        setCustomVocab(prev => prev.filter(item => String(item.id) !== String(id)));
+        showToast(`Đã xóa từ vựng: ${hanzi}!`);
+      } catch (err) {
+        console.error('Delete vocab error:', err);
+        showToast(err.message || 'Lỗi khi xóa từ vựng!', 'error');
+      }
+    }
+  };
+
+  const handleRefreshVocab = async () => {
     playClickSound();
-    const updated = saveCustomLesson(lessonForm);
-    setCustomLessons(updated);
-    showToast(`Đã thêm bài học: ${lessonForm.title}!`);
-    setLessonFormOpen(false);
+    await loadCustomVocabData();
+    showToast('Đã làm mới danh sách từ vựng bổ sung!');
+  };
+
+  // Lesson Actions (Supabase DB Authoritative)
+  const handleOpenCreateLesson = () => {
+    playClickSound();
+    setEditingLessonId(null);
     setLessonForm({
       title: '',
       level: 'HSK 1',
@@ -567,15 +793,88 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       description: '',
       grammarPoints: ''
     });
+    setLessonFormOpen(true);
   };
 
-  const handleDeleteLesson = (id, title) => {
-    if (window.confirm(`Xóa bài học: ${title}?`)) {
-      playClickSound();
-      const updated = deleteCustomLesson(id);
-      setCustomLessons(updated);
-      showToast('Đã xóa bài học!');
+  const handleOpenEditLesson = (l) => {
+    playClickSound();
+    setEditingLessonId(l.id);
+    setLessonForm({
+      title: l.title || '',
+      level: l.level || 'HSK 1',
+      duration: String(l.duration || '20'),
+      xp: String(l.xp || '50'),
+      description: l.description || '',
+      grammarPoints: l.grammarPoints || ''
+    });
+    setLessonFormOpen(true);
+  };
+
+  const handleSaveLesson = async (e) => {
+    e.preventDefault();
+    const cleanTitle = (lessonForm.title || '').trim();
+
+    if (!cleanTitle) {
+      alert('Vui lòng nhập tên bài học!');
+      return;
     }
+
+    setIsSavingLesson(true);
+    try {
+      const isDup = await checkLessonDuplicate(cleanTitle, editingLessonId);
+      if (isDup) {
+        alert(`Bài học có tiêu đề "${cleanTitle}" đã tồn tại!`);
+        setIsSavingLesson(false);
+        return;
+      }
+
+      playClickSound();
+      if (editingLessonId) {
+        const updated = await updateCustomLessonInDb(editingLessonId, lessonForm);
+        setCustomLessons(prev => prev.map(item => String(item.id) === String(editingLessonId) ? updated : item));
+        showToast(`Đã cập nhật bài học: ${cleanTitle}!`);
+      } else {
+        const created = await addCustomLessonToDb(lessonForm, user);
+        setCustomLessons(prev => [created, ...prev]);
+        showToast(`Đã thêm bài học: ${cleanTitle}!`);
+      }
+
+      setLessonFormOpen(false);
+      setEditingLessonId(null);
+      setLessonForm({
+        title: '',
+        level: 'HSK 1',
+        duration: '20',
+        xp: '50',
+        description: '',
+        grammarPoints: ''
+      });
+    } catch (err) {
+      console.error('Save lesson error:', err);
+      showToast(err.message || 'Lỗi lưu bài học!', 'error');
+    } finally {
+      setIsSavingLesson(false);
+    }
+  };
+
+  const handleDeleteLesson = async (id, title) => {
+    if (window.confirm(`Xóa bài học: ${title}? Dữ liệu sẽ được cập nhật trực tiếp trên cơ sở dữ liệu Supabase.`)) {
+      playClickSound();
+      try {
+        await deleteCustomLessonFromDb(id);
+        setCustomLessons(prev => prev.filter(item => String(item.id) !== String(id)));
+        showToast(`Đã xóa bài học: ${title}!`);
+      } catch (err) {
+        console.error('Delete lesson error:', err);
+        showToast(err.message || 'Lỗi khi xóa bài học!', 'error');
+      }
+    }
+  };
+
+  const handleRefreshLessons = async () => {
+    playClickSound();
+    await loadCustomLessonsData();
+    showToast('Đã làm mới danh sách bài học bổ sung!');
   };
 
   // Purge Mock Data
@@ -644,6 +943,14 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     });
   }, [usersList, userSearch, userRoleFilter, userStatusFilter, userSortBy]);
 
+  // Paginated Users Calculation
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * pageSize;
+    return filteredUsers.slice(startIndex, startIndex + pageSize);
+  }, [filteredUsers, safeCurrentPage, pageSize]);
+
   // Filtered Materials
   const filteredMaterials = useMemo(() => {
     return materials.filter(m => {
@@ -670,6 +977,18 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     });
   }, [customVocab, vocabSearch, vocabHskFilter]);
 
+  // Filtered Lessons
+  const filteredLessons = useMemo(() => {
+    return customLessons.filter(l => {
+      const matchSearch = !lessonSearch.trim() || 
+        (l.title && l.title.toLowerCase().includes(lessonSearch.toLowerCase())) ||
+        (l.description && l.description.toLowerCase().includes(lessonSearch.toLowerCase()));
+      const matchLevel = lessonLevelFilter === 'all' || 
+        (l.level && l.level.toLowerCase().replace(/\s+/g, '') === lessonLevelFilter.toLowerCase().replace(/\s+/g, ''));
+      return matchSearch && matchLevel;
+    });
+  }, [customLessons, lessonSearch, lessonLevelFilter]);
+
   // Total User Stats
   const userStats = useMemo(() => {
     const total = usersList.length;
@@ -685,6 +1004,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   const adminTabsList = [
     { id: 'overview', label: 'Tổng quan & KPI', icon: BarChart3 },
     { id: 'users', label: `Người dùng (${usersList.length})`, icon: Users },
+    { id: 'moderation', label: 'Kiểm duyệt', icon: ShieldAlert },
     { id: 'materials', label: `Kho Tài liệu (${materials.length})`, icon: FileText },
     { id: 'vocab', label: `Từ vựng (${customVocab.length})`, icon: Layers },
     { id: 'lessons', label: `Bài học (${customLessons.length})`, icon: BookOpen },
@@ -981,9 +1301,8 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
 
               <button
                 onClick={() => {
-                  playClickSound();
                   setAdminTab('vocab');
-                  setVocabFormOpen(true);
+                  handleOpenCreateVocab();
                 }}
                 className="p-4 rounded-2xl bg-white dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-left hover:border-[#E85D3F] transition-all cursor-pointer group shadow-xs"
               >
@@ -1030,17 +1349,34 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 />
               </div>
 
-              {/* Action: Add User */}
-              <button
-                onClick={() => {
-                  playClickSound();
-                  setIsAddUserModalOpen(true);
-                }}
-                className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
-              >
-                <Plus size={16} />
-                <span>Tạo tài khoản học viên</span>
-              </button>
+              {/* Action Buttons: Refresh & Add User */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound();
+                    loadCloudProfiles();
+                  }}
+                  disabled={isLoadingUsers}
+                  title="Tải lại danh sách từ cơ sở dữ liệu"
+                  className="p-2.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] hover:bg-black/5 dark:hover:bg-white/5 text-[#748092] dark:text-[#94A3B8] transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw size={16} className={isLoadingUsers ? 'animate-spin text-[#E85D3F]' : ''} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound();
+                    setCreateUserError(null);
+                    setIsAddUserModalOpen(true);
+                  }}
+                  className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
+                >
+                  <Plus size={16} />
+                  <span>Tạo tài khoản người dùng</span>
+                </button>
+              </div>
             </div>
 
             {/* Filter Pills */}
@@ -1107,7 +1443,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               <table className="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead>
                   <tr className="bg-[#FFF9F2] dark:bg-[#131B24] border-b border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] dark:text-[#94A3B8] font-bold">
-                    <th className="p-4 pl-6">Học viên</th>
+                    <th className="p-4 pl-6">Người dùng</th>
                     <th className="p-4">Phân quyền</th>
                     <th className="p-4">Cấp độ học</th>
                     <th className="p-4 text-center">Chuỗi ngày</th>
@@ -1117,15 +1453,48 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F1E5D8] dark:divide-[#2B3A4F]">
-                  {filteredUsers.length === 0 ? (
+                  {isLoadingUsers ? (
                     <tr>
-                      <td colSpan="7" className="p-8 text-center text-[#748092] dark:text-[#94A3B8]">
-                        Không tìm thấy học viên nào phù hợp với bộ lọc tìm kiếm.
+                      <td colSpan="7" className="p-12 text-center text-[#748092] dark:text-[#94A3B8]">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <Loader2 size={28} className="animate-spin text-[#E85D3F]" />
+                          <p className="font-semibold text-sm">Đang tải danh sách người dùng từ máy chủ...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : fetchUsersError ? (
+                    <tr>
+                      <td colSpan="7" className="p-8 text-center text-rose-500 dark:text-rose-400">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <AlertTriangle size={28} />
+                          <p className="font-bold text-sm">{fetchUsersError}</p>
+                          <button
+                            type="button"
+                            onClick={loadCloudProfiles}
+                            className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-sm"
+                          >
+                            <RefreshCw size={14} />
+                            <span>Thử lại</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : paginatedUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="p-12 text-center text-[#748092] dark:text-[#94A3B8]">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Users size={32} className="opacity-40" />
+                          <p className="font-bold text-sm">
+                            {usersList.length === 0
+                              ? 'Chưa có người dùng nào trong cơ sở dữ liệu.'
+                              : 'Không tìm thấy người dùng nào phù hợp với bộ lọc tìm kiếm.'}
+                          </p>
+                        </div>
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.map((u) => {
-                      const isSelf = user && (user.id === u.id || user.email === u.email);
+                    paginatedUsers.map((u) => {
+                      const isSelf = user && (user.id === u.id || user.email === u.email || user.uid === u.id);
                       return (
                         <tr key={u.id} className="hover:bg-[#FFFDF9] dark:hover:bg-white/5 transition-colors">
                           <td className="p-4 pl-6">
@@ -1139,7 +1508,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                               </div>
                               <div className="min-w-0">
                                 <p className="font-bold text-[#243447] dark:text-white truncate flex items-center gap-1.5">
-                                  <span>{u.name || 'Học viên'}</span>
+                                  <span>{u.name || 'Người dùng'}</span>
                                   {isSelf && (
                                     <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 font-bold">
                                       Bạn
@@ -1189,6 +1558,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                           <td className="p-4 pr-6 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <button
+                                type="button"
                                 onClick={() => {
                                   playClickSound();
                                   setEditingUser(u);
@@ -1203,6 +1573,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                               {!isSelf && (
                                 <>
                                   <button
+                                    type="button"
                                     onClick={() => handleToggleUserStatus(u)}
                                     title={u.status === 'blocked' ? 'Mở khóa' : 'Khóa tài khoản'}
                                     className="p-1.5 rounded-lg text-gray-500 hover:text-amber-500 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
@@ -1211,6 +1582,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                                   </button>
 
                                   <button
+                                    type="button"
                                     onClick={() => handleDeleteUser(u)}
                                     title="Xóa tài khoản"
                                     className="p-1.5 rounded-lg text-gray-500 hover:text-rose-500 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
@@ -1228,9 +1600,62 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {!isLoadingUsers && !fetchUsersError && filteredUsers.length > 0 && (
+              <div className="p-4 px-6 border-t border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2]/50 dark:bg-[#131B24]/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+                <div className="text-[#748092] dark:text-[#94A3B8] font-medium">
+                  Trang <span className="font-bold text-[#243447] dark:text-white">{safeCurrentPage}</span> / <span className="font-bold text-[#243447] dark:text-white">{totalPages}</span> (Tổng cộng <span className="font-bold text-[#243447] dark:text-white">{filteredUsers.length}</span> người dùng)
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={safeCurrentPage <= 1}
+                    className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-[#243447] dark:text-white font-bold hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+                  >
+                    <ChevronLeft size={14} />
+                    <span>Trước</span>
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 rounded-xl font-bold transition-all cursor-pointer ${
+                        safeCurrentPage === pageNum
+                          ? 'bg-[#E85D3F] text-white shadow-sm'
+                          : 'border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-[#243447] dark:text-white hover:bg-gray-50 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={safeCurrentPage >= totalPages}
+                    className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-[#243447] dark:text-white font-bold hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+                  >
+                    <span>Sau</span>
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
         </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* TAB: COMMUNITY MODERATION (Phase 24 Task 24.08D) */}
+      {/* ============================================================== */}
+      {adminTab === 'moderation' && (
+        <CommunityModerationDashboard user={user} />
       )}
 
       {/* ============================================================== */}
@@ -1261,11 +1686,12 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 </button>
 
                 <button
-                  onClick={handleResetMaterials}
-                  className="px-3.5 py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:bg-[#131B24] dark:hover:bg-gray-800 text-[#748092] dark:text-[#94A3B8] text-xs font-bold transition-all cursor-pointer"
-                  title="Khôi phục kho mẫu chuẩn"
+                  onClick={handleRefreshMaterials}
+                  disabled={isLoadingMaterials}
+                  className="px-3.5 py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:bg-[#131B24] dark:hover:bg-gray-800 text-[#748092] dark:text-[#94A3B8] text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                  title="Tải lại tài liệu từ cơ sở dữ liệu"
                 >
-                  <RefreshCw size={15} />
+                  <RefreshCw size={15} className={isLoadingMaterials ? 'animate-spin' : ''} />
                 </button>
               </div>
             </div>
@@ -1304,8 +1730,37 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             </div>
           </div>
 
-          {/* Materials Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Materials Content: Loading, Error, Empty, or Grid */}
+          {isLoadingMaterials ? (
+            <div className="py-20 flex flex-col items-center justify-center text-center space-y-3">
+              <Loader2 size={36} className="text-[#E85D3F] animate-spin" />
+              <p className="text-sm font-bold text-[#748092] dark:text-[#94A3B8]">
+                Đang tải danh sách tài liệu từ cơ sở dữ liệu...
+              </p>
+            </div>
+          ) : materialsError ? (
+            <div className="p-6 rounded-3xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 text-center space-y-3">
+              <AlertTriangle size={32} className="text-red-500 mx-auto" />
+              <p className="text-sm font-bold text-red-600 dark:text-red-400">{materialsError}</p>
+              <button
+                onClick={loadMaterialsData}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all cursor-pointer"
+              >
+                Thử lại
+              </button>
+            </div>
+          ) : filteredMaterials.length === 0 ? (
+            <div className="py-20 flex flex-col items-center justify-center text-center space-y-3 bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
+              <BookOpen size={40} className="text-gray-300 dark:text-gray-600" />
+              <h4 className="text-base font-black text-[#243447] dark:text-white">
+                Không tìm thấy tài liệu phù hợp
+              </h4>
+              <p className="text-xs text-[#748092] dark:text-[#94A3B8] max-w-sm">
+                Chưa có tài liệu nào trong cơ sở dữ liệu hoặc không khớp với tiêu chí tìm kiếm/lọc hiện tại.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredMaterials.map((mat) => (
               <div 
                 key={mat.id}
@@ -1374,6 +1829,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 
@@ -1410,10 +1866,16 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               </select>
 
               <button
-                onClick={() => {
-                  playClickSound();
-                  setVocabFormOpen(true);
-                }}
+                onClick={handleRefreshVocab}
+                disabled={isLoadingVocab}
+                className="p-2.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#E85D3F] hover:bg-orange-50 dark:hover:bg-[#131B24] transition-all cursor-pointer shrink-0"
+                title="Làm mới từ cơ sở dữ liệu"
+              >
+                <RefreshCw size={16} className={isLoadingVocab ? 'animate-spin text-[#E85D3F]' : ''} />
+              </button>
+
+              <button
+                onClick={handleOpenCreateVocab}
                 className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
               >
                 <Plus size={16} />
@@ -1422,44 +1884,95 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredVocab.map((v) => (
-              <div 
-                key={v.id}
-                className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-12 h-12 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] font-['Noto_Serif_SC'] text-2xl font-black flex items-center justify-center shrink-0">
-                    {v.hanzi}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-[#243447] dark:text-white truncate">
-                      {v.pinyin} <span className="text-xs font-semibold text-[#D97706]">({v.hanviet || 'Hán-Việt'})</span>
-                    </p>
-                    <p className="text-xs text-[#748092] dark:text-[#94A3B8] truncate">{v.meaning}</p>
-                    <span className="text-[10px] font-bold text-[#E85D3F] uppercase">{v.hsk}</span>
-                  </div>
-                </div>
+          {/* Loading / Error States */}
+          {isLoadingVocab && (
+            <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-col items-center justify-center gap-3">
+              <Loader2 className="animate-spin text-[#E85D3F]" size={32} />
+              <p className="text-sm font-bold text-[#748092]">Đang tải từ vựng từ cơ sở dữ liệu Supabase...</p>
+            </div>
+          )}
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    onClick={() => speakChinese(v.hanzi)}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-[#E85D3F] cursor-pointer"
-                    title="Nghe phát âm"
-                  >
-                    <Volume2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteVocab(v.id, v.hanzi)}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 cursor-pointer"
-                    title="Xóa từ"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+          {!isLoadingVocab && vocabError && (
+            <div className="p-6 rounded-3xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="text-rose-600 shrink-0" size={24} />
+                <p className="text-sm font-bold text-rose-700 dark:text-rose-300">{vocabError}</p>
               </div>
-            ))}
-          </div>
+              <button
+                onClick={loadCustomVocabData}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shrink-0 cursor-pointer"
+              >
+                Thử lại
+              </button>
+            </div>
+          )}
+
+          {!isLoadingVocab && !vocabError && filteredVocab.length === 0 && (
+            <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3">
+              <Layers size={40} className="mx-auto text-gray-400" />
+              <h4 className="text-base font-bold text-[#243447] dark:text-white">Không tìm thấy từ vựng bổ sung nào</h4>
+              <p className="text-xs text-[#748092]">
+                {vocabSearch || vocabHskFilter !== 'all' 
+                  ? 'Thử thay đổi từ khóa hoặc bộ lọc cấp độ HSK.'
+                  : 'Hãy thêm từ vựng mới để đồng bộ vào cơ sở dữ liệu và sổ tay từ vựng của học viên.'}
+              </p>
+              <button
+                onClick={handleOpenCreateVocab}
+                className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold cursor-pointer"
+              >
+                <Plus size={14} />
+                <span>Thêm từ vựng đầu tiên</span>
+              </button>
+            </div>
+          )}
+
+          {!isLoadingVocab && !vocabError && filteredVocab.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredVocab.map((v) => (
+                <div 
+                  key={v.id}
+                  className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex items-center justify-between group hover:border-[#E85D3F] transition-all"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] font-['Noto_Serif_SC'] text-2xl font-black flex items-center justify-center shrink-0">
+                      {v.hanzi}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-[#243447] dark:text-white truncate">
+                        {v.pinyin} <span className="text-xs font-semibold text-[#D97706]">({v.hanviet || 'Hán-Việt'})</span>
+                      </p>
+                      <p className="text-xs text-[#748092] dark:text-[#94A3B8] truncate">{v.meaning}</p>
+                      <span className="text-[10px] font-bold text-[#E85D3F] uppercase">{v.hsk}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => speakChinese(v.hanzi)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-[#E85D3F] cursor-pointer"
+                      title="Nghe phát âm"
+                    >
+                      <Volume2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleOpenEditVocab(v)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-[#E85D3F] cursor-pointer"
+                      title="Chỉnh sửa từ vựng"
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteVocab(v.id, v.hanzi)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 cursor-pointer"
+                      title="Xóa từ"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1468,51 +1981,136 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       {/* ============================================================== */}
       {adminTab === 'lessons' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black text-[#243447] dark:text-white">
-              Danh Sách Bài Học Bổ Sung ({customLessons.length})
-            </h3>
-            <button
-              onClick={() => {
-                playClickSound();
-                setLessonFormOpen(true);
-              }}
-              className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <Plus size={16} />
-              <span>Tạo bài học mới</span>
-            </button>
-          </div>
+          <div className="bg-white dark:bg-[#1E293B] p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
+              <input 
+                type="text"
+                value={lessonSearch}
+                onChange={(e) => setLessonSearch(e.target.value)}
+                placeholder="Tìm tiêu đề, mô tả bài học bổ sung..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+              />
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {customLessons.map((l) => (
-              <div 
-                key={l.id}
-                className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between space-y-3"
+            <div className="flex items-center gap-2">
+              <select
+                value={lessonLevelFilter}
+                onChange={(e) => setLessonLevelFilter(e.target.value)}
+                className="px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
               >
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-orange-100 dark:bg-orange-950/40 text-[#E85D3F]">
-                      {l.level}
-                    </span>
-                    <span className="text-xs text-[#748092]">+{l.xp} XP</span>
-                  </div>
-                  <h4 className="text-base font-bold text-[#243447] dark:text-white">{l.title}</h4>
-                  <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1">{l.description}</p>
-                </div>
+                <option value="all">Mọi cấp độ</option>
+                <option value="Nhập môn">Nhập môn</option>
+                <option value="HSK 1">HSK 1</option>
+                <option value="HSK 2">HSK 2</option>
+                <option value="HSK 3">HSK 3</option>
+                <option value="HSK 4">HSK 4</option>
+                <option value="HSK 5">HSK 5</option>
+                <option value="HSK 6">HSK 6</option>
+              </select>
 
-                <div className="pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
-                  <span className="text-xs text-[#748092]">Thời lượng: {l.duration} phút</span>
-                  <button
-                    onClick={() => handleDeleteLesson(l.id, l.title)}
-                    className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              <button
+                onClick={handleRefreshLessons}
+                disabled={isLoadingLessons}
+                className="p-2.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#E85D3F] hover:bg-orange-50 dark:hover:bg-[#131B24] transition-all cursor-pointer shrink-0"
+                title="Làm mới từ cơ sở dữ liệu"
+              >
+                <RefreshCw size={16} className={isLoadingLessons ? 'animate-spin text-[#E85D3F]' : ''} />
+              </button>
+
+              <button
+                onClick={handleOpenCreateLesson}
+                className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center gap-2 shrink-0 cursor-pointer"
+              >
+                <Plus size={16} />
+                <span>Tạo bài học mới</span>
+              </button>
+            </div>
           </div>
+
+          {/* Loading / Error States */}
+          {isLoadingLessons && (
+            <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-col items-center justify-center gap-3">
+              <Loader2 className="animate-spin text-[#E85D3F]" size={32} />
+              <p className="text-sm font-bold text-[#748092]">Đang tải bài học từ cơ sở dữ liệu Supabase...</p>
+            </div>
+          )}
+
+          {!isLoadingLessons && lessonsError && (
+            <div className="p-6 rounded-3xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="text-rose-600 shrink-0" size={24} />
+                <p className="text-sm font-bold text-rose-700 dark:text-rose-300">{lessonsError}</p>
+              </div>
+              <button
+                onClick={loadCustomLessonsData}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shrink-0 cursor-pointer"
+              >
+                Thử lại
+              </button>
+            </div>
+          )}
+
+          {!isLoadingLessons && !lessonsError && filteredLessons.length === 0 && (
+            <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3">
+              <BookOpen size={40} className="mx-auto text-gray-400" />
+              <h4 className="text-base font-bold text-[#243447] dark:text-white">Không tìm thấy bài học bổ sung nào</h4>
+              <p className="text-xs text-[#748092]">
+                {lessonSearch || lessonLevelFilter !== 'all' 
+                  ? 'Thử thay đổi từ khóa hoặc bộ lọc cấp độ.'
+                  : 'Hãy tạo bài học bổ sung đầu tiên để lưu vào cơ sở dữ liệu Supabase.'}
+              </p>
+              <button
+                onClick={handleOpenCreateLesson}
+                className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold cursor-pointer"
+              >
+                <Plus size={14} />
+                <span>Tạo bài học đầu tiên</span>
+              </button>
+            </div>
+          )}
+
+          {!isLoadingLessons && !lessonsError && filteredLessons.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredLessons.map((l) => (
+                <div 
+                  key={l.id}
+                  className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between space-y-3 group hover:border-[#E85D3F] transition-all"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-orange-100 dark:bg-orange-950/40 text-[#E85D3F]">
+                        {l.level}
+                      </span>
+                      <span className="text-xs text-[#748092]">+{l.xp} XP</span>
+                    </div>
+                    <h4 className="text-base font-bold text-[#243447] dark:text-white">{l.title}</h4>
+                    <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1 line-clamp-2">{l.description}</p>
+                  </div>
+
+                  <div className="pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
+                    <span className="text-xs text-[#748092]">Thời lượng: {l.duration} phút</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenEditLesson(l)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-[#E85D3F] cursor-pointer"
+                        title="Chỉnh sửa bài học"
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteLesson(l.id, l.title)}
+                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
+                        title="Xóa bài học"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1583,20 +2181,31 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <h3 className="text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
                 <UserCheck size={20} className="text-[#E85D3F]" />
-                <span>Tạo Tài Khoản Học Viên Mới</span>
+                <span>Tạo Tài Khoản Người Dùng Mới</span>
               </h3>
               <button 
-                onClick={() => setIsAddUserModalOpen(false)}
-                className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 cursor-pointer"
+                type="button"
+                onClick={() => {
+                  if (!isCreatingUser) setIsAddUserModalOpen(false);
+                }}
+                disabled={isCreatingUser}
+                className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 cursor-pointer disabled:opacity-40"
               >
                 <X size={18} />
               </button>
             </div>
 
+            {createUserError && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-start gap-2">
+                <AlertTriangle size={16} className="shrink-0 mt-0.5 text-rose-500" />
+                <span className="flex-1">{createUserError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                  Họ và tên học viên *
+                  Họ và tên người dùng *
                 </label>
                 <input 
                   type="text"
@@ -1604,7 +2213,8 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   value={newUserForm.name}
                   onChange={(e) => setNewUserForm({ ...newUserForm, name: e.target.value })}
                   placeholder="Ví dụ: Hoàng Đức Anh"
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  disabled={isCreatingUser}
+                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-60"
                 />
               </div>
 
@@ -1618,8 +2228,45 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   value={newUserForm.email}
                   onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
                   placeholder="ducanh@gmail.com"
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  disabled={isCreatingUser}
+                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-60"
                 />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8]">
+                    Mật khẩu khởi tạo * (tối thiểu 8 ký tự)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateRandomPassword}
+                    disabled={isCreatingUser}
+                    className="text-[11px] font-bold text-[#E85D3F] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <Key size={12} />
+                    <span>Tạo ngẫu nhiên</span>
+                  </button>
+                </div>
+                <div className="relative">
+                  <input 
+                    type={showNewUserPassword ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    value={newUserForm.password || ''}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                    placeholder="Nhập ít nhất 8 ký tự..."
+                    disabled={isCreatingUser}
+                    className="w-full pl-4 pr-10 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-60 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewUserPassword(!showNewUserPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  >
+                    {showNewUserPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1630,11 +2277,11 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   <select
                     value={newUserForm.role}
                     onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    disabled={isCreatingUser}
+                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold disabled:opacity-60"
                   >
-                    <option value="student">Học viên</option>
-                    <option value="teacher">Giáo viên</option>
-                    <option value="admin">Quản trị viên</option>
+                    <option value="student">Học viên (Student)</option>
+                    <option value="teacher">Giáo viên (Teacher)</option>
                   </select>
                 </div>
 
@@ -1645,12 +2292,14 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   <select
                     value={newUserForm.level}
                     onChange={(e) => setNewUserForm({ ...newUserForm, level: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    disabled={isCreatingUser}
+                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold disabled:opacity-60"
                   >
                     <option value="HSK 1 - Sơ cấp">HSK 1 - Sơ cấp</option>
                     <option value="HSK 2 - Cơ bản">HSK 2 - Cơ bản</option>
                     <option value="HSK 3 - Trung cấp">HSK 3 - Trung cấp</option>
                     <option value="HSK 4 - Độc lập">HSK 4 - Độc lập</option>
+                    <option value="HSK 5 - Cao cấp">HSK 5 - Cao cấp</option>
                   </select>
                 </div>
               </div>
@@ -1659,15 +2308,24 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 <button
                   type="button"
                   onClick={() => setIsAddUserModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#748092] hover:bg-black/5 cursor-pointer"
+                  disabled={isCreatingUser}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#748092] hover:bg-black/5 cursor-pointer disabled:opacity-40"
                 >
                   Hủy bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md cursor-pointer"
+                  disabled={isCreatingUser}
+                  className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Tạo tài khoản
+                  {isCreatingUser ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Đang tạo tài khoản...</span>
+                    </>
+                  ) : (
+                    <span>Tạo tài khoản</span>
+                  )}
                 </button>
               </div>
             </form>
@@ -1678,15 +2336,18 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       {/* ============================================================== */}
       {/* MODAL 2: EDIT USER MODAL */}
       {/* ============================================================== */}
-      {isEditUserModalOpen && editingUser && (
+      {isEditUserModalOpen && editingUser && (() => {
+        const isEditingSelf = user && (user.id === editingUser.id || user.email === editingUser.email || user.uid === editingUser.id);
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-lg w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6">
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <h3 className="text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
                 <Edit3 size={20} className="text-[#E85D3F]" />
-                <span>Chỉnh Sửa Học Viên</span>
+                <span>Chỉnh Sửa Người Dùng</span>
               </h3>
               <button 
+                type="button"
                 onClick={() => setIsEditUserModalOpen(false)}
                 className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 cursor-pointer"
               >
@@ -1728,12 +2389,13 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
 
                 <div>
                   <label className="block text-xs font-bold text-[#748092] dark:text-[#94A3B8] mb-1">
-                    Trạng thái
+                    Trạng thái {isEditingSelf && <span className="text-[10px] text-gray-400">(Không thể tự khóa)</span>}
                   </label>
                   <select
                     value={editingUser.status}
+                    disabled={isEditingSelf}
                     onChange={(e) => setEditingUser({ ...editingUser, status: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold disabled:opacity-60"
                   >
                     <option value="active">Hoạt động</option>
                     <option value="blocked">Khóa</option>
@@ -1784,7 +2446,8 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             </form>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ============================================================== */}
       {/* MODAL 3: ADD / EDIT MATERIAL MODAL */}
@@ -1918,7 +2581,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       )}
 
       {/* ============================================================== */}
-      {/* MODAL 4: ADD CUSTOM VOCAB */}
+      {/* MODAL 4: ADD / EDIT CUSTOM VOCAB */}
       {/* ============================================================== */}
       {vocabFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1926,10 +2589,16 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <h3 className="text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
                 <Layers size={20} className="text-[#E85D3F]" />
-                <span>Thêm Từ Vựng Mới</span>
+                <span>{editingVocabId ? 'Chỉnh Sửa Từ Vựng Bổ Sung' : 'Thêm Từ Vựng Mới'}</span>
               </h3>
-              <button onClick={() => setVocabFormOpen(false)} className="cursor-pointer">
-                <X size={18} className="text-gray-400" />
+              <button 
+                onClick={() => {
+                  setVocabFormOpen(false);
+                  setEditingVocabId(null);
+                }} 
+                className="cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                <X size={18} />
               </button>
             </div>
 
@@ -1998,19 +2667,35 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-[#748092] mb-1">Câu ví dụ (tùy chọn)</label>
+                <input 
+                  type="text" 
+                  value={vocabForm.example}
+                  onChange={(e) => setVocabForm({ ...vocabForm, example: e.target.value })}
+                  placeholder="你好！很高兴认识你。"
+                  className="w-full px-4 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                />
+              </div>
+
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
                 <button
                   type="button"
-                  onClick={() => setVocabFormOpen(false)}
+                  onClick={() => {
+                    setVocabFormOpen(false);
+                    setEditingVocabId(null);
+                  }}
                   className="px-4 py-2 rounded-xl text-xs font-bold text-[#748092] cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md cursor-pointer"
+                  disabled={isSavingVocab}
+                  className="px-6 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-2"
                 >
-                  Lưu từ vựng
+                  {isSavingVocab && <Loader2 size={14} className="animate-spin" />}
+                  <span>{isSavingVocab ? 'Đang lưu...' : (editingVocabId ? 'Cập nhật từ vựng' : 'Lưu từ vựng')}</span>
                 </button>
               </div>
             </form>
@@ -2019,7 +2704,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       )}
 
       {/* ============================================================== */}
-      {/* MODAL 5: ADD CUSTOM LESSON */}
+      {/* MODAL 5: ADD / EDIT CUSTOM LESSON */}
       {/* ============================================================== */}
       {lessonFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -2027,10 +2712,16 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <h3 className="text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
                 <BookOpen size={20} className="text-[#E85D3F]" />
-                <span>Thêm Bài Học Mới</span>
+                <span>{editingLessonId ? 'Chỉnh Sửa Bài Học Bổ Sung' : 'Thêm Bài Học Mới'}</span>
               </h3>
-              <button onClick={() => setLessonFormOpen(false)} className="cursor-pointer">
-                <X size={18} className="text-gray-400" />
+              <button 
+                onClick={() => {
+                  setLessonFormOpen(false);
+                  setEditingLessonId(null);
+                }} 
+                className="cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                <X size={18} />
               </button>
             </div>
 
@@ -2089,16 +2780,21 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
                 <button
                   type="button"
-                  onClick={() => setLessonFormOpen(false)}
+                  onClick={() => {
+                    setLessonFormOpen(false);
+                    setEditingLessonId(null);
+                  }}
                   className="px-4 py-2 rounded-xl text-xs font-bold text-[#748092] cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md cursor-pointer"
+                  disabled={isSavingLesson}
+                  className="px-6 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-2"
                 >
-                  Lưu bài học
+                  {isSavingLesson && <Loader2 size={14} className="animate-spin" />}
+                  <span>{isSavingLesson ? 'Đang lưu...' : (editingLessonId ? 'Cập nhật bài học' : 'Lưu bài học')}</span>
                 </button>
               </div>
             </form>

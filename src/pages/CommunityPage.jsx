@@ -27,25 +27,36 @@ import {
   Crown,
   ArrowRight,
   Volume2,
-  HelpCircle,
   Calendar,
   MessageSquare,
-  Compass,
-  Filter,
   CheckCircle,
-  ExternalLink
+  Flag,
+  Eye,
+  EyeOff,
+  Edit3,
+  ExternalLink,
+  Clock,
+  Target
 } from 'lucide-react';
+import ReportModal from '../components/community/ReportModal';
 import LeaderboardView from '../components/learning/LeaderboardView';
 import ChineseChallengeCard from '../components/learning/ChineseChallengeCard';
 import { COMMUNITY_POSTS } from '../data/chineseData';
-import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
+import { playClickSound, playSuccessSound, speakChinese } from '../utils/audio';
 import { 
   getCommunityPosts, 
-  addCommunityPost, 
+  getCommunityPostById,
+  createCommunityPost,
   updateCommunityPost, 
   deleteCommunityPost,
+  getPostComments,
+  createCommunityComment,
+  deleteCommunityComment,
+  togglePostReaction,
   getStudyPartnersFromDb,
   addStudyPartnerToDb,
+  updateStudyPartnerInDb,
+  toggleStudyPartnerStatusInDb,
   deleteStudyPartnerFromDb,
   subscribeToCommunityRealtime
 } from '../supabase/services';
@@ -224,25 +235,54 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     }
   }, [initialView]);
 
-  // Posts state initialized from localStorage
+  // Posts state initialized with offline cache fallback (Supabase is Single Source of Truth)
   const [posts, setPosts] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.POSTS);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const clean = sanitizeCommunityPosts(parsed);
-          localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(clean));
-          return clean;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return sanitizeCommunityPosts(parsed);
         }
       }
     } catch {}
-    const defaultClean = sanitizeCommunityPosts(COMMUNITY_POSTS);
-    try {
-      localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(defaultClean));
-    } catch {}
-    return defaultClean;
+    return sanitizeCommunityPosts(COMMUNITY_POSTS);
   });
+
+  // Cursor-based pagination state
+  const [hasMorePosts, setHasMorePosts] = useState(false);
+  const [nextPostCursor, setNextPostCursor] = useState(null);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false);
+
+  // Relational comments state per post
+  const [postCommentsMap, setPostCommentsMap] = useState({});
+  const [loadingCommentsMap, setLoadingCommentsMap] = useState({});
+  const [submittingCommentMap, setSubmittingCommentMap] = useState({});
+
+  // Report Modal State (Phase 24 Task 24.08D)
+  const [reportModalState, setReportModalState] = useState({
+    isOpen: false,
+    targetType: 'post',
+    targetId: null,
+    targetContent: '',
+    targetAuthor: ''
+  });
+
+  const handleOpenReportModal = (targetType, targetId, item) => {
+    playClickSound();
+    if (!user) {
+      alert('Vui lòng đăng nhập tài khoản HanziGo để gửi báo cáo vi phạm.');
+      return;
+    }
+    setReportModalState({
+      isOpen: true,
+      targetType,
+      targetId: String(targetId),
+      targetContent: item?.content || '',
+      targetAuthor: item?.author || item?.author_name || (targetType === 'post' ? 'Tác giả bài viết' : 'Học viên')
+    });
+  };
 
   // Solved posts tracking
   const [solvedPostIds, setSolvedPostIds] = useState(() => {
@@ -301,45 +341,67 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
   const [isCloudSynced, setIsCloudSynced] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Load latest posts and study partners from Supabase DB on mount
+  // Tag filter state declared early for pagination dependency
+  const [selectedTag, setSelectedTag] = useState('all');
+
+  // Load paginated community posts from Supabase on mount and when filter tag changes
   useEffect(() => {
     let isMounted = true;
+    setIsLoadingPosts(true);
 
-    getCommunityPosts().then((dbPosts) => {
-      if (isMounted && dbPosts) {
-        const clean = sanitizeCommunityPosts(dbPosts);
+    getCommunityPosts({ limit: 15, tag: selectedTag })
+      .then((res) => {
+        if (!isMounted) return;
+        const fetched = res?.posts || (Array.isArray(res) ? res : []);
+        const clean = sanitizeCommunityPosts(fetched);
         setPosts(clean);
+        setHasMorePosts(Boolean(res?.hasMore));
+        setNextPostCursor(res?.nextCursor || null);
         setIsCloudSynced(true);
         try {
-          localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(clean));
-        } catch (e) {
-          console.error(e);
-        }
-      } else if (isMounted) {
-        setIsCloudSynced(true);
-      }
-    }).catch(() => {
-      if (isMounted) setIsCloudSynced(false);
-    });
-
-    getStudyPartnersFromDb().then((dbPartners) => {
-      if (isMounted && dbPartners) {
-        const clean = dbPartners.filter(p => !isFakePartner(p));
-        setStudyPartners(clean);
-        try {
-          localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(clean));
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    }).catch(() => {});
+          localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(clean.slice(0, 20)));
+        } catch {}
+      })
+      .catch((err) => {
+        console.warn('Could not fetch Supabase community posts:', err);
+        if (isMounted) setIsCloudSynced(false);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingPosts(false);
+      });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedTag]);
 
-  // Real-time subscription for new posts, likes, comments, and partners
+  // Load study partners on mount
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingPartners(true);
+    getStudyPartnersFromDb({ currentUserId: user?.id, onlyActive: false })
+      .then((dbPartners) => {
+        if (isMounted && dbPartners) {
+          const clean = dbPartners.filter(p => !isFakePartner(p));
+          setStudyPartners(clean);
+          try {
+            localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(clean));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setIsLoadingPartners(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
+
+  // Real-time subscription for new posts, relational comments, reactions, and partners
   useEffect(() => {
     const unsubscribe = subscribeToCommunityRealtime((event) => {
       if (event.type === 'POST_CHANGE') {
@@ -352,53 +414,134 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
             : (newRow.author_avatar || null);
 
           const mapped = {
-            id: newRow.id,
+            id: String(newRow.id),
             author: newRow.author_name || 'Học viên HanziGo',
             avatar: avatarUrl,
-            level: newRow.author_level || 'HSK 1',
+            initial: isBqt ? 'HZ' : (newRow.author_name ? newRow.author_name.charAt(0).toUpperCase() : 'H'),
+            level: isBqt ? 'Quản trị viên' : (newRow.author_level || 'HSK 1'),
             content: newRow.content,
             tag: newRow.tag || '',
             image: newRow.image_url || newRow.image || null,
-            likes: newRow.likes || 0,
-            likedBy: newRow.liked_by || [],
-            comments: newRow.comments || [],
-            time: 'Vừa xong'
+            likes: Number(newRow.likes_count ?? newRow.likes ?? 0),
+            liked: false,
+            commentsCount: Number(newRow.comments_count ?? 0),
+            comments: [],
+            isPinned: Boolean(newRow.is_pinned),
+            isSolved: Boolean(newRow.is_solved),
+            isMyPost: Boolean(user?.id && newRow.author_id === user.id),
+            time: 'Vừa xong',
+            createdAt: newRow.created_at || new Date().toISOString()
           };
 
           if (!isFakePost(mapped)) {
             setPosts(prev => {
-              if (prev.some(p => p.id === mapped.id)) return prev;
-              const next = [mapped, ...prev];
-              try { localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(next)); } catch {}
-              return next;
+              if (prev.some(p => String(p.id) === String(mapped.id))) return prev;
+              return [mapped, ...prev];
             });
           }
         } else if (eventType === 'UPDATE' && newRow) {
-          setPosts(prev => {
-            const next = prev.map(p => {
-              if (p.id === newRow.id) {
+          // If post is hidden or deleted by Admin moderation, remove from student feed
+          if (newRow.status === 'hidden' || newRow.deleted_at) {
+            setPosts(prev => prev.filter(p => String(p.id) !== String(newRow.id)));
+          } else {
+            setPosts(prev => prev.map(p => {
+              if (String(p.id) === String(newRow.id)) {
                 return {
                   ...p,
-                  content: newRow.content,
-                  likes: newRow.likes ?? p.likes,
-                  likedBy: newRow.liked_by ?? p.likedBy,
-                  comments: newRow.comments ?? p.comments
+                  content: newRow.content ?? p.content,
+                  tag: newRow.tag ?? p.tag,
+                  image: newRow.image_url ?? p.image,
+                  likes: Number(newRow.likes_count ?? p.likes),
+                  commentsCount: Number(newRow.comments_count ?? p.commentsCount),
+                  isPinned: Boolean(newRow.is_pinned ?? p.isPinned),
+                  isSolved: Boolean(newRow.is_solved ?? p.isSolved)
                 };
               }
               return p;
-            });
-            try { localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(next)); } catch {}
-            return next;
-          });
+            }));
+          }
         } else if (eventType === 'DELETE' && oldRow?.id) {
-          setPosts(prev => {
-            const next = prev.filter(p => p.id !== oldRow.id);
-            try { localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(next)); } catch {}
-            return next;
+          setPosts(prev => prev.filter(p => String(p.id) !== String(oldRow.id)));
+        }
+      } else if (event.type === 'COMMENT_CHANGE') {
+        const { eventType, new: newCommentRow, old: oldCommentRow } = event.payload;
+        if (eventType === 'INSERT' && newCommentRow) {
+          // Only show published non-deleted comments
+          if (newCommentRow.status === 'published' && !newCommentRow.deleted_at) {
+            const postIdStr = String(newCommentRow.post_id);
+            setPosts(prev => prev.map(p => {
+              if (String(p.id) === postIdStr) {
+                return { ...p, commentsCount: (p.commentsCount || 0) + 1 };
+              }
+              return p;
+            }));
+            setPostCommentsMap(prev => {
+              if (!prev[postIdStr]) return prev;
+              if (prev[postIdStr].some(c => String(c.id) === String(newCommentRow.id))) return prev;
+              const newComment = {
+                id: String(newCommentRow.id),
+                postId: postIdStr,
+                authorId: newCommentRow.author_id,
+                author: 'Học viên HanziGo',
+                avatar: null,
+                level: 'HSK 1',
+                content: newCommentRow.content,
+                time: 'Vừa xong',
+                createdAt: newCommentRow.created_at,
+                isMyComment: Boolean(user?.id && newCommentRow.author_id === user.id)
+              };
+              return {
+                ...prev,
+                [postIdStr]: [...prev[postIdStr], newComment]
+              };
+            });
+          }
+        } else if (eventType === 'UPDATE' && newCommentRow) {
+          // If comment is moderated to hidden or deleted by Admin
+          const postIdStr = String(newCommentRow.post_id);
+          if (newCommentRow.status === 'hidden' || newCommentRow.deleted_at) {
+            setPostCommentsMap(prev => {
+              if (!prev[postIdStr]) return prev;
+              return {
+                ...prev,
+                [postIdStr]: prev[postIdStr].filter(c => String(c.id) !== String(newCommentRow.id))
+              };
+            });
+            setPosts(prev => prev.map(p => {
+              if (String(p.id) === postIdStr) {
+                return { ...p, commentsCount: Math.max(0, (p.commentsCount || 1) - 1) };
+              }
+              return p;
+            }));
+          }
+        } else if (eventType === 'DELETE' && oldCommentRow) {
+          const postIdStr = String(oldCommentRow.post_id);
+          setPosts(prev => prev.map(p => {
+            if (String(p.id) === postIdStr) {
+              return { ...p, commentsCount: Math.max(0, (p.commentsCount || 1) - 1) };
+            }
+            return p;
+          }));
+          setPostCommentsMap(prev => {
+            if (!prev[postIdStr]) return prev;
+            return {
+              ...prev,
+              [postIdStr]: prev[postIdStr].filter(c => String(c.id) !== String(oldCommentRow.id))
+            };
           });
         }
+      } else if (event.type === 'REACTION_CHANGE') {
+        const { new: newRow, old: oldRow } = event.payload;
+        const targetPostId = newRow?.post_id || oldRow?.post_id;
+        if (targetPostId) {
+          getCommunityPostById(targetPostId).then(updatedPost => {
+            if (updatedPost) {
+              setPosts(prev => prev.map(p => String(p.id) === String(targetPostId) ? { ...p, likes: updatedPost.likes } : p));
+            }
+          }).catch(() => {});
+        }
       } else if (event.type === 'PARTNER_CHANGE') {
-        getStudyPartnersFromDb().then(dbPartners => {
+        getStudyPartnersFromDb({ currentUserId: user?.id, onlyActive: false }).then(dbPartners => {
           if (dbPartners) {
             const clean = dbPartners.filter(p => !isFakePartner(p));
             setStudyPartners(clean);
@@ -408,7 +551,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
 
   // Post creation inputs
@@ -418,24 +561,31 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
   const [postContactInfo, setPostContactInfo] = useState('');
   const [postImage, setPostImage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTag, setSelectedTag] = useState('all');
 
-  // Study partner filter
+  // Study partner filters & state
   const [partnerFilterLevel, setPartnerFilterLevel] = useState('all');
   const [partnerFilterMethod, setPartnerFilterMethod] = useState('all');
+  const [partnerFilterStatus, setPartnerFilterStatus] = useState('all');
+  const [partnerSearchTerm, setPartnerSearchTerm] = useState('');
+  const [isLoadingPartners, setIsLoadingPartners] = useState(false);
 
   // Comments toggled per post
   const [expandedComments, setExpandedComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
 
-  // Study partner modal
+  // Study partner modal (supports both create and edit)
   const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
+  const [editingPartnerId, setEditingPartnerId] = useState(null);
   const [partnerForm, setPartnerForm] = useState({
     name: user?.name || '',
     level: user?.level || 'HSK 1',
     goal: '',
+    dailyTime: 'Tối 20h - 21h',
+    skills: 'Luyện khẩu ngữ',
     contactMethod: 'Zalo',
     contactInfo: '',
+    isContactPublic: true,
+    isActive: true,
     qrImage: ''
   });
 
@@ -451,13 +601,13 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     setTimeout(() => setToastMessage(null), 2500);
   };
 
-  // Persist posts
+  // Deprecated LocalStorage persistence for feed posts (Supabase is Single Source of Truth)
   const persistPosts = (updatedPosts) => {
     setPosts(updatedPosts);
     try {
-      localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts.slice(0, 20)));
     } catch (e) {
-      console.error('Error saving community posts', e);
+      console.error('Error saving community posts cache', e);
     }
   };
 
@@ -471,25 +621,31 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     }
   };
 
-  // Refresh data from Supabase
+  // Refresh feed and study partners from Supabase
   const handleRefreshCloud = async () => {
     setIsRefreshing(true);
     playClickSound();
     try {
-      const [dbPosts, dbPartners] = await Promise.all([
-        getCommunityPosts(),
+      const [resPosts, dbPartners] = await Promise.all([
+        getCommunityPosts({ limit: 15, tag: selectedTag }),
         getStudyPartnersFromDb()
       ]);
-      if (dbPosts) {
-        const cleanPosts = sanitizeCommunityPosts(dbPosts);
+      if (resPosts?.posts) {
+        const cleanPosts = sanitizeCommunityPosts(resPosts.posts);
         setPosts(cleanPosts);
+        setHasMorePosts(Boolean(resPosts.hasMore));
+        setNextPostCursor(resPosts.nextCursor || null);
         setIsCloudSynced(true);
-        localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(cleanPosts));
+        try {
+          localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(cleanPosts.slice(0, 20)));
+        } catch {}
       }
       if (dbPartners) {
         const cleanPartners = dbPartners.filter(p => !isFakePartner(p));
         setStudyPartners(cleanPartners);
-        localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(cleanPartners));
+        try {
+          localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(cleanPartners));
+        } catch {}
       }
       showToast('Đã làm mới dữ liệu cộng đồng từ Supabase!');
     } catch {
@@ -499,8 +655,35 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     }
   };
 
-  // Handle post creation with dual-layer persistence
-  const handleCreatePost = (e) => {
+  // Handle Load More Posts via cursor pagination
+  const handleLoadMorePosts = async () => {
+    if (isLoadingMorePosts || !hasMorePosts || !nextPostCursor) return;
+    setIsLoadingMorePosts(true);
+    playClickSound();
+    try {
+      const res = await getCommunityPosts({
+        limit: 15,
+        cursor: nextPostCursor,
+        tag: selectedTag
+      });
+      const newPosts = res?.posts || [];
+      const cleanNew = sanitizeCommunityPosts(newPosts);
+      setPosts(prev => {
+        const existingIds = new Set(prev.map(p => String(p.id)));
+        const filtered = cleanNew.filter(p => !existingIds.has(String(p.id)));
+        return [...prev, ...filtered];
+      });
+      setHasMorePosts(Boolean(res?.hasMore));
+      setNextPostCursor(res?.nextCursor || null);
+    } catch (err) {
+      console.warn('Error loading more community posts:', err);
+    } finally {
+      setIsLoadingMorePosts(false);
+    }
+  };
+
+  // Handle post creation with Supabase Single Source of Truth
+  const handleCreatePost = async (e) => {
     e.preventDefault();
     if (!newPostContent.trim()) return;
 
@@ -514,63 +697,35 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
       });
     } catch {}
 
-    const tempId = `post-${Date.now()}`;
     let finalContent = newPostContent.trim();
     if (postContactInfo.trim()) {
       finalContent += `\n\n📌 Thông tin liên hệ (${postContactMethod}): ${postContactInfo.trim()}`;
     }
 
-    const newPost = {
-      id: tempId,
-      author: user?.name || 'Học viên HanziGo',
-      avatar: user?.avatar || null,
-      initial: user?.name ? user.name.charAt(0).toUpperCase() : 'H',
-      level: user?.level || 'HSK 1',
-      time: 'Vừa xong',
-      tag: newPostTag,
+    const payload = {
       content: finalContent,
-      image: postImage || null,
-      likes: 0,
-      liked: false,
-      saved: false,
-      isMyPost: true,
-      comments: []
+      tag: newPostTag,
+      image_url: postImage || null
     };
 
-    const updated = [newPost, ...posts];
-    persistPosts(updated);
     setNewPostContent('');
     setPostContactInfo('');
     setPostImage('');
-    showToast('Đã đăng bài viết lên cộng đồng (+20 XP)!');
+    showToast('Đang đăng bài viết lên cộng đồng...');
 
-    addCommunityPost({
-      author: newPost.author,
-      avatar: newPost.avatar,
-      initial: newPost.initial,
-      level: newPost.level,
-      tag: newPost.tag,
-      content: newPost.content,
-      image: newPost.image,
-      likes: 0,
-      time: 'Vừa xong',
-      comments: []
-    }).then(cloudId => {
-      if (cloudId) {
+    try {
+      const res = await createCommunityPost(payload);
+      if (res?.success && res.post) {
         setIsCloudSynced(true);
-        setPosts(prev => {
-          const withCloudId = prev.map(p => p.id === tempId ? { ...p, id: cloudId } : p);
-          try {
-            localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(withCloudId));
-          } catch (err) {
-            console.error(err);
-          }
-          return withCloudId;
-        });
+        setPosts(prev => [res.post, ...prev]);
+        showToast('Đã đăng bài viết thành công (+20 XP)!');
+      } else {
+        showToast('Không thể kết nối Supabase. Vui lòng thử lại!');
       }
-    }).catch(err => {
-      console.warn('Supabase cloud sync fallback to local storage:', err);
-    });
+    } catch (err) {
+      console.warn('Error creating community post:', err);
+      showToast('Lỗi khi đăng bài viết.');
+    }
   };
 
   // Apply quick starter prompt
@@ -580,56 +735,89 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     setNewPostContent(item.prompt);
   };
 
-  // Toggle like
-  const handleToggleLike = (id) => {
+  // Toggle like using atomic RPC (zero client-side increment/decrement)
+  const handleToggleLike = async (postId) => {
     playClickSound();
-    let newLikes = 0;
-    const updated = posts.map(p => {
-      if (p.id === id) {
+    const idStr = String(postId);
+
+    // Optimistic UI update
+    setPosts(prev => prev.map(p => {
+      if (String(p.id) === idStr) {
         const isLiked = !p.liked;
-        newLikes = isLiked ? (p.likes || 0) + 1 : Math.max(0, (p.likes || 0) - 1);
         return {
           ...p,
           liked: isLiked,
-          likes: newLikes
+          likes: isLiked ? (p.likes || 0) + 1 : Math.max(0, (p.likes || 0) - 1)
         };
       }
       return p;
-    });
-    persistPosts(updated);
-    updateCommunityPost(id, { likes: newLikes }).catch(() => {});
+    }));
+
+    // Authoritative RPC call
+    const res = await togglePostReaction(idStr, 'like');
+    if (res?.success && res.data) {
+      setPosts(prev => prev.map(p => {
+        if (String(p.id) === idStr) {
+          return {
+            ...p,
+            liked: res.data.action === 'added',
+            likes: res.data.likes_count
+          };
+        }
+        return p;
+      }));
+    } else {
+      // Rollback optimistic update
+      setPosts(prev => prev.map(p => {
+        if (String(p.id) === idStr) {
+          const rollbackLiked = !p.liked;
+          return {
+            ...p,
+            liked: rollbackLiked,
+            likes: rollbackLiked ? (p.likes || 0) + 1 : Math.max(0, (p.likes || 0) - 1)
+          };
+        }
+        return p;
+      }));
+      showToast('Không thể cập nhật lượt thích. Vui lòng đăng nhập!');
+    }
   };
 
   // Toggle save
   const handleToggleSave = (id) => {
     playClickSound();
+    const idStr = String(id);
     const updated = posts.map(p => {
-      if (p.id === id) {
+      if (String(p.id) === idStr) {
         const isSaved = !p.saved;
         showToast(isSaved ? 'Đã lưu bài viết vào mục yêu thích!' : 'Đã bỏ lưu bài viết!');
         return { ...p, saved: isSaved };
       }
       return p;
     });
-    persistPosts(updated);
+    setPosts(updated);
   };
 
   // Toggle Solved status for questions
-  const handleToggleSolved = (id) => {
+  const handleToggleSolved = async (id) => {
     playClickSound();
-    let nextSolved;
-    if (solvedPostIds.includes(id)) {
-      nextSolved = solvedPostIds.filter(pid => pid !== id);
-      showToast('Đã bỏ đánh dấu giải đáp.');
-    } else {
-      nextSolved = [...solvedPostIds, id];
+    const idStr = String(id);
+    const targetPost = posts.find(p => String(p.id) === idStr);
+    const newSolved = !targetPost?.isSolved;
+
+    setPosts(prev => prev.map(p => String(p.id) === idStr ? { ...p, isSolved: newSolved } : p));
+    if (newSolved) {
       playSuccessSound();
       showToast('Đã đánh dấu câu hỏi: Đã được giải đáp! ✅');
+    } else {
+      showToast('Đã bỏ đánh dấu giải đáp.');
     }
-    setSolvedPostIds(nextSolved);
+
     try {
-      localStorage.setItem(STORAGE_KEYS.SOLVED_POSTS, JSON.stringify(nextSolved));
-    } catch {}
+      await updateCommunityPost(idStr, { is_solved: newSolved });
+    } catch (err) {
+      console.warn('Error updating solved status on Supabase:', err);
+    }
   };
 
   // Speak Chinese text contained in post
@@ -645,55 +833,105 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     }
   };
 
-  // Delete own post
-  const handleDeletePost = (id) => {
+  // Delete own post via Supabase RLS
+  const handleDeletePost = async (id) => {
+    const idStr = String(id);
     if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
       playClickSound();
-      const updated = posts.filter(p => p.id !== id);
-      persistPosts(updated);
-      deleteCommunityPost(id).catch(() => {});
-      showToast('Đã xóa bài viết khỏi cộng đồng!');
+      setPosts(prev => prev.filter(p => String(p.id) !== idStr));
+      try {
+        await deleteCommunityPost(idStr);
+        showToast('Đã xóa bài viết khỏi cộng đồng!');
+      } catch (err) {
+        console.warn('Error deleting post:', err);
+        showToast('Lỗi khi xóa bài viết.');
+      }
     }
   };
 
-  // Toggle comment section
-  const handleToggleComments = (id) => {
+  // Toggle comment section & fetch relational comments on demand
+  const handleToggleComments = async (id) => {
     playClickSound();
+    const idStr = String(id);
+    const willExpand = !expandedComments[idStr];
     setExpandedComments(prev => ({
       ...prev,
-      [id]: !prev[id]
+      [idStr]: willExpand
     }));
+
+    if (willExpand && !postCommentsMap[idStr]) {
+      setLoadingCommentsMap(prev => ({ ...prev, [idStr]: true }));
+      try {
+        const comments = await getPostComments(idStr);
+        setPostCommentsMap(prev => ({ ...prev, [idStr]: comments }));
+      } catch (err) {
+        console.warn(`Could not load comments for post ${idStr}:`, err);
+      } finally {
+        setLoadingCommentsMap(prev => ({ ...prev, [idStr]: false }));
+      }
+    }
   };
 
-  // Submit comment
-  const handleAddComment = (postId) => {
-    const text = commentInputs[postId]?.trim();
-    if (!text) return;
+  // Submit comment via relational table and database counter sync
+  const handleAddComment = async (postId) => {
+    const idStr = String(postId);
+    const text = commentInputs[idStr]?.trim();
+    if (!text || submittingCommentMap[idStr]) return;
 
     playSuccessSound();
     awardXp(5);
-    let allComments = [];
-    const updated = posts.map(p => {
-      if (p.id === postId) {
-        const newComment = {
-          id: `comment-${Date.now()}`,
-          author: user?.name || 'Bạn',
-          content: text,
-          time: 'Vừa xong'
-        };
-        allComments = [...(p.comments || []), newComment];
-        return {
-          ...p,
-          comments: allComments
-        };
-      }
-      return p;
-    });
+    setSubmittingCommentMap(prev => ({ ...prev, [idStr]: true }));
 
-    persistPosts(updated);
-    setCommentInputs(prev => ({ ...prev, [postId]: '' }));
-    showToast('Đã gửi bình luận (+5 XP)!');
-    updateCommunityPost(postId, { comments: allComments }).catch(() => {});
+    try {
+      const newComment = await createCommunityComment(idStr, text);
+      if (newComment) {
+        setPostCommentsMap(prev => ({
+          ...prev,
+          [idStr]: [...(prev[idStr] || []), newComment]
+        }));
+        setPosts(prev => prev.map(p => {
+          if (String(p.id) === idStr) {
+            return { ...p, commentsCount: (p.commentsCount || 0) + 1 };
+          }
+          return p;
+        }));
+        setCommentInputs(prev => ({ ...prev, [idStr]: '' }));
+        showToast('Đã gửi bình luận (+5 XP)!');
+      } else {
+        showToast('Không thể gửi bình luận. Vui lòng đăng nhập!');
+      }
+    } catch (err) {
+      console.warn('Error submitting comment:', err);
+      showToast('Lỗi khi gửi bình luận.');
+    } finally {
+      setSubmittingCommentMap(prev => ({ ...prev, [idStr]: false }));
+    }
+  };
+
+  // Delete comment via relational table
+  const handleDeleteComment = async (postId, commentId) => {
+    const idStr = String(postId);
+    if (!window.confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
+    playClickSound();
+
+    try {
+      const ok = await deleteCommunityComment(commentId);
+      if (ok) {
+        setPostCommentsMap(prev => ({
+          ...prev,
+          [idStr]: (prev[idStr] || []).filter(c => String(c.id) !== String(commentId))
+        }));
+        setPosts(prev => prev.map(p => {
+          if (String(p.id) === idStr) {
+            return { ...p, commentsCount: Math.max(0, (p.commentsCount || 1) - 1) };
+          }
+          return p;
+        }));
+        showToast('Đã xóa bình luận!');
+      }
+    } catch (err) {
+      console.warn('Error deleting comment:', err);
+    }
   };
 
   // Join 21-Day Challenge
@@ -747,75 +985,193 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     showToast(`Điểm danh thành công! Đã hoàn thành Ngày ${updated.checkIns}/21 (+15 XP) 🎉`);
   };
 
-  // Save new study partner request
-  const handleSavePartner = (e) => {
-    e.preventDefault();
-    if (!partnerForm.name.trim() || !partnerForm.contactInfo.trim()) {
-      alert('Vui lòng nhập họ tên và thông tin liên hệ!');
-      return;
-    }
-
-    playSuccessSound();
-    awardXp(15);
-    const tempPartnerId = `partner-${Date.now()}`;
-    const newPartner = {
-      id: tempPartnerId,
-      name: partnerForm.name.trim(),
-      initial: partnerForm.name.trim().charAt(0).toUpperCase(),
-      level: partnerForm.level,
-      goal: partnerForm.goal.trim() || 'Luyện phản xạ giao tiếp',
-      contactMethod: partnerForm.contactMethod,
-      contactInfo: partnerForm.contactInfo.trim(),
-      qrImage: partnerForm.qrImage || null,
-      createdAt: 'Hôm nay',
-      isMyPartnerPost: true
-    };
-
-    const updated = [newPartner, ...studyPartners];
-    persistPartners(updated);
-    setIsPartnerModalOpen(false);
+  // Open Create Modal
+  const handleOpenCreatePartnerModal = () => {
+    playClickSound();
+    setEditingPartnerId(null);
     setPartnerForm({
       name: user?.name || '',
       level: user?.level || 'HSK 1',
       goal: '',
+      dailyTime: 'Tối 20h - 21h',
+      skills: 'Luyện khẩu ngữ',
       contactMethod: 'Zalo',
       contactInfo: '',
+      isContactPublic: true,
+      isActive: true,
       qrImage: ''
     });
-    showToast('Đã đăng bài tìm bạn học (+15 XP)!');
-
-    addStudyPartnerToDb({
-      name: newPartner.name,
-      initial: newPartner.initial,
-      level: newPartner.level,
-      goal: newPartner.goal,
-      contactMethod: newPartner.contactMethod,
-      contactInfo: newPartner.contactInfo,
-      qrImage: newPartner.qrImage,
-      createdAt: 'Hôm nay'
-    }).then(cloudId => {
-      if (cloudId) {
-        setStudyPartners(prev => {
-          const withCloudId = prev.map(p => p.id === tempPartnerId ? { ...p, id: cloudId } : p);
-          try {
-            localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(withCloudId));
-          } catch (err) {
-            console.error(err);
-          }
-          return withCloudId;
-        });
-      }
-    }).catch(() => {});
+    setIsPartnerModalOpen(true);
   };
 
-  // Delete own study partner request
-  const handleDeletePartner = (id) => {
-    if (window.confirm('Bạn có muốn xóa bài đăng tìm bạn này?')) {
+  // Open Edit Modal
+  const handleOpenEditPartnerModal = (partner) => {
+    playClickSound();
+    setEditingPartnerId(partner.id);
+    setPartnerForm({
+      name: partner.name || '',
+      level: partner.level || partner.targetLevel || 'HSK 1',
+      goal: partner.goal || partner.intro || '',
+      dailyTime: partner.dailyTime || '',
+      skills: partner.skills || 'Luyện khẩu ngữ',
+      contactMethod: partner.contactMethod || 'Zalo',
+      contactInfo: partner.contactInfo || '',
+      isContactPublic: partner.isContactPublic !== false,
+      isActive: partner.isActive !== false,
+      qrImage: partner.qrImage || ''
+    });
+    setIsPartnerModalOpen(true);
+  };
+
+  // Toggle active / paused status
+  const handleTogglePartnerStatus = async (partner) => {
+    playClickSound();
+    const newStatus = !partner.isActive;
+    const actionLabel = newStatus ? 'kích hoạt lại' : 'tạm ngưng';
+
+    const updated = studyPartners.map(p => p.id === partner.id ? { ...p, isActive: newStatus } : p);
+    persistPartners(updated);
+    showToast(`Đã ${actionLabel} hiển thị hồ sơ tìm bạn!`);
+
+    await toggleStudyPartnerStatusInDb(partner.id, newStatus);
+  };
+
+  // Save (Create or Update) study partner request
+  const handleSavePartner = async (e) => {
+    e.preventDefault();
+    if (!partnerForm.name.trim()) {
+      alert('Vui lòng nhập họ tên hoặc biệt danh!');
+      return;
+    }
+
+    playSuccessSound();
+
+    if (editingPartnerId) {
+      // Cập nhật hồ sơ hiện có
+      const updated = studyPartners.map(p => {
+        if (p.id === editingPartnerId) {
+          return {
+            ...p,
+            name: partnerForm.name.trim(),
+            initial: partnerForm.name.trim().charAt(0).toUpperCase(),
+            level: partnerForm.level,
+            targetLevel: partnerForm.level,
+            goal: partnerForm.goal.trim() || 'Luyện phản xạ giao tiếp',
+            intro: partnerForm.goal.trim() || 'Luyện phản xạ giao tiếp',
+            dailyTime: partnerForm.dailyTime.trim(),
+            skills: partnerForm.skills.trim() || 'Luyện khẩu ngữ',
+            contactMethod: partnerForm.contactMethod,
+            contactInfo: partnerForm.contactInfo.trim(),
+            isContactPublic: partnerForm.isContactPublic,
+            isActive: partnerForm.isActive,
+            qrImage: partnerForm.qrImage || null
+          };
+        }
+        return p;
+      });
+      persistPartners(updated);
+      setIsPartnerModalOpen(false);
+      showToast('Đã cập nhật hồ sơ tìm bạn cùng tiến!');
+
+      await updateStudyPartnerInDb(editingPartnerId, {
+        name: partnerForm.name.trim(),
+        level: partnerForm.level,
+        goal: partnerForm.goal.trim() || 'Luyện phản xạ giao tiếp',
+        dailyTime: partnerForm.dailyTime.trim(),
+        skills: partnerForm.skills.trim() || 'Luyện khẩu ngữ',
+        contactMethod: partnerForm.contactMethod,
+        contactInfo: partnerForm.contactInfo.trim(),
+        isContactPublic: partnerForm.isContactPublic,
+        isActive: partnerForm.isActive,
+        qrImage: partnerForm.qrImage || null
+      });
+    } else {
+      // Tạo hồ sơ mới
+      awardXp(15);
+      const tempPartnerId = `partner-${Date.now()}`;
+      const newPartner = {
+        id: tempPartnerId,
+        userId: user?.id || null,
+        name: partnerForm.name.trim(),
+        initial: partnerForm.name.trim().charAt(0).toUpperCase(),
+        level: partnerForm.level,
+        targetLevel: partnerForm.level,
+        goal: partnerForm.goal.trim() || 'Luyện phản xạ giao tiếp',
+        intro: partnerForm.goal.trim() || 'Luyện phản xạ giao tiếp',
+        dailyTime: partnerForm.dailyTime.trim(),
+        skills: partnerForm.skills.trim() || 'Luyện khẩu ngữ',
+        contactMethod: partnerForm.contactMethod,
+        contactInfo: partnerForm.contactInfo.trim(),
+        isContactPublic: partnerForm.isContactPublic,
+        isActive: partnerForm.isActive,
+        qrImage: partnerForm.qrImage || null,
+        createdAt: 'Hôm nay',
+        isMyPartnerPost: true
+      };
+
+      const updated = [newPartner, ...studyPartners];
+      persistPartners(updated);
+      setIsPartnerModalOpen(false);
+      showToast('Đã đăng bài tìm bạn học (+15 XP)!');
+
+      try {
+        const cloudId = await addStudyPartnerToDb({
+          name: newPartner.name,
+          level: newPartner.level,
+          goal: newPartner.goal,
+          dailyTime: newPartner.dailyTime,
+          skills: newPartner.skills,
+          contactMethod: newPartner.contactMethod,
+          contactInfo: newPartner.contactInfo,
+          isContactPublic: newPartner.isContactPublic,
+          isActive: newPartner.isActive,
+          qrImage: newPartner.qrImage,
+          userId: user?.id || null
+        });
+
+        if (cloudId) {
+          setStudyPartners(prev => {
+            const withCloudId = prev.map(p => p.id === tempPartnerId ? { ...p, id: cloudId } : p);
+            try {
+              localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(withCloudId));
+            } catch (err) {
+              console.error(err);
+            }
+            return withCloudId;
+          });
+        }
+      } catch (err) {
+        console.warn('Không thể đồng bộ Study Partner lên Cloud:', err);
+      }
+    }
+  };
+
+  // Delete study partner request
+  const handleDeletePartner = async (id) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa bài đăng tìm bạn học này?')) {
       playClickSound();
       const updated = studyPartners.filter(p => p.id !== id);
       persistPartners(updated);
-      deleteStudyPartnerFromDb(id).catch(() => {});
+      await deleteStudyPartnerFromDb(id).catch(() => {});
       showToast('Đã xóa thông tin tìm bạn học!');
+    }
+  };
+
+  // Open direct contact link
+  const handleOpenContactLink = (contactMethod, contactInfo) => {
+    playClickSound();
+    if (!contactInfo) return;
+    const trimmed = contactInfo.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      window.open(trimmed, '_blank', 'noopener,noreferrer');
+    } else if (contactMethod === 'Telegram' && trimmed.startsWith('@')) {
+      window.open(`https://t.me/${trimmed.slice(1)}`, '_blank', 'noopener,noreferrer');
+    } else if (contactMethod === 'Zalo' && /^[0-9+]+$/.test(trimmed)) {
+      window.open(`https://zalo.me/${trimmed}`, '_blank', 'noopener,noreferrer');
+    } else if (/^[0-9+]{9,15}$/.test(trimmed)) {
+      window.open(`tel:${trimmed}`, '_self');
+    } else {
+      handleCopyContact(trimmed);
     }
   };
 
@@ -855,12 +1211,56 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     return post.tag === selectedTag;
   });
 
+  // My own study partner profile if exists
+  const myPartnerProfile = useMemo(() => {
+    return studyPartners.find(p => 
+      Boolean((user?.id && p.userId && String(user.id) === String(p.userId)) || p.isMyPartnerPost)
+    );
+  }, [studyPartners, user]);
+
   // Filter partners
-  const filteredPartners = studyPartners.filter(p => {
-    const matchesLevel = partnerFilterLevel === 'all' || p.level === partnerFilterLevel;
-    const matchesMethod = partnerFilterMethod === 'all' || p.contactMethod === partnerFilterMethod;
-    return matchesLevel && matchesMethod;
-  });
+  const filteredPartners = useMemo(() => {
+    return studyPartners.filter(p => {
+      // 1. Level filter (matching prefix resiliently: 'HSK 1 - Sơ cấp' vs 'HSK 1')
+      if (partnerFilterLevel !== 'all') {
+        const pLevel = (p.level || p.targetLevel || '').toLowerCase();
+        if (!pLevel.startsWith(partnerFilterLevel.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // 2. Contact method filter
+      if (partnerFilterMethod !== 'all') {
+        const pMethod = (p.contactMethod || '').toLowerCase();
+        if (pMethod !== partnerFilterMethod.toLowerCase()) {
+          return false;
+        }
+      }
+
+      // 3. Status filter
+      if (partnerFilterStatus === 'active') {
+        const isOwner = Boolean((user?.id && p.userId && String(user.id) === String(p.userId)) || p.isMyPartnerPost);
+        if (p.isActive === false && !isOwner) {
+          return false;
+        }
+      }
+
+      // 4. Search keyword filter (name, goal, skills, daily time)
+      if (partnerSearchTerm.trim()) {
+        const q = partnerSearchTerm.trim().toLowerCase();
+        const matchName = (p.name || '').toLowerCase().includes(q);
+        const matchGoal = (p.goal || p.intro || '').toLowerCase().includes(q);
+        const matchSkills = (p.skills || '').toLowerCase().includes(q);
+        const matchTime = (p.dailyTime || '').toLowerCase().includes(q);
+        const matchMethod = (p.contactMethod || '').toLowerCase().includes(q);
+        if (!matchName && !matchGoal && !matchSkills && !matchTime && !matchMethod) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [studyPartners, partnerFilterLevel, partnerFilterMethod, partnerFilterStatus, partnerSearchTerm, user]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10 animate-in fade-in duration-300">
@@ -925,7 +1325,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
               className="px-4 py-2.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <RefreshCw size={13} className={isRefreshing ? 'animate-spin' : ''} />
-              <span>{isRefreshing ? 'Đang tải...' : 'Làm mới máy chủ'}</span>
+              <span>{isRefreshing ? 'Đang tải...' : isCloudSynced ? 'Đã đồng bộ máy chủ' : 'Làm mới máy chủ'}</span>
             </button>
           </div>
         </div>
@@ -1015,155 +1415,329 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   <span>Trung Tâm Ghép Đôi Luyện Nói (Call 1-1)</span>
                 </h2>
                 <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1">
-                  Tìm bạn bè cùng cấp độ để cùng luyện đàm thoại 20–30 phút mỗi ngày qua Zalo, Google Meet hoặc WeChat.
+                  Tìm bạn bè cùng cấp độ HSK 1–6 để cùng luyện đàm thoại 20–30 phút mỗi ngày qua Zalo, Google Meet hoặc WeChat.
                 </p>
               </div>
 
-              <button
-                onClick={() => {
-                  playClickSound();
-                  setIsPartnerModalOpen(true);
-                }}
-                className="px-5 py-2.5 rounded-xl bg-[#45B97C] hover:bg-[#3AA56E] text-white font-bold text-xs shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer"
-              >
-                <Plus size={15} />
-                <span>Đăng tin tìm bạn ngay (+15 XP)</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {myPartnerProfile ? (
+                  <button
+                    onClick={() => handleOpenEditPartnerModal(myPartnerProfile)}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#45B97C] hover:bg-emerald-100 font-bold text-xs border border-emerald-200 dark:border-emerald-800 shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  >
+                    <Edit3 size={14} />
+                    <span>Hồ sơ của tôi</span>
+                  </button>
+                ) : null}
+
+                <button
+                  onClick={handleOpenCreatePartnerModal}
+                  className="px-5 py-2.5 rounded-xl bg-[#45B97C] hover:bg-[#3AA56E] text-white font-bold text-xs shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer"
+                >
+                  <Plus size={15} />
+                  <span>{myPartnerProfile ? 'Đăng tin mới' : 'Đăng tin tìm bạn ngay (+15 XP)'}</span>
+                </button>
+              </div>
             </div>
 
-            {/* Partner Filters */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-[#748092]">Cấp độ:</span>
-                <select
-                  value={partnerFilterLevel}
-                  onChange={(e) => setPartnerFilterLevel(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
-                >
-                  <option value="all">Mọi cấp độ</option>
-                  <option value="HSK 1">HSK 1</option>
-                  <option value="HSK 2">HSK 2</option>
-                  <option value="HSK 3">HSK 3</option>
-                  <option value="HSK 4">HSK 4</option>
-                  <option value="Giao tiếp tự do">Giao tiếp tự do</option>
-                </select>
+            {/* Banner hiển thị hồ sơ cá nhân của học viên nếu đã đăng ký */}
+            {myPartnerProfile && (
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#EBF8F2] dark:bg-[#162B21] border border-emerald-200 dark:border-emerald-800 text-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${myPartnerProfile.isActive ? 'bg-[#45B97C] animate-pulse' : 'bg-slate-400'}`} />
+                  <div className="min-w-0">
+                    <span className="font-bold text-[#243447] dark:text-white">
+                      Hồ sơ của bạn ({myPartnerProfile.name} - {myPartnerProfile.level}):
+                    </span>{' '}
+                    <span className={`font-semibold ${myPartnerProfile.isActive ? 'text-[#45B97C]' : 'text-slate-500'}`}>
+                      {myPartnerProfile.isActive ? 'Đang tìm bạn' : 'Đã tạm ngưng hiển thị'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleTogglePartnerStatus(myPartnerProfile)}
+                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#131B24] border border-emerald-300 dark:border-emerald-700 font-bold text-[#243447] dark:text-white hover:bg-emerald-50 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                    title={myPartnerProfile.isActive ? 'Tạm ngưng để không nhận kết nối mới' : 'Kích hoạt lại hồ sơ'}
+                  >
+                    {myPartnerProfile.isActive ? <EyeOff size={13} className="text-amber-500" /> : <Eye size={13} className="text-[#45B97C]" />}
+                    <span>{myPartnerProfile.isActive ? 'Tạm ngưng' : 'Mở lại'}</span>
+                  </button>
+                  <button
+                    onClick={() => handleOpenEditPartnerModal(myPartnerProfile)}
+                    className="px-3 py-1.5 rounded-xl bg-[#45B97C] text-white font-bold hover:bg-[#3AA56E] transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                  >
+                    <Edit3 size={13} />
+                    <span>Sửa hồ sơ</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Partner Search & Filters */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+              {/* Ô tìm kiếm từ khóa */}
+              <div className="relative flex-1">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
+                <input
+                  type="text"
+                  placeholder="Tìm bạn theo tên, mục tiêu, kỹ năng luyện tập..."
+                  value={partnerSearchTerm}
+                  onChange={(e) => setPartnerSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
+                />
+                {partnerSearchTerm && (
+                  <button
+                    onClick={() => setPartnerSearchTerm('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#748092] hover:text-[#243447] dark:hover:text-white"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-[#748092]">Kênh liên hệ:</span>
-                <select
-                  value={partnerFilterMethod}
-                  onChange={(e) => setPartnerFilterMethod(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
-                >
-                  <option value="all">Mọi kênh liên hệ</option>
-                  <option value="Zalo">Zalo</option>
-                  <option value="Google Meet">Google Meet</option>
-                  <option value="WeChat">WeChat</option>
-                  <option value="Zoom">Zoom</option>
-                  <option value="Telegram">Telegram</option>
-                </select>
+              {/* Bộ lọc dropdown */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[#748092]">Cấp độ:</span>
+                  <select
+                    value={partnerFilterLevel}
+                    onChange={(e) => setPartnerFilterLevel(e.target.value)}
+                    className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">Mọi cấp độ</option>
+                    <option value="HSK 1">HSK 1</option>
+                    <option value="HSK 2">HSK 2</option>
+                    <option value="HSK 3">HSK 3</option>
+                    <option value="HSK 4">HSK 4</option>
+                    <option value="HSK 5">HSK 5</option>
+                    <option value="HSK 6">HSK 6</option>
+                    <option value="Giao tiếp tự do">Giao tiếp tự do</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[#748092]">Kênh:</span>
+                  <select
+                    value={partnerFilterMethod}
+                    onChange={(e) => setPartnerFilterMethod(e.target.value)}
+                    className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">Mọi kênh liên hệ</option>
+                    <option value="Zalo">Zalo</option>
+                    <option value="Google Meet">Google Meet</option>
+                    <option value="WeChat">WeChat</option>
+                    <option value="Zoom">Zoom</option>
+                    <option value="Telegram">Telegram</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[#748092]">Trạng thái:</span>
+                  <select
+                    value={partnerFilterStatus}
+                    onChange={(e) => setPartnerFilterStatus(e.target.value)}
+                    className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">Tất cả</option>
+                    <option value="active">Đang tìm bạn</option>
+                  </select>
+                </div>
               </div>
             </div>
 
             {/* Partner Grid */}
-            {filteredPartners.length === 0 ? (
+            {isLoadingPartners ? (
+              <div className="p-12 text-center rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+                <RefreshCw size={28} className="mx-auto text-[#45B97C] animate-spin mb-2" />
+                <p className="text-xs text-[#748092]">Đang tải danh sách bạn học từ Supabase...</p>
+              </div>
+            ) : filteredPartners.length === 0 ? (
               <div className="p-12 text-center rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3">
                 <Users size={40} className="mx-auto text-[#748092]/50" />
-                <p className="text-sm font-bold text-[#243447] dark:text-white">Chưa có ai đăng ký phù hợp</p>
+                <p className="text-sm font-bold text-[#243447] dark:text-white">Chưa có ai đăng ký phù hợp với bộ lọc</p>
                 <p className="text-xs text-[#748092] dark:text-[#94A3B8] max-w-md mx-auto">
-                  Bạn muốn tìm bạn cùng luyện phản xạ khẩu ngữ? Hãy nhấn đăng tin để ghép đôi ngay nhé!
+                  Bạn muốn tìm bạn cùng luyện phản xạ khẩu ngữ HSK? Hãy nhấn đăng tin để ghép đôi ngay nhé!
                 </p>
-                <button
-                  onClick={() => setIsPartnerModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-[#45B97C] text-white text-xs font-bold hover:bg-[#3AA56E] transition-colors cursor-pointer"
-                >
-                  Đăng ký tìm bạn học
-                </button>
+                <div className="flex items-center justify-center gap-2 pt-1">
+                  {(partnerSearchTerm || partnerFilterLevel !== 'all' || partnerFilterMethod !== 'all' || partnerFilterStatus !== 'all') && (
+                    <button
+                      onClick={() => {
+                        setPartnerSearchTerm('');
+                        setPartnerFilterLevel('all');
+                        setPartnerFilterMethod('all');
+                        setPartnerFilterStatus('all');
+                      }}
+                      className="px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] hover:text-[#243447] dark:hover:text-white cursor-pointer"
+                    >
+                      Xóa bộ lọc
+                    </button>
+                  )}
+                  <button
+                    onClick={handleOpenCreatePartnerModal}
+                    className="px-4 py-2 rounded-xl bg-[#45B97C] text-white text-xs font-bold hover:bg-[#3AA56E] transition-colors cursor-pointer"
+                  >
+                    Đăng ký tìm bạn học
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredPartners.map((partner) => (
-                  <div 
-                    key={partner.id}
-                    className="p-5 rounded-3xl bg-white dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs hover:shadow-md transition-all space-y-3 flex flex-col justify-between"
-                  >
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-10 h-10 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] font-black text-sm flex items-center justify-center border border-[#F4B942]/40">
-                            {partner.initial || 'H'}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <h3 className="text-sm font-bold text-[#243447] dark:text-white">{partner.name}</h3>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C]">
-                                {partner.level}
-                              </span>
+                {filteredPartners.map((partner) => {
+                  const isOwner = Boolean((user?.id && partner.userId && String(user.id) === String(partner.userId)) || partner.isMyPartnerPost);
+                  const isAdmin = user?.role === 'admin';
+
+                  return (
+                    <div 
+                      key={partner.id}
+                      className={`p-5 rounded-3xl bg-white dark:bg-[#131B24] border shadow-xs hover:shadow-md transition-all space-y-3 flex flex-col justify-between ${
+                        partner.isActive === false
+                          ? 'border-dashed border-slate-300 dark:border-slate-700 opacity-80'
+                          : isOwner
+                            ? 'border-emerald-300 dark:border-emerald-700'
+                            : 'border-[#F1E5D8] dark:border-[#2B3A4F]'
+                      }`}
+                    >
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-10 h-10 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] font-black text-sm flex items-center justify-center border border-[#F4B942]/40 shrink-0">
+                              {partner.initial || 'H'}
                             </div>
-                            <p className="text-xs text-[#748092] mt-0.5">{partner.goal}</p>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <h3 className="text-sm font-bold text-[#243447] dark:text-white truncate">{partner.name}</h3>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] shrink-0">
+                                  {partner.level}
+                                </span>
+                                {partner.isActive === false ? (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 shrink-0">
+                                    Tạm ngưng
+                                  </span>
+                                ) : (
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Đang tìm bạn" />
+                                )}
+                              </div>
+                              <p className="text-xs text-[#748092] mt-0.5 truncate">{partner.goal}</p>
+                            </div>
+                          </div>
+
+                          {/* Toolbar hành động: Chủ sở hữu hoặc Admin */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            {isOwner && (
+                              <>
+                                <button
+                                  onClick={() => handleTogglePartnerStatus(partner)}
+                                  className="text-[#748092] hover:text-[#45B97C] p-1 cursor-pointer transition-colors"
+                                  title={partner.isActive ? 'Tạm ngưng tìm bạn' : 'Mở lại tìm bạn'}
+                                >
+                                  {partner.isActive ? <EyeOff size={13} className="text-amber-500" /> : <Eye size={13} className="text-emerald-500" />}
+                                </button>
+                                <button
+                                  onClick={() => handleOpenEditPartnerModal(partner)}
+                                  className="text-[#748092] hover:text-[#45B97C] p-1 cursor-pointer transition-colors"
+                                  title="Chỉnh sửa hồ sơ"
+                                >
+                                  <Edit3 size={13} />
+                                </button>
+                              </>
+                            )}
+
+                            {(isOwner || isAdmin) && (
+                              <button
+                                onClick={() => handleDeletePartner(partner.id)}
+                                className="text-[#748092] hover:text-red-500 p-1 cursor-pointer transition-colors"
+                                title={isAdmin && !isOwner ? 'Quản trị viên xóa tin vi phạm' : 'Hủy tin tìm bạn'}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
                           </div>
                         </div>
 
-                        {partner.isMyPartnerPost && (
-                          <button
-                            onClick={() => handleDeletePartner(partner.id)}
-                            className="text-[#748092] hover:text-red-500 p-1 cursor-pointer"
-                            title="Hủy tin tìm bạn"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                        {/* Thông tin kỹ năng & thời gian */}
+                        {(partner.skills || partner.dailyTime) && (
+                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[#748092] dark:text-[#94A3B8]">
+                            {partner.skills && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+                                <Target size={11} className="text-[#E85D3F]" />
+                                <span>{partner.skills}</span>
+                              </span>
+                            )}
+                            {partner.dailyTime && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+                                <Clock size={11} className="text-[#45B97C]" />
+                                <span>{partner.dailyTime}</span>
+                              </span>
+                            )}
+                          </div>
                         )}
-                      </div>
 
-                      {/* Contact Preview Strip */}
-                      <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <span className="text-[10px] font-bold text-[#E85D3F] uppercase block">
-                            {partner.contactMethod || 'Liên hệ'}
-                          </span>
-                          <span className="text-xs font-mono font-bold text-[#243447] dark:text-white truncate block">
-                            {partner.contactInfo || 'Chưa cung cấp'}
-                          </span>
+                        {/* Contact Preview Strip */}
+                        <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-bold text-[#E85D3F] uppercase block">
+                              {partner.contactMethod || 'Liên hệ'}
+                            </span>
+                            <span className="text-xs font-mono font-bold text-[#243447] dark:text-white truncate block">
+                              {partner.isContactPublic === false && !isOwner
+                                ? 'Thông tin bảo mật'
+                                : (partner.contactInfo || 'Chưa cung cấp')}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            {partner.contactInfo && (partner.isContactPublic !== false || isOwner) && (
+                              <>
+                                <button
+                                  onClick={() => handleCopyContact(partner.contactInfo)}
+                                  className="p-1.5 rounded-lg bg-white dark:bg-[#131B24] text-[#748092] hover:text-[#E85D3F] transition-colors cursor-pointer"
+                                  title="Sao chép"
+                                >
+                                  <Copy size={13} />
+                                </button>
+                                <button
+                                  onClick={() => handleOpenContactLink(partner.contactMethod, partner.contactInfo)}
+                                  className="p-1.5 rounded-lg bg-white dark:bg-[#131B24] text-[#748092] hover:text-[#45B97C] transition-colors cursor-pointer"
+                                  title="Mở liên hệ trực tiếp"
+                                >
+                                  <ExternalLink size={13} />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <button
-                          onClick={() => handleCopyContact(partner.contactInfo)}
-                          className="p-1.5 rounded-lg bg-white dark:bg-[#131B24] text-[#748092] hover:text-[#E85D3F] transition-colors cursor-pointer"
-                          title="Sao chép"
-                        >
-                          <Copy size={13} />
-                        </button>
                       </div>
-                    </div>
 
-                    <div className="pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2">
-                      {partner.qrImage ? (
+                      <div className="pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2">
+                        {partner.qrImage ? (
+                          <button
+                            onClick={() => {
+                              playClickSound();
+                              setZoomImageModal({ url: partner.qrImage, title: `Mã QR kết bạn - ${partner.name}` });
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#45B97C] text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <QrCode size={13} />
+                            <span>Mã QR</span>
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-[#748092]">Sẵn sàng kết nối</span>
+                        )}
+
                         <button
                           onClick={() => {
                             playClickSound();
-                            setZoomImageModal({ url: partner.qrImage, title: `Mã QR kết bạn - ${partner.name}` });
+                            setActiveContactModal(partner);
                           }}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#45B97C] text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1 cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-xl bg-[#45B97C] text-white text-xs font-bold hover:bg-[#3AA56E] transition-colors cursor-pointer"
                         >
-                          <QrCode size={13} />
-                          <span>Xem mã QR</span>
+                          Chi tiết
                         </button>
-                      ) : (
-                        <span className="text-[11px] text-[#748092]">Sẵn sàng kết nối</span>
-                      )}
-
-                      <button
-                        onClick={() => {
-                          playClickSound();
-                          setActiveContactModal(partner);
-                        }}
-                        className="px-3.5 py-1.5 rounded-xl bg-[#45B97C] text-white text-xs font-bold hover:bg-[#3AA56E] transition-colors cursor-pointer"
-                      >
-                        Chi tiết
-                      </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1477,7 +2051,12 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
 
             {/* 4. Posts Feed List */}
             <div className="space-y-4">
-              {filteredPosts.length === 0 ? (
+              {isLoadingPosts ? (
+                <div className="p-10 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center space-y-3 shadow-sm">
+                  <RefreshCw size={28} className="mx-auto text-[#E85D3F] animate-spin" />
+                  <p className="text-sm font-bold text-[#243447] dark:text-white">Đang tải bảng tin cộng đồng...</p>
+                </div>
+              ) : filteredPosts.length === 0 ? (
                 <div className="p-10 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center space-y-3 shadow-sm">
                   <MessageCircle size={40} className="mx-auto text-[#748092]/50" />
                   <p className="text-sm font-bold text-[#243447] dark:text-white">Chưa có bài viết nào phù hợp</p>
@@ -1488,8 +2067,9 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
               ) : (
                 filteredPosts.map((post) => {
                   const isExpanded = expandedComments[post.id];
-                  const comments = post.comments || [];
-                  const isSolved = solvedPostIds.includes(post.id);
+                  const comments = postCommentsMap[post.id] || post.comments || [];
+                  const commentsCount = post.commentsCount ?? comments.length;
+                  const isSolved = post.isSolved || solvedPostIds.includes(post.id);
                   const hasChinese = /[\u4e00-\u9fa5]/.test(post.content);
 
                   return (
@@ -1571,13 +2151,22 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                           <span className="text-xs font-bold text-[#E85D3F] bg-[#FDEEEB] dark:bg-[#2D1E1B] px-2.5 py-1 rounded-lg">
                             {post.tag}
                           </span>
-                          {post.isMyPost && (
+                          {post.isMyPost ? (
                             <button
                               onClick={() => handleDeletePost(post.id)}
                               className="p-1.5 rounded-lg text-[#748092] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
                               title="Xóa bài viết của bạn"
                             >
                               <Trash2 size={14} />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenReportModal('post', post.id, post)}
+                              className="p-1.5 rounded-lg text-[#748092] hover:text-[#E85D3F] hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors cursor-pointer"
+                              title="Báo cáo bài viết vi phạm"
+                            >
+                              <Flag size={14} />
                             </button>
                           )}
                         </div>
@@ -1642,7 +2231,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                             className="flex items-center gap-1.5 hover:text-[#243447] dark:hover:text-white transition-colors cursor-pointer"
                           >
                             <MessageCircle size={16} />
-                            <span>{comments.length} bình luận</span>
+                            <span>{commentsCount} bình luận</span>
                           </button>
 
                           {/* Solved toggle button for Q&A */}
@@ -1686,7 +2275,12 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                       {/* Expandable Comments Drawer */}
                       {isExpanded && (
                         <div className="pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3">
-                          {comments.length > 0 ? (
+                          {loadingCommentsMap[post.id] ? (
+                            <div className="py-4 text-center text-xs text-[#748092] flex items-center justify-center gap-2">
+                              <RefreshCw size={14} className="animate-spin text-[#E85D3F]" />
+                              <span>Đang tải bình luận...</span>
+                            </div>
+                          ) : comments.length > 0 ? (
                             <div className="space-y-2">
                               {comments.map((c) => (
                                 <div 
@@ -1694,8 +2288,33 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                                   className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-1"
                                 >
                                   <div className="flex items-center justify-between text-[11px]">
-                                    <span className="font-bold text-[#243447] dark:text-white">{c.author}</span>
-                                    <span className="text-[#748092]">{c.time}</span>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-bold text-[#243447] dark:text-white">{c.author}</span>
+                                      {c.level && (
+                                        <span className="text-[10px] text-[#D97706] bg-[#FEF7E9] dark:bg-[#2D2619] px-1.5 py-0.2 rounded font-semibold">{c.level}</span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[#748092]">{c.time}</span>
+                                      {c.isMyComment ? (
+                                        <button
+                                          onClick={() => handleDeleteComment(post.id, c.id)}
+                                          className="text-[#748092] hover:text-red-500 transition-colors p-0.5 cursor-pointer"
+                                          title="Xóa bình luận"
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenReportModal('comment', c.id, c)}
+                                          className="text-[#748092] hover:text-[#E85D3F] transition-colors p-0.5 cursor-pointer"
+                                          title="Báo cáo bình luận vi phạm"
+                                        >
+                                          <Flag size={12} />
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                   <p className="text-xs text-[#243447] dark:text-[#CBD5E1] leading-relaxed">
                                     {c.content}
@@ -1719,14 +2338,15 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                                   handleAddComment(post.id);
                                 }
                               }}
-                              className="flex-1 px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                              disabled={submittingCommentMap[post.id]}
+                              className="flex-1 px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-50"
                             />
                             <button
                               onClick={() => handleAddComment(post.id)}
-                              disabled={!commentInputs[post.id]?.trim()}
+                              disabled={!commentInputs[post.id]?.trim() || submittingCommentMap[post.id]}
                               className="px-3.5 py-2 rounded-xl bg-[#E85D3F] disabled:opacity-40 text-white font-bold text-xs hover:bg-[#D44C2E] transition-colors flex items-center gap-1 cursor-pointer"
                             >
-                              <span>Gửi</span>
+                              <span>{submittingCommentMap[post.id] ? 'Đang gửi...' : 'Gửi'}</span>
                               <Send size={11} />
                             </button>
                           </div>
@@ -1736,6 +2356,29 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                     </div>
                   );
                 })
+              )}
+
+              {/* Cursor-based Load More Button */}
+              {hasMorePosts && (
+                <div className="pt-2 text-center">
+                  <button
+                    onClick={handleLoadMorePosts}
+                    disabled={isLoadingMorePosts}
+                    className="px-6 py-2.5 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#E85D3F] hover:bg-[#FFF5F2] dark:hover:bg-[#2C1D1A] transition-all shadow-xs flex items-center gap-2 mx-auto disabled:opacity-50 cursor-pointer"
+                  >
+                    {isLoadingMorePosts ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" />
+                        <span>Đang tải thêm bài viết...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Xem thêm bài viết cũ hơn</span>
+                        <ArrowRight size={14} />
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
             </div>
 
@@ -1874,14 +2517,14 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
         </div>
       )}
 
-      {/* Modal: Đăng tin tìm bạn học */}
+      {/* Modal: Đăng tin / Chỉnh sửa hồ sơ bạn học */}
       {isPartnerModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-6 w-full max-w-md border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-6 w-full max-w-md border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-3">
               <h3 className="text-base font-bold text-[#243447] dark:text-white flex items-center gap-2">
-                <Users size={18} className="text-[#45B97C]" />
-                <span>Đăng tin tìm bạn luyện nói 1-1</span>
+                {editingPartnerId ? <Edit3 size={18} className="text-[#45B97C]" /> : <Users size={18} className="text-[#45B97C]" />}
+                <span>{editingPartnerId ? 'Chỉnh sửa hồ sơ tìm bạn cùng tiến' : 'Đăng tin tìm bạn luyện nói 1-1'}</span>
               </h3>
               <button 
                 onClick={() => setIsPartnerModalOpen(false)}
@@ -1902,7 +2545,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   placeholder="Ví dụ: Hoàng Nam"
                   value={partnerForm.name}
                   onChange={(e) => setPartnerForm({ ...partnerForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
                 />
               </div>
 
@@ -1920,6 +2563,8 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                     <option value="HSK 2">HSK 2</option>
                     <option value="HSK 3">HSK 3</option>
                     <option value="HSK 4">HSK 4</option>
+                    <option value="HSK 5">HSK 5</option>
+                    <option value="HSK 6">HSK 6</option>
                     <option value="Giao tiếp tự do">Giao tiếp tự do</option>
                   </select>
                 </div>
@@ -1952,8 +2597,36 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   placeholder="Ví dụ: 0912.xxx.xxx hoặc @nam_chinese"
                   value={partnerForm.contactInfo}
                   onChange={(e) => setPartnerForm({ ...partnerForm, contactInfo: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1">
+                    Thời gian học phù hợp
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: Tối 20h - 21h"
+                    value={partnerForm.dailyTime}
+                    onChange={(e) => setPartnerForm({ ...partnerForm, dailyTime: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1">
+                    Kỹ năng rèn luyện
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: Luyện khẩu ngữ HSK"
+                    value={partnerForm.skills}
+                    onChange={(e) => setPartnerForm({ ...partnerForm, skills: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
+                  />
+                </div>
               </div>
 
               <div>
@@ -1965,8 +2638,30 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   placeholder="Ví dụ: Luyện nói 30p mỗi tối, sửa thanh điệu cho nhau"
                   value={partnerForm.goal}
                   onChange={(e) => setPartnerForm({ ...partnerForm, goal: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
                 />
+              </div>
+
+              {/* Tùy chọn quyền riêng tư & hiển thị */}
+              <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2 text-xs">
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-[#243447] dark:text-white">
+                  <input
+                    type="checkbox"
+                    checked={partnerForm.isContactPublic}
+                    onChange={(e) => setPartnerForm({ ...partnerForm, isContactPublic: e.target.checked })}
+                    className="w-3.5 h-3.5 rounded text-[#45B97C] focus:ring-0 cursor-pointer"
+                  />
+                  <span>Công khai thông tin liên hệ trong danh sách</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-[#243447] dark:text-white">
+                  <input
+                    type="checkbox"
+                    checked={partnerForm.isActive}
+                    onChange={(e) => setPartnerForm({ ...partnerForm, isActive: e.target.checked })}
+                    className="w-3.5 h-3.5 rounded text-[#45B97C] focus:ring-0 cursor-pointer"
+                  />
+                  <span>Hiển thị hồ sơ tìm bạn học (Bỏ chọn để tạm ngưng)</span>
+                </label>
               </div>
 
               {/* Tải ảnh mã QR */}
@@ -2043,7 +2738,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-[#45B97C] hover:bg-[#3AA56E] text-white text-xs font-bold shadow-md transition-colors cursor-pointer"
                 >
-                  Đăng tin ngay (+15 XP)
+                  {editingPartnerId ? 'Lưu thay đổi' : 'Đăng tin ngay (+15 XP)'}
                 </button>
               </div>
             </form>
@@ -2060,12 +2755,41 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-base font-bold text-[#243447] dark:text-white">
-                {activeContactModal.name}
-              </h3>
+              <div className="flex items-center justify-center gap-2">
+                <h3 className="text-base font-bold text-[#243447] dark:text-white">
+                  {activeContactModal.name}
+                </h3>
+                {activeContactModal.isActive === false ? (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700">
+                    Tạm ngưng
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-700">
+                    Đang tìm bạn
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-[#E85D3F] font-bold">Mục tiêu: {activeContactModal.level || 'HSK 1'}</p>
               <p className="text-xs text-[#748092] dark:text-[#94A3B8]">{activeContactModal.goal || 'Luyện phản xạ giao tiếp'}</p>
             </div>
+
+            {/* Chi tiết kỹ năng & lịch học */}
+            {(activeContactModal.skills || activeContactModal.dailyTime) && (
+              <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-[#748092] dark:text-[#94A3B8]">
+                {activeContactModal.skills && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+                    <Target size={12} className="text-[#E85D3F]" />
+                    <span>{activeContactModal.skills}</span>
+                  </span>
+                )}
+                {activeContactModal.dailyTime && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+                    <Clock size={12} className="text-[#45B97C]" />
+                    <span>{activeContactModal.dailyTime}</span>
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className="p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2">
               <div className="text-left min-w-0">
@@ -2073,16 +2797,32 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   {activeContactModal.contactMethod || 'Kênh liên hệ'}
                 </span>
                 <span className="text-xs font-mono font-bold text-[#243447] dark:text-white truncate block">
-                  {activeContactModal.contactInfo || activeContactModal.contact || 'Chưa cung cấp'}
+                  {activeContactModal.isContactPublic === false && !activeContactModal.isMyPartnerPost && activeContactModal.userId !== user?.id
+                    ? 'Thông tin liên hệ bảo mật'
+                    : (activeContactModal.contactInfo || activeContactModal.contact || 'Chưa cung cấp')}
                 </span>
               </div>
-              <button
-                onClick={() => handleCopyContact(activeContactModal.contactInfo || activeContactModal.contact)}
-                className="p-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#E85D3F] hover:bg-[#FDEEEB] transition-colors cursor-pointer shrink-0"
-                title="Sao chép"
-              >
-                <Copy size={14} />
-              </button>
+
+              <div className="flex items-center gap-1 shrink-0">
+                {(activeContactModal.isContactPublic !== false || activeContactModal.isMyPartnerPost || activeContactModal.userId === user?.id) && (
+                  <>
+                    <button
+                      onClick={() => handleCopyContact(activeContactModal.contactInfo || activeContactModal.contact)}
+                      className="p-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#E85D3F] hover:bg-[#FDEEEB] transition-colors cursor-pointer"
+                      title="Sao chép"
+                    >
+                      <Copy size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleOpenContactLink(activeContactModal.contactMethod, activeContactModal.contactInfo || activeContactModal.contact)}
+                      className="p-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#45B97C] hover:bg-emerald-50 transition-colors cursor-pointer"
+                      title="Mở liên kết kết bạn"
+                    >
+                      <ExternalLink size={14} />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Mã QR kết bạn nếu có */}
@@ -2174,6 +2914,17 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
           </div>
         </div>
       )}
+
+      {/* Student Report Modal (Task 24.08D) */}
+      <ReportModal
+        isOpen={reportModalState.isOpen}
+        onClose={() => setReportModalState(prev => ({ ...prev, isOpen: false }))}
+        targetType={reportModalState.targetType}
+        targetId={reportModalState.targetId}
+        targetContent={reportModalState.targetContent}
+        targetAuthor={reportModalState.targetAuthor}
+        user={user}
+      />
 
     </div>
   );

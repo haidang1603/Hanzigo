@@ -18,6 +18,8 @@ export * from './listeningPracticeService.js';
 export * from './crossSkillService.js';
 export * from './aiFeedbackService.js';
 export * from './characterDictionaryService.js';
+export * from './customVocabularyService.js';
+export * from './customLessonService.js';
 export {
   GAMIFICATION_KEYS,
   REWARD_LIMITS,

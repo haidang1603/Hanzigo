@@ -19,8 +19,9 @@
  */
 
 export const XKIRO_DEFAULT_BASE_URL = 'https://api.xkiro.com/v1';
-export const XKIRO_DEFAULT_MODEL = 'qwen/qwen-plus-2025-07-28:free';
-export const DEFAULT_TIMEOUT_MS = 45000;
+export const XKIRO_DEFAULT_MODEL = 'sensenova/sensenova-6.8-flash-lite';
+export const GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash-lite';
+export const DEFAULT_TIMEOUT_MS = 25000;
 
 /**
  * Extracts and cleans JSON from raw LLM responses.
@@ -107,7 +108,7 @@ export function extractStructuredJson(rawText) {
 async function callXkiro({
   apiKey,
   baseUrl = XKIRO_DEFAULT_BASE_URL,
-  model = XKIRO_DEFAULT_MODEL,
+  model = process.env.XKIRO_MODEL || XKIRO_DEFAULT_MODEL,
   messages,
   temperature = 0.6,
   maxTokens = 1200,
@@ -115,7 +116,7 @@ async function callXkiro({
 }) {
   const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
   const url = `${cleanBaseUrl}/chat/completions`;
-  const cleanModel = model === 'qwen/qwen-plus-2025-07-28' ? 'qwen/qwen-plus-2025-07-28:free' : model;
+  const cleanModel = model || process.env.XKIRO_MODEL || XKIRO_DEFAULT_MODEL;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -150,11 +151,19 @@ async function callXkiro({
         errorBody = { message: await response.text().catch(() => '') };
       }
 
+      let errorCode = 'provider_error';
+      if (errStatus === 400) errorCode = 'bad_request';
+      else if (errStatus === 401) errorCode = 'auth_error';
+      else if (errStatus === 403) errorCode = 'forbidden';
+      else if (errStatus === 404) errorCode = 'model_not_found';
+      else if (errStatus === 429) errorCode = 'rate_limit_exceeded';
+      else if (errStatus >= 500) errorCode = 'server_error';
+
       return {
         success: false,
         status: errStatus,
         error: errorBody?.error?.message || errorBody?.message || `xKiro HTTP ${errStatus}`,
-        code: errorBody?.error?.code || (errStatus === 429 ? 'rate_limit_exceeded' : 'provider_error'),
+        code: errorBody?.error?.code || errorCode,
         latencyMs
       };
     }
@@ -178,7 +187,7 @@ async function callXkiro({
     return {
       success: true,
       provider: 'xkiro',
-      model,
+      model: cleanModel,
       data: parsedData,
       rawText: messageContent,
       usage: {
@@ -204,17 +213,19 @@ async function callXkiro({
 }
 
 /**
- * Executes a call to Google Gemini 1.5 Flash (Paid Fallback or Standalone).
+ * Executes a call to Google Gemini (3.5 Flash Lite or configured).
  */
 async function callGemini({
   apiKey,
   systemPrompt,
   userPrompt,
+  model = process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL,
   temperature = 0.6,
   maxTokens = 1200,
   timeoutMs = DEFAULT_TIMEOUT_MS
 }) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const cleanModel = (model || GEMINI_DEFAULT_MODEL).replace(/^models\//, '');
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:generateContent?key=${apiKey}`;
 
   const contents = [
     {
@@ -245,11 +256,26 @@ async function callGemini({
     const latencyMs = Date.now() - startTime;
 
     if (!response.ok) {
+      let errorBody = null;
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = { message: await response.text().catch(() => '') };
+      }
+
+      let errorCode = 'gemini_error';
+      if (response.status === 400) errorCode = 'bad_request';
+      else if (response.status === 401) errorCode = 'auth_error';
+      else if (response.status === 403) errorCode = 'forbidden';
+      else if (response.status === 404) errorCode = 'model_not_found';
+      else if (response.status === 429) errorCode = 'rate_limit_exceeded';
+      else if (response.status >= 500) errorCode = 'server_error';
+
       return {
         success: false,
         status: response.status,
-        error: `Gemini HTTP ${response.status}`,
-        code: 'gemini_error',
+        error: errorBody?.error?.message || errorBody?.message || `Gemini HTTP ${response.status}`,
+        code: errorCode,
         latencyMs
       };
     }
@@ -275,13 +301,13 @@ async function callGemini({
     const completionTokens = Math.ceil(rawText.length / 4);
     const totalTokens = promptTokens + completionTokens;
 
-    // Gemini 1.5 Flash Pricing: $0.075 / 1M input, $0.30 / 1M output
+    // Gemini 1.5/2.5/3.5 Flash pricing estimate
     const costUsd = Number(((promptTokens * 0.000000075) + (completionTokens * 0.0000003)).toFixed(6));
 
     return {
       success: true,
       provider: 'gemini',
-      model: 'gemini-1.5-flash',
+      model: cleanModel,
       data: parsedData,
       rawText,
       usage: { promptTokens, completionTokens, totalTokens },
@@ -303,15 +329,74 @@ async function callGemini({
 }
 
 /**
+ * CENTRALIZED FALLBACK COST & RECOVERY POLICY
+ * Evaluates whether a failure from the primary provider should trigger secondary fallback.
+ *
+ * Strict Cost Rules:
+ * 1. HTTP 400 (Bad Request): NEVER fallback to secondary provider (client formatting error).
+ * 2. If Secondary Provider is Paid (e.g. Gemini fallback from free xKiro):
+ *    - If ALLOW_PAID_FALLBACK !== true:
+ *      STRICTLY FORBIDDEN to call secondary provider on ANY error path:
+ *      401 (Auth Error), 403 (Forbidden), 404 (Model Not Found), 429 (Quota),
+ *      500-599 (Server Error), Timeout (504), Network Error, or Malformed JSON.
+ *      Returns `paidFallbackBlocked: true` and guides downstream to deterministic engine.
+ *    - If ALLOW_PAID_FALLBACK === true:
+ *      Fallback is permitted for recoverable failures (401, 403, 404, 429, 5xx, timeout, network error).
+ * 3. If Secondary Provider is Free (e.g. xKiro fallback from Gemini):
+ *    - Permitted for recoverable failures without incurring budget impact.
+ */
+export function evaluateFallbackPolicy({
+  primaryStatus,
+  primaryCode,
+  primaryProvider,
+  secondaryProvider,
+  allowPaidFallback = false,
+  hasSecondaryKey = false
+}) {
+  // Rule 1: 400 Bad Request is unrecoverable by secondary provider
+  if (primaryStatus === 400) {
+    return {
+      canFallback: false,
+      reason: 'client_bad_request',
+      paidBlocked: false
+    };
+  }
+
+  // If secondary key is not configured, cannot fallback
+  if (!hasSecondaryKey) {
+    return {
+      canFallback: false,
+      reason: 'no_secondary_key',
+      paidBlocked: false
+    };
+  }
+
+  // Determine if secondary provider is a paid service
+  // Gemini is treated as paid provider when acting as fallback from free xKiro
+  const isSecondaryPaid = (secondaryProvider === 'gemini');
+
+  if (isSecondaryPaid && !allowPaidFallback) {
+    return {
+      canFallback: false,
+      reason: 'paid_fallback_prohibited',
+      paidBlocked: true
+    };
+  }
+
+  return {
+    canFallback: true,
+    reason: 'recoverable_provider_error',
+    paidBlocked: false
+  };
+}
+
+/**
  * UNIFIED AI SERVICE DISPATCHER
- * Enforces Free-First Policy:
- * 1. Attempts xKiro with configured model (Free).
- * 2. If xKiro succeeds -> Returns result ($0.00 cost).
- * 3. If xKiro fails / quota exhausted (429):
- *    - Checks if ALLOW_PAID_FALLBACK is explicitly enabled AND GEMINI_API_KEY exists.
- *    - If NOT enabled -> Safely terminates with quota message to protect budget.
- * 4. If xKiro is not configured, checks for Gemini as standalone fallback.
- * 5. If no providers succeed -> Returns structured failure for deterministic fallback.
+ * Configurable Primary & Secondary Providers:
+ * - AI_PRIMARY_PROVIDER: 'xkiro' (Free-First) or 'gemini'
+ * - XKIRO_MODEL: Default 'sensenova/sensenova-6.8-flash-lite'
+ * - GEMINI_MODEL: Default 'gemini-3.5-flash-lite'
+ * - ALLOW_PAID_FALLBACK: Protects budget against unintended charges
  */
 export async function callUnifiedAiProvider({
   systemPrompt = '',
@@ -320,13 +405,17 @@ export async function callUnifiedAiProvider({
   temperature = 0.6,
   maxTokens = 1200,
   timeoutMs = DEFAULT_TIMEOUT_MS,
-  action = 'personalize'
+  action = 'personalize',
+  provider = null
 }) {
+  const primaryProvider = (provider || process.env.AI_PRIMARY_PROVIDER || 'xkiro').toLowerCase();
+
   const xkiroKey = process.env.XKIRO_API_KEY;
   const xkiroBaseUrl = process.env.XKIRO_BASE_URL || XKIRO_DEFAULT_BASE_URL;
   const xkiroModel = process.env.XKIRO_MODEL || XKIRO_DEFAULT_MODEL;
 
   const geminiKey = process.env.GEMINI_API_KEY;
+  const geminiModel = process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
   const allowPaidFallback = String(process.env.ALLOW_PAID_FALLBACK || '').toLowerCase() === 'true';
 
   // Format messages for OpenAI format
@@ -337,11 +426,8 @@ export async function callUnifiedAiProvider({
         { role: 'user', content: userPrompt }
       ];
 
-  // =========================================================================
-  // 1. PRIMARY: xKiro Free-First Provider
-  // =========================================================================
-  if (xkiroKey) {
-    const xkiroRes = await callXkiro({
+  const executeXkiro = async () => {
+    return await callXkiro({
       apiKey: xkiroKey,
       baseUrl: xkiroBaseUrl,
       model: xkiroModel,
@@ -350,64 +436,133 @@ export async function callUnifiedAiProvider({
       maxTokens,
       timeoutMs
     });
+  };
 
-    if (xkiroRes.success) {
-      return {
-        ...xkiroRes,
-        action,
-        timestamp: new Date().toISOString()
-      };
-    }
-
-    console.warn(`[AI Gateway] xKiro call failed (Status: ${xkiroRes.status}, Error: ${xkiroRes.error})`);
-
-    // Free-first cost policy enforcement:
-    // If xKiro returned 429 (Quota / Rate Limit) or failed, do NOT silently charge user.
-    if (!allowPaidFallback) {
-      return {
-        success: false,
-        status: xkiroRes.status,
-        provider: 'xkiro',
-        model: xkiroModel,
-        error: xkiroRes.status === 429 
-          ? 'Hạn mức miễn phí hàng ngày của xKiro đã hết. Hệ thống chuyển sang chế độ sư phạm ngoại tuyến để bảo vệ ngân sách.'
-          : `Nhà cung cấp AI xKiro tạm thời gián đoạn (${xkiroRes.error}).`,
-        code: xkiroRes.code,
-        latencyMs: xkiroRes.latencyMs,
-        paidFallbackBlocked: true
-      };
-    }
-
-    console.info('[AI Gateway] ALLOW_PAID_FALLBACK=true. Chuyển hướng sang nhà cung cấp phụ trợ (Gemini)...');
-  }
-
-  // =========================================================================
-  // 2. SECONDARY: Gemini (Explicit opt-in or standalone)
-  // =========================================================================
-  if (geminiKey && (allowPaidFallback || !xkiroKey)) {
-    const geminiRes = await callGemini({
+  const executeGemini = async () => {
+    return await callGemini({
       apiKey: geminiKey,
+      model: geminiModel,
       systemPrompt,
       userPrompt: userPrompt || (messages ? JSON.stringify(messages) : ''),
       temperature,
       maxTokens,
       timeoutMs
     });
+  };
 
-    if (geminiRes.success) {
-      return {
-        ...geminiRes,
-        action,
-        timestamp: new Date().toISOString(),
-        isPaidFallback: !!xkiroKey
-      };
+  // =========================================================================
+  // PATH A: GEMINI AS PRIMARY
+  // =========================================================================
+  if (primaryProvider === 'gemini') {
+    if (geminiKey) {
+      const geminiRes = await executeGemini();
+      if (geminiRes.success) {
+        return {
+          ...geminiRes,
+          action,
+          timestamp: new Date().toISOString()
+        };
+      }
+      console.warn(`[AI Gateway] Gemini primary call failed (Status: ${geminiRes.status}, Error: ${geminiRes.error})`);
+
+      // Evaluate Fallback Policy to xKiro (free-tier secondary)
+      const fallbackPolicy = evaluateFallbackPolicy({
+        primaryStatus: geminiRes.status,
+        primaryCode: geminiRes.code,
+        primaryProvider: 'gemini',
+        secondaryProvider: 'xkiro',
+        allowPaidFallback,
+        hasSecondaryKey: !!xkiroKey
+      });
+
+      if (fallbackPolicy.canFallback) {
+        console.info('[AI Gateway] Chuyển hướng sang nhà cung cấp phụ trợ (xKiro)...');
+        const xkiroRes = await executeXkiro();
+        if (xkiroRes.success) {
+          return {
+            ...xkiroRes,
+            action,
+            isSecondaryFallback: true,
+            timestamp: new Date().toISOString()
+          };
+        }
+        console.warn(`[AI Gateway] xKiro secondary fallback failed (Status: ${xkiroRes.status})`);
+      }
     }
+  } else {
+    // =========================================================================
+    // PATH B: XKIRO AS PRIMARY (Free-First Architecture)
+    // =========================================================================
+    if (xkiroKey) {
+      const xkiroRes = await executeXkiro();
 
-    console.warn(`[AI Gateway] Gemini fallback failed (Status: ${geminiRes.status}, Error: ${geminiRes.error})`);
+      if (xkiroRes.success) {
+        return {
+          ...xkiroRes,
+          action,
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      console.warn(`[AI Gateway] xKiro primary call failed (Status: ${xkiroRes.status}, Error: ${xkiroRes.error})`);
+
+      // Evaluate Centralized Fallback Cost Policy for Gemini (paid secondary)
+      const fallbackPolicy = evaluateFallbackPolicy({
+        primaryStatus: xkiroRes.status,
+        primaryCode: xkiroRes.code,
+        primaryProvider: 'xkiro',
+        secondaryProvider: 'gemini',
+        allowPaidFallback,
+        hasSecondaryKey: !!geminiKey
+      });
+
+      // Strict Cost Enforcement: If paid fallback is prohibited on ANY error path, terminate safely
+      if (!fallbackPolicy.canFallback) {
+        return {
+          success: false,
+          status: xkiroRes.status,
+          provider: 'xkiro',
+          model: xkiroModel,
+          error: xkiroRes.status === 429 
+            ? 'Hạn mức miễn phí hàng ngày của xKiro đã hết. Hệ thống chuyển sang chế độ sư phạm ngoại tuyến để bảo vệ ngân sách.'
+            : `Nhà cung cấp AI xKiro tạm thời gián đoạn (${xkiroRes.error}). Chuyển sang chế độ sư phạm ngoại tuyến.`,
+          code: xkiroRes.code,
+          latencyMs: xkiroRes.latencyMs,
+          paidFallbackBlocked: fallbackPolicy.paidBlocked
+        };
+      }
+
+      // ALLOW_PAID_FALLBACK=true explicitly granted by administrator
+      console.info(`[AI Gateway Fallback] Primary xKiro failed with HTTP ${xkiroRes.status} (${xkiroRes.code}). ALLOW_PAID_FALLBACK=true, activating secondary provider (Gemini)...`);
+
+      const geminiRes = await executeGemini();
+      if (geminiRes.success) {
+        return {
+          ...geminiRes,
+          action,
+          timestamp: new Date().toISOString(),
+          isPaidFallback: true
+        };
+      }
+
+      console.warn(`[AI Gateway] Gemini secondary fallback failed (Status: ${geminiRes.status}, Error: ${geminiRes.error})`);
+    } else if (geminiKey && (allowPaidFallback || !xkiroKey)) {
+      // Standalone Gemini when xKiro is unconfigured
+      const geminiRes = await executeGemini();
+      if (geminiRes.success) {
+        return {
+          ...geminiRes,
+          action,
+          timestamp: new Date().toISOString(),
+          isPaidFallback: false
+        };
+      }
+      console.warn(`[AI Gateway] Gemini standalone call failed (Status: ${geminiRes.status}, Error: ${geminiRes.error})`);
+    }
   }
 
   // =========================================================================
-  // 3. NO PROVIDER SUCESS -> SAFE RETURN FOR DETERMINISTIC ENGINE
+  // 3. NO PROVIDER SUCCESS -> SAFE RETURN FOR DETERMINISTIC ENGINE
   // =========================================================================
   return {
     success: false,

@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
-import { getStoredMaterials } from '../utils/materialsStorage.js';
+import { getStoredMaterials, DEFAULT_MATERIALS } from '../utils/materialsStorage.js';
 
 export async function getMaterialsFromDb() {
   if (!isSupabaseConfigured || !supabase) return null;
@@ -18,27 +18,28 @@ export async function getMaterialsFromDb() {
         ? (Array.isArray(m.tags) ? m.tags : String(m.tags).split(',').map(t => t.trim()).filter(Boolean))
         : [];
 
+      const def = DEFAULT_MATERIALS.find(d => d.id === m.id);
       return {
         id: m.id,
-        title: m.title,
-        category: m.category || 'Giáo trình chuẩn',
-        level: m.level || 'HSK 1',
+        title: m.title || def?.title,
+        category: m.category || def?.category || 'Giáo trình chuẩn',
+        level: m.level || def?.level || 'HSK 1',
         skills: skillsArray,
-        format: m.format || 'PDF',
-        fileSize: m.file_size || 'Tài liệu số',
-        author: m.author || m.publisher || 'HanziGo Biên soạn',
-        publisher: m.publisher || m.author || 'HanziGo Academic',
-        description: m.description || '',
-        downloadUrl: m.download_url || '',
-        sourceUrl: m.source_url || m.download_url || '',
-        language: m.language || 'Song ngữ Trung - Việt',
-        license: m.license || 'Tài liệu giáo dục công cộng',
-        verificationStatus: m.verification_status || 'verified',
-        relatedLessonId: m.related_lesson_id || null,
-        verificationNotes: m.verification_notes || '',
-        tags: tagsArray,
-        isFeatured: Boolean(m.is_featured),
-        isHidden: Boolean(m.is_hidden),
+        format: m.format || def?.format || 'PDF',
+        fileSize: m.file_size || def?.fileSize || 'Tài liệu số',
+        author: m.author || m.publisher || def?.author || 'HanziGo Biên soạn',
+        publisher: m.publisher || m.author || def?.publisher || 'HanziGo Academic',
+        description: m.description || def?.description || '',
+        downloadUrl: m.download_url || def?.downloadUrl || '',
+        sourceUrl: m.source_url || m.download_url || def?.sourceUrl || '',
+        language: m.language || def?.language || 'Song ngữ Trung - Việt',
+        license: m.license || def?.license || 'Tài liệu giáo dục công cộng',
+        verificationStatus: m.verification_status || def?.verificationStatus || 'verified',
+        relatedLessonId: m.related_lesson_id || def?.relatedLessonId || null,
+        verificationNotes: m.verification_notes || def?.verificationNotes || '',
+        tags: tagsArray.length > 0 ? tagsArray : (def?.tags || []),
+        isFeatured: Boolean(m.is_featured ?? def?.isFeatured),
+        isHidden: Boolean(m.is_hidden ?? def?.isHidden),
         downloadsCount: Number(m.downloads_count) || 0,
         createdAt: m.created_at ? m.created_at.split('T')[0] : '2026-01-01'
       };

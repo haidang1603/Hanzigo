@@ -68,3 +68,49 @@ export async function deleteUserProfileFromDb(userId) {
     return false;
   }
 }
+
+/**
+ * Admin: Create a new user account via serverless backend API
+ * Passes caller's Bearer token for server-side zero-trust admin verification
+ */
+export async function adminCreateUser({ email, name, role = 'student', password, level, status = 'active' }) {
+  let authToken = '';
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        authToken = session.access_token;
+      }
+    } catch {}
+  }
+
+  if (!authToken && typeof localStorage !== 'undefined') {
+    authToken = localStorage.getItem('sb-access-token') || localStorage.getItem('supabase.auth.token') || '';
+  }
+
+  const response = await fetch('/api/admin/create-user', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+    },
+    body: JSON.stringify({
+      email,
+      name,
+      role,
+      password,
+      level,
+      status
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || `Tạo tài khoản thất bại (Mã lỗi: ${response.status})`);
+  }
+
+  return data;
+}
+

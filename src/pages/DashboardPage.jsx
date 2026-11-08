@@ -47,6 +47,7 @@ import {
   getLessonById,
   getRecommendedNextLesson 
 } from '../services/learningPathService';
+import { getRecentReadingProgress } from '../services/readingProgressService';
 import { evaluateUserAchievements } from '../services/gamificationService';
 import StreakModal from '../components/learning/StreakModal';
 import AiLearningCoachWidget from '../components/learning/AiLearningCoachWidget';
@@ -227,6 +228,18 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   const [studentClassrooms, setStudentClassrooms] = useState([]);
   const [studentAssignments, setStudentAssignments] = useState([]);
   const [loadingClassroomData, setLoadingClassroomData] = useState(false);
+  const [recentReading, setRecentReading] = useState(null);
+
+  // Load Recent Reading Progress from Cloud / Local
+  useEffect(() => {
+    let isMounted = true;
+    getRecentReadingProgress(1, user).then(list => {
+      if (isMounted && list && list.length > 0) {
+        setRecentReading(list[0]);
+      }
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, [user]);
 
   useEffect(() => {
     let isMounted = true;
@@ -477,11 +490,28 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
           </p>
         </div>
 
-        {/* Action Button */}
+        {/* Action Button & Recent Reading */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-10 shrink-0">
+          {recentReading && (
+            <button
+              onClick={() => {
+                playClickSound();
+                setActiveTab('reader');
+              }}
+              className="px-4 py-3 rounded-2xl bg-white/90 dark:bg-[#1E293B]/90 hover:bg-white dark:hover:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold text-xs shadow-sm hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+              title={`Đọc tiếp: ${recentReading.title || recentReading.materialId}`}
+            >
+              <BookOpen size={15} className="text-[#E85D3F]" />
+              <div className="text-left">
+                <span className="block text-[10px] text-[#748092]">Đọc tiếp ({recentReading.progressPercent}%)</span>
+                <span className="block truncate max-w-[120px] sm:max-w-[150px]">{recentReading.title || recentReading.materialId}</span>
+              </div>
+            </button>
+          )}
+
           <button
             onClick={handleContinueLesson}
-            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-sm shadow-lg shadow-[#E85D3F]/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-sm shadow-lg shadow-[#E85D3F]/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
           >
             <Play size={16} className="fill-white" />
             <span>{completedLessonIds.length > 0 ? 'Tiếp tục bài học' : 'Bắt đầu bài 1 ngay'}</span>

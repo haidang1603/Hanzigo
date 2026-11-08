@@ -527,28 +527,44 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
+          const normalizedId = id.replace(/\\/g, '/');
+          if (normalizedId.includes('node_modules')) {
+            if (normalizedId.includes('react') || normalizedId.includes('react-dom')) {
               return 'vendor-react';
             }
-            if (id.includes('lucide-react')) {
+            if (normalizedId.includes('lucide-react')) {
               return 'vendor-lucide';
             }
-            if (id.includes('@supabase')) {
+            if (normalizedId.includes('@supabase')) {
               return 'vendor-supabase';
             }
-            if (id.includes('canvas-confetti')) {
+            if (normalizedId.includes('canvas-confetti')) {
               return 'vendor-confetti';
             }
             return 'vendor-deps';
           }
-          if (id.includes('curriculumLessons')) {
-            return 'data-curriculum';
+          if (normalizedId.includes('curriculum/hsk1Lessons')) {
+            return 'data-curriculum-hsk1';
           }
-          if (id.includes('chineseData')) {
+          if (normalizedId.includes('curriculum/hsk2Lessons')) {
+            return 'data-curriculum-hsk2';
+          }
+          if (normalizedId.includes('curriculum/hsk3Lessons')) {
+            return 'data-curriculum-hsk3';
+          }
+          if (normalizedId.includes('curriculum/hsk4Lessons')) {
+            return 'data-curriculum-hsk4';
+          }
+          if (normalizedId.includes('curriculum/hsk5Lessons')) {
+            return 'data-curriculum-hsk5';
+          }
+          if (normalizedId.includes('curriculum/hsk6Lessons')) {
+            return 'data-curriculum-hsk6';
+          }
+          if (normalizedId.includes('chineseData')) {
             return 'data-chinese';
           }
-          if (id.includes('learningPathData')) {
+          if (normalizedId.includes('learningPathData')) {
             return 'data-learning-path';
           }
         }

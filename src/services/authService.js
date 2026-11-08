@@ -275,3 +275,143 @@ export async function getValidSessionToken() {
   }
 }
 
+/**
+ * Validate email format with standard RFC 5322 simplified regex
+ */
+export function isValidEmailFormat(email) {
+  if (!email || typeof email !== 'string') return false;
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email.trim());
+}
+
+/**
+ * Request Password Reset via Email (Supabase Auth)
+ * Zero user enumeration: always returns standard positive message to UI
+ * Handles rate limits, network errors, and simulation fallback
+ */
+export async function requestPasswordReset(email) {
+  if (!email || typeof email !== 'string' || !email.trim()) {
+    throw new Error('Vui lòng nhập địa chỉ email của bạn.');
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  if (!isValidEmailFormat(cleanEmail)) {
+    throw new Error('Địa chỉ email không đúng định dạng. Vui lòng kiểm tra lại.');
+  }
+
+  // Determine dynamic redirect URL based on current origin (zero hardcoded domains)
+  let redirectUrl = 'http://localhost:5173/#reset-password';
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    redirectUrl = `${window.location.origin}/#reset-password`;
+  }
+
+  if (!isSupabaseConfigured || !supabase) {
+    // Graceful simulation mode for offline/test environments
+    return {
+      success: true,
+      message: 'Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu sẽ được gửi đến hộp thư của bạn.',
+      simulated: true
+    };
+  }
+
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: redirectUrl
+    });
+
+    if (error) {
+      // Map rate limiting and common errors to friendly Vietnamese messages
+      if (error.status === 429 || error.message?.includes('rate') || error.message?.includes('over_email_send_rate_limit')) {
+        throw new Error('Bạn đã yêu cầu gửi email quá nhiều lần. Vui lòng đợi vài phút trước khi thử lại.');
+      }
+      if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        throw new Error('Không thể kết nối đến máy chủ xác thực. Vui lòng kiểm tra kết nối mạng của bạn.');
+      }
+      console.warn('Supabase resetPasswordForEmail notice:', error.message);
+    }
+
+    // Zero User Enumeration: Return success message regardless
+    return {
+      success: true,
+      message: 'Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu sẽ được gửi đến hộp thư của bạn.'
+    };
+  } catch (err) {
+    if (err.message?.includes('Vui lòng') || err.message?.includes('kết nối') || err.message?.includes('quá nhiều lần')) {
+      throw err;
+    }
+    console.warn('Password reset request error:', err);
+    throw new Error(err.message || 'Có lỗi xảy ra khi gửi yêu cầu khôi phục mật khẩu. Vui lòng thử lại sau.');
+  }
+}
+
+/**
+ * Update new password for current recovery session
+ * Security: Validates session, minimum 6 characters, never logs passwords
+ */
+export async function updateNewPassword(newPassword) {
+  if (!newPassword || typeof newPassword !== 'string') {
+    throw new Error('Mật khẩu mới không được để trống.');
+  }
+
+  if (newPassword.length < 6) {
+    throw new Error('Mật khẩu mới phải có tối thiểu 6 ký tự.');
+  }
+
+  if (!isSupabaseConfigured || !supabase) {
+    // Simulation mode
+    return {
+      success: true,
+      message: 'Mật khẩu đã được cập nhật thành công (Chế độ mô phỏng).',
+      simulated: true
+    };
+  }
+
+  // Verify that an active authenticated/recovery session exists
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session || !session.user) {
+    throw new Error('Phiên làm việc không hợp lệ hoặc liên kết khôi phục đã hết hạn. Vui lòng yêu cầu liên kết mới.');
+  }
+
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      if (error.message?.includes('same_password')) {
+        throw new Error('Mật khẩu mới không được trùng với mật khẩu cũ. Vui lòng chọn mật khẩu khác.');
+      }
+      throw new Error(error.message || 'Không thể cập nhật mật khẩu mới. Vui lòng thử lại.');
+    }
+
+    return {
+      success: true,
+      message: 'Mật khẩu của bạn đã được cập nhật thành công.'
+    };
+  } catch (err) {
+    if (err.message?.includes('Mật khẩu') || err.message?.includes('Phiên')) {
+      throw err;
+    }
+    throw new Error(err.message || 'Lỗi khi cập nhật mật khẩu mới. Vui lòng thử lại.');
+  }
+}
+
+/**
+ * Check if current user has an active recovery/auth session
+ */
+export async function verifyRecoverySession() {
+  if (!isSupabaseConfigured || !supabase) {
+    return { valid: true, simulated: true };
+  }
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error || !session || !session.user) {
+      return { valid: false, error: 'Không tìm thấy phiên làm việc hoặc liên kết đã hết hạn.' };
+    }
+    return { valid: true, user: session.user };
+  } catch (err) {
+    return { valid: false, error: err.message };
+  }
+}
+
+

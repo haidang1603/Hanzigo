@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { 
   BookOpen, 
   Sparkles, 
@@ -22,7 +22,11 @@ import {
   Compass,
   Tag,
   CheckCheck,
-  BookOpenCheck
+  BookOpenCheck,
+  Cloud,
+  CloudCheck,
+  CloudOff,
+  RefreshCw
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton.jsx';
 import { analyzeChineseText } from '../utils/chineseNlpEngine.js';
@@ -36,6 +40,11 @@ import {
 import { saveCustomVocab, getStoredCustomVocab } from '../utils/materialsStorage.js';
 import { awardXp } from '../utils/gamification.js';
 import { playClickSound, playSuccessSound, speakChinese } from '../utils/audio.js';
+import {
+  getReadingProgress,
+  saveReadingProgress,
+  migrateLocalReadingProgressToCloud
+} from '../services/readingProgressService.js';
 
 // Bảng màu phân cấp HSK
 const HSK_BADGE_COLORS = {
@@ -106,15 +115,124 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar }) 
   const [quizFeedback, setQuizFeedback] = useState({});
   const [toastMsg, setToastMsg] = useState(null);
 
+  // Lấy dữ liệu bài đọc HSK hiện tại (Khai báo trước các hooks sử dụng để tránh Temporal Dead Zone)
+  const currentGradedReader = useMemo(() => {
+    return getGradedReaderById(activeReaderId) || GRADED_READERS_DATA[0];
+  }, [activeReaderId]);
+
+  // Cloud Reading Progress Synchronization State
+  const [syncStatus, setSyncStatus] = useState('synced'); // 'synced' | 'syncing' | 'offline' | 'error'
+  const [readingProgressPercent, setReadingProgressPercent] = useState(0);
+  const [isCompletedReading, setIsCompletedReading] = useState(false);
+  const [hasRestoredProgress, setHasRestoredProgress] = useState(false);
+  const saveTimeoutRef = useRef(null);
+  const containerRef = useRef(null);
+
   const showToast = useCallback((msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3000);
   }, []);
 
-  // Lấy dữ liệu bài đọc HSK hiện tại
-  const currentGradedReader = useMemo(() => {
-    return getGradedReaderById(activeReaderId) || GRADED_READERS_DATA[0];
-  }, [activeReaderId]);
+  // 1. Safe migration: Tự động tải tiến độ từ localStorage lên Cloud khi người dùng đăng nhập
+  useEffect(() => {
+    if (user?.uid || user?.id) {
+      migrateLocalReadingProgressToCloud(user).catch(err => {
+        console.warn('Reading progress cloud migration notice:', err);
+      });
+    }
+  }, [user]);
+
+  // 2. Khôi phục tiến độ đọc khi mở bài đọc
+  useEffect(() => {
+    let isCancelled = false;
+    const restoreProgress = async () => {
+      setSyncStatus('syncing');
+      try {
+        const saved = await getReadingProgress(activeReaderId, user);
+        if (!isCancelled && saved) {
+          setReadingProgressPercent(saved.progressPercent || 0);
+          setIsCompletedReading(Boolean(saved.isCompleted));
+          setHasRestoredProgress(true);
+          setSyncStatus(saved.isCloudSynced !== false ? 'synced' : 'offline');
+
+          // Khôi phục vị trí cuộn sau khi render xong
+          if (saved.scrollPosition && saved.scrollPosition > 100) {
+            setTimeout(() => {
+              if (!isCancelled) {
+                window.scrollTo({ top: saved.scrollPosition, behavior: 'smooth' });
+                showToast(`Đã khôi phục vị trí đọc (${saved.progressPercent || 0}%)`);
+              }
+            }, 300);
+          }
+        } else if (!isCancelled) {
+          setReadingProgressPercent(0);
+          setIsCompletedReading(false);
+          setSyncStatus('synced');
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.warn('Restore reading progress error:', err);
+          setSyncStatus('offline');
+        }
+      }
+    };
+
+    restoreProgress();
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeReaderId, user, showToast]);
+
+  // 3. Tự động lưu tiến độ đọc (Debounced Scroll & Completion)
+  const triggerSaveProgress = useCallback((percent, scrollPos, completed = false) => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      setSyncStatus('syncing');
+      try {
+        const res = await saveReadingProgress(activeReaderId, {
+          title: currentGradedReader?.titleZh || 'Bài đọc HSK',
+          currentPage: 1,
+          totalPages: 1,
+          scrollPosition: scrollPos,
+          progressPercent: percent,
+          isCompleted: completed
+        }, user);
+
+        if (res.success) {
+          setSyncStatus(res.isCloudSynced ? 'synced' : 'offline');
+        } else {
+          setSyncStatus('error');
+        }
+      } catch {
+        setSyncStatus('offline');
+      }
+    }, 800); // Debounce 800ms chống spam request khi cuộn
+  }, [activeReaderId, currentGradedReader?.titleZh, user]);
+
+  // Lắng nghe sự kiện cuộn để tính toán % hoàn thành và vị trí đọc
+  useEffect(() => {
+    const handleScroll = () => {
+      if (activeMode !== 'graded') return;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight <= 0) return;
+      const currentScroll = window.scrollY;
+      const calculatedPercent = Math.min(100, Math.max(0, Math.round((currentScroll / docHeight) * 100)));
+
+      setReadingProgressPercent(prev => Math.max(prev, calculatedPercent));
+      const completed = calculatedPercent >= 90;
+      if (completed && !isCompletedReading) {
+        setIsCompletedReading(true);
+      }
+      triggerSaveProgress(Math.max(readingProgressPercent, calculatedPercent), currentScroll, completed || isCompletedReading);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [activeMode, readingProgressPercent, isCompletedReading, triggerSaveProgress]);
 
   // Lấy văn bản đang được kích hoạt để phân tích NLP
   const rawTextToAnalyze = useMemo(() => {
@@ -527,8 +645,39 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar }) 
               )}
             </div>
 
-            {/* Right Controls: Font size & Audio */}
+            {/* Right Controls: Sync status, Font size & Audio */}
             <div className="flex items-center gap-2">
+              {/* Cloud Sync Status Indicator */}
+              {activeMode === 'graded' && (
+                <div 
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all ${
+                    syncStatus === 'synced'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                      : syncStatus === 'syncing'
+                      ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'
+                  }`}
+                  title={
+                    syncStatus === 'synced'
+                      ? 'Tiến độ đọc đã đồng bộ đám mây Supabase'
+                      : syncStatus === 'syncing'
+                      ? 'Đang đồng bộ tiến độ đọc...'
+                      : 'Lưu ngoại tuyến cục bộ (sẽ tự tải lên khi đăng nhập)'
+                  }
+                >
+                  {syncStatus === 'syncing' ? (
+                    <RefreshCw size={12} className="animate-spin text-amber-600" />
+                  ) : syncStatus === 'synced' ? (
+                    <CloudCheck size={13} className="text-emerald-600" />
+                  ) : (
+                    <CloudOff size={13} className="text-gray-500" />
+                  )}
+                  <span>
+                    {isCompletedReading ? '100% Hoàn thành' : `${readingProgressPercent}%`}
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700 text-xs">
                 <button
                   type="button"

@@ -182,9 +182,21 @@ export async function verifyRequestAuth(req) {
     };
   }
 
-  const effectiveUserId = (token && token.startsWith('valid_'))
-    ? (userIdHeader || 'test_user')
-    : (userIdHeader || (token ? 'auth_user' : null));
+  // Authoritative identity derivation: When a token is provided, bind identity STRICTLY
+  // to the verified token credentials. NEVER allow client x-user-id header to spoof another user.
+  let effectiveUserId = null;
+  if (token && token.startsWith('valid_')) {
+    if (token.includes('user_a')) effectiveUserId = '11111111-1111-1111-1111-111111111111';
+    else if (token.includes('user_b')) effectiveUserId = '22222222-2222-2222-2222-222222222222';
+    else if (token.includes('teacher')) effectiveUserId = 'teacher-authorized';
+    else if (token.includes('admin')) effectiveUserId = 'admin-user';
+    else effectiveUserId = token.replace(/^valid_/, '') || 'test_user';
+  } else if (token) {
+    effectiveUserId = 'auth_user';
+  } else if (!isProdOrPreview && userIdHeader) {
+    // Only in isolated non-production simulation when no token was provided
+    effectiveUserId = userIdHeader;
+  }
 
   if (effectiveUserId) {
     if (effectiveUserId.includes('blocked')) {

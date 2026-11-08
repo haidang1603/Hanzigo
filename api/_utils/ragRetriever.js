@@ -578,6 +578,9 @@ export async function retrieveRagKnowledge({
     if (embedRes.success && Array.isArray(embedRes.embedding)) {
       queryEmbedding = embedRes.embedding;
       embeddingLatencyMs = embedRes.latencyMs || 0;
+      if (embedRes.isFallback) {
+        retrievalMode = 'lexical_fallback';
+      }
     } else {
       // Embedding provider timeout hoặc gặp lỗi -> Hạ cấp mềm sang Lexical Search
       retrievalMode = 'lexical_fallback';
@@ -592,8 +595,14 @@ export async function retrieveRagKnowledge({
   // TRƯỜNG HỢP A: Supabase RPC đã kết nối
   if (storageEngine && typeof storageEngine.rpc === 'function') {
     try {
+      // Vector Space Compatibility Protection:
+      // When queryEmbedding is generated via deterministic pseudo-fallback, do NOT pass it
+      // into Postgres neural vector similarity space (trained on gemini-text-embedding-004).
+      // Passing null instructs Postgres RPC to perform clean Lexical/Trigram/FTS matching.
+      const safeQueryEmbedding = retrievalMode === 'hybrid' ? queryEmbedding : null;
+
       const { data, error } = await storageEngine.rpc('match_rag_knowledge', {
-        query_embedding: queryEmbedding,
+        query_embedding: safeQueryEmbedding,
         query_text: queryMeta.cleanQuery,
         match_threshold: matchThreshold,
         match_count: effectiveTopK * 3, // Lấy nhiều hơn để sau đó deduplicate

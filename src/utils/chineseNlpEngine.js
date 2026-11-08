@@ -1133,11 +1133,12 @@ export function calculateReadabilityScore(text = '', allTokens = [], hskStats = 
   chineseTokens.forEach(t => {
     let w = LEVEL_WEIGHTS[t.level];
     if (!w) {
-      if (t.level?.includes('6')) w = 6.0;
-      else if (t.level?.includes('5')) w = 5.0;
-      else if (t.level?.includes('4')) w = 4.0;
-      else if (t.level?.includes('3')) w = 3.0;
-      else if (t.level?.includes('2')) w = 2.0;
+      const levelStr = String(t.level || '');
+      if (levelStr.includes('6')) w = 6.0;
+      else if (levelStr.includes('5')) w = 5.0;
+      else if (levelStr.includes('4')) w = 4.0;
+      else if (levelStr.includes('3')) w = 3.0;
+      else if (levelStr.includes('2')) w = 2.0;
       else if (t.raw.length >= 2) w = 4.5;
       else w = 1.0;
     }
@@ -1285,7 +1286,9 @@ export function analyzeChineseText(text = '') {
         keyTerms: { topKeywords: [], chengyuList: [] },
         summary: ''
       },
-      readability: { hskScore: 1.0, recommendedLevel: 'HSK 1 - Sơ cấp', estimatedReadingTimeMinutes: 1, typeTokenRatio: 0, avgSentenceLength: 0, advancedWordRatio: 0 },
+      readability: { hskScore: 1.0, recommendedLevel: 'HSK 1 - Sơ cấp', estimatedReadingTimeMinutes: 1, estimatedReadingMinutes: 1, typeTokenRatio: 0, ttr: 0, avgSentenceLength: 0, advancedWordRatio: 0 },
+      tokens: [],
+      allTokens: [],
       grammarPatterns: [],
       keyTerms: { topKeywords: [], chengyuList: [] },
       summary: ''
@@ -1340,8 +1343,14 @@ export function analyzeChineseText(text = '') {
   const keyTermsResult = extractKeyTermsAndChengyu(text, allTokens);
   const summary = generateExtractiveSummary(text, keyTermsResult.topKeywords);
 
+  // Normalize aliases for readability metrics
+  readability.estimatedReadingMinutes = readability.estimatedReadingTimeMinutes || 1;
+  readability.ttr = readability.typeTokenRatio !== undefined ? Number(readability.typeTokenRatio.toFixed(2)) : 0;
+
   return {
     paragraphs,
+    tokens: allTokens,
+    allTokens,
     stats: {
       totalChars,
       chineseChars,

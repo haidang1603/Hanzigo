@@ -31,6 +31,8 @@ const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
 const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
 const RefundPolicyPage = lazy(() => import('./pages/RefundPolicyPage'));
 const ReaderPage = lazy(() => import('./pages/ReaderPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const PracticePage = lazy(() => import('./pages/PracticePage'));
 import StorageConsentBanner from './components/StorageConsentBanner';
 import TeacherGuard from './components/TeacherGuard';
 import CommandPaletteModal from './components/dictionary/CommandPaletteModal.jsx';
@@ -39,7 +41,8 @@ const VALID_TABS = [
   'home', 'dashboard', 'roadmap', 'lesson', 'vocabulary', 
   'pronunciation', 'writing', 'dictionary', 'reader', 'conversation', 'community', 
   'materials', 'admin', 'profile', 'leaderboard',
-  'teacher', 'classroom', 'hsk', 'privacy', 'terms', 'cookies', 'refund'
+  'teacher', 'classroom', 'hsk', 'privacy', 'terms', 'cookies', 'refund',
+  'reset-password', 'practice', 'grammar', 'listening'
 ];
 
 function MainApp() {
@@ -55,17 +58,24 @@ function MainApp() {
       if (path === 'terms-of-service' || path === 'terms') return { tab: 'terms', sub: null, param: null, extra: null };
       if (path === 'cookie-policy' || path === 'cookies') return { tab: 'cookies', sub: null, param: null, extra: null };
       if (path === 'refund-policy' || path === 'refund') return { tab: 'refund', sub: null, param: null, extra: null };
+      if (path === 'reset-password' || path === 'reset') return { tab: 'reset-password', sub: null, param: null, extra: null };
+
+      // Recovery flow detection: if URL hash contains recovery token, route directly to reset-password
+      const rawHash = (window.location.hash || '');
+      if (rawHash.includes('type=recovery') || rawHash.includes('reset-password')) {
+        return { tab: 'reset-password', sub: null, param: null, extra: null };
+      }
 
       const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
       const parts = hash.split('/').filter(Boolean);
       const rawTab = (parts[0] || 'home').toLowerCase();
       const tab = 
-        rawTab === 'practice' ? 'vocabulary' : 
         rawTab === 'dictionary' ? 'writing' :
         rawTab === 'privacy-policy' ? 'privacy' :
         rawTab === 'terms-of-service' ? 'terms' :
         rawTab === 'cookie-policy' ? 'cookies' :
         rawTab === 'refund-policy' ? 'refund' :
+        rawTab === 'reset-password' ? 'reset-password' :
         rawTab;
       const sub = parts[1] || null;
       const param = parts[2] || null;
@@ -375,6 +385,21 @@ function MainApp() {
             <ConversationPage user={user} openAuthModal={handleOpenAuth} />
           )}
 
+          {(activeTab === 'practice' || activeTab === 'grammar' || activeTab === 'listening') && (
+            <PracticePage
+              user={user}
+              setActiveTab={setActiveTab}
+              initialSkill={activeTab === 'grammar' ? 'grammar' : activeTab === 'listening' ? 'listening' : (routeInfo.sub || 'overview')}
+              initialLevel={routeInfo.param ? parseInt(routeInfo.param, 10) : 1}
+              onSelectWriting={handleSelectWriting}
+              onSelectPronounce={handleSelectPronounce}
+              onSelectLesson={(lessonId) => {
+                window.location.hash = `#roadmap/${lessonId}`;
+                setActiveTab('roadmap');
+              }}
+            />
+          )}
+
 
           {(activeTab === 'community' || activeTab === 'leaderboard') && (
             <CommunityPage 
@@ -530,6 +555,21 @@ function MainApp() {
 
           {activeTab === 'refund' && (
             <RefundPolicyPage setActiveTab={setActiveTab} />
+          )}
+
+          {activeTab === 'reset-password' && (
+            <ResetPasswordPage 
+              onNavigateHome={() => {
+                setActiveTab('home');
+                window.location.hash = '#home';
+              }}
+              onOpenLogin={() => {
+                setActiveTab('home');
+                window.location.hash = '#home';
+                setAuthModalMode('login');
+                setAuthModalOpen(true);
+              }}
+            />
           )}
         </Suspense>
       </main>

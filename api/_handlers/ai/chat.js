@@ -27,14 +27,21 @@ const MAX_HISTORY_ITEMS = 10;
 const MAX_HISTORY_MSG_LENGTH = 300;
 const ALLOWED_HSK_LEVELS = ['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7-9'];
 
-// Prompt injection & abuse detection patterns
+// Prompt injection & abuse detection patterns (Multilingual & XML Breaking)
 const INJECTION_PATTERNS = [
   /ignore\s+(all\s+)?(previous|prior)\s+(instructions|prompts)/i,
   /system\s+prompt\s+override/i,
   /you\s+are\s+now\s+(an\s+unrestricted|DAN|jailbreak)/i,
   /reveal\s+(your\s+)?(api[_\s]?key|secret|system\s+prompt)/i,
   /drop\s+table\s+/i,
-  /<script\b[^>]*>/i
+  /<script\b[^>]*>/i,
+  /exec\s*\(/i,
+  // Multilingual & XML tag breaking patterns (Task 25.02.1E)
+  /忽略.*(指令|提示|指示|prompt)/i,
+  /透露.*(密码|密钥|secret|api[_\s]?key|prompt)/i,
+  /bỏ\s+qua\s+(mọi\s+)?(chỉ\s+dẫn|quy\s+tắc|hướng\s+dẫn|prompt)/i,
+  /tiết\s+lộ\s+(secret|mật\s+khẩu|api[_\s]?key|system\s+prompt)/i,
+  /<\/(verified_knowledge|system|prompt)>/i
 ];
 
 function detectAbuseOrInjection(text) {

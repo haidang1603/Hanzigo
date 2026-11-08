@@ -542,6 +542,12 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
     setTimeout(() => setToast(null), 2800);
   };
 
+  // Authoritative database update helper
+  const applyAuthoritativeMaterials = (dbItems) => {
+    if (!Array.isArray(dbItems)) return;
+    setMaterials(dbItems);
+  };
+
   // Fetch materials from Supabase on mount
   useEffect(() => {
     let isMounted = true;
@@ -551,18 +557,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
     getMaterialsFromDb()
       .then(dbItems => {
         if (!isMounted) return;
-        if (dbItems && dbItems.length > 0) {
-          setMaterials(prev => {
-            const custom = prev.filter(p => p.isCustom);
-            const merged = [...custom];
-            dbItems.forEach(dbItem => {
-              if (!merged.some(m => String(m.id) === String(dbItem.id) || m.title === dbItem.title)) {
-                merged.push(dbItem);
-              }
-            });
-            return merged;
-          });
-        }
+        applyAuthoritativeMaterials(dbItems);
       })
       .catch(err => {
         if (isMounted) {
@@ -576,6 +571,41 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
     return () => { isMounted = false; };
   }, []);
 
+  // Listen for real-time / cross-component material updates (Custom Event + Supabase Realtime)
+  useEffect(() => {
+    const handleRemoteMaterialsUpdate = () => {
+      getMaterialsFromDb()
+        .then(dbItems => {
+          applyAuthoritativeMaterials(dbItems);
+        })
+        .catch(err => {
+          console.warn('Real-time materials sync notice:', err);
+        });
+    };
+    window.addEventListener('hanzigo:materials_updated', handleRemoteMaterialsUpdate);
+
+    let channel;
+    if (isSupabaseConfigured && supabase) {
+      try {
+        channel = supabase
+          .channel('public:materials_changes')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'materials' }, () => {
+            handleRemoteMaterialsUpdate();
+          })
+          .subscribe();
+      } catch (err) {
+        console.warn('Realtime channel subscription notice:', err);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('hanzigo:materials_updated', handleRemoteMaterialsUpdate);
+      if (channel && supabase) {
+        supabase.removeChannel(channel).catch(() => {});
+      }
+    };
+  }, []);
+
   // Sync / Refresh with Supabase cloud
   const handleRefreshCloud = async () => {
     setIsSyncing(true);
@@ -583,17 +613,8 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
     playClickSound();
     try {
       const dbItems = await getMaterialsFromDb();
-      if (dbItems && dbItems.length > 0) {
-        setMaterials(prev => {
-          const custom = prev.filter(p => p.isCustom);
-          const merged = [...custom];
-          dbItems.forEach(dbItem => {
-            if (!merged.some(m => String(m.id) === String(dbItem.id) || m.title === dbItem.title)) {
-              merged.push(dbItem);
-            }
-          });
-          return merged;
-        });
+      if (Array.isArray(dbItems)) {
+        applyAuthoritativeMaterials(dbItems);
         showToast('Đã làm mới dữ liệu tài liệu từ máy chủ!');
       } else {
         showToast('Dữ liệu tài liệu đang ở trạng thái mới nhất!');

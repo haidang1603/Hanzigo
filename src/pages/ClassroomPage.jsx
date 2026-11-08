@@ -54,6 +54,7 @@ import {
   submitAssignment, 
   getAnnouncementsForClassroom, 
   getMaterialsForClassroom,
+  getDownloadUrlForClassMaterial,
   getClassMembers,
   removeStudentFromClass,
   subscribeToClassroomRealtime
@@ -366,6 +367,21 @@ export default function ClassroomPage({
     const timer = setInterval(poll, 5000);
     return () => clearInterval(timer);
   }, [myClasses.length, classId, myClasses]);
+
+  // Handle open / download material with signed url
+  const handleOpenMaterial = async (mat) => {
+    playClickSound();
+    try {
+      const targetUrl = await getDownloadUrlForClassMaterial(mat);
+      if (targetUrl) {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        alert('Không thể mở liên kết tài liệu này.');
+      }
+    } catch {
+      alert('Lỗi khi tải tài liệu.');
+    }
+  };
 
   // Handle lookup by class code
   const handleLookupCode = async (codeToLookup = null) => {
@@ -1414,20 +1430,27 @@ export default function ClassroomPage({
                             {mat.file_type || 'PDF'}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-[#243447] dark:text-white truncate">{mat.title}</p>
-                            <p className="text-[11px] text-[#748092] dark:text-[#94A3B8] line-clamp-1 mt-0.5">{mat.description || 'Tài liệu học tập nội bộ'}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-bold text-[#243447] dark:text-white truncate">{mat.title}</p>
+                              {mat.isStorageFile && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold shrink-0">
+                                  Storage
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-[#748092] dark:text-[#94A3B8] line-clamp-1 mt-0.5">
+                              {mat.cleanDescription || mat.description || 'Tài liệu học tập nội bộ'}
+                            </p>
                           </div>
                         </div>
-                        <a 
-                          href={mat.file_url} 
-                          target="_blank" 
-                          rel="noreferrer"
+                        <button 
+                          onClick={() => handleOpenMaterial(mat)}
                           className="px-3.5 py-2 rounded-xl bg-[#FFF5F2] dark:bg-[#2C1D1A] text-[#E85D3F] hover:bg-[#E85D3F] hover:text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
-                          title="Mở hoặc tải tài liệu"
+                          title="Mở hoặc tải tài liệu an toàn"
                         >
                           <Download size={13} />
                           <span>Xem / Tải</span>
-                        </a>
+                        </button>
                       </div>
                     ))}
                   </div>

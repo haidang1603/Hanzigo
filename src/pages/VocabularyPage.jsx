@@ -36,6 +36,7 @@ import { playClickSound, playSuccessSound, playErrorSound } from '../utils/audio
 import { VOCABULARY_LIST, TOPIC_FILTERS } from '../data/chineseData';
 import { getStoredCustomVocab, saveCustomVocab, deleteCustomVocab } from '../utils/materialsStorage';
 import { triggerCloudSync, getVocabularyFromDb, addVocabularyToDb } from '../supabase/services';
+import { supabase, isSupabaseConfigured } from '../supabase/config';
 import { awardXp, getUserStorageKey, getLocalDateString } from '../utils/gamification';
 import { calculateNextSrsReview, SRS_QUALITY, calculateSrsStats, isCardDueForReview, captureWeakVocabulary } from '../utils/srsEngine';
 import { saveUserVocabSrsCard, syncUserVocabSrsFromCloud, updateDailyMissionProgress } from '../services';
@@ -168,7 +169,7 @@ function normalizeVocab(item) {
     strokes: Number(item.strokes) || Number(item.strokeCount) || 5,
     mnemonic: item.mnemonic || item.memoryTip || 'Ghi nhớ cấu trúc bộ thủ và hình tượng của chữ.',
     example: exampleObj,
-    isCustom: !!item.isCustom
+    isCustom: !!(item.isCustom || item.is_custom || (item.example && item.example.is_custom) || (typeof item.topic === 'string' && (item.topic.startsWith('Tự thêm') || item.topic.startsWith('Custom'))))
   };
 }
 
@@ -266,28 +267,58 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
     }
   });
 
-  // Fetch all words from Supabase on mount and synchronize seamlessly
-  useEffect(() => {
-    let isMounted = true;
-    getVocabularyFromDb().then(dbItems => {
-      if (!isMounted || !dbItems || dbItems.length === 0) return;
+  // Fetch all words from Supabase and synchronize seamlessly
+  const syncVocabularyFromDb = useCallback(async () => {
+    try {
+      const dbItems = await getVocabularyFromDb();
+      if (!dbItems || !Array.isArray(dbItems)) return;
       const normalizedDb = dbItems.map(normalizeVocab);
-      setAllVocabList(prev => {
+
+      setAllVocabList(() => {
         const map = new Map();
-        // 1. Static base list
+        // 1. Static base standard curriculum vocabulary (HSK 1-6)
         VOCABULARY_LIST.map(normalizeVocab).forEach(item => map.set(item.hanzi, item));
-        // 2. Previous in-memory items
-        prev.forEach(item => map.set(item.hanzi, item));
-        // 3. Supabase DB items (latest authority)
+        // 2. Authoritative Supabase DB items (includes active non-hidden custom vocab and standard DB overrides)
         normalizedDb.forEach(item => map.set(item.hanzi, item));
-        // 4. Custom user created items
-        const custom = getStoredCustomVocab().map(normalizeVocab);
-        custom.forEach(item => map.set(item.hanzi, item));
         return Array.from(map.values());
       });
-    });
-    return () => { isMounted = false; };
+    } catch (err) {
+      console.warn('Sync vocabulary from Supabase notice:', err);
+    }
   }, []);
+
+  // Fetch on mount + subscribe to Supabase Realtime channel and local CustomEvent
+  useEffect(() => {
+    let isMounted = true;
+    syncVocabularyFromDb();
+
+    const handleLocalVocabUpdate = () => {
+      if (isMounted) syncVocabularyFromDb();
+    };
+    window.addEventListener('hanzigo:custom_vocab_updated', handleLocalVocabUpdate);
+
+    let channel;
+    if (isSupabaseConfigured && supabase) {
+      try {
+        channel = supabase
+          .channel('public:vocabulary_changes')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'vocabulary' }, () => {
+            if (isMounted) syncVocabularyFromDb();
+          })
+          .subscribe();
+      } catch (err) {
+        console.warn('Realtime vocabulary subscription notice:', err);
+      }
+    }
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('hanzigo:custom_vocab_updated', handleLocalVocabUpdate);
+      if (channel && supabase) {
+        supabase.removeChannel(channel).catch(() => {});
+      }
+    };
+  }, [syncVocabularyFromDb]);
 
   // Flashcard interaction state
   const [currentIndex, setCurrentIndex] = useState(0);

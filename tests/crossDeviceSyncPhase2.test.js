@@ -53,7 +53,7 @@ test('PHASE 2 - 1: Curriculum integrity verifies 7 levels, 24 chapters, and 120 
   assert.equal(LEARNING_LEVELS.length, 7, 'Must have 7 HSK levels (HSK 1 to HSK 7-9)');
   assert.equal(LEARNING_CHAPTERS.length, 24, 'Must have 24 chapters');
   assert.equal(LEARNING_LESSONS.length, 120, 'Must have 120 authored lessons with 9 steps across 24 chapters');
-  assert.equal(BOSS_CHALLENGES.length, 12, 'Must have 12 boss challenges');
+  assert.equal(BOSS_CHALLENGES.length, 24, 'Must have 24 boss challenges');
 
   // Verify each lesson has all 9 pedagogical steps
   LEARNING_LESSONS.forEach(lesson => {

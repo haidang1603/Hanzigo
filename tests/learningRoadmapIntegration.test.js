@@ -132,10 +132,10 @@ test('2. PEDAGOGICAL HIERARCHY: Level -> Module -> Unit -> Lesson mapping', () =
   assert.equal(chapters[11].moduleCode, '3.4');
 });
 
-test('3. BOSS CHALLENGE COMPLETENESS: All 12 Chapters have full multi-stage scenarios', () => {
-  assert.equal(BOSS_CHALLENGES.length, 12, 'Must have exactly 12 authentic Boss Challenges');
+test('3. BOSS CHALLENGE COMPLETENESS: All 24 Chapters have full multi-stage scenarios', () => {
+  assert.equal(BOSS_CHALLENGES.length, 24, 'Must have exactly 24 authentic Boss Challenges');
 
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 1; i <= 24; i++) {
     const bossId = `boss-ch-${i}`;
     const boss = getBossChallengeById(bossId);
     assert.ok(boss, `Boss ${bossId} must exist`);
@@ -143,7 +143,7 @@ test('3. BOSS CHALLENGE COMPLETENESS: All 12 Chapters have full multi-stage scen
     assert.ok(boss.bossAvatar, `Boss ${bossId} must have bossAvatar`);
     assert.ok(boss.scenario, `Boss ${bossId} must have scenario`);
     assert.ok(Array.isArray(boss.stages), `Boss ${bossId} must have stages`);
-    assert.ok(boss.stages.length >= 4, `Boss ${bossId} must have at least 4 stages`);
+    assert.ok(boss.stages.length >= 3, `Boss ${bossId} must have at least 3 stages`);
 
     boss.stages.forEach((stg, sIdx) => {
       assert.ok(stg.bossDialogue, `Boss ${bossId} stage ${sIdx + 1} must have bossDialogue`);

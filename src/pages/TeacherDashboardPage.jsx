@@ -40,9 +40,9 @@ import {
   getMaterialsForClassroom, 
   uploadClassMaterial, 
   deleteClassMaterial,
+  getDownloadUrlForClassMaterial,
   calculateStudentHealthStatus,
   getAllStudentsForTeacher,
-  addDemoStudent,
   clearDemoStudents,
   subscribeToTeacherSubmissionsRealtime,
   subscribeToClassroomRealtime
@@ -311,23 +311,6 @@ export default function TeacherDashboardPage({
 
   const [gradeInput, setGradeInput] = useState({ score: '', feedback: '' });
 
-  // Add demo student helper
-  const handleAddDemoStudent = async (targetClassId) => {
-    const cid = targetClassId || classId || classrooms[0]?.id;
-    if (!cid) {
-      showToast('Vui lòng tạo lớp học trước khi thêm học viên thử nghiệm.');
-      return;
-    }
-    const res = await addDemoStudent(cid);
-    if (res.success) {
-      playSuccessSound();
-      showToast('🎉 Đã thêm học viên thử nghiệm vào lớp thành công!');
-      loadTeacherData();
-    } else {
-      showToast(res.error || 'Lỗi khi thêm học viên');
-    }
-  };
-
   // Remove single student from class
   const handleRemoveStudent = async (studentId, studentName, targetClassId) => {
     const cid = targetClassId || classId;
@@ -536,22 +519,33 @@ export default function TeacherDashboardPage({
   };
 
   // Upload Material submit
-  const handleUploadMaterial = async (e) => {
-    e.preventDefault();
-    if (!newMatForm.title.trim() || !newMatForm.fileUrl.trim()) {
-      showToast('Vui lòng nhập tên tài liệu và đường dẫn URL.');
+  const handleUploadMaterial = async (e, customPayload = null) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    const payload = customPayload || newMatForm;
+
+    if (!payload.title || !payload.title.trim()) {
+      showToast('Vui lòng nhập tên tài liệu.');
       return;
     }
+    if (!payload.fileUrl && !payload.storagePath) {
+      showToast('Vui lòng cung cấp đường dẫn hoặc tải tệp lên Storage.');
+      return;
+    }
+
     const targetClassId = classId || classrooms[0]?.id;
     const teacherId = user?.uid || user?.id || 'user_teacher_demo';
 
     const res = await uploadClassMaterial({
       classroomId: targetClassId,
       teacherId,
-      title: newMatForm.title,
-      description: newMatForm.description,
-      fileUrl: newMatForm.fileUrl,
-      fileType: newMatForm.fileType
+      title: payload.title,
+      description: payload.description || '',
+      fileUrl: payload.fileUrl,
+      fileType: payload.fileType || 'pdf',
+      storagePath: payload.storagePath || null,
+      fileName: payload.fileName || null,
+      mimeType: payload.mimeType || null,
+      fileSizeBytes: payload.fileSizeBytes || null
     });
 
     if (res.success) {
@@ -560,13 +554,30 @@ export default function TeacherDashboardPage({
       setUploadMatModalOpen(false);
       setNewMatForm({ title: '', description: '', fileUrl: '', fileType: 'pdf' });
       loadTeacherData();
+    } else {
+      showToast(res.error || 'Lỗi khi lưu tài liệu');
+    }
+  };
+
+  // Open / View Material with Signed URL support
+  const handleOpenMaterial = async (mat) => {
+    playClickSound();
+    try {
+      const targetUrl = await getDownloadUrlForClassMaterial(mat);
+      if (targetUrl) {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        showToast('Không thể mở liên kết tài liệu này.');
+      }
+    } catch {
+      showToast('Lỗi khi mở tài liệu.');
     }
   };
 
   // Delete material
-  const handleDeleteMaterial = async (matId, title) => {
+  const handleDeleteMaterial = async (matId, title, storagePath = null) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa tài liệu "${title || 'này'}"?`)) return;
-    const res = await deleteClassMaterial(matId);
+    const res = await deleteClassMaterial(matId, storagePath);
     if (res.success) {
       playSuccessSound();
       showToast('Đã xóa tài liệu thành công!');
@@ -1959,28 +1970,35 @@ export default function TeacherDashboardPage({
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {materials.map(mat => (
-                      <div key={mat.id} className="p-4 rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-orange-100 text-[#E85D3F] flex items-center justify-center font-bold text-xs uppercase">
+                      <div key={mat.id} className="p-4 rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between shadow-xs hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-2xl bg-orange-100 text-[#E85D3F] flex items-center justify-center font-bold text-xs uppercase shrink-0">
                             {mat.file_type}
                           </div>
-                          <div>
-                            <p className="text-xs font-bold text-[#243447] dark:text-white">{mat.title}</p>
-                            <p className="text-[11px] text-[#748092] line-clamp-1">{mat.description || mat.file_url}</p>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-bold text-[#243447] dark:text-white truncate">{mat.title}</p>
+                              {mat.isStorageFile && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold shrink-0">
+                                  Storage
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-[#748092] line-clamp-1">
+                              {mat.cleanDescription || mat.description || (mat.isStorageFile ? mat.fileName : mat.file_url)}
+                            </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <a 
-                            href={mat.file_url} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="p-2 rounded-xl text-[#748092] hover:text-[#E85D3F] hover:bg-[#FFF5F2] cursor-pointer"
-                            title="Mở tài liệu"
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => handleOpenMaterial(mat)}
+                            className="p-2 rounded-xl text-[#748092] hover:text-[#E85D3F] hover:bg-[#FFF5F2] dark:hover:bg-[#2C1D1A] cursor-pointer transition-colors"
+                            title="Mở hoặc tải tài liệu"
                           >
                             <ExternalLink size={16} />
-                          </a>
+                          </button>
                           <button
-                            onClick={() => handleDeleteMaterial(mat.id, mat.title)}
+                            onClick={() => handleDeleteMaterial(mat.id, mat.title, mat.storagePath)}
                             className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
                             title="Xóa tài liệu này"
                           >
@@ -2293,6 +2311,8 @@ export default function TeacherDashboardPage({
         onSubmit={handleUploadMaterial}
         formData={newMatForm}
         setFormData={setNewMatForm}
+        classroomId={classId || classrooms[0]?.id}
+        teacherId={user?.uid || user?.id}
       />
 
       {/* ========================================================== */}

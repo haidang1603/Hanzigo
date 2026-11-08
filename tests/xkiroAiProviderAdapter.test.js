@@ -60,6 +60,8 @@ test('2. Missing Keys & Offline Fallback State', async () => {
 test('3. Primary Provider (xKiro) Success Flow', async () => {
   const origFetch = global.fetch;
   const origKey = process.env.XKIRO_API_KEY;
+  const origModel = process.env.XKIRO_MODEL;
+  delete process.env.XKIRO_MODEL;
   process.env.XKIRO_API_KEY = 'xkiro-test-mock-key';
 
   const mockAiPayload = {
@@ -110,6 +112,8 @@ test('3. Primary Provider (xKiro) Success Flow', async () => {
     global.fetch = origFetch;
     if (origKey) process.env.XKIRO_API_KEY = origKey;
     else delete process.env.XKIRO_API_KEY;
+    if (origModel) process.env.XKIRO_MODEL = origModel;
+    else delete process.env.XKIRO_MODEL;
   }
 });
 
@@ -256,11 +260,8 @@ test('6. Real Endpoint Smoke Test: xKiro Availability & Model Catalog Verificati
     assert.ok(Array.isArray(body.data), 'xKiro should return list of models in OpenAI format');
     assert.ok(body.data.length > 50, 'xKiro should have rich catalog of models (>50)');
 
-    const qwenModels = body.data.filter(m => m.id && m.id.toLowerCase().includes('qwen'));
-    assert.ok(qwenModels.length > 0, 'Catalog must contain Qwen family models');
-
-    const hasQwenPlus = qwenModels.some(m => m.id.includes('qwen-plus'));
-    assert.ok(hasQwenPlus, 'Catalog must include Qwen Plus variant');
+    const flashModels = body.data.filter(m => m.id && (m.id.includes('flash') || m.id.includes('sensenova') || m.id.includes('mini')));
+    assert.ok(flashModels.length > 0, 'Catalog must contain lightweight flash / lite models');
   } catch (err) {
     // If offline or network unavailable in certain environments, log notice
     console.warn('[Smoke Test Notice] Network check skipped or failed:', err.message);

@@ -7,8 +7,9 @@ import {
   GRAMMAR_DRILLS_BY_LEVEL
 } from '../src/data/practiceLevelData.js';
 
-test('Practice Levels Data: contains 4 pedagogical levels with required structure', () => {
-  assert.equal(PRACTICE_LEVELS.length, 4, 'Must have exactly 4 difficulty levels');
+test('Practice Levels Data: contains 6 pedagogical levels with required structure', () => {
+  assert.ok(PRACTICE_LEVELS.length >= 4, 'Must have at least 4 difficulty levels');
+  assert.equal(PRACTICE_LEVELS.length, 6, 'Must have exactly 6 difficulty levels for HSK 1-6');
 
   PRACTICE_LEVELS.forEach((lvl, idx) => {
     assert.equal(lvl.level, idx + 1, `Level must match 1-based index for ${lvl.id}`);
@@ -20,7 +21,7 @@ test('Practice Levels Data: contains 4 pedagogical levels with required structur
   });
 
   const levelCodes = PRACTICE_LEVELS.map(l => l.code);
-  assert.deepEqual(levelCodes, ['LV1', 'LV2', 'LV3', 'LV4']);
+  assert.deepEqual(levelCodes, ['LV1', 'LV2', 'LV3', 'LV4', 'LV5', 'LV6']);
 });
 
 test('Pronunciation Drills: covers all 4 difficulty tiers and valid schema', () => {
@@ -52,7 +53,7 @@ test('Listening Drills: valid multiple-choice format with correct options', () =
 
   LISTENING_DRILLS_BY_LEVEL.forEach(drill => {
     assert.ok(drill.id);
-    assert.ok([1, 2, 3, 4].includes(drill.level));
+    assert.ok([1, 2, 3, 4, 5, 6].includes(drill.level));
     assert.ok(drill.question && drill.question.length > 0);
     assert.ok(Array.isArray(drill.options) && drill.options.length >= 2);
     assert.ok(drill.correctIndex >= 0 && drill.correctIndex < drill.options.length,
@@ -66,7 +67,7 @@ test('Grammar Drills: sentence reconstruction token integrity', () => {
 
   GRAMMAR_DRILLS_BY_LEVEL.forEach(drill => {
     assert.ok(drill.id);
-    assert.ok([1, 2, 3, 4].includes(drill.level));
+    assert.ok([1, 2, 3, 4, 5, 6].includes(drill.level));
     assert.ok(drill.title);
     assert.ok(drill.meaning);
     assert.ok(Array.isArray(drill.tokens));

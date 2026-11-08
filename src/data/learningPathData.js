@@ -2221,6 +2221,1014 @@ export const BOSS_CHALLENGES = [
       }
     ]
   }
+,
+  {
+    "id": "boss-ch-13",
+    "chapterId": "ch-13",
+    "title": "Thử Thách Giao Tiếp: Kết Bạn Tại Quán Cà Phê Bắc Kinh",
+    "chineseTitle": "社交实战：北京咖啡馆初识",
+    "bossName": "Tiểu Triệu (小赵) — Sinh viên Đại học Bắc Kinh",
+    "bossAvatar": "🧑‍🎓",
+    "scenario": "Bạn đang ngồi tại quán cà phê gần trường đại học thì Tiểu Triệu đến bắt chuyện. Hãy trao đổi WeChat, giới thiệu bản thân và hẹn đi xem phim cuối tuần.",
+    "xpReward": 250,
+    "requiredScoreToPass": 75,
+    "stages": [
+      {
+        "stageNumber": 1,
+        "bossDialogue": "你好！看你也在看这本中国地理书，请问你也是这里的留学生吗？",
+        "bossPinyin": "Nǐ hǎo! Kàn nǐ yě zài kàn zhè běn Zhōngguó dìlǐ shū, qǐngwèn nǐ yě shì zhèlǐ de liúxuéshēng ma?",
+        "bossMeaning": "Xin chào! Thấy bạn cũng đang đọc cuốn sách địa lý Trung Quốc này, xin hỏi bạn cũng là du học sinh ở đây à?",
+        "prompt": "Đáp lại lời làm quen của Tiểu Triệu một cách lịch thiệp:",
+        "options": [
+          {
+            "text": "你好！是的，我来自越南，刚到北京不久。很高兴认识你！",
+            "pinyin": "Nǐ hǎo! Shì de, wǒ láizì Yuènán, gāng dào Běijīng bù jiǔ. Hěn gāoxìng rènshi nǐ!",
+            "isCorrect": true,
+            "score": 25,
+            "feedback": "Rất tuyệt vời! Giới thiệu nguồn gốc rõ ràng và dùng câu kết bạn chuẩn mực."
+          },
+          {
+            "text": "我不买书，谢谢。",
+            "pinyin": "Wǒ bù mǎi shū, xièxie.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Người ta đang hỏi làm quen chứ không phải bán sách đâu nhé!"
+          }
+        ]
+      },
+      {
+        "stageNumber": 2,
+        "bossDialogue": "太巧了！我一直对越南文化很感兴趣。方便加个微信吗？以后常联系！",
+        "bossPinyin": "Tài qiǎo le! Wǒ yìzhí duì Yuènán wénhuà hěn gǎnxìngqù. Fāngbiàn jiā gè Wēixìn ma? Yǐhòu cháng liánxì!",
+        "bossMeaning": "Khéo quá! Mình luôn rất có hứng thú với văn hóa Việt Nam. Tiện thêm WeChat không? Sau này thường xuyên liên lạc nhé!",
+        "prompt": "Đồng ý kết bạn WeChat và chủ động quét mã QR:",
+        "options": [
+          {
+            "text": "好的，没问题！我来扫你的二维码吧，我的微信号是这个。",
+            "pinyin": "Hǎo de, méi wèntí! Wǒ lái sǎo nǐ de èrwéimǎ ba, wǒ de wēixìnhào shì zhè ge.",
+            "isCorrect": true,
+            "score": 25,
+            "feedback": "Chuẩn giao tiếp thời đại số! Dùng đúng từ 扫二维码 (quét mã QR) và 微信号."
+          },
+          {
+            "text": "微信是什么？我不懂。",
+            "pinyin": "Wēixìn shì shénme? Wǒ bù dǒng.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "HSK 4 cần làm chủ các ứng dụng công nghệ phổ biến nhé."
+          }
+        ]
+      },
+      {
+        "stageNumber": 3,
+        "bossDialogue": "加好了！这个周末三里屯有一部新上映的电影，不仅评价很高而且制作精良，你愿意一起去看看吗？",
+        "bossPinyin": "Jiā hǎo le! Zhè ge zhōumò Sānlǐtún yǒu yí bù xīn shàngyìng de diànyǐng, bùjǐn píngjià hěn gāo érqiě zhìzuò jīngliáng, nǐ yuànyì yìqǐ qù kànkan ma?",
+        "bossMeaning": "Kết bạn xong rồi nhé! Cuối tuần này ở Tam Lý Đồn có phim mới chiếu, không những đánh giá cao mà sản xuất cũng tinh xảo, bạn muốn cùng đi xem không?",
+        "prompt": "Vui vẻ nhận lời và hẹn giờ địa điểm rõ ràng:",
+        "options": [
+          {
+            "text": "太好了！既然你有空，我们就周六下午两点在电影院门口见吧！",
+            "pinyin": "Tài hǎo le! Jìrán nǐ yǒu kòng, wǒmen jiù zhōuliù xiàwǔ liǎng diǎn zài diànyǐngyuàn ménkǒu jiàn ba!",
+            "isCorrect": true,
+            "score": 25,
+            "feedback": "Xuất sắc! Vận dụng chuẩn cấu trúc 既然……就…… đã học ở bài 402!"
+          },
+          {
+            "text": "我不喜欢看电影，去睡觉吧。",
+            "pinyin": "Wǒ bù xǐhuan kàn diànyǐng, qù shuìjiào ba.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Cách từ chối này hơi khiếm nhã trong bối cảnh kết bạn mới."
+          }
+        ]
+      },
+      {
+        "stageNumber": 4,
+        "bossDialogue": "一言为定！周六见，祝你在北京生活愉快！",
+        "bossPinyin": "Yì yán wéi dìng! Zhōuliù jiàn, zhù nǐ zài Běijīng shēnghuó yúkuài!",
+        "bossMeaning": "Nhất ngôn vi định (Quyết định vậy nhé)! Hẹn thứ Bảy gặp, chúc bạn sống vui vẻ ở Bắc Kinh!",
+        "prompt": "Chào tạm biệt nồng nhiệt:",
+        "options": [
+          {
+            "text": "好的，一言为定！周六见，谢谢你！",
+            "pinyin": "Hǎo de, yì yán wéi dìng! Zhōuliù jiàn, xièxie nǐ!",
+            "isCorrect": true,
+            "score": 25,
+            "feedback": "Hoàn hảo! Bạn đã chinh phục trọn vẹn Boss Chapter 13!"
+          },
+          {
+            "text": "我不认识你，再见。",
+            "pinyin": "Wǒ bú rènshi nǐ, zàijiàn.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Đã hẹn nhau xong xuôi lại bảo không quen biết?"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "boss-ch-14",
+    "chapterId": "ch-14",
+    "title": "Thử Thách Khách Sạn: Đổi Phòng & Xử Lý Sự Cố",
+    "chineseTitle": "酒店攻坚：换房与退还押金",
+    "bossName": "Quản lý Lâm (林经理) — Giám sát Lễ tân Khách sạn 4 sao",
+    "bossAvatar": "🏨",
+    "scenario": "Phòng khách sạn bạn nhận được bị hỏng điều hòa giữa mùa hè. Hãy đàm phán lịch sự nhưng cương quyết để được đổi sang phòng yên tĩnh hơn và làm thủ tục cọc.",
+    "xpReward": 250,
+    "requiredScoreToPass": 75,
+    "stages": [
+      {
+        "stageNumber": 1,
+        "bossDialogue": "先生您好，我是值班经理。听说您对刚才安排的房间不太满意，请问具体是什么问题呢？",
+        "bossPinyin": "Xiānsheng nín hǎo, wǒ shì zhíbān jīnglǐ. Tīngshuō nín duì gāngcái ānpái de fángjiān bú tài mǎnyì, qǐngwèn jùtǐ shì shénme wèntí ne?",
+        "bossMeaning": "Dạ chào quý khách, tôi là quản lý ca trực. Nghe nói quý khách chưa hài lòng với căn phòng vừa sắp xếp, xin hỏi cụ thể có vấn đề gì ạ?",
+        "prompt": "Mô tả sự cố điều hòa hỏng và tiếng ồn đường phố:",
+        "options": [
+          {
+            "text": "经理您好，我房间的空调制冷坏了，而且窗户外临街太吵，严重影响休息。",
+            "pinyin": "Jīnglǐ nín hǎo, wǒ fángjiān de kōngtiáo zhìlěng huài le, érqiě chuānghu wài línjiē tài chǎo, yánzhòng yǐngxiǎng xiūxi.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Rất rõ ràng, chuẩn xác ngôn từ dịch vụ: 空调制冷坏了 và 临街太吵."
+          },
+          {
+            "text": "这个房间太小，我不喜欢。",
+            "pinyin": "Zhè ge fángjiān tài xiǎo, wǒ bù xǐhuan.",
+            "isCorrect": false,
+            "score": 10,
+            "feedback": "Lý do chưa đủ tính thuyết phục kỹ thuật để được hỗ trợ nâng hạng phòng."
+          }
+        ]
+      },
+      {
+        "stageNumber": 2,
+        "bossDialogue": "实在非常抱歉！由于我们的疏忽给您带来了不便。我现在为您免费调换到高层的商务套房，窗户朝向内花园，您看可以吗？",
+        "bossPinyin": "Shízài fēicháng bàoqiàn! Yóuyú wǒmen de shūhu gěi nín dài lái le búbiàn. Wǒ xiànzài wèi nín miǎnfèi tiáohuàn dào gāocéng de shāngwù tàofáng, chuānghu cháoxiàng nèi huāyuán, nín kàn kěyǐ ma?",
+        "bossMeaning": "Vô cùng xin lỗi quý khách! Do sơ suất của chúng tôi đã mang lại phiền hà. Bây giờ tôi sẽ đổi miễn phí cho quý khách sang phòng suite thương gia tầng cao, cửa sổ hướng vườn trong, quý khách thấy được không ạ?",
+        "prompt": "Đồng ý với phương án và cảm ơn quản lý một cách lịch sự:",
+        "options": [
+          {
+            "text": "好的，非常感谢您的迅速处理！只要安静舒适，我就很满意了。",
+            "pinyin": "Hǎo de, fēicháng gǎnxiè nín de xùnsù chǔlǐ! Zhǐyào ānjìng shūshì, wǒ jiù hěn mǎnyì le.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Vận dụng chuẩn ngữ pháp 只要……就…… và thể hiện tác phong chuyên nghiệp!"
+          },
+          {
+            "text": "必须退钱给我！",
+            "pinyin": "Bìxū tuì qián gěi wǒ!",
+            "isCorrect": false,
+            "score": 5,
+            "feedback": "Khách sạn đã nâng hạng phòng miễn phí rồi, phản ứng quá gay gắt là không cần thiết."
+          }
+        ]
+      },
+      {
+        "stageNumber": 3,
+        "bossDialogue": "这是新房间的房卡，押金五百元在您退房时会原路退还。祝您入住愉快！",
+        "bossPinyin": "Zhè shì xīn fángjiān de fángkǎ, yājīn wǔbǎi yuán zài nín tuìfáng shí huì yuánlù tuìhuán. Zhù nín rùzhù yúkuài!",
+        "bossMeaning": "Đây là thẻ phòng mới, tiền cọc 500 tệ sẽ được hoàn lại theo phương thức cũ khi quý khách check-out. Chúc quý khách lưu trú vui vẻ!",
+        "prompt": "Nhận thẻ phòng và chốt thủ tục check-in:",
+        "options": [
+          {
+            "text": "太好了，麻烦您了！退房时我会带房卡过来办理，谢谢林经理。",
+            "pinyin": "Tài hǎo le, máfan nín le! Tuìfáng shí wǒ huì dài fángkǎ guòlái bànlǐ, xièxie Lín jīnglǐ.",
+            "isCorrect": true,
+            "score": 30,
+            "feedback": "Xuất sắc! Bạn đã giải quyết triệt để sự cố khách sạn như người bản xứ."
+          },
+          {
+            "text": "不要了。",
+            "pinyin": "Bú yào le.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Đã giải quyết xong phòng ốc mà lại bỏ đi?"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "boss-ch-15",
+    "chapterId": "ch-15",
+    "title": "Đàm Thoại Công Sở: Cuộc Gọi Đặt Lịch Đối Tác Doanh Nghiệp",
+    "chineseTitle": "职场通话：商务预约与确认",
+    "bossName": "Thư ký Trương (张秘书) — Tập đoàn Công nghệ Zhongguancun",
+    "bossAvatar": "💼",
+    "scenario": "Bạn gọi điện thoại đại diện cho đối tác Việt Nam để hẹn lịch làm việc với Giám đốc Lưu về kế hoạch hợp tác phần mềm.",
+    "xpReward": 260,
+    "requiredScoreToPass": 75,
+    "stages": [
+      {
+        "stageNumber": 1,
+        "bossDialogue": "您好，中关村科技创新集团，请问您找哪位？",
+        "bossPinyin": "Nín hǎo, Zhōngguāncūn Kējì Chuàngxīn Jítuán, qǐngwèn nín zhǎo nǎ yí wèi?",
+        "bossMeaning": "Xin chào, Tập đoàn Sáng tạo Công nghệ Trung Quan Thôn, xin hỏi quý khách tìm ai ạ?",
+        "prompt": "Chào hỏi và nêu rõ mục đích muốn gặp Giám đốc Lưu:",
+        "options": [
+          {
+            "text": "您好，张秘书！我是越南合作方的项目负责人，想跟刘总预约下周洽谈软件合作的时间。",
+            "pinyin": "Nín hǎo, Zhāng mìshū! Wǒ shì Yuènán hézuòfāng de xiàngmù fùzérén, xiǎng gēn Liú zǒng yùyuē xià zhōu qiàtán ruǎnjiàn hézuò de shíjiān.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Tác phong điện thoại thương mại cực kỳ chuẩn mực và rõ ràng!"
+          },
+          {
+            "text": "喂，刘总在不在？叫他来接电话。",
+            "pinyin": "Wèi, Liú zǒng zài bu zài? Jiào tā lái jiē diànhuà.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Thiếu lịch sự trong môi trường công sở!"
+          }
+        ]
+      },
+      {
+        "stageNumber": 2,
+        "bossDialogue": "好的，刘总下周二上午九点到十点半有空档，请问这个时间对您合适吗？",
+        "bossPinyin": "Hǎo de, Liú zǒng xià zhōur-èr shàngwǔ jiǔ diǎn dào shí diǎn bàn yǒu kòngdàng, qǐngwèn zhè ge shíjiān duì nín héshì ma?",
+        "bossMeaning": "Dạ được, Giám đốc Lưu sáng thứ Ba tuần sau từ 9h đến 10h30 có lịch trống, xin hỏi thời gian này có phù hợp với quý khách không?",
+        "prompt": "Xác nhận đồng ý thời gian và đề xuất gửi trước tài liệu:",
+        "options": [
+          {
+            "text": "周二上午非常合适！我会提前把会议方案和合作大纲发到您的邮箱，请查收。",
+            "pinyin": "Zhōur-èr shàngwǔ fēicháng héshì! Wǒ huì tíqián bǎ huìyì fāng’àn hé hézuò dàgāng fā dào nín de yóuxiāng, qǐng cháchōu.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Rất chu đáo! Dùng câu chữ 把 (把方案发到邮箱) hoàn toàn chính xác."
+          },
+          {
+            "text": "我不知道，到时再说。",
+            "pinyin": "Wǒ bù zhīdào, dào shí zài shuō.",
+            "isCorrect": false,
+            "score": 5,
+            "feedback": "Trong kinh doanh cần chốt lịch cụ thể, không được nói tùy tiện."
+          }
+        ]
+      },
+      {
+        "stageNumber": 3,
+        "bossDialogue": "收到，期待周二与您的会面。会议地点在总部18层第一会议室。祝您工作顺利！",
+        "bossPinyin": "Shōudào, qīdài zhōur-èr yǔ nín de huìmiàn. Huìyì dìdiǎn zài zǒngbù shíbā céng dì-yī huìyìshì. Zhù nín gōngzuò shùnlì!",
+        "bossMeaning": "Đã nhận, mong đợi buổi gặp mặt vào thứ Ba cùng quý khách. Địa điểm họp tại phòng họp số 1 tầng 18 trụ sở chính. Chúc quý khách công tác thuận lợi!",
+        "prompt": "Kết thúc cuộc gọi lịch sự và chuyên nghiệp:",
+        "options": [
+          {
+            "text": "好的，周二见！十分感谢张秘书的安排，祝您工作愉快，再见！",
+            "pinyin": "Hǎo de, zhōur-èr jiàn! Shífēn gǎnxiè Zhāng mìshū de ānpái, zhù nín gōngzuò yúkuài, zàijiàn!",
+            "isCorrect": true,
+            "score": 30,
+            "feedback": "Đạt điểm tuyệt đối kỹ năng đàm thoại thương mại HSK 4!"
+          },
+          {
+            "text": "行，挂了。",
+            "pinyin": "Xíng, guà le.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Cách nói cộc lốc sẽ gây ấn tượng xấu với đối tác."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "boss-ch-16",
+    "chapterId": "ch-16",
+    "title": "Khiếu Nại Đơn Hàng & Đổi Trả Trực Tuyến Taobao",
+    "chineseTitle": "电商售后：网购退换货与客服交涉",
+    "bossName": "Chăm sóc khách hàng Taobao (淘宝小蜜 / 淘客服)",
+    "bossAvatar": "📦",
+    "scenario": "Chiếc áo khoác bạn mua trên Taobao bị gửi nhầm màu và sai kích cỡ. Hãy giao tiếp với CSKH để yêu cầu đổi trả miễn phí và hoàn tiền.",
+    "xpReward": 260,
+    "requiredScoreToPass": 75,
+    "stages": [
+      {
+        "stageNumber": 1,
+        "bossDialogue": "亲，您好！我是本店售后客服，请问这件外套有什么问题需要协助处理呢？",
+        "bossPinyin": "Qīn, nín hǎo! Wǒ shì běn diàn shòuhòu kèfù, qǐngwèn zhè jiàn wàitào yǒu shénme wèntí xūyào xiézhù chǔlǐ ne?",
+        "bossMeaning": "Khách yêu ơi xin chào! Em là CSKH hậu mãi của tiệm, xin hỏi chiếc áo khoác này có vấn đề gì cần hỗ trợ xử lý ạ?",
+        "prompt": "Nêu rõ áo nhận được bị nhầm kích cỡ L thành S và nhầm màu xanh thành đen:",
+        "options": [
+          {
+            "text": "客服你好，我订购的是蓝色L码，但收到的包裹里却是黑色S码，尺寸完全不合适。",
+            "pinyin": "Kèfù nǐ hǎo, wǒ dìnggòu de shì lánsè L mǎ, dàn shōudào de bāoguǒ lǐ què shì hēisè S mǎ, chǐcùn wánquán bù héshì.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Mô tả cực kỳ mạch lạc và dùng đúng thuật ngữ mua sắm trực tuyến (订购, 包裹, 尺寸)."
+          },
+          {
+            "text": "这件衣服不好看，退钱！",
+            "pinyin": "Zhè jiàn yīfu bù hǎokàn, tuì qián!",
+            "isCorrect": false,
+            "score": 10,
+            "feedback": "Cần nêu rõ lý do do lỗi người bán giao sai hàng để được miễn phí vận chuyển đổi trả."
+          }
+        ]
+      },
+      {
+        "stageNumber": 2,
+        "bossDialogue": "给您添麻烦了亲！确实是我们发货仓库配错了。您可以申请“七天无理由退换货”，运费由我们店铺承担，您看您是想换货还是直接全额退款？",
+        "bossPinyin": "Gěi nín tiān máfan le qīn! Quèshí shì wǒmen fāhuò cāngkù pèi cuò le. Nín kěyǐ shēnqǐng “qī tiān wú lǐyóu tuì-huàn huò”, yùnfèi yóu wǒmen diànpù chéngdān, nín kàn nín shì xiǎng huàn huò háishì zhíjiē quán’é tuìkuǎn?",
+        "bossMeaning": "Làm phiền bạn quá khách ơi! Đúng là kho bên em gửi nhầm hàng rồi. Bạn có thể yêu cầu \"Đổi trả 7 ngày không cần lý do\", phí ship do shop chịu, bạn muốn đổi hàng mới hay hoàn lại toàn bộ tiền ạ?",
+        "prompt": "Chọn hoàn lại toàn bộ tiền vào ví Alipay / WeChat Pay:",
+        "options": [
+          {
+            "text": "我想申请直接全额退款，稍后我会把商品打包好寄回给快递员。",
+            "pinyin": "Wǒ xiǎng shēnqǐng zhíjiē quán’é tuìkuǎn, shāohòu wǒ huì bǎ shāngpǐn dǎbāo hǎo jì huí gěi kuàidìyuán.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Rất chuẩn! Dùng đúng cấu trúc 把商品打包好寄回."
+          },
+          {
+            "text": "我不要衣服，我只要钱。",
+            "pinyin": "Wǒ bú yào yīfu, wǒ zhǐ yào qián.",
+            "isCorrect": false,
+            "score": 5,
+            "feedback": "Cách diễn đạt thô sơ, chưa đúng văn phong thương mại điện tử."
+          }
+        ]
+      },
+      {
+        "stageNumber": 3,
+        "bossDialogue": "好的亲，退款申请已为您秒批同意！款项已原路退回您的支付宝账户，请您查收。祝您生活愉快！",
+        "bossPinyin": "Hǎo de qīn, tuìkuǎn shēnqǐng yǐ wèi nín miǎo pī tóngyì! Kuǎnxiàng yǐ yuánlù tuì huí nín de Zhīfùbǎo zhànghù, qǐng nín cháchōu. Zhù nín shēnghuó yúkuài!",
+        "bossMeaning": "Dạ vâng khách ơi, yêu cầu hoàn tiền đã duyệt đồng ý ngay lập tức! Tiền đã về tài khoản Alipay của bạn, xin kiểm tra nhé. Chúc bạn một ngày tốt lành!",
+        "prompt": "Xác nhận đã nhận được tiền và cho đánh giá tốt về thái độ chăm sóc khách hàng:",
+        "options": [
+          {
+            "text": "收到退款了，非常感谢您的负责态度，我会给店铺五星好评的！",
+            "pinyin": "Shōudào tuìkuǎn le, fēicháng gǎnxiè nín de fùzé tàidu, wǒ huì gěi diànpù wǔ xīng hǎopíng de!",
+            "isCorrect": true,
+            "score": 30,
+            "feedback": "Khẩu ngữ 五星好评 (đánh giá 5 sao) cực kỳ đắt giá! Hoàn thành Boss Chapter 16."
+          },
+          {
+            "text": "拜拜。",
+            "pinyin": "Báibai.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Chưa đủ đầy đủ và thiếu thiện cảm trong giao dịch."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "boss-ch-17",
+    "chapterId": "ch-17",
+    "title": "Tiệc Chiêu Đãi Đối Tác & Thưởng Thức Trà Đạo",
+    "chineseTitle": "国宴礼仪：八大菜系与品茗鉴赏",
+    "bossName": "Bếp trưởng Trần & Nghệ nhân Trà (陈大厨与茶艺师)",
+    "bossAvatar": "🍵",
+    "scenario": "Bạn tham dự bữa tiệc chiêu đãi đối tác tại Thượng Hải. Hãy thể hiện sự am hiểu về 8 trường phái ẩm thực lớn và nghệ thuật thưởng trà Trung Hoa.",
+    "xpReward": 300,
+    "requiredScoreToPass": 80,
+    "stages": [
+      {
+        "stageNumber": 1,
+        "bossDialogue": "贵客光临！今晚的主席菜单包含川菜的麻辣鲜香与粤菜的清淡鲜活，不知各位贵宾口味偏好如何？",
+        "bossPinyin": "Guìkè guānglín! Jīnwǎn de zhǔxí càidān bāohán Chuāncài de málà xiānxiāng yǔ Yuècài de qīngdàn xiānhuó, bùzhī gèwèi guìbīn kǒuwèi piānhào rúhé?",
+        "bossMeaning": "Chào mừng quý khách quý! Thực đơn tiệc tối nay gồm vị tê cay đậm đà của ẩm thực Tứ Xuyên và sự thanh mát tươi ngon của ẩm thực Quảng Đông, không rõ khẩu vị của quý khách ra sao ạ?",
+        "prompt": "Bình luận tinh tế về sự hài hòa giữa hai trường phái ẩm thực:",
+        "options": [
+          {
+            "text": "中国菜讲究五味调和。与其全吃重油重辣，不如将川菜的开胃与粤菜的原汁原味结合起来，相得益彰。",
+            "pinyin": "Zhōngguó cài jiǎngjiu wǔ wèi tiáohé. Yǔqí quán chī zhòng yóu zhòng là, bùrú jiāng Chuāncài de kāiwèi yǔ Yuècài de yuánzhī-yuánwèi jiéhé qǐlai, xiāngdéyìzhāng.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Đẳng cấp HSK 5! Sử dụng chuẩn cấu trúc 与其……不如…… và thành ngữ 相得益彰."
+          },
+          {
+            "text": "我只要吃肉，青菜不好吃。",
+            "pinyin": "Wǒ zhǐ yào chī ròu, qīngcài bù hǎochī.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Câu nói trẻ con, không phù hợp bàn tiệc ngoại giao."
+          }
+        ]
+      },
+      {
+        "stageNumber": 2,
+        "bossDialogue": "妙极！饭后我们奉上特级大红袍岩茶，请问您可知品岩茶的“岩骨花香”之道？",
+        "bossPinyin": "Miào jí! Fàn hòu wǒmen fèngshàng tèjí Dàhóngpáo yánchá, qǐngwèn nín kě zhī pǐn yánchá de “yángǔ huāxiāng” zhī dào?",
+        "bossMeaning": "Khen hay tuyệt! Sau bữa ăn chúng tôi xin dâng trà Nham Đại Hồng Bào đặc cấp, xin hỏi quý khách có thấu hiểu đạo lý \"nham cốt hoa hương\" khi thưởng thức trà nham chăng?",
+        "prompt": "Thuyết minh về triết lý thưởng trà truyền thống:",
+        "options": [
+          {
+            "text": "所谓岩茶，贵在香气馥郁且回甘深沉。品茶如品人，唯有心境清静，才能悟出茶道之美。",
+            "pinyin": "Suǒwèi yánchá, guì zài xiāngqì fùyù qiě huígān shēnchén. Pǐn chá rú pǐn rén, wéiyǒu xīnjìng qīngjìng, cái néng wù chū chádào zhī měi.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Tuyệt bút! Vận dụng chuẩn cấu trúc giải thích 所谓…… và văn phong tao nhã."
+          },
+          {
+            "text": "茶就是水，渴了就喝。",
+            "pinyin": "Chá jiù shì shuǐ, kě le jiù hē.",
+            "isCorrect": false,
+            "score": 5,
+            "feedback": "Mất hết phong vị trà đạo rồi bạn ơi!"
+          }
+        ]
+      },
+      {
+        "stageNumber": 3,
+        "bossDialogue": "今日得遇知音，实乃幸事！请受老夫以茶代酒，敬各位一杯！",
+        "bossPinyin": "Jīnrì dé yù zhīyīn, shí nǎi xìngshì! Qǐng shòu lǎofū yǐ chá dài jiǔ, jìng gèwèi yì bēi!",
+        "bossMeaning": "Hôm nay gặp được tri âm, thực là hạnh ngộ! Xin nhận chén trà thay rượu của lão phu, kính chúc các vị một ly!",
+        "prompt": "Nâng chén trà đáp lễ chuẩn nghi thức:",
+        "options": [
+          {
+            "text": "大师过奖了！感谢您的盛情款待，敬祝中华茶艺代代相传、生生不息！",
+            "pinyin": "Dàshī guòjiǎng le! Gǎnxiè nín de shèngqíng kuǎndài, jìngzhù Zhōnghuá cháyì dàidài xiāngchuán, shēngshēng-bùxī!",
+            "isCorrect": true,
+            "score": 30,
+            "feedback": "Khí chất bậc thầy văn hóa! Hoàn thành xuất sắc Boss Chapter 17."
+          },
+          {
+            "text": "干杯！再来一瓶酒！",
+            "pinyin": "Gānbēi! Zài lái yì píng jiǔ!",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Trà đạo cần sự trang nhã, không hô hào nhậu nhẹt."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "boss-ch-18",
+    "chapterId": "ch-18",
+    "title": "Chiến Thần Livestream & Xu Hướng Ngôn Ngữ Mạng",
+    "chineseTitle": "网络冲浪：短视频爆梗与直播互动",
+    "bossName": "Hot Streamer A Luân (阿伦主播)",
+    "bossAvatar": "📱",
+    "scenario": "Bạn tham gia buổi livestream triệu view của A Luân. Hãy tương tác bằng ngôn ngữ mạng thời thượng (种草, 躺平, 破防, 绝绝子) và chia sẻ quan điểm tích cực.",
+    "xpReward": 300,
+    "requiredScoreToPass": 80,
+    "stages": [
+      {
+        "stageNumber": 1,
+        "bossDialogue": "哈喽直播间的家人们！今天我们连麦到了一位来自越南的外国学霸，先跟大家打个招呼吧！",
+        "bossPinyin": "Hālóu zhībōjiān de jiārénmen! Jīntiān wǒmen liánmài dào le yí wèi láizì Yuènán de wàiguó xuébà, xiān gēn dàjiā dǎ gè zhāohu ba!",
+        "bossMeaning": "Hello cả nhà trong phòng livestream! Hôm nay chúng ta kết nối live với một bạn học bá nước ngoài đến từ Việt Nam, trước tiên hãy chào cả nhà nhé!",
+        "prompt": "Chào khán giả livestream bằng ngôn ngữ mạng thân thiện, dí dỏm:",
+        "options": [
+          {
+            "text": "直播间的所有老铁和家人们好！我是汉字Go的忠实粉丝，今天能跟阿伦连麦简直是绝绝子！",
+            "pinyin": "Zhībōjiān de suǒyǒu lǎotiě hé jiārénmen hǎo! Wǒ shì HànzìGo de zhōngshí fěnsī, jīntiān néng gēn Ālún liánmài jiǎnzhí shì juéjuézi!",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Rất bắt trend! Dùng trúng các cụm từ mạng hot 老铁, 家人们, 绝绝子."
+          },
+          {
+            "text": "大家好，我想睡觉。",
+            "pinyin": "Dàjiā hǎo, wǒ xiǎng shuìjiào.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Tụt mood cả phòng livestream rồi bạn ơi!"
+          }
+        ]
+      },
+      {
+        "stageNumber": 2,
+        "bossDialogue": "哈哈太有梗了！现在很多年轻人都在谈论“内卷”与“躺平”，不知作为外国青年的你怎么看这种现象？",
+        "bossPinyin": "Hāhā tài yǒu gěng le! Xiànzài hěn duō niánqīngrén dōu zài tánlùn “nèijuǎn” yǔ “tǎngpíng”, bùzhī zuòwéi wàiguó qīngnián de nǐ zěnme kàn zhè zhǒng xiànxiàng?",
+        "bossMeaning": "Haha có muối ghê! Hiện nay nhiều bạn trẻ hay bàn về \"nội quyển\" (áp lực cạnh tranh) và \"nằm yên mặc kệ sự đời\", không rõ là thanh niên quốc tế thì bạn nhìn nhận hiện tượng này thế nào?",
+        "prompt": "Nêu quan điểm sâu sắc về thái độ sống cân bằng:",
+        "options": [
+          {
+            "text": "所谓躺平，往往是年轻人面对压力的短暂休整。总之，我们既不能盲目内卷，也不该彻底放弃，保持内心的平衡与热情最为重要。",
+            "pinyin": "Suǒwèi tǎngpíng, wǎngwǎng shì niánqīngrén miànduì yālì de duǎnzàn xiūzhěng. Zǒngzhī, wǒmen jì bù néng mángmù nèijuǎn, yě bù gāi chèdǐ fàngqì, bǎochí nèixīn de pínghéng yǔ rèqíng zuì wéi zhòngyào.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Đỉnh cao tư duy nghị luận HSK 5! Vừa dùng từ mạng vừa kết nối liên từ 总之 sâu sắc."
+          },
+          {
+            "text": "我天天躺平，什么都不想做。",
+            "pinyin": "Wǒ tiāntiān tǎngpíng, shénme dōu bù xiǎng zuò.",
+            "isCorrect": false,
+            "score": 10,
+            "feedback": "Câu trả lời quá phiến diện, thiếu chiều sâu phân tích."
+          }
+        ]
+      },
+      {
+        "stageNumber": 3,
+        "bossDialogue": "说得太棒了！弹幕全在刷“666”！最后请给全网正在苦学中文的朋友们一句鼓励的话吧！",
+        "bossPinyin": "Shuō de tài bàng le! Dànmù quán zài shuā “liù-liù-liù”! Zuìhòu qǐng gěi quán wǎng zhèngzài kǔ xué Zhōngwén de péngyoumen yí jù gǔlì de huà ba!",
+        "bossMeaning": "Nói đỉnh quá! Dòng bình luận bay kín màn hình toàn số 666! Cuối cùng xin hãy gửi một lời khuyên khích lệ tới toàn thể các bạn đang khổ luyện tiếng Trung trên mạng nhé!",
+        "prompt": "Gửi thông điệp truyền cảm hứng học tập mạnh mẽ:",
+        "options": [
+          {
+            "text": "持之以恒，金石可镂！只要每天进步一点点，我们大家都能轻松拿下HSK高分，一起加油！",
+            "pinyin": "Chí zhī yǐ héng, jīn shí kě lòu! Zhǐyào měitiān jìnbù yì diǎndiǎn, wǒmen dàjiā dōu néng qīngsōng náxià HSK gāofēn, yìqǐ jiāyóu!",
+            "isCorrect": true,
+            "score": 30,
+            "feedback": "Cực kỳ truyền cảm hứng! Nhận trọn vẹn điểm số Boss Chapter 18."
+          },
+          {
+            "text": "中文太难了，大家放弃吧。",
+            "pinyin": "Zhōngwén tài nán le, dàjiā fàngqì ba.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Truyền năng lượng tiêu cực là bị khóa mic ngay đấy!"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "boss-ch-19",
+    "chapterId": "ch-19",
+    "title": "Đón Tết Nguyên Đán Cùng Gia Đình Bản Xứ",
+    "chineseTitle": "岁序更迭：四合院除夕守岁与拜年",
+    "bossName": "Bác Lý (李大伯) — Trưởng bối gia đình Bắc Kinh",
+    "bossAvatar": "🏮",
+    "scenario": "Bạn được mời đến nhà Bác Lý tại Bắc Kinh ăn cơm tất niên đêm giao thừa, cùng gói sủi cảo và chúc Tết theo đúng phong tục tập quán.",
+    "xpReward": 300,
+    "requiredScoreToPass": 80,
+    "stages": [
+      {
+        "stageNumber": 1,
+        "bossDialogue": "快进屋快进屋！大年三十天寒地冻的，快喝碗热姜茶暖和暖和！第一次在北京过年吧？",
+        "bossPinyin": "Kuài jìn wū kuài jìn wū! Dànián sānshí tiān hán dì dòng de, kuài hē wǎn rè jiāngchá nuǎnhuo nuǎnhuo! Dì-yī cì zài Běijīng guònián ba?",
+        "bossMeaning": "Mau vào nhà mau vào nhà! Ba mươi Tết trời lạnh buốt giá, mau uống bát trà gừng nóng cho ấm người! Lần đầu ăn Tết ở Bắc Kinh đúng không cháu?",
+        "prompt": "Đáp lại sự đón tiếp nồng hậu và dâng quà Tết:",
+        "options": [
+          {
+            "text": "谢谢大伯！这是我从越南带来的特产咖啡和腰果，祝大伯大妈新春吉祥、健康长寿！",
+            "pinyin": "Xièxie dàbó! Zhè shì wǒ cóng Yuènán dài lái de tèchǎn kāfēi hé yāoguǒ, zhù dàbó dàmā xīnchūn jíxiáng, jiànkāng chángshòu!",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Rất hiểu lễ nghĩa! Lời chúc Tết đúng chuẩn mực người lớn tuổi."
+          },
+          {
+            "text": "今天真冷，我要回家。",
+            "pinyin": "Jīntiān zhēn lěng, wǒ yào huí jiā.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Đêm 30 được mời cơm lại đòi bỏ về là thất lễ."
+          }
+        ]
+      },
+      {
+        "stageNumber": 2,
+        "bossDialogue": "哈哈太客气了！来，一起包饺子！我们北方讲究“大年三十包饺子，更岁交子迎福气”。你可知为什么饺子里要包一枚硬币吗？",
+        "bossPinyin": "Hāhā tài kèqi le! Lái, yìqǐ bāo jiǎozi! Wǒmen běifāng jiǎngjiu “dànián sānshí bāo jiǎozi, gēng suì jiāo zǐ yíng fúqì”. Nǐ kě zhī wèishénme jiǎozi lǐ yào bāo yì méi yìngbì ma?",
+        "bossMeaning": "Haha khách sáo quá! Nào, cùng gói sủi cảo! Miền Bắc chúng ta coi trọng tục lệ \"ba mươi Tết gói sủi cảo, giao thời đổi năm đón phúc khí\". Cháu có biết tại sao trong sủi cảo lại gói một đồng xu không?",
+        "prompt": "Giải thích ý nghĩa văn hóa gói đồng xu may mắn:",
+        "options": [
+          {
+            "text": "这体现了长辈对后辈的祝福。谁吃到包有硬币的饺子，就象征着新的一年财源广进、大吉大利！",
+            "pinyin": "Zhè tǐxiàn le zhǎngbèi duì hòubèi de zhùfú. Shéi chī dào bāo yǒu yìngbì de jiǎozi, jiù xiàngzhēng zhe xīn de yì nián cáiyuán-guǎngjìn, dàjí-dàlì!",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Kiến thức văn hóa Hán học cực kỳ sâu sắc! Dùng từ 财源广进, 大吉大利 rất chuẩn."
+          },
+          {
+            "text": "为了看谁牙齿硬。",
+            "pinyin": "Wèile kàn shéi yáchǐ yìng.",
+            "isCorrect": false,
+            "score": 5,
+            "feedback": "Đùa vui chưa đúng lúc rồi bạn ơi!"
+          }
+        ]
+      },
+      {
+        "stageNumber": 3,
+        "bossDialogue": "零点钟声响了！新的一年到了！大伯给你包了个大红包，祝你在新的一年学业有成、万事如意！",
+        "bossPinyin": "Língdiǎn zhōngshēng xiǎng le! Xīn de yì nián dào le! Dàbó gěi nǐ bāo le gè dà hóngbāo, zhù nǐ zài xīn de yì nián xuéyè-yǒuchéng, wànshì-rúyì!",
+        "bossMeaning": "Tiếng chuông 0 giờ vang lên rồi! Năm mới đã đến! Bác mừng tuổi cháu một phong bao lì xì lớn, chúc cháu năm mới học hành tấn tới, vạn sự như ý!",
+        "prompt": "Nhận lì xì bằng hai tay và chúc Tết cả gia đình:",
+        "options": [
+          {
+            "text": "晚辈恭敬不如从命，谢谢大伯大妈！祝全家岁岁平安、合家幸福、龙马精神！",
+            "pinyin": "Wǎnbèi gōngjìng bùrú cóngmìng, xièxie dàbó dàmā! Zhù quánjiā suìsuì-píng’ān, héjiā-xìngfú, lóngmǎ-jīngshén!",
+            "isCorrect": true,
+            "score": 30,
+            "feedback": "Cụm từ 恭敬不如从命 (cung kính không bằng tuân mệnh) đỉnh cao lễ nghĩa Hán phong! Hoàn thành Boss 19."
+          },
+          {
+            "text": "多少钱？我看看。",
+            "pinyin": "Duōshao qián? Wǒ kànkan.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Mở lì xì trước mặt người lớn là điều tối kỵ."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "boss-ch-20",
+    "chapterId": "ch-20",
+    "title": "Khám Bệnh Khẩn Cấp Tại Bệnh Viện Nhân Dân",
+    "chineseTitle": "医患对话：人民医院问诊与配药",
+    "bossName": "Bác sĩ Tôn (孙主任) — Trưởng khoa Nội Tổng quát",
+    "bossAvatar": "🩺",
+    "scenario": "Bạn bị dị ứng thức ăn dẫn đến nổi mẩn ngứa và sốt nhẹ. Hãy đăng ký khám bệnh, diễn đạt triệu chứng, tiền sử dị ứng và dặn dò của bác sĩ.",
+    "xpReward": 300,
+    "requiredScoreToPass": 80,
+    "stages": [
+      {
+        "stageNumber": 1,
+        "bossDialogue": "请坐。把病历本和医保卡给我。请问哪里不舒服？症状持续几天了？",
+        "bossPinyin": "Qǐng zuò. Bǎ bìnglìběn hé yībǎokǎ gěi wǒ. Qǐngwèn nǎlǐ bù shūfu? Zhèngzhuàng chíxù jǐ tiān le?",
+        "bossMeaning": "Mời ngồi. Đưa sổ khám bệnh và thẻ bảo hiểm y tế cho tôi. Xin hỏi cháu khó chịu ở đâu? Triệu chứng kéo dài mấy ngày rồi?",
+        "prompt": "Mô tả triệu chứng dị ứng hải sản và sốt từ đêm qua:",
+        "options": [
+          {
+            "text": "孙主任您好，我从昨天傍晚吃完海鲜后，皮肤开始起红疹并且奇痒无比，体温也上升到了三十八度。",
+            "pinyin": "Sūn zhǔrèn nín hǎo, wǒ cóng zuótiān bàngwǎn chī wán hǎixiān hòu, pífū kāishǐ qǐ hóngzhěn bìngqiě qí yǎng wúbǐ, tǐwēn yě shàngshēng dào le sānshíbā dù.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Miêu tả y khoa cực kỳ chính xác: 皮肤起红疹, 奇痒无比, 体温上升."
+          },
+          {
+            "text": "我头痛，吃不下饭。",
+            "pinyin": "Wǒ tóutòng, chī bu xià fàn.",
+            "isCorrect": false,
+            "score": 10,
+            "feedback": "Chưa nêu được trọng tâm triệu chứng dị ứng ngoài da."
+          }
+        ]
+      },
+      {
+        "stageNumber": 2,
+        "bossDialogue": "看症状是典型的急性过敏性寻麻疹。请问您以前有没有青霉素或者其他药物过敏史？",
+        "bossPinyin": "Kàn zhèngzhuàng shì diǎnxíng de jíxìng guòmǐnxìng xúnmázhěn. Qǐngwèn nín yǐqián yǒu méiyǒu qīngméisù huòzhě qítā yàowù guòmǐnshǐ?",
+        "bossMeaning": "Xem triệu chứng thì là nổi mề đay dị ứng cấp tính điển hình. Xin hỏi cháu trước đây có tiền sử dị ứng penicillin hay loại thuốc nào khác không?",
+        "prompt": "Xác nhận không dị ứng thuốc và nhờ bác sĩ kê đơn thuốc dạng uống:",
+        "options": [
+          {
+            "text": "我没有任何药物过敏史。如果可以的话，请尽量给我开温和的口服抗过敏药，非常感谢！",
+            "pinyin": "Wǒ méiyǒu rènhé yàowù guòmǐnshǐ. Rúguǒ kěyǐ de huà, qǐng jǐnliàng gěi wǒ kāi wēnhé de kǒufú kàng-guòmǐnyào, fēicháng gǎnxiè!",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Rõ ràng, dứt khoát và dùng đúng từ chuyên môn: 口服抗过敏药 (thuốc kháng dị ứng đường uống)."
+          },
+          {
+            "text": "我不知道，随便开吧。",
+            "pinyin": "Wǒ bù zhīdào, suíbiàn kāi ba.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Uống thuốc bừa bãi rất nguy hiểm đến tính mạng."
+          }
+        ]
+      },
+      {
+        "stageNumber": 3,
+        "bossDialogue": "处方开好了。这种药一天三次，一次一片，饭后服用。切记服药期间严禁饮酒，清淡饮食。去一楼药房缴费取药吧。",
+        "bossPinyin": "Chǔfāng kāi hǎo le. Zhè zhǒng yào yì tiān sān cì, yí cì yí piàn, fànhòu fúyòng. Qièjì fúyào qījiān yánjìn yǐnjiǔ, qīngdàn yǐnshí. Qù yī lóu yàofáng jiǎofèi qǔ yào ba.",
+        "bossMeaning": "Đơn thuốc kê xong rồi. Thuốc này một ngày 3 lần, mỗi lần 1 viên, uống sau khi ăn. Tuyệt đối nhớ trong thời gian dùng thuốc nghiêm cấm uống rượu, ăn thanh đạm. Xuống nhà thuốc tầng 1 thanh toán lấy thuốc nhé.",
+        "prompt": "Xác nhận lại liều dùng và cảm ơn bác sĩ:",
+        "options": [
+          {
+            "text": "我记住了：一日三次一次一片，饭后吃且忌酒辛辣。谢谢孙主任细心诊疗！",
+            "pinyin": "Wǒ jì zhù le: Yí rì sān cì yí cì yí piàn, fànhòu chī qiě jì jiǔ xīnlà. Xièxie Sūn zhǔrèn xìxīn zhěnliáo!",
+            "isCorrect": true,
+            "score": 30,
+            "feedback": "Giao tiếp y tế an toàn, chính xác 100%! Hoàn thành Boss Chapter 20."
+          },
+          {
+            "text": "知道了，走啦。",
+            "pinyin": "Zhīdào le, zǒu la.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Chưa kiểm tra lại liều dùng có thể dẫn tới sự cố dùng thuốc nhầm."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "boss-ch-21",
+    "chapterId": "ch-21",
+    "title": "Đại Khảo Hạch Thành Ngữ & Điển Cố Hán Học",
+    "chineseTitle": "国风雅韵：经史子集成语博弈",
+    "bossName": "Viện sĩ Chu (周院士) — Giáo sư Văn học Cổ đại",
+    "bossAvatar": "📜",
+    "scenario": "Bạn tham gia hội thảo Hán học quốc tế do Viện sĩ Chu chủ trì. Hãy sử dụng các thành ngữ 4 chữ kinh điển đúng ngữ cảnh để hoàn thành bài khảo hạch.",
+    "xpReward": 350,
+    "requiredScoreToPass": 85,
+    "stages": [
+      {
+        "stageNumber": 1,
+        "bossDialogue": "后生可畏！在文章写作中，若想使立论更加鲜明精炼，结尾处应如何巧妙运用成语？",
+        "bossPinyin": "Hòushēng kě wèi! Zài wénzhāng xiězuò zhōng, ruò xiǎng shǐ lìlùn gèngjiā xiānmíng jīngliàn, jiéwěi chù yīng rúhé qiǎomiào yùnyòng chéngyǔ?",
+        "bossMeaning": "Hậu sinh khả úy! Trong viết văn, nếu muốn làm cho luận điểm thêm phần sắc bén tinh tế, nơi kết bài nên khéo léo vận dụng thành ngữ như thế nào?",
+        "prompt": "Nêu vai trò của việc kết luận đắt giá bằng thành ngữ phù hợp:",
+        "options": [
+          {
+            "text": "末尾若能恰当点缀精辟成语，定能起到画龙点睛的作用，使全篇立意瞬间升华。",
+            "pinyin": "Mòwěi ruò néng qiàdàng diǎnzhuì jīngpì chéngyǔ, dìng néng qǐdào huàlóng-diǎnjīng de zuòyòng, shǐ quán piān lìyì shùnjiān shēnghuá.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Vận dụng thành ngữ 画龙点睛 (điểm nhãn cho rồng bay) cực kỳ tinh tế và chuẩn mực."
+          },
+          {
+            "text": "随便加几个大词充字数就可以了。",
+            "pinyin": "Suíbiàn jiā jǐ gè dà cí chōng zìshù jiù kěyǐ le.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Quan điểm sai lầm trong mỹ học văn chương."
+          }
+        ]
+      },
+      {
+        "stageNumber": 2,
+        "bossDialogue": "善哉！面对突如其来的逆境或挫折，我们应当具备怎样的思辨智慧与豁达胸襟？",
+        "bossPinyin": "Shàn zāi! Miànduì tūrúqílái de nìjìng huò cuòzhé, wǒmen yīngdāng jùbèi zěnyàng de sībiàn zhìhuì yǔ huòdá xiōngjīn?",
+        "bossMeaning": "Lành thay! Đứng trước nghịch cảnh hoặc trắc trở bất ngờ ập đến, chúng ta cần có trí tuệ biện chứng và tâm thế bao dung khoáng đạt như thế nào?",
+        "prompt": "Vận dụng điển cố Tái ông mất ngựa để luận giải:",
+        "options": [
+          {
+            "text": "古人云“塞翁失马，焉知非福”。祸福相依，唯有保持审慎客观，方能在危局中捕捉转机。",
+            "pinyin": "Gǔrén yún “Sài wēng shī mǎ, yān zhī fēi fú”. Huò fú xiāng yī, wéiyǒu bǎochí shěnshèn kèguān, fāng néng zài wēijú zhōng bǔzhuō zhuǎnjī.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Triết lý uyên bác! Điển cố 塞翁失马焉知非福 thể hiện cảnh giới HSK 6 thượng thừa."
+          },
+          {
+            "text": "遇到倒霉事就只能认命。",
+            "pinyin": "Yù dào dǎoméi shì jiù zhǐ néng rèn mìng.",
+            "isCorrect": false,
+            "score": 5,
+            "feedback": "Thiếu chiều sâu tư tưởng của người học cổ học."
+          }
+        ]
+      },
+      {
+        "stageNumber": 3,
+        "bossDialogue": "经纶满腹，对答如流！汝对成语神韵之领悟，当之无愧为当代杰出青年汉学学者！",
+        "bossPinyin": "Jīnglún mǎnfù, duìdá rú liú! Rǔ duì chéngyǔ shényùn zhī lǐngwù, dāng zhī wú kuì wéi dāngdài jiéchū qīngnián hànxué xuézhě!",
+        "bossMeaning": "Kinh luân đầy bụng, đối đáp như dòng chảy! Sự lĩnh hội của con đối với thần thái của thành ngữ, xứng đáng không thẹn là học giả Hán học trẻ tuổi kiệt xuất!",
+        "prompt": "Khiêm nhường cảm tạ và khẳng định ý chí học tập suốt đời:",
+        "options": [
+          {
+            "text": "承蒙先生勖勉！学海无涯，晚辈定当戒骄戒躁、厚积薄发，致力于中华优秀传统文化的交流互鉴！",
+            "pinyin": "Chéngméng xiānsheng xùmiǎn! Xué hǎi wú yá, wǎnbèi dìng dāng jièjiāo-jièzào, hòujī-bófā, zhìlì yú Zhōnghuá yòuxiù chuántǒng wénhuà de jiāoliú hùjiàn!",
+            "isCorrect": true,
+            "score": 30,
+            "feedback": "Tuyệt bút văn hoa! Dùng chuẩn 厚积薄发 và 戒骄戒躁. Chinh phục Boss 21."
+          },
+          {
+            "text": "哈哈，我就是最聪明的。",
+            "pinyin": "Hāhā, wǒ jiù shì zuì cōngming de.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Tự phụ kiêu ngạo là điều cấm kỵ trong văn hóa phương Đông."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "boss-ch-22",
+    "chapterId": "ch-22",
+    "title": "Vòng Phỏng Vấn Cuối Với Giám Đốc Nhân Sự Tập Đoàn",
+    "chineseTitle": "决战名企：跨国企业终面实录",
+    "bossName": "Giám đốc Nhân sự Cao (高总监) — HR Director",
+    "bossAvatar": "👔",
+    "scenario": "Bạn lọt vào vòng phỏng vấn cuối cùng cho vị trí Giám đốc Phát triển Thị trường Đông Nam Á của tập đoàn công nghệ Fortune 500.",
+    "xpReward": 350,
+    "requiredScoreToPass": 85,
+    "stages": [
+      {
+        "stageNumber": 1,
+        "bossDialogue": "候选人请坐。我们看重跨文化战略视野。请用两分钟概述您过往最具突破性的领导力实践案例。",
+        "bossPinyin": "Hòuxuǎnrén qǐng zuò. Wǒmen kànzhòng kuà-wénhuà zhànlüè shìyě. Qǐng yòng liǎng fēnzhōng gàishù nín guòwǎng zuì jù tūpòxìng de lǐngdǎolì shíjiàn ànlì.",
+        "bossMeaning": "Mời ứng viên ngồi. Chúng tôi coi trọng tầm nhìn chiến lược đa văn hóa. Xin hãy dùng 2 phút khái quát trường hợp thực tiễn mang tính đột phá nhất trong năng lực lãnh đạo trước đây của bạn.",
+        "prompt": "Trình bày trường hợp lãnh đạo dự án công nghệ vượt chỉ tiêu KPI:",
+        "options": [
+          {
+            "text": "高总您好。我曾带领十五人跨国团队主导中越跨境数字化供应链项目，克服了文化隔阂与系统合规挑战，最终提前一个月交付并实现业绩超额增长35%。",
+            "pinyin": "Gāo zǒng nín hǎo. Wǒ céng dàilǐng shíwǔ rén kuà-guó tuánduì zhǔdǎo Zhōng-Yuè kuàjìng shùzìhuà gōngyìngliàn xiàngmù, kèfú le wénhuà géhé yǔ xìtǒng hégūi tiǎozhàn, zuìzhōng tíqián yí gè yuè jiāofù bìng shíxiàn yèjì chāo’é zēngzhǎng bǎifēnzhī-sānshíwǔ.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Trình bày theo mô hình STAR (Situation, Task, Action, Result) đỉnh cao nhân sự quốc tế."
+          },
+          {
+            "text": "我工作很努力，什么苦都能吃。",
+            "pinyin": "Wǒ gōngzuò hěn nǔlì, shénme kǔ dōu néng chī.",
+            "isCorrect": false,
+            "score": 10,
+            "feedback": "Câu trả lời thiếu dữ liệu định lượng và tầm nhìn quản trị cấp cao."
+          }
+        ]
+      },
+      {
+        "stageNumber": 2,
+        "bossDialogue": "数据令人信服。如果入职后您发现团队成员因文化差异产生严重内耗，您将如何行之有效地化解危机？",
+        "bossPinyin": "Shùjù lìngrén xìnfú. Rúguǒ rùzhí hòu nín fāxiàn tuánduì chéngyuán yīn wénhuà chāyì chǎnshēng yánzhòng nèihào, nín jiāng rúhé xíngzhī-yǒuxiào de huàjiě wēijī?",
+        "bossMeaning": "Số liệu rất thuyết phục. Nếu sau khi gia nhập bạn phát hiện thành viên nhóm do khác biệt văn hóa mà nảy sinh sự tiêu hao mâu thuẫn nội bộ nghiêm trọng, bạn sẽ hóa giải khủng hoảng thế nào cho hữu hiệu?",
+        "prompt": "Đề xuất giải pháp quản trị đa văn hóa tinh tế:",
+        "options": [
+          {
+            "text": "我主张“求同存异，换位思考”。一方面建立透明开放的跨文化沟通机制，设身处地为各方着想；另一方面以共同商业目标凝聚共识，将分歧转化为团队创新动力。",
+            "pinyin": "Wǒ zhǔzhāng “qiú tóng cún yì, huàn wèi sīkǎo”. Yì fāngmiàn jiànlì tòumíng kāifàng de kuà-wénhuà gōutōng jīzhì, shèshēn-chǔdì wèi gè fāng zhuóxiǎng; lìng yì fāngmiàn yǐ gòngtóng shāngyè mùbiāo níngjù gòngshí, jiāng fēnqí zhuǎnhuà wéi tuánduì chuàngxīn dònglì.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Tư duy quản trị lãnh đạo kiệt xuất! Áp dụng chuẩn thành ngữ 设身处地 và 求同存异."
+          },
+          {
+            "text": "不听话的员工直接开除掉。",
+            "pinyin": "Bù tīnghuà de yuángōng zhíjiē kāichú diào.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Phương pháp quản lý độc đoán, vi phạm nguyên tắc nhân sự hiện đại."
+          }
+        ]
+      },
+      {
+        "stageNumber": 3,
+        "bossDialogue": "非常卓越的战略认知！我们诚挚邀请您加入集团出任东盟区总监。关于薪酬与职级期待，您的底线是什么？",
+        "bossPinyin": "Fēicháng zhuóyuè de zhànlüè rènzhī! Wǒmen chéngzhì yāoqǐng nín jiārù jítuán chūrèn Dōngméng Qū zǒngjiān. Guānyú xīnchóu yǔ zhíjī qīdài, nín de dǐxiàn shì shénme?",
+        "bossMeaning": "Nhận thức chiến lược rất xuất sắc! Chúng tôi chân thành mời bạn gia nhập tập đoàn đảm nhiệm vị trí Giám đốc Khu vực ASEAN. Về kỳ vọng đãi ngộ và bậc lương, mức kỳ vọng của bạn là gì?",
+        "prompt": "Thương lượng lương thưởng tự tin, chuyên nghiệp dựa trên giá trị cống hiến:",
+        "options": [
+          {
+            "text": "感谢高总的认可！我期望有竞争力的年薪底薪配以绩效期权激励。我相信我的本地化经验与商业开拓力，必将为集团创造远超薪酬预期的数倍商业回报！",
+            "pinyin": "Gǎnxiè Gāo zǒng de rènkě! Wǒ qīwàng yǒu jìngzhènglì de niánxīn dǐxīn pèiyǐ jìxiào qīquán jīlì. Wǒ xiāngxìn wǒ de běndìhuà jīngyàn yǔ shāngyè kāituòlì, bì jiāng wèi jítuán chuàngzào yuǎn chāo xīnchóu qīdài de shù bèi shāngyè huíbào!",
+            "isCorrect": true,
+            "score": 30,
+            "feedback": "Đàm phán chức vị C-level cực kỳ đĩnh đạc và thuyết phục! Hoàn thành Boss 22."
+          },
+          {
+            "text": "给多少钱都行，只要让我来。",
+            "pinyin": "Gěi duōshao qián dōu xíng, zhǐyào ràng wǒ lái.",
+            "isCorrect": false,
+            "score": 5,
+            "feedback": "Hạ thấp giá trị bản thân trong buổi phỏng vấn cấp cao."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "boss-ch-23",
+    "chapterId": "ch-23",
+    "title": "Đàm Phán Hợp Đồng Ngoại Thương Xuất Nhập Khẩu",
+    "chineseTitle": "商战风云：进出口合同签署与条款博弈",
+    "bossName": "Tổng Giám Đốc Tiền (钱总) — Đối tác Thương mại Quốc tế",
+    "bossAvatar": "🤝",
+    "scenario": "Đại diện doanh nghiệp thương thảo hợp đồng cung ứng thiết bị trị giá 5 triệu USD. Hãy bảo vệ quyền lợi về phương thức thanh toán L/C và điều kiện giao hàng CIF.",
+    "xpReward": 350,
+    "requiredScoreToPass": 85,
+    "stages": [
+      {
+        "stageNumber": 1,
+        "bossDialogue": "贵公司提出的首期全额TT电汇付款，在当前国际外汇波动环境下，对我方资金周转风险过大。我们坚持要求使用远期信用证。",
+        "bossPinyin": "Guì gōngsī tíchū de shǒuqī quán’é TT diànhuì fùkuǎn, zài dāngqián guójì wàihuì bōdòng huánjìng xià, duì wǒfāng zījīn zhōuzhuǎn fēngxiǎn guò dà. Wǒmen jiānchí yāoqiú shǐyòng yuǎnqī xìnyòngzhèng.",
+        "bossMeaning": "Phương thức thanh toán điện chuyển tiền TT 100% đợt đầu mà quý công ty đưa ra, trong bối cảnh tỷ giá ngoại hối biến động hiện nay, rủi ro quay vòng vốn đối với bên tôi quá lớn. Chúng tôi kiên quyết yêu cầu dùng thư tín dụng trả chậm (Usance L/C).",
+        "prompt": "Đề xuất giải pháp dung hòa thanh toán bằng L/C không hủy ngang kết hợp đặt cọc TT:",
+        "options": [
+          {
+            "text": "钱总的顾虑完全可以理解。为兼顾双方资金安全与履约保障，我们建议折中方案：30%定金以TT支付，其余70%采用不可撤销即期信用证结算，您意下如何？",
+            "pinyin": "Qián zǒng de gùlǜ wánquán kěyǐ lǐjiě. Wèi jiāngù shuāngfāng zījīn ānquán yǔ lǚyuē bǎozhàng, wǒmen jiànyì zhézhōng fāng’àn: Sānshí bǎifēnzhī dìngjīn yǐ TT zhīfù, qíyú qīshí bǎifēnzhī cǎiyòng bù kě chèxiāo jíqī xìnyòngzhèng jiésuàn, nín yì xià rúhé?",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Ngoại thương quốc tế lão luyện! Thuật ngữ 不可撤销即期信用证 (L/C không hủy ngang trả ngay) bảo vệ an toàn cho cả hai bên."
+          },
+          {
+            "text": "不付全款我们坚决不生产发货。",
+            "pinyin": "Bú fù quánkuǎn wǒmen jiānjué bù shēngchǎn fāhuò.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Cứng nhắc dẫn tới đổ vỡ cuộc đàm phán triệu đô."
+          }
+        ]
+      },
+      {
+        "stageNumber": 2,
+        "bossDialogue": "付款方式可以接受。但在交货条款上，若按FOB交货，国际海运航运周期受红海危机影响极大，一旦延期由谁承担违约金责任？",
+        "bossPinyin": "Fùkuǎn fāngshì kěyǐ jiēshòu. Dàn zài jiāohuò tiáokuǎn shàng, ruò àn FOB jiāohuò, guójì hǎiyùn hángyùn zhōuqī shòu Hóng Hǎi wēijī yǐngxiǎng jí dà, yídàn yánqī yóu shéi chéngdān wéiyuējīn zérèn?",
+        "bossMeaning": "Phương thức thanh toán có thể chấp thuận. Nhưng về điều khoản giao hàng, nếu giao hàng theo điều kiện FOB, chu kỳ vận tải biển quốc tế chịu ảnh hưởng rất lớn từ khủng hoảng Biển Đỏ, một khi chậm trễ thì ai chịu trách nhiệm tiền phạt vi phạm hợp đồng?",
+        "prompt": "Làm rõ điều khoản bất khả kháng và chuyển đổi sang CIF:",
+        "options": [
+          {
+            "text": "针对地缘政治与航运不可抗力因素，我们应在合同明确免责范畴。同时我方愿意协助订舱并提供CIF报价，双方共同锁定全链条运输保险。",
+            "pinyin": "Zhēnduì dìyuán zhèngzhì yǔ hángyùn bù kě kànglì yīnsù, wǒmen yīng zài hétong míngquè miǎnzé fànchóu. Tóngshí wǒfāng yuànyì xiézhù dìngcāng bìng tígōng CIF bàojià, shuāngfāng gòngtóng suǒdìng quán liàntiáo yùnshū bǎoxiǎn.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Lập luận pháp lý thương mại chặt chẽ! Dùng chuẩn từ 不可抗力, 订舱, 运输保险."
+          },
+          {
+            "text": "延期了我也没办法。",
+            "pinyin": "Yánqī le wǒ yě méi bànfǎ.",
+            "isCorrect": false,
+            "score": 5,
+            "feedback": "Thiếu trách nhiệm hợp đồng, không đủ tin cậy để đối tác ký kết."
+          }
+        ]
+      },
+      {
+        "stageNumber": 3,
+        "bossDialogue": "专业！严谨！贵司的诚意与风控能力让我们十分放心。合同文本确认无误，我们现在就正式签字盖章！",
+        "bossPinyin": "Zhuānyè! Yánjǐn! Guì sī de chéngyì yǔ fēngkòng nénglì ràng wǒmen shífēn fàngxīn. Hétong wénběn quèrèn wú wù, wǒmen xiànzài jiù zhèngshì qiānzì gàizhāng!",
+        "bossMeaning": "Chuyên nghiệp! Cẩn trọng! Sự chân thành và năng lực kiểm soát rủi ro của quý công ty khiến chúng tôi vô cùng yên tâm. Văn bản hợp đồng đã xác nhận chuẩn xác, chúng ta chính thức ký tên đóng dấu ngay bây giờ!",
+        "prompt": "Ký kết hợp đồng và chúc mừng quan hệ hợp tác cùng thắng (win-win):",
+        "options": [
+          {
+            "text": "合作愉快，互利共赢！期待我们的战略合作扬帆起航，共创辉煌业绩！",
+            "pinyin": "Hézuò yúkuài, hùlì-gòngyíng! Qīdài wǒmen de zhànlüè hézuò yángfān qǐháng, gòng chuàng huīhuáng yèjì!",
+            "isCorrect": true,
+            "score": 30,
+            "feedback": "Ký kết thành công thương vụ 5 triệu USD! Bạn là bậc thầy thương mại HSK 6."
+          },
+          {
+            "text": "字签好了，给钱吧。",
+            "pinyin": "Zì qiān hǎo le, gěi qián ba.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Cách nói suồng sã làm mất đi phong độ đối tác chiến lược."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "boss-ch-24",
+    "chapterId": "ch-24",
+    "title": "Vương Miện Đại Sứ Hán Ngữ: Diễn Thuyết Kinh Tế & Tốt Nghiệp HSK 6",
+    "chineseTitle": "巅峰冕冠：财经宏观述评与汉学大成",
+    "bossName": "Chủ tịch Hội đồng Khảo thí Quốc tế HSK (汉考国际主考官)",
+    "bossAvatar": "👑",
+    "scenario": "Lễ tốt nghiệp và đại khảo nghiệm tối thượng: Phân tích báo cáo vĩ mô kinh tế số Đông Á và đăng quang danh hiệu Chinese Master HSK 6 trọn vẹn.",
+    "xpReward": 500,
+    "requiredScoreToPass": 90,
+    "stages": [
+      {
+        "stageNumber": 1,
+        "bossDialogue": "考生请就位。历经120课之淬炼，汝已至六级之巅。请结合最新宏观经济数据，阐述数字经济对区域协同发展之深远驱动。",
+        "bossPinyin": "Kǎoshēng qǐng jiùwèi. Lìjīng yībǎi-èrshí kè zhī cuìliàn, rǔ yǐ zhì liù jí zhī diān. Qǐng jiéhé zuìxīn hóngguān jīngjì shùjù, chǎnshù shùzì jīngjì duì qūyù xiétóng fāzhǎn zhī shēnyuǎn qūdòng.",
+        "bossMeaning": "Thí sinh xin vào vị trí. Trải qua 120 bài học tôi luyện, con đã bước tới đỉnh cao cấp 6. Xin hãy kết hợp dữ liệu kinh tế vĩ mô mới nhất, làm rõ động lực sâu xa của nền kinh tế số đối với sự phát triển hiệp đồng khu vực.",
+        "prompt": "Trình bày diễn thuyết tài chính vĩ mô chuẩn xác, lập luận chặt chẽ:",
+        "options": [
+          {
+            "text": "各位评委好！当前数字经济正重塑产业链版图。通过云计算、人工智能与跨境电商生态的深度融合，区域贸易壁垒大幅降低，产业链韧性显著增强，实现了全要素生产率的质变跃升。",
+            "pinyin": "Gèwèi píngwěi hǎo! Dāngqián shùzì jīngjì zhèng chóngsù chǎnyèliàn bǎntú. Tōngguò yún-jìsuàn, réngōng zhìnéng yǔ kuàjìng diànshāng shēngtài de shēndù rónghé, qūyù màoyì bìlěi dàfú jiàngdī, chǎnyèliàn rènxìng xiǎnzhù zēngqiáng, shíxiàn le quán yàosù shēngchǎnlǜ de zhìbiàn yuèshēng.",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Hùng biện kinh tế vĩ mô xuất sắc tuyệt luân! Thuật ngữ 全要素生产率, 产业链韧性 chứng minh năng lực HSK 6 hoàn hảo."
+          },
+          {
+            "text": "现在大家都在手机上花钱，网购很方便。",
+            "pinyin": "Xiànzài dàjiā dōu zài shǒujī shang huā qián, wǎnggòu hěn fāngbiàn.",
+            "isCorrect": false,
+            "score": 10,
+            "feedback": "Quá sơ sài, chưa đạt tầm mức học thuật chuyên sâu cấp 6."
+          }
+        ]
+      },
+      {
+        "stageNumber": 2,
+        "bossDialogue": "思辨深刻，论述谨严！学汉语者众，而成大器者鲜。回望求索征途，汝如何体悟“厚积薄发”之精髓？",
+        "bossPinyin": "Sībiàn shēnkè, lùnshù jǐnyán! Xué Hànyǔ zhě zhòng, ér chéng dàqì zhě xiǎn. Huíwàng qiúsuǒ zhēngtú, rǔ rúhé tǐwù “hòujī-bófā” zhī jīngsuǐ?",
+        "bossMeaning": "Tư duy sâu sắc, luận thuật cẩn trọng! Người học Hán ngữ thì đông, nhưng người thành tài lớn thì hiếm. Nhìn lại hành trình tìm tòi đã qua, con cảm nhận ra sao về tinh hoa của bốn chữ \"hậu tích bạc phát\"?",
+        "prompt": "Chia sẻ đúc kết tâm huyết về hành trình học tiếng Trung từ số 0 đến bậc thầy:",
+        "options": [
+          {
+            "text": "千里之行，始于足下。从最初辨析平仄四声，到如今融会贯通经世致用，唯有一步一个脚印深耕细作，方能领略中华文化之博大精深，迎来厚积薄发的觉醒时刻！",
+            "pinyin": "Qiānlǐ zhī xíng, shǐ yú zúxià. Cóng zuìchū biànxī píngzè sì shēng, dào rújīn rónghuì-guàntōng jīngshì-zhìyòng, wéiyǒu yí bù yí gè jiǎoyìn shēngēng-xìzuò, fāng néng lǐnglüè Zhōnghuá wénmíng zhī bódà-jīngshēn, yínglái hòujī-bófā de juéxǐng shíkè!",
+            "isCorrect": true,
+            "score": 35,
+            "feedback": "Lời đúc kết xúc động và tràn đầy nội lực học thuật! Kết hợp hoàn hảo thành ngữ và triết lý ngôn ngữ."
+          },
+          {
+            "text": "学中文就是背背单词应付考试而已。",
+            "pinyin": "Xué Zhōngwén jiù shì bèi bèi dāncí yìngfu kǎoshì éryǐ.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Học vẹt đối phó không thể vươn tới cảnh giới chân chính."
+          }
+        ]
+      },
+      {
+        "stageNumber": 3,
+        "bossDialogue": "善哉大善！文采斐然，器宇轩昂！汉考国际最高评委会一致通过：特授予汝“汉字Go当代汉学大师·HSK 6级最高至尊荣誉”！请登台加冕！",
+        "bossPinyin": "Shàn zāi dà shàn! Wéncǎi fěirán, qìyǔ xuān’áng! Hànkǎo Guójì zuìgāo píngwěihuì yízhì tōngguò: Tè shòuyǔ rǔ “HànzìGo Dāngdài Hànxué Dàshī • HSK Liù Jí Zuìgāo Zhìzūn Róngyù”! Qǐng dēngtái jiāmiǎn!",
+        "bossMeaning": "Lành thay vô cùng! Văn phong rực rỡ, khí vũ hiên ngang! Hội đồng Giám khảo Quốc tế nhất trí thông qua: Đặc cách phong tặng con danh hiệu \"Bậc Thầy Hán Học Đương Đại HanziGo • Tối Cao Chí Tôn HSK 6\"! Xin mời bước lên bục vinh quang đăng quang vương miện!",
+        "prompt": "Tuyên thệ tốt nghiệp và đón nhận Vương Miện Hanzi Master:",
+        "options": [
+          {
+            "text": "铭记师恩，不负韶华！我将以语言为桥梁，传播友谊、促进互鉴，持之以恒，终身学习！",
+            "pinyin": "Míngjì shī’ēn, bú fù sháohuá! Wǒ jiāng yǐ yǔyán wéi qiáoliáng, chuánbō yǒuyì, cùjìn hùjiàn, chí zhī yǐ héng, zhōngshēn xuéxí!",
+            "isCorrect": true,
+            "score": 30,
+            "feedback": "🎉 VINH QUANG TỐI THƯỢNG! BẠN ĐÃ CHÍNH THỨC TỐT NGHIỆP TRỌN VẸN 6 CẤP ĐỘ HSK 1–6 VÀ 24 BỘ TRƯỞNG BOSS CỦA HANZIGO!"
+          },
+          {
+            "text": "终于考完了，以后再也不看中文了。",
+            "pinyin": "Zhōngyú kǎo wán le, yǐhòu zài yě bú kàn Zhōngwén le.",
+            "isCorrect": false,
+            "score": 0,
+            "feedback": "Tốt nghiệp là điểm khởi đầu cho hành trình ứng dụng suốt đời chứ không phải kết thúc."
+          }
+        ]
+      }
+    ]
+  }
 ];
 
 

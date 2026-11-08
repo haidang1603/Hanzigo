@@ -395,17 +395,26 @@ test('BUG-01: registerWithEmail strictly prevents client self-selection of admin
   try {
     await registerWithEmail('newadmin@example.com', 'password123', 'Hacker', 'HSK 1', 'admin');
   } catch (err) {
-    // Expected if Supabase is unconfigured in test environment
-    assert.ok(err.message.includes('Supabase chưa được cấu hình') || err.message.includes('signUp'));
+    // Expected if Supabase is unconfigured in test environment or returns live auth message
+    assert.ok(
+      err.message.includes('Supabase chưa được cấu hình') || 
+      err.message.includes('signUp') ||
+      err.message.includes('registered') ||
+      err.message.includes('already')
+    );
   }
 });
 
 test('BUG-01: loginWithEmail never calls non-existent set_user_role_on_login RPC', async () => {
-  // If Supabase is unconfigured, it fails gracefully without throwing set_user_role_on_login errors
+  // If Supabase is unconfigured or live credentials fail, it fails gracefully without throwing set_user_role_on_login errors
   try {
     await loginWithEmail('student@example.com', 'password123', 'teacher');
   } catch (err) {
-    assert.ok(err.message.includes('Supabase chưa được cấu hình'));
+    assert.ok(
+      err.message.includes('Supabase chưa được cấu hình') ||
+      err.message.includes('Invalid') ||
+      err.message.includes('credentials')
+    );
     assert.ok(!err.message.includes('set_user_role_on_login'), 'Must not reference removed RPC');
   }
 });

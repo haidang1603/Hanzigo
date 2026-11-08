@@ -35,13 +35,21 @@ const DEFAULT_WELCOME_LESSON = {
   ]
 };
 
+const DEFAULT_QUOTE = {
+  id: 10,
+  hanzi: '持之以恒，金石可镂',
+  pinyin: 'Chí zhī yǐ héng, jīn shí kě lòu',
+  meaning: 'Kiên trì bền bỉ, sắt đá ngàn năm cũng có thể khắc chạm thành tác phẩm.',
+  author: 'Tuân Tử — Khuyến Học'
+};
+
 export default function Footer({ setActiveTab }) {
   const [emailInput, setEmailInput] = useState('');
   const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'already' | 'error'
   const [errorMessage, setErrorMessage] = useState('');
   const [todayLesson, setTodayLesson] = useState(DEFAULT_WELCOME_LESSON);
   const [showLessonModal, setShowLessonModal] = useState(false);
-  const [currentQuote, setCurrentQuote] = useState(() => getDailyQuote());
+  const [currentQuote, setCurrentQuote] = useState(DEFAULT_QUOTE);
   const [quotesPool, setQuotesPool] = useState(null);
 
   useEffect(() => {
@@ -49,7 +57,6 @@ export default function Footer({ setActiveTab }) {
     fetchDailyQuotes().then(quotes => {
       if (isMounted && quotes && quotes.length > 0) {
         setQuotesPool(quotes);
-        setCurrentQuote(calculateQuoteOfTheDay(quotes));
       }
     }).catch(() => {});
     return () => { isMounted = false; };
@@ -168,33 +175,29 @@ export default function Footer({ setActiveTab }) {
   };
 
   return (
-    <footer className="bg-[#111923] text-white pt-16 pb-12 border-t border-[#1E293B] relative overflow-hidden">
+    <footer className="bg-[#182330] text-white pt-12 pb-12 border-t border-[#233346] relative overflow-hidden">
       {/* Decorative background watermark */}
-      <div className="absolute right-4 bottom-2 font-['Noto_Serif_SC'] text-[10rem] font-black text-white/[0.02] select-none pointer-events-none">
+      <div className="absolute right-4 bottom-1 font-['Noto_Serif_SC'] text-[9rem] sm:text-[11rem] font-black text-white/[0.035] select-none pointer-events-none leading-none">
         汉语
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Top Highlight Banner: Redesigned Asian-Modern Cultural Quote Card */}
-        <div className="mb-14 p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#1E293B]/90 via-[#182330]/95 to-[#131C26]/90 border border-[#F4B942]/20 hover:border-[#F4B942]/40 shadow-2xl shadow-black/40 relative overflow-hidden backdrop-blur-md transition-all group">
-          {/* Subtle warm ambient glows */}
-          <div className="absolute -top-16 -left-16 w-44 h-44 rounded-full bg-[#E85D3F]/10 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-16 -right-16 w-44 h-44 rounded-full bg-[#F4B942]/10 blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        {/* Top Highlight Banner: Warm Asian-Modern Cultural Quote Card */}
+        <div className="mb-14 px-6 py-6 sm:px-8 sm:py-7 lg:px-10 lg:py-8 rounded-3xl bg-[#DF5334] shadow-xl shadow-[#DF5334]/20 relative overflow-hidden transition-all group">
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             
             {/* Quote Body */}
-            <div className="space-y-2 text-center lg:text-left flex-1 min-w-0">
-              <div className="inline-flex items-center gap-2 flex-wrap justify-center lg:justify-start">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E85D3F]/15 border border-[#E85D3F]/30 text-[#E85D3F] dark:text-[#F87171] text-xs font-bold shadow-xs">
-                  <Sparkles size={13} className="text-[#F4B942]" />
-                  <span>Châm ngôn Hán ngữ mỗi ngày</span>
+            <div className="space-y-2 text-left flex-1 min-w-0">
+              <div className="inline-flex items-center gap-2 flex-wrap">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold backdrop-blur-xs shadow-xs">
+                  <Sparkles size={13} className="text-white" />
+                  <span>Châm ngôn mỗi ngày</span>
                 </div>
                 <button
                   type="button"
                   onClick={handleNextQuote}
-                  className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 hover:text-white text-[11px] font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs border border-white/10"
+                  className="px-3 py-1 rounded-full bg-black/15 hover:bg-black/25 active:scale-95 text-white/95 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                   title="Bấm để đổi và khám phá thêm các câu châm ngôn ý nghĩa khác"
                 >
                   <Shuffle size={12} />
@@ -203,16 +206,16 @@ export default function Footer({ setActiveTab }) {
               </div>
 
               {/* Chinese Calligraphy Characters */}
-              <h3 className="text-2xl sm:text-3xl font-black font-['Noto_Serif_SC'] tracking-wider text-amber-100 drop-shadow-sm">
+              <h3 className="text-2xl sm:text-3xl lg:text-[34px] font-black font-['Noto_Serif_SC'] tracking-wider text-white drop-shadow-xs my-1">
                 {currentQuote.hanzi}
               </h3>
 
               {/* Pinyin, Meaning & Author */}
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-                <span className="font-semibold text-[#F4B942] mr-1.5">{currentQuote.pinyin}</span>
-                <span>— <span className="italic text-slate-200 font-medium">"{currentQuote.meaning}"</span></span>
+              <p className="text-xs sm:text-sm text-white/95 leading-relaxed font-normal">
+                <span className="font-medium mr-1.5">{currentQuote.pinyin}</span>
+                <span>— <span className="italic">"{currentQuote.meaning}"</span></span>
                 {currentQuote.author && (
-                  <span className="text-xs text-slate-400 ml-2 font-normal">({currentQuote.author})</span>
+                  <span className="text-xs text-white/80 ml-2 font-normal">({currentQuote.author})</span>
                 )}
               </p>
             </div>
@@ -221,69 +224,67 @@ export default function Footer({ setActiveTab }) {
             <button
               type="button"
               onClick={() => speakChinese(currentQuote.hanzi)}
-              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-xs sm:text-sm shadow-lg shadow-[#E85D3F]/25 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 whitespace-nowrap cursor-pointer shrink-0 self-center lg:self-center"
+              className="px-6 py-3 rounded-full bg-white hover:bg-orange-50 active:scale-95 text-[#DF5334] font-bold text-xs sm:text-sm shadow-lg shadow-black/15 hover:scale-105 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer shrink-0 self-start sm:self-center lg:self-center"
               title={`Nghe phát âm chuẩn: "${currentQuote.hanzi}"`}
             >
               <Volume2 size={16} />
-              <span>Nghe phát âm chuẩn</span>
+              <span>Nghe phát âm</span>
               <ArrowRight size={15} />
             </button>
           </div>
         </div>
 
-        {/* Main Footer Links */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-white/10">
+        {/* Main Footer Links: 4 Columns Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 pb-12 border-b border-[#233346]/80">
           
           {/* Brand Col */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#E85D3F] flex items-center justify-center text-white font-bold shadow-md">
+              <div className="w-10 h-10 rounded-xl bg-[#DF5334] flex items-center justify-center text-white font-bold shadow-md">
                 <span className="font-['Noto_Serif_SC'] text-2xl font-black">汉</span>
               </div>
-              <span className="text-2xl font-black tracking-tight">
-                Hanzi<span className="text-[#E85D3F]">Go</span>
+              <span className="text-2xl font-black tracking-tight text-white">
+                Hanzi<span className="text-[#DF5334]">Go</span>
               </span>
             </div>
             
-            <p className="text-sm text-[#94A3B8] leading-relaxed max-w-sm">
+            <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
               Nền tảng học tiếng Trung trực tuyến hiện đại dành riêng cho người Việt Nam. Tối ưu phương pháp phản xạ, chiết tự chữ Hán, phát âm chuẩn Bắc Kinh và đồng hành cùng bạn thi đỗ HSK.
             </p>
 
-            <div className="pt-2 text-xs text-[#94A3B8] space-y-1">
+            <div className="pt-2 text-xs text-[#94A3B8] space-y-2">
               <p className="flex items-center gap-2">
-                <Mail size={14} className="text-[#F4B942]" />
+                <Mail size={14} className="text-[#DF5334] shrink-0" />
                 <span>lehaidang16032006@gmail.com</span>
               </p>
               <p className="flex items-center gap-2">
-                <Globe size={14} className="text-[#45B97C]" />
+                <Globe size={14} className="text-[#45B97C] shrink-0" />
                 <span>Đà Nẵng, Việt Nam</span>
               </p>
             </div>
           </div>
 
-          {/* Links 1 */}
+          {/* Links 1: Khóa học & Lộ trình */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#F4B942] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#F4B942]" />
-              <span>Khóa học & Lộ trình</span>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#F4B942]">
+              Khóa học & Lộ trình
             </h4>
-            <ul className="space-y-2 text-xs sm:text-sm text-[#94A3B8]">
+            <ul className="space-y-2.5 text-xs sm:text-sm text-[#94A3B8]">
               <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Nhập môn Pinyin & Bút thuận</button></li>
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Khóa HSK 1 - 150 từ cơ bản</button></li>
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Khóa HSK 2 - Sơ cấp đàm thoại</button></li>
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Khóa HSK 3 - 4 Giao tiếp công sở</button></li>
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Luyện thi HSK 5-6 Chuyên sâu</button></li>
+              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Khóa HSK 1 – 150 từ cơ bản</button></li>
+              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Khóa HSK 2 – Sơ cấp đàm thoại</button></li>
+              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Khóa HSK 3 – 4 Giao tiếp công sở</button></li>
+              <li className="pt-2"><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left font-medium">Luyện thi HSK 5–6 Chuyên sâu</button></li>
             </ul>
           </div>
 
-          {/* Links 2 */}
+          {/* Links 2: Tính năng nổi bật */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#F4B942] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E85D3F]" />
-              <span>Tính năng nổi bật</span>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#F4B942]">
+              Tính năng nổi bật
             </h4>
-            <ul className="space-y-2 text-xs sm:text-sm text-[#94A3B8]">
-              <li><button onClick={() => handleNav('materials')} className="hover:text-white hover:translate-x-1 transition-all text-left text-[#F4B942] font-semibold">Thư viện Tài liệu & Giáo trình</button></li>
+            <ul className="space-y-2.5 text-xs sm:text-sm text-[#94A3B8]">
+              <li><button onClick={() => handleNav('materials')} className="text-[#F4B942] hover:text-amber-300 hover:translate-x-1 transition-all text-left font-medium">Thư viện Tài liệu & Giáo trình</button></li>
               <li><button onClick={() => handleNav('vocabulary')} className="hover:text-white hover:translate-x-1 transition-all text-left">Flashcard 3D thông minh SRS</button></li>
               <li><button onClick={() => handleNav('pronunciation')} className="hover:text-white hover:translate-x-1 transition-all text-left">Luyện phát âm & Nhận diện giọng</button></li>
               <li><button onClick={() => handleNav('writing')} className="hover:text-white hover:translate-x-1 transition-all text-left">Canvas tập viết chữ Hán mễ tự</button></li>
@@ -292,17 +293,11 @@ export default function Footer({ setActiveTab }) {
             </ul>
           </div>
 
-          {/* Newsletter Subscribe */}
+          {/* Column 4: Newsletter Subscribe */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#F4B942] flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#45B97C]" />
-                <span>Nhận bài học mỗi ngày</span>
-              </h4>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                07:00 AM
-              </span>
-            </div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#F4B942]">
+              Nhận bài học mỗi ngày
+            </h4>
             <p className="text-xs text-[#94A3B8] leading-relaxed">
               Đăng ký nhận mẹo nhớ chữ Hán và từ vựng thông dụng gửi vào hòm thư mỗi sáng.
             </p>
@@ -362,7 +357,7 @@ export default function Footer({ setActiveTab }) {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubscribe} className="space-y-2">
+              <form onSubmit={handleSubscribe} className="space-y-2.5">
                 <div className="relative">
                   <input 
                     type="email" 
@@ -374,10 +369,10 @@ export default function Footer({ setActiveTab }) {
                     placeholder="Nhập email của bạn..." 
                     required
                     disabled={status === 'loading'}
-                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#1E293B] border transition-colors text-white placeholder-[#64748B] focus:outline-none ${
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#131D28] border transition-colors text-white placeholder-slate-500 focus:outline-none ${
                       status === 'error' 
                         ? 'border-rose-500 focus:border-rose-400 ring-1 ring-rose-500/30' 
-                        : 'border-[#2B3A4F] focus:border-[#E85D3F]'
+                        : 'border-[#233346] focus:border-[#DF5334]'
                     }`}
                   />
                 </div>
@@ -392,7 +387,7 @@ export default function Footer({ setActiveTab }) {
                 <button
                   type="submit"
                   disabled={status === 'loading'}
-                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] disabled:opacity-60 text-xs font-bold text-white transition-all shadow-md shadow-[#E85D3F]/20 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  className="w-full py-2.5 px-3 rounded-xl bg-[#DF5334] hover:bg-[#C9472B] disabled:opacity-60 text-xs font-bold text-white transition-all shadow-md shadow-[#DF5334]/20 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 >
                   {status === 'loading' ? (
                     <>
@@ -401,24 +396,23 @@ export default function Footer({ setActiveTab }) {
                     </>
                   ) : (
                     <>
-                      <span>Đăng ký miễn phí</span>
-                      <Send size={14} />
+                      <span>Đăng ký miễn phí 🚀</span>
                     </>
                   )}
                 </button>
                 
-                <div className="flex items-center justify-between text-[10px] pt-0.5">
+                <div className="flex items-center justify-between text-[11px] pt-0.5">
                   <button
                     type="button"
                     onClick={() => setShowLessonModal(true)}
-                    className="text-[#94A3B8] hover:text-[#F4B942] underline flex items-center gap-1 transition-colors cursor-pointer"
+                    className="text-[#F4B942] hover:underline flex items-center gap-1 transition-colors cursor-pointer"
                   >
-                    <Sparkles size={11} className="text-[#F4B942]" />
+                    <Sparkles size={12} className="text-[#F4B942]" />
                     <span>Xem thử bài học mẫu hôm nay</span>
                   </button>
                 </div>
 
-                <p className="text-[10px] text-[#64748B] leading-tight">
+                <p className="text-[10px] text-slate-500 leading-relaxed">
                   * Thông báo quyền riêng tư: Email chỉ dùng để gửi bài học hàng ngày, không chia sẻ cho bên thứ ba. Hủy đăng ký bất kỳ lúc nào.
                 </p>
               </form>
@@ -427,14 +421,14 @@ export default function Footer({ setActiveTab }) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-[#94A3B8] gap-4">
+        <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-[#94A3B8] gap-4 relative z-10">
           <p>© 2026 HanziGo. Dự án giáo dục phi thương mại dành cho người Việt.</p>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             <button 
               onClick={() => handleNav('admin')} 
-              className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-[#E85D3F] font-semibold text-[11px] transition-all flex items-center gap-1.5 cursor-pointer"
+              className="text-[#DF5334] hover:text-[#f87171] font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <ShieldCheck size={13} className="text-[#E85D3F]" />
+              <ShieldCheck size={14} className="text-[#DF5334]" />
               <span>Quản trị viên (Admin)</span>
             </button>
             <a 
@@ -480,7 +474,7 @@ export default function Footer({ setActiveTab }) {
             <button
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent('hanzigo_open_consent_modal'))}
-              className="text-[#94A3B8] hover:text-[#E85D3F] transition-colors cursor-pointer text-xs"
+              className="text-[#94A3B8] hover:text-white transition-colors cursor-pointer text-xs"
             >
               Tùy chọn lưu trữ
             </button>

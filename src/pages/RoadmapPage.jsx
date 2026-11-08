@@ -23,6 +23,7 @@ import {
   GraduationCap,
   ArrowRight,
   ExternalLink,
+  RotateCw,
   X
 } from 'lucide-react';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
@@ -48,6 +49,11 @@ import {
   getRecommendedReviewLessons,
   syncUserJourneyProgressFromCloud
 } from '../services/learningPathService';
+import { 
+  getStudentSupplementaryLessons, 
+  completeCustomLesson 
+} from '../services/customLessonService';
+import { supabase, isSupabaseConfigured } from '../supabase/config';
 import AiContextBadge from '../components/personalization/AiContextBadge.jsx';
 
 export default function RoadmapPage({ 
@@ -72,6 +78,108 @@ export default function RoadmapPage({
   const [syllabusSearchTerm, setSyllabusSearchTerm] = useState('');
   const [syllabusStatusFilter, setSyllabusStatusFilter] = useState('all'); // 'all' | 'pending' | 'completed' | 'boss'
   const [selectedMaterialModal, setSelectedMaterialModal] = useState(null);
+
+  // Supplementary / Custom Lessons State
+  const [supplementaryLessons, setSupplementaryLessons] = useState([]);
+  const [isLoadingSupplementary, setIsLoadingSupplementary] = useState(false);
+  const [supplementarySearch, setSupplementarySearch] = useState('');
+  const [supplementaryLevelFilter, setSupplementaryLevelFilter] = useState('all');
+  const [selectedSupplementaryLesson, setSelectedSupplementaryLesson] = useState(null);
+  const [isCompletingSupplementary, setIsCompletingSupplementary] = useState(false);
+
+  // Load supplementary lessons from Supabase (student-safe, non-hidden only)
+  const loadSupplementaryLessons = useCallback(async () => {
+    setIsLoadingSupplementary(true);
+    try {
+      const items = await getStudentSupplementaryLessons();
+      setSupplementaryLessons(Array.isArray(items) ? items : []);
+    } catch (err) {
+      console.warn('Load supplementary lessons notice:', err);
+    } finally {
+      setIsLoadingSupplementary(false);
+    }
+  }, []);
+
+  // Fetch supplementary lessons on mount and subscribe to Realtime + CustomEvent
+  useEffect(() => {
+    let isMounted = true;
+    loadSupplementaryLessons();
+
+    const handleRemoteLessonsUpdate = () => {
+      if (isMounted) loadSupplementaryLessons();
+    };
+    window.addEventListener('hanzigo:custom_lessons_updated', handleRemoteLessonsUpdate);
+
+    let channel;
+    if (isSupabaseConfigured && supabase) {
+      try {
+        channel = supabase
+          .channel('public:lessons_changes')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'lessons' }, () => {
+            if (isMounted) loadSupplementaryLessons();
+          })
+          .subscribe();
+      } catch (err) {
+        console.warn('Realtime lessons subscription notice:', err);
+      }
+    }
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('hanzigo:custom_lessons_updated', handleRemoteLessonsUpdate);
+      if (channel && supabase) {
+        supabase.removeChannel(channel).catch(() => {});
+      }
+    };
+  }, [loadSupplementaryLessons]);
+
+  // Filtered supplementary lessons
+  const filteredSupplementaryLessons = useMemo(() => {
+    return supplementaryLessons.filter(l => {
+      if (l.isHidden || l.is_hidden) return false;
+      const matchSearch = !supplementarySearch.trim() ||
+        (l.title && l.title.toLowerCase().includes(supplementarySearch.toLowerCase())) ||
+        (l.description && l.description.toLowerCase().includes(supplementarySearch.toLowerCase()));
+      const matchLevel = supplementaryLevelFilter === 'all' ||
+        (l.level && l.level.toLowerCase().replace(/\s+/g, '') === supplementaryLevelFilter.toLowerCase().replace(/\s+/g, ''));
+      return matchSearch && matchLevel;
+    });
+  }, [supplementaryLessons, supplementarySearch, supplementaryLevelFilter]);
+
+  // Handler for opening a supplementary lesson
+  const handleOpenSupplementaryLesson = (lesson) => {
+    playClickSound();
+    if (lesson?.step1_objectives && lesson?.step2_vocabulary) {
+      setActiveLessonToPlay(lesson);
+    } else {
+      setSelectedSupplementaryLesson(lesson);
+    }
+  };
+
+  // Handler for completing a supplementary lesson
+  const handleCompleteSupplementaryLesson = async (lesson) => {
+    if (!lesson) return;
+    playClickSound();
+    setIsCompletingSupplementary(true);
+    try {
+      const res = await completeCustomLesson(lesson, user);
+      if (res?.success) {
+        playSuccessSound();
+        if (res.isFirstTime && onAddXp) {
+          onAddXp(res.xpAwarded);
+        }
+        showToast(`🎉 Chúc mừng! Bạn đã hoàn thành "${lesson.title}" (+${res.xpAwarded} XP)`);
+        setJourneyVersion(v => v + 1);
+        setSelectedSupplementaryLesson(null);
+      }
+    } catch (err) {
+      console.error('Complete custom lesson error:', err);
+      playErrorSound();
+      showToast(err.message || 'Lỗi khi ghi nhận hoàn thành bài học.');
+    } finally {
+      setIsCompletingSupplementary(false);
+    }
+  };
 
   // Toast notification state
   const [toast, setToast] = useState(null);
@@ -421,6 +529,21 @@ export default function RoadmapPage({
             >
               <BarChart3 size={16} />
               <span>Ma trận 5 Kỹ năng</span>
+            </button>
+
+            <button
+              onClick={() => {
+                playClickSound();
+                setRoadmapView('supplementary');
+              }}
+              className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                roadmapView === 'supplementary'
+                  ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
+                  : 'bg-white dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F]'
+              }`}
+            >
+              <BookOpen size={16} />
+              <span>Bài học Mở rộng ({supplementaryLessons.length})</span>
             </button>
           </div>
 
@@ -946,6 +1069,134 @@ export default function RoadmapPage({
           </div>
         )}
 
+        {/* ========================================================== */}
+        {/* VIEW 4: 📚 SUPPLEMENTARY / CUSTOM LESSONS */}
+        {/* ========================================================== */}
+        {roadmapView === 'supplementary' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Search and Filter Bar */}
+            <div className="bg-white dark:bg-[#1E293B] p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
+                <input 
+                  type="text"
+                  value={supplementarySearch}
+                  onChange={(e) => setSupplementarySearch(e.target.value)}
+                  placeholder="Tìm tiêu đề, chuyên đề bài học mở rộng..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select
+                  value={supplementaryLevelFilter}
+                  onChange={(e) => setSupplementaryLevelFilter(e.target.value)}
+                  className="px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
+                >
+                  <option value="all">Mọi cấp độ HSK</option>
+                  <option value="Nhập môn">Nhập môn</option>
+                  <option value="HSK 1">HSK 1</option>
+                  <option value="HSK 2">HSK 2</option>
+                  <option value="HSK 3">HSK 3</option>
+                  <option value="HSK 4">HSK 4</option>
+                  <option value="HSK 5">HSK 5</option>
+                  <option value="HSK 6">HSK 6</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={loadSupplementaryLessons}
+                  disabled={isLoadingSupplementary}
+                  className="p-2.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#E85D3F] hover:bg-orange-50 dark:hover:bg-[#131B24] transition-all cursor-pointer shrink-0"
+                  title="Làm mới bài học mở rộng"
+                >
+                  <RotateCw size={16} className={isLoadingSupplementary ? 'animate-spin text-[#E85D3F]' : ''} />
+                </button>
+              </div>
+            </div>
+
+            {/* Loading State */}
+            {isLoadingSupplementary && (
+              <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-col items-center justify-center gap-3">
+                <div className="w-8 h-8 rounded-full border-2 border-[#E85D3F] border-t-transparent animate-spin" />
+                <p className="text-sm font-bold text-[#748092]">Đang tải bài học mở rộng từ máy chủ...</p>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!isLoadingSupplementary && filteredSupplementaryLessons.length === 0 && (
+              <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3">
+                <BookOpen size={40} className="mx-auto text-gray-400" />
+                <h4 className="text-base font-bold text-[#243447] dark:text-white">Không tìm thấy bài học mở rộng nào</h4>
+                <p className="text-xs text-[#748092]">
+                  {supplementarySearch || supplementaryLevelFilter !== 'all'
+                    ? 'Thử thay đổi từ khóa hoặc bộ lọc cấp độ HSK.'
+                    : 'Các bài học mở rộng mới nhất từ giáo viên sẽ hiển thị tại đây khi được xuất bản.'}
+                </p>
+              </div>
+            )}
+
+            {/* Lessons Grid */}
+            {!isLoadingSupplementary && filteredSupplementaryLessons.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filteredSupplementaryLessons.map((l) => {
+                  const isDone = Boolean(progress?.completedLessons?.[l.id]);
+                  return (
+                    <div 
+                      key={l.id}
+                      className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between space-y-4 hover:border-[#E85D3F] transition-all group"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-orange-100 dark:bg-orange-950/40 text-[#E85D3F]">
+                            {l.level}
+                          </span>
+                          <span className="text-xs font-bold text-[#D97706] flex items-center gap-1">
+                            <Sparkles size={13} />
+                            <span>+{l.xp} XP</span>
+                          </span>
+                        </div>
+
+                        <h4 className="text-base font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
+                          {l.title}
+                        </h4>
+                        <p className="text-xs text-[#748092] dark:text-[#94A3B8] line-clamp-3 leading-relaxed">
+                          {l.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
+                        <span className="text-xs text-[#748092]">Thời lượng: {l.duration} phút</span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenSupplementaryLesson(l)}
+                          className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                            isDone
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300/40'
+                              : 'bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-xs hover:opacity-90'
+                          }`}
+                        >
+                          {isDone ? (
+                            <>
+                              <CheckCircle2 size={14} className="text-emerald-600" />
+                              <span>Ôn lại</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play size={12} fill="currentColor" />
+                              <span>Học ngay</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
       {/* ========================================================== */}
@@ -1061,6 +1312,105 @@ export default function RoadmapPage({
                   <ExternalLink size={14} />
                 </a>
               ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* MODAL 6: SUPPLEMENTARY LESSON VIEWER MODAL */}
+      {/* ========================================================== */}
+      {selectedSupplementaryLesson && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3 border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-lg bg-orange-100 dark:bg-orange-950/40 text-[#E85D3F]">
+                    {selectedSupplementaryLesson.level || 'HSK'}
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-950/40 text-[#D97706]">
+                    🌟 Bài học bổ sung
+                  </span>
+                  <span className="text-xs text-[#748092]">
+                    ⏱️ {selectedSupplementaryLesson.duration || 20} phút
+                  </span>
+                  <span className="text-xs font-bold text-[#E85D3F]">
+                    +{selectedSupplementaryLesson.xp || 50} XP
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-[#243447] dark:text-white flex items-center gap-2">
+                  <BookOpen size={20} className="text-[#E85D3F]" />
+                  <span>{selectedSupplementaryLesson.title}</span>
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedSupplementaryLesson(null)}
+                className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-[#748092] cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-bold uppercase text-[#748092] mb-1">Mô tả tóm tắt</h4>
+                <p className="text-sm text-[#243447] dark:text-slate-200 leading-relaxed font-medium">
+                  {selectedSupplementaryLesson.description || 'Chuyên đề học tập bổ trợ củng cố kiến thức thực hành.'}
+                </p>
+              </div>
+
+              {selectedSupplementaryLesson.grammarPoints && (
+                <div className="p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2">
+                  <h4 className="text-xs font-black uppercase text-[#E85D3F] flex items-center gap-1.5">
+                    <Sparkles size={14} />
+                    <span>Trọng tâm & Điểm ngữ pháp cần nhớ</span>
+                  </h4>
+                  <p className="text-xs text-[#243447] dark:text-slate-300 whitespace-pre-line leading-relaxed font-medium">
+                    {selectedSupplementaryLesson.grammarPoints}
+                  </p>
+                </div>
+              )}
+
+              {/* Completion status info box */}
+              {Boolean(progress?.completedLessons?.[selectedSupplementaryLesson.id]) ? (
+                <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center gap-2.5 text-xs text-emerald-800 dark:text-emerald-300 font-bold">
+                  <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                  <span>Bạn đã hoàn thành bài học này và tích lũy +{selectedSupplementaryLesson.xp || 50} XP!</span>
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-300 font-medium">
+                  <Award size={18} className="text-amber-600 shrink-0" />
+                  <span>Đọc kỹ kiến thức trên và bấm nút xác nhận bên dưới để nhận <strong>+{selectedSupplementaryLesson.xp || 50} XP</strong> vào tài khoản học viên.</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
+              <button
+                type="button"
+                onClick={() => setSelectedSupplementaryLesson(null)}
+                className="px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+              >
+                Đóng
+              </button>
+
+              <button
+                type="button"
+                disabled={isCompletingSupplementary}
+                onClick={() => handleCompleteSupplementaryLesson(selectedSupplementaryLesson)}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#f06e52] hover:to-[#db4f33] text-white text-xs font-black shadow-md shadow-[#E85D3F]/25 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Check size={16} />
+                <span>
+                  {isCompletingSupplementary
+                    ? 'Đang ghi nhận...'
+                    : progress?.completedLessons?.[selectedSupplementaryLesson.id]
+                      ? 'Học lại & Ghi nhận ôn tập'
+                      : `Hoàn thành bài học (+${selectedSupplementaryLesson.xp || 50} XP)`}
+                </span>
+              </button>
             </div>
           </div>
         </div>

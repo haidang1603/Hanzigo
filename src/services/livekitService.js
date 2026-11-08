@@ -67,7 +67,7 @@ export async function fetchLiveKitToken({ sessionId, user, role = 'student' }) {
         })
       });
     } catch (fetchErr) {
-      if (typeof window === 'undefined') {
+      if (typeof window === 'undefined' || !window.location?.origin) {
         const livekitTokenHandler = (await import('../../api/_webrtc/livekit-token.js')).default;
         let statusCode = 200;
         let jsonData = null;
@@ -175,15 +175,17 @@ export class LiveKitClassroomManager {
   /**
    * Connect to the LiveKit classroom room
    */
-  async connect({ sessionId, user, role = 'student', teacherId = null }) {
+  async connect({ sessionId, user, role = 'student', teacherId = null, token: precomputedToken = null, serverUrl: precomputedUrl = null }) {
     this.role = role;
     this.sessionId = sessionId;
     this.userId = user?.uid || user?.id;
     this.teacherId = teacherId;
     this.lastConnectOptions = { sessionId, user, role, teacherId };
 
-    // 1. Fetch token
-    const tokenResult = await fetchLiveKitToken({ sessionId, user, role });
+    // 1. Resolve token (use precomputed if provided, otherwise fetch)
+    const tokenResult = precomputedToken 
+      ? { success: true, token: precomputedToken, serverUrl: precomputedUrl || getEnv('VITE_LIVEKIT_URL') || getEnv('LIVEKIT_URL') || '', isConfigured: Boolean(precomputedUrl || getEnv('VITE_LIVEKIT_URL') || getEnv('LIVEKIT_URL')) }
+      : await fetchLiveKitToken({ sessionId, user, role });
     if (!tokenResult.success) {
       console.warn('[LiveKit] Không lấy được token:', tokenResult.error);
       return { success: false, error: tokenResult.error };

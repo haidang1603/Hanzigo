@@ -87,6 +87,10 @@ CREATE TABLE IF NOT EXISTS public.lessons (
   xp INT DEFAULT 50,
   description TEXT DEFAULT '',
   grammar_points JSONB DEFAULT '[]'::jsonb,
+  is_custom BOOLEAN DEFAULT false,
+  is_hidden BOOLEAN DEFAULT false,
+  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -103,6 +107,10 @@ CREATE TABLE IF NOT EXISTS public.vocabulary (
   strokes INT DEFAULT 1,
   mnemonic TEXT DEFAULT '',
   example JSONB DEFAULT '{}'::jsonb,
+  is_custom BOOLEAN DEFAULT false,
+  is_hidden BOOLEAN DEFAULT false,
+  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -137,7 +145,7 @@ CREATE TABLE IF NOT EXISTS public.pronunciation_items (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1.7. community_posts: Bảng tin cộng đồng
+-- 1.7. community_posts: Bảng tin cộng đồng (Preserved & Extended)
 CREATE TABLE IF NOT EXISTS public.community_posts (
   id BIGSERIAL PRIMARY KEY,
   author_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
@@ -149,8 +157,112 @@ CREATE TABLE IF NOT EXISTS public.community_posts (
   likes INT DEFAULT 0,
   liked_by JSONB DEFAULT '[]'::jsonb,
   comments JSONB DEFAULT '[]'::jsonb,
+  image_url TEXT,
+  status VARCHAR(20) DEFAULT 'published' CHECK (status IN ('published', 'hidden', 'flagged')),
+  is_pinned BOOLEAN DEFAULT FALSE,
+  is_solved BOOLEAN DEFAULT FALSE,
+  likes_count INT DEFAULT 0,
+  comments_count INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
+);
+
+-- Compound index for feed ordering and 3-tuple cursor pagination
+CREATE INDEX IF NOT EXISTS idx_community_posts_feed_compound 
+  ON public.community_posts (is_pinned DESC, created_at DESC, id DESC) 
+  WHERE deleted_at IS NULL AND status <> 'hidden';
+
+-- 1.7.1. community_comments: Bình luận bài viết
+CREATE TABLE IF NOT EXISTS public.community_comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id BIGINT NOT NULL REFERENCES public.community_posts(id) ON DELETE CASCADE,
+  author_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  content TEXT NOT NULL,
+  status VARCHAR(20) DEFAULT 'published' CHECK (status IN ('published', 'hidden')),
+  legacy_source_id TEXT,
+  legacy_author_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
+  CONSTRAINT chk_community_comments_content CHECK (length(trim(content)) > 0 AND length(content) <= 3000)
+);
+
+-- Unique index to prevent duplicate migration of legacy comments per post
+CREATE UNIQUE INDEX IF NOT EXISTS uq_community_comments_legacy_source 
+  ON public.community_comments (post_id, legacy_source_id) 
+  WHERE legacy_source_id IS NOT NULL;
+
+-- 1.7.2. community_reactions: Tương tác Thích bài viết
+CREATE TABLE IF NOT EXISTS public.community_reactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id BIGINT NOT NULL REFERENCES public.community_posts(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  reaction_type VARCHAR(20) DEFAULT 'like',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT chk_community_reactions_type CHECK (reaction_type IN ('like', 'heart', 'clap', 'bulb')),
+  CONSTRAINT uq_community_reactions_post_user UNIQUE (post_id, user_id)
+);
+
+-- 1.7.3. community_reports: Báo cáo vi phạm (Resilient XOR Constraint & Snapshot)
+CREATE TABLE IF NOT EXISTS public.community_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reporter_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  post_id BIGINT REFERENCES public.community_posts(id) ON DELETE SET NULL,
+  comment_id UUID REFERENCES public.community_comments(id) ON DELETE SET NULL,
+  target_type VARCHAR(20) DEFAULT 'post' CHECK (target_type IN ('post', 'comment')),
+  target_id TEXT,
+  reason VARCHAR(50) NOT NULL CHECK (reason IN ('spam', 'inappropriate', 'harassment', 'misinformation', 'other')),
+  details TEXT,
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'reviewing', 'resolved', 'dismissed')),
+  resolved_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  resolved_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT chk_community_reports_target_valid CHECK (
+    (post_id IS NOT NULL AND comment_id IS NULL AND target_type = 'post' AND target_id IS NOT NULL AND length(trim(target_id)) > 0)
+    OR (post_id IS NULL AND comment_id IS NOT NULL AND target_type = 'comment' AND target_id IS NOT NULL AND length(trim(target_id)) > 0)
+    OR (post_id IS NULL AND comment_id IS NULL AND target_type IN ('post', 'comment') AND target_id IS NOT NULL AND length(trim(target_id)) > 0)
+  )
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_community_reports_active 
+  ON public.community_reports (reporter_id, target_type, target_id) 
+  WHERE status IN ('pending', 'reviewing') AND reporter_id IS NOT NULL;
+
+-- 1.7.4. community_moderation_logs: Lịch sử thao tác kiểm duyệt của Admin (Bất biến)
+CREATE TABLE IF NOT EXISTS public.community_moderation_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  target_type VARCHAR(20) NOT NULL CHECK (target_type IN ('post', 'comment', 'report')),
+  target_id TEXT NOT NULL,
+  action VARCHAR(30) NOT NULL CHECK (action IN ('hide', 'restore', 'delete', 'dismiss_report', 'review_report', 'resolve_report', 'pin', 'unpin')),
+  reason TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 1.7.5. community_migration_manifest: Nhật ký di chuyển dữ liệu phục vụ rollback phẫu thuật
+CREATE TABLE IF NOT EXISTS public.community_migration_manifest (
+  migration_id TEXT NOT NULL,
+  record_id UUID NOT NULL,
+  table_name TEXT NOT NULL DEFAULT 'community_comments',
+  action TEXT NOT NULL, -- 'INSERTED' or 'UPDATED'
+  post_id BIGINT,
+  legacy_source_id TEXT,
+  before_state JSONB, -- Pre-migration snapshot for UPDATED records
+  created_state JSONB, -- Post-migration initial snapshot for INSERTED records
+  applied_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (migration_id, record_id)
+);
+
+ALTER TABLE public.community_migration_manifest 
+  ADD COLUMN IF NOT EXISTS table_name TEXT DEFAULT 'community_comments',
+  ADD COLUMN IF NOT EXISTS post_id BIGINT,
+  ADD COLUMN IF NOT EXISTS legacy_source_id TEXT,
+  ADD COLUMN IF NOT EXISTS before_state JSONB,
+  ADD COLUMN IF NOT EXISTS created_state JSONB,
+  ADD COLUMN IF NOT EXISTS applied_at TIMESTAMPTZ DEFAULT NOW(),
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 
 -- 1.8. study_partners: Ghép cặp học tập
 CREATE TABLE IF NOT EXISTS public.study_partners (
@@ -188,6 +300,9 @@ ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS image_url TEXT;
 
 ALTER TABLE public.study_partners ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL;
 ALTER TABLE public.study_partners ADD COLUMN IF NOT EXISTS qr_image TEXT;
+ALTER TABLE public.study_partners ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE public.study_partners ADD COLUMN IF NOT EXISTS is_contact_public BOOLEAN DEFAULT true;
+ALTER TABLE public.study_partners ADD COLUMN IF NOT EXISTS skills TEXT DEFAULT 'Luyện khẩu ngữ';
 
 -- =========================================================================
 -- 2. BẢNG TIẾN ĐỘ HỌC TẬP CHUẨN HÓA (SRS, BÀI HỌC, AI CHAT)
@@ -308,29 +423,68 @@ CREATE INDEX IF NOT EXISTS idx_daily_quotes_level ON public.daily_quotes(hsk_lev
 
 -- Kiểm tra quyền Admin an toàn trên database
 CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN FALSE;
+  END IF;
   RETURN EXISTS (
     SELECT 1 FROM public.profiles
     WHERE id = auth.uid() AND role = 'admin' AND status = 'active'
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+$$;
 
 -- Chặn người dùng tự nâng quyền (role) hoặc gỡ chặn (status)
 CREATE OR REPLACE FUNCTION public.prevent_self_role_escalation()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_jwt_claims text;
+  v_jwt_role text;
 BEGIN
+  -- Chỉ kiểm tra khi có sự thay đổi role hoặc status
   IF (NEW.role IS DISTINCT FROM OLD.role OR NEW.status IS DISTINCT FROM OLD.status) THEN
-    -- Chỉ chặn khi là yêu cầu từ client web (auth.uid() khác NULL) và không phải Admin
-    -- Thao tác trực tiếp từ Supabase SQL Editor / Backend migration (auth.uid() IS NULL) được phép
-    IF auth.uid() IS NOT NULL AND NOT public.is_admin() THEN
+    -- Cho phép thao tác trực tiếp từ Supabase SQL Editor / superuser (SESSION_USER là 'postgres' hoặc 'supabase_admin' không kèm JWT claim)
+    IF SESSION_USER IN ('postgres', 'supabase_admin') AND current_setting('request.jwt.claims', true) IS NULL THEN
+      RETURN NEW;
+    END IF;
+
+    -- Đọc vai trò từ JWT claims nếu được gọi qua HTTP API
+    v_jwt_claims := current_setting('request.jwt.claims', true);
+    IF v_jwt_claims IS NOT NULL AND v_jwt_claims <> '' THEN
+      v_jwt_role := (v_jwt_claims::jsonb ->> 'role');
+    ELSE
+      v_jwt_role := NULL;
+    END IF;
+
+    -- TH1: Service Role được phép thực hiện (backend server / admin scripts)
+    IF v_jwt_role = 'service_role' OR auth.role() = 'service_role' THEN
+      RETURN NEW;
+    END IF;
+
+    -- TH2: Gọi qua API với vai trò 'anon' hoặc không có auth.uid() hợp lệ
+    IF v_jwt_role = 'anon' OR auth.role() = 'anon' OR auth.uid() IS NULL THEN
+      RAISE EXCEPTION 'Quyền hạn bị từ chối: Yêu cầu chưa xác thực không thể sửa đổi vai trò hoặc trạng thái người dùng.';
+    END IF;
+
+    -- TH3: Người dùng xác thực bình thường (Student, Teacher, Guest) không phải là Admin
+    IF NOT public.is_admin() THEN
       RAISE EXCEPTION 'Quyền hạn bị từ chối: Chỉ Quản trị viên (Admin) mới có thể sửa đổi vai trò hoặc trạng thái.';
     END IF;
   END IF;
+
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 DROP TRIGGER IF EXISTS trg_prevent_role_escalation ON public.profiles;
 CREATE TRIGGER trg_prevent_role_escalation
@@ -401,7 +555,17 @@ DROP POLICY IF EXISTS "profiles_select_public" ON public.profiles;
 CREATE POLICY "profiles_select_public" ON public.profiles FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "profiles_update_owner_or_admin" ON public.profiles;
-CREATE POLICY "profiles_update_owner_or_admin" ON public.profiles FOR UPDATE USING (auth.uid() = id OR public.is_admin()) WITH CHECK (auth.uid() = id OR public.is_admin());
+DROP POLICY IF EXISTS "profiles_update_policy" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Public profiles are updatable" ON public.profiles;
+DROP POLICY IF EXISTS "Enable update for users based on email" ON public.profiles;
+DROP POLICY IF EXISTS "Enable update for all users" ON public.profiles;
+DROP POLICY IF EXISTS "Allow all update" ON public.profiles;
+DROP POLICY IF EXISTS "allow_update_all" ON public.profiles;
+DROP POLICY IF EXISTS "anon_update_profiles" ON public.profiles;
+CREATE POLICY "profiles_update_owner_or_admin" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id OR public.is_admin()) WITH CHECK (auth.uid() = id OR public.is_admin());
 
 DROP POLICY IF EXISTS "profiles_delete_admin_only" ON public.profiles;
 CREATE POLICY "profiles_delete_admin_only" ON public.profiles FOR DELETE USING (public.is_admin());
@@ -420,7 +584,7 @@ DROP POLICY IF EXISTS "materials_admin_delete" ON public.materials;
 CREATE POLICY "materials_admin_delete" ON public.materials FOR DELETE USING (public.is_admin());
 
 DROP POLICY IF EXISTS "lessons_select_public" ON public.lessons;
-CREATE POLICY "lessons_select_public" ON public.lessons FOR SELECT USING (true);
+CREATE POLICY "lessons_select_public" ON public.lessons FOR SELECT USING ((is_hidden = false) OR public.is_admin());
 
 DROP POLICY IF EXISTS "lessons_admin_insert" ON public.lessons;
 CREATE POLICY "lessons_admin_insert" ON public.lessons FOR INSERT WITH CHECK (public.is_admin());
@@ -432,7 +596,7 @@ DROP POLICY IF EXISTS "lessons_admin_delete" ON public.lessons;
 CREATE POLICY "lessons_admin_delete" ON public.lessons FOR DELETE USING (public.is_admin());
 
 DROP POLICY IF EXISTS "vocabulary_select_public" ON public.vocabulary;
-CREATE POLICY "vocabulary_select_public" ON public.vocabulary FOR SELECT USING (true);
+CREATE POLICY "vocabulary_select_public" ON public.vocabulary FOR SELECT USING ((is_hidden = false) OR public.is_admin());
 
 DROP POLICY IF EXISTS "vocabulary_admin_insert" ON public.vocabulary;
 CREATE POLICY "vocabulary_admin_insert" ON public.vocabulary FOR INSERT WITH CHECK (public.is_admin());
@@ -442,6 +606,31 @@ CREATE POLICY "vocabulary_admin_update" ON public.vocabulary FOR UPDATE USING (p
 
 DROP POLICY IF EXISTS "vocabulary_admin_delete" ON public.vocabulary;
 CREATE POLICY "vocabulary_admin_delete" ON public.vocabulary FOR DELETE USING (public.is_admin());
+
+-- Realtime Publication for Custom Content
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'vocabulary'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.vocabulary;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'lessons'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.lessons;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'materials'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.materials;
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 
 DROP POLICY IF EXISTS "writing_select_public" ON public.writing_characters;
 CREATE POLICY "writing_select_public" ON public.writing_characters FOR SELECT USING (true);
@@ -495,30 +684,992 @@ DROP POLICY IF EXISTS "daily_quotes_admin_all" ON public.daily_quotes;
 CREATE POLICY "daily_quotes_admin_all" ON public.daily_quotes 
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
--- 5.4 Community
+-- 5.4 Community (Hardened Phase 24 Task 24.08A)
 DROP POLICY IF EXISTS "community_posts_select" ON public.community_posts;
-CREATE POLICY "community_posts_select" ON public.community_posts FOR SELECT USING (true);
+CREATE POLICY "community_posts_select" ON public.community_posts
+  FOR SELECT
+  USING (
+    (status = 'published' AND deleted_at IS NULL)
+    OR (auth.uid() IS NOT NULL AND auth.uid() = author_id)
+    OR public.is_admin()
+  );
 
 DROP POLICY IF EXISTS "community_posts_insert" ON public.community_posts;
-CREATE POLICY "community_posts_insert" ON public.community_posts FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "community_posts_insert" ON public.community_posts
+  FOR INSERT
+  WITH CHECK (
+    auth.uid() IS NOT NULL
+    AND (author_id IS NULL OR author_id = auth.uid())
+  );
 
 DROP POLICY IF EXISTS "community_posts_update" ON public.community_posts;
-CREATE POLICY "community_posts_update" ON public.community_posts FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
+CREATE POLICY "community_posts_update" ON public.community_posts
+  FOR UPDATE
+  USING (
+    (auth.uid() IS NOT NULL AND auth.uid() = author_id)
+    OR public.is_admin()
+  )
+  WITH CHECK (
+    (
+      (auth.uid() IS NOT NULL AND auth.uid() = author_id)
+      AND (status = 'published' OR status IS NULL)
+      AND (is_pinned IS NOT TRUE OR public.is_admin())
+    )
+    OR public.is_admin()
+  );
 
 DROP POLICY IF EXISTS "community_posts_delete" ON public.community_posts;
-CREATE POLICY "community_posts_delete" ON public.community_posts FOR DELETE USING (auth.uid() = author_id OR public.is_admin());
+CREATE POLICY "community_posts_delete" ON public.community_posts
+  FOR DELETE
+  USING (
+    (auth.uid() IS NOT NULL AND auth.uid() = author_id)
+    OR public.is_admin()
+  );
+
+-- Community Comments RLS
+ALTER TABLE public.community_comments ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "community_comments_select" ON public.community_comments;
+CREATE POLICY "community_comments_select" ON public.community_comments
+  FOR SELECT
+  USING (
+    (status = 'published' AND deleted_at IS NULL)
+    OR (auth.uid() IS NOT NULL AND auth.uid() = author_id)
+    OR public.is_admin()
+  );
+
+DROP POLICY IF EXISTS "community_comments_insert" ON public.community_comments;
+CREATE POLICY "community_comments_insert" ON public.community_comments
+  FOR INSERT
+  WITH CHECK (
+    auth.uid() IS NOT NULL
+    AND auth.uid() = author_id
+  );
+
+DROP POLICY IF EXISTS "community_comments_update" ON public.community_comments;
+CREATE POLICY "community_comments_update" ON public.community_comments
+  FOR UPDATE
+  USING (
+    (auth.uid() IS NOT NULL AND auth.uid() = author_id)
+    OR public.is_admin()
+  )
+  WITH CHECK (
+    (auth.uid() IS NOT NULL AND auth.uid() = author_id)
+    OR public.is_admin()
+  );
+
+DROP POLICY IF EXISTS "community_comments_delete" ON public.community_comments;
+CREATE POLICY "community_comments_delete" ON public.community_comments
+  FOR DELETE
+  USING (
+    (auth.uid() IS NOT NULL AND auth.uid() = author_id)
+    OR public.is_admin()
+  );
+
+-- Community Reactions RLS
+ALTER TABLE public.community_reactions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "community_reactions_select" ON public.community_reactions;
+CREATE POLICY "community_reactions_select" ON public.community_reactions
+  FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "community_reactions_insert" ON public.community_reactions;
+CREATE POLICY "community_reactions_insert" ON public.community_reactions
+  FOR INSERT
+  WITH CHECK (
+    auth.uid() IS NOT NULL
+    AND auth.uid() = user_id
+  );
+
+DROP POLICY IF EXISTS "community_reactions_delete" ON public.community_reactions;
+CREATE POLICY "community_reactions_delete" ON public.community_reactions
+  FOR DELETE
+  USING (
+    auth.uid() IS NOT NULL
+    AND (auth.uid() = user_id OR public.is_admin())
+  );
+
+-- Community Reports RLS
+ALTER TABLE public.community_reports ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "community_reports_select" ON public.community_reports;
+CREATE POLICY "community_reports_select" ON public.community_reports
+  FOR SELECT
+  USING (
+    (auth.uid() IS NOT NULL AND auth.uid() = reporter_id)
+    OR public.is_admin()
+  );
+
+DROP POLICY IF EXISTS "community_reports_insert" ON public.community_reports;
+CREATE POLICY "community_reports_insert" ON public.community_reports
+  FOR INSERT
+  WITH CHECK (
+    auth.uid() IS NOT NULL
+    AND auth.uid() = reporter_id
+    AND status = 'pending'
+    AND resolved_by IS NULL
+    AND resolved_at IS NULL
+  );
+
+DROP POLICY IF EXISTS "community_reports_update" ON public.community_reports;
+CREATE POLICY "community_reports_update" ON public.community_reports
+  FOR UPDATE
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "community_reports_delete" ON public.community_reports;
+CREATE POLICY "community_reports_delete" ON public.community_reports
+  FOR DELETE
+  USING (public.is_admin());
+
+-- Community Moderation Logs RLS
+ALTER TABLE public.community_moderation_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "community_mod_logs_select" ON public.community_moderation_logs;
+CREATE POLICY "community_mod_logs_select" ON public.community_moderation_logs
+  FOR SELECT
+  USING (public.is_admin());
+
+DROP POLICY IF EXISTS "community_mod_logs_insert" ON public.community_moderation_logs;
+CREATE POLICY "community_mod_logs_insert" ON public.community_moderation_logs
+  FOR INSERT
+  WITH CHECK (
+    public.is_admin()
+    AND auth.uid() = admin_id
+  );
+
+DROP POLICY IF EXISTS "community_mod_logs_no_update" ON public.community_moderation_logs;
+CREATE POLICY "community_mod_logs_no_update" ON public.community_moderation_logs
+  FOR UPDATE
+  USING (false);
+
+DROP POLICY IF EXISTS "community_mod_logs_no_delete" ON public.community_moderation_logs;
+CREATE POLICY "community_mod_logs_no_delete" ON public.community_moderation_logs
+  FOR DELETE
+  USING (false);
 
 DROP POLICY IF EXISTS "study_partners_select" ON public.study_partners;
-CREATE POLICY "study_partners_select" ON public.study_partners FOR SELECT USING (true);
+CREATE POLICY "study_partners_select" ON public.study_partners 
+  FOR SELECT 
+  USING (
+    is_active = true 
+    OR (auth.uid() IS NOT NULL AND auth.uid() = user_id) 
+    OR public.is_admin()
+  );
 
 DROP POLICY IF EXISTS "study_partners_insert" ON public.study_partners;
-CREATE POLICY "study_partners_insert" ON public.study_partners FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "study_partners_insert" ON public.study_partners 
+  FOR INSERT 
+  WITH CHECK (
+    auth.uid() IS NOT NULL 
+    AND (user_id IS NULL OR user_id = auth.uid())
+  );
 
 DROP POLICY IF EXISTS "study_partners_update" ON public.study_partners;
-CREATE POLICY "study_partners_update" ON public.study_partners FOR UPDATE USING (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "study_partners_update" ON public.study_partners 
+  FOR UPDATE 
+  USING (
+    (auth.uid() IS NOT NULL AND auth.uid() = user_id) 
+    OR public.is_admin()
+  )
+  WITH CHECK (
+    (auth.uid() IS NOT NULL AND auth.uid() = user_id) 
+    OR public.is_admin()
+  );
 
 DROP POLICY IF EXISTS "study_partners_delete" ON public.study_partners;
-CREATE POLICY "study_partners_delete" ON public.study_partners FOR DELETE USING (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "study_partners_delete" ON public.study_partners 
+  FOR DELETE 
+  USING (
+    (auth.uid() IS NOT NULL AND auth.uid() = user_id) 
+    OR public.is_admin()
+  );
+
+-- =========================================================================
+-- 5.4.1 COMMUNITY INTEGRITY TRIGGERS (Phase 24 Task 24.08A.2 Finalized)
+-- =========================================================================
+
+CREATE OR REPLACE FUNCTION public.audit_community_reports_snapshot_status()
+RETURNS TABLE (
+  total_reports BIGINT,
+  reports_with_post_fk BIGINT,
+  reports_with_comment_fk BIGINT,
+  reports_with_snapshot BIGINT,
+  reports_missing_snapshot BIGINT,
+  reports_target_type_mismatch BIGINT,
+  reports_both_fks_present BIGINT,
+  reports_orphan_no_snapshot BIGINT
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT
+    COUNT(*) AS total_reports,
+    COUNT(*) FILTER (WHERE post_id IS NOT NULL) AS reports_with_post_fk,
+    COUNT(*) FILTER (WHERE comment_id IS NOT NULL) AS reports_with_comment_fk,
+    COUNT(*) FILTER (WHERE target_id IS NOT NULL AND length(trim(target_id)) > 0) AS reports_with_snapshot,
+    COUNT(*) FILTER (WHERE target_id IS NULL OR length(trim(target_id)) = 0) AS reports_missing_snapshot,
+    COUNT(*) FILTER (WHERE (post_id IS NOT NULL AND target_type <> 'post') OR (comment_id IS NOT NULL AND target_type <> 'comment')) AS reports_target_type_mismatch,
+    COUNT(*) FILTER (WHERE post_id IS NOT NULL AND comment_id IS NOT NULL) AS reports_both_fks_present,
+    COUNT(*) FILTER (WHERE post_id IS NULL AND comment_id IS NULL AND (target_id IS NULL OR length(trim(target_id)) = 0)) AS reports_orphan_no_snapshot
+  FROM public.community_reports;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.audit_community_reports_snapshot_status() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.audit_community_reports_snapshot_status() TO authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.sync_community_report_target_snapshot()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_is_parent_deleted BOOLEAN;
+BEGIN
+  v_is_admin := (
+    auth.role() = 'service_role'
+    OR public.is_admin()
+  );
+
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.post_id IS NOT NULL AND NEW.comment_id IS NULL THEN
+      NEW.target_type := 'post';
+      NEW.target_id := NEW.post_id::text;
+    ELSIF NEW.comment_id IS NOT NULL AND NEW.post_id IS NULL THEN
+      NEW.target_type := 'comment';
+      NEW.target_id := NEW.comment_id::text;
+    ELSE
+      RAISE EXCEPTION 'Báo cáo không hợp lệ: Bắt buộc phải chỉ định chính xác một bài viết hoặc một bình luận.';
+    END IF;
+
+    NEW.target_id := trim(NEW.target_id);
+    IF length(NEW.target_id) = 0 THEN
+      RAISE EXCEPTION 'Báo cáo không hợp lệ: Mã định danh mục tiêu không thể để trống.';
+    END IF;
+
+    IF NOT v_is_admin THEN
+      IF NEW.reporter_id IS NOT NULL AND NEW.reporter_id <> auth.uid() THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể tạo báo cáo dưới danh nghĩa người dùng khác.';
+      END IF;
+
+      NEW.reporter_id := auth.uid();
+      NEW.status := 'pending';
+      NEW.resolved_by := NULL;
+      NEW.resolved_at := NULL;
+      NEW.created_at := NOW();
+    END IF;
+
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'UPDATE' THEN
+    v_is_parent_deleted := (
+      (OLD.post_id IS NOT NULL AND NEW.post_id IS NULL AND NEW.comment_id IS NULL)
+      OR
+      (OLD.comment_id IS NOT NULL AND NEW.comment_id IS NULL AND NEW.post_id IS NULL)
+    );
+
+    IF v_is_parent_deleted THEN
+      NEW.target_type := OLD.target_type;
+      NEW.target_id := OLD.target_id;
+      RETURN NEW;
+    END IF;
+
+    IF NOT v_is_admin THEN
+      IF (NEW.post_id IS DISTINCT FROM OLD.post_id) OR (NEW.comment_id IS DISTINCT FROM OLD.comment_id) THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể chuyển đối tượng mục tiêu của báo cáo sau khi đã tạo.';
+      END IF;
+
+      IF (NEW.target_type IS DISTINCT FROM OLD.target_type) OR (NEW.target_id IS DISTINCT FROM OLD.target_id) THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể sửa đổi dữ liệu snapshot của báo cáo.';
+      END IF;
+
+      IF NEW.reporter_id IS DISTINCT FROM OLD.reporter_id THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể thay đổi người tạo báo cáo.';
+      END IF;
+
+      IF NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể sửa đổi thời gian tạo báo cáo.';
+      END IF;
+
+      IF (NEW.status IS DISTINCT FROM OLD.status) OR 
+         (NEW.resolved_by IS DISTINCT FROM OLD.resolved_by) OR 
+         (NEW.resolved_at IS DISTINCT FROM OLD.resolved_at) THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Chỉ quản trị viên mới có quyền xử lý hoặc đổi trạng thái báo cáo.';
+      END IF;
+    END IF;
+
+    IF v_is_admin THEN
+      IF NEW.post_id IS NOT NULL AND NEW.comment_id IS NULL THEN
+        NEW.target_type := 'post';
+        NEW.target_id := NEW.post_id::text;
+      ELSIF NEW.comment_id IS NOT NULL AND NEW.post_id IS NULL THEN
+        NEW.target_type := 'comment';
+        NEW.target_id := NEW.comment_id::text;
+      ELSIF NEW.post_id IS NULL AND NEW.comment_id IS NULL THEN
+        NEW.target_type := COALESCE(OLD.target_type, NEW.target_type);
+        NEW.target_id := COALESCE(OLD.target_id, NEW.target_id);
+      END IF;
+    END IF;
+
+    RETURN NEW;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_sync_community_report_target ON public.community_reports;
+CREATE TRIGGER trg_sync_community_report_target
+  BEFORE INSERT OR UPDATE ON public.community_reports
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_community_report_target_snapshot();
+
+CREATE OR REPLACE FUNCTION public.enforce_community_post_integrity()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_author_profile RECORD;
+BEGIN
+  v_is_admin := (
+    auth.role() = 'service_role'
+    OR public.is_admin()
+  );
+
+  IF TG_OP = 'INSERT' THEN
+    IF NOT v_is_admin THEN
+      IF NEW.author_id IS NOT NULL AND NEW.author_id <> auth.uid() THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể tạo bài viết dưới danh nghĩa người dùng khác.';
+      END IF;
+
+      NEW.author_id := auth.uid();
+
+      IF auth.uid() IS NOT NULL THEN
+        SELECT full_name, avatar_url, role INTO v_author_profile
+        FROM public.profiles
+        WHERE id = auth.uid();
+
+        IF FOUND THEN
+          NEW.author_name := COALESCE(v_author_profile.full_name, NEW.author_name, 'Học viên HanziGo');
+          NEW.author_avatar := COALESCE(v_author_profile.avatar_url, NEW.author_avatar);
+        END IF;
+      END IF;
+
+      NEW.status := 'published';
+      NEW.is_pinned := FALSE;
+      NEW.is_solved := FALSE;
+      NEW.likes_count := 0;
+      NEW.comments_count := 0;
+      NEW.likes := 0;
+      NEW.liked_by := '[]'::jsonb;
+      NEW.comments := '[]'::jsonb;
+      NEW.deleted_at := NULL;
+      NEW.created_at := NOW();
+    END IF;
+
+    NEW.updated_at := NOW();
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'UPDATE' THEN
+    IF NOT v_is_admin THEN
+      IF NEW.author_id IS DISTINCT FROM OLD.author_id THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể chuyển quyền sở hữu tác giả bài viết.';
+      END IF;
+
+      IF (NEW.author_name IS DISTINCT FROM OLD.author_name) OR
+         (NEW.author_avatar IS DISTINCT FROM OLD.author_avatar) OR
+         (NEW.author_level IS DISTINCT FROM OLD.author_level) THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể sửa đổi trực tiếp thông tin tác giả trên bài viết.';
+      END IF;
+
+      IF NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể sửa đổi thời gian tạo bài viết.';
+      END IF;
+
+      IF NEW.status IS DISTINCT FROM OLD.status THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Chỉ quản trị viên mới có quyền thay đổi trạng thái kiểm duyệt bài viết.';
+      END IF;
+
+      IF NEW.is_pinned IS DISTINCT FROM OLD.is_pinned THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Chỉ quản trị viên mới có quyền ghim bài viết.';
+      END IF;
+
+      IF NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể tự ý sửa đổi mốc thời gian xóa bài viết.';
+      END IF;
+
+      IF (NEW.likes_count IS DISTINCT FROM OLD.likes_count) OR 
+         (NEW.comments_count IS DISTINCT FROM OLD.comments_count) OR
+         (NEW.likes IS DISTINCT FROM OLD.likes) OR
+         (NEW.liked_by IS DISTINCT FROM OLD.liked_by) OR
+         (NEW.comments IS DISTINCT FROM OLD.comments) THEN
+        IF current_setting('hanzigo.internal_counter_sync', true) = 'true' THEN
+          PERFORM set_config('hanzigo.internal_counter_sync', '', true);
+        ELSE
+          RAISE EXCEPTION 'Quyền hạn bị từ chối: Số lượt thích và bình luận chỉ được cập nhật qua tương tác hợp lệ.';
+        END IF;
+      END IF;
+    END IF;
+
+    NEW.updated_at := NOW();
+    RETURN NEW;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_enforce_community_post_integrity ON public.community_posts;
+CREATE TRIGGER trg_enforce_community_post_integrity
+  BEFORE INSERT OR UPDATE ON public.community_posts
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_community_post_integrity();
+
+CREATE OR REPLACE FUNCTION public.enforce_community_comment_integrity()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_service_role BOOLEAN;
+  v_is_admin BOOLEAN;
+  v_is_migration_session BOOLEAN;
+BEGIN
+  -- 1. Strict JWT service role detection
+  v_is_service_role := (
+    auth.role() = 'service_role' 
+    OR (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );
+
+  -- 2. Database admin role check (via profiles table, blocked from non-active / blocked admins)
+  v_is_admin := public.is_admin();
+
+  -- 3. Transaction-local migration session (only available when explicitly configured in SQL migration block)
+  v_is_migration_session := (
+    current_setting('hanzigo.internal_migration_session', true) = 'true'
+    AND (
+      SESSION_USER IN ('postgres', 'supabase_admin')
+      OR v_is_service_role
+    )
+  );
+
+  IF TG_OP = 'INSERT' THEN
+    IF NOT (v_is_service_role OR v_is_admin OR v_is_migration_session) THEN
+      IF NEW.author_id IS NOT NULL AND NEW.author_id <> auth.uid() THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể đăng bình luận dưới danh nghĩa người khác.';
+      END IF;
+      NEW.author_id := auth.uid();
+      NEW.status := 'published';
+      NEW.deleted_at := NULL;
+      NEW.created_at := NOW();
+      -- Clients cannot forge legacy source identity
+      NEW.legacy_source_id := NULL;
+      NEW.legacy_author_name := NULL;
+    END IF;
+
+    NEW.updated_at := NOW();
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'UPDATE' THEN
+    IF NOT (v_is_service_role OR v_is_admin OR v_is_migration_session) THEN
+      IF NEW.author_id IS DISTINCT FROM OLD.author_id THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể thay đổi tác giả bình luận.';
+      END IF;
+
+      IF NEW.post_id IS DISTINCT FROM OLD.post_id THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể chuyển bình luận sang bài viết khác.';
+      END IF;
+
+      IF NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể sửa đổi thời gian đăng bình luận.';
+      END IF;
+
+      IF NEW.status IS DISTINCT FROM OLD.status THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Chỉ quản trị viên mới có quyền đổi trạng thái bình luận.';
+      END IF;
+
+      IF NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN
+        RAISE EXCEPTION 'Quyền hạn bị từ chối: Không thể tự ý sửa đổi mốc thời gian xóa bình luận.';
+      END IF;
+
+      -- Legacy fields immutable by clients
+      NEW.legacy_source_id := OLD.legacy_source_id;
+      NEW.legacy_author_name := OLD.legacy_author_name;
+    END IF;
+
+    NEW.updated_at := NOW();
+    RETURN NEW;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_enforce_community_comment_integrity ON public.community_comments;
+CREATE TRIGGER trg_enforce_community_comment_integrity
+  BEFORE INSERT OR UPDATE ON public.community_comments
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_community_comment_integrity();
+
+-- =========================================================================
+-- 5.4.2 ATOMIC REACTION RPC & COMMENT COUNTER (Phase 24 Task 24.08B)
+-- =========================================================================
+
+CREATE OR REPLACE FUNCTION public.toggle_community_post_reaction(
+  p_post_id BIGINT,
+  p_reaction_type TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_post RECORD;
+  v_existing_reaction RECORD;
+  v_action TEXT;
+  v_user_reaction TEXT;
+  v_new_likes_count INT;
+BEGIN
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Chưa đăng nhập: Thao tác tương tác yêu cầu đăng nhập tài khoản.' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_post_id IS NULL THEN
+    RAISE EXCEPTION 'Tham số không hợp lệ: Thiếu post_id.' USING ERRCODE = '22023';
+  END IF;
+
+  IF p_reaction_type IS NULL OR p_reaction_type NOT IN ('like', 'heart', 'clap', 'bulb') THEN
+    RAISE EXCEPTION 'Loại tương tác không hợp lệ: Chỉ chấp nhận like, heart, clap, bulb.' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT id, status, deleted_at, likes_count
+  INTO v_post
+  FROM public.community_posts
+  WHERE id = p_post_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Bài viết không tồn tại.' USING ERRCODE = 'P0002';
+  END IF;
+
+  IF v_post.deleted_at IS NOT NULL OR v_post.status <> 'published' THEN
+    RAISE EXCEPTION 'Bài viết đã bị xóa hoặc không cho phép tương tác.' USING ERRCODE = '22000';
+  END IF;
+
+  SELECT id, reaction_type
+  INTO v_existing_reaction
+  FROM public.community_reactions
+  WHERE post_id = p_post_id AND user_id = v_user_id;
+
+  IF NOT FOUND THEN
+    INSERT INTO public.community_reactions (post_id, user_id, reaction_type)
+    VALUES (p_post_id, v_user_id, p_reaction_type);
+
+    PERFORM set_config('hanzigo.internal_counter_sync', 'true', true);
+
+    UPDATE public.community_posts
+    SET likes_count = COALESCE(likes_count, 0) + 1,
+        updated_at = NOW()
+    WHERE id = p_post_id
+    RETURNING likes_count INTO v_new_likes_count;
+
+    v_action := 'added';
+    v_user_reaction := p_reaction_type;
+
+  ELSIF v_existing_reaction.reaction_type = p_reaction_type THEN
+    DELETE FROM public.community_reactions
+    WHERE id = v_existing_reaction.id;
+
+    PERFORM set_config('hanzigo.internal_counter_sync', 'true', true);
+
+    UPDATE public.community_posts
+    SET likes_count = GREATEST(0, COALESCE(likes_count, 0) - 1),
+        updated_at = NOW()
+    WHERE id = p_post_id
+    RETURNING likes_count INTO v_new_likes_count;
+
+    v_action := 'removed';
+    v_user_reaction := NULL;
+
+  ELSE
+    UPDATE public.community_reactions
+    SET reaction_type = p_reaction_type,
+        created_at = NOW()
+    WHERE id = v_existing_reaction.id;
+
+    v_new_likes_count := v_post.likes_count;
+    v_action := 'updated';
+    v_user_reaction := p_reaction_type;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'action', v_action,
+    'post_id', p_post_id::text,
+    'user_reaction', v_user_reaction,
+    'likes_count', v_new_likes_count
+  );
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.toggle_community_post_reaction(BIGINT, TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.toggle_community_post_reaction(BIGINT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.toggle_community_post_reaction(BIGINT, TEXT) TO authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.sync_community_post_comments_count()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_old_valid BOOLEAN;
+  v_new_valid BOOLEAN;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    v_new_valid := (NEW.status = 'published' AND NEW.deleted_at IS NULL);
+    IF v_new_valid THEN
+      PERFORM set_config('hanzigo.internal_counter_sync', 'true', true);
+      UPDATE public.community_posts
+      SET comments_count = COALESCE(comments_count, 0) + 1
+      WHERE id = NEW.post_id;
+      PERFORM set_config('hanzigo.internal_counter_sync', '', true);
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN
+    v_old_valid := (OLD.status = 'published' AND OLD.deleted_at IS NULL);
+    IF v_old_valid THEN
+      PERFORM set_config('hanzigo.internal_counter_sync', 'true', true);
+      UPDATE public.community_posts
+      SET comments_count = GREATEST(0, COALESCE(comments_count, 0) - 1)
+      WHERE id = OLD.post_id;
+      PERFORM set_config('hanzigo.internal_counter_sync', '', true);
+    END IF;
+    RETURN OLD;
+  END IF;
+
+  IF TG_OP = 'UPDATE' THEN
+    v_old_valid := (OLD.status = 'published' AND OLD.deleted_at IS NULL);
+    v_new_valid := (NEW.status = 'published' AND NEW.deleted_at IS NULL);
+
+    IF NEW.post_id IS DISTINCT FROM OLD.post_id THEN
+      IF v_old_valid THEN
+        PERFORM set_config('hanzigo.internal_counter_sync', 'true', true);
+        UPDATE public.community_posts
+        SET comments_count = GREATEST(0, COALESCE(comments_count, 0) - 1)
+        WHERE id = OLD.post_id;
+        PERFORM set_config('hanzigo.internal_counter_sync', '', true);
+      END IF;
+      IF v_new_valid THEN
+        PERFORM set_config('hanzigo.internal_counter_sync', 'true', true);
+        UPDATE public.community_posts
+        SET comments_count = COALESCE(comments_count, 0) + 1
+        WHERE id = NEW.post_id;
+        PERFORM set_config('hanzigo.internal_counter_sync', '', true);
+      END IF;
+    ELSE
+      IF (NOT v_old_valid) AND v_new_valid THEN
+        PERFORM set_config('hanzigo.internal_counter_sync', 'true', true);
+        UPDATE public.community_posts
+        SET comments_count = COALESCE(comments_count, 0) + 1
+        WHERE id = NEW.post_id;
+        PERFORM set_config('hanzigo.internal_counter_sync', '', true);
+      ELSIF v_old_valid AND (NOT v_new_valid) THEN
+        PERFORM set_config('hanzigo.internal_counter_sync', 'true', true);
+        UPDATE public.community_posts
+        SET comments_count = GREATEST(0, COALESCE(comments_count, 0) - 1)
+        WHERE id = NEW.post_id;
+        PERFORM set_config('hanzigo.internal_counter_sync', '', true);
+      END IF;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_sync_community_post_comments_count ON public.community_comments;
+CREATE TRIGGER trg_sync_community_post_comments_count
+  AFTER INSERT OR UPDATE OR DELETE ON public.community_comments
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_community_post_comments_count();
+
+-- -------------------------------------------------------------------------
+-- 9. HARDENED TELEMETRY AUDIT FUNCTION (SECURITY INVOKER & SERVICE_ROLE ONLY)
+-- -------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.audit_community_post_counters()
+RETURNS TABLE (
+  post_id BIGINT,
+  author_name TEXT,
+  stored_likes_count INT,
+  actual_reactions_count BIGINT,
+  legacy_likes_baseline BIGINT,
+  new_reaction_count BIGINT,
+  likes_diff BIGINT,
+  stored_comments_count INT,
+  actual_published_comments_count BIGINT,
+  legacy_comments_baseline BIGINT,
+  comments_diff BIGINT
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY INVOKER
+SET search_path = public, pg_temp
+AS $$
+#variable_conflict use_column
+DECLARE
+  v_jwt_role TEXT;
+BEGIN
+  -- Extract JWT role if invoked via PostgREST/HTTP
+  v_jwt_role := COALESCE(
+    NULLIF(current_setting('request.jwt.claim.role', true), ''),
+    (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role')
+  );
+
+  -- 1. If invoked via HTTP / PostgREST (where JWT context is populated),
+  -- strictly allow ONLY 'service_role'. Deny authenticated, anon, and active admins with authenticated JWT.
+  IF v_jwt_role IS NOT NULL THEN
+    IF v_jwt_role <> 'service_role' THEN
+      RAISE EXCEPTION 'Quyền hạn bị từ chối: Chỉ Service Role mới có quyền truy cập công cụ đối soát.'
+        USING ERRCODE = '42501';
+    END IF;
+  ELSE
+    -- 2. If invoked via direct SQL (e.g. psql / SQL Editor where JWT settings are NULL),
+    -- strictly verify that the database SESSION_USER is postgres or supabase_admin.
+    -- (We check SESSION_USER, never current_user, preventing any privilege confusion).
+    IF SESSION_USER NOT IN ('postgres', 'supabase_admin') THEN
+      RAISE EXCEPTION 'Quyền hạn bị từ chối: Chỉ Superuser hoặc Service Role mới có quyền truy cập công cụ đối soát.'
+        USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    p.id AS post_id,
+    p.author_name,
+    p.likes_count AS stored_likes_count,
+    COALESCE(r.reaction_cnt, 0) AS actual_reactions_count,
+    GREATEST(0, COALESCE(p.likes, 0) - COALESCE(r.reaction_cnt, 0))::bigint AS legacy_likes_baseline,
+    COALESCE(r.reaction_cnt, 0) AS new_reaction_count,
+    (p.likes_count - (
+      GREATEST(0, COALESCE(p.likes, 0) - COALESCE(r.reaction_cnt, 0)) + COALESCE(r.reaction_cnt, 0)
+    ))::bigint AS likes_diff,
+    p.comments_count AS stored_comments_count,
+    COALESCE(c.comment_cnt, 0) AS actual_published_comments_count,
+    (CASE WHEN jsonb_typeof(p.comments) = 'array' THEN jsonb_array_length(p.comments) ELSE 0 END)::bigint AS legacy_comments_baseline,
+    (p.comments_count - COALESCE(c.comment_cnt, 0))::bigint AS comments_diff
+  FROM public.community_posts p
+  LEFT JOIN (
+    SELECT cr.post_id AS rx_post_id, COUNT(*) AS reaction_cnt
+    FROM public.community_reactions cr
+    GROUP BY cr.post_id
+  ) r ON r.rx_post_id = p.id
+  LEFT JOIN (
+    SELECT cc.post_id AS cm_post_id, COUNT(*) AS comment_cnt
+    FROM public.community_comments cc
+    WHERE cc.status = 'published' AND cc.deleted_at IS NULL
+    GROUP BY cc.post_id
+  ) c ON c.cm_post_id = p.id
+  ORDER BY p.id ASC;
+END;
+$$;
+    FROM public.community_reactions
+    GROUP BY post_id
+  ) r ON r.post_id = p.id
+  LEFT JOIN (
+    SELECT post_id, COUNT(*) AS comment_cnt
+    FROM public.community_comments
+    WHERE status = 'published' AND deleted_at IS NULL
+    GROUP BY post_id
+  ) c ON c.post_id = p.id
+  ORDER BY p.id ASC;
+END;
+$$;
+
+-- Revoke all execute rights from PUBLIC and authenticated students
+REVOKE EXECUTE ON FUNCTION public.audit_community_post_counters() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.audit_community_post_counters() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.audit_community_post_counters() FROM anon;
+
+-- Grant EXECUTE strictly to service_role
+GRANT EXECUTE ON FUNCTION public.audit_community_post_counters() TO service_role;
+
+-- -------------------------------------------------------------------------
+-- ATOMIC MODERATION RPC: moderate_community_content (Phase 24 Task 24.08D)
+-- -------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.moderate_community_content(
+  p_action TEXT,
+  p_target_type TEXT,
+  p_target_id TEXT,
+  p_reason TEXT DEFAULT NULL,
+  p_report_id UUID DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_admin_id UUID;
+  v_post_id BIGINT;
+  v_comment_id UUID;
+BEGIN
+  -- 1. Strict Administrator Authorization Verification
+  v_is_admin := (
+    auth.role() = 'service_role'
+    OR public.is_admin()
+  );
+
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Quyền hạn bị từ chối: Chỉ Quản trị viên mới có quyền thực hiện thao tác kiểm duyệt.'
+      USING ERRCODE = '42501';
+  END IF;
+
+  v_admin_id := auth.uid();
+
+  -- 2. Validate action and target_type
+  IF p_action NOT IN ('hide', 'restore', 'delete', 'dismiss_report', 'review_report', 'resolve_report', 'pin', 'unpin') THEN
+    RAISE EXCEPTION 'Hành động kiểm duyệt không hợp lệ: %', p_action;
+  END IF;
+
+  IF p_target_type NOT IN ('post', 'comment', 'report') THEN
+    RAISE EXCEPTION 'Loại mục tiêu không hợp lệ: %', p_target_type;
+  END IF;
+
+  IF p_target_id IS NULL OR length(trim(p_target_id)) = 0 THEN
+    RAISE EXCEPTION 'Mã định danh mục tiêu không được để trống.';
+  END IF;
+
+  -- 3. Execute Content Mutation based on Action
+  IF p_action = 'hide' THEN
+    IF p_target_type = 'post' THEN
+      v_post_id := p_target_id::bigint;
+      UPDATE public.community_posts
+      SET status = 'hidden', updated_at = NOW()
+      WHERE id = v_post_id;
+    ELSIF p_target_type = 'comment' THEN
+      v_comment_id := p_target_id::uuid;
+      UPDATE public.community_comments
+      SET status = 'hidden', updated_at = NOW()
+      WHERE id = v_comment_id;
+    END IF;
+
+    -- If triggered from a report resolution, mark report resolved
+    IF p_report_id IS NOT NULL THEN
+      UPDATE public.community_reports
+      SET status = 'resolved', resolved_by = v_admin_id, resolved_at = NOW()
+      WHERE id = p_report_id;
+    END IF;
+
+  ELSIF p_action = 'restore' THEN
+    IF p_target_type = 'post' THEN
+      v_post_id := p_target_id::bigint;
+      UPDATE public.community_posts
+      SET status = 'published', updated_at = NOW()
+      WHERE id = v_post_id;
+    ELSIF p_target_type = 'comment' THEN
+      v_comment_id := p_target_id::uuid;
+      UPDATE public.community_comments
+      SET status = 'published', updated_at = NOW()
+      WHERE id = v_comment_id;
+    END IF;
+
+  ELSIF p_action = 'delete' THEN
+    IF p_target_type = 'post' THEN
+      v_post_id := p_target_id::bigint;
+      UPDATE public.community_posts
+      SET deleted_at = NOW(), status = 'hidden', updated_at = NOW()
+      WHERE id = v_post_id;
+    ELSIF p_target_type = 'comment' THEN
+      v_comment_id := p_target_id::uuid;
+      UPDATE public.community_comments
+      SET deleted_at = NOW(), status = 'hidden', updated_at = NOW()
+      WHERE id = v_comment_id;
+    END IF;
+
+    IF p_report_id IS NOT NULL THEN
+      UPDATE public.community_reports
+      SET status = 'resolved', resolved_by = v_admin_id, resolved_at = NOW()
+      WHERE id = p_report_id;
+    END IF;
+
+  ELSIF p_action = 'pin' THEN
+    IF p_target_type = 'post' THEN
+      UPDATE public.community_posts SET is_pinned = true, updated_at = NOW() WHERE id = p_target_id::bigint;
+    END IF;
+
+  ELSIF p_action = 'unpin' THEN
+    IF p_target_type = 'post' THEN
+      UPDATE public.community_posts SET is_pinned = false, updated_at = NOW() WHERE id = p_target_id::bigint;
+    END IF;
+
+  ELSIF p_action = 'review_report' THEN
+    UPDATE public.community_reports
+    SET status = 'reviewing', resolved_by = v_admin_id
+    WHERE id = p_target_id::uuid;
+
+  ELSIF p_action = 'resolve_report' THEN
+    UPDATE public.community_reports
+    SET status = 'resolved', resolved_by = v_admin_id, resolved_at = NOW()
+    WHERE id = p_target_id::uuid;
+
+  ELSIF p_action = 'dismiss_report' THEN
+    UPDATE public.community_reports
+    SET status = 'dismissed', resolved_by = v_admin_id, resolved_at = NOW()
+    WHERE id = p_target_id::uuid;
+  END IF;
+
+  -- 4. Record Immutable Audit Log
+  INSERT INTO public.community_moderation_logs (
+    admin_id,
+    target_type,
+    target_id,
+    action,
+    reason,
+    created_at
+  )
+  VALUES (
+    v_admin_id,
+    p_target_type,
+    p_target_id,
+    p_action,
+    p_reason,
+    NOW()
+  );
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'action', p_action,
+    'target_type', p_target_type,
+    'target_id', p_target_id,
+    'admin_id', v_admin_id,
+    'timestamp', NOW()
+  );
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.moderate_community_content(TEXT, TEXT, TEXT, TEXT, UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.moderate_community_content(TEXT, TEXT, TEXT, TEXT, UUID) FROM anon;
+GRANT EXECUTE ON FUNCTION public.moderate_community_content(TEXT, TEXT, TEXT, TEXT, UUID) TO authenticated, service_role;
 
 -- =========================================================================
 -- 6. HÀM RPC CHO QUẢN TRỊ VIÊN
@@ -526,10 +1677,18 @@ CREATE POLICY "study_partners_delete" ON public.study_partners FOR DELETE USING 
 
 -- Xóa user an toàn qua Server-side RPC
 CREATE OR REPLACE FUNCTION public.admin_delete_user(target_user_id UUID)
-RETURNS JSONB AS $$
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
-  IF NOT public.is_admin() THEN
+  IF auth.role() IS DISTINCT FROM 'service_role' AND NOT public.is_admin() THEN
     RAISE EXCEPTION 'Chỉ có Admin mới có quyền thực thi thao tác xóa người dùng.';
+  END IF;
+
+  IF target_user_id IS NULL THEN
+    RAISE EXCEPTION 'target_user_id không được để trống.';
   END IF;
 
   IF target_user_id = auth.uid() THEN
@@ -545,14 +1704,28 @@ BEGIN
 
   RETURN jsonb_build_object('success', true, 'message', 'Đã xóa người dùng thành công.');
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Sửa quyền / trạng thái user an toàn qua Server-side RPC
 CREATE OR REPLACE FUNCTION public.admin_update_user_status(target_user_id UUID, new_role TEXT, new_status TEXT)
-RETURNS JSONB AS $$
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
-  IF NOT public.is_admin() THEN
+  IF auth.role() IS DISTINCT FROM 'service_role' AND NOT public.is_admin() THEN
     RAISE EXCEPTION 'Chỉ có Admin mới có quyền thay đổi role hoặc status của người dùng.';
+  END IF;
+
+  -- SEC-SELF-GUARD: Ngăn chặn quản trị viên tự khóa hoặc tự hạ quyền của chính mình qua RPC
+  IF auth.role() IS DISTINCT FROM 'service_role' AND target_user_id = auth.uid() THEN
+    IF new_status = 'blocked' THEN
+      RAISE EXCEPTION 'Quản trị viên không thể tự khóa tài khoản của chính mình.';
+    END IF;
+    IF new_role IS NOT NULL AND new_role != 'admin' THEN
+      RAISE EXCEPTION 'Quản trị viên không thể tự hạ quyền của chính mình.';
+    END IF;
   END IF;
 
   UPDATE public.profiles
@@ -564,7 +1737,13 @@ BEGIN
 
   RETURN jsonb_build_object('success', true, 'message', 'Cập nhật thành công.');
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.admin_update_user_status(UUID, TEXT, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_update_user_status(UUID, TEXT, TEXT) TO authenticated, service_role;
+
+REVOKE EXECUTE ON FUNCTION public.admin_delete_user(UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_delete_user(UUID) TO authenticated, service_role;
 
 -- =========================================================================
 -- 7. LEARNING PATH & GAMIFICATION SYSTEM (HSK 1 đến HSK 7-9, 24 Chapters, Boss Battles)
@@ -740,14 +1919,22 @@ CREATE INDEX IF NOT EXISTS idx_user_missions_uid_date ON public.user_daily_missi
 
 -- 8.1. Kiểm tra quyền Teacher an toàn trên database (Migration 12 Hardened)
 CREATE OR REPLACE FUNCTION public.is_teacher()
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN FALSE;
+  END IF;
   RETURN EXISTS (
     SELECT 1 FROM public.profiles
     WHERE id = auth.uid() AND role IN ('teacher', 'admin') AND status != 'blocked'
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+$$;
 
 GRANT EXECUTE ON FUNCTION public.is_teacher() TO authenticated, service_role, anon;
 
@@ -1006,20 +2193,41 @@ CREATE OR REPLACE FUNCTION public.is_classroom_teacher(
   p_user_id UUID DEFAULT auth.uid()
 )
 RETURNS BOOLEAN
-LANGUAGE sql
+LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
-  SELECT EXISTS (
+DECLARE
+  v_effective_user_id UUID;
+BEGIN
+  -- 1. Nếu caller là anonymous (auth.uid() IS NULL) và không phải service_role: tuyệt đối không cấp quyền
+  IF auth.uid() IS NULL AND auth.role() IS DISTINCT FROM 'service_role' THEN
+    RETURN FALSE;
+  END IF;
+
+  -- 2. Nếu caller không phải Admin và không phải service_role:
+  -- Ép buộc chỉ kiểm tra theo auth.uid() của chính caller, triệt tiêu hoàn toàn nguy cơ giả mạo p_user_id
+  IF NOT public.is_admin() AND auth.role() IS DISTINCT FROM 'service_role' THEN
+    v_effective_user_id := auth.uid();
+  ELSE
+    v_effective_user_id := COALESCE(p_user_id, auth.uid());
+  END IF;
+
+  IF v_effective_user_id IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  RETURN EXISTS (
     SELECT 1 FROM public.classrooms
-    WHERE id = p_classroom_id
-      AND teacher_id = p_user_id
+    WHERE id = p_classroom_id AND teacher_id = v_effective_user_id
   );
+END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.is_classroom_member(UUID, UUID) TO authenticated, service_role, anon;
-GRANT EXECUTE ON FUNCTION public.is_classroom_teacher(UUID, UUID) TO authenticated, service_role, anon;
+REVOKE EXECUTE ON FUNCTION public.is_classroom_teacher(UUID, UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_classroom_teacher(UUID, UUID) TO authenticated, service_role;
 
 DROP POLICY IF EXISTS "classrooms_select_policy" ON public.classrooms;
 CREATE POLICY "classrooms_select_policy" ON public.classrooms
@@ -6353,14 +7561,22 @@ CREATE POLICY "Admin and service role can modify dictionary"
 -- PHẦN 1: ĐẢM BẢO HÀM KIỂM TRA ADMIN AN TOÀN (ZERO-TRUST)
 -- -------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN 
+LANGUAGE plpgsql 
+STABLE 
+SECURITY DEFINER 
+SET search_path = public, pg_temp 
+AS $$
 BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN FALSE;
+  END IF;
   RETURN EXISTS (
     SELECT 1 FROM public.profiles
     WHERE id = auth.uid() AND role = 'admin' AND status = 'active'
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+$$;
 
 -- -------------------------------------------------------------------------
 -- PHẦN 2: MỞ RỘNG BẢNG DICTIONARY_ENTRIES CHO 120.000 TỪ (PHASE 16)

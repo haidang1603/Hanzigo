@@ -100,12 +100,13 @@ export default async function handler(req, res) {
           });
         }
 
-        // Enforce maximum class capacity (50 students limit)
+        // Enforce maximum class capacity (50 students limit, teacher excluded)
         const { count: activeCount } = await supabase
           .from('session_participants')
           .select('*', { count: 'exact', head: true })
           .eq('session_id', roomName)
           .is('left_at', null)
+          .neq('role', 'teacher')
           .neq('user_id', userId);
 
         const maxCap = session.max_capacity || 50;
@@ -179,6 +180,7 @@ export default async function handler(req, res) {
           .select('*', { count: 'exact', head: true })
           .eq('session_id', roomName)
           .is('left_at', null)
+          .neq('role', 'teacher')
           .neq('user_id', userId);
 
         const maxCap = session.max_capacity || 50;
@@ -209,11 +211,11 @@ export default async function handler(req, res) {
                       String(userId).includes('teacher');
     verifiedRole = isTeacher ? 'teacher' : 'student';
 
-    // Simulation capacity check: Count active participants in memory
+    // Simulation capacity check: Count active student participants in memory (teacher excluded)
     if (!isTeacher) {
       let activeCount = 0;
       for (const [key, part] of memoryParticipants.entries()) {
-        if (key.startsWith(`${roomName}:`) && !key.endsWith(`:${userId}`) && !part?.left_at) {
+        if (key.startsWith(`${roomName}:`) && !key.endsWith(`:${userId}`) && !part?.left_at && part?.role !== 'teacher') {
           activeCount++;
         }
       }

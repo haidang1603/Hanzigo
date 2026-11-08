@@ -199,6 +199,18 @@ export async function generateQueryEmbedding(text, options = {}) {
 
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '');
+      if (useFallback) {
+        const vector = generateDeterministicEmbedding(cleanText, EMBEDDING_DIMENSION);
+        return {
+          success: true,
+          embedding: vector,
+          model: EMBEDDING_MODEL_IDENTIFIER,
+          dimension: EMBEDDING_DIMENSION,
+          isFallback: true,
+          error: `Gemini Embedding API trả về lỗi HTTP ${response.status} (Fallback kích hoạt): ${errorBody.slice(0, 100)}`,
+          latencyMs
+        };
+      }
       return {
         success: false,
         model: EMBEDDING_MODEL_IDENTIFIER,
