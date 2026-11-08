@@ -909,7 +909,7 @@ export default function ClassroomPage({
                     { id: 'HSK 1', label: 'HSK 1' },
                     { id: 'HSK 2', label: 'HSK 2' },
                     { id: 'HSK 3', label: 'HSK 3' },
-                    { id: 'HSK 4', label: 'HSK 4+' }
+                    { id: 'HSK 4', label: 'HSK 4' }
                   ].map(f => (
                     <button
                       key={f.id}

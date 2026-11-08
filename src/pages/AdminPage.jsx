@@ -120,8 +120,9 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
     xp: 0,
     streak: 0
   });
-  const [isSubmittingNewUser, setIsSubmittingNewUser] = useState(false);
-  const [addUserError, setAddUserError] = useState('');
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [createUserError, setCreateUserError] = useState('');
+  const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   // Admin Profile Name Editing State
   const [isEditingAdminName, setIsEditingAdminName] = useState(false);

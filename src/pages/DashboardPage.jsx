@@ -511,10 +511,20 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
 
           <button
             onClick={handleContinueLesson}
-            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-sm shadow-lg shadow-[#E85D3F]/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-sm shadow-lg shadow-[#E85D3F]/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 whitespace-nowrap cursor-pointer group"
+            title={`Vào bài học: ${nextLessonInfo.title}`}
           >
-            <Play size={16} className="fill-white" />
-            <span>{completedLessonIds.length > 0 ? 'Tiếp tục bài học' : 'Bắt đầu bài 1 ngay'}</span>
+            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <Play size={15} className="fill-white ml-0.5" />
+            </div>
+            <div className="text-left">
+              <span className="block text-[10px] uppercase font-bold text-amber-200 leading-tight">
+                {completedLessonIds.length > 0 ? `Tiếp tục học (${nextLessonInfo.level})` : 'Bắt đầu bài 1'}
+              </span>
+              <span className="block text-xs font-bold truncate max-w-[180px] sm:max-w-[240px] leading-tight">
+                {nextLessonInfo.title}
+              </span>
+            </div>
           </button>
         </div>
 
@@ -1227,6 +1237,26 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
                 <div>
                   <p className="text-xs font-bold text-[#243447] dark:text-white">Tập viết chữ Hán mễ tự</p>
                   <p className="text-[10px] text-[#748092]">Thứ tự nét bút & tải file ảnh PNG</p>
+                </div>
+              </div>
+              <ArrowRight size={14} className="text-[#748092] group-hover:text-[#E85D3F] group-hover:translate-x-1 transition-transform" />
+            </button>
+
+            {/* Reading & NLP Shortcut */}
+            <button
+              onClick={() => {
+                playClickSound();
+                setActiveTab('reader');
+              }}
+              className="w-full p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:border-[#E85D3F] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-left transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center font-bold text-sm">
+                  <BookOpen size={17} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#243447] dark:text-white">Đọc hiểu & Phân tích NLP</p>
+                  <p className="text-[10px] text-[#748092]">Tách từ Hán ngữ, ngữ pháp & dịch nghĩa</p>
                 </div>
               </div>
               <ArrowRight size={14} className="text-[#748092] group-hover:text-[#E85D3F] group-hover:translate-x-1 transition-transform" />

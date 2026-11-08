@@ -79,9 +79,9 @@ export default function CookiePolicyPage({ setActiveTab }) {
           <div className="pt-2 flex flex-wrap items-center gap-4 text-xs text-slate-400">
             <span>📅 Ngày hiệu lực: <strong>01/01/2026</strong></span>
             <span>•</span>
-            <span>🔍 Cập nhật gần nhất: <strong>20/10/2026</strong></span>
+            <span>🔍 Cập nhật gần nhất: <strong>09/11/2026</strong></span>
             <span>•</span>
-            <span>Phiên bản: <strong>1.0 (Chính thức)</strong></span>
+            <span>Phiên bản: <strong>1.1 (Chính thức)</strong></span>
           </div>
         </div>
 

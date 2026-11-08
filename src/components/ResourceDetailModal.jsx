@@ -26,9 +26,11 @@ export default function ResourceDetailModal({
   onClose, 
   onSelectLesson, 
   onNavigateExam, 
-  onOpenReport 
+  onOpenReport,
+  onReportBroken
 }) {
   const [copied, setCopied] = useState(false);
+  const handleReport = onOpenReport || onReportBroken;
 
   if (!resource) return null;
 
@@ -249,10 +251,10 @@ export default function ResourceDetailModal({
               <span>{copied ? 'Đã sao chép' : 'Sao chép liên kết'}</span>
             </button>
 
-            {onOpenReport && (
+            {handleReport && (
               <button
                 onClick={() => {
-                  onOpenReport(resource);
+                  handleReport(resource);
                   onClose();
                 }}
                 className="px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-1.5 cursor-pointer transition-colors"

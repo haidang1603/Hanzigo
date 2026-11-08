@@ -417,7 +417,7 @@ export default function PracticePage({
                 Luyện tập có chủ đích theo từng cấp độ HSK
               </h2>
               <p className="text-xs sm:text-sm text-[#748092] dark:text-[#CBD5E1] leading-relaxed">
-                HanziGo cung cấp bài tập ghép từ thành câu chuẩn ngữ pháp, thử thách nghe hiểu âm thanh giọng bản xứ và kết nối trực tiếp với toàn bộ hệ sinh thái học tập HSK 1–4+.
+                HanziGo cung cấp bài tập ghép từ thành câu chuẩn ngữ pháp, thử thách nghe hiểu âm thanh giọng bản xứ và kết nối trực tiếp với toàn bộ hệ sinh thái học tập HSK 1–6.
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <button
@@ -454,7 +454,7 @@ export default function PracticePage({
                   <Sparkles size={24} />
                 </div>
                 <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-1 rounded-full">
-                  7 cấu trúc HSK 1–4+
+                  {GRAMMAR_DRILLS_BY_LEVEL.length} cấu trúc HSK 1–6 (10 bài/cấp)
                 </span>
               </div>
               <div>
@@ -481,7 +481,7 @@ export default function PracticePage({
                   <Headphones size={24} />
                 </div>
                 <span className="text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-2.5 py-1 rounded-full">
-                  9 bài nghe HSK 1–4+
+                  {LISTENING_DRILLS_BY_LEVEL.length} bài nghe HSK 1–6 (10 bài/cấp)
                 </span>
               </div>
               <div>
@@ -504,7 +504,7 @@ export default function PracticePage({
             <h3 className="text-sm font-black text-[#243447] dark:text-white uppercase tracking-wider">
               Kết nối nhanh các kỹ năng bổ trợ
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <button
                 onClick={() => setActiveTab && setActiveTab('vocabulary')}
                 className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-left hover:border-[#E85D3F] transition-all cursor-pointer group"
@@ -542,6 +542,19 @@ export default function PracticePage({
                   Từ Điển & Viết Chữ
                 </h4>
                 <p className="text-[10px] text-[#748092]">Thứ tự nét viết chuẩn</p>
+              </button>
+
+              <button
+                onClick={() => setActiveTab && setActiveTab('reader')}
+                className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-left hover:border-[#E85D3F] transition-all cursor-pointer group"
+              >
+                <div className="w-8 h-8 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-2">
+                  <BookOpen size={16} />
+                </div>
+                <h4 className="text-xs font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F]">
+                  Đọc Hiểu & NLP
+                </h4>
+                <p className="text-[10px] text-[#748092]">Phân tích ngữ nghĩa & đoạn văn</p>
               </button>
 
               <button

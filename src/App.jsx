@@ -36,6 +36,9 @@ const PracticePage = lazy(() => import('./pages/PracticePage'));
 import StorageConsentBanner from './components/StorageConsentBanner';
 import TeacherGuard from './components/TeacherGuard';
 import CommandPaletteModal from './components/dictionary/CommandPaletteModal.jsx';
+import { AppSidebar, AppHeader, MobileNavigation, SmartCommandPalette } from './components/navigation';
+import { UnifiedDashboard } from './components/dashboard';
+import { getRecommendedNextLesson, getLessonById } from './services/learningPathService';
 
 const VALID_TABS = [
   'home', 'dashboard', 'roadmap', 'lesson', 'vocabulary', 
@@ -136,6 +139,40 @@ function MainApp() {
   const [streak, setStreak] = useState(() => getEffectiveStreak(user));
   const [xp, setXp] = useState(() => calculateTotalXp(user));
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Desktop sidebar collapsed state persisted in localStorage
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('hanzigo_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('hanzigo_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  // Smart quick-access next recommended lesson
+  const lastLesson = React.useMemo(() => {
+    try {
+      const nextId = getRecommendedNextLesson(user);
+      return getLessonById(nextId) || { id: nextId, title: `Bài ${nextId}` };
+    } catch {
+      return { id: 'l-101', title: 'Bài 101: Chào hỏi' };
+    }
+  }, [user]);
+
+  const handleContinueLearning = () => {
+    handleSelectLesson(lastLesson?.id || 'l-101');
+  };
 
   // Global hotkey Ctrl+K / Cmd+K for Command Palette
   useEffect(() => {
@@ -292,43 +329,71 @@ function MainApp() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] transition-colors duration-200">
+    <div className="min-h-screen flex bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] transition-colors duration-200">
       
-      {/* 1. Global Navigation Bar */}
-      <Navbar
+      {/* 1. Desktop Smart Adaptive Collapsible Sidebar */}
+      <AppSidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         user={user}
-        streak={streak}
-        xp={xp}
-        openAuthModal={handleOpenAuth}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={handleToggleSidebar}
+        onContinueLearning={handleContinueLearning}
+        lastLesson={lastLesson}
+        onOpenAuth={handleOpenAuth}
         onLogout={handleLogout}
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
-        soundEnabled={soundEnabled}
-        setSoundEnabled={setSoundEnabled}
-        onOpenCommandPalette={() => setCommandPaletteOpen(true)}
       />
 
-      {/* 2. Main Page Content with Suspense & Lazy Loading */}
-      <main className="flex-1">
+      {/* 2. Main Layout Column */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Sticky Top Header with Breadcrumbs, Global Search, Gamification */}
+        <AppHeader
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          routeInfo={routeInfo}
+          user={user}
+          streak={streak}
+          xp={xp}
+          openAuthModal={handleOpenAuth}
+          onLogout={handleLogout}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+          soundEnabled={soundEnabled}
+          setSoundEnabled={setSoundEnabled}
+          onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+          onToggleMobileMenu={() => setMobileMenuOpen(prev => !prev)}
+          onContinueLearning={handleContinueLearning}
+          lastLesson={lastLesson}
+        />
+
+        {/* Main Content Area (pb-20 on mobile for bottom navigation bar) */}
+        <main className="flex-1 pb-20 lg:pb-0">
         <Suspense fallback={<PageLoader />}>
-          {activeTab === 'home' && (
-            <HomePage 
+          {(activeTab === 'home' || activeTab === 'dashboard') && (
+            <UnifiedDashboard 
               user={user}
               streak={streak}
               xp={xp}
               setActiveTab={setActiveTab} 
               openAuthModal={handleOpenAuth} 
               onSelectLesson={handleSelectLesson}
-            />
-          )}
-
-          {activeTab === 'dashboard' && (
-            <DashboardPage 
-              user={user} 
-              setActiveTab={setActiveTab} 
-              onSelectLesson={handleSelectLesson}
+              onNavigate={(route, id) => {
+                if (route === 'dashboard') {
+                  window.location.hash = '#teacher';
+                } else if (route === 'classes' && !id) {
+                  window.location.hash = '#teacher/classes';
+                } else if (route === 'classes' && id) {
+                  window.location.hash = `#teacher/classes/${id}`;
+                } else if (route === 'students') {
+                  window.location.hash = '#teacher/students';
+                } else if (route === 'grading') {
+                  window.location.hash = '#teacher/grading';
+                } else if (route === 'analytics') {
+                  window.location.hash = '#teacher/analytics';
+                } else if (route === 'ai-studio' || route === 'ai_studio') {
+                  window.location.hash = '#teacher/ai-studio';
+                }
+              }}
             />
           )}
 
@@ -572,12 +637,26 @@ function MainApp() {
             />
           )}
         </Suspense>
-      </main>
+        </main>
 
-      {/* 3. Global Footer */}
-      <Footer setActiveTab={setActiveTab} />
+        {/* 3. Global Footer */}
+        <Footer setActiveTab={setActiveTab} />
+      </div>
 
-      {/* 4. Login / Register Modal */}
+      {/* 4. Mobile Navigation Drawer & Bottom Bar */}
+      <MobileNavigation
+        isOpen={mobileMenuOpen}
+        onClose={(toggle) => setMobileMenuOpen(toggle === true ? !mobileMenuOpen : false)}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        user={user}
+        onContinueLearning={handleContinueLearning}
+        lastLesson={lastLesson}
+        onOpenAuth={handleOpenAuth}
+        onLogout={handleLogout}
+      />
+
+      {/* 5. Login / Register Modal */}
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
@@ -586,15 +665,16 @@ function MainApp() {
         setActiveTab={setActiveTab}
       />
 
-      {/* 5. Cookie & Storage Consent Banner */}
+      {/* 6. Cookie & Storage Consent Banner */}
       <StorageConsentBanner setActiveTab={setActiveTab} />
 
-      {/* 6. Global Command Palette Modal (Ctrl + K) */}
-      <CommandPaletteModal
+      {/* 7. Global Smart Command Palette Modal (Ctrl + K) */}
+      <SmartCommandPalette
         isOpen={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
         user={user}
         onNavigate={setActiveTab}
+        onSelectLesson={handleSelectLesson}
       />
 
     </div>

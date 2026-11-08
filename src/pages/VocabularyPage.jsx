@@ -437,12 +437,10 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
 
   // Dynamic counts per HSK Level
   const hskCounts = useMemo(() => {
-    const counts = { 'HSK 1': 0, 'HSK 2': 0, 'HSK 3': 0, 'HSK 4': 0, 'HSK 5-6': 0 };
+    const counts = { 'HSK 1': 0, 'HSK 2': 0, 'HSK 3': 0, 'HSK 4': 0, 'HSK 5': 0, 'HSK 6': 0, 'HSK 5-6': 0 };
     allVocabList.forEach(v => {
       const lvl = v.level || 'HSK 1';
-      if (lvl === 'HSK 5-6' || lvl === 'HSK 5' || lvl === 'HSK 6') {
-        counts['HSK 5-6'] = (counts['HSK 5-6'] || 0) + 1;
-      } else if (counts[lvl] !== undefined) {
+      if (counts[lvl] !== undefined) {
         counts[lvl] = (counts[lvl] || 0) + 1;
       } else {
         counts[lvl] = 1;
@@ -1105,7 +1103,9 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
               { id: 'HSK 2', label: 'HSK 2', count: hskCounts['HSK 2'] || 0 },
               { id: 'HSK 3', label: 'HSK 3', count: hskCounts['HSK 3'] || 0 },
               { id: 'HSK 4', label: 'HSK 4', count: hskCounts['HSK 4'] || 0 },
-              { id: 'HSK 5-6', label: 'HSK 5-6 (Thành ngữ)', count: hskCounts['HSK 5-6'] || 0 }
+              { id: 'HSK 5', label: 'HSK 5', count: hskCounts['HSK 5'] || 0 },
+              { id: 'HSK 6', label: 'HSK 6', count: hskCounts['HSK 6'] || 0 },
+              { id: 'HSK 5-6', label: 'Thành ngữ / Cao cấp', count: (hskCounts['HSK 5-6'] || 0) + (hskCounts['HSK 5'] || 0) + (hskCounts['HSK 6'] || 0) }
             ].map((tab) => {
               const isActive = selectedHsk === tab.id;
               return (

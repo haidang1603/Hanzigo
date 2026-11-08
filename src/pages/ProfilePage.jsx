@@ -456,6 +456,10 @@ export default function ProfilePage({
         localStorage.removeItem('hanzigo_custom_avatar');
       }
       localStorage.setItem('hanzigo_user_bio', updatedData.bio);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('hanzigo_avatar_updated', { detail: finalAvatar }));
+        window.dispatchEvent(new Event('storage'));
+      }
     } catch (err) {
       console.warn('LocalStorage avatar save error:', err);
     }

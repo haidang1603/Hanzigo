@@ -4,12 +4,14 @@
  */
 
 export const HSK_LEVELS_METADATA = [
-  { id: 'all', code: 'ALL', label: 'Tất cả HSK', count: 500, color: '#243447', desc: 'Toàn bộ 500 từ vựng kèm câu ví dụ từ giáo án và tài liệu tổng hợp' },
+  { id: 'all', code: 'ALL', label: 'Tất cả HSK', count: 850, color: '#243447', desc: 'Toàn bộ 850+ từ vựng kèm câu ví dụ từ giáo án và tài liệu tổng hợp' },
   { id: 'HSK 1', code: 'HSK 1', label: 'HSK 1 (Nền tảng)', count: 161, color: '#45B97C', desc: '161 từ cốt lõi, phiên âm Pinyin, số đếm, gia đình & chào hỏi' },
   { id: 'HSK 2', code: 'HSK 2', label: 'HSK 2 (Sinh hoạt)', count: 142, color: '#F4B942', desc: '142 từ giao tiếp hàng ngày, mua sắm, phương tiện & ăn uống' },
   { id: 'HSK 3', code: 'HSK 3', label: 'HSK 3 (Trung cấp)', count: 137, color: '#E85D3F', desc: '137 từ du lịch tự túc, công sở, câu chữ 把/被 & liên từ' },
-  { id: 'HSK 4', code: 'HSK 4', label: 'HSK 4 (Công sở)', count: 25, color: '#3B82F6', desc: '25 từ ngữ thương mại, đàm phán, kỹ năng lưu loát & phỏng vấn' },
-  { id: 'HSK 5-6', code: 'HSK 5-6', label: 'HSK 5-6 (Thành ngữ)', count: 35, color: '#8B5CF6', desc: '35 từ vựng cao cấp, học thuật, thành ngữ 4 chữ (成语) & chiều sâu văn hóa' }
+  { id: 'HSK 4', code: 'HSK 4', label: 'HSK 4 (Công sở)', count: 140, color: '#3B82F6', desc: '140+ từ ngữ thương mại, đàm phán, kỹ năng lưu loát & phỏng vấn' },
+  { id: 'HSK 5', code: 'HSK 5', label: 'HSK 5 (Học thuật)', count: 120, color: '#0284C7', desc: '120+ từ ngữ văn phong viết, cấu trúc nhượng bộ & nghị luận' },
+  { id: 'HSK 6', code: 'HSK 6', label: 'HSK 6 (Thành ngữ)', count: 150, color: '#8B5CF6', desc: '150+ từ vựng cao cấp, thành ngữ 4 chữ (成语) & văn hóa chuyên sâu' },
+  { id: 'HSK 5-6', code: 'HSK 5-6', label: 'HSK 5-6 (Thành ngữ & Cao cấp)', count: 270, color: '#8B5CF6', desc: '270+ từ vựng cao cấp, học thuật, thành ngữ 4 chữ (成语) & chiều sâu văn hóa' }
 ];
 
 export const PRACTICE_LEVELS = [
@@ -35,8 +37,8 @@ export const PRACTICE_LEVELS = [
     stats: {
       wordsCount: 161,
       pronounceItems: 8,
-      listeningCount: 6,
-      grammarCount: 5
+      listeningCount: 10,
+      grammarCount: 10
     }
   },
   {
@@ -61,8 +63,8 @@ export const PRACTICE_LEVELS = [
     stats: {
       wordsCount: 142,
       pronounceItems: 8,
-      listeningCount: 6,
-      grammarCount: 5
+      listeningCount: 10,
+      grammarCount: 10
     }
   },
   {
@@ -87,19 +89,19 @@ export const PRACTICE_LEVELS = [
     stats: {
       wordsCount: 137,
       pronounceItems: 8,
-      listeningCount: 6,
-      grammarCount: 5
+      listeningCount: 10,
+      grammarCount: 10
     }
   },
   {
     id: 'level-4',
     code: 'LV4',
-    hskLevel: 'HSK 4+',
+    hskLevel: 'HSK 4',
     level: 4,
-    name: 'Mức độ 4: HSK 4+ & Thành ngữ — Thử thách Bậc thầy',
+    name: 'Mức độ 4: HSK 4 & Thành ngữ — Thử thách Bậc thầy',
     subtitle: 'Thành ngữ 4 chữ (成语), HSK 4 công sở & Câu líu lưỡi',
     difficulty: 'challenge',
-    badge: '🔴 HSK 4+ (Master)',
+    badge: '🔴 HSK 4 (Master)',
     color: '#8B5CF6',
     bgLight: 'bg-purple-50 dark:bg-purple-950/30',
     borderLight: 'border-purple-200 dark:border-purple-800',
@@ -111,10 +113,10 @@ export const PRACTICE_LEVELS = [
       'Làm chủ kho thành ngữ 4 chữ và từ vựng chuyên sâu'
     ],
     stats: {
-      wordsCount: 15,
+      wordsCount: 140,
       pronounceItems: 8,
-      listeningCount: 6,
-      grammarCount: 5
+      listeningCount: 10,
+      grammarCount: 10
     }
   },
   {
@@ -504,7 +506,7 @@ export const PRONUNCIATION_ITEMS_BY_LEVEL = [
 
 // Bài tập luyện nghe tương tác phân cấp
 export const LISTENING_DRILLS_BY_LEVEL = [
-  // Mức 1
+  // Mức 1 (HSK 1 - Khởi động & Nền tảng)
   {
     id: 'list-l1-01',
     level: 1,
@@ -535,8 +537,78 @@ export const LISTENING_DRILLS_BY_LEVEL = [
     correctIndex: 1,
     explanation: '中国 (Zhōngguó) nghĩa là "Trung Quốc".'
   },
+  {
+    id: 'list-l1-04',
+    level: 1,
+    audioText: 'duìbuqǐ',
+    hanzi: '对不起',
+    question: 'Nghe và chọn câu đáp lại phù hợp trong tiếng Trung:',
+    options: ['没关系', '不用谢', '再见', '你好'],
+    correctIndex: 0,
+    explanation: '对不起 (Xin lỗi) thường được đáp lại bằng 没关系 (Không sao đâu).'
+  },
+  {
+    id: 'list-l1-05',
+    level: 1,
+    audioText: 'wǒ de lǎoshī',
+    hanzi: '我的老师',
+    question: 'Nghe và chọn ý nghĩa tiếng Việt chính xác:',
+    options: ['Học sinh của tôi', 'Giáo viên của tôi', 'Bạn học của tôi', 'Bố mẹ của tôi'],
+    correctIndex: 1,
+    explanation: '我的老师 (wǒ de lǎoshī) nghĩa là "Giáo viên của tôi".'
+  },
+  {
+    id: 'list-l1-06',
+    level: 1,
+    audioText: 'jīntiān xīngqītiān',
+    hanzi: '今天星期天',
+    question: 'Nghe và xác định hôm nay là thứ mấy:',
+    options: ['Thứ Bảy', 'Chủ Nhật', 'Thứ Hai', 'Thứ Tư'],
+    correctIndex: 1,
+    explanation: '星期天 (xīngqītiān) nghĩa là "Chủ Nhật".'
+  },
+  {
+    id: 'list-l1-07',
+    level: 1,
+    audioText: 'hē shuǐ',
+    hanzi: '喝水',
+    question: 'Nghe và chọn hành động được nhắc tới:',
+    options: ['Ăn cơm', 'Uống nước', 'Ngủ', 'Đi bộ'],
+    correctIndex: 1,
+    explanation: '喝水 (hē shuǐ) nghĩa là "Uống nước".'
+  },
+  {
+    id: 'list-l1-08',
+    level: 1,
+    audioText: 'tā zài yīyuàn',
+    hanzi: '他在医院',
+    question: 'Nghe và xác định người đó đang ở đâu:',
+    options: ['Trường học', 'Bệnh viện', 'Sân bay', 'Cửa hàng'],
+    correctIndex: 1,
+    explanation: '医院 (yīyuàn) nghĩa là "Bệnh viện".'
+  },
+  {
+    id: 'list-l1-09',
+    level: 1,
+    audioText: 'sān gè píngguǒ',
+    hanzi: '三个苹果',
+    question: 'Nghe số lượng và đồ vật được nhắc tới:',
+    options: ['3 quả táo', '4 quả chuối', '3 ly trà', '5 bát cơm'],
+    correctIndex: 0,
+    explanation: '三个苹果 (sān gè píngguǒ) nghĩa là "3 quả táo".'
+  },
+  {
+    id: 'list-l1-10',
+    level: 1,
+    audioText: 'wǒ hěn xǐhuan tā',
+    hanzi: '我很喜欢他',
+    question: 'Nghe và chọn cảm xúc của người nói:',
+    options: ['Rất ghét anh ấy', 'Rất thích anh ấy', 'Không biết anh ấy', 'Sợ anh ấy'],
+    correctIndex: 1,
+    explanation: '我很喜欢他 (wǒ hěn xǐhuan tā) nghĩa là "Tôi rất thích anh ấy".'
+  },
 
-  // Mức 2
+  // Mức 2 (HSK 2 - Tăng tốc & Sinh hoạt)
   {
     id: 'list-l2-01',
     level: 2,
@@ -557,8 +629,88 @@ export const LISTENING_DRILLS_BY_LEVEL = [
     correctIndex: 2,
     explanation: '不客气 (bú kèqi) nghĩa là "Đừng khách sáo", dùng đáp lại 谢谢 (Cảm ơn).'
   },
+  {
+    id: 'list-l2-03',
+    level: 2,
+    audioText: 'zuǒbian de fángjiān',
+    hanzi: '左边的房间',
+    question: 'Nghe và chọn phương hướng căn phòng:',
+    options: ['Căn phòng bên phải', 'Căn phòng bên trái', 'Căn phòng phía trước', 'Căn phòng phía sau'],
+    correctIndex: 1,
+    explanation: '左边 (zuǒbian) nghĩa là "bên trái".'
+  },
+  {
+    id: 'list-l2-04',
+    level: 2,
+    audioText: 'yìqǐ qù kàn diànyǐng ba',
+    hanzi: '一起去看电影吧',
+    question: 'Người nói đang rủ đối phương làm gì?',
+    options: ['Đi siêu thị', 'Cùng đi xem phim', 'Về nhà ăn cơm', 'Đi tập thể thao'],
+    correctIndex: 1,
+    explanation: '看电影 (kàn diànyǐng) nghĩa là "xem phim".'
+  },
+  {
+    id: 'list-l2-05',
+    level: 2,
+    audioText: 'wǒ zuò huǒchē qù shànghǎi',
+    hanzi: '我坐火车去上海',
+    question: 'Người nói di chuyển bằng phương tiện gì?',
+    options: ['Máy bay', 'Tàu hỏa', 'Xe buýt', 'Tàu điện ngầm'],
+    correctIndex: 1,
+    explanation: '火车 (huǒchē) nghĩa là "tàu hỏa".'
+  },
+  {
+    id: 'list-l2-06',
+    level: 2,
+    audioText: 'tā zài gōngsī gōngzuò le sān nián',
+    hanzi: '她在公司工作了三年',
+    question: 'Cô ấy đã làm việc ở công ty bao lâu?',
+    options: ['3 tháng', '3 năm', '3 tuần', '13 năm'],
+    correctIndex: 1,
+    explanation: '三年 (sān nián) nghĩa là "3 năm".'
+  },
+  {
+    id: 'list-l2-07',
+    level: 2,
+    audioText: 'míngtiān tiānqì bǐ jīntiān hǎo',
+    hanzi: '明天天气比今天好',
+    question: 'Theo câu nói, thời tiết ngày mai như thế nào?',
+    options: ['Lạnh hơn hôm nay', 'Tốt hơn hôm nay', 'Có mưa to', 'Xấu hơn hôm nay'],
+    correctIndex: 1,
+    explanation: '比今天好 nghĩa là "tốt hơn hôm nay".'
+  },
+  {
+    id: 'list-l2-08',
+    level: 2,
+    audioText: 'qǐng gěi wǒ yì bēi kāfēi',
+    hanzi: '请给我一杯咖啡',
+    question: 'Người nói yêu cầu món đồ uống nào?',
+    options: ['Một ly trà sữa', 'Một ly cà phê', 'Một cốc nước ngọt', 'Một bình trà nóng'],
+    correctIndex: 1,
+    explanation: '一杯咖啡 (yì bēi kāfēi) nghĩa là "một ly cà phê".'
+  },
+  {
+    id: 'list-l2-09',
+    level: 2,
+    audioText: 'tā chàng gē chàng de fēicháng hǎo',
+    hanzi: '她唱歌唱得非常好',
+    question: 'Lời nhận xét về khả năng ca hát của cô ấy là gì?',
+    options: ['Hát rất dở', 'Hát vô cùng hay', 'Không biết hát', 'Chỉ hát lúc rảnh'],
+    correctIndex: 1,
+    explanation: '唱得非常好 nghĩa là "hát vô cùng hay/xuất sắc".'
+  },
+  {
+    id: 'list-l2-10',
+    level: 2,
+    audioText: 'chūzūchē yǐjīng dào ménkǒu le',
+    hanzi: '出租车已经到门口了',
+    question: 'Phương tiện nào đã đến trước cửa?',
+    options: ['Xe đạp', 'Xe taxi', 'Xe máy', 'Xe buýt'],
+    correctIndex: 1,
+    explanation: '出租车 (chūzūchē) nghĩa là "xe taxi".'
+  },
 
-  // Mức 3
+  // Mức 3 (HSK 3 - Chinh phục & Bứt phá)
   {
     id: 'list-l3-01',
     level: 3,
@@ -579,8 +731,88 @@ export const LISTENING_DRILLS_BY_LEVEL = [
     correctIndex: 1,
     explanation: '虽然...但是... biểu thị mối quan hệ tương phản (tuy... nhưng...).'
   },
+  {
+    id: 'list-l3-03',
+    level: 3,
+    audioText: 'bǎ hùzhào fàng jìn bāobāo lǐ',
+    hanzi: '把护照放进包包里',
+    question: 'Người nói yêu cầu cất vật dụng gì vào túi xách?',
+    options: ['Điện thoại', 'Hộ chiếu', 'Ví tiền', 'Chìa khóa'],
+    correctIndex: 1,
+    explanation: '护照 (hùzhào) nghĩa là "hộ chiếu".'
+  },
+  {
+    id: 'list-l3-04',
+    level: 3,
+    audioText: 'chúle xīngqītiān yǐwài wǒ měitiān dōu jiānchí yùndòng',
+    hanzi: '除了星期天以外我每天都坚持运动',
+    question: 'Người nói không tập thể dục vào ngày nào?',
+    options: ['Thứ Bảy', 'Chủ Nhật', 'Thứ Hai', 'Thứ Sáu'],
+    correctIndex: 1,
+    explanation: '除了星期天以外 nghĩa là "ngoại trừ ngày Chủ Nhật ra".'
+  },
+  {
+    id: 'list-l3-05',
+    level: 3,
+    audioText: 'huānyíng guānglín qǐngwèn nín yǒu yùdìng ma',
+    hanzi: '欢迎光临，请问您有预订吗？',
+    question: 'Tình huống giao tiếp này diễn ra ở đâu?',
+    options: ['Rạp chiếu phim', 'Khách sạn hoặc nhà hàng', 'Trạm xe buýt', 'Bệnh viện'],
+    correctIndex: 1,
+    explanation: '欢迎光临，请问您有预订吗？ thường dùng trong tiếp đón khách sạn, nhà hàng.'
+  },
+  {
+    id: 'list-l3-06',
+    level: 3,
+    audioText: 'bèi dàyǔ lín shī le yīfu',
+    hanzi: '被大雨淋湿了衣服',
+    question: 'Nguyên nhân quần áo bị ướt là gì?',
+    options: ['Làm đổ nước canh', 'Bị cơn mưa to làm ướt', 'Rơi xuống hồ bơi', 'Giặt đồ chưa khô'],
+    correctIndex: 1,
+    explanation: '被大雨淋湿 nghĩa là "bị cơn mưa to làm ướt sũng".'
+  },
+  {
+    id: 'list-l3-07',
+    level: 3,
+    audioText: 'tā yuè lái yuè xǐhuan zhōngguó shūfǎ',
+    hanzi: '他越来越喜欢中国书法',
+    question: 'Mức độ yêu thích của anh ấy đối với thư pháp Trung Quốc như thế nào?',
+    options: ['Ngày càng thích hơn', 'Ngày càng chán nản', 'Đã bỏ cuộc', 'Chưa từng học'],
+    correctIndex: 0,
+    explanation: '越来越喜欢 nghĩa là "ngày càng yêu thích hơn".'
+  },
+  {
+    id: 'list-l3-08',
+    level: 3,
+    audioText: 'zhè fèn wénjiàn xūyào jīnglǐ qiānzì',
+    hanzi: '这份文件需要经理签字',
+    question: 'Văn kiện này cần điều gì để hoàn tất?',
+    options: ['Gửi qua email', 'Chữ ký của giám đốc', 'In thành 5 bản', 'Dịch sang tiếng Anh'],
+    correctIndex: 1,
+    explanation: '经理签字 (jīnglǐ qiānzì) nghĩa là "giám đốc ký tên".'
+  },
+  {
+    id: 'list-l3-09',
+    level: 3,
+    audioText: 'zhè jiā fàndiàn de kǎoyā fēicháng dìdao',
+    hanzi: '这家饭店的烤鸭非常地道',
+    question: 'Món vịt quay của nhà hàng được khen ngợi điều gì?',
+    options: ['Giá rất rẻ', 'Rất chuẩn vị truyền thống', 'Được phục vụ nhanh', 'Trông bắt mắt'],
+    correctIndex: 1,
+    explanation: '地道 (dìdao) nghĩa là "chính tông, chuẩn vị truyền thống".'
+  },
+  {
+    id: 'list-l3-10',
+    level: 3,
+    audioText: 'yīnwèi dǔchē suǒyǐ chídào le shí fēnzhōng',
+    hanzi: '因为堵车所以迟到了十分钟',
+    question: 'Lý do bị trễ 10 phút là gì?',
+    options: ['Dậy muộn', 'Tắc đường kẹt xe', 'Hỏng xe giữa đường', 'Đi nhầm ga tàu'],
+    correctIndex: 1,
+    explanation: '堵车 (dǔchē) nghĩa là "kẹt xe / tắc đường".'
+  },
 
-  // Mức 4
+  // Mức 4 (HSK 4 - Thử thách Bậc thầy & Công sở)
   {
     id: 'list-l4-01',
     level: 4,
@@ -600,6 +832,86 @@ export const LISTENING_DRILLS_BY_LEVEL = [
     options: ['Đứng núi này trông núi nọ', 'Ba chìm bảy nổi', 'Một lòng một dạ / Toàn tâm toàn ý', 'Trăm nghe không bằng một thấy'],
     correctIndex: 2,
     explanation: '一心一意 (yì xīn yí yì) nghĩa là toàn tâm toàn ý, một lòng một dạ.'
+  },
+  {
+    id: 'list-l4-03',
+    level: 4,
+    audioText: 'bùjǐn néng tígāo kǒuyǔ érqiě néng jiéjiāo péngyou',
+    hanzi: '不仅能提高口语，而且能结交朋友',
+    question: 'Lợi ích kép được nhắc đến là gì?',
+    options: ['Kiếm được tiền và tiết kiệm thời gian', 'Vừa nâng cao khẩu ngữ vừa kết bạn', 'Được đi du lịch và mua sắm', 'Được thăng chức và tăng lương'],
+    correctIndex: 1,
+    explanation: '不仅...而且... nêu hai lợi ích: nâng cao khẩu ngữ và kết bạn bè mới.'
+  },
+  {
+    id: 'list-l4-04',
+    level: 4,
+    audioText: 'wúlùn tiānqì rúhé bǐsài dōu jiāng rúqī jǔxíng',
+    hanzi: '无论天气如何，比赛都将如期举行',
+    question: 'Trận đấu sẽ diễn ra như thế nào?',
+    options: ['Bị hủy bỏ nếu có mưa', 'Vẫn diễn ra đúng kế hoạch bất kể thời tiết', 'Hoãn lại sang tuần sau', 'Chuyển địa điểm thi đấu vào trong nhà'],
+    correctIndex: 1,
+    explanation: '如期举行 (rúqī jǔxíng) nghĩa là diễn ra đúng kỳ hạn/kế hoạch.'
+  },
+  {
+    id: 'list-l4-05',
+    level: 4,
+    audioText: 'tā jīlěi le fēngfù de shìchǎng yíngxiāo jīngyàn',
+    hanzi: '他积累了丰富的市场营销经验',
+    question: 'Anh ấy đã tích lũy được điều gì quý báu?',
+    options: ['Vốn đầu tư ban đầu', 'Kinh nghiệm phong phú về tiếp thị thị trường', 'Bằng cấp thạc sĩ', 'Mối quan hệ chính khách'],
+    correctIndex: 1,
+    explanation: '市场营销经验 (shìchǎng yíngxiāo jīngyàn) nghĩa là kinh nghiệm tiếp thị thị trường.'
+  },
+  {
+    id: 'list-l4-06',
+    level: 4,
+    audioText: 'duìyú zhè cì hézuò wǒmen chōngmǎn xìnxīn',
+    hanzi: '对于这次合作，我们充满信心',
+    question: 'Thái độ của đối tác đối với lần hợp tác này là gì?',
+    options: ['Rất hoài nghi', 'Tràn đầy tự tin', 'Muốn đàm phán lại giá', 'Chờ đợi kết quả năm sau'],
+    correctIndex: 1,
+    explanation: '充满信心 (chōngmǎn xìnxīn) nghĩa là "tràn đầy lòng tự tin".'
+  },
+  {
+    id: 'list-l4-07',
+    level: 4,
+    audioText: 'jìrán nǐ yǐjīng juédìng le jiù yǒnggǎn de qù zuò ba',
+    hanzi: '既然你已经决定了，就勇敢地去做吧',
+    question: 'Người nói đưa ra lời khuyên gì cho đối phương?',
+    options: ['Hãy suy nghĩ lại thật kỹ', 'Hãy dũng cảm thực hiện vì đã quyết định', 'Hãy hỏi ý kiến bố mẹ', 'Nên chờ thêm cơ hội tốt hơn'],
+    correctIndex: 1,
+    explanation: '勇敢地去做 nghĩa là hãy dũng cảm bắt tay vào hành động.'
+  },
+  {
+    id: 'list-l4-08',
+    level: 4,
+    audioText: 'lián xiǎoxuéshēng dōu zhīdào de chángshí nǐ jūrán bù dǒng',
+    hanzi: '连小学生都知道的常识，你居然不懂',
+    question: 'Ý ngầm trong câu nói biểu thị sắc thái cảm xúc gì?',
+    options: ['Khen ngợi học sinh tiểu học', 'Ngạc nhiên và chê trách vì thiếu kiến thức thường thức cơ bản', 'Đồng cảm với người nghe', 'Khuyên học sinh đọc nhiều sách'],
+    correctIndex: 1,
+    explanation: '居然不懂 biểu thị sự sửng sốt và chê trách khi đối phương không biết điều sơ đẳng.'
+  },
+  {
+    id: 'list-l4-09',
+    level: 4,
+    audioText: 'bùguǎn zěnmeyàng wǒmen dōu yīnggāi zūnzhòng tārén de xuǎnzé',
+    hanzi: '不管怎么样，我们都应该尊重他人的选择',
+    question: 'Nguyên tắc sống được nhấn mạnh trong câu là gì?',
+    options: ['Phải tự quyết định một mình', 'Nên tôn trọng sự lựa chọn của người khác', 'Phải làm theo số đông', 'Không được tin ai'],
+    correctIndex: 1,
+    explanation: '尊重他人的选择 nghĩa là "tôn trọng sự lựa chọn của người khác".'
+  },
+  {
+    id: 'list-l4-10',
+    level: 4,
+    audioText: 'rènzhēn fùzé de tàidu shì huòdé chénggōng de guānjiàn',
+    hanzi: '认真负责的态度是获得成功的关键',
+    question: 'Yếu tố mấu chốt để thành công theo câu nói là gì?',
+    options: ['Gia đình giàu có', 'Thái độ nghiêm túc và có trách nhiệm', 'May mắn ngẫu nhiên', 'Ngoại hình thu hút'],
+    correctIndex: 1,
+    explanation: '认真负责的态度 (thái độ nghiêm túc, có trách nhiệm) là chìa khóa đạt được thành công.'
   },
 
   // Mức 5 (HSK 5 - Cao cấp & Học thuật)
@@ -889,7 +1201,7 @@ export const LISTENING_DRILLS_BY_LEVEL = [
 
 // Bài tập ghép câu ngữ pháp phân cấp
 export const GRAMMAR_DRILLS_BY_LEVEL = [
-  // Mức 1
+  // Mức 1 (HSK 1 - Khởi động & Nền tảng)
   {
     id: 'gram-l1-01',
     level: 1,
@@ -897,19 +1209,111 @@ export const GRAMMAR_DRILLS_BY_LEVEL = [
     meaning: 'Tôi là giáo viên.',
     tokens: ['我', '是', '老师'],
     correctTokens: ['我', '是', '老师'],
-    explanation: 'Cấu trúc cơ bản: Chủ ngữ + 是 + Tân ngữ.'
+    explanation: 'Cấu trúc cơ bản: Chủ ngữ + 是 + Tân ngữ.',
+    topic: 'Câu chữ 是',
+    difficulty: 'easy'
   },
   {
     id: 'gram-l1-02',
     level: 1,
-    title: 'Câu hỏi nghi vấn với 吗',
+    title: 'Câu hỏi nghi vấn với trợ từ 吗',
     meaning: 'Bạn là người Trung Quốc phải không?',
     tokens: ['吗', '你', '是', '中国人'],
     correctTokens: ['你', '是', '中国人', '吗'],
-    explanation: 'Trợ từ nghi vấn 吗 luôn đứng ở cuối câu hỏi Yes/No.'
+    explanation: 'Trợ từ nghi vấn 吗 luôn đứng ở cuối câu hỏi Yes/No.',
+    topic: 'Câu hỏi nghi vấn 吗',
+    difficulty: 'easy'
+  },
+  {
+    id: 'gram-l1-03',
+    level: 1,
+    title: 'Định ngữ với trợ từ 的 (Sở hữu)',
+    meaning: 'Đây là sách của tôi.',
+    tokens: ['书。', '这', '我的', '是'],
+    correctTokens: ['这', '是', '我的', '书。'],
+    explanation: 'Cấu trúc định ngữ: Định ngữ (我的) + 的 + Trung tâm ngữ (书).',
+    topic: 'Trợ từ kết cấu 的',
+    difficulty: 'easy'
+  },
+  {
+    id: 'gram-l1-04',
+    level: 1,
+    title: 'Câu vị ngữ tính từ với phó từ 很',
+    meaning: 'Hôm nay thời tiết rất tốt.',
+    tokens: ['很好。', '今天', '天气'],
+    correctTokens: ['今天', '天气', '很好。'],
+    explanation: 'Trong câu vị ngữ tính từ, phó từ 很 thường đứng trước tính từ tạo thành vị ngữ hoàn chỉnh.',
+    topic: 'Phó từ mức độ 很',
+    difficulty: 'easy'
+  },
+  {
+    id: 'gram-l1-05',
+    level: 1,
+    title: 'Giới từ / Động từ 在 chỉ nơi chốn',
+    meaning: 'Anh ấy đang ở trường học.',
+    tokens: ['学校。', '在', '他'],
+    correctTokens: ['他', '在', '学校。'],
+    explanation: 'Cấu trúc vị trí cơ bản: Chủ ngữ + 在 + Địa điểm.',
+    topic: 'Động từ/Giới từ 在',
+    difficulty: 'easy'
+  },
+  {
+    id: 'gram-l1-06',
+    level: 1,
+    title: 'Câu hỏi với đại từ nghi vấn 什么 (Cái gì)',
+    meaning: 'Bạn tên là gì?',
+    tokens: ['名字？', '叫', '你', '什么'],
+    correctTokens: ['你', '叫', '什么', '名字？'],
+    explanation: 'Trật tự từ trong câu hỏi tiếng Trung giữ nguyên như câu khẳng định: S + 叫 + 什么 + 名字.',
+    topic: 'Đại từ nghi vấn 什么',
+    difficulty: 'easy'
+  },
+  {
+    id: 'gram-l1-07',
+    level: 1,
+    title: 'Số từ + Lượng từ 个 + Danh từ',
+    meaning: 'Tôi có ba người bạn Trung Quốc.',
+    tokens: ['中国朋友。', '有', '我', '三个'],
+    correctTokens: ['我', '有', '三个', '中国朋友。'],
+    explanation: 'Giữa số từ và danh từ bắt buộc phải có lượng từ tương ứng (三个 + 朋友).',
+    topic: 'Lượng từ 个',
+    difficulty: 'easy'
+  },
+  {
+    id: 'gram-l1-08',
+    level: 1,
+    title: 'Phó từ phủ định 不 (Không)',
+    meaning: 'Tôi không thích uống trà.',
+    tokens: ['喝茶。', '不', '我', '喜欢'],
+    correctTokens: ['我', '不', '喜欢', '喝茶。'],
+    explanation: 'Phó từ phủ định 不 đứng trước động từ hoặc tính từ biểu thị sự phủ định.',
+    topic: 'Phó từ phủ định 不',
+    difficulty: 'easy'
+  },
+  {
+    id: 'gram-l1-09',
+    level: 1,
+    title: 'Phó từ liên kết 也 (Cũng)',
+    meaning: 'Cô ấy cũng là sinh viên đại học.',
+    tokens: ['也是', '大学生。', '她'],
+    correctTokens: ['她', '也是', '大学生。'],
+    explanation: 'Phó từ 也 luôn đứng trước động từ hoặc tính từ, không đứng đầu câu.',
+    topic: 'Phó từ 也',
+    difficulty: 'easy'
+  },
+  {
+    id: 'gram-l1-10',
+    level: 1,
+    title: 'Động từ năng nguyện 会 (Biết qua học hỏi)',
+    meaning: 'Tôi biết nói một chút tiếng Trung.',
+    tokens: ['说', '会', '我', '一点儿汉语。'],
+    correctTokens: ['我', '会', '说', '一点儿汉语。'],
+    explanation: 'Động từ năng nguyện 会 đứng trước động từ chính biểu thị khả năng qua rèn luyện.',
+    topic: 'Động từ năng nguyện 会',
+    difficulty: 'easy'
   },
 
-  // Mức 2
+  // Mức 2 (HSK 2 - Tăng tốc & Sinh hoạt)
   {
     id: 'gram-l2-01',
     level: 2,
@@ -917,7 +1321,9 @@ export const GRAMMAR_DRILLS_BY_LEVEL = [
     meaning: 'Tôi muốn uống trà sữa.',
     tokens: ['喝', '我', '奶茶', '想'],
     correctTokens: ['我', '想', '喝', '奶茶'],
-    explanation: 'Động từ năng nguyện (想) đứng trước động từ chính (喝).'
+    explanation: 'Động từ năng nguyện (想) đứng trước động từ chính (喝).',
+    topic: 'Động từ năng nguyện 想',
+    difficulty: 'medium'
   },
   {
     id: 'gram-l2-02',
@@ -926,10 +1332,100 @@ export const GRAMMAR_DRILLS_BY_LEVEL = [
     meaning: 'Chiếc áo này bao nhiêu tiền?',
     tokens: ['多少钱', '衣服', '这件'],
     correctTokens: ['这件', '衣服', '多少钱'],
-    explanation: 'Lượng từ đi liền với danh từ: 这件衣服 + Đại từ nghi vấn 多少钱.'
+    explanation: 'Lượng từ đi liền với danh từ: 这件衣服 + Đại từ nghi vấn 多少钱.',
+    topic: 'Đại từ nghi vấn 多少',
+    difficulty: 'medium'
+  },
+  {
+    id: 'gram-l2-03',
+    level: 2,
+    title: 'Cấu trúc câu so sánh chữ 比 (Hơn)',
+    meaning: 'Hôm nay trời lạnh hơn hôm qua.',
+    tokens: ['比', '昨天', '冷。', '今天'],
+    correctTokens: ['今天', '比', '昨天', '冷。'],
+    explanation: 'Cấu trúc so sánh cơ bản: A + 比 + B + Tính từ.',
+    topic: 'Câu chữ 比',
+    difficulty: 'medium'
+  },
+  {
+    id: 'gram-l2-04',
+    level: 2,
+    title: 'Trợ từ động thái 了 (Hoàn thành hành động)',
+    meaning: 'Tôi đã mua một cuốn sách mới.',
+    tokens: ['一本', '买了', '我', '新书。'],
+    correctTokens: ['我', '买了', '一本', '新书。'],
+    explanation: 'Trợ từ 了 đứng ngay sau động từ biểu thị hành động đã hoàn tất.',
+    topic: 'Trợ từ động thái 了',
+    difficulty: 'medium'
+  },
+  {
+    id: 'gram-l2-05',
+    level: 2,
+    title: 'Kết cấu giới từ Từ... đến... (从...到...)',
+    meaning: 'Từ nhà tôi đến công ty rất gần.',
+    tokens: ['到', '我家', '很近。', '公司', '从'],
+    correctTokens: ['从', '我家', '到', '公司', '很近。'],
+    explanation: '从 [Điểm A] 到 [Điểm B] biểu thị phạm vi cự ly không gian hoặc mốc thời gian.',
+    topic: 'Giới từ 从...到...',
+    difficulty: 'medium'
+  },
+  {
+    id: 'gram-l2-06',
+    level: 2,
+    title: 'Cặp liên từ Vì... nên... (因为...所以...)',
+    meaning: 'Vì trời mưa nên tôi không đi đá bóng.',
+    tokens: ['下雨，', '所以我', '没去踢足球。', '因为'],
+    correctTokens: ['因为', '下雨，', '所以我', '没去踢足球。'],
+    explanation: '因为 nêu nguyên nhân, 所以 nêu kết quả tương ứng.',
+    topic: 'Liên từ 因为...所以...',
+    difficulty: 'medium'
+  },
+  {
+    id: 'gram-l2-07',
+    level: 2,
+    title: 'Bổ ngữ trạng thái với trợ từ 得',
+    meaning: 'Anh ấy chạy rất nhanh.',
+    tokens: ['跑得', '很快。', '他'],
+    correctTokens: ['他', '跑得', '很快。'],
+    explanation: 'Cấu trúc bổ ngữ trạng thái: Động từ + 得 + Cụm tính từ/Trạng ngữ.',
+    topic: 'Bổ ngữ trạng thái 得',
+    difficulty: 'medium'
+  },
+  {
+    id: 'gram-l2-08',
+    level: 2,
+    title: 'Trợ từ kinh nghiệm 过 (Từng trải nghiệm)',
+    meaning: 'Tôi đã từng đến Bắc Kinh.',
+    tokens: ['去过', '北京。', '我'],
+    correctTokens: ['我', '去过', '北京。'],
+    explanation: 'Động từ + 过 biểu thị hành động hoặc trải nghiệm từng diễn ra trong quá khứ.',
+    topic: 'Trợ từ động thái 过',
+    difficulty: 'medium'
+  },
+  {
+    id: 'gram-l2-09',
+    level: 2,
+    title: 'Phó từ chỉ tiến hành 正在...呢 (Đang...)',
+    meaning: 'Bố đang đọc báo trong phòng.',
+    tokens: ['看报纸呢。', '正在', '在房间', '爸爸'],
+    correctTokens: ['爸爸', '正在', '在房间', '看报纸呢。'],
+    explanation: '正在 + Động từ + 呢 biểu thị hành động đang tiếp diễn tại thời điểm nói.',
+    topic: 'Cấu trúc 正在...呢',
+    difficulty: 'medium'
+  },
+  {
+    id: 'gram-l2-10',
+    level: 2,
+    title: 'Câu cầu khiến lịch sự với 请 / 不要',
+    meaning: 'Xin mọi người đừng nói chuyện ồn ào.',
+    tokens: ['大声说话。', '请大家', '不要'],
+    correctTokens: ['请大家', '不要', '大声说话。'],
+    explanation: '请 + Đối tượng + 不要 + Động từ: Câu mệnh lệnh lịch sự trong giao tiếp công cộng.',
+    topic: 'Câu cầu khiến 请/不要',
+    difficulty: 'medium'
   },
 
-  // Mức 3
+  // Mức 3 (HSK 3 - Chinh phục & Bứt phá)
   {
     id: 'gram-l3-01',
     level: 3,
@@ -937,19 +1433,111 @@ export const GRAMMAR_DRILLS_BY_LEVEL = [
     meaning: 'Hãy mở máy điều hòa ra.',
     tokens: ['打开', '把', '空调', '请'],
     correctTokens: ['请', '把', '空调', '打开'],
-    explanation: 'Cấu trúc câu chữ 把: Chủ ngữ + 把 + Tân ngữ + Động từ + Thành phần khác.'
+    explanation: 'Cấu trúc câu chữ 把: Chủ ngữ + 把 + Tân ngữ + Động từ + Thành phần khác.',
+    topic: 'Câu chữ 把',
+    difficulty: 'hard'
   },
   {
     id: 'gram-l3-02',
     level: 3,
-    title: 'Cặp liên từ 虽然...但是...',
+    title: 'Cặp liên từ 虽然...但是... (Tuy... nhưng...)',
     meaning: 'Tuy rất mệt nhưng rất vui.',
     tokens: ['很累', '虽然', '但是', '很高兴'],
     correctTokens: ['虽然', '很累', '但是', '很高兴'],
-    explanation: 'Cấu trúc mặc dù... nhưng... liên kết hai vế đối lập.'
+    explanation: 'Cấu trúc mặc dù... nhưng... liên kết hai vế tương phản đối lập.',
+    topic: 'Liên từ 虽然...但是...',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l3-03',
+    level: 3,
+    title: 'Cấu trúc câu bị động chữ 被',
+    meaning: 'Chiếc bánh ngọt đã bị em trai ăn mất rồi.',
+    tokens: ['弟弟', '蛋糕', '吃了。', '被'],
+    correctTokens: ['蛋糕', '被', '弟弟', '吃了。'],
+    explanation: 'Cấu trúc câu bị động: Tân ngữ chịu tác động + 被 + Tác nhân + Động từ + Thành phần khác.',
+    topic: 'Câu chữ 被',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l3-04',
+    level: 3,
+    title: 'Cấu trúc tăng tiến tương quan 越...越...',
+    meaning: 'Tiếng Trung càng học càng cảm thấy thú vị.',
+    tokens: ['越觉得', '越学', '汉语', '有意思。'],
+    correctTokens: ['汉语', '越学', '越觉得', '有意思。'],
+    explanation: '越 A 越 B biểu thị mức độ của B tăng tiến theo sự phát triển của điều kiện A.',
+    topic: 'Cấu trúc 越...越...',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l3-05',
+    level: 3,
+    title: 'Bổ ngữ xu hướng kép (Động từ + 起来 / 出来 / 下去)',
+    meaning: 'Mặt trời từ hướng đông mọc lên rồi.',
+    tokens: ['升起来了。', '太阳', '从东方'],
+    correctTokens: ['太阳', '从东方', '升起来了。'],
+    explanation: 'Bổ ngữ xu hướng kép kết hợp động từ chỉ hướng và 来/去.',
+    topic: 'Bổ ngữ xu hướng kép',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l3-06',
+    level: 3,
+    title: 'Cấu trúc loại trừ và bổ sung: 除了...以外',
+    meaning: 'Ngoài táo ra, anh ấy còn thích ăn chuối.',
+    tokens: ['以外，', '他还', '除了', '苹果', '喜欢吃香蕉。'],
+    correctTokens: ['除了', '苹果', '以外，', '他还', '喜欢吃香蕉。'],
+    explanation: '除了...以外 + 还/也 biểu thị ngoài phần kể trước thì còn bổ sung thêm thành phần khác.',
+    topic: 'Cấu trúc 除了...以外',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l3-07',
+    level: 3,
+    title: 'Cấu trúc hành động đồng thời: 一边...一边...',
+    meaning: 'Chúng tôi vừa uống cà phê vừa trò chuyện vui vẻ.',
+    tokens: ['一边', '喝咖啡，', '我们', '一边', '愉快地聊天。'],
+    correctTokens: ['我们', '一边', '喝咖啡，', '一边', '愉快地聊天。'],
+    explanation: '一边 A 一边 B biểu thị cùng một chủ thể thực hiện đồng thời hai hành vi.',
+    topic: 'Cấu trúc 一边...一边...',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l3-08',
+    level: 3,
+    title: 'Cấu trúc câu phản vấn: 不是...吗？',
+    meaning: 'Chẳng phải bạn đã đồng ý rồi sao?',
+    tokens: ['答应了吗？', '你', '不是', '已经'],
+    correctTokens: ['你', '不是', '已经', '答应了吗？'],
+    explanation: 'Cấu trúc 不是...吗 dùng để khẳng định mạnh mẽ hoặc nhắc nhở về điều hiển nhiên.',
+    topic: 'Câu phản vấn 不是...吗',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l3-09',
+    level: 3,
+    title: 'Liên từ song hành tính chất: 又...又...',
+    meaning: 'Căn phòng này vừa rộng rãi lại vừa sạch sẽ.',
+    tokens: ['这个房间', '又干净。', '又大'],
+    correctTokens: ['这个房间', '又大', '又干净。'],
+    explanation: '又 A 又 B dùng để kết hợp hai tính chất có cùng chiều hướng biểu cảm.',
+    topic: 'Liên từ 又...又...',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l3-10',
+    level: 3,
+    title: 'Trợ từ trạng ngữ 地 (Chỉ phương thức hành động)',
+    meaning: 'Các học sinh chăm chú lắng nghe cô giáo giảng bài.',
+    tokens: ['认真地', '听老师讲课。', '同学们'],
+    correctTokens: ['同学们', '认真地', '听老师讲课。'],
+    explanation: 'Tính từ/Cụm từ + 地 đứng trước động từ miêu tả thái độ, cách thức hành động.',
+    topic: 'Trợ từ trạng ngữ 地',
+    difficulty: 'hard'
   },
 
-  // Mức 4
+  // Mức 4 (HSK 4 - Thử thách Bậc thầy & Công sở)
   {
     id: 'gram-l4-01',
     level: 4,
@@ -957,7 +1545,108 @@ export const GRAMMAR_DRILLS_BY_LEVEL = [
     meaning: 'Chỉ cần chăm chỉ thì sẽ thành công.',
     tokens: ['就', '只要', '努力', '会成功'],
     correctTokens: ['只要', '努力', '就', '会成功'],
-    explanation: '只要 A 就 B: Chỉ cần A thì sẽ B (điều kiện đủ).'
+    explanation: '只要 A 就 B: Chỉ cần A thì sẽ B (điều kiện đủ).',
+    topic: 'Điều kiện đủ 只要...就...',
+    difficulty: 'challenge'
+  },
+  {
+    id: 'gram-l4-02',
+    level: 4,
+    title: 'Cặp liên từ tăng tiến: 不仅...而且...',
+    meaning: 'Anh ấy không những nói tiếng Trung lưu loát mà còn biết viết thư pháp.',
+    tokens: ['不仅', '流利，', '汉语说得', '他', '而且', '会写书法。'],
+    correctTokens: ['他', '不仅', '汉语说得', '流利，', '而且', '会写书法。'],
+    explanation: '不仅 A 而且 B biểu thị mối quan hệ tăng tiến về trình độ hoặc phạm vi giữa hai vế câu.',
+    topic: 'Liên từ tăng tiến 不仅...而且...',
+    difficulty: 'challenge'
+  },
+  {
+    id: 'gram-l4-03',
+    level: 4,
+    title: 'Cấu trúc điều kiện toàn thể: 无论...都...',
+    meaning: 'Bất luận gặp phải khó khăn gì, chúng tôi đều kiên trì đến cùng.',
+    tokens: ['无论', '坚持到底。', '遇到什么困难，', '我们', '都'],
+    correctTokens: ['无论', '遇到什么困难，', '我们', '都', '坚持到底。'],
+    explanation: '无论 đi kèm đại từ nghi vấn (什么/怎么) ở vế trước, vế sau dùng 都 biểu thị kết quả không đổi.',
+    topic: 'Điều kiện toàn thể 无论...都...',
+    difficulty: 'challenge'
+  },
+  {
+    id: 'gram-l4-04',
+    level: 4,
+    title: 'Cấu trúc nhấn mạnh trường hợp cực đoan: 连...都/也...',
+    meaning: 'Bài toán đơn giản thế này ngay cả đứa trẻ cũng biết làm.',
+    tokens: ['小孩子', '都会做。', '连', '这么简单的问题，'],
+    correctTokens: ['这么简单的问题，', '连', '小孩子', '都会做。'],
+    explanation: '连 + Đối tượng cực đoan + 都/也 + Vị ngữ: Đưa ra ví dụ tối thiểu để nhấn mạnh điều hiển nhiên.',
+    topic: 'Cấu trúc nhấn mạnh 连...都...',
+    difficulty: 'challenge'
+  },
+  {
+    id: 'gram-l4-05',
+    level: 4,
+    title: 'Giới từ chỉ phạm vi đối tượng: 对于 (Đối với)',
+    meaning: 'Đối với phương án mới này, mọi người đều rất tán thành.',
+    tokens: ['大家', '这个新方案，', '都表示赞成。', '对于'],
+    correctTokens: ['对于', '这个新方案，', '大家', '都表示赞成。'],
+    explanation: '对于 nêu ra sự vật, hiện tượng làm đối tượng được xem xét hoặc có thái độ tương ứng.',
+    topic: 'Giới từ 对于',
+    difficulty: 'challenge'
+  },
+  {
+    id: 'gram-l4-06',
+    level: 4,
+    title: 'Bổ ngữ khả năng phủ định (Động từ + 不 + Bổ ngữ)',
+    meaning: 'Nhiều bài tập như vậy một tiếng đồng hồ làm sao xong được.',
+    tokens: ['做不完。', '这么多作业，', '一个小时'],
+    correctTokens: ['这么多作业，', '一个小时', '做不完。'],
+    explanation: 'Cấu trúc phủ định của bổ ngữ khả năng: Động từ + 不 + Bổ ngữ kết quả/xu hướng (做不完 = không thể làm xong).',
+    topic: 'Bổ ngữ khả năng',
+    difficulty: 'challenge'
+  },
+  {
+    id: 'gram-l4-07',
+    level: 4,
+    title: 'Cấu trúc nguyên nhân suy luận: 既然...就...',
+    meaning: 'Đã hứa với người khác thì phải giữ lời.',
+    tokens: ['答应了别人，', '既然', '就应该', '遵守诺言。'],
+    correctTokens: ['既然', '答应了别人，', '就应该', '遵守诺言。'],
+    explanation: '既然 nêu hiện thực đã thành tiền đề, 就 dẫn ra kết luận hoặc kiến nghị hợp logic.',
+    topic: 'Liên từ 既然...就...',
+    difficulty: 'challenge'
+  },
+  {
+    id: 'gram-l4-08',
+    level: 4,
+    title: 'Phó từ truy vấn ngọn ngành: 究竟 (Rốt cuộc)',
+    meaning: 'Rốt cuộc là ai đã phát hiện ra bí mật này?',
+    tokens: ['发现了', '究竟', '是谁', '这个秘密？'],
+    correctTokens: ['究竟', '是谁', '发现了', '这个秘密？'],
+    explanation: 'Phó từ 究竟 dùng trong câu hỏi để nhấn mạnh sự truy cứu đến cùng bản chất sự việc.',
+    topic: 'Phó từ 究竟',
+    difficulty: 'challenge'
+  },
+  {
+    id: 'gram-l4-09',
+    level: 4,
+    title: 'Cấu trúc lựa chọn loại suy: 不是...就是...',
+    meaning: 'Cuối tuần anh ấy không phải ở nhà đọc sách thì là đi leo núi.',
+    tokens: ['在家里看书，', '周末他', '不是', '就是', '去爬山。'],
+    correctTokens: ['周末他', '不是', '在家里看书，', '就是', '去爬山。'],
+    explanation: '不是 A 就是 B loại trừ các phương án khác, chỉ ra một trong hai khả năng chắc chắn xảy ra.',
+    topic: 'Cấu trúc 不是...就是...',
+    difficulty: 'challenge'
+  },
+  {
+    id: 'gram-l4-10',
+    level: 4,
+    title: 'Phó từ biểu thị sự bất ngờ ngoài dự liệu: 居然 (Lại có thể)',
+    meaning: 'Anh ấy thế mà lại đỗ vào trường đại học danh tiếng nhất.',
+    tokens: ['考上了', '他', '居然', '最好的大学。'],
+    correctTokens: ['他', '居然', '考上了', '最好的大学。'],
+    explanation: 'Phó từ 居然 đứng trước vị ngữ biểu thị sự việc diễn ra bất ngờ, ngoài mong đợi.',
+    topic: 'Phó từ 居然',
+    difficulty: 'challenge'
   },
 
   // Mức 5 (HSK 5 - Cao cấp & Học thuật)

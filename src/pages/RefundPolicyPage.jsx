@@ -77,7 +77,7 @@ export default function RefundPolicyPage({ setActiveTab }) {
           <div className="pt-2 flex flex-wrap items-center gap-4 text-xs text-slate-400">
             <span>📅 Ngày hiệu lực: <strong>01/01/2026</strong></span>
             <span>•</span>
-            <span>🔍 Cập nhật gần nhất: <strong>20/10/2026</strong></span>
+            <span>🔍 Cập nhật gần nhất: <strong>09/11/2026</strong></span>
             <span>•</span>
             <span>Trạng thái: <strong>Miễn phí toàn phần (Non-commercial)</strong></span>
           </div>

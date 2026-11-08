@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import UserAvatar from './common/UserAvatar.jsx';
 import { 
   Flame, 
   BookOpen, 
@@ -468,27 +469,11 @@ export default function Navbar({
                   className="flex items-center gap-1.5 pl-1 cursor-pointer group shrink-0"
                   title="Nhấn để xem menu người dùng"
                 >
-                  {(() => {
-                    const navAvatar = user.avatar || localStorage.getItem('hanzigo_custom_avatar');
-                    if (navAvatar) {
-                      return navAvatar.length <= 4 ? (
-                        <div className="w-8 h-8 rounded-full bg-[#FFF5F2] dark:bg-[#2C1D1A] border-2 border-[#E85D3F] flex items-center justify-center text-sm shadow-sm group-hover:ring-2 ring-[#E85D3F]/50 transition-all shrink-0">
-                          {navAvatar}
-                        </div>
-                      ) : (
-                        <img 
-                          src={navAvatar} 
-                          alt={user.name} 
-                          className="w-8 h-8 rounded-full object-cover border-2 border-[#E85D3F] shadow-sm group-hover:ring-2 ring-[#E85D3F]/50 transition-all shrink-0"
-                        />
-                      );
-                    }
-                    return (
-                      <div className="w-8 h-8 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border-2 border-[#E85D3F] flex items-center justify-center text-[#E85D3F] font-bold text-xs shadow-sm group-hover:ring-2 ring-[#E85D3F]/50 transition-all shrink-0">
-                        {user.name ? user.name.charAt(0).toUpperCase() : <User size={14} />}
-                      </div>
-                    );
-                  })()}
+                  <UserAvatar 
+                    user={user} 
+                    size="md" 
+                    className="group-hover:ring-2 ring-[#E85D3F]/50 transition-all shrink-0" 
+                  />
 
                   <div className="hidden 2xl:block text-left whitespace-nowrap">
                     <p className="text-xs font-bold text-[#243447] dark:text-white leading-tight truncate max-w-[85px]">

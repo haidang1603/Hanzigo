@@ -9,26 +9,17 @@
  * 4. Rule-Based At-Risk Detection (Xác định học viên nguy cơ bỏ học / hổng kiến thức KHÔNG dùng AI)
  */
 
-import { calculateStudentHealthStatus } from './classroomService.js';
+import { 
+  calculateStudentHealthStatus,
+  getClassroomsForTeacher,
+  getAllStudentsForTeacher,
+  getAllSubmissionsForTeacher,
+  getAssignmentsForClassroom,
+  sanitizeStudentDataForTeacher
+} from './classroomService.js';
 
-/**
- * Lọc bỏ hoàn toàn các thông tin nhạy cảm của tài khoản học viên (Student Privacy)
- * Giáo viên chỉ được xem dữ liệu học tập cần thiết, KHÔNG BAO GIỜ thấy mật khẩu hay auth token.
- */
-export function sanitizeStudentDataForTeacher(student) {
-  if (!student || typeof student !== 'object') return null;
-  const safe = { ...student };
-  delete safe.password;
-  delete safe.password_hash;
-  delete safe.token;
-  delete safe.access_token;
-  delete safe.refresh_token;
-  delete safe.auth_token;
-  delete safe.secret;
-  delete safe.raw_user_meta_data;
-  delete safe.private_account_info;
-  return safe;
-}
+// Re-export sanitizeStudentDataForTeacher from classroomService for backward compatibility
+export { sanitizeStudentDataForTeacher };
 
 /**
  * Tính toán số liệu phân tích tổng quan cho một lớp học (hoặc toàn bộ các lớp)
@@ -629,4 +620,484 @@ export function getAtRiskStudents(members = [], submissions = []) {
       weakVocabularyCount
     }
   };
+}
+
+export async function getTeacherOverviewMetrics(teacherId) {
+  if (!teacherId) {
+    throw new Error('Yêu cầu teacherId hợp lệ để truy xuất thống kê giảng dạy.');
+  }
+
+  const [classrooms, students, submissions] = await Promise.all([
+    getClassroomsForTeacher(teacherId).catch(() => []),
+    getAllStudentsForTeacher(teacherId).catch(() => []),
+    getAllSubmissionsForTeacher(teacherId).catch(() => [])
+  ]);
+
+  const safeClasses = classrooms || [];
+  const safeStudents = students || [];
+  const safeSubs = submissions || [];
+
+  // Lấy danh sách assignment của các lớp
+  let totalAssignments = 0;
+  try {
+    const assignmentPromises = safeClasses.map(c => getAssignmentsForClassroom(c.id).catch(() => []));
+    const allAssignments = await Promise.all(assignmentPromises);
+    totalAssignments = allAssignments.reduce((acc, list) => acc + (list ? list.length : 0), 0);
+  } catch (err) {
+    console.warn('Error counting assignments for teacher:', err);
+  }
+
+  const pendingSubmissions = safeSubs.filter(s => !s.graded).length;
+  const gradedSubmissions = safeSubs.filter(s => s.graded).length;
+
+  return {
+    totalClassrooms: safeClasses.length,
+    totalStudents: safeStudents.length,
+    totalAssignments,
+    pendingSubmissions,
+    gradedSubmissions,
+    classrooms: safeClasses
+  };
+}
+
+/**
+ * 2. Tiến độ học tập của các học viên trong lớp (Bar Chart)
+ * @param {string} teacherId
+ * @param {string} classroomId 'all' hoặc ID cụ thể của lớp
+ */
+export async function getClassLearningProgress(teacherId, classroomId = 'all') {
+  if (!teacherId) return { studentsProgress: [], classAverage: 0 };
+
+  const [classrooms, students, submissions] = await Promise.all([
+    getClassroomsForTeacher(teacherId).catch(() => []),
+    getAllStudentsForTeacher(teacherId).catch(() => []),
+    getAllSubmissionsForTeacher(teacherId).catch(() => [])
+  ]);
+
+  // Xác minh quyền sở hữu lớp (Security Isolation)
+  const teacherClassIds = new Set((classrooms || []).map(c => c.id));
+  if (classroomId !== 'all' && !teacherClassIds.has(classroomId)) {
+    throw new Error('Từ chối truy cập: Bạn không có quyền quản lý lớp học này.');
+  }
+
+  // Lọc học viên theo lớp
+  const targetStudents = (students || []).filter(s => {
+    if (classroomId === 'all') return teacherClassIds.has(s.classroom_id);
+    return s.classroom_id === classroomId;
+  });
+
+  // Lấy tổng số bài tập của lớp
+  let totalAssignmentsCount = 0;
+  if (classroomId === 'all') {
+    const assignmentLists = await Promise.all(
+      Array.from(teacherClassIds).map(cId => getAssignmentsForClassroom(cId).catch(() => []))
+    );
+    totalAssignmentsCount = assignmentLists.reduce((acc, list) => acc + (list?.length || 0), 0);
+  } else {
+    const list = await getAssignmentsForClassroom(classroomId).catch(() => []);
+    totalAssignmentsCount = list.length;
+  }
+
+  // Tính tiến độ cho từng học viên
+  const studentsProgress = targetStudents.map(student => {
+    const studentSubs = (submissions || []).filter(s => 
+      s.student_id === student.student_id && 
+      (classroomId === 'all' || s.classroom_id === classroomId)
+    );
+    const completedCount = studentSubs.length;
+    
+    let rate = 0;
+    if (totalAssignmentsCount > 0) {
+      rate = Math.min(100, Math.round((completedCount / totalAssignmentsCount) * 100));
+    } else {
+      rate = Math.min(100, (student.lessons_completed || 0) * 5); // Fallback theo tiến độ bài học
+    }
+
+    return {
+      studentId: student.student_id || student.id,
+      name: student.student_name || 'Học viên',
+      email: student.student_email || '',
+      avatar: student.student_avatar || null,
+      classroomName: student.classroom_name || 'Lớp học',
+      classroomId: student.classroom_id,
+      completedCount,
+      totalAssignmentsCount,
+      completionRate: rate,
+      lastActive: student.last_active || student.joined_at
+    };
+  });
+
+  const totalRate = studentsProgress.reduce((sum, s) => sum + s.completionRate, 0);
+  const classAverage = studentsProgress.length > 0 ? Math.round(totalRate / studentsProgress.length) : 0;
+
+  return {
+    classroomId,
+    totalStudents: studentsProgress.length,
+    classAverage,
+    studentsProgress
+  };
+}
+
+/**
+ * 3. Phân tích kết quả bài kiểm tra & bài tập (Score Distribution & Averages)
+ * @param {string} teacherId
+ * @param {string} classroomId
+ */
+export async function getStudentPerformanceData(teacherId, classroomId = 'all') {
+  if (!teacherId) return { averageScore: 0, tiers: [], submissionsCount: 0 };
+
+  const [classrooms, submissions] = await Promise.all([
+    getClassroomsForTeacher(teacherId).catch(() => []),
+    getAllSubmissionsForTeacher(teacherId).catch(() => [])
+  ]);
+
+  const teacherClassIds = new Set((classrooms || []).map(c => c.id));
+  if (classroomId !== 'all' && !teacherClassIds.has(classroomId)) {
+    throw new Error('Từ chối truy cập: Lớp học không thuộc quyền quản lý của bạn.');
+  }
+
+  // Lọc bài nộp đã chấm (graded == true) và thuộc lớp được chọn
+  const gradedSubs = (submissions || []).filter(s => {
+    if (!s.graded || typeof s.score !== 'number') return false;
+    if (classroomId === 'all') return teacherClassIds.has(s.classroom_id);
+    return s.classroom_id === classroomId;
+  });
+
+  if (gradedSubs.length === 0) {
+    return {
+      averageScore: 0,
+      submissionsCount: 0,
+      tiers: [
+        { id: 'excellent', label: 'Xuất sắc (85-100đ)', count: 0, percentage: 0, color: '#10B981' },
+        { id: 'good', label: 'Khá (70-84đ)', count: 0, percentage: 0, color: '#3B82F6' },
+        { id: 'average', label: 'Trung bình (50-69đ)', count: 0, percentage: 0, color: '#F59E0B' },
+        { id: 'needsHelp', label: 'Cần nỗ lực (<50đ)', count: 0, percentage: 0, color: '#EF4444' }
+      ]
+    };
+  }
+
+  let excellent = 0; // 85-100
+  let good = 0;      // 70-84
+  let average = 0;   // 50-69
+  let needsHelp = 0; // < 50
+  let totalScore = 0;
+
+  gradedSubs.forEach(s => {
+    const score = s.score;
+    totalScore += score;
+    if (score >= 85) excellent++;
+    else if (score >= 70) good++;
+    else if (score >= 50) average++;
+    else needsHelp++;
+  });
+
+  const total = gradedSubs.length;
+  const avg = Math.round((totalScore / total) * 10) / 10;
+
+  return {
+    averageScore: avg,
+    submissionsCount: total,
+    tiers: [
+      {
+        id: 'excellent',
+        label: 'Xuất sắc (85-100đ)',
+        count: excellent,
+        percentage: Number(((excellent / total) * 100).toFixed(1)),
+        color: '#10B981'
+      },
+      {
+        id: 'good',
+        label: 'Khá (70-84đ)',
+        count: good,
+        percentage: Number(((good / total) * 100).toFixed(1)),
+        color: '#3B82F6'
+      },
+      {
+        id: 'average',
+        label: 'Trung bình (50-69đ)',
+        count: average,
+        percentage: Number(((average / total) * 100).toFixed(1)),
+        color: '#F59E0B'
+      },
+      {
+        id: 'needsHelp',
+        label: 'Cần nỗ lực (<50đ)',
+        count: needsHelp,
+        percentage: Number(((needsHelp / total) * 100).toFixed(1)),
+        color: '#EF4444'
+      }
+    ]
+  };
+}
+
+/**
+ * 4. Biểu đồ trạng thái bài tập (Donut Chart - Mutually Exclusive States)
+ */
+export async function getAssignmentStatusData(teacherId, classroomId = 'all') {
+  if (!teacherId) return { totalTasks: 0, statuses: [] };
+
+  const [classrooms, students, submissions] = await Promise.all([
+    getClassroomsForTeacher(teacherId).catch(() => []),
+    getAllStudentsForTeacher(teacherId).catch(() => []),
+    getAllSubmissionsForTeacher(teacherId).catch(() => [])
+  ]);
+
+  const teacherClassIds = new Set((classrooms || []).map(c => c.id));
+  if (classroomId !== 'all' && !teacherClassIds.has(classroomId)) {
+    throw new Error('Từ chối truy cập: Lớp học không thuộc quyền quản lý của bạn.');
+  }
+
+  const targetClassIds = classroomId === 'all' ? Array.from(teacherClassIds) : [classroomId];
+  const assignmentLists = await Promise.all(
+    targetClassIds.map(cId => getAssignmentsForClassroom(cId).catch(() => []))
+  );
+  const assignments = assignmentLists.flat();
+
+  const targetStudents = (students || []).filter(s => {
+    if (classroomId === 'all') return teacherClassIds.has(s.classroom_id);
+    return s.classroom_id === classroomId;
+  });
+
+  const now = Date.now();
+  let gradedCount = 0;
+  let pendingGradeCount = 0;
+  let overdueCount = 0;
+  let notSubmittedCount = 0;
+
+  assignments.forEach(assign => {
+    const classStudents = targetStudents.filter(s => s.classroom_id === assign.classroom_id);
+    const isPastDue = assign.due_date ? new Date(assign.due_date).getTime() < now : false;
+
+    classStudents.forEach(stu => {
+      const sub = (submissions || []).find(s => 
+        s.assignment_id === assign.id && s.student_id === stu.student_id
+      );
+
+      if (sub) {
+        if (sub.graded) {
+          gradedCount++;
+        } else {
+          pendingGradeCount++;
+        }
+      } else {
+        if (isPastDue) {
+          overdueCount++;
+        } else {
+          notSubmittedCount++;
+        }
+      }
+    });
+  });
+
+  const totalTasks = gradedCount + pendingGradeCount + overdueCount + notSubmittedCount;
+
+  return {
+    totalTasks,
+    statuses: [
+      {
+        id: 'graded',
+        label: 'Đã chấm',
+        count: gradedCount,
+        percentage: totalTasks > 0 ? Number(((gradedCount / totalTasks) * 100).toFixed(1)) : 0,
+        color: '#10B981' // Green
+      },
+      {
+        id: 'pending_grade',
+        label: 'Chờ chấm',
+        count: pendingGradeCount,
+        percentage: totalTasks > 0 ? Number(((pendingGradeCount / totalTasks) * 100).toFixed(1)) : 0,
+        color: '#F59E0B' // Amber
+      },
+      {
+        id: 'overdue',
+        label: 'Quá hạn',
+        count: overdueCount,
+        percentage: totalTasks > 0 ? Number(((overdueCount / totalTasks) * 100).toFixed(1)) : 0,
+        color: '#EF4444' // Red
+      },
+      {
+        id: 'not_submitted',
+        label: 'Chưa nộp',
+        count: notSubmittedCount,
+        percentage: totalTasks > 0 ? Number(((notSubmittedCount / totalTasks) * 100).toFixed(1)) : 0,
+        color: '#64748B' // Slate
+      }
+    ]
+  };
+}
+
+/**
+ * 5. Hoạt động nộp bài và tương tác của lớp theo mốc thời gian (Area / Line Chart)
+ * @param {string} teacherId
+ * @param {string} classroomId
+ * @param {'7d' | '30d' | '90d'} timeframe
+ */
+export async function getClassActivityData(teacherId, classroomId = 'all', timeframe = '30d') {
+  if (!teacherId) return { timeframe, totalEvents: 0, points: [] };
+
+  const [classrooms, submissions] = await Promise.all([
+    getClassroomsForTeacher(teacherId).catch(() => []),
+    getAllSubmissionsForTeacher(teacherId).catch(() => [])
+  ]);
+
+  const teacherClassIds = new Set((classrooms || []).map(c => c.id));
+  if (classroomId !== 'all' && !teacherClassIds.has(classroomId)) {
+    throw new Error('Từ chối truy cập: Lớp học không thuộc quyền quản lý của bạn.');
+  }
+
+  const targetSubs = (submissions || []).filter(s => {
+    if (classroomId === 'all') return teacherClassIds.has(s.classroom_id);
+    return s.classroom_id === classroomId;
+  });
+
+  const now = new Date();
+  let days = 30;
+  if (timeframe === '7d') days = 7;
+  else if (timeframe === '90d') days = 90;
+
+  const startDate = new Date();
+  startDate.setDate(now.getDate() - days + 1);
+  startDate.setHours(0, 0, 0, 0);
+
+  const dateMap = {};
+  for (let i = 0; i < days; i++) {
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
+    dateMap[dateStr] = 0;
+  }
+
+  let totalEvents = 0;
+
+  targetSubs.forEach(s => {
+    const timestamp = s.submitted_at || s.created_at;
+    if (!timestamp) return;
+    const dateStr = new Date(timestamp).toISOString().split('T')[0];
+    if (dateMap[dateStr] !== undefined) {
+      dateMap[dateStr] += 1;
+      totalEvents += 1;
+    }
+  });
+
+  let cumulative = 0;
+  const points = Object.entries(dateMap).map(([date, count]) => {
+    cumulative += count;
+    const [y, m, d] = date.split('-');
+    return {
+      date,
+      displayDate: `${d}/${m}`,
+      count,
+      cumulative
+    };
+  });
+
+  return {
+    timeframe,
+    totalEvents,
+    points
+  };
+}
+
+/**
+ * 6. Danh sách học viên cần quan tâm đặc biệt (Students Requiring Attention)
+ */
+export async function getStudentsRequiringAttention(teacherId, classroomId = 'all') {
+  if (!teacherId) return [];
+
+  const [classrooms, students, submissions] = await Promise.all([
+    getClassroomsForTeacher(teacherId).catch(() => []),
+    getAllStudentsForTeacher(teacherId).catch(() => []),
+    getAllSubmissionsForTeacher(teacherId).catch(() => [])
+  ]);
+
+  const teacherClassIds = new Set((classrooms || []).map(c => c.id));
+  if (classroomId !== 'all' && !teacherClassIds.has(classroomId)) {
+    throw new Error('Từ chối truy cập: Lớp học không thuộc quyền quản lý của bạn.');
+  }
+
+  const targetClassIds = classroomId === 'all' ? Array.from(teacherClassIds) : [classroomId];
+  const assignmentLists = await Promise.all(
+    targetClassIds.map(cId => getAssignmentsForClassroom(cId).catch(() => []))
+  );
+  const assignments = assignmentLists.flat();
+
+  const targetStudents = (students || []).filter(s => {
+    if (classroomId === 'all') return teacherClassIds.has(s.classroom_id);
+    return s.classroom_id === classroomId;
+  });
+
+  const now = Date.now();
+  const attentionList = [];
+
+  targetStudents.forEach(stu => {
+    const stuSubs = (submissions || []).filter(s => s.student_id === stu.student_id);
+    
+    // 1. Số bài quá hạn chưa nộp
+    const stuAssignments = assignments.filter(a => a.classroom_id === stu.classroom_id);
+    let overdueCount = 0;
+    stuAssignments.forEach(a => {
+      const hasSub = stuSubs.some(s => s.assignment_id === a.id);
+      if (!hasSub && a.due_date && new Date(a.due_date).getTime() < now) {
+        overdueCount++;
+      }
+    });
+
+    // 2. Số ngày không hoạt động
+    let daysInactive = 0;
+    const lastActiveTime = stu.last_active || stu.joined_at;
+    if (lastActiveTime) {
+      const diffMs = now - new Date(lastActiveTime).getTime();
+      daysInactive = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+    }
+
+    // 3. Điểm trung bình bài đã chấm
+    const gradedSubs = stuSubs.filter(s => s.graded && typeof s.score === 'number');
+    let avgScore = null;
+    if (gradedSubs.length > 0) {
+      const sum = gradedSubs.reduce((acc, s) => acc + s.score, 0);
+      avgScore = Math.round(sum / gradedSubs.length);
+    }
+
+    // 4. Tỷ lệ hoàn thành bài tập
+    let completionRate = 100;
+    if (stuAssignments.length > 0) {
+      completionRate = Math.round((stuSubs.length / stuAssignments.length) * 100);
+    }
+
+    // 5. Đánh giá trạng thái sư phạm
+    const health = calculateStudentHealthStatus({
+      daysInactive,
+      completionRate,
+      overdueCount,
+      avgScore
+    });
+
+    if (health.status !== 'Healthy') {
+      attentionList.push({
+        studentId: stu.student_id || stu.id,
+        name: stu.student_name || 'Học viên',
+        email: stu.student_email || '',
+        avatar: stu.student_avatar || null,
+        classroomId: stu.classroom_id,
+        classroomName: stu.classroom_name || 'Lớp học',
+        daysInactive,
+        overdueCount,
+        completionRate,
+        avgScore,
+        status: health.status,
+        color: health.color,
+        badgeClass: health.badgeClass,
+        reason: health.reason
+      });
+    }
+  });
+
+  // Sắp xếp: At Risk lên đầu, sau đó theo số bài quá hạn
+  attentionList.sort((a, b) => {
+    if (a.status === 'At Risk' && b.status !== 'At Risk') return -1;
+    if (a.status !== 'At Risk' && b.status === 'At Risk') return 1;
+    return b.overdueCount - a.overdueCount;
+  });
+
+  return attentionList;
 }

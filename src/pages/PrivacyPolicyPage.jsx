@@ -85,9 +85,9 @@ export default function PrivacyPolicyPage({ setActiveTab }) {
           <div className="pt-2 flex flex-wrap items-center gap-4 text-xs text-slate-400">
             <span>📅 Ngày hiệu lực: <strong>01/01/2026</strong></span>
             <span>•</span>
-            <span>🔍 Cập nhật gần nhất: <strong>12/10/2026</strong></span>
+            <span>🔍 Cập nhật gần nhất: <strong>09/11/2026</strong></span>
             <span>•</span>
-            <span>Phiên bản: <strong>2.4 (Toàn diện)</strong></span>
+            <span>Phiên bản: <strong>2.5 (Chính thức)</strong></span>
           </div>
         </div>
 

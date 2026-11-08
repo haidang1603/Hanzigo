@@ -20,6 +20,8 @@ export * from './aiFeedbackService.js';
 export * from './characterDictionaryService.js';
 export * from './customVocabularyService.js';
 export * from './customLessonService.js';
+export * from './adminAnalyticsService.js';
+export * from './teacherAnalyticsService.js';
 export {
   GAMIFICATION_KEYS,
   REWARD_LIMITS,

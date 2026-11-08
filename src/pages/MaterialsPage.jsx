@@ -60,6 +60,7 @@ import {
   deleteMaterialFromDb, 
   updateMaterialInDb 
 } from '../supabase/services';
+import { supabase, isSupabaseConfigured } from '../supabase/config';
 import { awardXp } from '../utils/gamification';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -187,7 +188,7 @@ const CURATED_LEVEL_BUNDLES = [
   {
     id: 'bundle-hsk4',
     level: 'HSK 4',
-    title: 'HSK 4+ Nâng Cao & Thành Ngữ',
+    title: 'HSK 4 Nâng Cao & Thành Ngữ',
     subtitle: '1200+ từ & Ngữ pháp AllSet Wiki',
     color: '#8B5CF6',
     bgLight: 'from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30',
@@ -3103,6 +3104,9 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
         onNavigateExam={(examId) => {
           window.location.hash = `#hsk/exam/${examId}`;
           if (setActiveTab) setActiveTab('hsk');
+        }}
+        onOpenReport={(item) => {
+          setBrokenReportTarget(item);
         }}
         onReportBroken={(item) => {
           setBrokenReportTarget(item);

@@ -690,7 +690,7 @@ export const LEVEL_SYSTEM = [
   { level: 10, minXp: 4200, maxXp: 5200, title: 'Người Khám Phá Hán Ngữ (Chinese Explorer)', badge: '🧭', hskEquivalent: 'HSK 3+' },
   { level: 11, minXp: 5200, maxXp: 6350, title: 'Cao Thủ Nghe Hiểu', badge: '🎧', hskEquivalent: 'HSK 4-' },
   { level: 12, minXp: 6350, maxXp: 7650, title: 'Độc Giả Hán Tự', badge: '📖', hskEquivalent: 'HSK 4' },
-  { level: 13, minXp: 7650, maxXp: 9100, title: 'Tinh Anh Khẩu Ngữ', badge: '🎙️', hskEquivalent: 'HSK 4+' },
+  { level: 13, minXp: 7650, maxXp: 9100, title: 'Tinh Anh Khẩu Ngữ', badge: '🎙️', hskEquivalent: 'HSK 4' },
   { level: 14, minXp: 9100, maxXp: 10700, title: 'Hiệp Sĩ Hán Ngữ', badge: '🛡️', hskEquivalent: 'HSK 5-' },
   { level: 15, minXp: 10700, maxXp: 12500, title: 'Chuyên Gia Thành Ngữ', badge: '📜', hskEquivalent: 'HSK 5' },
   { level: 16, minXp: 12500, maxXp: 14500, title: 'Bậc Thầy Đối Thoại', badge: '💎', hskEquivalent: 'HSK 5' },

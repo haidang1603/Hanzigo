@@ -27,6 +27,8 @@ dist-ssr
 *.sw?
 supabase/.temp/
 scratch/
+.chrome_verify_profile/
+runtime_verification_results.json
 
 # Python
 __pycache__/
