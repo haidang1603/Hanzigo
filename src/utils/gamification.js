@@ -162,6 +162,11 @@ export const STREAK_MILESTONES = [
 /**
  * Award XP to the specific learner, update streak activity, and sync to DB.
  * Supports idempotencyKey to prevent duplicate XP on repetitive clicks.
+ * @param {number} amount
+ * @param {{ id?: string | null; [key: string]: any } | string | null} [user]
+ * @param {string | Record<string, any> | null} [idempotencyKey]
+ * @param {{ skipStreakRecord?: boolean }} [options]
+ * @returns {number}
  */
 export function awardXp(amount, user = null, idempotencyKey = null, options = {}) {
   if (typeof amount !== 'number' || amount <= 0) return calculateTotalXp(typeof user === 'object' ? user : null);

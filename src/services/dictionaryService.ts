@@ -8,6 +8,7 @@ import {
   normalizeNumberedPinyin,
   searchLocalDictionary,
 } from './dictionaryService.js';
+export { searchDictionaryHybrid } from './dictionaryService.js';
 import type {
   CharacterDecomposition,
   DictionaryEntry,
