@@ -50,6 +50,9 @@ export function normalizeDateString(val) {
 
 /**
  * Get unique identifier key for current user to isolate storage and scoring
+ * @param {string} key
+ * @param {{ id?: string | null; uid?: string | null; email?: string | null; [key: string]: any } | null} [user]
+ * @returns {string}
  */
 export function getUserStorageKey(key, user = null) {
   let targetUser = user;
@@ -65,6 +68,8 @@ export function getUserStorageKey(key, user = null) {
 
 /**
  * Calculate total XP accurately for a SPECIFIC user
+ * @param {{ id?: string | null; uid?: string | null; email?: string | null; xp?: number; [key: string]: any } | null} [user]
+ * @returns {number}
  */
 export function calculateTotalXp(user = null) {
   let targetUser = user;
@@ -291,6 +296,8 @@ export function awardXp(amount, user = null, idempotencyKey = null, options = {}
 
 /**
  * Record a study activity today and advance the consecutive day streak for a SPECIFIC user
+ * @param {{ id?: string | null; uid?: string | null; email?: string | null; [key: string]: any } | null} [user]
+ * @returns {number}
  */
 export function recordStudyActivity(user = null) {
   const today = getLocalDateString();
