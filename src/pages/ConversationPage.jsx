@@ -40,8 +40,18 @@ import { SPECIAL_ROLEPLAY_SCENARIOS } from '../utils/roleplayScenarioBuilder';
 
 const STORAGE_KEY = 'hanzigo_ai_chat_history';
 
-export default function ConversationPage({ user, openAuthModal }) {
-  const [activeDepthTab, setActiveDepthTab] = useState('roleplay'); // 'roleplay' | 'tutor' | 'listening' | 'grammar'
+const CONVERSATION_VALID_MODES = ['roleplay', 'conversation', 'tutor', 'listening', 'grammar'];
+
+export default function ConversationPage({ user, openAuthModal, initialMode = 'roleplay' }) {
+  const [activeDepthTab, setActiveDepthTab] = useState(() => (
+    CONVERSATION_VALID_MODES.includes(initialMode) ? initialMode : 'roleplay'
+  )); // 'roleplay' | 'tutor' | 'listening' | 'grammar'
+
+  useEffect(() => {
+    if (initialMode && CONVERSATION_VALID_MODES.includes(initialMode)) {
+      setActiveDepthTab(initialMode);
+    }
+  }, [initialMode]);
   const [roleplaySubMode, setRoleplaySubMode] = useState('studio'); // 'studio' | 'dialogues'
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedScenarioId, setSelectedScenarioId] = useState(ALL_CONVERSATION_SCENARIOS[0].id);

@@ -3,6 +3,18 @@ import React from 'react';
 /**
  * DashboardWidget
  * Standardized surface container for unified dashboard widgets
+ * @param {object} props
+ * @param {React.ReactNode} [props.title]
+ * @param {React.ReactNode} [props.subtitle]
+ * @param {React.ElementType} [props.icon]
+ * @param {React.ReactNode} [props.action]
+ * @param {React.ReactNode} [props.children]
+ * @param {string} [props.className]
+ * @param {boolean} [props.loading]
+ * @param {string | null} [props.error]
+ * @param {boolean} [props.empty]
+ * @param {string} [props.emptyMessage]
+ * @param {(() => void) | null} [props.onRetry]
  */
 export default function DashboardWidget({
   title = undefined,

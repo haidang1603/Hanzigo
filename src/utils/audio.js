@@ -127,6 +127,11 @@ export const speakWithWebSpeech = (text, options = {}) => {
  * @param {number|Object} optionsOrRate - Tốc độ (number) hoặc cấu hình chi tiết (object)
  * @returns {Object} Kết quả phát âm
  */
+/**
+ * Speak Chinese text using cached cloud TTS or Web Speech API fallback.
+ * @param {string} text
+ * @param {number | { rate?: number; pitch?: number; voiceName?: string; onStart?: () => void; onEnd?: () => void; onError?: (err?: unknown) => void; [key: string]: any }} [optionsOrRate]
+ */
 export const speakChinese = (text, optionsOrRate = 0.85) => {
   if (!text || typeof text !== 'string' || !text.trim()) {
     return { success: false, reason: 'empty_text' };

@@ -1263,7 +1263,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   Hoạt động <span className="text-xs text-purple-500 font-bold">100% Sẵn sàng</span>
                 </p>
                 <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-                  xKiro Free Tier & Dự phòng Gemini tự động
+                  Google Gemini Gateway & Engine Sư phạm Ngoại tuyến
                 </p>
               </div>
               <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">

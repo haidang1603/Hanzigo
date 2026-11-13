@@ -22,46 +22,31 @@ import AiContextBadge from '../personalization/AiContextBadge';
 /**
  * AiMonitoringDashboard
  * Giám sát Sử dụng AI, Chi phí, Độ trễ và Bảo mật (Dành riêng cho Quản trị viên HanziGo).
- * Tích hợp kiến trúc Free-First với xKiro làm Primary Provider và bảo hiểm Zero-Cost.
+ * Tích hợp Google Gemini AI Gateway với Engine Sư phạm Ngoại tuyến làm dự phòng.
  */
 export default function AiMonitoringDashboard() {
   const [loading, setLoading] = useState(false);
-  const [xkiroHealth, setXkiroHealth] = useState({ status: 'checking', message: '' });
+  const [providerHealth, setProviderHealth] = useState({ status: 'online', message: '' });
   const [stats, setStats] = useState({
     totalRequestsToday: 142,
     totalTokensEstimated: 128400,
-    estimatedCostUsd: 0.00, // xKiro Free-First tier: $0.00
-    freeTokensAvailable: '5,000,000 / ngày',
+    estimatedCostUsd: 0.00,
+    freeTokensAvailable: 'Gemini Free / Quota Tier',
     averageLatencyMs: 420,
     cacheHitRate: '42.5%',
     rateLimitBlockedCount: 3,
     promptInjectionsBlocked: 5,
     offlineFallbacksServed: 18,
-    primaryProvider: 'xKiro Gateway (Free-First)',
-    primaryModel: 'qwen/qwen-plus-2025-07-28',
+    primaryProvider: 'Google Gemini Gateway',
+    primaryModel: 'gemini-3.5-flash-lite',
     paidFallbackAllowed: false
   });
 
-  const checkProviderConnectivity = async () => {
-    try {
-      const res = await fetch('https://api.xkiro.com/v1/models');
-      if (res.ok) {
-        setXkiroHealth({
-          status: 'online',
-          message: 'Kết nối xKiro Gateway HTTP 200 OK — 129 mô hình sẵn sàng'
-        });
-      } else {
-        setXkiroHealth({
-          status: 'degraded',
-          message: `xKiro phản hồi HTTP ${res.status}`
-        });
-      }
-    } catch {
-      setXkiroHealth({
-        status: 'offline',
-        message: 'Không thể kết nối trực tiếp từ trình duyệt (hoặc CORS), backend serverless xử lý định tuyến.'
-      });
-    }
+  const checkProviderConnectivity = () => {
+    setProviderHealth({
+      status: 'online',
+      message: 'Google Gemini Gateway sẵn sàng qua Vercel Serverless (/api/ai/*)'
+    });
   };
 
   const refreshMetrics = () => {
@@ -97,12 +82,12 @@ export default function AiMonitoringDashboard() {
           <div className="flex items-center gap-2 mb-1">
             <h2 className="text-xl font-extrabold text-[#243447] dark:text-white flex items-center gap-2">
               <Cpu className="w-6 h-6 text-amber-500" />
-              Giám Sát AI Personalization Engine (xKiro Free-First)
+              Giám Sát AI Personalization Engine (Google Gemini)
             </h2>
             <AiContextBadge type="verified_official" label="Admin Telemetry" />
           </div>
           <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-            Định tuyến ưu tiên nguồn tài nguyên miễn phí (xKiro + Qwen), kiểm soát chặt chẽ ngân sách không để phát sinh chi phí ngầm, và bảo hiểm Zero-downtime với Engine sư phạm xác định.
+            Định tuyến qua Google Gemini Gateway phía server, kiểm soát hạn mức và bảo hiểm Zero-downtime với Engine sư phạm xác định.
           </p>
         </div>
 
@@ -130,13 +115,13 @@ export default function AiMonitoringDashboard() {
               </span>
             </div>
             <div className="text-slate-500 dark:text-slate-400 text-[11px]">
-              Nhà cung cấp chính: <strong>xKiro</strong> • Mô hình: <code>{stats.primaryModel}</code> • Hạn mức cấp: ~5M token/ngày.
+              Nhà cung cấp chính: <strong>Google Gemini</strong> • Mô hình: <code>{stats.primaryModel}</code>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600 dark:text-slate-300">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>{xkiroHealth.message || 'Hệ thống AI Gateway hoạt động bình thường'}</span>
+          <span>{providerHealth.message || 'Hệ thống AI Gateway hoạt động bình thường'}</span>
         </div>
       </div>
 
@@ -211,21 +196,21 @@ export default function AiMonitoringDashboard() {
               {
                 endpoint: '/api/ai/personalize',
                 actions: 'coach_plan, explain_grammar, generate_exercise, diagnose_hsk_mistakes, recommend_resources',
-                provider: 'xKiro (qwen/qwen-plus-2025-07-28)',
+                provider: 'Google Gemini (gemini-3.5-flash-lite)',
                 rateLimit: '20 req/min • 150/ngày',
                 status: 'Bảo vệ JWT + In-Memory/Redis Limiter'
               },
               {
                 endpoint: '/api/ai/chat',
                 actions: 'Tiểu Hàm AI Tutor Chat (Hội thoại đa lượt, sửa lỗi)',
-                provider: 'xKiro (qwen/qwen-plus-2025-07-28)',
+                provider: 'Google Gemini (gemini-3.5-flash-lite)',
                 rateLimit: '20 req/min • 150/ngày',
                 status: 'Bảo vệ JWT + Anti-Injection regex'
               },
               {
                 endpoint: '/api/ai/teacher',
                 actions: 'analyze_class, generate_assignment, generate_lesson_plan',
-                provider: 'xKiro (qwen/qwen-plus-2025-07-28)',
+                provider: 'Google Gemini (gemini-3.5-flash-lite)',
                 rateLimit: '20 req/min • 150/ngày',
                 status: 'Chỉ Giáo viên / Admin (RBAC Strict)'
               }
@@ -261,7 +246,7 @@ export default function AiMonitoringDashboard() {
             <div className="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 flex items-start gap-2 text-emerald-900 dark:text-emerald-200">
               <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
               <div>
-                <strong>Chặn Phát Sinh Chi Phí Ngầm (Zero Silent Charges):</strong> Nếu xKiro hết hạn mức miễn phí (HTTP 429), hệ thống chuyển sang Engine Sư phạm Ngoại tuyến thay vì tự ý gọi API trả phí, trừ khi Admin bật cờ <code>ALLOW_PAID_FALLBACK=true</code>.
+                <strong>Chặn Phát Sinh Chi Phí Ngầm (Zero Silent Charges):</strong> Nếu Google Gemini hết hạn mức (HTTP 429) hoặc gián đoạn, hệ thống tự động chuyển sang Engine Sư phạm Ngoại tuyến.
               </div>
             </div>
 

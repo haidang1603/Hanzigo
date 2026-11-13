@@ -1,6 +1,6 @@
 # 🐉 HanziGo - Nền Tảng Học Tiếng Trung & Hán Tự Toàn Diện
 
-> **HanziGo** là ứng dụng web học tiếng Trung hiện đại, kết hợp phương pháp sư phạm chuẩn quốc tế (HSK 1 - HSK 6) với công nghệ trí tuệ nhân tạo (AI Tutor), thuật toán lặp lại ngắt quãng SuperMemo-2 (SM-2 SRS), hệ thống đánh giá ngữ âm chi tiết, gamification chống lạm dụng XP và bảo mật dữ liệu phân quyền cấp cơ sở dữ liệu (Supabase Row-Level Security).
+> **HanziGo** là nền tảng học tiếng Trung trực tuyến dành cho người Việt, tích hợp lộ trình **HSK 1–6 & HSK 3.0 (Cấp 7–9)**, AI Tutor, thuật toán lặp lại ngắt quãng **SuperMemo-2 (SM-2 SRS)**, phòng luyện phát âm, từ điển Hán-Việt & luyện viết chữ Hán, phòng thi thử **HSK/HSKK CBT**, lớp học trực tuyến **LiveKit**, hệ thống chịu lỗi **GlobalErrorBoundary (Exam Draft Rescue)**, SEO động và kiểm toán bảo mật **Supabase RLS / Vercel**.
 
 ---
 
@@ -13,9 +13,10 @@
 6. [Thuật Toán Lặp Lại Ngắt Quãng SM-2 (SRS Engine)](#-thuật-toán-lặp-lại-ngắt-quãng-sm-2)
 7. [Động Cơ Đánh Giá Phát Âm Khoa Học (Phonetics & Tone)](#-động-cơ-đánh-giá-phát-âm-khoa-học)
 8. [Hướng Dẫn Cài Đặt & Chạy Cục Bộ (Getting Started)](#-hướng-dẫn-cài-đặt--chạy-cục-bộ)
-9. [Cấu Hình Biến Môi Trường (Environment Variables)](#-cấu-hình-biến-môi-trường)
+9. [Cấu Hình Biến Môi Trường (Environment Variables)](#-cấu-hình-biến-môi-trường--kiến-trúc-bảo-mật-api)
 10. [Hướng Dẫn Chạy Migration Database (Supabase Migrations)](#-hướng-dẫn-chạy-migration-database)
-11. [Kiểm Thử Tự Động (Automated Testing)](#-kiểm-thử-tự-động)
+11. [Kiểm Thử Tự Động & Go-Live Audit](#-kiểm-thử-tự-động--go-live-audit)
+12. [Sẵn Sàng Production (SRE, SEO, PWA & Bảo Mật Hạ Tầng)](#-sẵn-sàng-production-sre-seo-pwa--bảo-mật-hạ-tầng)
 
 ---
 
@@ -360,19 +361,43 @@ VITE_APP_ENV=production
 
 ---
 
-## 🧪 Kiểm Thử Tự Động
+## 🧪 Kiểm Thử Tự Động & Go-Live Audit
 
-HanziGo tích hợp bộ kiểm thử đơn vị tự động sử dụng Node.js Native Test Runner:
+HanziGo tích hợp bộ kiểm thử tự động sử dụng **Node.js Native Test Runner** cùng công cụ kiểm định trước khi phát hành (**Pre-Flight Go-Live Auditor**):
 
 ```bash
-# Chạy toàn bộ các bài kiểm tra tự động
+# 1. Chạy toàn bộ bộ kiểm thử tự động
 npm test
+
+# 2. Chạy Pre-Flight Go-Live Readiness Scorecard (/100 điểm)
+npm run audit:golive
+
+# 3. Kiểm tra lint và build production
+npm run lint
+npm run build
 ```
 
-Nội dung các bài kiểm thử:
-* `tests/srsEngine.test.js`: Kiểm thử độ chính xác của thuật toán lặp lại ngắt quãng SuperMemo-2, tính toán chu kỳ ôn tập, cận dưới của Ease Factor và hàng đợi thẻ đến hạn.
-* `tests/pronunciationEvaluator.test.js`: Kiểm thử việc trích xuất thanh điệu Pinyin, đánh giá trung thực âm vị và xử lý trường hợp không thu được giọng nói.
-* `tests/securityRbac.test.js`: Kiểm thử logic phân quyền người dùng (Khách, Học viên, Moderator, Admin và tài khoản bị khóa).
+Một số nhóm kiểm thử trọng tâm:
+* `tests/srsEngine.test.js`: Thuật toán lặp lại ngắt quãng SuperMemo-2 (SM-2), Ease Factor và hàng đợi ôn tập.
+* `tests/pronunciationEvaluator.test.js`: Trích xuất thanh điệu Pinyin, đánh giá âm vị và xử lý trạng thái micro.
+* `tests/securityRbac.test.js` & `tests/securityAudit.test.js`: Kiểm thử phân quyền RBAC, Vercel security headers và migration bảo mật RLS/RPC.
+* `tests/globalErrorBoundary.test.js`: Lọc PII/JWT/password trong client telemetry, deduplication 60 giây, hàng đợi offline 10 log và Exam Draft Rescue.
+* `tests/seoMetadata.test.js`: Metadata tiếng Việt cho 31 route, Schema.org JSON-LD, `robots.txt` và `sitemap.xml`.
+* `tests/phase37GoLiveAudit.test.js`: Quét rò rỉ secret ở `src/`, đếm Serverless Entrypoints (`<= 12` trên Vercel) và xác nhận điểm Go-Live **100/100**.
+
+---
+
+## 🚀 Sẵn Sàng Production (SRE, SEO, PWA & Bảo Mật Hạ Tầng)
+
+* **SRE & Exam Draft Rescue**:
+  * `src/core/telemetry/errorReporter.js`: Bắt lỗi toàn cục (`error`, `unhandledrejection`), che email/JWT/mật khẩu, chống gửi trùng trong 60 giây và lưu tối đa 10 log vào `sessionStorage` khi offline.
+  * `src/components/common/GlobalErrorBoundary.jsx`: Bọc 2 tầng trong `src/App.jsx` (toàn app & khu vực `<main>`) giúp `AppSidebar` vẫn hoạt động khi một trang gặp lỗi, kèm nút tải bản sao bài làm HSK (`.JSON`) và xóa riêng nhóm bộ nhớ đệm `functional`.
+* **SEO & PWA**:
+  * `src/core/seo/routeSeoConfig.js` & `src/core/seo/SeoHeadManager.jsx`: Cập nhật `document.title`, canonical URL (`https://hanzigo-xi.vercel.app`), OpenGraph (`vi_VN`), Twitter Card và Schema.org JSON-LD (`WebApplication`, `EducationalOrganization`, `Course`).
+  * `public/robots.txt`, `public/sitemap.xml` và `public/manifest.webmanifest`.
+* **Vercel & Supabase Hardening**:
+  * `vercel.json`: Gộp gọn còn **8 Serverless Dispatchers** trong `api/`, cấu hình SPA rewrites, `Cache-Control` cho `/assets/*` và đầy đủ HTTP Security Headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Strict-Transport-Security`, `Permissions-Policy`).
+  * `supabase/migrations/20261114_3701_security_rls_and_telemetry_audit.sql`: Tạo bảng `public.system_error_logs` (chỉ Admin `SELECT/DELETE`), bật RLS cho các bảng Phase 27–36 và gia cố `SET search_path = public` + kiểm tra `auth.uid()` cho các hàm `SECURITY DEFINER`.
 
 ---
 

@@ -128,16 +128,6 @@ export default function StudentAnalyticsDashboard({
         .join(' ')
     );
 
-    const benchmarkPoints = axes
-      .map((axis, idx) => {
-        const pt = polarToCartesian(
-          idx * step - Math.PI / 2,
-          (axis.targetBenchmark / 100) * RADAR_RADIUS
-        );
-        return `${pt.x},${pt.y}`;
-      })
-      .join(' ');
-
     const currentPoints = axes
       .map((axis, idx) => {
         const pt = polarToCartesian(
@@ -159,7 +149,7 @@ export default function StudentAnalyticsDashboard({
       return { axis, outer, labelPos, dotPos };
     });
 
-    return { rings, benchmarkPoints, currentPoints, vertices };
+    return { rings, currentPoints, vertices };
   }, [snapshot?.skillRadar]);
 
   // Memoized Dual-Axis Time-Series Geometry
@@ -449,16 +439,7 @@ export default function StudentAnalyticsDashboard({
                   />
                 ))}
 
-                {/* Target HSK Benchmark Polygon */}
-                <polygon
-                  points={radarGeometry.benchmarkPoints}
-                  fill="rgba(59, 130, 246, 0.08)"
-                  stroke="#3B82F6"
-                  strokeWidth={1.75}
-                  strokeDasharray="4 3"
-                />
-
-                {/* Current Proficiency Polygon */}
+                {/* Current Proficiency Polygon (Real Data) */}
                 <polygon
                   points={radarGeometry.currentPoints}
                   fill="rgba(232, 93, 63, 0.22)"
@@ -500,13 +481,15 @@ export default function StudentAnalyticsDashboard({
               <div className="w-full flex flex-wrap items-center justify-center gap-4 text-xs">
                 <span className="inline-flex items-center gap-1.5 font-semibold text-[#243447] dark:text-gray-200">
                   <span className="w-3 h-3 rounded-sm bg-[#E85D3F]/30 border-2 border-[#E85D3F]" />
-                  Hiện tại
-                </span>
-                <span className="inline-flex items-center gap-1.5 font-semibold text-[#748092] dark:text-gray-400">
-                  <span className="w-3 h-3 rounded-sm bg-blue-500/10 border border-dashed border-blue-500" />
-                  Chuẩn HSK {targetHskLevel} ({snapshot?.skillRadar[0]?.targetBenchmark ?? 75}%)
+                  Năng lực thực tế (HSK {targetHskLevel})
                 </span>
               </div>
+
+              {snapshot?.skillRadar?.every((s) => s.attemptsCount === 0) && (
+                <p className="text-[11px] text-center text-[#748092] dark:text-gray-400 px-2">
+                  Chưa có dữ liệu luyện tập cho HSK {targetHskLevel}. Hãy hoàn thành bài học, từ vựng hoặc đề thi để biểu đồ cập nhật dữ liệu thật.
+                </p>
+              )}
 
               {hoveredSkill && (
                 <div className="w-full p-2.5 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] flex items-center justify-between text-xs">
@@ -514,7 +497,7 @@ export default function StudentAnalyticsDashboard({
                     {hoveredSkill.skillLabel}
                   </span>
                   <span className="text-[#748092] dark:text-gray-300">
-                    Đạt <strong className="text-[#E85D3F]">{hoveredSkill.proficiency}%</strong> / Chuẩn {hoveredSkill.targetBenchmark}% ({hoveredSkill.attemptsCount} lượt)
+                    Đạt <strong className="text-[#E85D3F]">{hoveredSkill.proficiency}%</strong> ({hoveredSkill.attemptsCount} lượt)
                   </span>
                 </div>
               )}

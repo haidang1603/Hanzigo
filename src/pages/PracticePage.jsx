@@ -545,7 +545,7 @@ export default function PracticePage({
                   <Sparkles size={24} />
                 </div>
                 <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-1 rounded-full">
-                  {GRAMMAR_DRILLS_BY_LEVEL.length} cấu trúc HSK 1–6 (10 bài/cấp)
+                  {GRAMMAR_DRILLS_BY_LEVEL.length} cấu trúc HSK 1–6 (15 bài/cấp)
                 </span>
               </div>
               <div>
@@ -572,7 +572,7 @@ export default function PracticePage({
                   <Headphones size={24} />
                 </div>
                 <span className="text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-2.5 py-1 rounded-full">
-                  {LISTENING_DRILLS_BY_LEVEL.length} bài nghe HSK 1–6 (10 bài/cấp)
+                  {LISTENING_DRILLS_BY_LEVEL.length} bài nghe HSK 1–6 (15 bài/cấp)
                 </span>
               </div>
               <div>

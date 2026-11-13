@@ -1,19 +1,25 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Award,
   BookOpen,
   BookmarkPlus,
   CheckCircle2,
   Compass,
   GraduationCap,
+  HelpCircle,
   Languages,
   Scale,
   Search,
   Sparkles,
+  Square,
+  Volume2,
   X,
 } from 'lucide-react';
 import DashboardWidget from '../../components/dashboard/DashboardWidget.jsx';
 import {
+  completeHsk7to9Module,
   exportHskAdvancedItemToSrs,
+  getCompletedHsk7to9Modules,
   HSK_7_9_GRAMMAR,
   HSK_7_9_MODULES,
   HSK_7_9_STANDARD_SPEC,
@@ -21,9 +27,11 @@ import {
   HSK_7_9_VOCABULARY,
   lookupHsk7to9OrCedict,
   type DictionaryPopupResult,
+  type Hsk7to9ModuleCompletion,
   type HskAdvancedDomain,
   type HskAdvancedVocabItem,
 } from '../../data/hsk7to9CurriculumData.ts';
+import { playSuccessSound, speakChinese, stopChineseSpeech } from '../../utils/audio.js';
 
 export interface HskAdvancedModuleProps {
   user?: { id?: string | null } | null;
@@ -48,6 +56,43 @@ export default function HskAdvancedModule({
   const [lookupInput, setLookupInput] = useState<string>('');
   const [popupResult, setPopupResult] = useState<DictionaryPopupResult | null>(null);
   const [exportedMap, setExportedMap] = useState<Record<string, boolean>>({});
+  const [completedModules, setCompletedModules] = useState<Record<string, Hsk7to9ModuleCompletion>>(() =>
+    getCompletedHsk7to9Modules(user)
+  );
+  const [speakingKey, setSpeakingKey] = useState<string | null>(null);
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
+  const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
+  const [completionToast, setCompletionToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCompletedModules(getCompletedHsk7to9Modules(user));
+  }, [user]);
+
+  useEffect(() => {
+    setQuizAnswers({});
+    setQuizSubmitted(false);
+    setCompletionToast(null);
+    stopChineseSpeech();
+    setSpeakingKey(null);
+  }, [selectedModuleId]);
+
+  const handleToggleSpeech = useCallback(
+    (key: string, text: string) => {
+      if (speakingKey === key) {
+        stopChineseSpeech();
+        setSpeakingKey(null);
+        return;
+      }
+      stopChineseSpeech();
+      setSpeakingKey(key);
+      speakChinese(text, {
+        rate: 0.9,
+        onEnd: () => setSpeakingKey((prev) => (prev === key ? null : prev)),
+        onError: () => setSpeakingKey((prev) => (prev === key ? null : prev)),
+      });
+    },
+    [speakingKey]
+  );
 
   const filteredModules = useMemo(() => {
     if (domainFilter === 'all') return HSK_7_9_MODULES;
@@ -109,6 +154,33 @@ export default function HskAdvancedModule({
     },
     [activeModule.domain, user]
   );
+
+  const quizQuestions = activeModule.quizQuestions ?? [];
+  const quizCorrectCount = useMemo(
+    () =>
+      quizQuestions.filter((q) => quizAnswers[q.id] === q.correctIndex).length,
+    [quizQuestions, quizAnswers]
+  );
+  const quizScorePercent =
+    quizQuestions.length > 0
+      ? Math.round((quizCorrectCount / quizQuestions.length) * 100)
+      : 100;
+
+  const handleSubmitQuiz = useCallback(async () => {
+    setQuizSubmitted(true);
+    const { xpAwarded, progress } = await completeHsk7to9Module(
+      activeModule,
+      quizScorePercent,
+      user
+    );
+    setCompletedModules(progress);
+    playSuccessSound();
+    setCompletionToast(
+      `Đã hoàn thành "${activeModule.titleVi}" (${quizScorePercent}%) · +${xpAwarded} XP`
+    );
+  }, [activeModule, quizScorePercent, user]);
+
+  const completedCount = Object.keys(completedModules).length;
 
   return (
     <section aria-label="HSK 7-9 Advanced Professional Band" className="space-y-6">
@@ -198,38 +270,61 @@ export default function HskAdvancedModule({
         </div>
       </div>
 
-      {/* Module Selector Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {filteredModules.map((mod) => {
-          const isSelected = mod.id === activeModule.id;
-          return (
-            <button
-              key={mod.id}
-              type="button"
-              onClick={() => setSelectedModuleId(mod.id)}
-              className={`text-left p-4 rounded-2xl border transition-all cursor-pointer space-y-1.5 ${
-                isSelected
-                  ? 'bg-[#FFF5F2] dark:bg-[#1E293B] border-[#E85D3F] shadow-sm'
-                  : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]/60'
-              }`}
-            >
-              <div className="flex items-center justify-between text-[11px] font-extrabold">
-                <span className="px-2 py-0.5 rounded-full bg-[#E85D3F]/10 text-[#E85D3F]">
-                  HSK {mod.hskBand}
-                </span>
-                <span className="text-[#748092] dark:text-gray-400">
-                  {mod.domainLabelVi} · ~{mod.charCount} chữ
-                </span>
-              </div>
-              <div className="text-sm font-extrabold text-[#243447] dark:text-white">
-                {mod.titleZh}
-              </div>
-              <div className="text-xs text-[#748092] dark:text-[#94A3B8]">
-                {mod.titleVi}
-              </div>
-            </button>
-          );
-        })}
+      {/* Progress Bar + Module Selector Cards */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
+          <span className="font-bold text-[#243447] dark:text-gray-200 inline-flex items-center gap-1.5">
+            <Award size={15} className="text-[#E85D3F]" />
+            Tiến độ chuyên đề HSK 7–9: {completedCount}/{HSK_7_9_MODULES.length} bài đã hoàn thành
+          </span>
+          <div className="w-40 h-2 rounded-full bg-[#EFE4D6] dark:bg-[#2B3A4F] overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#E85D3F] to-amber-500 transition-all duration-300"
+              style={{ width: `${Math.round((completedCount / Math.max(1, HSK_7_9_MODULES.length)) * 100)}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5">
+          {filteredModules.map((mod) => {
+            const isSelected = mod.id === activeModule.id;
+            const modCompletion = completedModules[mod.id];
+            return (
+              <button
+                key={mod.id}
+                type="button"
+                onClick={() => setSelectedModuleId(mod.id)}
+                className={`text-left p-4 rounded-2xl border transition-all cursor-pointer space-y-1.5 ${
+                  isSelected
+                    ? 'bg-[#FFF5F2] dark:bg-[#1E293B] border-[#E85D3F] shadow-sm'
+                    : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]/60'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1 text-[11px] font-extrabold">
+                  <span className="px-2 py-0.5 rounded-full bg-[#E85D3F]/10 text-[#E85D3F]">
+                    HSK {mod.hskBand}
+                  </span>
+                  {modCompletion ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 text-[10px]">
+                      <CheckCircle2 size={11} />
+                      {modCompletion.scorePercent}%
+                    </span>
+                  ) : (
+                    <span className="text-[#748092] dark:text-gray-400 truncate">
+                      {mod.domainLabelVi}
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm font-extrabold text-[#243447] dark:text-white line-clamp-2">
+                  {mod.titleZh}
+                </div>
+                <div className="text-xs text-[#748092] dark:text-[#94A3B8] line-clamp-2">
+                  {mod.titleVi}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Instant Dictionary Pop-up Card */}
@@ -335,9 +430,28 @@ export default function HskAdvancedModule({
                 key={p.index}
                 className="p-4 rounded-2xl bg-[#FAF6F0]/70 dark:bg-[#0F172A]/70 border border-[#EFE4D6] dark:border-[#2B3A4F] space-y-2"
               >
-                <span className="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
-                  Đoạn {p.index} · {p.discourseRole}
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                    Đoạn {p.index} · {p.discourseRole}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleSpeech(`${activeModule.id}_p_${p.index}`, p.zh)}
+                    className="px-2.5 py-1 rounded-xl bg-white dark:bg-[#1E293B] border border-[#EFE4D6] dark:border-[#2B3A4F] hover:border-[#E85D3F] text-[11px] font-bold text-[#243447] dark:text-gray-200 cursor-pointer inline-flex items-center gap-1"
+                  >
+                    {speakingKey === `${activeModule.id}_p_${p.index}` ? (
+                      <>
+                        <Square size={11} className="text-[#E85D3F] fill-[#E85D3F]" />
+                        <span>Dừng</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 size={12} className="text-[#E85D3F]" />
+                        <span>Nghe đoạn</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <p className="text-sm sm:text-base leading-relaxed text-[#243447] dark:text-gray-100 font-medium">
                   {p.zh}
                 </p>
@@ -496,6 +610,127 @@ export default function HskAdvancedModule({
           </button>
         </div>
       </DashboardWidget>
+
+      {/* Interactive HSK 7-9 Comprehension & Register Quiz */}
+      {quizQuestions.length > 0 && (
+        <DashboardWidget
+          title="Luyện tập & Kiểm tra Năng lực Chuyên đề"
+          subtitle={`Hoàn thành ${quizQuestions.length} câu hỏi chuẩn HSK ${activeModule.hskBand} để ghi nhận tiến độ, XP và biểu đồ năng lực`}
+          icon={HelpCircle}
+        >
+          <div className="space-y-4">
+            {quizQuestions.map((q, qIdx) => {
+              const chosen = quizAnswers[q.id];
+              return (
+                <div
+                  key={q.id}
+                  className="p-4 rounded-2xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] space-y-2.5"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-xs sm:text-sm font-bold text-[#243447] dark:text-white">
+                      Câu {qIdx + 1}: {q.promptVi}
+                    </p>
+                  </div>
+                  {q.promptZh && (
+                    <p className="text-sm font-semibold text-[#E85D3F] bg-white dark:bg-[#1E293B] px-3 py-2 rounded-xl border border-[#EFE4D6] dark:border-[#2B3A4F]">
+                      {q.promptZh}
+                    </p>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {q.options.map((opt, optIdx) => {
+                      const isPicked = chosen === optIdx;
+                      const isRight = optIdx === q.correctIndex;
+                      let optionStyle =
+                        'bg-white dark:bg-[#1E293B] border-[#EFE4D6] dark:border-[#2B3A4F] text-[#243447] dark:text-gray-200 hover:border-[#E85D3F]';
+                      if (quizSubmitted) {
+                        if (isRight) {
+                          optionStyle =
+                            'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-200 font-bold';
+                        } else if (isPicked && !isRight) {
+                          optionStyle =
+                            'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-200';
+                        }
+                      } else if (isPicked) {
+                        optionStyle =
+                          'bg-[#FFF5F2] dark:bg-[#2D1E1B] border-[#E85D3F] text-[#E85D3F] font-bold';
+                      }
+
+                      return (
+                        <button
+                          key={optIdx}
+                          type="button"
+                          disabled={quizSubmitted}
+                          onClick={() =>
+                            setQuizAnswers((prev) => ({ ...prev, [q.id]: optIdx }))
+                          }
+                          className={`text-left px-3 py-2 rounded-xl border text-xs transition-all cursor-pointer disabled:cursor-default ${optionStyle}`}
+                        >
+                          <span className="font-extrabold mr-1.5">
+                            {String.fromCharCode(65 + optIdx)}.
+                          </span>
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {quizSubmitted && (
+                    <p className="text-[11px] text-[#5B6B7F] dark:text-gray-300 bg-white/80 dark:bg-[#1E293B] p-2.5 rounded-xl border border-[#EFE4D6] dark:border-[#2B3A4F]">
+                      <strong>Giải thích:</strong> {q.explanationVi}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              {completionToast ? (
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                  <CheckCircle2 size={15} />
+                  <span>{completionToast}</span>
+                </div>
+              ) : (
+                <span className="text-xs text-[#748092] dark:text-gray-400">
+                  Đã chọn {Object.keys(quizAnswers).length}/{quizQuestions.length} câu
+                </span>
+              )}
+
+              <div className="flex items-center gap-2 ml-auto">
+                {quizSubmitted && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuizAnswers({});
+                      setQuizSubmitted(false);
+                      setCompletionToast(null);
+                    }}
+                    className="px-3.5 py-2 rounded-xl border border-[#EFE4D6] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-white hover:bg-[#FAF6F0] dark:hover:bg-[#1E293B] cursor-pointer"
+                  >
+                    Làm lại
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={
+                    quizSubmitted ||
+                    Object.keys(quizAnswers).length < quizQuestions.length
+                  }
+                  onClick={() => void handleSubmitQuiz()}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] disabled:opacity-50 text-white text-xs font-extrabold shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Award size={14} />
+                  <span>
+                    {quizSubmitted
+                      ? `Điểm: ${quizCorrectCount}/${quizQuestions.length} (${quizScorePercent}%)`
+                      : 'Nộp bài & Hoàn thành (+XP)'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </DashboardWidget>
+      )}
     </section>
   );
 }

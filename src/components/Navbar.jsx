@@ -103,7 +103,14 @@ export default function Navbar({
       label: 'Luyện phát âm', 
       desc: 'Pinyin, thanh điệu & nhận diện giọng', 
       icon: Mic, 
-      color: 'text-emerald-500 bg-emerald-500/10' 
+      color: 'text-emerald-500 bg-emerald-500/10',
+      subItems: [
+        { id: 'pronunciation/record', label: 'AI Chấm giọng' },
+        { id: 'pronunciation/lab', label: 'Lab Cao độ & Sandhi' },
+        { id: 'pronunciation/tones', label: '4 Thanh điệu' },
+        { id: 'pronunciation/initials', label: 'Thanh mẫu' },
+        { id: 'pronunciation/finals', label: 'Vận mẫu' },
+      ],
     },
     { 
       id: 'writing', 
@@ -117,7 +124,13 @@ export default function Navbar({
       label: 'Hội thoại AI', 
       desc: 'Giao tiếp phản xạ theo tình huống', 
       icon: MessageSquare, 
-      color: 'text-rose-500 bg-rose-500/10' 
+      color: 'text-rose-500 bg-rose-500/10',
+      subItems: [
+        { id: 'conversation/roleplay', label: 'Nhập vai' },
+        { id: 'conversation/tutor', label: 'Gia sư AI' },
+        { id: 'conversation/listening', label: 'Luyện nghe' },
+        { id: 'conversation/grammar', label: 'Ngữ pháp' },
+      ],
     },
     { 
       id: 'reader', 
@@ -160,7 +173,15 @@ export default function Navbar({
 
   const handleNavClick = (id) => {
     playClickSound();
-    setActiveTab(id);
+    if (typeof id === 'string' && id.includes('/')) {
+      const [baseTab] = id.split('/');
+      if (typeof window !== 'undefined') {
+        window.location.hash = `#${id}`;
+      }
+      setActiveTab(baseTab);
+    } else {
+      setActiveTab(id);
+    }
     setMobileMenuOpen(false);
     setPracticeOpen(false);
     setMoreOpen(false);
@@ -246,7 +267,7 @@ export default function Navbar({
 
               {practiceOpen && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="w-72 p-2 rounded-2xl bg-white/95 dark:bg-[#1A2433]/95 backdrop-blur-xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl shadow-black/15 space-y-1">
+                  <div className="w-80 p-2 rounded-2xl bg-white/95 dark:bg-[#1A2433]/95 backdrop-blur-xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl shadow-black/15 space-y-1 max-h-[80vh] overflow-y-auto">
                     <div className="px-3 py-1.5 pb-2 border-b border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70">
                       <p className="text-[10px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
                         Kỹ năng & Luyện tập
@@ -255,36 +276,63 @@ export default function Navbar({
                     {practiceItems.map((p) => {
                       const PIcon = p.icon;
                       const isPActive = activeTab === p.id;
+                      const currentHash = typeof window !== 'undefined' ? window.location.hash.replace(/^#\/?/, '') : '';
                       return (
-                        <button
-                          key={p.id}
-                          onClick={() => {
-                            handleNavClick(p.id);
-                            setPracticeOpen(false);
-                          }}
-                          className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all text-left cursor-pointer group ${
-                            isPActive
-                              ? 'bg-[#FFF5F2] dark:bg-[#2C1D1A] border border-[#E85D3F]/25 shadow-sm'
-                              : 'hover:bg-[#FFF9F2] dark:hover:bg-[#243447]'
-                          }`}
-                        >
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${p.color}`}>
-                            <PIcon size={16} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between">
-                              <p className={`text-xs font-bold ${isPActive ? 'text-[#E85D3F]' : 'text-[#243447] dark:text-white group-hover:text-[#E85D3F]'}`}>
-                                {p.label}
-                              </p>
-                              {isPActive && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#E85D3F]" />
-                              )}
+                        <div key={p.id} className="space-y-1">
+                          <button
+                            onClick={() => {
+                              handleNavClick(p.id);
+                              setPracticeOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all text-left cursor-pointer group ${
+                              isPActive
+                                ? 'bg-[#FFF5F2] dark:bg-[#2C1D1A] border border-[#E85D3F]/25 shadow-sm'
+                                : 'hover:bg-[#FFF9F2] dark:hover:bg-[#243447]'
+                            }`}
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${p.color}`}>
+                              <PIcon size={16} />
                             </div>
-                            <p className="text-[10px] text-[#748092] dark:text-[#94A3B8] truncate">
-                              {p.desc}
-                            </p>
-                          </div>
-                        </button>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <p className={`text-xs font-bold ${isPActive ? 'text-[#E85D3F]' : 'text-[#243447] dark:text-white group-hover:text-[#E85D3F]'}`}>
+                                  {p.label}
+                                </p>
+                                {isPActive && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#E85D3F]" />
+                                )}
+                              </div>
+                              <p className="text-[10px] text-[#748092] dark:text-[#94A3B8] truncate">
+                                {p.desc}
+                              </p>
+                            </div>
+                          </button>
+
+                          {p.subItems && (
+                            <div className="flex flex-wrap gap-1 pl-11 pr-2 pb-1">
+                              {p.subItems.map((sub) => {
+                                const isSubActive = currentHash === sub.id;
+                                return (
+                                  <button
+                                    key={sub.id}
+                                    type="button"
+                                    onClick={() => {
+                                      handleNavClick(sub.id);
+                                      setPracticeOpen(false);
+                                    }}
+                                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer border ${
+                                      isSubActive
+                                        ? 'bg-[#E85D3F] text-white border-[#E85D3F]'
+                                        : 'bg-[#FFF9F2] dark:bg-[#243447] text-[#5C6672] dark:text-[#CBD5E1] border-[#F1E5D8] dark:border-[#334155] hover:border-[#E85D3F] hover:text-[#E85D3F]'
+                                    }`}
+                                  >
+                                    {sub.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -637,6 +685,26 @@ export default function Navbar({
                 );
               })}
             </div>
+
+            {practiceItems.filter((p) => p.subItems).map((p) => (
+              <div key={`${p.id}-subs`} className="pt-1 space-y-1">
+                <p className="text-[10px] font-bold text-[#748092] dark:text-[#94A3B8] px-1">
+                  {p.label} — Truy cập nhanh
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {p.subItems.map((sub) => (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => handleNavClick(sub.id)}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white dark:bg-[#1B2636] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-[#CBD5E1] hover:border-[#E85D3F] hover:text-[#E85D3F]"
+                    >
+                      {sub.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Bottom actions */}

@@ -24,7 +24,13 @@ import {
   ArrowRight,
   ExternalLink,
   RotateCw,
-  X
+  X,
+  Unlock,
+  ShieldCheck,
+  Mic,
+  PenTool,
+  Headphones,
+  MessageSquare
 } from 'lucide-react';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
 import LearningJourneyMap from '../components/learning/LearningJourneyMap';
@@ -57,6 +63,71 @@ import { supabase, isSupabaseConfigured } from '../supabase/config';
 import AiContextBadge from '../components/personalization/AiContextBadge.jsx';
 import HskAdvancedModule from '../features/curriculum/HskAdvancedModule.tsx';
 
+const LOCAL_FREE_EXPLORE_KEY = 'hanzigo_roadmap_free_explore_v1';
+
+const TOOL_META = {
+  pronunciation: {
+    label: 'Phát âm',
+    icon: Mic,
+    tab: 'pronunciation',
+    hash: '#pronunciation/record',
+    color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800',
+  },
+  writing: {
+    label: 'Viết chữ',
+    icon: PenTool,
+    tab: 'writing',
+    hash: '#writing',
+    color: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800',
+  },
+  grammar: {
+    label: 'Ngữ pháp',
+    icon: Sparkles,
+    tab: 'grammar',
+    hash: '#grammar',
+    color: 'text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800',
+  },
+  reading: {
+    label: 'Đọc hiểu',
+    icon: BookOpen,
+    tab: 'reader',
+    hash: '#reader/studio',
+    color: 'text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/40 border-cyan-200 dark:border-cyan-800',
+  },
+  listening: {
+    label: 'Luyện nghe',
+    icon: Headphones,
+    tab: 'listening',
+    hash: '#listening',
+    color: 'text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800',
+  },
+  roleplay: {
+    label: 'Hội thoại AI',
+    icon: MessageSquare,
+    tab: 'conversation',
+    hash: '#conversation/roleplay',
+    color: 'text-pink-700 dark:text-pink-300 bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-800',
+  },
+  exam: {
+    label: 'Thi thử HSK',
+    icon: Trophy,
+    tab: 'hsk',
+    hash: '#hsk',
+    color: 'text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800',
+  },
+};
+
+const CBT_STAGE_META = {
+  1: { paperCode: 'H10901', questionCount: 40, durationMinutes: 40, passScore: 120, maxScore: 200, unlockTargetScore: 160, hskkRequired: null },
+  2: { paperCode: 'H20901', questionCount: 60, durationMinutes: 55, passScore: 120, maxScore: 200, unlockTargetScore: 160, hskkRequired: null },
+  3: { paperCode: 'H30901', questionCount: 80, durationMinutes: 90, passScore: 180, maxScore: 300, unlockTargetScore: 230, hskkRequired: 'HSKK Sơ cấp' },
+  4: { paperCode: 'H40901', questionCount: 100, durationMinutes: 105, passScore: 180, maxScore: 300, unlockTargetScore: 230, hskkRequired: 'HSKK Trung cấp' },
+  5: { paperCode: 'H50901', questionCount: 100, durationMinutes: 125, passScore: 180, maxScore: 300, unlockTargetScore: 230, hskkRequired: 'HSKK Trung/Cao cấp' },
+  6: { paperCode: 'H60901', questionCount: 101, durationMinutes: 140, passScore: 180, maxScore: 300, unlockTargetScore: 230, hskkRequired: 'HSKK Cao cấp' },
+};
+
+const TOOL_CYCLE = ['pronunciation', 'writing', 'grammar', 'reading', 'listening', 'roleplay', 'exam'];
+
 export default function RoadmapPage({ 
   user, 
   setActiveTab, 
@@ -77,9 +148,58 @@ export default function RoadmapPage({
 
   // Syllabus list view states
   const [selectedLevelId, setSelectedLevelId] = useState('lvl-1');
+  const [selectedChapterFilter, setSelectedChapterFilter] = useState('all');
   const [syllabusSearchTerm, setSyllabusSearchTerm] = useState('');
   const [syllabusStatusFilter, setSyllabusStatusFilter] = useState('all'); // 'all' | 'pending' | 'completed' | 'boss'
   const [selectedMaterialModal, setSelectedMaterialModal] = useState(null);
+  const [freeExploreUnlocked, setFreeExploreUnlocked] = useState(() => {
+    try {
+      return localStorage.getItem(LOCAL_FREE_EXPLORE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [bestCbtScores, setBestCbtScores] = useState({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 });
+
+  const toggleFreeExplore = useCallback(() => {
+    setFreeExploreUnlocked(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem(LOCAL_FREE_EXPLORE_KEY, String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadBestCbtScores() {
+      if (!isSupabaseConfigured || !supabase || !(user?.id || user?.uid)) return;
+      try {
+        const uid = user.id || user.uid;
+        const { data: attempts } = await supabase
+          .from('hsk_attempts')
+          .select('hsk_level, total_score')
+          .eq('user_id', uid)
+          .order('total_score', { ascending: false });
+        if (attempts && attempts.length > 0 && mounted) {
+          const scoreMap = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+          for (const row of attempts) {
+            const lvl = Number(row.hsk_level);
+            const sc = Number(row.total_score) || 0;
+            if (lvl >= 1 && lvl <= 6 && sc > scoreMap[lvl]) {
+              scoreMap[lvl] = sc;
+            }
+          }
+          setBestCbtScores(scoreMap);
+        }
+      } catch {
+        // Ignore offline/table errors
+      }
+    }
+    loadBestCbtScores();
+    return () => { mounted = false; };
+  }, [user]);
 
   // Supplementary / Custom Lessons State
   const [supplementaryLessons, setSupplementaryLessons] = useState([]);
@@ -628,10 +748,32 @@ export default function RoadmapPage({
             
             {/* Level Selector Bar */}
             <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">
+                  Chọn cấp độ HSK 1–6 (hoặc bật mở khóa tự do để ôn thi vượt cấp):
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound();
+                    toggleFreeExplore();
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                    freeExploreUnlocked
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                  }`}
+                >
+                  {freeExploreUnlocked ? <Unlock size={13} /> : <Lock size={13} />}
+                  <span>{freeExploreUnlocked ? 'Đang mở khóa tự do' : 'Chế độ tuần tự & vượt cấp'}</span>
+                </button>
+              </div>
               <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
                 {levels.map(lvl => {
                   const isSelected = selectedLevelId === lvl.id;
-                  const isLevelLocked = lvl.levelNumber > (progress.unlockedLevelNumber || 1);
+                  const prevCbtMeta = CBT_STAGE_META[lvl.levelNumber - 1];
+                  const unlockedByPrevCbt = lvl.levelNumber > 1 && prevCbtMeta && (bestCbtScores[lvl.levelNumber - 1] || 0) >= prevCbtMeta.passScore;
+                  const isLevelLocked = !freeExploreUnlocked && !unlockedByPrevCbt && lvl.levelNumber > (progress.unlockedLevelNumber || 1);
 
                   // Calculate level-specific completed lessons
                   const lvlChapters = getChaptersByLevel(lvl.id);
@@ -646,6 +788,7 @@ export default function RoadmapPage({
                       onClick={() => {
                         playClickSound();
                         setSelectedLevelId(lvl.id);
+                        setSelectedChapterFilter('all');
                       }}
                       className={`px-4 py-3 rounded-2xl border transition-all text-left flex items-center gap-3 shrink-0 cursor-pointer ${
                         isSelected
@@ -675,11 +818,15 @@ export default function RoadmapPage({
               </div>
 
               {/* Selected Level Summary Card */}
-              {selectedLevel && (
+              {selectedLevel && (() => {
+                const cbtMeta = CBT_STAGE_META[selectedLevel.levelNumber] || CBT_STAGE_META[1];
+                const bestScore = bestCbtScores[selectedLevel.levelNumber] || 0;
+                const isCbtPassed = bestScore >= cbtMeta.passScore;
+                return (
                 <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs space-y-4">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span 
                           className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-lg"
                           style={{ backgroundColor: `${selectedLevel.color}15`, color: selectedLevel.color }}
@@ -700,7 +847,24 @@ export default function RoadmapPage({
                         {selectedLevel.description || selectedLevel.tagline}
                       </p>
 
-                      <div className="pt-1.5 flex items-center gap-2">
+                      {selectedLevel.syllabus5Pillars && (
+                        <div className="flex items-center gap-2 flex-wrap pt-1">
+                          <div className="px-3 py-1.5 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs">
+                            <span className="text-[#748092]">Mục tiêu từ: </span>
+                            <strong className="font-black text-[#E85D3F]">{selectedLevel.syllabus5Pillars.vocabularyTarget}</strong>
+                          </div>
+                          <div className="px-3 py-1.5 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs">
+                            <span className="text-[#748092]">Ngữ pháp: </span>
+                            <strong className="font-black text-[#3B82F6]">{selectedLevel.syllabus5Pillars.grammarTarget} điểm</strong>
+                          </div>
+                          <div className="px-3 py-1.5 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs">
+                            <span className="text-[#748092]">Chữ Hán: </span>
+                            <strong className="font-black text-[#45B97C]">{selectedLevel.syllabus5Pillars.hanziTarget} chữ</strong>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="pt-1.5 flex items-center gap-2 flex-wrap">
                         <button
                           type="button"
                           onClick={() => {
@@ -716,32 +880,69 @@ export default function RoadmapPage({
                       </div>
                     </div>
 
-                    {/* 3 Metrics target badges */}
-                    {selectedLevel.syllabus5Pillars && (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <div className="p-2.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center min-w-20">
-                          <span className="text-[10px] text-[#748092] block">Mục tiêu từ</span>
-                          <strong className="text-xs sm:text-sm font-black text-[#E85D3F]">
-                            {selectedLevel.syllabus5Pillars.vocabularyTarget}
-                          </strong>
+                    {/* CBT Gatekeeper Box */}
+                    <div className="w-full lg:w-[390px] p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3 shrink-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                          <ShieldCheck size={15} />
+                          <span>Cổng Thi Vượt Cấp CBT ({cbtMeta.paperCode})</span>
                         </div>
-                        <div className="p-2.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center min-w-20">
-                          <span className="text-[10px] text-[#748092] block">Ngữ pháp</span>
-                          <strong className="text-xs sm:text-sm font-black text-[#3B82F6]">
-                            {selectedLevel.syllabus5Pillars.grammarTarget} điểm
-                          </strong>
-                        </div>
-                        <div className="p-2.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center min-w-20">
-                          <span className="text-[10px] text-[#748092] block">Chữ Hán</span>
-                          <strong className="text-xs sm:text-sm font-black text-[#45B97C]">
-                            {selectedLevel.syllabus5Pillars.hanziTarget} chữ
-                          </strong>
-                        </div>
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                          isCbtPassed
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                            : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                        }`}>
+                          {isCbtPassed ? `Đã đạt (${bestScore}/${cbtMeta.maxScore}đ)` : `Cần ≥ ${cbtMeta.passScore}/${cbtMeta.maxScore}đ`}
+                        </span>
                       </div>
-                    )}
+
+                      <div className="text-xs text-[#5C6672] dark:text-[#CBD5E1] space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span>Cấu trúc chuẩn:</span>
+                          <strong className="text-[#243447] dark:text-white">{cbtMeta.questionCount} câu / {cbtMeta.durationMinutes} phút</strong>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Mục tiêu mở khóa xuất sắc:</span>
+                          <strong className="text-[#E85D3F]">≥ {cbtMeta.unlockTargetScore}/{cbtMeta.maxScore} điểm</strong>
+                        </div>
+                        {cbtMeta.hskkRequired && (
+                          <div className="flex items-center justify-between">
+                            <span>Thi nói đi kèm:</span>
+                            <strong className="text-purple-600 dark:text-purple-300">{cbtMeta.hskkRequired}</strong>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClickSound();
+                            window.location.hash = `#hsk?level=${selectedLevel.levelNumber}`;
+                            if (setActiveTab) setActiveTab('hsk');
+                          }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-xs hover:opacity-95 transition cursor-pointer"
+                        >
+                          <Trophy size={13} />
+                          <span>Thi vượt cấp {selectedLevel.code}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClickSound();
+                            window.location.hash = `#vocabulary?level=${selectedLevel.levelNumber}`;
+                            if (setActiveTab) setActiveTab('vocabulary');
+                          }}
+                          className="py-2 px-3 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white text-xs font-bold hover:border-[#E85D3F] transition cursor-pointer"
+                        >
+                          Ôn từ SRS
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              )}
+                );
+              })()}
             </div>
 
             {/* Search and Filters Bar */}
@@ -791,9 +992,48 @@ export default function RoadmapPage({
               </div>
             </div>
 
+            {/* Chapter Sub-Filter Tabs */}
+            {chaptersForSelectedLevel.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound();
+                    setSelectedChapterFilter('all');
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    selectedChapterFilter === 'all'
+                      ? 'bg-[#E85D3F] text-white border-[#E85D3F] shadow-xs'
+                      : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                  }`}
+                >
+                  Tất cả {chaptersForSelectedLevel.length} chặng
+                </button>
+                {chaptersForSelectedLevel.map((ch, idx) => (
+                  <button
+                    key={ch.id}
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setSelectedChapterFilter(ch.id);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      selectedChapterFilter === ch.id
+                        ? 'bg-[#E85D3F] text-white border-[#E85D3F] shadow-xs'
+                        : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                    }`}
+                  >
+                    Chặng {selectedLevel?.levelNumber || 1}.{idx + 1}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Chapters & Lessons Detailed List */}
             <div className="space-y-6">
-              {chaptersForSelectedLevel.map(chapter => {
+              {chaptersForSelectedLevel
+                .filter(ch => selectedChapterFilter === 'all' || ch.id === selectedChapterFilter)
+                .map(chapter => {
                 const chapterLessons = getLessonsByChapter(chapter.id);
                 const bossChallenge = getBossChallengeByChapter(chapter.id);
                 const bossUnlocked = isBossUnlocked(chapter.id, progress);
@@ -878,9 +1118,12 @@ export default function RoadmapPage({
                         ) : (
                           filteredLessons.map(lesson => {
                             const status = getLessonNodeStatus(lesson.id, progress);
-                            const isLocked = status === 'locked';
+                            const isLocked = !freeExploreUnlocked && status === 'locked';
                             const isMastered = status === 'mastered';
                             const isCompleted = status === 'completed' || isMastered;
+                            const toolKey = lesson.focusTool || TOOL_CYCLE[(Number(lesson.lessonNumber) || 1) % TOOL_CYCLE.length];
+                            const toolInfo = TOOL_META[toolKey] || TOOL_META.reading;
+                            const ToolIcon = toolInfo.icon;
 
                             return (
                               <div
@@ -952,6 +1195,22 @@ export default function RoadmapPage({
                                       Sẵn sàng học
                                     </span>
                                   )}
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      playClickSound();
+                                      if (typeof window !== 'undefined' && toolInfo.hash) {
+                                        window.location.hash = toolInfo.hash;
+                                      }
+                                      if (setActiveTab) setActiveTab(toolInfo.tab);
+                                    }}
+                                    title={`Mở công cụ luyện tập: ${toolInfo.label}`}
+                                    className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 hover:brightness-95 ${toolInfo.color}`}
+                                  >
+                                    <ToolIcon size={12} />
+                                    <span className="hidden md:inline">{toolInfo.label}</span>
+                                  </button>
 
                                   <button
                                     type="button"

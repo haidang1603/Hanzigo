@@ -2,26 +2,109 @@
  * =========================================================================
  * HANZI GO - REUSABLE SERVER-SIDE AI PROVIDER ADAPTER
  * =========================================================================
- * Free-First AI Architecture with xKiro as the Primary Provider:
- * 1. Primary: xKiro (OpenAI-compatible endpoint with generous free-tier tokens)
- *    - Base URL: process.env.XKIRO_BASE_URL || 'https://api.xkiro.com/v1'
- *    - Model: process.env.XKIRO_MODEL || 'qwen/qwen-plus-2025-07-28'
- *    - API Key: process.env.XKIRO_API_KEY (Server-side ONLY, never in client)
- *    - Zero-Cost Policy: Free tokens consumed first; no silent charges incurred.
- * 2. Secondary (Paid Fallback): Google Gemini 1.5 Flash
- *    - Only enabled if ALLOW_PAID_FALLBACK=true explicitly configured by Admin,
- *      OR if XKIRO_API_KEY is not configured and GEMINI_API_KEY is present.
- * 3. Graceful Offline Fallback:
- *    - When providers are unconfigured, rate-limited, or quota-exhausted,
+ * Gemini-First AI Architecture with Deterministic Offline Fallback:
+ * 1. Primary: Google Gemini (Server-side ONLY via process.env.GEMINI_API_KEY)
+ *    - Model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'
+ * 2. Graceful Offline Fallback:
+ *    - When GEMINI_API_KEY is unconfigured, rate-limited, or quota-exhausted,
  *      returns standardized fallback signals so downstream caller seamlessly
  *      activates deterministicRuleEngine with zero application crashes.
  * =========================================================================
  */
 
-export const XKIRO_DEFAULT_BASE_URL = 'https://api.xkiro.com/v1';
-export const XKIRO_DEFAULT_MODEL = 'sensenova/sensenova-6.8-flash-lite';
 export const GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash-lite';
 export const DEFAULT_TIMEOUT_MS = 25000;
+const KEY_COOLDOWN_MS = 60_000;
+const rateLimitedKeysUntil = new Map();
+
+const GEMINI_PRICING_PER_1M_USD = {
+  'flash-lite': { input: 0.10, output: 0.40 },
+  flash: { input: 0.15, output: 0.60 },
+  pro: { input: 1.25, output: 5.00 },
+};
+
+/**
+ * Calculate token cost in USD based on Gemini model tier and token counts.
+ */
+export function calculateGeminiTokenCost({
+  model = GEMINI_DEFAULT_MODEL,
+  promptTokens = 0,
+  completionTokens = 0,
+} = {}) {
+  const normalized = String(model || '').toLowerCase();
+  const tier = normalized.includes('pro')
+    ? GEMINI_PRICING_PER_1M_USD.pro
+    : normalized.includes('flash-lite')
+      ? GEMINI_PRICING_PER_1M_USD['flash-lite']
+      : GEMINI_PRICING_PER_1M_USD.flash;
+
+  const safePrompt = Math.max(0, Number(promptTokens) || 0);
+  const safeCompletion = Math.max(0, Number(completionTokens) || 0);
+
+  const inputCostUsd = (safePrompt / 1_000_000) * tier.input;
+  const outputCostUsd = (safeCompletion / 1_000_000) * tier.output;
+  const totalCostUsd = Number((inputCostUsd + outputCostUsd).toFixed(8));
+
+  return {
+    costUsd: totalCostUsd,
+    inputCostUsd: Number(inputCostUsd.toFixed(8)),
+    outputCostUsd: Number(outputCostUsd.toFixed(8)),
+    inputRatePer1M: tier.input,
+    outputRatePer1M: tier.output,
+  };
+}
+
+/**
+ * Collect all configured Gemini API keys in priority order:
+ * GEMINI_API_KEY, GEMINI_API_KEYS (comma-separated), and GEMINI_API_KEY_1..10.
+ * Places non-cooled-down keys first so rate-limited keys are skipped automatically.
+ */
+export function getGeminiApiKeys(now = Date.now()) {
+  const candidates = [];
+  if (process.env.GEMINI_API_KEY) {
+    candidates.push(process.env.GEMINI_API_KEY);
+  }
+  if (process.env.GEMINI_API_KEYS) {
+    for (const part of process.env.GEMINI_API_KEYS.split(',')) {
+      candidates.push(part);
+    }
+  }
+  for (let i = 1; i <= 10; i += 1) {
+    const numbered = process.env[`GEMINI_API_KEY_${i}`];
+    if (numbered) candidates.push(numbered);
+  }
+
+  const deduped = [];
+  const seen = new Set();
+  for (const raw of candidates) {
+    const key = String(raw || '').trim();
+    if (!key || key === 'your_gemini_api_key_here' || seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(key);
+  }
+
+  const healthy = [];
+  const cooledDown = [];
+  for (const key of deduped) {
+    const until = rateLimitedKeysUntil.get(key) || 0;
+    if (until > now) {
+      cooledDown.push(key);
+    } else {
+      if (until > 0) rateLimitedKeysUntil.delete(key);
+      healthy.push(key);
+    }
+  }
+  return [...healthy, ...cooledDown];
+}
+
+export function markGeminiKeyRateLimited(apiKey, cooldownMs = KEY_COOLDOWN_MS, now = Date.now()) {
+  if (!apiKey) return;
+  rateLimitedKeysUntil.set(apiKey, now + cooldownMs);
+}
+
+export function __resetGeminiKeyPoolForTests() {
+  rateLimitedKeysUntil.clear();
+}
 
 /**
  * Extracts and cleans JSON from raw LLM responses.
@@ -100,116 +183,6 @@ export function extractStructuredJson(rawText) {
   }
 
   return JSON.parse(text);
-}
-
-/**
- * Executes a call to the xKiro OpenAI-compatible endpoint.
- */
-async function callXkiro({
-  apiKey,
-  baseUrl = XKIRO_DEFAULT_BASE_URL,
-  model = process.env.XKIRO_MODEL || XKIRO_DEFAULT_MODEL,
-  messages,
-  temperature = 0.6,
-  maxTokens = 1200,
-  timeoutMs = DEFAULT_TIMEOUT_MS
-}) {
-  const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
-  const url = `${cleanBaseUrl}/chat/completions`;
-  const cleanModel = model || process.env.XKIRO_MODEL || XKIRO_DEFAULT_MODEL;
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  const startTime = Date.now();
-
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'x-api-key': apiKey
-      },
-      body: JSON.stringify({
-        model: cleanModel,
-        messages,
-        temperature,
-        max_tokens: maxTokens
-      }),
-      signal: controller.signal
-    });
-
-    const latencyMs = Date.now() - startTime;
-
-    if (!response.ok) {
-      const errStatus = response.status;
-      let errorBody = null;
-      try {
-        errorBody = await response.json();
-      } catch {
-        errorBody = { message: await response.text().catch(() => '') };
-      }
-
-      let errorCode = 'provider_error';
-      if (errStatus === 400) errorCode = 'bad_request';
-      else if (errStatus === 401) errorCode = 'auth_error';
-      else if (errStatus === 403) errorCode = 'forbidden';
-      else if (errStatus === 404) errorCode = 'model_not_found';
-      else if (errStatus === 429) errorCode = 'rate_limit_exceeded';
-      else if (errStatus >= 500) errorCode = 'server_error';
-
-      return {
-        success: false,
-        status: errStatus,
-        error: errorBody?.error?.message || errorBody?.message || `xKiro HTTP ${errStatus}`,
-        code: errorBody?.error?.code || errorCode,
-        latencyMs
-      };
-    }
-
-    const data = await response.json();
-    const messageContent = data?.choices?.[0]?.message?.content;
-
-    if (!messageContent) {
-      return {
-        success: false,
-        status: 502,
-        error: 'xKiro phản hồi rỗng (không có message content).',
-        code: 'empty_response',
-        latencyMs
-      };
-    }
-
-    const parsedData = extractStructuredJson(messageContent);
-    const usage = data?.usage || {};
-
-    return {
-      success: true,
-      provider: 'xkiro',
-      model: cleanModel,
-      data: parsedData,
-      rawText: messageContent,
-      usage: {
-        promptTokens: usage.prompt_tokens || 0,
-        completionTokens: usage.completion_tokens || 0,
-        totalTokens: usage.total_tokens || 0
-      },
-      costUsd: 0, // xKiro free tier model consumes $0.00
-      latencyMs
-    };
-  } catch (err) {
-    const isTimeout = err.name === 'AbortError';
-    return {
-      success: false,
-      status: isTimeout ? 504 : 500,
-      error: isTimeout ? `xKiro timeout sau ${timeoutMs}ms` : err.message,
-      code: isTimeout ? 'timeout' : 'network_error',
-      latencyMs: Date.now() - startTime
-    };
-  } finally {
-    clearTimeout(timer);
-  }
 }
 
 /**
@@ -295,14 +268,27 @@ async function callGemini({
 
     const parsedData = extractStructuredJson(rawText);
 
-    // Approximate token count: ~4 chars per token
+    // Prefer exact token counts from Gemini usageMetadata; fallback to ~4 chars/token estimate
+    const usageMeta = data?.usageMetadata || {};
     const promptLen = (systemPrompt || '').length + (userPrompt || '').length;
-    const promptTokens = Math.ceil(promptLen / 4);
-    const completionTokens = Math.ceil(rawText.length / 4);
-    const totalTokens = promptTokens + completionTokens;
+    const promptTokens =
+      typeof usageMeta.promptTokenCount === 'number'
+        ? usageMeta.promptTokenCount
+        : Math.ceil(promptLen / 4);
+    const completionTokens =
+      typeof usageMeta.candidatesTokenCount === 'number'
+        ? usageMeta.candidatesTokenCount
+        : Math.ceil(rawText.length / 4);
+    const totalTokens =
+      typeof usageMeta.totalTokenCount === 'number'
+        ? usageMeta.totalTokenCount
+        : promptTokens + completionTokens;
 
-    // Gemini 1.5/2.5/3.5 Flash pricing estimate
-    const costUsd = Number(((promptTokens * 0.000000075) + (completionTokens * 0.0000003)).toFixed(6));
+    const costBreakdown = calculateGeminiTokenCost({
+      model: cleanModel,
+      promptTokens,
+      completionTokens,
+    });
 
     return {
       success: true,
@@ -311,7 +297,8 @@ async function callGemini({
       data: parsedData,
       rawText,
       usage: { promptTokens, completionTokens, totalTokens },
-      costUsd,
+      costUsd: costBreakdown.costUsd,
+      costBreakdown,
       latencyMs
     };
   } catch (err) {
@@ -392,11 +379,7 @@ export function evaluateFallbackPolicy({
 
 /**
  * UNIFIED AI SERVICE DISPATCHER
- * Configurable Primary & Secondary Providers:
- * - AI_PRIMARY_PROVIDER: 'xkiro' (Free-First) or 'gemini'
- * - XKIRO_MODEL: Default 'sensenova/sensenova-6.8-flash-lite'
- * - GEMINI_MODEL: Default 'gemini-3.5-flash-lite'
- * - ALLOW_PAID_FALLBACK: Protects budget against unintended charges
+ * Uses Google Gemini (GEMINI_API_KEY) with deterministic offline fallback.
  */
 export async function callUnifiedAiProvider({
   systemPrompt = '',
@@ -406,169 +389,85 @@ export async function callUnifiedAiProvider({
   maxTokens = 1200,
   timeoutMs = DEFAULT_TIMEOUT_MS,
   action = 'personalize',
-  provider = null
 }) {
-  const primaryProvider = (provider || process.env.AI_PRIMARY_PROVIDER || 'xkiro').toLowerCase();
-
-  const xkiroKey = process.env.XKIRO_API_KEY;
-  const xkiroBaseUrl = process.env.XKIRO_BASE_URL || XKIRO_DEFAULT_BASE_URL;
-  const xkiroModel = process.env.XKIRO_MODEL || XKIRO_DEFAULT_MODEL;
-
-  const geminiKey = process.env.GEMINI_API_KEY;
+  const geminiKeys = getGeminiApiKeys();
   const geminiModel = process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
-  const allowPaidFallback = String(process.env.ALLOW_PAID_FALLBACK || '').toLowerCase() === 'true';
 
-  // Format messages for OpenAI format
-  const chatMessages = messages && Array.isArray(messages) && messages.length > 0
-    ? messages
-    : [
-        ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
-        { role: 'user', content: userPrompt }
-      ];
+  const resolvedUserPrompt =
+    userPrompt ||
+    (Array.isArray(messages)
+      ? messages
+          .filter((m) => m.role !== 'system')
+          .map((m) => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`)
+          .join('\n')
+      : '');
+  const resolvedSystemPrompt =
+    systemPrompt ||
+    (Array.isArray(messages)
+      ? messages
+          .filter((m) => m.role === 'system')
+          .map((m) => m.content)
+          .join('\n')
+      : '');
 
-  const executeXkiro = async () => {
-    return await callXkiro({
-      apiKey: xkiroKey,
-      baseUrl: xkiroBaseUrl,
-      model: xkiroModel,
-      messages: chatMessages,
-      temperature,
-      maxTokens,
-      timeoutMs
-    });
-  };
+  if (geminiKeys.length > 0) {
+    let lastFailure = null;
 
-  const executeGemini = async () => {
-    return await callGemini({
-      apiKey: geminiKey,
+    for (let idx = 0; idx < geminiKeys.length; idx += 1) {
+      const apiKey = geminiKeys[idx];
+      const geminiRes = await callGemini({
+        apiKey,
+        model: geminiModel,
+        systemPrompt: resolvedSystemPrompt,
+        userPrompt: resolvedUserPrompt,
+        temperature,
+        maxTokens,
+        timeoutMs
+      });
+
+      if (geminiRes.success) {
+        return {
+          ...geminiRes,
+          action,
+          keyIndex: idx,
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      lastFailure = geminiRes;
+      console.warn(
+        `[AI Gateway] Gemini call failed on key #${idx + 1}/${geminiKeys.length} (Status: ${geminiRes.status}, Error: ${geminiRes.error})`
+      );
+
+      // Do not rotate on 400 Bad Request (prompt/schema issue)
+      if (geminiRes.status === 400) {
+        break;
+      }
+
+      if (geminiRes.status === 429 || geminiRes.status === 403) {
+        markGeminiKeyRateLimited(apiKey);
+      }
+    }
+
+    return {
+      success: false,
+      status: lastFailure?.status || 503,
+      provider: 'gemini',
       model: geminiModel,
-      systemPrompt,
-      userPrompt: userPrompt || (messages ? JSON.stringify(messages) : ''),
-      temperature,
-      maxTokens,
-      timeoutMs
-    });
-  };
-
-  // =========================================================================
-  // PATH A: GEMINI AS PRIMARY
-  // =========================================================================
-  if (primaryProvider === 'gemini') {
-    if (geminiKey) {
-      const geminiRes = await executeGemini();
-      if (geminiRes.success) {
-        return {
-          ...geminiRes,
-          action,
-          timestamp: new Date().toISOString()
-        };
-      }
-      console.warn(`[AI Gateway] Gemini primary call failed (Status: ${geminiRes.status}, Error: ${geminiRes.error})`);
-
-      // Evaluate Fallback Policy to xKiro (free-tier secondary)
-      const fallbackPolicy = evaluateFallbackPolicy({
-        primaryStatus: geminiRes.status,
-        primaryCode: geminiRes.code,
-        primaryProvider: 'gemini',
-        secondaryProvider: 'xkiro',
-        allowPaidFallback,
-        hasSecondaryKey: !!xkiroKey
-      });
-
-      if (fallbackPolicy.canFallback) {
-        console.info('[AI Gateway] Chuyển hướng sang nhà cung cấp phụ trợ (xKiro)...');
-        const xkiroRes = await executeXkiro();
-        if (xkiroRes.success) {
-          return {
-            ...xkiroRes,
-            action,
-            isSecondaryFallback: true,
-            timestamp: new Date().toISOString()
-          };
-        }
-        console.warn(`[AI Gateway] xKiro secondary fallback failed (Status: ${xkiroRes.status})`);
-      }
-    }
-  } else {
-    // =========================================================================
-    // PATH B: XKIRO AS PRIMARY (Free-First Architecture)
-    // =========================================================================
-    if (xkiroKey) {
-      const xkiroRes = await executeXkiro();
-
-      if (xkiroRes.success) {
-        return {
-          ...xkiroRes,
-          action,
-          timestamp: new Date().toISOString()
-        };
-      }
-
-      console.warn(`[AI Gateway] xKiro primary call failed (Status: ${xkiroRes.status}, Error: ${xkiroRes.error})`);
-
-      // Evaluate Centralized Fallback Cost Policy for Gemini (paid secondary)
-      const fallbackPolicy = evaluateFallbackPolicy({
-        primaryStatus: xkiroRes.status,
-        primaryCode: xkiroRes.code,
-        primaryProvider: 'xkiro',
-        secondaryProvider: 'gemini',
-        allowPaidFallback,
-        hasSecondaryKey: !!geminiKey
-      });
-
-      // Strict Cost Enforcement: If paid fallback is prohibited on ANY error path, terminate safely
-      if (!fallbackPolicy.canFallback) {
-        return {
-          success: false,
-          status: xkiroRes.status,
-          provider: 'xkiro',
-          model: xkiroModel,
-          error: xkiroRes.status === 429 
-            ? 'Hạn mức miễn phí hàng ngày của xKiro đã hết. Hệ thống chuyển sang chế độ sư phạm ngoại tuyến để bảo vệ ngân sách.'
-            : `Nhà cung cấp AI xKiro tạm thời gián đoạn (${xkiroRes.error}). Chuyển sang chế độ sư phạm ngoại tuyến.`,
-          code: xkiroRes.code,
-          latencyMs: xkiroRes.latencyMs,
-          paidFallbackBlocked: fallbackPolicy.paidBlocked
-        };
-      }
-
-      // ALLOW_PAID_FALLBACK=true explicitly granted by administrator
-      console.info(`[AI Gateway Fallback] Primary xKiro failed with HTTP ${xkiroRes.status} (${xkiroRes.code}). ALLOW_PAID_FALLBACK=true, activating secondary provider (Gemini)...`);
-
-      const geminiRes = await executeGemini();
-      if (geminiRes.success) {
-        return {
-          ...geminiRes,
-          action,
-          timestamp: new Date().toISOString(),
-          isPaidFallback: true
-        };
-      }
-
-      console.warn(`[AI Gateway] Gemini secondary fallback failed (Status: ${geminiRes.status}, Error: ${geminiRes.error})`);
-    } else if (geminiKey && (allowPaidFallback || !xkiroKey)) {
-      // Standalone Gemini when xKiro is unconfigured
-      const geminiRes = await executeGemini();
-      if (geminiRes.success) {
-        return {
-          ...geminiRes,
-          action,
-          timestamp: new Date().toISOString(),
-          isPaidFallback: false
-        };
-      }
-      console.warn(`[AI Gateway] Gemini standalone call failed (Status: ${geminiRes.status}, Error: ${geminiRes.error})`);
-    }
+      error: lastFailure?.error || 'All configured Gemini keys failed.',
+      code: lastFailure?.code || 'provider_error',
+      latencyMs: lastFailure?.latencyMs || 0
+    };
   }
 
   // =========================================================================
-  // 3. NO PROVIDER SUCCESS -> SAFE RETURN FOR DETERMINISTIC ENGINE
+  // NO PROVIDER CONFIGURED -> SAFE RETURN FOR DETERMINISTIC ENGINE
   // =========================================================================
   return {
     success: false,
     status: 503,
     provider: 'none',
-    error: 'Không có dịch vụ AI nào khả dụng hoặc chưa cấu hình API Key. Hệ thống sử dụng bộ sư phạm xác định offline.',
+    error: 'Chưa cấu hình GEMINI_API_KEY. Hệ thống sử dụng bộ sư phạm xác định offline.',
     code: 'NO_ACTIVE_AI_PROVIDER',
     latencyMs: 0
   };

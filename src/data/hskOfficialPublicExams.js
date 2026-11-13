@@ -119,6 +119,44 @@ export const OFFICIAL_PUBLIC_EXAMS = [
     permission_status: 'reproducible',
     verified_date: '2026-11-05',
     is_published: true
+  },
+  {
+    id: 'hsk2-official-ref-02',
+    title: 'Đề Minh Họa HSK 2 CTI Bộ 2 (Mã đề H21001 - Công Khai)',
+    level: 'HSK 2',
+    exam_version: '2015-Standard',
+    exam_type: 'official_sample',
+    skill_category: 'mixed',
+    duration_minutes: 55,
+    total_questions: 6,
+    passing_score: 120,
+    max_score: 200,
+    description: 'Bộ đề tham chiếu công khai số 2 theo chuẩn CTI H21001: Nghe hội thoại sinh hoạt hàng ngày và Đọc hiểu điền từ, phán đoán ngữ cảnh.',
+    source_url: 'http://www.chinesetest.cn/userfiles/file/HSK2.pdf',
+    source_author: 'Chinese Testing International (CTI / Hanban)',
+    license: 'Public Educational Sample Reference (Chỉ tham chiếu học thuật công khai)',
+    permission_status: 'reproducible',
+    verified_date: '2026-11-13',
+    is_published: true
+  },
+  {
+    id: 'hsk3-official-ref-02',
+    title: 'Đề Minh Họa HSK 3 CTI Bộ 2 (Mã đề H31001 - Công Khai)',
+    level: 'HSK 3',
+    exam_version: '2015-Standard',
+    exam_type: 'official_sample',
+    skill_category: 'mixed',
+    duration_minutes: 90,
+    total_questions: 6,
+    passing_score: 180,
+    max_score: 300,
+    description: 'Bộ đề tham chiếu công khai số 2 theo chuẩn CTI H31001: Nghe đối thoại dài, Đọc hiểu điền từ & suy luận, và Viết sắp xếp câu chuẩn HSK 3.',
+    source_url: 'http://www.chinesetest.cn/userfiles/file/HSK3.pdf',
+    source_author: 'Chinese Testing International (CTI / Hanban)',
+    license: 'Public Educational Sample Reference (Chỉ tham chiếu học thuật công khai)',
+    permission_status: 'reproducible',
+    verified_date: '2026-11-13',
+    is_published: true
   }
 ];
 
@@ -2293,5 +2331,260 @@ export const OFFICIAL_PUBLIC_QUESTIONS = [
     explanation: "Câu A chuẩn xác. Câu B lỗi lặp ('制定出了...方案制定'). Câu C lỗi thiếu chủ ngữ ('通过...使...'). Câu D lỗi kết hợp động tân ('品质' trừu tượng không thể '浮现' hữu hình).",
     points: 20,
     topic: 'philosophy'
+  },
+  // =========================================================================
+  // HSK 2 OFFICIAL PUBLIC SET 2 (H21001) - 6 Questions
+  // =========================================================================
+  {
+    id: 'q-hsk2-ref2-01',
+    exam_id: 'hsk2-official-ref-02',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 1,
+    question_type: 'true_false',
+    prompt: '听录音，判断对错：[他每天坐公共汽车去公司。]',
+    pinyin: 'Tā měitiān zuò gōnggòng qìchē qù gōngsī.',
+    translation: 'Nghe ghi âm và phán đoán đúng sai: "Anh ấy mỗi ngày đi xe buýt đến công ty."',
+    audio_url: '',
+    audio_script: '我家离公司很近，我每天骑自行车去上班，只要十分钟。',
+    options: [
+      { text: '✓ Đúng (对)', pinyin: 'Duì', translation: 'Khớp với lời thoại' },
+      { text: '✗ Sai (错)', pinyin: 'Cuò', translation: 'Không khớp' }
+    ],
+    correct_option_index: 1,
+    explanation: 'Lời thoại nói "骑自行车去上班" (đi xe đạp đi làm), không phải đi xe buýt.',
+    points: 10,
+    topic: 'transport'
+  },
+  {
+    id: 'q-hsk2-ref2-02',
+    exam_id: 'hsk2-official-ref-02',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 2,
+    question_type: 'multiple_choice',
+    prompt: '听对话，选择正确答案：男的想买什么？',
+    pinyin: 'Nán de xiǎng mǎi shénme?',
+    translation: 'Nghe hội thoại: Người nam muốn mua gì?',
+    audio_url: '',
+    audio_script: '女：先生，您想喝点儿什么？男：请给我一杯热牛奶，谢谢。',
+    options: [
+      { text: 'A. 一杯热牛奶', pinyin: 'Yì bēi rè niúnǎi', translation: 'Một ly sữa nóng' },
+      { text: 'B. 一杯冰茶', pinyin: 'Yì bēi bīng chá', translation: 'Một ly trà đá' },
+      { text: 'C. 一碗面条', pinyin: 'Yì wǎn miàntiáo', translation: 'Một bát mì' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Người nam nói rõ: "请给我一杯热牛奶".',
+    points: 10,
+    topic: 'food'
+  },
+  {
+    id: 'q-hsk2-ref2-03',
+    exam_id: 'hsk2-official-ref-02',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 3,
+    question_type: 'multiple_choice',
+    prompt: '听对话，选择正确答案：明天天气怎么样？',
+    pinyin: 'Míngtiān tiānqì zěnmeyàng?',
+    translation: 'Nghe hội thoại: Thời tiết ngày mai thế nào?',
+    audio_url: '',
+    audio_script: '女：明天会下雨吗？男：天气预报说明天是晴天，非常适合去公园。',
+    options: [
+      { text: 'A. 下大雨', pinyin: 'Xià dàyǔ', translation: 'Mưa to' },
+      { text: 'B. 晴天', pinyin: 'Qíngtiān', translation: 'Trời nắng đẹp' },
+      { text: 'C. 下雪', pinyin: 'Xià xuě', translation: 'Tuyết rơi' }
+    ],
+    correct_option_index: 1,
+    explanation: 'Dự báo thời tiết nói ngày mai là "晴天" (trời nắng).',
+    points: 10,
+    topic: 'weather'
+  },
+  {
+    id: 'q-hsk2-ref2-04',
+    exam_id: 'hsk2-official-ref-02',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 4,
+    question_type: 'multiple_choice',
+    prompt: '选择恰当的词语填空：姐姐（　）我高两公分。',
+    pinyin: 'Jiějie ( ) wǒ gāo liǎng gōngfēn.',
+    translation: 'Chọn từ thích hợp điền vào chỗ trống: Chị gái cao hơn tôi 2 cm.',
+    options: [
+      { text: 'A. 比', pinyin: 'bǐ', translation: 'So với (so sánh hơn)' },
+      { text: 'B. 从', pinyin: 'cóng', translation: 'Từ' },
+      { text: 'C. 对', pinyin: 'duì', translation: 'Đối với' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Cấu trúc câu so sánh chữ 比: A + 比 + B + Tính từ + Số lượng chênh lệch.',
+    points: 10,
+    topic: 'grammar'
+  },
+  {
+    id: 'q-hsk2-ref2-05',
+    exam_id: 'hsk2-official-ref-02',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 5,
+    question_type: 'multiple_choice',
+    prompt: '根据短文判断：王老师教我们汉语，他上课很有意思，大家都喜欢他。',
+    pinyin: 'Wáng lǎoshī jiāo wǒmen Hànyǔ, tā shàngkè hěn yǒuyìsi, dàjiā dōu xǐhuan tā.',
+    translation: 'Theo đoạn văn: Vì sao mọi người đều thích thầy Vương?',
+    options: [
+      { text: 'A. 他上课很有意思', pinyin: 'Tā shàngkè hěn yǒuyìsi', translation: 'Thầy giảng bài rất thú vị' },
+      { text: 'B. 他每天发礼物', pinyin: 'Tā měitiān fā lǐwù', translation: 'Thầy phát quà mỗi ngày' },
+      { text: 'C. 他不留作业', pinyin: 'Tā bù liú zuòyè', translation: 'Thầy không giao bài tập' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Đoạn văn nêu rõ "他上课很有意思" (thầy lên lớp rất thú vị).',
+    points: 10,
+    topic: 'school'
+  },
+  {
+    id: 'q-hsk2-ref2-06',
+    exam_id: 'hsk2-official-ref-02',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 6,
+    question_type: 'multiple_choice',
+    prompt: '选择恰当的词语填空：现在已经晚上十一点了，你快去（　）吧。',
+    pinyin: 'Xiànzài yǐjīng wǎnshang shíyī diǎn le, nǐ kuài qù ( ) ba.',
+    translation: 'Đã 11 giờ tối rồi, bạn mau đi (...) đi.',
+    options: [
+      { text: 'A. 休息', pinyin: 'xiūxi', translation: 'Nghỉ ngơi' },
+      { text: 'B. 跑步', pinyin: 'pǎobù', translation: 'Chạy bộ' },
+      { text: 'C. 旅游', pinyin: 'lǚyóu', translation: 'Du lịch' }
+    ],
+    correct_option_index: 0,
+    explanation: '11 giờ tối thì hợp ngữ cảnh nhất là "休息" (nghỉ ngơi).',
+    points: 10,
+    topic: 'daily_life'
+  },
+  // =========================================================================
+  // HSK 3 OFFICIAL PUBLIC SET 2 (H31001) - 6 Questions
+  // =========================================================================
+  {
+    id: 'q-hsk3-ref2-01',
+    exam_id: 'hsk3-official-ref-02',
+    part_type: 'listening',
+    part_number: 1,
+    question_number: 1,
+    question_type: 'multiple_choice',
+    prompt: '听对话，选择正确答案：女的为什么没去参加会议？',
+    pinyin: 'Nǚ de wèishénme méi qù cānjiā huìyì?',
+    translation: 'Nghe hội thoại: Vì sao người nữ không đi dự cuộc họp?',
+    audio_url: '',
+    audio_script: '男：今天的会议你怎么没来？女：真不好意思，我昨天晚上发烧了，今天上午去了医院。',
+    options: [
+      { text: 'A. 她生病去医院了', pinyin: 'Tā shēngbìng qù yīyuàn le', translation: 'Cô ấy bị ốm phải đi bệnh viện' },
+      { text: 'B. 她忘记了会议时间', pinyin: 'Tā wàngjì le huìyì shíjiān', translation: 'Cô ấy quên giờ họp' },
+      { text: 'C. 她去机场接朋友了', pinyin: 'Tā qù jīchǎng jiē péngyou le', translation: 'Cô ấy ra sân bay đón bạn' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Người nữ nói tối qua bị sốt ("发烧了") và sáng nay phải đi bệnh viện ("去了医院").',
+    points: 15,
+    topic: 'health'
+  },
+  {
+    id: 'q-hsk3-ref2-02',
+    exam_id: 'hsk3-official-ref-02',
+    part_type: 'listening',
+    part_number: 2,
+    question_number: 2,
+    question_type: 'multiple_choice',
+    prompt: '听对话，选择正确答案：男的觉得那家新开的饭馆怎么样？',
+    pinyin: 'Nán de juéde nà jiā xīn kāi de fànguǎn zěnmeyàng?',
+    translation: 'Nghe hội thoại: Người nam thấy quán ăn mới mở kia thế nào?',
+    audio_url: '',
+    audio_script: '女：你去过楼下那家新开的饭馆吗？男：去过一次，菜很新鲜，就是服务员有点儿忙，等菜等了半个小时。',
+    options: [
+      { text: 'A. 菜很新鲜，但上菜有点儿慢', pinyin: 'Cài hěn xīnxiān, dàn shàng cài yǒudiǎnr màn', translation: 'Món ăn rất tươi ngon nhưng lên món hơi chậm' },
+      { text: 'B. 菜太咸了，价格也很贵', pinyin: 'Cài tài xián le, jiàgé yě hěn guì', translation: 'Món quá mặn và giá đắt' },
+      { text: 'C. 环境很吵，不想再去', pinyin: 'Huánjìng hěn chǎo', translation: 'Môi trường rất ồn' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Người nam khen "菜很新鲜" nhưng lưu ý phải đợi món nửa tiếng ("等菜等了半个小时").',
+    points: 15,
+    topic: 'food'
+  },
+  {
+    id: 'q-hsk3-ref2-03',
+    exam_id: 'hsk3-official-ref-02',
+    part_type: 'reading',
+    part_number: 1,
+    question_number: 3,
+    question_type: 'multiple_choice',
+    prompt: '选择恰当的词语填空：虽然这次考试很难，（　）他还是考了九十五分。',
+    pinyin: 'Suīrán zhè cì kǎoshì hěn nán, ( ) tā háishi kǎo le jiǔshíwǔ fēn.',
+    translation: 'Chọn từ điền vào chỗ trống: Tuy kỳ thi lần này rất khó, (...) anh ấy vẫn đạt 95 điểm.',
+    options: [
+      { text: 'A. 但是', pinyin: 'dànshì', translation: 'Nhưng' },
+      { text: 'B. 所以', pinyin: 'suǒyǐ', translation: 'Cho nên' },
+      { text: 'C. 因为', pinyin: 'yīnwèi', translation: 'Bởi vì' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Liên từ cặp chuẩn: 虽然... 但是... (Tuy... nhưng...).',
+    points: 15,
+    topic: 'grammar'
+  },
+  {
+    id: 'q-hsk3-ref2-04',
+    exam_id: 'hsk3-official-ref-02',
+    part_type: 'reading',
+    part_number: 2,
+    question_number: 4,
+    question_type: 'multiple_choice',
+    prompt: '阅读理解：以前我总觉得时间很多，经常把今天的事情留到明天做。后来才明白，只有抓紧每一分钟，才能把工作做好。',
+    pinyin: 'Yǐqián wǒ zǒng juéde shíjiān hěn duō... zhǐyǒu zhuājǐn měi yì fēnzhōng, cái néng bǎ gōngzuò zuò hǎo.',
+    translation: 'Đoạn văn muốn nhấn mạnh điều gì?',
+    options: [
+      { text: 'A. 要珍惜时间，不要拖延今天的事情', pinyin: 'Yào zhēnxī shíjiān, búyào tuōyán', translation: 'Cần trân trọng thời gian, không trì hoãn việc hôm nay' },
+      { text: 'B. 明天的工作比今天更重要', pinyin: 'Míngtiān de gōngzuò gèng zhòngyào', translation: 'Việc ngày mai quan trọng hơn' },
+      { text: 'C. 每个人每天都有很多空闲时间', pinyin: 'Měi gè rén dōu yǒu hěn duō kòngxián shíjiān', translation: 'Ai cũng có nhiều thời gian rảnh' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Tác giả rút ra bài học: phải nắm chặt từng phút giây mới làm tốt công việc được.',
+    points: 15,
+    topic: 'work'
+  },
+  {
+    id: 'q-hsk3-ref2-05',
+    exam_id: 'hsk3-official-ref-02',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 5,
+    question_type: 'multiple_choice',
+    prompt: '连词成句：把下列词语组成正确的句子：[照相机 / 弟弟 / 借走了 / 我的 / 把]',
+    pinyin: 'Zhàoxiàngjī / dìdi / jiè zǒu le / wǒ de / bǎ',
+    translation: 'Sắp xếp thành câu chữ 把 đúng ngữ pháp:',
+    options: [
+      { text: 'A. 弟弟把我的照相机借走了。', pinyin: 'Dìdi bǎ wǒ de zhàoxiàngjī jiè zǒu le.', translation: 'Em trai đã mượn mất máy ảnh của tôi rồi.' },
+      { text: 'B. 我的照相机把弟弟借走了。', pinyin: 'Wǒ de zhàoxiàngjī bǎ dìdi jiè zǒu le.', translation: 'Sai chủ ngữ thực hiện hành động' },
+      { text: 'C. 弟弟借走了把我的照相机。', pinyin: 'Dìdi jiè zǒu le bǎ wǒ de zhàoxiàngjī.', translation: 'Sai vị trí cụm 把' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Cấu trúc câu chữ 把: Chủ ngữ (弟弟) + 把 + Tân ngữ (我的照相机) + Động từ + Bổ ngữ kết quả (借走了).',
+    points: 20,
+    topic: 'grammar'
+  },
+  {
+    id: 'q-hsk3-ref2-06',
+    exam_id: 'hsk3-official-ref-02',
+    part_type: 'writing',
+    part_number: 1,
+    question_number: 6,
+    question_type: 'multiple_choice',
+    prompt: '连词成句：把下列词语组成正确的句子：[干净 / 教室 / 打扫得 / 被同学们 / 很]',
+    pinyin: 'Gānjìng / jiàoshì / dǎsǎo de / bèi tóngxuémen / hěn',
+    translation: 'Sắp xếp thành câu chữ 被 đúng ngữ pháp:',
+    options: [
+      { text: 'A. 教室被同学们打扫得很干净。', pinyin: 'Jiàoshì bèi tóngxuémen dǎsǎo de hěn gānjìng.', translation: 'Phòng học được các bạn học sinh quét dọn rất sạch sẽ.' },
+      { text: 'B. 同学们被教室打扫得很干净。', pinyin: 'Tóngxuémen bèi jiàoshì dǎsǎo de hěn gānjìng.', translation: 'Đảo ngược chủ thể bị động' },
+      { text: 'C. 教室打扫得很干净被同学们。', pinyin: 'Jiàoshì dǎsǎo de hěn gānjìng bèi tóngxuémen.', translation: 'Sai vị trí cụm 被' }
+    ],
+    correct_option_index: 0,
+    explanation: 'Cấu trúc câu bị động chữ 被: Đối tượng chịu tác động (教室) + 被 + Tác nhân (同学们) + Động từ + 得 + Bổ ngữ trạng thái (很干净).',
+    points: 20,
+    topic: 'grammar'
   }
 ];

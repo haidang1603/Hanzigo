@@ -37,8 +37,8 @@ export const PRACTICE_LEVELS = [
     stats: {
       wordsCount: 161,
       pronounceItems: 8,
-      listeningCount: 10,
-      grammarCount: 10
+      listeningCount: 15,
+      grammarCount: 15
     }
   },
   {
@@ -63,8 +63,8 @@ export const PRACTICE_LEVELS = [
     stats: {
       wordsCount: 142,
       pronounceItems: 8,
-      listeningCount: 10,
-      grammarCount: 10
+      listeningCount: 15,
+      grammarCount: 15
     }
   },
   {
@@ -89,8 +89,8 @@ export const PRACTICE_LEVELS = [
     stats: {
       wordsCount: 137,
       pronounceItems: 8,
-      listeningCount: 10,
-      grammarCount: 10
+      listeningCount: 15,
+      grammarCount: 15
     }
   },
   {
@@ -115,8 +115,8 @@ export const PRACTICE_LEVELS = [
     stats: {
       wordsCount: 140,
       pronounceItems: 8,
-      listeningCount: 10,
-      grammarCount: 10
+      listeningCount: 15,
+      grammarCount: 15
     }
   },
   {
@@ -141,8 +141,8 @@ export const PRACTICE_LEVELS = [
     stats: {
       wordsCount: 114,
       pronounceItems: 8,
-      listeningCount: 10,
-      grammarCount: 10
+      listeningCount: 15,
+      grammarCount: 15
     }
   },
   {
@@ -167,8 +167,8 @@ export const PRACTICE_LEVELS = [
     stats: {
       wordsCount: 110,
       pronounceItems: 8,
-      listeningCount: 10,
-      grammarCount: 10
+      listeningCount: 15,
+      grammarCount: 15
     }
   }
 ];
@@ -1196,6 +1196,432 @@ export const LISTENING_DRILLS_BY_LEVEL = [
     explanation: '"将伦理秩序、家族情感与人与自然的和谐共生融汇..." (kết hợp trật tự lễ giáo, tình cảm gia đình và thiên nhiên).',
     topic: 'Kiến trúc & Triết lý văn hóa',
     difficulty: 'master'
+  },
+  // === BỔ SUNG MỨC 1 (HSK 1: list-l1-11 -> list-l1-15) ===
+  {
+    id: 'list-l1-11',
+    level: 1,
+    audioText: '今天星期几？',
+    hanzi: '今天星期几？',
+    pinyin: 'Jīntiān xīngqī jǐ?',
+    translation: 'Hôm nay là thứ mấy?',
+    question: 'Người nói đang hỏi thông tin gì?',
+    options: ['Hôm nay là thứ mấy', 'Bây giờ là mấy giờ', 'Ngày mai trời có mưa không', 'Hôm nay bạn đi đâu'],
+    correctIndex: 0,
+    explanation: '星期几 (xīngqī jǐ) dùng để hỏi thứ mấy trong tuần.',
+    topic: 'Thời gian & Thứ ngày',
+    difficulty: 'easy'
+  },
+  {
+    id: 'list-l1-12',
+    level: 1,
+    audioText: '我想喝一杯热茶。',
+    hanzi: '我想喝一杯热茶。',
+    pinyin: 'Wǒ xiǎng hē yì bēi rè chá.',
+    translation: 'Tôi muốn uống một tách trà nóng.',
+    question: 'Người nói muốn uống gì?',
+    options: ['Một chai nước lạnh', 'Một tách cà phê đá', 'Một tách trà nóng', 'Một ly sữa tươi'],
+    correctIndex: 2,
+    explanation: '一杯热茶 (yì bēi rè chá): một cốc/tách trà nóng.',
+    topic: 'Ăn uống cơ bản',
+    difficulty: 'easy'
+  },
+  {
+    id: 'list-l1-13',
+    level: 1,
+    audioText: '他是我爸爸，他是医生。',
+    hanzi: '他是我爸爸，他是医生。',
+    pinyin: 'Tā shì wǒ bàba, tā shì yīshēng.',
+    translation: 'Ông ấy là bố tôi, ông ấy là bác sĩ.',
+    question: 'Bố của người nói làm nghề gì?',
+    options: ['Giáo viên', 'Bác sĩ', 'Tài xế', 'Nhân viên bán hàng'],
+    correctIndex: 1,
+    explanation: '医生 (yīshēng) nghĩa là bác sĩ.',
+    topic: 'Gia đình & Nghề nghiệp',
+    difficulty: 'easy'
+  },
+  {
+    id: 'list-l1-14',
+    level: 1,
+    audioText: '这个苹果多少钱？',
+    hanzi: '这个苹果多少钱？',
+    pinyin: 'Zhège píngguǒ duōshao qián?',
+    translation: 'Quả táo này bao nhiêu tiền?',
+    question: 'Câu này thường được dùng trong tình huống nào?',
+    options: ['Hỏi đường đi', 'Hỏi giá khi mua sắm', 'Hỏi thăm sức khỏe', 'Đặt vé tàu hỏa'],
+    correctIndex: 1,
+    explanation: '多少钱 (duōshao qián) dùng để hỏi giá cả.',
+    topic: 'Mua sắm cơ bản',
+    difficulty: 'easy'
+  },
+  {
+    id: 'list-l1-15',
+    level: 1,
+    audioText: '明天上午九点我去医院。',
+    hanzi: '明天上午九点我去医院。',
+    pinyin: 'Míngtiān shàngwǔ jiǔ diǎn wǒ qù yīyuàn.',
+    translation: '9 giờ sáng mai tôi đi bệnh viện.',
+    question: 'Người nói sẽ đi đâu vào 9 giờ sáng mai?',
+    options: ['Trường học', 'Siêu thị', 'Bệnh viện', 'Ga tàu'],
+    correctIndex: 2,
+    explanation: '医院 (yīyuàn) là bệnh viện; 上午九点 là 9 giờ sáng.',
+    topic: 'Lịch trình & Địa điểm',
+    difficulty: 'easy'
+  },
+  // === BỔ SUNG MỨC 2 (HSK 2: list-l2-11 -> list-l2-15) ===
+  {
+    id: 'list-l2-11',
+    level: 2,
+    audioText: '这件衣服有点儿大，有没有小一点儿的？',
+    hanzi: '这件衣服有点儿大，有没有小一点儿的？',
+    pinyin: 'Zhè jiàn yīfu yǒudiǎnr dà, yǒu méiyǒu xiǎo yìdiǎnr de?',
+    translation: 'Bộ quần áo này hơi rộng một chút, có cái nào nhỏ hơn chút không?',
+    question: 'Vì sao khách hàng muốn đổi chiếc áo khác?',
+    options: ['Vì áo bị bẩn', 'Vì áo hơi rộng', 'Vì giá quá đắt', 'Vì không thích màu sắc'],
+    correctIndex: 1,
+    explanation: '有点儿大 (yǒudiǎnr dà) diễn tả mức độ hơi lớn/rộng hơn mong muốn.',
+    topic: 'Mua sắm quần áo',
+    difficulty: 'medium'
+  },
+  {
+    id: 'list-l2-12',
+    level: 2,
+    audioText: '从我家到公司坐地铁只要二十分钟。',
+    hanzi: '从我家到公司坐地铁只要二十分钟。',
+    pinyin: 'Cóng wǒ jiā dào gōngsī zuò dìtiě zhǐ yào èrshí fēnzhōng.',
+    translation: 'Từ nhà tôi đến công ty đi tàu điện ngầm chỉ mất 20 phút.',
+    question: 'Người nói đi làm bằng phương tiện gì và mất bao lâu?',
+    options: ['Xe buýt - 30 phút', 'Tàu điện ngầm - 20 phút', 'Xe đạp - 15 phút', 'Taxi - 20 phút'],
+    correctIndex: 1,
+    explanation: '坐地铁 (zuò dìtiě) là đi tàu điện ngầm; 只要二十分钟 là chỉ cần 20 phút.',
+    topic: 'Phương tiện giao thông',
+    difficulty: 'medium'
+  },
+  {
+    id: 'list-l2-13',
+    level: 2,
+    audioText: '外边下雪了，你出门的时候多穿点儿衣服。',
+    hanzi: '外边下雪了，你出门的时候多穿点儿衣服。',
+    pinyin: 'Wàibian xià xuě le, nǐ chūmén de shíhou duō chuān diǎnr yīfu.',
+    translation: 'Bên ngoài tuyết rơi rồi, lúc ra ngoài bạn mặc thêm chút áo nhé.',
+    question: 'Thời tiết bên ngoài hiện tại thế nào?',
+    options: ['Trời nắng gắt', 'Đang có tuyết rơi', 'Gió rất to', 'Trời sắp mưa'],
+    correctIndex: 1,
+    explanation: '下雪了 (xià xuě le): tuyết rơi rồi.',
+    topic: 'Thời tiết & Quan tâm',
+    difficulty: 'medium'
+  },
+  {
+    id: 'list-l2-14',
+    level: 2,
+    audioText: '我已经学了一年多汉语了，能看懂简单的报纸。',
+    hanzi: '我已经学了一年多汉语了，能看懂简单的报纸。',
+    pinyin: 'Wǒ yǐjīng xuéle yì nián duō Hànyǔ le, néng kàndǒng jiǎndān de bàozhǐ.',
+    translation: 'Tôi đã học tiếng Trung hơn một năm rồi, có thể đọc hiểu báo chí đơn giản.',
+    question: 'Người nói đã học tiếng Trung được bao lâu?',
+    options: ['Hơn một tháng', 'Hơn nửa năm', 'Hơn một năm', 'Gần ba năm'],
+    correctIndex: 2,
+    explanation: '一年多 (yì nián duō): hơn một năm; 看懂 (kàndǒng): đọc hiểu.',
+    topic: 'Học tập & Năng lực',
+    difficulty: 'medium'
+  },
+  {
+    id: 'list-l2-15',
+    level: 2,
+    audioText: '请问，附近有银行吗？我想取点儿钱。',
+    hanzi: '请问，附近有银行吗？我想取点儿钱。',
+    pinyin: 'Qǐngwèn, fùjìn yǒu yínháng ma? Wǒ xiǎng qǔ diǎnr qián.',
+    translation: 'Xin hỏi, gần đây có ngân hàng không? Tôi muốn rút một ít tiền.',
+    question: 'Người nói tìm ngân hàng để làm gì?',
+    options: ['Gửi bưu kiện', 'Rút tiền', 'Đổi hộ chiếu', 'Thanh toán hóa đơn điện'],
+    correctIndex: 1,
+    explanation: '取钱 (qǔ qián): rút tiền.',
+    topic: 'Hỏi đường & Dịch vụ',
+    difficulty: 'medium'
+  },
+  // === BỔ SUNG MỨC 3 (HSK 3: list-l3-11 -> list-l3-15) ===
+  {
+    id: 'list-l3-11',
+    level: 3,
+    audioText: '虽然这次考试的题目有点难，但是只要认真复习就没问题。',
+    hanzi: '虽然这次考试的题目有点难，但是只要认真复习就没问题。',
+    pinyin: 'Suīrán zhè cì kǎoshì de tímù yǒudiǎn nán, dànshì zhǐyào rènzhēn fùxí jiù méi wèntí.',
+    translation: 'Tuy đề thi lần này hơi khó một chút, nhưng chỉ cần ôn tập chăm chỉ là không thành vấn đề.',
+    question: 'Điều kiện để vượt qua kỳ thi theo lời người nói là gì?',
+    options: ['Phải học thuộc lòng sách giáo khoa', 'Chỉ cần ôn tập nghiêm túc, chăm chỉ', 'Phải làm bài thật nhanh', 'Nhờ bạn cùng lớp giảng lại'],
+    correctIndex: 1,
+    explanation: '只要...就... (chỉ cần... thì...); 认真复习 (ôn tập nghiêm túc).',
+    topic: 'Học tập & Kỳ thi',
+    difficulty: 'hard'
+  },
+  {
+    id: 'list-l3-12',
+    level: 3,
+    audioText: '请你把桌子上的护照和机票放进包里，别忘了。',
+    hanzi: '请你把桌子上的护照和机票放进包里，别忘了。',
+    pinyin: 'Qǐng nǐ bǎ zhuōzi shàng de hùzhào hé jīpiào fàng jìn bāo lǐ, bié wàng le.',
+    translation: 'Bạn hãy cất hộ chiếu và vé máy bay trên bàn vào trong túi nhé, đừng quên đấy.',
+    question: 'Hộ chiếu và vé máy bay hiện đang ở đâu?',
+    options: ['Trong va li', 'Trên mặt bàn', 'Ở quầy lễ tân', 'Trong túi áo khoác'],
+    correctIndex: 1,
+    explanation: '桌子上的护照和机票: hộ chiếu và vé máy bay ở trên bàn.',
+    topic: 'Du lịch & Câu chữ 把',
+    difficulty: 'hard'
+  },
+  {
+    id: 'list-l3-13',
+    level: 3,
+    audioText: '为了提高汉语水平，他每天晚上都坚持听半个小时广播。',
+    hanzi: '为了提高汉语水平，他每天晚上都坚持听半个小时广播。',
+    pinyin: 'Wèile tígāo Hànyǔ shuǐpíng, tā měitiān wǎnshang dōu jiānchí tīng bàn gè xiǎoshí guǎngbō.',
+    translation: 'Để nâng cao trình độ tiếng Trung, tối nào anh ấy cũng kiên trì nghe đài nửa tiếng.',
+    question: 'Anh ấy làm gì vào mỗi buổi tối để nâng cao tiếng Trung?',
+    options: ['Viết nhật ký 30 phút', 'Nghe đài phát thanh nửa tiếng', 'Xem phim hoạt hình 1 tiếng', 'Tra từ điển 20 phút'],
+    correctIndex: 1,
+    explanation: '坚持听半个小时广播: kiên trì nghe đài nửa tiếng đồng hồ.',
+    topic: 'Thói quen học tập',
+    difficulty: 'hard'
+  },
+  {
+    id: 'list-l3-14',
+    level: 3,
+    audioText: '会议室的空调坏了，我们换到三楼的教室去开会吧。',
+    hanzi: '会议室的空调坏了，我们换到三楼的教室去开会吧。',
+    pinyin: 'Huìyìshì de kōngtiáo huài le, wǒmen huàn dào sān lóu de jiàoshì qù kāihuì ba.',
+    translation: 'Điều hòa phòng họp hỏng rồi, chúng ta đổi sang phòng học ở tầng 3 để họp nhé.',
+    question: 'Tại sao mọi người phải đổi địa điểm họp?',
+    options: ['Phòng họp quá nhỏ', 'Điều hòa phòng họp bị hỏng', 'Phòng họp đang được dọn dẹp', 'Có lớp học khác đang dùng phòng'],
+    correctIndex: 1,
+    explanation: '空调坏了 (kōngtiáo huài le): điều hòa bị hỏng rồi.',
+    topic: 'Công sở & Sự cố',
+    difficulty: 'hard'
+  },
+  {
+    id: 'list-l3-15',
+    level: 3,
+    audioText: '除了游泳以外，周末我还喜欢跟朋友们一起去爬山。',
+    hanzi: '除了游泳以外，周末我还喜欢跟朋友们一起去爬山。',
+    pinyin: 'Chúle yóuyǒng yǐwài, zhōumò wǒ hái xǐhuan gēn péngyoumen yìqǐ qù páshān.',
+    translation: 'Ngoài bơi lội ra, cuối tuần tôi còn thích cùng bạn bè đi leo núi.',
+    question: 'Cuối tuần người nói thích làm những hoạt động nào?',
+    options: ['Bơi lội và leo núi', 'Chơi bóng đá và đọc sách', 'Chạy bộ và nấu ăn', 'Đi xem phim và mua sắm'],
+    correctIndex: 0,
+    explanation: '除了...以外，还... (ngoài... ra còn...); 游泳 (bơi lội) và 爬山 (leo núi).',
+    topic: 'Sở thích cuối tuần',
+    difficulty: 'hard'
+  },
+  // === BỔ SUNG MỨC 4 (HSK 4: list-l4-11 -> list-l4-15) ===
+  {
+    id: 'list-l4-11',
+    level: 4,
+    audioText: '无论遇到什么困难，我们都要保持冷静，先分析原因再找解决办法。',
+    hanzi: '无论遇到什么困难，我们都要保持冷静，先分析原因再找解决办法。',
+    pinyin: 'Wúlùn yùdào shénme kùnnan, wǒmen dōu yào bǎochí lěngjìng, xiān fēnxī yuányīn zài zhǎo jiějué bànfǎ.',
+    translation: 'Bất kể gặp phải khó khăn gì, chúng ta đều phải giữ bình tĩnh, phân tích nguyên nhân trước rồi mới tìm cách giải quyết.',
+    question: 'Khi gặp khó khăn, bước đầu tiên người nói khuyên nên làm gì?',
+    options: ['Nhờ cấp trên xử lý ngay', 'Giữ bình tĩnh và phân tích nguyên nhân', 'Tạm dừng dự án lại', 'Thay đổi toàn bộ kế hoạch'],
+    correctIndex: 1,
+    explanation: '保持冷静，先分析原因 (giữ bình tĩnh, phân tích nguyên nhân trước).',
+    topic: 'Kỹ năng giải quyết vấn đề',
+    difficulty: 'hard'
+  },
+  {
+    id: 'list-l4-12',
+    level: 4,
+    audioText: '这份合同的细节我已经仔细核对过了，没有任何问题，下午就可以签字。',
+    hanzi: '这份合同的细节我已经仔细核对过了，没有任何问题，下午就可以签字。',
+    pinyin: 'Zhè fèn hétong de xìjié wǒ yǐjīng zǐxì héduì guò le, méiyǒu rènhé wèntí, xiàwǔ jiù kěyǐ qiānzì.',
+    translation: 'Các chi tiết của bản hợp đồng này tôi đã đối chiếu kỹ lưỡng rồi, không có vấn đề gì, chiều nay có thể ký tên.',
+    question: 'Tình trạng của bản hợp đồng hiện tại là gì?',
+    options: ['Cần sửa lại điều khoản thanh toán', 'Đã được kiểm tra kỹ và sẵn sàng ký kết vào buổi chiều', 'Đang chờ đối tác gửi bản mới', 'Bị thất lạc một trang phụ lục'],
+    correctIndex: 1,
+    explanation: '仔细核对过 (đã đối chiếu kỹ); 下午就可以签字 (chiều có thể ký).',
+    topic: 'Thương mại & Hợp đồng',
+    difficulty: 'hard'
+  },
+  {
+    id: 'list-l4-13',
+    level: 4,
+    audioText: '与其天天抱怨工作太累，不如抽出时间提升自己的专业能力。',
+    hanzi: '与其天天抱怨工作太累，不如抽出时间提升自己的专业能力。',
+    pinyin: 'Yǔqí tiāntiān bàoyuàn gōngzuò tài lèi, bùrú chōuchū shíjiān tíshēng zìjǐ de zhuānyè nénglì.',
+    translation: 'Thay vì ngày nào cũng phàn nàn công việc quá mệt, chi bằng dành thời gian nâng cao năng lực chuyên môn của bản thân.',
+    question: 'Thông điệp chính của câu nói là gì?',
+    options: ['Nên xin nghỉ phép dài ngày', 'Thay vì than phiền hãy đầu tư nâng cao chuyên môn', 'Nên đổi sang công việc nhàn hạ hơn', 'Công việc hiện tại không phù hợp'],
+    correctIndex: 1,
+    explanation: '与其...不如... (thay vì... chi bằng...); 提升专业能力 (nâng cao năng lực chuyên môn).',
+    topic: 'Phát triển bản thân',
+    difficulty: 'hard'
+  },
+  {
+    id: 'list-l4-14',
+    level: 4,
+    audioText: '垃圾分类不仅能保护环境，还能让许多可回收资源重新得到利用。',
+    hanzi: '垃圾分类不仅能保护环境，还能让许多可回收资源重新得到利用。',
+    pinyin: 'Lājī fēnlèi bùjǐn néng bǎohù huánjìng, hái néng ràng xǔduō kě huíshōu zīyuán chóngxīn dédào lìyòng.',
+    translation: 'Phân loại rác không chỉ bảo vệ được môi trường mà còn giúp nhiều tài nguyên tái chế được tái sử dụng.',
+    question: 'Lợi ích thứ hai của việc phân loại rác được nhắc đến là gì?',
+    options: ['Giảm chi phí vận chuyển rác', 'Giúp tài nguyên tái chế được sử dụng lại', 'Tạo thêm nhiều việc làm mới', 'Làm đường phố rộng rãi hơn'],
+    correctIndex: 1,
+    explanation: '让许多可回收资源重新得到利用: giúp nhiều tài nguyên có thể tái chế được sử dụng lại.',
+    topic: 'Môi trường & Đời sống',
+    difficulty: 'hard'
+  },
+  {
+    id: 'list-l4-15',
+    level: 4,
+    audioText: '养成早睡早起的好习惯，对身体健康和第二天的工作效率都有很大帮助。',
+    hanzi: '养成早睡早起的好习惯，对身体健康和第二天的工作效率都有很大帮助。',
+    pinyin: 'Yǎngchéng zǎoshuì zǎoqǐ de hǎo xíguàn, duì shēntǐ jiànkāng hé dì èr tiān de gōngzuò xiàolǜ dōu yǒu hěn dà bāngzhù.',
+    translation: 'Hình thành thói quen ngủ sớm dậy sớm rất có ích cho sức khỏe cơ thể và hiệu suất làm việc ngày hôm sau.',
+    question: 'Thói quen ngủ sớm dậy sớm giúp ích cho hai khía cạnh nào?',
+    options: ['Tài chính và giao tiếp', 'Sức khỏe và hiệu suất công việc', 'Trí nhớ và khả năng ngoại ngữ', 'Thể hình và giấc ngủ trưa'],
+    correctIndex: 1,
+    explanation: '身体健康 (sức khỏe cơ thể) và 工作效率 (hiệu suất công việc).',
+    topic: 'Sức khỏe & Thói quen',
+    difficulty: 'hard'
+  },
+  // === BỔ SUNG MỨC 5 (HSK 5: list-l5-11 -> list-l5-15) ===
+  {
+    id: 'list-l5-11',
+    level: 5,
+    audioText: '面对信息过载的时代，具备独立思考和甄别真伪的能力显得尤为重要。',
+    hanzi: '面对信息过载的时代，具备独立思考和甄别真伪的能力显得尤为重要。',
+    pinyin: 'Miànduì xìnxī guòzài de shídài, jùbèi dúlì sīkǎo hé zhēnbié zhēnwěi de nénglì xiǎndé yóuwéi zhòngyào.',
+    translation: 'Đối mặt với thời đại quá tải thông tin, việc sở hữu năng lực tư duy độc lập và phân biệt thật giả trở nên đặc biệt quan trọng.',
+    question: 'Trong thời đại quá tải thông tin, năng lực nào được nhấn mạnh là đặc biệt quan trọng?',
+    options: ['Ghi nhớ nhanh mọi tin tức', 'Tư duy độc lập và phân biệt thật giả', 'Chia sẻ thông tin lên mạng xã hội thật sớm', 'Sử dụng nhiều thiết bị công nghệ cùng lúc'],
+    correctIndex: 1,
+    explanation: '独立思考 (tư duy độc lập) và 甄别真伪 (phân biệt thật giả).',
+    topic: 'Truyền thông & Tư duy phản biện',
+    difficulty: 'advanced'
+  },
+  {
+    id: 'list-l5-12',
+    level: 5,
+    audioText: '这项新能源研发项目之所以能取得突破，离不开整个团队多年来的默默耕耘。',
+    hanzi: '这项新能源研发项目之所以能取得突破，离不开整个团队多年来的默默耕耘。',
+    pinyin: 'Zhè xiàng xīn néngyuán yánfā xiàngmù zhī suǒyǐ néng qǔdé tūpò, lìbukāi zhěnggè tuánduì duōnián lái de mòmò gēngyún.',
+    translation: 'Dự án nghiên cứu năng lượng mới này sở dĩ đạt được bước đột phá không thể tách rời sự cống hiến âm thầm suốt nhiều năm của cả đội ngũ.',
+    question: 'Nguyên nhân nào giúp dự án năng lượng mới đạt được đột phá?',
+    options: ['Nguồn vốn đầu tư khổng lồ từ nước ngoài', 'Sự nỗ lực bền bỉ âm thầm nhiều năm của cả đội ngũ', 'Việc mua lại công nghệ có sẵn', 'Chính sách giảm thuế đột xuất'],
+    correctIndex: 1,
+    explanation: '之所以...离不开... (sở dĩ... không thể tách rời...); 默默耕耘 (âm thầm cày cấy/cống hiến).',
+    topic: 'Khoa học & Nghiên cứu',
+    difficulty: 'advanced'
+  },
+  {
+    id: 'list-l5-13',
+    level: 5,
+    audioText: '城市规划不仅要追求现代化的建筑外观，更应当保留当地历史街区的独特风貌。',
+    hanzi: '城市规划不仅要追求现代化的建筑外观，更应当保留当地历史街区的独特风貌。',
+    pinyin: 'Chéngshì guīhuà bùjǐn yào zhuīqiú xiàndàihuà de jiànzhù wàiguān, gèng yīngdāng bǎoliú dāngdì lìshǐ jiēqū de dútè fēngmào.',
+    translation: 'Quy hoạch đô thị không chỉ theo đuổi diện mạo kiến trúc hiện đại hóa mà càng nên bảo lưu nét đặc trưng độc đáo của các khu phố lịch sử địa phương.',
+    question: 'Người nói đề xuất điều gì trong quy hoạch đô thị?',
+    options: ['Phá bỏ toàn bộ khu phố cũ để xây cao ốc', 'Kết hợp hiện đại hóa với việc giữ gìn bản sắc khu phố lịch sử', 'Chỉ xây dựng công trình bằng gỗ truyền thống', 'Mở rộng đường cao tốc xuyên qua phố cổ'],
+    correctIndex: 1,
+    explanation: '保留当地历史街区的独特风貌: giữ lại diện mạo độc đáo của khu phố lịch sử địa phương.',
+    topic: 'Đô thị & Bảo tồn di sản',
+    difficulty: 'advanced'
+  },
+  {
+    id: 'list-l5-14',
+    level: 5,
+    audioText: '心理学研究表明，适度的压力反而能够激发人的潜能，提高专注度。',
+    hanzi: '心理学研究表明，适度的压力反而能够激发人的潜能，提高专注度。',
+    pinyin: 'Xīnlǐxué yánjiū biǎomíng, shìdù de yālì fǎnér nénggòu jīfā rén de qiánnéng, tígāo zhuānzhùdù.',
+    translation: 'Nghiên cứu tâm lý học chỉ ra rằng áp lực ở mức độ vừa phải trái lại có thể khơi dậy tiềm năng của con người và nâng cao mức độ tập trung.',
+    question: 'Theo nghiên cứu tâm lý học, áp lực vừa phải có tác dụng gì?',
+    options: ['Gây mất ngủ kéo dài', 'Khơi dậy tiềm năng và tăng sự tập trung', 'Làm giảm hiệu quả làm việc nhóm', 'Khiến con người trở nên thụ động'],
+    correctIndex: 1,
+    explanation: '激发潜能 (khơi dậy tiềm năng) và 提高专注度 (tăng độ tập trung).',
+    topic: 'Tâm lý học ứng dụng',
+    difficulty: 'advanced'
+  },
+  {
+    id: 'list-l5-15',
+    level: 5,
+    audioText: '在跨文化交流中，尊重彼此的习俗差异是建立长期信任关系的前提条件。',
+    hanzi: '在跨文化交流中，尊重彼此的习俗差异是建立长期信任关系的前提条件。',
+    pinyin: 'Zài kuà wénhuà jiāoliú zhōng, zūnzhòng bǐcǐ de xísú chāyì shì jiànlì chángqī xìnrèn guānxì de qiántí tiáojiàn.',
+    translation: 'Trong giao lưu liên văn hóa, tôn trọng sự khác biệt phong tục của nhau là điều kiện tiên quyết để xây dựng mối quan hệ tin cậy lâu dài.',
+    question: 'Điều kiện tiên quyết để xây dựng lòng tin lâu dài trong giao lưu đa văn hóa là gì?',
+    options: ['Sử dụng chung một ngôn ngữ duy nhất', 'Tôn trọng sự khác biệt về phong tục tập quán của nhau', 'Tránh bàn luận về văn hóa truyền thống', 'Ký kết thỏa thuận thương mại trước'],
+    correctIndex: 1,
+    explanation: '尊重彼此的习俗差异 (tôn trọng sự khác biệt tập quán của nhau) là 前提条件 (điều kiện tiên quyết).',
+    topic: 'Giao lưu văn hóa',
+    difficulty: 'advanced'
+  },
+  // === BỔ SUNG MỨC 6 (HSK 6: list-l6-11 -> list-l6-15) ===
+  {
+    id: 'list-l6-11',
+    level: 6,
+    audioText: '数字化转型并非单纯地将纸质流程搬到线上，而是对企业运营模式与组织文化的深层次重构。',
+    hanzi: '数字化转型并非单纯地将纸质流程搬到线上，而是对企业运营模式与组织文化的深层次重构。',
+    pinyin: 'Shùzìhuà zhuǎnxíng bìngfēi dānchún de jiāng zhǐzhì liúchéng bān dào xiànshàng, érshì duì qǐyè yùnyíng móshì yǔ zǔzhī wénhuà de shēn céngcì chónggòu.',
+    translation: 'Chuyển đổi số không phải là việc đơn thuần đưa quy trình giấy lên mạng, mà là sự tái cấu trúc sâu sắc đối với mô hình vận hành và văn hóa tổ chức của doanh nghiệp.',
+    question: 'Bản chất thực sự của chuyển đổi số theo đoạn nghe là gì?',
+    options: ['Thay thế toàn bộ nhân sự bằng trí tuệ nhân tạo', 'Tái cấu trúc sâu sắc mô hình vận hành và văn hóa tổ chức', 'Chỉ cần số hóa các văn bản giấy thành file PDF', 'Tăng ngân sách quảng cáo trên mạng xã hội'],
+    correctIndex: 1,
+    explanation: '并非...而是... (không phải... mà là...); 深层次重构 (tái cấu trúc tầng sâu).',
+    topic: 'Kinh tế số & Quản trị',
+    difficulty: 'master'
+  },
+  {
+    id: 'list-l6-12',
+    level: 6,
+    audioText: '真正的博学并非记诵繁杂的零散知识，而是在融会贯通之后形成独到的见解与判断力。',
+    hanzi: '真正的博学并非记诵繁杂的零散知识，而是在融会贯通之后形成独到的见解与判断力。',
+    pinyin: 'Zhēnzhèng de bóxué bìngfēi jìsòng fánzá de língsǎn zhīshi, érshì zài rónghuì guàntōng zhīhòu xíngchéng dúdào de jiànjiě yǔ pànduànlì.',
+    translation: 'Sự uyên bác thực sự không nằm ở việc học thuộc lòng những kiến thức rời rạc phức tạp, mà là hình thành nên kiến giải độc đáo và năng lực phán đoán sau khi đã dung hội quán thông.',
+    question: 'Theo tác giả, người thực sự uyên bác có đặc điểm gì?',
+    options: ['Thuộc lòng hàng nghìn trang sách kinh điển', 'Biết dung hội quán thông để tạo kiến giải và phán đoán độc đáo', 'Sở hữu nhiều bằng cấp học thuật nhất', 'Chỉ tập trung nghiên cứu một lĩnh vực hẹp'],
+    correctIndex: 1,
+    explanation: '融会贯通 (dung hội quán thông/hiểu thấu đáo liên kết); 独到的见解与判断力 (kiến giải và phán đoán sắc bén).',
+    topic: 'Triết lý học thuật',
+    difficulty: 'master'
+  },
+  {
+    id: 'list-l6-13',
+    level: 6,
+    audioText: '湿地生态系统被誉为地球之肾，在调节气候、蓄洪防旱以及维系生物多样性方面发挥着不可替代的作用。',
+    hanzi: '湿地生态系统被誉为地球之肾，在调节气候、蓄洪防旱以及维系生物多样性方面发挥着不可替代的作用。',
+    pinyin: 'Shīdì shēngtài xìtǒng bèi yùwéi dìqiú zhī shèn, zài tiáojié qìhòu, xùhóng fánghàn yǐjí wéixì shēngwù duōyàngxìng fāngmiàn fāhuīzhe bùkě tìdài de zuòyòng.',
+    translation: 'Hệ sinh thái đất ngập nước được ví như quả thận của Trái Đất, đóng vai trò không thể thay thế trong việc điều hòa khí hậu, trữ lũ chống hạn và duy trì đa dạng sinh học.',
+    question: 'Vai trò nào của hệ sinh thái đất ngập nước KHÔNG được nhắc đến trong bài?',
+    options: ['Điều hòa khí hậu', 'Trữ lũ chống hạn', 'Duy trì đa dạng sinh học', 'Khai thác khoáng sản biển sâu'],
+    correctIndex: 3,
+    explanation: 'Đoạn văn nhắc đến 调节气候, 蓄洪防旱, 维系生物多样性; không nhắc đến khai thác khoáng sản.',
+    topic: 'Sinh thái & Khoa học Trái Đất',
+    difficulty: 'master'
+  },
+  {
+    id: 'list-l6-14',
+    level: 6,
+    audioText: '面对舆论风波，企业唯有以坦诚透明的态度及时回应关切，方能重塑公众信任，化危为机。',
+    hanzi: '面对舆论风波，企业唯有以坦诚透明的态度及时回应关切，方能重塑公众信任，化危为机。',
+    pinyin: 'Miànduì yúlùn fēngbō, qǐyè wéiyǒu yǐ tǎnchéng tòumíng de tàidù jíshí huíyìng guānqiè, fāngnéng chóngsù gōngzhòng xìnrèn, huà wēi wéi jī.',
+    translation: 'Trước sóng gió dư luận, doanh nghiệp chỉ có thể lấy thái độ thẳng thắn minh bạch để kịp thời phản hồi mối quan tâm thì mới tái thiết được niềm tin công chúng, biến nguy thành cơ.',
+    question: 'Cách xử lý khủng hoảng dư luận được khuyên dùng là gì?',
+    options: ['Im lặng chờ dư luận tự lắng xuống', 'Thẳng thắn, minh bạch và phản hồi kịp thời', 'Xóa toàn bộ bình luận tiêu cực trên mạng', 'Đổ lỗi cho đối tác bên ngoài'],
+    correctIndex: 1,
+    explanation: '坦诚透明的态度及时回应 (thái độ thẳng thắn minh bạch, phản hồi kịp thời); 化危为机 (biến nguy thành cơ).',
+    topic: 'Quản trị khủng hoảng',
+    difficulty: 'master'
+  },
+  {
+    id: 'list-l6-15',
+    level: 6,
+    audioText: '江南古典园林讲究移步换景，借由曲折回廊与漏窗框景，在咫尺之地营造出咫尺山林的深邃意境。',
+    hanzi: '江南古典园林讲究移步换景，借由曲折回廊与漏窗框景，在咫尺之地营造出咫尺山林的深邃意境。',
+    pinyin: 'Jiāngnán gǔdiǎn yuánlín jiǎngjiu yíbù huànjǐng, jièyóu qūzhé huíláng yǔ lòuchuāng kuàngjǐng, zài zhǐchǐ zhī dì yíngzàochū zhǐchǐ shānlín de shēnsuì yìjìng.',
+    translation: 'Hoa viên cổ điển Giang Nam chú trọng nghệ thuật "dời bước đổi cảnh", mượn hành lang quanh co và cửa sổ hoa văn đóng khung cảnh sắc để tạo nên ý境 sơn lâm sâu thẳm ngay trong không gian tấc đất.',
+    question: 'Thủ pháp nghệ thuật đặc trưng của hoa viên Giang Nam là gì?',
+    options: ['Xây dựng quảng trường đá rộng lớn đối xứng tuyệt đối', 'Dùng hành lang uốn lượn và khung cửa để tạo hiệu ứng "dời bước đổi cảnh"', 'Trồng duy nhất một loài cây thông cổ thụ', 'Sử dụng vật liệu kính và thép hiện đại'],
+    correctIndex: 1,
+    explanation: '移步换景 (dời bước đổi cảnh) thông qua 曲折回廊 (hành lang quanh co) và 漏窗框景 (cửa sổ đóng khung cảnh).',
+    topic: 'Nghệ thuật & Văn hóa cổ điển',
+    difficulty: 'master'
   }
 ];
 
@@ -1891,5 +2317,341 @@ export const GRAMMAR_DRILLS_BY_LEVEL = [
     topic: 'Cấu trúc vị ngữ song hành',
     difficulty: 'master',
     whyWrong: '兼具 đứng trước đặc tính thứ nhất 东方传统美学, liên từ 与 nối với đặc tính thứ hai 现代实用功能.'
+  },
+  // === BỔ SUNG MỨC 1 (HSK 1: gram-l1-11 -> gram-l1-15) ===
+  {
+    id: 'gram-l1-11',
+    level: 1,
+    title: 'Trạng ngữ thời gian trong câu: Hôm nay mấy giờ?',
+    meaning: 'Bây giờ là mấy giờ rồi?',
+    tokens: ['了？', '现在', '几点'],
+    correctTokens: ['现在', '几点', '了？'],
+    explanation: '现在 (bây giờ) + 几点 (mấy giờ) + 了？ dùng để hỏi giờ hiện tại.',
+    topic: 'Thời gian & Hỏi giờ',
+    difficulty: 'easy'
+  },
+  {
+    id: 'gram-l1-12',
+    level: 1,
+    title: 'Động từ năng nguyện 想 (Muốn)',
+    meaning: 'Tôi muốn đi Bắc Kinh.',
+    tokens: ['北京。', '想', '我', '去'],
+    correctTokens: ['我', '想', '去', '北京。'],
+    explanation: 'Chủ ngữ + 想 + Động từ + Tân ngữ: diễn đạt mong muốn thực hiện hành động.',
+    topic: 'Động từ năng nguyện 想',
+    difficulty: 'easy'
+  },
+  {
+    id: 'gram-l1-13',
+    level: 1,
+    title: 'Câu phủ định với 没有 (Không có)',
+    meaning: 'Tôi không có sách tiếng Trung.',
+    tokens: ['汉语书。', '没有', '我'],
+    correctTokens: ['我', '没有', '汉语书。'],
+    explanation: 'Phủ định của 有 luôn dùng 没 (没有), tuyệt đối không dùng 不有.',
+    topic: 'Phủ định 没有',
+    difficulty: 'easy'
+  },
+  {
+    id: 'gram-l1-14',
+    level: 1,
+    title: 'Câu hỏi với đại từ nghi vấn 哪儿 (Ở đâu)',
+    meaning: 'Bạn đi đâu thế?',
+    tokens: ['去', '你', '哪儿？'],
+    correctTokens: ['你', '去', '哪儿？'],
+    explanation: 'Đại từ nghi vấn 哪儿 đặt tại vị trí của tân ngữ chỉ địa điểm.',
+    topic: 'Đại từ nghi vấn 哪儿',
+    difficulty: 'easy'
+  },
+  {
+    id: 'gram-l1-15',
+    level: 1,
+    title: 'Trợ từ ngữ khí 了 biểu thị hoàn thành',
+    meaning: 'Tôi đã ăn cơm rồi.',
+    tokens: ['饭了。', '吃', '我'],
+    correctTokens: ['我', '吃', '饭了。'],
+    explanation: 'Chủ ngữ + Động từ + Tân ngữ + 了 biểu thị sự việc đã xảy ra/hoàn thành.',
+    topic: 'Trợ từ 了',
+    difficulty: 'easy'
+  },
+  // === BỔ SUNG MỨC 2 (HSK 2: gram-l2-11 -> gram-l2-15) ===
+  {
+    id: 'gram-l2-11',
+    level: 2,
+    title: 'Câu so sánh với 比 (Hơn)',
+    meaning: 'Hôm nay nóng hơn hôm qua.',
+    tokens: ['热。', '比', '今天', '昨天'],
+    correctTokens: ['今天', '比', '昨天', '热。'],
+    explanation: 'Cấu trúc so sánh: A + 比 + B + Tính từ.',
+    topic: 'Câu so sánh 比',
+    difficulty: 'medium'
+  },
+  {
+    id: 'gram-l2-12',
+    level: 2,
+    title: 'Phó từ 正在 biểu thị hành động đang diễn ra',
+    meaning: 'Cô ấy đang nghe nhạc.',
+    tokens: ['音乐。', '正在', '她', '听'],
+    correctTokens: ['她', '正在', '听', '音乐。'],
+    explanation: 'Chủ ngữ + 正在 + Động từ + Tân ngữ: đang thực hiện hành động.',
+    topic: 'Thì tiếp diễn 正在',
+    difficulty: 'medium'
+  },
+  {
+    id: 'gram-l2-13',
+    level: 2,
+    title: 'Cấu trúc 因为...所以... (Vì... cho nên...)',
+    meaning: 'Vì trời mưa nên tôi không đi công viên.',
+    tokens: ['所以', '因为', '我不去', '下雨，', '公园。'],
+    correctTokens: ['因为', '下雨，', '所以', '我不去', '公园。'],
+    explanation: '因为 nêu nguyên nhân, 所以 dẫn ra kết quả.',
+    topic: 'Liên từ nguyên nhân - kết quả',
+    difficulty: 'medium'
+  },
+  {
+    id: 'gram-l2-14',
+    level: 2,
+    title: 'Cấu trúc 快要...了 (Sắp... rồi)',
+    meaning: 'Tàu hỏa sắp đến rồi.',
+    tokens: ['到了。', '快要', '火车'],
+    correctTokens: ['火车', '快要', '到了。'],
+    explanation: '快要 + Động từ/Tính từ + 了 biểu thị sự việc sắp xảy ra.',
+    topic: 'Thì tương lai gần 快要...了',
+    difficulty: 'medium'
+  },
+  {
+    id: 'gram-l2-15',
+    level: 2,
+    title: 'Bổ ngữ kết quả 完 (Xong)',
+    meaning: 'Tôi làm xong bài tập rồi.',
+    tokens: ['作业了。', '做完', '我'],
+    correctTokens: ['我', '做完', '作业了。'],
+    explanation: 'Động từ + 完 + Tân ngữ + 了: hoàn thành xong hành động.',
+    topic: 'Bổ ngữ kết quả',
+    difficulty: 'medium'
+  },
+  // === BỔ SUNG MỨC 3 (HSK 3: gram-l3-11 -> gram-l3-15) ===
+  {
+    id: 'gram-l3-11',
+    level: 3,
+    title: 'Câu chữ 把 với bổ ngữ địa điểm 到',
+    meaning: 'Xin hãy mang hành lý vào trong phòng.',
+    tokens: ['把', '请', '放进', '行李', '房间里。'],
+    correctTokens: ['请', '把', '行李', '放进', '房间里。'],
+    explanation: 'Chủ ngữ + 把 + Tân ngữ + Động từ + Bổ ngữ phương hướng/kết quả.',
+    topic: 'Câu chữ 把',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l3-12',
+    level: 3,
+    title: 'Câu chữ 被 (Bị động)',
+    meaning: 'Cốc của tôi bị em trai làm vỡ rồi.',
+    tokens: ['弟弟', '我的', '打碎了。', '杯子', '被'],
+    correctTokens: ['我的', '杯子', '被', '弟弟', '打碎了。'],
+    explanation: 'Đối tượng chịu tác động + 被 + Tác nhân + Động từ + Thành phần khác.',
+    topic: 'Câu bị động 被',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l3-13',
+    level: 3,
+    title: 'Cấu trúc 一边...一边... (Vừa... vừa...)',
+    meaning: 'Anh ấy vừa uống cà phê vừa đọc báo.',
+    tokens: ['看报纸。', '一边', '他', '喝咖啡，', '一边'],
+    correctTokens: ['他', '一边', '喝咖啡，', '一边', '看报纸。'],
+    explanation: '一边 V1 一边 V2 diễn tả hai hành động diễn ra song song.',
+    topic: 'Hành động song song',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l3-14',
+    level: 3,
+    title: 'Cấu trúc 越来越... (Càng ngày càng...)',
+    meaning: 'Tiếng Trung của bạn càng ngày càng tốt.',
+    tokens: ['越来越', '你的', '好了。', '汉语'],
+    correctTokens: ['你的', '汉语', '越来越', '好了。'],
+    explanation: '越来越 + Tính từ/Động từ tâm lý diễn tả sự biến đổi tăng dần theo thời gian.',
+    topic: 'Phó từ chỉ mức độ biến đổi',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l3-15',
+    level: 3,
+    title: 'Cấu trúc 只有...才... (Chỉ có... mới...)',
+    meaning: 'Chỉ có kiên trì luyện tập mới có thể tiến bộ nhanh.',
+    tokens: ['才能', '只有', '快速进步。', '坚持练习，'],
+    correctTokens: ['只有', '坚持练习，', '才能', '快速进步。'],
+    explanation: '只有 + Điều kiện duy nhất + 才 + Kết quả.',
+    topic: 'Câu điều kiện 只有...才...',
+    difficulty: 'hard'
+  },
+  // === BỔ SUNG MỨC 4 (HSK 4: gram-l4-11 -> gram-l4-15) ===
+  {
+    id: 'gram-l4-11',
+    level: 4,
+    title: 'Cấu trúc 无论...都... (Bất kể... đều...)',
+    meaning: 'Bất kể thời tiết thế nào, anh ấy đều chạy bộ mỗi sáng.',
+    tokens: ['怎么样，', '每天早上', '都', '无论', '他', '跑步。', '天气'],
+    correctTokens: ['无论', '天气', '怎么样，', '他', '每天早上', '都', '跑步。'],
+    explanation: '无论 + Nghi vấn từ/Lựa chọn + 都 + Kết quả không đổi.',
+    topic: 'Câu điều kiện vô điều kiện',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l4-12',
+    level: 4,
+    title: 'Cấu trúc 既然...就... (Đã... thì...)',
+    meaning: 'Đã quyết định tham gia thi HSK thì phải ôn tập thật kỹ.',
+    tokens: ['参加', 'HSK，', '既然', '就得', '认真复习。', '决定'],
+    correctTokens: ['既然', '决定', '参加', 'HSK，', '就得', '认真复习。'],
+    explanation: '既然 đưa ra tiền đề đã xác lập, 就 suy ra hành động hợp lý tương ứng.',
+    topic: 'Liên từ suy luận',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l4-13',
+    level: 4,
+    title: 'Cấu trúc 即使...也... (Cho dù... cũng...)',
+    meaning: 'Cho dù công việc rất bận, cô ấy vẫn dành thời gian đọc sách.',
+    tokens: ['也会', '抽出时间', '很忙，', '即使', '看书。', '她', '工作'],
+    correctTokens: ['即使', '工作', '很忙，', '她', '也会', '抽出时间', '看书。'],
+    explanation: '即使 nêu giả thiết nhượng bộ, 也 khẳng định kết quả không thay đổi.',
+    topic: 'Câu nhượng bộ giả thiết',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l4-14',
+    level: 4,
+    title: 'Cấu trúc 随着... (Cùng với sự...)',
+    meaning: 'Cùng với sự phát triển của kinh tế, đời sống người dân ngày càng tốt hơn.',
+    tokens: ['人民', '经济的', '发展，', '越来越好。', '随着', '生活'],
+    correctTokens: ['随着', '经济的', '发展，', '人民', '生活', '越来越好。'],
+    explanation: '随着 + Cụm danh từ/Động từ danh hóa, dẫn ra sự biến đổi song hành.',
+    topic: 'Giới từ 随着',
+    difficulty: 'hard'
+  },
+  {
+    id: 'gram-l4-15',
+    level: 4,
+    title: 'Cấu trúc 不管...还是...都... (Cho dù... hay... đều...)',
+    meaning: 'Cho dù là cuối tuần hay ngày thường, thư viện đều mở cửa.',
+    tokens: ['图书馆', '平时，', '周末', '都', '还是', '不管', '开放。'],
+    correctTokens: ['不管', '周末', '还是', '平时，', '图书馆', '都', '开放。'],
+    explanation: '不管 A 还是 B，都... liệt kê các khả năng đối lập nhưng chung kết quả.',
+    topic: 'Cấu trúc lựa chọn toàn phần',
+    difficulty: 'hard'
+  },
+  // === BỔ SUNG MỨC 5 (HSK 5: gram-l5-11 -> gram-l5-15) ===
+  {
+    id: 'gram-l5-11',
+    level: 5,
+    title: 'Cấu trúc 之所以...是因为... (Sở dĩ... là vì...)',
+    meaning: 'Sở dĩ dự án thành công là vì cả nhóm đã phối hợp ăn ý.',
+    tokens: ['成功，', '默契。', '是因为', '这个项目', '配合', '之所以', '团队'],
+    correctTokens: ['这个项目', '之所以', '成功，', '是因为', '团队', '配合', '默契。'],
+    explanation: '之所以 nêu kết quả trước, 是因为 giải thích nguyên nhân cốt lõi phía sau.',
+    topic: 'Cấu trúc đảo nguyên nhân - kết quả',
+    difficulty: 'advanced'
+  },
+  {
+    id: 'gram-l5-12',
+    level: 5,
+    title: 'Cấu trúc 宁可...也不... (Thà... chứ không...)',
+    meaning: 'Anh ấy thà làm thêm giờ cũng không chịu nộp bản thiết kế cẩu thả.',
+    tokens: ['也不', '交出', '粗糙的', '宁可', '加班，', '他', '方案。'],
+    correctTokens: ['他', '宁可', '加班，', '也不', '交出', '粗糙的', '方案。'],
+    explanation: '宁可 A 也不 B thể hiện sự lựa chọn kiên quyết giữa hai phương án.',
+    topic: 'Cấu trúc lựa chọn kiên quyết',
+    difficulty: 'advanced'
+  },
+  {
+    id: 'gram-l5-13',
+    level: 5,
+    title: 'Cấu trúc 除非...否则... (Trừ phi... nếu không thì...)',
+    meaning: 'Trừ phi thời tiết cực đoan, nếu không buổi hòa nhạc ngoài trời vẫn diễn ra đúng hẹn.',
+    tokens: ['户外', '恶劣，', '否则', '如期', '除非', '音乐会', '举行。', '天气'],
+    correctTokens: ['除非', '天气', '恶劣，', '否则', '户外', '音乐会', '如期', '举行。'],
+    explanation: '除非 nêu điều kiện ngoại lệ duy nhất, 否则 nêu hệ quả bình thường.',
+    topic: 'Câu điều kiện loại trừ',
+    difficulty: 'advanced'
+  },
+  {
+    id: 'gram-l5-14',
+    level: 5,
+    title: 'Cấu trúc 不仅如此，而且... (Không chỉ vậy, mà còn...)',
+    meaning: 'Phương án này giảm được chi phí, không chỉ vậy mà còn nâng cao độ an toàn.',
+    tokens: ['提升了', '降低了', '而且', '成本，', '不仅如此，', '该方案', '安全性。'],
+    correctTokens: ['该方案', '降低了', '成本，', '不仅如此，', '而且', '提升了', '安全性。'],
+    explanation: '不仅如此 dùng nối tiếp câu trước để bổ sung ý tăng tiến.',
+    topic: 'Liên kết câu tăng tiến',
+    difficulty: 'advanced'
+  },
+  {
+    id: 'gram-l5-15',
+    level: 5,
+    title: 'Cấu trúc 无论如何... (Dù thế nào đi nữa...)',
+    meaning: 'Dù thế nào đi nữa, chúng ta cũng phải giữ vững lời hứa với khách hàng.',
+    tokens: ['兑现', '我们', '对客户的', '无论如何，', '都要', '承诺。'],
+    correctTokens: ['无论如何，', '我们', '都要', '兑现', '对客户的', '承诺。'],
+    explanation: '无论如何 đứng đầu câu nhấn mạnh quyết tâm không lay chuyển.',
+    topic: 'Cụm từ nhấn mạnh thái độ',
+    difficulty: 'advanced'
+  },
+  // === BỔ SUNG MỨC 6 (HSK 6: gram-l6-11 -> gram-l6-15) ===
+  {
+    id: 'gram-l6-11',
+    level: 6,
+    title: 'Cấu trúc 唯有...方能... (Chỉ có... mới có thể...)',
+    meaning: 'Chỉ có đổi mới không ngừng mới có thể đứng vững trong cạnh tranh khốc liệt.',
+    tokens: ['方能在', '立于', '持续创新，', '竞争中', '不败之地。', '唯有', '激烈'],
+    correctTokens: ['唯有', '持续创新，', '方能在', '激烈', '竞争中', '立于', '不败之地。'],
+    explanation: '唯有...方能... là biến thể văn viết trang trọng của 只有...才能....',
+    topic: 'Cấu trúc điều kiện văn viết',
+    difficulty: 'master'
+  },
+  {
+    id: 'gram-l6-12',
+    level: 6,
+    title: 'Cấu trúc 固然...然而... (Quả thật là... tuy nhiên...)',
+    meaning: 'Số liệu quả thật có giá trị tham khảo, tuy nhiên không thể bỏ qua bối cảnh thực tiễn.',
+    tokens: ['忽视', '固然', '数据', '然而', '不可', '现实语境。', '具参考价值，'],
+    correctTokens: ['数据', '固然', '具参考价值，', '然而', '不可', '忽视', '现实语境。'],
+    explanation: '固然 thừa nhận mặt hợp lý của vế trước, 然而 chuyển ngoặt sang trọng tâm phản biện.',
+    topic: 'Cấu trúc nhượng bộ học thuật',
+    difficulty: 'master'
+  },
+  {
+    id: 'gram-l6-13',
+    level: 6,
+    title: 'Cấu trúc 鉴于...特此... (Xét thấy... nay xin/đặc biệt...)',
+    meaning: 'Xét thấy nhu cầu học viên tăng cao, trung tâm đặc biệt mở thêm hai lớp chuyên đề.',
+    tokens: ['需求', '特此', '增设', '鉴于', '两期', '激增，', '学员', '专题班。'],
+    correctTokens: ['鉴于', '学员', '需求', '激增，', '特此', '增设', '两期', '专题班。'],
+    explanation: '鉴于 dùng trong văn bản hành chính/học thuật để viện dẫn căn cứ thực tế.',
+    topic: 'Ngôn ngữ hành chính & Thông báo',
+    difficulty: 'master'
+  },
+  {
+    id: 'gram-l6-14',
+    level: 6,
+    title: 'Cấu trúc 纵观...无不... (Nhìn tổng thể... không đâu là không...)',
+    meaning: 'Nhìn tổng thể lịch sử văn minh nhân loại, không thời đại nào không gắn liền với sáng tạo kỹ thuật.',
+    tokens: ['纵观', '文明史，', '人类', '无不与', '密不可分。', '技术创新'],
+    correctTokens: ['纵观', '人类', '文明史，', '无不与', '技术创新', '密不可分。'],
+    explanation: '纵观 (nhìn bao quát) + Danh từ vĩ mô, 无不 (không gì không) nhấn mạnh tính phổ quát.',
+    topic: 'Văn phong nghị luận vĩ mô',
+    difficulty: 'master'
+  },
+  {
+    id: 'gram-l6-15',
+    level: 6,
+    title: 'Cấu trúc 倘若...势必... (Nếu như... ắt hẳn sẽ...)',
+    meaning: 'Nếu như xem nhẹ khâu kiểm định chất lượng, ắt hẳn sẽ làm tổn hại uy tín thương hiệu.',
+    tokens: ['质量', '品牌声誉。', '势必', '倘若', '轻视', '损害', '把关，'],
+    correctTokens: ['倘若', '轻视', '质量', '把关，', '势必', '损害', '品牌声誉。'],
+    explanation: '倘若 (giả sử trang trọng) đi với 势必 (tất yếu sẽ dẫn đến hệ quả nghiêm trọng).',
+    topic: 'Câu điều kiện trang trọng',
+    difficulty: 'master'
   }
 ];

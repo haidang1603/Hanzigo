@@ -1,0 +1,25 @@
+{
+  "name": "HanziGo — Học tiếng Trung dễ hơn mỗi ngày",
+  "short_name": "HanziGo",
+  "description": "Nền tảng học tiếng Trung trực tuyến chuẩn HSK 1–9 dành cho người Việt.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FFF9F2",
+  "theme_color": "#E85D3F",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "/hanzigo-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
+

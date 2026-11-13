@@ -10,6 +10,8 @@
  * =========================================================================
  */
 
+import { getGeminiApiKeys, markGeminiKeyRateLimited } from '../../_utils/aiProviderAdapter.js';
+
 export default async function handler(req, res) {
   // CORS & Methods
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -38,8 +40,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Thiếu chữ Hán mục tiêu (targetHanzi)' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) {
+    const apiKeys = getGeminiApiKeys();
+    if (apiKeys.length === 0 && process.env.VITE_GEMINI_API_KEY) {
+      apiKeys.push(process.env.VITE_GEMINI_API_KEY);
+    }
+    if (apiKeys.length === 0) {
       return res.status(500).json({ error: 'Chưa cấu hình GEMINI_API_KEY trên server' });
     }
 
@@ -95,8 +100,8 @@ Hãy phân tích và trả về đúng JSON format sau:
 }
 `;
 
-    // Gọi Gemini API (Sử dụng gemini-1.5-flash hoặc gemini-2.0-flash-exp)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Gọi Gemini API (mặc định gemini-3.5-flash-lite hoặc theo GEMINI_MODEL), tự động xoay vòng key khi hết limit
+    const geminiModel = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').replace(/^models\//, '');
 
     const parts = [];
 
@@ -134,11 +139,23 @@ Hãy phân tích và trả về đúng JSON format sau:
       }
     };
 
-    const response = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    let response = null;
+    for (const currentKey of apiKeys) {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${currentKey}`;
+      response = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok || response.status === 400) {
+        break;
+      }
+
+      if (response.status === 429 || response.status === 403) {
+        markGeminiKeyRateLimited(currentKey);
+      }
+    }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');

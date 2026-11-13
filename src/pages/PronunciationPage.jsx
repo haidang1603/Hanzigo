@@ -100,9 +100,19 @@ const QUICK_SUGGESTIONS = [
   { hanzi: '我想去北京旅游', pinyin: 'Wǒ xiǎng qù Běijīng lǚyóu', meaning: 'Tôi muốn đi Bắc Kinh du lịch', tip: 'qù bật hơi mặt lưỡi, lǚ cần tròn môi như huýt sáo.' }
 ];
 
-export default function PronunciationPage({ user, targetVocab, onClearTargetVocab, setActiveTab: setAppActiveTab, onSelectWriting }) {
-  const [activeTab, setActiveTab] = useState('record'); // Default to AI Practice ('tones', 'initials', 'finals', 'record', 'quiz')
+const PRONUNCIATION_VALID_TABS = ['record', 'lab', 'tones', 'initials', 'finals'];
+
+export default function PronunciationPage({ user, targetVocab, onClearTargetVocab, setActiveTab: setAppActiveTab, onSelectWriting, initialTab = 'record' }) {
+  const [activeTab, setActiveTab] = useState(() => (
+    PRONUNCIATION_VALID_TABS.includes(initialTab) ? initialTab : 'record'
+  ));
   const [pronounceTargetMode, setPronounceTargetMode] = useState('word'); // 'word' | 'sentence'
+
+  useEffect(() => {
+    if (initialTab && PRONUNCIATION_VALID_TABS.includes(initialTab)) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // Custom Items & Practice Items State initialized lazily
   const [practiceList, setPracticeList] = useState(() => {
@@ -767,8 +777,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
           { id: 'lab', label: '🔬 Pronunciation Lab (Cao độ & Sandhi)' },
           { id: 'tones', label: '4 Thanh Điệu' },
           { id: 'initials', label: 'Thanh Mẫu (21 âm)' },
-          { id: 'finals', label: 'Vận Mẫu (15 âm)' },
-          { id: 'quiz', label: 'Trắc Nghiệm Thanh Điệu' }
+          { id: 'finals', label: 'Vận Mẫu (15 âm)' }
         ].map((tab) => (
           <button
             key={tab.id}

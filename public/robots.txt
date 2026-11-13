@@ -1,0 +1,41 @@
+User-agent: Googlebot
+Allow: /
+Allow: /roadmap
+Allow: /materials
+Allow: /hsk-practice
+Allow: /community
+Allow: /privacy-policy
+Allow: /terms-of-service
+Allow: /cookie-policy
+Allow: /refund-policy
+Allow: /storage-preferences
+Disallow: /admin
+Disallow: /api/
+Disallow: /reset-password
+Disallow: /teacher
+
+User-agent: Bingbot
+Allow: /
+Allow: /roadmap
+Allow: /materials
+Allow: /hsk-practice
+Allow: /community
+Allow: /privacy-policy
+Allow: /terms-of-service
+Allow: /cookie-policy
+Allow: /refund-policy
+Allow: /storage-preferences
+Disallow: /admin
+Disallow: /api/
+Disallow: /reset-password
+Disallow: /teacher
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Disallow: /reset-password
+Disallow: /teacher
+
+Sitemap: https://hanzigo-xi.vercel.app/sitemap.xml
+

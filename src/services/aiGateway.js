@@ -267,7 +267,7 @@ export async function getPersonalizedResourceRecommendations(user = null, candid
 }
 
 /**
- * Convenience method: Tra cứu Gia sư AI có kiểm chứng (Secure RAG + xKiro)
+ * Convenience method: Tra cứu Gia sư AI có kiểm chứng (Secure RAG + Gemini)
  * Tích hợp cá nhân hóa an toàn dựa trên hồ sơ học viên thực tế
  */
 export async function askAiTutor({

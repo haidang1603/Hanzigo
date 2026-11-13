@@ -13,11 +13,13 @@ import { isValidUuid } from '../../services/authService.js';
 import {
   getPendingLearningEvents,
   getLocalMistakeRecords,
+  normalizeLearningEvent,
   type ErrorCategory,
   type NormalizedLearningEvent,
   type UserMistakeRecord,
 } from '../../services/learningDataService.ts';
 import { getPastAttempts } from '../../services/hskService.js';
+import { getUserStorageKey } from '../../utils/gamification.js';
 
 export interface SkillRadarAxis {
   skillKey: 'listening' | 'reading' | 'writing' | 'vocabulary' | 'grammar' | 'stroke_order';
@@ -576,6 +578,134 @@ export function computeStudentAnalyticsSnapshot(
   };
 }
 
+function safeReadLocalJson<T>(key: string, fallback: T): T {
+  try {
+    if (typeof localStorage === 'undefined') return fallback;
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function buildRealLocalFallbackEvents(params: {
+  user: { id?: string | null } | null;
+  hskLevel: number;
+  examAttempts: NonNullable<RawAnalyticsInputs['examAttempts']>;
+  existingEvents: NormalizedLearningEvent[];
+  rpcRadar: RawAnalyticsInputs['rpcRadar'];
+}): NormalizedLearningEvent[] {
+  const { user, hskLevel, examAttempts, existingEvents, rpcRadar } = params;
+  const coveredSkills = new Set<SkillRadarAxis['skillKey']>();
+
+  for (const r of rpcRadar ?? []) {
+    if (Number(r.attempts_count ?? 0) > 0) {
+      coveredSkills.add(normalizeSkillKey(r.skill_key));
+    }
+  }
+  for (const ev of existingEvents) {
+    if (ev.hsk_level === hskLevel) {
+      coveredSkills.add(normalizeSkillKey(ev.skill_domain));
+    }
+  }
+
+  const derived: NormalizedLearningEvent[] = [];
+  const pushDerived = (
+    skillDomain: SkillRadarAxis['skillKey'],
+    itemId: string,
+    scoreEarned: number,
+    scoreMax: number,
+    createdAt?: string
+  ) => {
+    if (coveredSkills.has(skillDomain)) return;
+    derived.push(
+      normalizeLearningEvent({
+        userId: user?.id ?? null,
+        sourceModule: 'hsk_cbt',
+        hskLevel,
+        skillDomain,
+        itemId,
+        isCorrect: scoreMax > 0 ? scoreEarned / scoreMax >= 0.6 : true,
+        scoreEarned,
+        scoreMax,
+        createdAt: createdAt || new Date().toISOString(),
+      })
+    );
+  };
+
+  // 1. Real CBT mock exam attempts
+  for (const att of examAttempts) {
+    const attLevel = Number(att.hskLevel ?? att.level ?? 0);
+    if (attLevel && attLevel !== hskLevel) continue;
+    const pct =
+      typeof att.percentage === 'number'
+        ? att.percentage
+        : att.totalPoints && att.totalPoints > 0
+        ? ((att.score ?? 0) / att.totalPoints) * 100
+        : 0;
+    const ts = att.submittedAt || att.createdAt;
+    const id = String(att.id || att.examId || ts || Math.random());
+    pushDerived('listening', `exam_listen_${id}`, pct, 100, ts);
+    pushDerived('reading', `exam_read_${id}`, pct, 100, ts);
+    if (hskLevel >= 3) {
+      pushDerived('writing', `exam_write_${id}`, pct, 100, ts);
+    }
+  }
+
+  // 2. Real SRS vocabulary review history
+  const vocabKey = getUserStorageKey('hanzigo_vocab_review', user);
+  const vocabData = safeReadLocalJson<Record<string, any>>(
+    vocabKey,
+    user ? {} : safeReadLocalJson<Record<string, any>>('hanzigo_vocab_review', {})
+  );
+  if (vocabData && typeof vocabData === 'object') {
+    for (const [wordId, card] of Object.entries(vocabData)) {
+      if (!card || typeof card !== 'object') continue;
+      const reps = Number(card.reps ?? card.reviewCount ?? 0);
+      if (reps <= 0 && !card.lastReviewedAt) continue;
+      const lapses = Number(card.lapses ?? 0);
+      const accuracy = Math.max(20, Math.min(100, 100 - lapses * 15));
+      pushDerived('vocabulary', `srs_${wordId}`, accuracy, 100, card.lastReviewedAt);
+    }
+  }
+
+  // 3. Real Hanzi calligraphy / stroke practice
+  const writingKey = getUserStorageKey('hanzigo_custom_writing_chars', user);
+  const writingChars = safeReadLocalJson<any[]>(
+    writingKey,
+    user ? [] : safeReadLocalJson<any[]>('hanzigo_custom_writing_chars', [])
+  );
+  if (Array.isArray(writingChars)) {
+    for (const item of writingChars) {
+      const charId = typeof item === 'string' ? item : item?.char || item?.hanzi;
+      if (!charId) continue;
+      const score = typeof item === 'object' && typeof item.score === 'number' ? item.score : 85;
+      pushDerived('stroke_order', `stroke_${charId}`, score, 100, item?.updatedAt);
+    }
+  }
+
+  // 4. Real completed roadmap lessons for this HSK level
+  const lessonsKey = getUserStorageKey('hanzigo_completed_lessons', user);
+  const completedLessons = safeReadLocalJson<string[]>(
+    lessonsKey,
+    user ? [] : safeReadLocalJson<string[]>('hanzigo_completed_lessons', [])
+  );
+  if (Array.isArray(completedLessons)) {
+    for (const lessonId of completedLessons) {
+      if (typeof lessonId !== 'string') continue;
+      const matchesLevel =
+        lessonId.startsWith(`hsk${hskLevel}-`) ||
+        lessonId.includes(`hsk${hskLevel}_`) ||
+        (hskLevel === 1 && !/hsk[2-9]/i.test(lessonId));
+      if (!matchesLevel) continue;
+      pushDerived('grammar', `lesson_grammar_${lessonId}`, 85, 100);
+      pushDerived('reading', `lesson_read_${lessonId}`, 85, 100);
+    }
+  }
+
+  return derived;
+}
+
 /**
  * Fetch student analytics data from Supabase RPCs (with offline & guest fallback).
  */
@@ -620,11 +750,19 @@ export async function fetchStudentAnalyticsSnapshot(params: {
     }
   }
 
-  const localEvents = getPendingLearningEvents().filter(
+  const pendingEvents = getPendingLearningEvents().filter(
     (ev) => !userId || ev.user_id === userId || ev.user_id === null
   );
   const localMistakes = getLocalMistakeRecords(userId ?? undefined);
   const examAttempts = getPastAttempts() ?? [];
+  const derivedFallbackEvents = buildRealLocalFallbackEvents({
+    user: params.user ?? null,
+    hskLevel,
+    examAttempts,
+    existingEvents: pendingEvents,
+    rpcRadar,
+  });
+  const localEvents = [...pendingEvents, ...derivedFallbackEvents];
 
   return computeStudentAnalyticsSnapshot({
     hskLevel,

@@ -81,7 +81,7 @@ test('Navigation: Navbar includes grammar and listening in practiceItems without
 // =========================================================================
 test('Grammar Drills: dataset contains valid levels and question structures', () => {
   assert.ok(GRAMMAR_DRILLS_BY_LEVEL.length >= 7, 'Must have at least 7 verified grammar drills');
-  assert.equal(GRAMMAR_DRILLS_BY_LEVEL.length, 27, 'Must have 27 grammar drills (expanded for HSK 1-6)');
+  assert.ok(GRAMMAR_DRILLS_BY_LEVEL.length >= 90, 'Must have at least 90 verified grammar drills (15 per HSK 1-6)');
   
   const drillsByLevel = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
   GRAMMAR_DRILLS_BY_LEVEL.forEach(drill => {
@@ -96,12 +96,12 @@ test('Grammar Drills: dataset contains valid levels and question structures', ()
     assert.ok(drill.explanation && drill.explanation.length > 0, 'Must provide pedagogical explanation');
   });
 
-  assert.equal(drillsByLevel[1], 2, 'Level 1 must have 2 grammar drills');
-  assert.equal(drillsByLevel[2], 2, 'Level 2 must have 2 grammar drills');
-  assert.equal(drillsByLevel[3], 2, 'Level 3 must have 2 grammar drills');
-  assert.equal(drillsByLevel[4], 1, 'Level 4 must have 1 grammar drill');
-  assert.equal(drillsByLevel[5], 10, 'Level 5 must have 10 advanced grammar drills');
-  assert.equal(drillsByLevel[6], 10, 'Level 6 must have 10 mastery grammar drills');
+  assert.ok(drillsByLevel[1] >= 15, 'Level 1 must have at least 15 grammar drills');
+  assert.ok(drillsByLevel[2] >= 15, 'Level 2 must have at least 15 grammar drills');
+  assert.ok(drillsByLevel[3] >= 15, 'Level 3 must have at least 15 grammar drills');
+  assert.ok(drillsByLevel[4] >= 15, 'Level 4 must have at least 15 grammar drills');
+  assert.ok(drillsByLevel[5] >= 15, 'Level 5 must have at least 15 advanced grammar drills');
+  assert.ok(drillsByLevel[6] >= 15, 'Level 6 must have at least 15 mastery grammar drills');
 });
 
 test('Grammar Drills: answer evaluation validates exact token order', () => {
@@ -125,7 +125,7 @@ test('Grammar Drills: answer evaluation validates exact token order', () => {
 
 test('Grammar Drills: question navigation and boundary handling', () => {
   const level1Drills = GRAMMAR_DRILLS_BY_LEVEL.filter(d => d.level === 1);
-  assert.equal(level1Drills.length, 2);
+  assert.ok(level1Drills.length >= 15);
 
   let currentIdx = 0;
   // Next question
@@ -136,9 +136,9 @@ test('Grammar Drills: question navigation and boundary handling', () => {
   currentIdx = (currentIdx - 1 + level1Drills.length) % level1Drills.length;
   assert.equal(currentIdx, 0, 'Should navigate back to question 1');
 
-  // Advanced level check (level 5 has 10 drills)
+  // Advanced level check (level 5 has >= 15 drills)
   const level5Drills = GRAMMAR_DRILLS_BY_LEVEL.filter(d => d.level === 5);
-  assert.equal(level5Drills.length, 10, 'Level 5 should safely return 10 drills');
+  assert.ok(level5Drills.length >= 15, 'Level 5 should safely return >= 15 drills');
 
   // Out-of-bounds level check (level 7)
   const level7Drills = GRAMMAR_DRILLS_BY_LEVEL.filter(d => d.level === 7);
@@ -150,7 +150,7 @@ test('Grammar Drills: question navigation and boundary handling', () => {
 // =========================================================================
 test('Listening Drills: dataset contains valid levels, audio texts, and option choices', () => {
   assert.ok(LISTENING_DRILLS_BY_LEVEL.length >= 9, 'Must have at least 9 verified listening drills');
-  assert.equal(LISTENING_DRILLS_BY_LEVEL.length, 29, 'Must have 29 listening drills (expanded for HSK 1-6)');
+  assert.ok(LISTENING_DRILLS_BY_LEVEL.length >= 90, 'Must have at least 90 verified listening drills (15 per HSK 1-6)');
 
   const drillsByLevel = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
   LISTENING_DRILLS_BY_LEVEL.forEach(drill => {
@@ -165,12 +165,12 @@ test('Listening Drills: dataset contains valid levels, audio texts, and option c
     assert.ok(drill.explanation && drill.explanation.length > 0, 'Drill must provide explanation');
   });
 
-  assert.equal(drillsByLevel[1], 3, 'Level 1 must have 3 listening drills');
-  assert.equal(drillsByLevel[2], 2, 'Level 2 must have 2 listening drills');
-  assert.equal(drillsByLevel[3], 2, 'Level 3 must have 2 listening drills');
-  assert.equal(drillsByLevel[4], 2, 'Level 4 must have 2 listening drills');
-  assert.equal(drillsByLevel[5], 10, 'Level 5 must have 10 advanced listening drills');
-  assert.equal(drillsByLevel[6], 10, 'Level 6 must have 10 mastery listening drills');
+  assert.ok(drillsByLevel[1] >= 15, 'Level 1 must have at least 15 listening drills');
+  assert.ok(drillsByLevel[2] >= 15, 'Level 2 must have at least 15 listening drills');
+  assert.ok(drillsByLevel[3] >= 15, 'Level 3 must have at least 15 listening drills');
+  assert.ok(drillsByLevel[4] >= 15, 'Level 4 must have at least 15 listening drills');
+  assert.ok(drillsByLevel[5] >= 15, 'Level 5 must have at least 15 advanced listening drills');
+  assert.ok(drillsByLevel[6] >= 15, 'Level 6 must have at least 15 mastery listening drills');
 });
 
 test('Listening Drills: answer evaluation checks option index correctly', () => {

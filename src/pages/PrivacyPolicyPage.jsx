@@ -372,7 +372,7 @@ export default function PrivacyPolicyPage({ setActiveTab }) {
                     <td className="p-3"><a href="https://livekit.io/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">livekit.io/privacy</a></td>
                   </tr>
                   <tr>
-                    <td className="p-3 font-bold text-[#E85D3F]">xKiro / Google Gemini</td>
+                    <td className="p-3 font-bold text-[#E85D3F]">Google Gemini</td>
                     <td className="p-3">Gia sư AI học thuật (AI Tutor, hội thoại Tiểu Hàm, gợi ý bài tập)</td>
                     <td className="p-3">Nội dung câu hỏi học thuật, cấp độ HSK mục tiêu (tuyệt đối không gửi email, mật khẩu hay token xác thực)</td>
                     <td className="p-3"><span className="text-gray-500">API hợp đồng bảo mật không lưu dữ liệu huấn luyện</span></td>

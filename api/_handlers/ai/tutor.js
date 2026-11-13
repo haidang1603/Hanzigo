@@ -1,6 +1,6 @@
 /**
  * =========================================================================
- * HANZI GO - SECURE XKIRO AI TUTOR BACKEND: /api/ai/tutor
+ * HANZI GO - SECURE AI TUTOR BACKEND: /api/ai/tutor
  * =========================================================================
  * Production-Hardened Vercel Serverless Function (Node.js runtime):
  * 1. Zero-Trust Authentication & RBAC:
@@ -13,11 +13,10 @@
  *    - Trả về danh sách trích dẫn (source title, source URL, license, confidence).
  *    - Nếu không đủ bằng chứng, trả về evidence_status = 'insufficient_evidence'
  *      và cấm AI bịa đặt nguồn giáo trình.
- * 3. Tích hợp xKiro OpenAI-compatible API:
- *    - Đọc XKIRO_API_KEY server-side, không bao giờ lộ ra client bundle.
- *    - Xác minh model qua XKIRO_MODEL (mặc định 'qwen/qwen-plus-2025-07-28:free').
+ * 3. Tích hợp Google Gemini API:
+ *    - Đọc GEMINI_API_KEY server-side, không bao giờ lộ ra client bundle.
+ *    - Xác minh model qua GEMINI_MODEL (mặc định 'gemini-3.5-flash-lite').
  *    - Xử lý timeout (45s), HTTP errors, quota exhaustion (429) và model unavailable.
- *    - Không tự ý chuyển sang model trả phí nếu chưa có cấu hình phê duyệt.
  *    - Giới hạn token input, output và độ dài lịch sử chat.
  * 4. Chống lạm dụng & Quản lý chi phí:
  *    - Rate Limiting: 20 req/phút/user qua Distributed Rate Limiter.
@@ -573,7 +572,7 @@ export default async function handler(req, res) {
     { role: 'user', content: cleanQuestion }
   ];
 
-  // 7. GỌI XKIRO AI GATEWAY (OpenAI-compatible /v1/chat/completions)
+  // 7. GỌI GOOGLE GEMINI AI GATEWAY
   try {
     const aiResult = await callUnifiedAiProvider({
       action: 'tutor_qa',
@@ -586,7 +585,7 @@ export default async function handler(req, res) {
     let tutorData = null;
     let providerInfo = {
       provider: aiResult.provider || 'offline_deterministic',
-      model: aiResult.model || process.env.XKIRO_MODEL || 'qwen/qwen-plus-2025-07-28:free',
+      model: aiResult.model || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
       usage: aiResult.usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
       costUsd: aiResult.costUsd || 0,
       latencyMs: aiResult.latencyMs || 0

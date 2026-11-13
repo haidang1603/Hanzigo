@@ -80,9 +80,9 @@ test('Supabase Sync Audit: 1.3 IDS Hanzi Decomposition Database has 325 characte
   }
 });
 
-test('Supabase Sync Audit: 1.4 HSK Exam Center has 27 exams and 417 questions', () => {
-  assert.equal(HSK_EXAMS.length, 27, 'Must have 27 curated exams across HSK 1-6');
-  assert.equal(HSK_QUESTIONS.length, 417, 'Must have 417 detailed questions');
+test('Supabase Sync Audit: 1.4 HSK Exam Center has 29 exams and 429 questions', () => {
+  assert.equal(HSK_EXAMS.length, 29, 'Must have 29 curated exams across HSK 1-6');
+  assert.equal(HSK_QUESTIONS.length, 429, 'Must have 429 detailed questions');
 
   // Verify all questions reference valid exams
   const examIds = new Set(HSK_EXAMS.map(e => e.id));
@@ -175,17 +175,17 @@ test('Supabase Live Sync: 2.4 Verifies hanzi_decompositions contains all 325 cha
   assert.equal(count, 325, 'hanzi_decompositions table must contain 325 rows');
 });
 
-test('Supabase Live Sync: 2.5 Verifies HSK Exam Center tables in Supabase (27 exams, 417 questions)', async (t) => {
+test('Supabase Live Sync: 2.5 Verifies HSK Exam Center tables in Supabase (29 exams, 429 questions)', async (t) => {
   if (!hasLiveCredentials) {
     t.skip('Skipping live Supabase check: credentials missing');
     return;
   }
 
   const { count: examCount } = await supabase.from('hsk_exams').select('*', { count: 'exact', head: true });
-  assert.equal(examCount, 27, 'hsk_exams table must contain 27 rows');
+  assert.equal(examCount, 29, 'hsk_exams table must contain 29 rows');
 
   const { count: qCount } = await supabase.from('hsk_questions').select('*', { count: 'exact', head: true });
-  assert.equal(qCount, 417, 'hsk_questions table must contain 417 rows');
+  assert.equal(qCount, 429, 'hsk_questions table must contain 429 rows');
 
   const { count: structCount } = await supabase.from('hsk_exam_structures').select('*', { count: 'exact', head: true });
   assert.ok(structCount >= 13, 'hsk_exam_structures table must contain at least 13 rows');
@@ -205,7 +205,7 @@ test('Supabase Live Sync: 2.6 Verifies vocabulary table contains all 804 entries
   assert.equal(count, 804, 'vocabulary table must contain 804 rows');
 });
 
-test('Supabase Live Sync: 2.7 Verifies materials library has 20 items in Supabase', async (t) => {
+test('Supabase Live Sync: 2.7 Verifies materials library has at least 83 items in Supabase', async (t) => {
   if (!hasLiveCredentials) {
     t.skip('Skipping live Supabase check: credentials missing');
     return;
@@ -216,7 +216,7 @@ test('Supabase Live Sync: 2.7 Verifies materials library has 20 items in Supabas
     .select('*', { count: 'exact', head: true });
 
   assert.ifError(error);
-  assert.equal(count, 20, 'materials table must contain 20 rows');
+  assert.ok(count >= 83, `materials table must contain at least 83 rows (got ${count})`);
 });
 
 test('Supabase Live Sync: 2.8 Verifies Storage bucket "materials" is configured and private', async (t) => {

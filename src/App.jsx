@@ -4,6 +4,9 @@ import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
 import AdminGuard from './components/AdminGuard';
 import RouteSuspenseFallback from './components/common/RouteSuspenseFallback';
+import GlobalErrorBoundary from './components/common/GlobalErrorBoundary';
+import { initGlobalErrorReporter } from './core/telemetry/errorReporter';
+import SeoHeadManager from './core/seo/SeoHeadManager';
 import { lazyWithRetry } from './core/routing/lazyWithRetry';
 import HomePage from './pages/HomePage';
 
@@ -337,21 +340,25 @@ function MainApp() {
   const isLiveRoom = activeTab === 'classroom' && routeInfo.param === 'live' && Boolean(routeInfo.extra);
   if (isLiveRoom) {
     return (
-      <Suspense fallback={<RouteSuspenseFallback />}>
-        <LiveClassroomPage
-          user={user}
-          classId={routeInfo.sub}
-          sessionId={routeInfo.extra}
-          onNavigateBack={() => {
-            window.location.hash = `#classroom/${routeInfo.sub}`;
-          }}
-        />
-      </Suspense>
+      <>
+        <SeoHeadManager activeTab={activeTab} routeInfo={routeInfo} />
+        <Suspense fallback={<RouteSuspenseFallback />}>
+          <LiveClassroomPage
+            user={user}
+            classId={routeInfo.sub}
+            sessionId={routeInfo.extra}
+            onNavigateBack={() => {
+              window.location.hash = `#classroom/${routeInfo.sub}`;
+            }}
+          />
+        </Suspense>
+      </>
     );
   }
 
   return (
     <div className="min-h-screen flex bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] transition-colors duration-200">
+      <SeoHeadManager activeTab={activeTab} routeInfo={routeInfo} />
       
       {/* 1. Desktop Smart Adaptive Collapsible Sidebar */}
       <AppSidebar
@@ -390,6 +397,14 @@ function MainApp() {
 
         {/* Main Content Area (pb-20 on mobile for bottom navigation bar) */}
         <main className="flex-1 pb-20 lg:pb-0">
+        <GlobalErrorBoundary
+          scope="route"
+          resetKey={activeTab}
+          onGoHome={() => {
+            setActiveTab('home');
+            window.location.hash = '#home';
+          }}
+        >
         <Suspense fallback={<RouteSuspenseFallback />}>
           {(activeTab === 'home' || activeTab === 'dashboard') && (
             <UnifiedDashboard 
@@ -455,6 +470,7 @@ function MainApp() {
               onClearTargetVocab={handleClearPronounceTarget}
               setActiveTab={setActiveTab}
               onSelectWriting={handleSelectWriting}
+              initialTab={routeInfo.sub || 'record'}
             />
           )}
 
@@ -478,7 +494,11 @@ function MainApp() {
           )}
 
           {activeTab === 'conversation' && (
-            <ConversationPage user={user} openAuthModal={handleOpenAuth} />
+            <ConversationPage
+              user={user}
+              openAuthModal={handleOpenAuth}
+              initialMode={routeInfo.sub || 'roleplay'}
+            />
           )}
 
           {(activeTab === 'practice' || activeTab === 'grammar' || activeTab === 'listening' || activeTab === 'listening-studio' || activeTab === 'video' || activeTab === 'video-studio' || activeTab === 'hsk30-translation') && (
@@ -695,6 +715,7 @@ function MainApp() {
             />
           )}
         </Suspense>
+        </GlobalErrorBoundary>
         </main>
 
         {/* 3. Global Footer */}
@@ -744,13 +765,19 @@ function MainApp() {
 }
 
 export default function App() {
+  useEffect(() => {
+    return initGlobalErrorReporter();
+  }, []);
+
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <UnifiedToolsProvider>
-          <MainApp />
-        </UnifiedToolsProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <GlobalErrorBoundary scope="app">
+      <ThemeProvider>
+        <AuthProvider>
+          <UnifiedToolsProvider>
+            <MainApp />
+          </UnifiedToolsProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </GlobalErrorBoundary>
   );
 }

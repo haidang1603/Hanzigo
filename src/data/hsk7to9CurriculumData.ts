@@ -14,7 +14,7 @@
  * =========================================================================
  */
 
-import { getUserStorageKey } from '../utils/gamification.js';
+import { awardXp, getUserStorageKey } from '../utils/gamification.js';
 import { STORAGE_REVIEW } from '../utils/srsEngine.js';
 import { searchDictionaryHybrid } from '../services/dictionaryService.js';
 import { recordLearningEvent } from '../services/learningDataService.ts';
@@ -104,6 +104,16 @@ export interface RhetoricalDeviceNote {
   analysisVi: string;
 }
 
+export interface HskAdvancedQuizQuestion {
+  id: string;
+  category: 'comprehension' | 'synonym_nuance' | 'register_grammar';
+  promptVi: string;
+  promptZh?: string;
+  options: string[];
+  correctIndex: number;
+  explanationVi: string;
+}
+
 export interface HskAdvancedModuleData {
   id: string;
   slug: string;
@@ -118,6 +128,7 @@ export interface HskAdvancedModuleData {
   vocabIds: string[];
   grammarIds: string[];
   synonymGroupIds: string[];
+  quizQuestions: HskAdvancedQuizQuestion[];
 }
 
 export const HSK_7_9_STANDARD_SPEC = {
@@ -300,6 +311,46 @@ export const HSK_7_9_VOCABULARY: HskAdvancedVocabItem[] = [
     exampleZh: '在跨学科知识整合方面，人类学者所扮演的桥梁角色非其莫属。',
     exampleVi: 'Trong việc tích hợp tri thức liên ngành, vai trò cầu nối của giới học giả nhân văn không ai có thể thay thế.',
   },
+  {
+    id: 'adv_v_11',
+    hanzi: '算力基建',
+    pinyin: 'suàn lì jī jiàn',
+    meaningVi: 'Hạ tầng năng lực tính toán (Computing infrastructure)',
+    hskBand: 8,
+    domain: 'science_technology',
+    entryType: 'domain_term',
+    connotationLabelZh: '中性',
+    collocations: ['算力基建布局', '绿色算力', '算力调度'],
+    exampleZh: '绿色算力基建已成为支撑大模型可持续训练的关键底座。',
+    exampleVi: 'Hạ tầng tính toán xanh đã trở thành nền tảng then chốt hỗ trợ huấn luyện mô hình lớn bền vững.',
+  },
+  {
+    id: 'adv_v_12',
+    hanzi: '碳中和',
+    pinyin: 'tàn zhōng hé',
+    meaningVi: 'Trung hòa carbon (Carbon neutrality)',
+    hskBand: 8,
+    domain: 'science_technology',
+    entryType: 'domain_term',
+    connotationLabelZh: '褒义',
+    collocations: ['实现碳中和', '碳中和目标', '碳足迹'],
+    exampleZh: '清洁能源与储能技术的协同突破加速了碳中和进程。',
+    exampleVi: 'Đột phá hiệp đồng giữa năng lượng sạch và công nghệ lưu trữ đã thúc đẩy nhanh tiến trình trung hòa carbon.',
+  },
+  {
+    id: 'adv_v_13',
+    hanzi: '方兴未艾',
+    pinyin: 'fāng xīng wèi ài',
+    meaningVi: 'Đang lên như diều gặp gió, đang phát triển mạnh mẽ chưa dừng',
+    hskBand: 8,
+    domain: 'science_technology',
+    entryType: 'chengyu_idiom',
+    connotationLabelZh: '褒义',
+    collocations: ['量子计算方兴未艾', '新能源产业方兴未艾'],
+    classicalOrigin: '《诗经·小雅·庭燎》“夜未艾”',
+    exampleZh: '固态电池与氢能储能的研发浪潮方兴未艾。',
+    exampleVi: 'Làn sóng nghiên cứu phát triển pin thể rắn và lưu trữ năng lượng hydro đang phát triển vô cùng mạnh mẽ.',
+  },
 ];
 
 export const HSK_7_9_GRAMMAR: HskAdvancedGrammarItem[] = [
@@ -344,6 +395,20 @@ export const HSK_7_9_GRAMMAR: HskAdvancedGrammarItem[] = [
     explanationVi: 'Thường xuất hiện trong văn nghị luận văn hóa, xã luận và diễn văn chính thức.',
     exampleZh: '凡亲临非遗工坊者，无不惊叹于匠人毫厘之间的极致专注。',
     exampleVi: 'Phàm ai từng đặt chân tới xưởng di sản phi vật thể, không một ai không kinh ngạc trước sự tập trung tuyệt đối của người nghệ nhân.',
+  },
+  {
+    id: 'adv_g_4',
+    pattern: '抑或…… / 莫衷一是',
+    titleVi: 'Lựa chọn nghi vấn trang trọng (Hay là...) & Chưa ngã ngũ',
+    hskBand: 8,
+    domain: 'science_technology',
+    formalWrittenForm: '究竟是技术瓶颈，抑或成本掣肘，学界尚莫衷一是',
+    spokenEquivalent: '到底是技术问题，还是成本太高，大家意见还不统一',
+    classicalBridge: 'Liên từ lựa chọn văn ngôn “抑或” (hay là) + thành ngữ “莫衷一是”',
+    rhetoricalFunction: 'Trình bày các giả thuyết khoa học đối lập một cách khách quan',
+    explanationVi: 'Dùng phổ biến trong tổng quan nghiên cứu (literature review) và báo cáo công nghệ HSK 8.',
+    exampleZh: '量子纠错究竟率先在超导抑或离子阱路线实现规模化商用，业界仍莫衷一是。',
+    exampleVi: 'Sửa lỗi lượng tử rốt cuộc sẽ thương mại hóa quy mô lớn trước ở hướng siêu dẫn hay bẫy ion, giới chuyên môn vẫn chưa ngã ngũ.',
   },
 ];
 
@@ -416,6 +481,40 @@ export const HSK_7_9_SYNONYM_GROUPS: SynonymComparisonGroup[] = [
       },
     ],
   },
+  {
+    id: 'syn_3',
+    title: '突破 vs. 颠覆 vs. 改良',
+    domain: 'science_technology',
+    items: [
+      {
+        word: '突破',
+        pinyin: 'tū pò',
+        register: '书面语 (Trang trọng)',
+        connotation: '褒义',
+        collocationConstraints: '技术突破、实现零的突破、突破瓶颈',
+        nuanceVi: 'Vượt qua rào cản, nút thắt kỹ thuật để đạt tiến bộ mang tính bước ngoặt.',
+        exampleZh: '科研团队在高温超导材料领域取得了关键性突破。',
+      },
+      {
+        word: '颠覆',
+        pinyin: 'diān fù',
+        register: '书面语 (Học thuật / Công nghệ)',
+        connotation: '中性',
+        collocationConstraints: '颠覆性创新、颠覆传统格局',
+        nuanceVi: 'Thay đổi tận gốc, lật đổ mô hình cũ để tạo hệ hình mới (có thể tích cực trong đổi mới hoặc tiêu cực trong chính trị).',
+        exampleZh: '固态储能技术有望颠覆现有新能源汽车的续航格局。',
+      },
+      {
+        word: '改良',
+        pinyin: 'gǎi liáng',
+        register: '通用 (Trung tính)',
+        connotation: '褒义',
+        collocationConstraints: '工艺改良、品种改良、渐进式改良',
+        nuanceVi: 'Cải tiến từng bước trên nền tảng sẵn có, giữ nguyên cấu trúc cốt lõi.',
+        exampleZh: '工程师对电池散热结构进行了细致改良，降低了能耗。',
+      },
+    ],
+  },
 ];
 
 export const HSK_7_9_MODULES: HskAdvancedModuleData[] = [
@@ -465,6 +564,38 @@ export const HSK_7_9_MODULES: HskAdvancedModuleData[] = [
     vocabIds: ['adv_v_1', 'adv_v_2', 'adv_v_3', 'adv_v_6', 'adv_v_10'],
     grammarIds: ['adv_g_1', 'adv_g_2'],
     synonymGroupIds: ['syn_1'],
+    quizQuestions: [
+      {
+        id: 'q_acad_1',
+        category: 'comprehension',
+        promptVi: 'Theo đoạn 2 của bài đọc, nguyên nhân gốc rễ của "thiên kiến thuật toán" (算法偏见) chủ yếu đến từ đâu?',
+        options: [
+          'Sự ác ý cố tình của lập trình viên trong mã nguồn',
+          'Sự phản chiếu số hóa của thiên kiến sẵn có trong dữ liệu lịch sử và thiếu đa dạng ngữ liệu',
+          'Do chi phí phần cứng máy chủ quá cao khiến mô hình chạy chậm',
+          'Do người dùng cuối nhập sai câu lệnh truy vấn',
+        ],
+        correctIndex: 1,
+        explanationVi: 'Đoạn 2 nêu rõ: “所谓‘算法偏见’往往并非源于代码本身的恶意，而是历史数据中隐性歧视的数字化映射”.',
+      },
+      {
+        id: 'q_acad_2',
+        category: 'synonym_nuance',
+        promptVi: 'Trong văn phong báo cáo học thuật, cụm nào mang sắc thái 褒义 (tích cực) và kết hợp chuẩn với “科研”?',
+        promptZh: '经过三年攻关，研究团队终于取得了突破性的科研_____。',
+        options: ['成果', '后果', '结果', '下场'],
+        correctIndex: 0,
+        explanationVi: '“成果” mang sắc thái 褒义 (kết quả tốt đẹp từ nỗ lực nghiên cứu), còn “后果” mang sắc thái 贬义.',
+      },
+      {
+        id: 'q_acad_3',
+        category: 'register_grammar',
+        promptVi: 'Cấu trúc nào tương đương với “虽然……但是……” nhưng mang văn phong nghị luận học thuật HSK 7–9?',
+        options: ['……，诚然……，然而……', '……，尽管……，所以……', '……，一边……，一边……', '……，不但……，而且……'],
+        correctIndex: 0,
+        explanationVi: '“诚然……，然而……” kế thừa văn ngôn “诚” (quả thực) + “然而” (tuy vậy) dùng để nhượng bộ rồi phản biện sắc bén.',
+      },
+    ],
   },
   {
     id: 'mod_hsk8_business',
@@ -506,6 +637,116 @@ export const HSK_7_9_MODULES: HskAdvancedModuleData[] = [
     vocabIds: ['adv_v_4', 'adv_v_5', 'adv_v_6'],
     grammarIds: ['adv_g_2'],
     synonymGroupIds: ['syn_2'],
+    quizQuestions: [
+      {
+        id: 'q_biz_1',
+        category: 'comprehension',
+        promptVi: 'Thành ngữ “未雨绸缪” trong đoạn 2 nhấn mạnh chiến lược nào của doanh nghiệp?',
+        options: [
+          'Cắt giảm toàn bộ tồn kho xuống bằng 0 để giảm chi phí',
+          'Chủ động phòng bị từ sớm, đa dạng hóa nguồn cung và bố trí dự phòng trước rủi ro',
+          'Chuyển toàn bộ áp lực tài chính sang nhà cung ứng nhỏ',
+          'Ngừng ký kết hợp đồng dài hạn trong thời kỳ biến động',
+        ],
+        correctIndex: 1,
+        explanationVi: '“未雨绸缪” nghĩa là sửa soạn trước khi trời đổ mưa — trong quản trị là lập phương án dự phòng và đa khu vực từ sớm.',
+      },
+      {
+        id: 'q_biz_2',
+        category: 'synonym_nuance',
+        promptVi: 'Chọn từ có văn phong 书面语 (trang trọng) phù hợp nhất để điền vào câu hợp đồng kinh tế:',
+        promptZh: '双方律师正在对补充协议中的免责条款进行反复_____。',
+        options: ['斟酌', '掂量', '打听', '商量商量'],
+        correctIndex: 0,
+        explanationVi: '“斟酌” là từ văn viết trang trọng dùng cho việc cân nhắc kỹ câu chữ, điều khoản; “掂量” thiên về khẩu ngữ.',
+      },
+      {
+        id: 'q_biz_3',
+        category: 'register_grammar',
+        promptVi: 'Cụm liên kết văn ngôn nào diễn đạt quan hệ phương tiện → mục đích súc tích trong văn phong hành chính?',
+        options: ['以……为…… / 藉以……', '因为……所以……', '不仅……而且……', '哪怕……也……'],
+        correctIndex: 0,
+        explanationVi: '“以A为抓手，藉以实现B” cô đọng quan hệ lấy A làm công cụ/cơ hội để đạt mục tiêu B.',
+      },
+    ],
+  },
+  {
+    id: 'mod_hsk8_scitech',
+    slug: 'green-computing-and-energy-transition',
+    hskBand: 8,
+    domain: 'science_technology',
+    domainLabelVi: 'Khoa học & Công nghệ',
+    titleZh: '绿色算力与能源转型：迈向碳中和的技术路径',
+    titleVi: 'Năng lực Tính toán Xanh & Chuyển dịch Năng lượng: Lộ trình Công nghệ tới Trung hòa Carbon',
+    charCount: 838,
+    paragraphs: [
+      {
+        index: 1,
+        discourseRole: 'Đặt vấn đề công nghệ (科技前沿)',
+        zh: '伴随人工智能大模型训练与云计算需求的指数级攀升，全球数据中心的电力消耗正以前所未有的速度扩张。一方面，数字经济对高密度算力基建的依赖日益加深；另一方面，各国政府与科技巨头均已立下“碳中和”的刚性时间表。如何在算力爆发与能耗约束之间寻求动态平衡，已成为当代能源科学与信息工程交叉领域的焦点命题。',
+        vi: 'Cùng với sự gia tăng theo cấp số nhân của nhu cầu huấn luyện mô hình AI lớn và điện toán đám mây, mức tiêu thụ điện năng của các trung tâm dữ liệu toàn cầu đang mở rộng với tốc độ chưa từng có. Một mặt, kinh tế số ngày càng phụ thuộc vào hạ tầng tính toán mật độ cao; mặt khác, các chính phủ và tập đoàn công nghệ đều đã đặt lộ trình cứng về "trung hòa carbon". Tìm điểm cân bằng động giữa bùng nổ năng lực tính toán và giới hạn năng lượng trở thành đề tài trọng tâm giao thoa giữa khoa học năng lượng và kỹ thuật thông tin.',
+      },
+      {
+        index: 2,
+        discourseRole: 'Giải pháp kỹ thuật (技术方案)',
+        zh: '值得欣喜的是，围绕“绿色算力”的协同创新正方兴未艾。在硬件层面，科研人员通过液冷散热系统改良与存算一体芯片架构突破，显著降低了数据中心电能利用效率（PUE）的损耗；在电网调度层面，借助智能微电网与长时储能技术，高耗能计算集群得以与风电、光伏等间歇性清洁能源实现精准耦合，从而大幅削减化石能源在算力底座中的占比。',
+        vi: 'Điều đáng mừng là làn sóng đổi mới hiệp đồng xoay quanh "tính toán xanh" đang phát triển mạnh mẽ. Ở tầng phần cứng, giới nghiên cứu cải tiến hệ thống tản nhiệt bằng chất lỏng và đột phá kiến trúc chip tích hợp lưu-tính, giảm rõ rệt tổn hao chỉ số PUE; ở tầng điều độ lưới điện, nhờ lưới điện siêu nhỏ thông minh và công nghệ lưu trữ dài hạn, các cụm máy chủ tiêu thụ điện lớn có thể khớp nối chính xác với điện gió, điện mặt trời.',
+      },
+      {
+        index: 3,
+        discourseRole: 'Tranh luận & Triển vọng (前景展望)',
+        zh: '当然，技术演进的路线并非毫无争议。未来十年，究竟是可控核聚变抑或第四代高温气冷堆能够率先为超大规模算力中心提供稳定基荷电力，工程界尚莫衷一是。然而可以肯定的是，唯有坚持基础研究突破与工程应用改良并重，人类方能以绿色数字底座支撑起可持续的智能未来。',
+        vi: 'Tất nhiên, lộ trình tiến hóa công nghệ không phải không có tranh luận. Trong thập kỷ tới, liệu nhiệt hạch có kiểm soát hay lò phản ứng thế hệ 4 sẽ đi đầu cung cấp điện nền ổn định cho siêu trung tâm dữ liệu, giới kỹ thuật vẫn chưa ngã ngũ. Song điều chắc chắn là chỉ khi coi trọng song hành giữa đột phá nghiên cứu cơ bản và cải tiến ứng dụng kỹ thuật, nhân loại mới xây dựng được tương lai thông minh bền vững.',
+      },
+    ],
+    rhetoricalDevices: [
+      {
+        deviceZh: '双线对比 (Đối chiếu hai tuyến song hành)',
+        deviceVi: 'Đối chiếu nhu cầu bùng nổ算力基建 với mục tiêu 碳中和',
+        excerptZh: '一方面，数字经济对高密度算力基建的依赖日益加深；另一方面……',
+        analysisVi: 'Đặt ra mâu thuẫn cốt lõi để dẫn dắt giải pháp công nghệ xanh ở đoạn 2.',
+      },
+    ],
+    vocabIds: ['adv_v_11', 'adv_v_12', 'adv_v_13'],
+    grammarIds: ['adv_g_4'],
+    synonymGroupIds: ['syn_3'],
+    quizQuestions: [
+      {
+        id: 'q_sci_1',
+        category: 'comprehension',
+        promptVi: 'Theo đoạn 2, công nghệ nào giúp trung tâm dữ liệu tận dụng hiệu quả nguồn điện gió và điện mặt trời vốn có tính gián đoạn?',
+        options: [
+          'Tăng cường dùng máy phát điện chạy dầu dự phòng',
+          'Lưới điện siêu nhỏ thông minh (智能微电网) và công nghệ lưu trữ năng lượng dài hạn (长时储能)',
+          'Giảm tốc độ xung nhịp CPU xuống mức tối thiểu',
+          'Chuyển toàn bộ trung tâm dữ liệu ra ngoài vũ trụ',
+        ],
+        correctIndex: 1,
+        explanationVi: 'Đoạn 2 chỉ rõ: “借助智能微电网与长时储能技术，高耗能计算集群得以与风电、光伏等间歇性清洁能源实现精准耦合”.',
+      },
+      {
+        id: 'q_sci_2',
+        category: 'synonym_nuance',
+        promptVi: 'Phân biệt “突破” và “改良”: Từ nào dùng khi nói về cải tiến từng bước hệ thống tản nhiệt sẵn có?',
+        promptZh: '工程师对数据中心的液冷散热系统进行了精细_____，进一步降低了能耗。',
+        options: ['改良', '颠覆', '推翻', '破坏'],
+        correctIndex: 0,
+        explanationVi: '“改良” chỉ việc cải tiến từng phần trên nền tảng sẵn có (như hệ thống tản nhiệt), còn “颠覆” là thay đổi tận gốc mô hình cũ.',
+      },
+      {
+        id: 'q_sci_3',
+        category: 'register_grammar',
+        promptVi: 'Cụm từ “莫衷一是” trong đoạn 3 mang ý nghĩa gì?',
+        options: [
+          'Mọi người đã thống nhất hoàn toàn một phương án duy nhất',
+          'Ý kiến các bên còn khác nhau, chưa đi đến kết luận thống nhất',
+          'Không ai quan tâm tới vấn đề đang thảo luận',
+          'Kết quả thí nghiệm đã thất bại hoàn toàn',
+        ],
+        correctIndex: 1,
+        explanationVi: '“莫衷一是” là thành ngữ HSK 8 nghĩa là ý kiến phân tán, chưa thể thống nhất được phương án nào đúng nhất.',
+      },
+    ],
   },
   {
     id: 'mod_hsk9_culture_law',
@@ -547,6 +788,42 @@ export const HSK_7_9_MODULES: HskAdvancedModuleData[] = [
     vocabIds: ['adv_v_7', 'adv_v_8', 'adv_v_9'],
     grammarIds: ['adv_g_3'],
     synonymGroupIds: ['syn_1'],
+    quizQuestions: [
+      {
+        id: 'q_cult_1',
+        category: 'comprehension',
+        promptVi: 'Theo đoạn 1, vì sao việc chỉ cất giữ di sản phi vật thể trong tủ kính bảo tàng là chưa đủ?',
+        options: [
+          'Vì tủ kính bảo tàng quá nhỏ để trưng bày hết hiện vật',
+          'Vì làm tách rời di sản khỏi đời sống xã hội đương đại — nơi nuôi dưỡng sức sống cho nghề truyền thống',
+          'Vì du khách không thích tham quan bảo tàng vào cuối tuần',
+          'Vì chi phí bảo trì kính trưng bày quá tốn kém',
+        ],
+        correctIndex: 1,
+        explanationVi: 'Đoạn 1 nhấn mạnh: “若仅将非遗封存于博物馆的玻璃展柜之中，无异于抽离其赖以呼吸的社会土壤；真正的保护，必是让传统工艺融入当代日常，实现活态传承.”',
+      },
+      {
+        id: 'q_cult_2',
+        category: 'register_grammar',
+        promptVi: 'Cấu trúc phủ định kép “凡亲临非遗工坊者，莫不敬佩……” mang sắc thái tu từ nào?',
+        options: [
+          'Diễn đạt sự hoài nghi, không chắc chắn',
+          'Khẳng định tuyệt đối không ngoại lệ (Mọi người đến thăm đều khâm phục)',
+          'Phủ định hoàn toàn giá trị của nghề thủ công',
+          'Thể hiện câu hỏi tu từ mang tính châm biếm',
+        ],
+        correctIndex: 1,
+        explanationVi: '“莫不……” (không ai không) là cấu trúc phủ định kép gốc văn ngôn dùng để khẳng định mạnh mẽ với sắc thái trang nghiêm.',
+      },
+      {
+        id: 'q_cult_3',
+        category: 'synonym_nuance',
+        promptVi: 'Câu “法律确立底线，创意激活当下，教育播种未来。” sử dụng biện pháp tu từ nào?',
+        options: ['排比句 (Điệp cấu trúc 3 vế)', '反问句 (Câu hỏi tu từ)', '拟人 (Nhân hóa)', '夸张 (Nói quá)'],
+        correctIndex: 0,
+        explanationVi: 'Ba vế song hành cùng cấu trúc Chủ ngữ + Động từ + Tân ngữ (法律确立底线 / 创意激活当下 / 教育播种未来) là phép 排比 điển hình.',
+      },
+    ],
   },
 ];
 
@@ -666,4 +943,91 @@ export async function exportHskAdvancedItemToSrs(
 
   return { exported: true, cardId };
 }
+
+const HSK_7_9_PROGRESS_KEY = 'hanzigo_hsk79_completed_modules';
+
+export interface Hsk7to9ModuleCompletion {
+  moduleId: string;
+  scorePercent: number;
+  completedAt: string;
+}
+
+export function getCompletedHsk7to9Modules(
+  user: { id?: string | null } | null = null
+): Record<string, Hsk7to9ModuleCompletion> {
+  if (typeof localStorage === 'undefined') return {};
+  try {
+    const key = getUserStorageKey(HSK_7_9_PROGRESS_KEY, user);
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as Record<string, Hsk7to9ModuleCompletion>) : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function completeHsk7to9Module(
+  module: HskAdvancedModuleData,
+  scorePercent: number,
+  user: { id?: string | null } | null = null
+): Promise<{ xpAwarded: number; progress: Record<string, Hsk7to9ModuleCompletion> }> {
+  const safeScore = Math.min(100, Math.max(0, Math.round(scorePercent)));
+  const current = getCompletedHsk7to9Modules(user);
+  const existing = current[module.id];
+  const updated: Record<string, Hsk7to9ModuleCompletion> = {
+    ...current,
+    [module.id]: {
+      moduleId: module.id,
+      scorePercent: Math.max(safeScore, existing?.scorePercent ?? 0),
+      completedAt: new Date().toISOString(),
+    },
+  };
+
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const key = getUserStorageKey(HSK_7_9_PROGRESS_KEY, user);
+      localStorage.setItem(key, JSON.stringify(updated));
+
+      const lessonsKey = getUserStorageKey('hanzigo_completed_lessons', user);
+      const rawLessons = localStorage.getItem(lessonsKey);
+      const lessons = rawLessons ? (JSON.parse(rawLessons) as string[]) : [];
+      if (!lessons.includes(module.id)) {
+        lessons.push(module.id);
+        localStorage.setItem(lessonsKey, JSON.stringify(lessons));
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  const xpAmount = safeScore >= 80 ? 80 : 50;
+  awardXp(xpAmount, user, `hsk79_complete_${module.id}`);
+
+  await Promise.allSettled([
+    recordLearningEvent({
+      userId: user?.id ?? null,
+      sourceModule: 'lesson',
+      hskLevel: module.hskBand,
+      skillDomain: 'reading',
+      itemId: `${module.id}_reading`,
+      isCorrect: safeScore >= 60,
+      scoreEarned: safeScore,
+      scoreMax: 100,
+      payload: { domain: module.domain, titleZh: module.titleZh },
+    }),
+    recordLearningEvent({
+      userId: user?.id ?? null,
+      sourceModule: 'lesson',
+      hskLevel: module.hskBand,
+      skillDomain: 'grammar',
+      itemId: `${module.id}_grammar`,
+      isCorrect: safeScore >= 60,
+      scoreEarned: safeScore,
+      scoreMax: 100,
+      payload: { domain: module.domain },
+    }),
+  ]);
+
+  return { xpAwarded: xpAmount, progress: updated };
+}
+
 

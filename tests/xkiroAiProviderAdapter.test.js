@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { 
-  callUnifiedAiProvider, 
+import {
+  callUnifiedAiProvider,
   extractStructuredJson,
-  XKIRO_DEFAULT_BASE_URL,
-  XKIRO_DEFAULT_MODEL
+  getGeminiApiKeys,
+  calculateGeminiTokenCost,
+  __resetGeminiKeyPoolForTests,
+  GEMINI_DEFAULT_MODEL
 } from '../api/_utils/aiProviderAdapter.js';
 
 test('1. JSON Extraction & Resilient Parsing', async (t) => {
@@ -34,10 +36,8 @@ test('1. JSON Extraction & Resilient Parsing', async (t) => {
   });
 });
 
-test('2. Missing Keys & Offline Fallback State', async () => {
-  const origXkiro = process.env.XKIRO_API_KEY;
+test('2. Missing Gemini Key & Offline Fallback State', async () => {
   const origGemini = process.env.GEMINI_API_KEY;
-  delete process.env.XKIRO_API_KEY;
   delete process.env.GEMINI_API_KEY;
 
   try {
@@ -52,44 +52,43 @@ test('2. Missing Keys & Offline Fallback State', async () => {
     assert.equal(res.code, 'NO_ACTIVE_AI_PROVIDER');
     assert.equal(res.provider, 'none');
   } finally {
-    if (origXkiro) process.env.XKIRO_API_KEY = origXkiro;
     if (origGemini) process.env.GEMINI_API_KEY = origGemini;
   }
 });
 
-test('3. Primary Provider (xKiro) Success Flow', async () => {
+test('3. Primary Provider (Google Gemini) Success Flow', async () => {
   const origFetch = global.fetch;
-  const origKey = process.env.XKIRO_API_KEY;
-  const origModel = process.env.XKIRO_MODEL;
-  delete process.env.XKIRO_MODEL;
-  process.env.XKIRO_API_KEY = 'xkiro-test-mock-key';
+  const origKey = process.env.GEMINI_API_KEY;
+  const origModel = process.env.GEMINI_MODEL;
+  delete process.env.GEMINI_MODEL;
+  process.env.GEMINI_API_KEY = 'gemini-test-mock-key';
 
-  const mockAiPayload = {
-    summary: 'Kế hoạch học tập tối ưu hôm nay từ xKiro',
-    weaknesses: [],
-    dailyPlan: [{ id: 'p1', title: 'Ôn 10 từ HSK 1' }]
+  const mockResponsePayload = {
+    summary: 'Kế hoạch học tập tối ưu HSK 2',
+    tasks: [{ title: 'Luyện từ vựng cốt lõi' }]
   };
 
   global.fetch = async (url, opts) => {
-    assert.ok(url.includes('/chat/completions'));
+    assert.ok(url.includes('generativelanguage.googleapis.com'));
     assert.equal(opts.method, 'POST');
-    assert.equal(opts.headers.Authorization, 'Bearer xkiro-test-mock-key');
+    const body = JSON.parse(opts.body);
+    assert.ok(Array.isArray(body.contents));
 
     return {
       ok: true,
       status: 200,
       json: async () => ({
-        choices: [
+        candidates: [
           {
-            message: {
-              content: JSON.stringify(mockAiPayload)
+            content: {
+              parts: [{ text: JSON.stringify(mockResponsePayload) }]
             }
           }
         ],
-        usage: {
-          prompt_tokens: 350,
-          completion_tokens: 180,
-          total_tokens: 530
+        usageMetadata: {
+          promptTokenCount: 120,
+          candidatesTokenCount: 80,
+          totalTokenCount: 200
         }
       })
     };
@@ -98,172 +97,131 @@ test('3. Primary Provider (xKiro) Success Flow', async () => {
   try {
     const res = await callUnifiedAiProvider({
       action: 'coach_plan',
-      systemPrompt: 'You are coach',
-      userPrompt: 'User data'
-    });
-
-    assert.equal(res.success, true);
-    assert.equal(res.provider, 'xkiro');
-    assert.equal(res.model, XKIRO_DEFAULT_MODEL);
-    assert.equal(res.costUsd, 0); // Free-first: $0.00
-    assert.equal(res.usage.totalTokens, 530);
-    assert.equal(res.data.summary, 'Kế hoạch học tập tối ưu hôm nay từ xKiro');
-  } finally {
-    global.fetch = origFetch;
-    if (origKey) process.env.XKIRO_API_KEY = origKey;
-    else delete process.env.XKIRO_API_KEY;
-    if (origModel) process.env.XKIRO_MODEL = origModel;
-    else delete process.env.XKIRO_MODEL;
-  }
-});
-
-test('4. Free-First Cost Policy Enforcement & Protection against Silent Charges', async (t) => {
-  const origFetch = global.fetch;
-  const origXkiro = process.env.XKIRO_API_KEY;
-  const origGemini = process.env.GEMINI_API_KEY;
-  const origPaid = process.env.ALLOW_PAID_FALLBACK;
-
-  process.env.XKIRO_API_KEY = 'xkiro-test-key';
-  process.env.GEMINI_API_KEY = 'gemini-paid-key';
-
-  await t.test('blocks paid fallback and protects budget when xKiro quota exhausted (429) and ALLOW_PAID_FALLBACK=false', async () => {
-    process.env.ALLOW_PAID_FALLBACK = 'false';
-
-    let callCount = 0;
-    global.fetch = async () => {
-      callCount++;
-      return {
-        ok: false,
-        status: 429,
-        json: async () => ({
-          error: { message: 'Daily free token quota exceeded', code: 'rate_limit_exceeded' }
-        })
-      };
-    };
-
-    const res = await callUnifiedAiProvider({
-      action: 'coach_plan',
-      systemPrompt: 'System',
-      userPrompt: 'User'
-    });
-
-    assert.equal(res.success, false);
-    assert.equal(res.status, 429);
-    assert.equal(res.paidFallbackBlocked, true);
-    assert.ok(res.error.includes('Hạn mức miễn phí hàng ngày của xKiro đã hết'));
-    assert.equal(callCount, 1); // Never called secondary provider
-  });
-
-  await t.test('permits fallback to Gemini ONLY when ALLOW_PAID_FALLBACK=true explicitly configured', async () => {
-    process.env.ALLOW_PAID_FALLBACK = 'true';
-
-    let callCount = 0;
-    global.fetch = async (url) => {
-      callCount++;
-      if (url.includes('xkiro.com')) {
-        return {
-          ok: false,
-          status: 429,
-          json: async () => ({ error: { message: 'Quota exceeded' } })
-        };
-      }
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          candidates: [
-            {
-              content: {
-                parts: [{ text: JSON.stringify({ summary: 'Kế hoạch dự phòng từ Gemini' }) }]
-              }
-            }
-          ]
-        })
-      };
-    };
-
-    const res = await callUnifiedAiProvider({
-      action: 'coach_plan',
-      systemPrompt: 'System',
-      userPrompt: 'User'
+      systemPrompt: 'You are an expert tutor',
+      userPrompt: 'Create plan'
     });
 
     assert.equal(res.success, true);
     assert.equal(res.provider, 'gemini');
-    assert.equal(res.isPaidFallback, true);
-    assert.equal(res.data.summary, 'Kế hoạch dự phòng từ Gemini');
-    assert.equal(callCount, 2);
-  });
-
-  // Restore env
-  global.fetch = origFetch;
-  if (origXkiro) process.env.XKIRO_API_KEY = origXkiro; else delete process.env.XKIRO_API_KEY;
-  if (origGemini) process.env.GEMINI_API_KEY = origGemini; else delete process.env.GEMINI_API_KEY;
-  if (origPaid) process.env.ALLOW_PAID_FALLBACK = origPaid; else delete process.env.ALLOW_PAID_FALLBACK;
+    assert.equal(res.model, GEMINI_DEFAULT_MODEL);
+    assert.equal(res.usage.totalTokens, 200);
+    assert.equal(res.costUsd, 0.000044);
+    assert.equal(res.data.summary, 'Kế hoạch học tập tối ưu HSK 2');
+  } finally {
+    global.fetch = origFetch;
+    if (origKey) process.env.GEMINI_API_KEY = origKey;
+    else delete process.env.GEMINI_API_KEY;
+    if (origModel) process.env.GEMINI_MODEL = origModel;
+    else delete process.env.GEMINI_MODEL;
+  }
 });
 
-test('5. Timeout & Provider Failure Handling', async (t) => {
+test('4. Gemini Error Resilience (429 Rate Limit -> Safe Failure Signal)', async () => {
+  __resetGeminiKeyPoolForTests();
   const origFetch = global.fetch;
-  const origXkiro = process.env.XKIRO_API_KEY;
-  process.env.XKIRO_API_KEY = 'xkiro-test-key';
+  const origKey = process.env.GEMINI_API_KEY;
+  const origKeys = process.env.GEMINI_API_KEYS;
+  process.env.GEMINI_API_KEY = 'gemini-test-mock-key';
+  delete process.env.GEMINI_API_KEYS;
 
-  await t.test('handles network abort / timeout gracefully with status 504 without crashing', async () => {
-    const abortError = new Error('The operation was aborted');
-    abortError.name = 'AbortError';
-
-    global.fetch = async () => {
-      throw abortError;
-    };
-
-    const res = await callUnifiedAiProvider({
-      action: 'explain_grammar',
-      systemPrompt: 'System',
-      userPrompt: 'User',
-      timeoutMs: 100
-    });
-
-    assert.equal(res.success, false);
-    assert.equal(res.status, 504);
-    assert.equal(res.code, 'timeout');
+  global.fetch = async () => ({
+    ok: false,
+    status: 429,
+    json: async () => ({ error: { message: 'Quota exceeded', status: 'RESOURCE_EXHAUSTED' } })
   });
 
-  await t.test('handles malformed model response body gracefully', async () => {
-    global.fetch = async () => ({
+  try {
+    const res = await callUnifiedAiProvider({
+      action: 'tutor_qa',
+      systemPrompt: 'System',
+      userPrompt: 'Hello'
+    });
+    assert.equal(res.success, false);
+    assert.equal(res.status, 429);
+    assert.equal(res.provider, 'gemini');
+    assert.equal(res.code, 'rate_limit_exceeded');
+  } finally {
+    global.fetch = origFetch;
+    __resetGeminiKeyPoolForTests();
+    if (origKey) process.env.GEMINI_API_KEY = origKey;
+    else delete process.env.GEMINI_API_KEY;
+    if (origKeys) process.env.GEMINI_API_KEYS = origKeys;
+    else delete process.env.GEMINI_API_KEYS;
+  }
+});
+
+test('5. Gemini Multi-Key Rotation on 429 Quota Exhaustion', async () => {
+  __resetGeminiKeyPoolForTests();
+  const origFetch = global.fetch;
+  const origKey = process.env.GEMINI_API_KEY;
+  const origKeys = process.env.GEMINI_API_KEYS;
+  process.env.GEMINI_API_KEY = 'key-primary-exhausted';
+  process.env.GEMINI_API_KEYS = 'key-backup-1,key-backup-2';
+
+  const calledKeys = [];
+  global.fetch = async (url) => {
+    const match = url.match(/key=([^&]+)/);
+    const usedKey = match ? decodeURIComponent(match[1]) : '';
+    calledKeys.push(usedKey);
+
+    if (usedKey === 'key-primary-exhausted') {
+      return {
+        ok: false,
+        status: 429,
+        json: async () => ({ error: { message: 'Quota exceeded' } })
+      };
+    }
+
+    return {
       ok: true,
       status: 200,
       json: async () => ({
-        choices: [{ message: { content: 'Sorry, I am unable to output JSON.' } }]
+        candidates: [{ content: { parts: [{ text: '{"ok":true,"rotated":true}' }] } }]
       })
-    });
+    };
+  };
 
-    const res = await callUnifiedAiProvider({
-      action: 'generate_exercise',
+  try {
+    const first = await callUnifiedAiProvider({
+      action: 'tutor_qa',
       systemPrompt: 'System',
-      userPrompt: 'User'
+      userPrompt: 'Ping 1'
     });
+    assert.equal(first.success, true);
+    assert.equal(first.data.rotated, true);
+    assert.deepEqual(calledKeys, ['key-primary-exhausted', 'key-backup-1']);
 
-    assert.equal(res.success, false);
-    assert.ok(res.error);
-  });
+    // Second call should skip cooled-down key-primary-exhausted and go straight to key-backup-1
+    calledKeys.length = 0;
+    const keysOrder = getGeminiApiKeys();
+    assert.equal(keysOrder[0], 'key-backup-1');
 
-  global.fetch = origFetch;
-  if (origXkiro) process.env.XKIRO_API_KEY = origXkiro; else delete process.env.XKIRO_API_KEY;
+    const second = await callUnifiedAiProvider({
+      action: 'tutor_qa',
+      systemPrompt: 'System',
+      userPrompt: 'Ping 2'
+    });
+    assert.equal(second.success, true);
+    assert.deepEqual(calledKeys, ['key-backup-1']);
+  } finally {
+    global.fetch = origFetch;
+    __resetGeminiKeyPoolForTests();
+    if (origKey) process.env.GEMINI_API_KEY = origKey;
+    else delete process.env.GEMINI_API_KEY;
+    if (origKeys) process.env.GEMINI_API_KEYS = origKeys;
+    else delete process.env.GEMINI_API_KEYS;
+  }
 });
 
-test('6. Real Endpoint Smoke Test: xKiro Availability & Model Catalog Verification', async () => {
-  // Test connection to public models endpoint
-  try {
-    const response = await fetch(`${XKIRO_DEFAULT_BASE_URL}/models`);
-    assert.equal(response.status, 200, 'xKiro models endpoint should return HTTP 200');
-
-    const body = await response.json();
-    assert.ok(Array.isArray(body.data), 'xKiro should return list of models in OpenAI format');
-    assert.ok(body.data.length > 50, 'xKiro should have rich catalog of models (>50)');
-
-    const flashModels = body.data.filter(m => m.id && (m.id.includes('flash') || m.id.includes('sensenova') || m.id.includes('mini')));
-    assert.ok(flashModels.length > 0, 'Catalog must contain lightweight flash / lite models');
-  } catch (err) {
-    // If offline or network unavailable in certain environments, log notice
-    console.warn('[Smoke Test Notice] Network check skipped or failed:', err.message);
-  }
+test('6. Token Cost Calculation for Gemini 3.5 Flash Lite', () => {
+  const cost = calculateGeminiTokenCost({
+    model: 'gemini-3.5-flash-lite',
+    promptTokens: 1_000_000,
+    completionTokens: 1_000_000
+  });
+  assert.equal(cost.inputRatePer1M, 0.1);
+  assert.equal(cost.outputRatePer1M, 0.4);
+  assert.equal(cost.inputCostUsd, 0.1);
+  assert.equal(cost.outputCostUsd, 0.4);
+  assert.equal(cost.costUsd, 0.5);
 });

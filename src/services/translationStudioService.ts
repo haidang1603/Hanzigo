@@ -20,7 +20,7 @@ export interface SpecializedDomainPack {
 }
 
 export type TranslationDirection = 'zh_to_vi' | 'vi_to_zh';
-export type TranslationLevel = 'hsk3' | 'hsk4' | 'hsk5' | 'hsk6' | 'hsk7_9' | 'it_business';
+export type TranslationLevel = 'hsk1' | 'hsk2' | 'hsk3' | 'hsk4' | 'hsk5' | 'hsk6' | 'hsk7_9' | 'it_business';
 
 export interface RequiredKeywordItem {
   word_or_pattern: string;
@@ -282,6 +282,51 @@ export const CURATED_DOMAIN_PACKS: SpecializedDomainPack[] = [
       },
     ],
   },
+  {
+    id: 'pack-finance-business',
+    slug: 'finance-business',
+    title_vi: 'Tài chính, Đầu tư & Đàm phán Thương mại',
+    description_vi:
+      'Thuật ngữ hợp đồng thương mại, dòng tiền, lợi nhuận ròng, tỷ giá hối đoái và đàm phán đối tác doanh nghiệp.',
+    terminology_list: [
+      {
+        simplified: '净利润',
+        pinyin: 'jìng lìrùn',
+        han_viet: 'Tịnh lợi nhuận',
+        meaning_vi: 'Lợi nhuận ròng',
+        english_equiv: 'Net Profit',
+        sample_sentence_zh: '本季度公司的净利润同比增长了百分之十五。',
+        sample_sentence_vi: 'Lợi nhuận ròng của công ty trong quý này tăng 15% so với cùng kỳ năm ngoái.',
+      },
+      {
+        simplified: '现金流',
+        pinyin: 'xiànjīnliú',
+        han_viet: 'Hiện kim lưu',
+        meaning_vi: 'Dòng tiền (Cash Flow)',
+        english_equiv: 'Cash Flow',
+        sample_sentence_zh: '保持健康的现金流是中小企业抵御风险的关键。',
+        sample_sentence_vi: 'Duy trì dòng tiền lành mạnh là chìa khóa giúp doanh nghiệp vừa và nhỏ chống chịu rủi ro.',
+      },
+      {
+        simplified: '违约责任',
+        pinyin: 'wéiyuē zérèn',
+        han_viet: 'Vi ước trách nhiệm',
+        meaning_vi: 'Trách nhiệm vi phạm hợp đồng',
+        english_equiv: 'Liability for Breach of Contract',
+        sample_sentence_zh: '签署协议前，双方律师必须明确违约责任条款。',
+        sample_sentence_vi: 'Trước khi ký thỏa thuận, luật sư hai bên phải làm rõ điều khoản trách nhiệm vi phạm hợp đồng.',
+      },
+      {
+        simplified: '战略合作',
+        pinyin: 'zhànlüè hézuò',
+        han_viet: 'Chiến lược hợp tác',
+        meaning_vi: 'Hợp tác chiến lược',
+        english_equiv: 'Strategic Partnership',
+        sample_sentence_zh: '两家企业正式签署了长期战略合作备忘录。',
+        sample_sentence_vi: 'Hai doanh nghiệp đã chính thức ký biên bản ghi nhớ hợp tác chiến lược dài hạn.',
+      },
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -377,6 +422,156 @@ export const CURATED_TRANSLATION_DRILLS: TranslationDrill[] = [
     ],
     translation_pitfalls_vi:
       'Chú ý cấu trúc câu chữ 将 (tương đương 把): 将 [tân ngữ dài] 放入 [nơi chốn] 中 ➔ đưa [dữ liệu...] vào trong [bộ nhớ đệm...].',
+  },
+  {
+    id: 'drill-vi2zh-hsk3-1',
+    direction: 'vi_to_zh',
+    level: 'hsk3',
+    domain_slug: 'tourism-hospitality',
+    source_text: 'Tuy thời tiết hôm nay hơi lạnh, nhưng chúng tôi vẫn quyết định đi leo núi cùng bạn bè.',
+    reference_translations: [
+      '虽然今天天气有点冷，但是我们还是决定跟朋友们一起去爬山。',
+    ],
+    required_keywords: [
+      { word_or_pattern: '虽然...但是...', pinyin: 'suīrán... dànshì...', hint_vi: 'Tuy... nhưng...' },
+      { word_or_pattern: '决定', pinyin: 'juédìng', hint_vi: 'Quyết định' },
+      { word_or_pattern: '爬山', pinyin: 'páshān', hint_vi: 'Leo núi' },
+    ],
+    translation_pitfalls_vi:
+      'Trong tiếng Trung, 虽然... và 但是... thường đi cặp cùng nhau, không bỏ mất 但是 khi diễn đạt nhượng bộ rõ ràng.',
+  },
+  {
+    id: 'drill-vi2zh-hsk4-1',
+    direction: 'vi_to_zh',
+    level: 'hsk4',
+    domain_slug: 'it-software',
+    source_text: 'Chỉ cần cả nhóm phối hợp ăn ý thì dù dự án có khó khăn đến đâu cũng có thể hoàn thành đúng hạn.',
+    reference_translations: [
+      '只要团队配合默契，无论项目多么困难都能按时完成。',
+    ],
+    required_keywords: [
+      { word_or_pattern: '只要...就/都...', pinyin: 'zhǐyào...', hint_vi: 'Chỉ cần...' },
+      { word_or_pattern: '无论', pinyin: 'wúlùn', hint_vi: 'Bất kể / Dù' },
+      { word_or_pattern: '按时完成', pinyin: 'ànshí wánchéng', hint_vi: 'Hoàn thành đúng hạn' },
+    ],
+    translation_pitfalls_vi:
+      'Chú ý cụm "đúng hạn" dịch là 按时 (trước động từ 完成), không đặt ở cuối câu như tiếng Việt.',
+  },
+  {
+    id: 'drill-vi2zh-logistics-1',
+    direction: 'vi_to_zh',
+    level: 'it_business',
+    domain_slug: 'ecommerce-logistics',
+    source_text: 'Lô hàng này đã hoàn tất thủ tục thông quan và dự kiến sẽ giao tới kho vào chiều mai.',
+    reference_translations: [
+      '这批货物已经完成清关手续，预计明天下午送达仓库。',
+    ],
+    required_keywords: [
+      { word_or_pattern: '清关', pinyin: 'qīngguān', hint_vi: 'Thông quan' },
+      { word_or_pattern: '预计', pinyin: 'yùjì', hint_vi: 'Dự kiến' },
+      { word_or_pattern: '送达', pinyin: 'sòngdá', hint_vi: 'Giao tới' },
+    ],
+    translation_pitfalls_vi:
+      '"Lô hàng" dùng lượng từ 批 (这批货物); trạng ngữ thời gian 明天下午 đặt trước động từ 送达.',
+  },
+  {
+    id: 'drill-vi2zh-tourism-1',
+    direction: 'vi_to_zh',
+    level: 'hsk4',
+    domain_slug: 'tourism-hospitality',
+    source_text: 'Xin chào, tôi đã đặt một phòng đôi qua mạng, phiền bạn làm thủ tục nhận phòng giúp tôi.',
+    reference_translations: [
+      '你好，我在网上预订了一间双人房，麻烦帮我办理入住手续。',
+    ],
+    required_keywords: [
+      { word_or_pattern: '预订', pinyin: 'yùdìng', hint_vi: 'Đặt trước' },
+      { word_or_pattern: '办理入住', pinyin: 'bànlǐ rùzhù', hint_vi: 'Làm thủ tục nhận phòng' },
+    ],
+    translation_pitfalls_vi:
+      'Địa điểm "qua mạng" (在网上) phải đặt trước động từ 预订; "làm thủ tục nhận phòng" dùng cụm chuẩn 办理入住手续.',
+  },
+  {
+    id: 'drill-zh2vi-hsk6-1',
+    direction: 'zh_to_vi',
+    level: 'hsk6',
+    domain_slug: 'hsk79-academic',
+    source_text: '真正的创新并非凭空而来，而是在长期实践积累与跨界融合中逐步孕育而成的。',
+    reference_translations: [
+      'Sự đổi mới sáng tạo thực thụ không phải tự nhiên mà có, mà được ươm mầm dần qua quá trình tích lũy thực tiễn lâu dài và giao thoa liên ngành.',
+    ],
+    required_keywords: [
+      { word_or_pattern: '并非...而是...', pinyin: 'bìngfēi... érshì...', hint_vi: 'Không phải... mà là...' },
+      { word_or_pattern: '凭空而来', pinyin: 'píngkōng ér lái', hint_vi: 'Tự dưng mà có / Từ hư không mà đến' },
+      { word_or_pattern: '跨界融合', pinyin: 'kuàjiè rónghé', hint_vi: 'Giao thoa liên ngành' },
+    ],
+    translation_pitfalls_vi:
+      'Thành ngữ 凭空而来 không nên dịch word-by-word là "dựa vào khoảng không đến", nên dịch tự nhiên là "tự dưng mà có / từ hư không mà đến".',
+  },
+  {
+    id: 'drill-zh2vi-finance-1',
+    direction: 'zh_to_vi',
+    level: 'it_business',
+    domain_slug: 'finance-business',
+    source_text: '尽管宏观市场波动较大，本季度公司的净利润依然实现了百分之十五的同比增长。',
+    reference_translations: [
+      'Mặc dù thị trường vĩ mô biến động khá mạnh, lợi nhuận ròng của công ty trong quý này vẫn đạt mức tăng trưởng 15% so với cùng kỳ năm ngoái.',
+    ],
+    required_keywords: [
+      { word_or_pattern: '净利润', pinyin: 'jìng lìrùn', hint_vi: 'Lợi nhuận ròng' },
+      { word_or_pattern: '同比增长', pinyin: 'tóngbǐ zēngzhǎng', hint_vi: 'Tăng trưởng so với cùng kỳ (YoY)' },
+    ],
+    translation_pitfalls_vi:
+      '同比增长 là thuật ngữ tài chính chuyên ngành chỉ mức tăng trưởng so với cùng kỳ năm trước (YoY), cần dịch chuẩn xác thay vì dịch chung chung là "tăng trưởng".',
+  },
+  {
+    id: 'drill-vi2zh-finance-1',
+    direction: 'vi_to_zh',
+    level: 'hsk7_9',
+    domain_slug: 'finance-business',
+    source_text: 'Trước khi ký biên bản ghi nhớ hợp tác chiến lược, hai bên cần rà soát kỹ điều khoản trách nhiệm vi phạm hợp đồng.',
+    reference_translations: [
+      '在签署战略合作备忘录之前，双方需要仔细审核违约责任条款。',
+    ],
+    required_keywords: [
+      { word_or_pattern: '战略合作', pinyin: 'zhànlüè hézuò', hint_vi: 'Hợp tác chiến lược' },
+      { word_or_pattern: '违约责任', pinyin: 'wéiyuē zérèn', hint_vi: 'Trách nhiệm vi phạm hợp đồng' },
+      { word_or_pattern: '条款', pinyin: 'tiáokuǎn', hint_vi: 'Điều khoản' },
+    ],
+    translation_pitfalls_vi:
+      'Cụm "Trước khi [làm gì]" dùng khung 在...之前 bọc lấy toàn bộ mệnh đề hành động.',
+  },
+  {
+    id: 'drill-vi2zh-hsk1-1',
+    direction: 'vi_to_zh',
+    level: 'hsk1',
+    domain_slug: 'tourism-hospitality',
+    source_text: 'Xin chào, hôm nay tôi muốn đi siêu thị mua một ít hoa quả và nước.',
+    reference_translations: [
+      '你好，我今天想去超市买一些水果和水。',
+    ],
+    required_keywords: [
+      { word_or_pattern: '超市', pinyin: 'chāoshì', hint_vi: 'Siêu thị' },
+      { word_or_pattern: '水果', pinyin: 'shuǐguǒ', hint_vi: 'Hoa quả' },
+    ],
+    translation_pitfalls_vi:
+      'Trạng ngữ thời gian 今天 đặt sau chủ ngữ 我 và trước động từ năng nguyện 想.',
+  },
+  {
+    id: 'drill-vi2zh-hsk2-1',
+    direction: 'vi_to_zh',
+    level: 'hsk2',
+    domain_slug: 'tourism-hospitality',
+    source_text: 'Từ nhà tôi đến ga tàu mất khoảng hai mươi phút đi xe buýt.',
+    reference_translations: [
+      '从我家到火车站坐公共汽车大概要二十分钟。',
+    ],
+    required_keywords: [
+      { word_or_pattern: '从...到...', pinyin: 'cóng... dào...', hint_vi: 'Từ... đến...' },
+      { word_or_pattern: '公共汽车', pinyin: 'gōnggòng qìchē', hint_vi: 'Xe buýt' },
+      { word_or_pattern: '大概', pinyin: 'dàgài', hint_vi: 'Khoảng / Đại khái' },
+    ],
+    translation_pitfalls_vi:
+      'Trong tiếng Trung, phương tiện đi lại (坐公共汽车) đặt trước khoảng thời gian (要二十分钟).',
   },
 ];
 
