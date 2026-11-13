@@ -26,7 +26,10 @@ import {
   Cloud,
   CloudCheck,
   CloudOff,
-  RefreshCw
+  RefreshCw,
+  Camera,
+  Globe,
+  Pickaxe
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton.jsx';
 import { analyzeChineseText } from '../utils/chineseNlpEngine.js';
@@ -45,6 +48,10 @@ import {
   saveReadingProgress,
   migrateLocalReadingProgressToCloud
 } from '../services/readingProgressService.js';
+import { ChineseReadingStudio } from '../features/reading-studio/ChineseReadingStudio.tsx';
+import { OcrFlashLookupStudio } from '../features/ocr-scanner/OcrFlashLookupStudio.tsx';
+import { WebArticleReadingWorkspace } from '../features/web-importer/WebArticleReadingWorkspace.tsx';
+import { UnifiedImmersionDashboard } from '../features/immersion-hub/UnifiedImmersionDashboard.tsx';
 
 // Bảng màu phân cấp HSK
 const HSK_BADGE_COLORS = {
@@ -83,9 +90,19 @@ const SAMPLE_CUSTOM_TEXTS = [
   }
 ];
 
-export default function ReaderPage({ user, setActiveTab, onSelectWritingChar }) {
-  // Mode: 'graded' (Bài đọc HSK) hoặc 'custom' (Dán văn bản)
-  const [activeMode, setActiveMode] = useState('graded');
+const VALID_READER_MODES = ['graded', 'custom', 'studio', 'ocr', 'importer', 'immersion'];
+
+export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, initialMode = 'graded' }) {
+  // Mode: 'graded' (Bài đọc HSK) | 'custom' | 'studio' | 'ocr' | 'importer' | 'immersion'
+  const [activeMode, setActiveMode] = useState(() =>
+    VALID_READER_MODES.includes(initialMode) ? initialMode : 'graded'
+  );
+
+  useEffect(() => {
+    if (VALID_READER_MODES.includes(initialMode)) {
+      setActiveMode(initialMode);
+    }
+  }, [initialMode]);
   const [selectedHskFilter, setSelectedHskFilter] = useState('all');
   const [selectedTopicFilter, setSelectedTopicFilter] = useState('all');
   const [activeReaderId, setActiveReaderId] = useState('gr-101');
@@ -438,12 +455,102 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar }) 
               <FileText className="w-4 h-4" />
               <span>Dán đoạn văn tùy chỉnh (NLP Analyzer)</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => { playClickSound(); setActiveMode('studio'); }}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+                activeMode === 'studio'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 scale-102'
+                  : 'bg-white dark:bg-[#1E293B] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-emerald-600'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-emerald-500" />
+              <span>Reading Studio (Độ phủ & Quiz)</span>
+            </button>
+
+            <button
+              type="button"
+              id="tab-reader-ocr-scanner"
+              onClick={() => { playClickSound(); setActiveMode('ocr'); }}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+                activeMode === 'ocr'
+                  ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20 scale-102'
+                  : 'bg-white dark:bg-[#1E293B] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-teal-600'
+              }`}
+            >
+              <Camera className="w-4 h-4 text-teal-500" />
+              <span>Quét ảnh & Sách (OCR)</span>
+            </button>
+
+            <button
+              type="button"
+              id="tab-reader-web-clipper"
+              onClick={() => { playClickSound(); setActiveMode('importer'); }}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+                activeMode === 'importer'
+                  ? 'bg-cyan-700 text-white shadow-md shadow-cyan-700/20 scale-102'
+                  : 'bg-white dark:bg-[#1E293B] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-cyan-600'
+              }`}
+            >
+              <Globe className="w-4 h-4 text-cyan-500" />
+              <span>Web Clipper & Báo chí</span>
+            </button>
+
+            <button
+              type="button"
+              id="tab-reader-immersion-hub"
+              onClick={() => { playClickSound(); setActiveMode('immersion'); }}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+                activeMode === 'immersion'
+                  ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20 scale-102'
+                  : 'bg-white dark:bg-[#1E293B] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-amber-500'
+              }`}
+            >
+              <Pickaxe className="w-4 h-4 text-amber-500" />
+              <span>Immersion Hub (i+1)</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* 2. Sub-Control Area: Level Selection or Custom Input Bar */}
-      {activeMode === 'graded' ? (
+      {/* 2. Sub-Control Area: Immersion / Importer / OCR / Studio / Graded / Custom */}
+      {activeMode === 'immersion' ? (
+        <UnifiedImmersionDashboard
+          user={user}
+          onNavigateTab={(tabId) => {
+            if (tabId === 'reader') setActiveMode('studio');
+            else if (onSelectWritingChar && tabId === 'writing') onSelectWritingChar('');
+          }}
+          onOpenDictionary={(term) => {
+            window.dispatchEvent(new CustomEvent('hanzigo:open-dict', { detail: { term } }));
+          }}
+        />
+      ) : activeMode === 'importer' ? (
+        <WebArticleReadingWorkspace
+          user={user}
+          onOpenWriting={onSelectWritingChar}
+          onOpenReadingStudio={(_articleId) => {
+            setActiveMode('studio');
+          }}
+          onOpenDictionary={(term) => {
+            window.dispatchEvent(new CustomEvent('hanzigo:open-dict', { detail: { term } }));
+          }}
+        />
+      ) : activeMode === 'ocr' ? (
+        <OcrFlashLookupStudio
+          user={user}
+          onOpenWriting={onSelectWritingChar}
+          onOpenReadingStudio={(_articleId) => {
+            setActiveMode('studio');
+          }}
+          onOpenDictionary={(term) => {
+            window.dispatchEvent(new CustomEvent('hanzigo:open-dict', { detail: { term } }));
+          }}
+        />
+      ) : activeMode === 'studio' ? (
+        <ChineseReadingStudio user={user} />
+      ) : activeMode === 'graded' ? (
         <div className="space-y-4">
           <div className="space-y-3 p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-gray-700 shadow-xs">
             {/* HSK Level Filter Pills */}

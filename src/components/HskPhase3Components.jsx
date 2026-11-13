@@ -19,6 +19,13 @@ import {
   importHskExamWithValidation, 
   generateSampleImportJson 
 } from '../services/hskImportService';
+import {
+  importFullHskPaperToRepository,
+  validateHskPaperImportPayload,
+  listImportedHskPapers,
+  generateSampleHskPaperPayload,
+} from '../services/hskExamImportService.ts';
+import { HskBulkImporterPanel } from '../features/hsk-exam/admin-importer/HskBulkImporterPanel.tsx';
 
 // =========================================================================
 // 1. PHASE 3 VIEW: KHO TÀI LIỆU & ĐỀ MẪU HSK (HSK RESOURCE HUB)
@@ -544,7 +551,7 @@ export function HskReportModal({ isOpen, onClose, targetItem, user }) {
 // 3. PHASE 3 MODAL: QUẢN TRỊ NỘI DUNG & NHẬP ĐỀ THI (ADMIN WORKFLOW)
 // =========================================================================
 export function HskAdminImportModal({ isOpen, onClose, user }) {
-  const [activeTab, setActiveTab] = useState('import'); // 'import' | 'reports'
+  const [activeTab, setActiveTab] = useState('import'); // 'import' | 'paper_bank' | 'reports'
   const [jsonText, setJsonText] = useState('');
   const [validationReport, setValidationReport] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -553,6 +560,15 @@ export function HskAdminImportModal({ isOpen, onClose, user }) {
   const [reportsList, setReportsList] = useState([]);
   const [loadingReports, setLoadingReports] = useState(false);
 
+  // State for structured Paper Bank tab (hsk_exam_papers & hsk_question_bank)
+  const [bankJsonText, setBankJsonText] = useState(() =>
+    JSON.stringify(generateSampleHskPaperPayload(4), null, 2)
+  );
+  const [bankValidation, setBankValidation] = useState(null);
+  const [bankImporting, setBankImporting] = useState(false);
+  const [bankResult, setBankResult] = useState(null);
+  const [bankPapers, setBankPapers] = useState([]);
+
   useEffect(() => {
     if (isOpen && activeTab === 'reports') {
       setLoadingReports(true);
@@ -560,6 +576,9 @@ export function HskAdminImportModal({ isOpen, onClose, user }) {
         setReportsList(data);
         setLoadingReports(false);
       });
+    }
+    if (isOpen && activeTab === 'paper_bank') {
+      listImportedHskPapers().then(setBankPapers);
     }
   }, [isOpen, activeTab, user]);
 
@@ -652,7 +671,7 @@ export function HskAdminImportModal({ isOpen, onClose, user }) {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex space-x-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 shrink-0 text-xs font-bold">
+        <div className="flex flex-wrap gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 shrink-0 text-xs font-bold">
           <button
             onClick={() => setActiveTab('import')}
             className={`px-3 py-1.5 rounded-xl cursor-pointer transition-colors ${
@@ -662,6 +681,26 @@ export function HskAdminImportModal({ isOpen, onClose, user }) {
             }`}
           >
             📥 Nhập đề thi JSON (Dry-run & Commit)
+          </button>
+          <button
+            onClick={() => setActiveTab('paper_bank')}
+            className={`px-3 py-1.5 rounded-xl cursor-pointer transition-colors ${
+              activeTab === 'paper_bank'
+                ? 'bg-amber-500 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            🏛️ Kho đề chuẩn (Paper Bank)
+          </button>
+          <button
+            onClick={() => setActiveTab('bulk_import')}
+            className={`px-3 py-1.5 rounded-xl cursor-pointer transition-colors ${
+              activeTab === 'bulk_import'
+                ? 'bg-amber-500 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            ⚡ Bulk Import &amp; TTS
           </button>
           <button
             onClick={() => setActiveTab('reports')}
@@ -809,6 +848,158 @@ export function HskAdminImportModal({ isOpen, onClose, user }) {
               )}
             </div>
           )}
+
+          {activeTab === 'paper_bank' && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                  Nạp trọn bộ đề chuẩn (hsk_exam_papers + hsk_question_bank):
+                </span>
+                <div className="flex items-center space-x-1.5 text-xs">
+                  <span className="text-slate-400 text-[11px]">Mẫu chuẩn:</span>
+                  {[1, 2, 3, 4, 5, 6].map((lvl) => (
+                    <button
+                      key={lvl}
+                      type="button"
+                      onClick={() => {
+                        setBankJsonText(JSON.stringify(generateSampleHskPaperPayload(lvl), null, 2));
+                        setBankValidation(null);
+                        setBankResult(null);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-amber-100 hover:text-amber-800 cursor-pointer"
+                    >
+                      HSK {lvl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <textarea
+                value={bankJsonText}
+                onChange={(e) => {
+                  setBankJsonText(e.target.value);
+                  setBankValidation(null);
+                  setBankResult(null);
+                }}
+                rows={10}
+                placeholder="Dán JSON HskPaperImportPayload (paper_code, title_zh, title_vi, hsk_level, paper_type, questions)..."
+                className="w-full p-3 font-mono text-xs rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20"
+              />
+
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      const parsed = JSON.parse(bankJsonText);
+                      setBankValidation(validateHskPaperImportPayload(parsed));
+                      setBankResult(null);
+                    } catch (err) {
+                      setBankValidation({
+                        valid: false,
+                        errors: [`Lỗi cú pháp JSON: ${err.message}`],
+                        stats: null,
+                      });
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs cursor-pointer flex items-center space-x-1.5"
+                >
+                  <FileCheck2 className="w-4 h-4 text-amber-400" />
+                  <span>Kiểm tra cấu trúc đề</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={bankImporting || !bankJsonText.trim()}
+                  onClick={async () => {
+                    try {
+                      setBankImporting(true);
+                      setBankResult(null);
+                      const parsed = JSON.parse(bankJsonText);
+                      const res = await importFullHskPaperToRepository(parsed);
+                      setBankResult({
+                        success: true,
+                        message: `Đã nạp thành công mã đề ${res.paper.paper_code} (${res.insertedGroupsCount} nhóm câu hỏi · ${res.storageMode}).`,
+                      });
+                      const updated = await listImportedHskPapers();
+                      setBankPapers(updated);
+                    } catch (err) {
+                      setBankResult({
+                        success: false,
+                        error: err.message || 'Lỗi nạp đề thi.',
+                      });
+                    } finally {
+                      setBankImporting(false);
+                    }
+                  }}
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 cursor-pointer flex items-center space-x-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{bankImporting ? 'Đang nạp vào kho...' : 'Nạp trọn bộ đề vào Kho (Upsert)'}</span>
+                </button>
+              </div>
+
+              {bankValidation && (
+                <div
+                  className={`p-3 rounded-2xl border text-xs ${
+                    bankValidation.valid
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      : 'bg-rose-50 border-rose-200 text-rose-700'
+                  }`}
+                >
+                  {bankValidation.valid ? (
+                    <div className="font-bold">
+                      Hợp lệ — Mã đề {bankValidation.stats.paperCode} (HSK {bankValidation.stats.hskLevel}):{' '}
+                      {bankValidation.stats.listeningGroups} Nghe · {bankValidation.stats.readingGroups} Đọc ·{' '}
+                      {bankValidation.stats.writingGroups} Viết ({bankValidation.stats.totalSubQuestions} câu hỏi con).
+                    </div>
+                  ) : (
+                    <ul className="list-disc list-inside space-y-0.5 font-semibold">
+                      {bankValidation.errors.map((err, i) => (
+                        <li key={i}>{err}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              {bankResult && (
+                <div
+                  className={`p-3 rounded-2xl border text-xs font-bold ${
+                    bankResult.success
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      : 'bg-rose-50 border-rose-200 text-rose-800'
+                  }`}
+                >
+                  {bankResult.success ? bankResult.message : bankResult.error}
+                </div>
+              )}
+
+              {bankPapers.length > 0 && (
+                <div className="pt-2 space-y-2">
+                  <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Đề thi đã có trong Kho ({bankPapers.length}):
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {bankPapers.map((p) => (
+                      <div
+                        key={p.paper_code}
+                        className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 text-xs"
+                      >
+                        <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white">
+                          <span>{p.paper_code} · HSK {p.hsk_level}</span>
+                          <span className="text-[11px] text-amber-600">{p.total_questions} câu / {p.duration_minutes}p</span>
+                        </div>
+                        <div className="text-slate-600 dark:text-slate-400 truncate mt-0.5">{p.title_vi}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'bulk_import' && <HskBulkImporterPanel />}
 
           {activeTab === 'reports' && (
             <div>

@@ -63,6 +63,7 @@ import { getDailyQuote } from '../data/dailyQuotesData';
 import { getActiveSessionForClass, createClassSession, endLiveSession, liveEventBus } from '../services/liveClassroomService';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
 import { awardXp } from '../utils/gamification';
+import StudentHskAssignmentsPanel from '../features/classroom/assignments/StudentHskAssignmentsPanel';
 
 // Theme styling map for HSK levels
 const HSK_THEMES = {
@@ -589,69 +590,69 @@ export default function ClassroomPage({
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
         {/* 1. HERO HEADER BANNER */}
-        <div className="relative overflow-hidden p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#991B1B] text-white shadow-2xl">
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/3 -mb-20 w-80 h-80 rounded-full bg-rose-400/20 blur-3xl pointer-events-none" />
+        <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#991B1B] text-white shadow-lg">
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/3 -mb-16 w-56 h-56 rounded-full bg-rose-400/20 blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 text-white text-xs font-bold backdrop-blur-md border border-white/20 shadow-xs">
-                <GraduationCap size={14} className="text-amber-300" />
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-2 max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-white text-[11px] font-bold backdrop-blur-md border border-white/20">
+                <GraduationCap size={13} className="text-amber-300" />
                 <span>Không Gian Lớp Học Trực Tuyến & Giảng Đường Số</span>
               </div>
               
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
                 {subRoute === 'join' ? 'Tham Gia Lớp Học' :
                  classId && currentClass ? currentClass.name :
                  'Lớp Học Của Tôi'}
               </h1>
               
-              <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-medium">
+              <p className="text-xs text-white/90 leading-relaxed font-medium line-clamp-2">
                 {classId && currentClass 
                   ? `Giáo viên phụ trách: ${currentClass.profiles?.name || currentClass.teacher_name || 'Giáo viên HanziGo'} • Cấp độ ${currentClass.hsk_level} • Mã lớp: ${currentClass.class_code}`
                   : `${greeting.text} ${greeting.proverb}`}
               </p>
               
-              <div className="flex flex-wrap items-center gap-2.5 pt-1 text-xs">
-                <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px]">
+                <span className="px-2.5 py-1 rounded-lg bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1">
                   🏫 <strong>{myClasses.length}</strong> lớp đã tham gia
                 </span>
                 {classId && currentClass ? (
                   <>
-                    <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5">
+                    <span className="px-2.5 py-1 rounded-lg bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1">
                       📝 <strong>{assignments.length}</strong> bài tập
                     </span>
                     {stats.avgScore !== null && (
-                      <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-amber-300">
+                      <span className="px-2.5 py-1 rounded-lg bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1 text-amber-300">
                         ⭐ Điểm TB: <strong>{stats.avgScore}/100</strong>
                       </span>
                     )}
                   </>
                 ) : (
-                  <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-amber-200">
+                  <span className="px-2.5 py-1 rounded-lg bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1 text-amber-200">
                     <Sparkles size={12} className="text-amber-300" />
-                    <span>Lộ trình HSK chuẩn kết hợp phòng học tương tác trực tuyến</span>
+                    <span>Lộ trình HSK & phòng học tương tác</span>
                   </span>
                 )}
               </div>
             </div>
 
             {/* Header Right Actions */}
-            <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-3 shrink-0">
+            <div className="flex flex-wrap items-center lg:justify-end gap-2 shrink-0">
               {subRoute !== 'list' && (
                 <button
                   onClick={() => navigateTo('list')}
-                  className="px-4 py-2.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  className="px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
                 >
                   <ArrowLeft size={14} />
-                  <span>Quay lại Danh sách lớp</span>
+                  <span>Danh sách lớp</span>
                 </button>
               )}
 
               {subRoute === 'detail' && currentClass && (
                 <button
                   onClick={handleLeaveClass}
-                  className="px-4 py-2.5 rounded-2xl bg-rose-500/30 hover:bg-rose-500/50 text-white border border-rose-300/40 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  className="px-3 py-2 rounded-xl bg-rose-500/30 hover:bg-rose-500/50 text-white border border-rose-300/40 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
                   title="Rời khỏi lớp học này"
                 >
                   <span>Rời lớp học</span>
@@ -661,16 +662,16 @@ export default function ClassroomPage({
               {subRoute !== 'join' && (
                 <button
                   onClick={() => navigateTo('join')}
-                  className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-black text-xs sm:text-sm shadow-xl hover:scale-105 active:scale-100 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-black text-xs shadow-md transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                 >
-                  <Plus size={16} />
+                  <Plus size={15} />
                   <span>Nhập mã vào lớp (+15 XP)</span>
                 </button>
               )}
             </div>
           </div>
 
-          <div className="absolute right-6 -bottom-8 font-['Noto_Serif_SC'] text-8xl sm:text-9xl font-black text-white/10 select-none pointer-events-none">
+          <div className="absolute right-4 -bottom-4 font-['Noto_Serif_SC'] text-6xl sm:text-7xl font-black text-white/10 select-none pointer-events-none">
             敏而好学
           </div>
         </div>
@@ -1273,6 +1274,10 @@ export default function ClassroomPage({
                     </div>
                   </div>
                 )}
+
+                <StudentHskAssignmentsPanel
+                  classroomId={currentClass?.id || classId}
+                />
 
                 {filteredAssignments.length === 0 ? (
                   <div className="p-12 rounded-3xl bg-white dark:bg-[#1E293B] text-center text-xs text-[#748092] border border-[#F1E5D8] dark:border-[#2B3A4F]">

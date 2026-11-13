@@ -71,7 +71,7 @@ test('=== PHASE 22 / TASK 22.05: HSK 4 CONTENT QUALITY & DEDUPLICATION TEST SUIT
 
   await t.test('Criterion 7: 100% of vocabulary items have accurate Vietnamese POS (Part of Speech)', () => {
     const validPosCategories = [
-      'động từ', 'danh từ', 'tính từ', 'phó từ', 'trợ từ', 'liên từ', 
+      'động từ', 'danh từ', 'tính từ', 'phó từ', 'trợ từ', 'liên từ',
       'giới từ', 'số từ', 'đại từ', 'lượng từ', 'thành ngữ', 'cụm từ', 'động tân', 'thán từ', 'bổ ngữ'
     ];
     hsk4Lessons.forEach((lesson) => {

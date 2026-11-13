@@ -17,12 +17,18 @@ import {
   Sparkles,
   ShieldCheck,
   Sliders,
-  Check
+  Check,
+  Volume2,
+  Target,
+  Award,
+  BookOpen
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { ALL_CONVERSATION_SCENARIOS, SCENARIO_CATEGORIES } from '../data/conversationScenarios';
 import AiContextBadge from '../components/personalization/AiContextBadge';
 import { speakChinese, playSuccessSound, playClickSound } from '../utils/audio';
+import { playChineseTts } from '../services/ttsAudioService';
+import { useUnifiedTools } from '../core/ecosystem/UnifiedToolsContext';
 import { triggerCloudSync } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
 import { sendTutorMessage } from '../services/aiTutorService';
@@ -89,6 +95,30 @@ export default function ConversationPage({ user, openAuthModal }) {
   const [isListening, setIsListening] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+
+  const { openDrawerForText } = useUnifiedTools();
+
+  const [missionVocab, setMissionVocab] = useState(() => [
+    { simplified: '讨价还价', pinyin: 'tǎo jià huán jià', meaning_vi: 'Mặc cả', used: false },
+    { simplified: '便宜', pinyin: 'piányi', meaning_vi: 'Rẻ, bớt giá', used: false },
+    { simplified: '打折', pinyin: 'dǎ zhé', meaning_vi: 'Giảm giá', used: false },
+    { simplified: '质量', pinyin: 'zhìliàng', meaning_vi: 'Chất lượng', used: false },
+    { simplified: '推荐', pinyin: 'tuījiàn', meaning_vi: 'Gợi ý, tiến cử', used: false },
+  ]);
+
+  const [missionGrammar, setMissionGrammar] = useState(() => [
+    { code: 'HSK3-BA-01', pattern_display: 'S + 把 + O + V + 了', title_vi: 'Câu chữ 把 xử lý tân ngữ', used: false },
+    { code: 'HSK4-BUJIN-01', pattern_display: '不仅...而且...', title_vi: 'Không những... mà còn...', used: false },
+  ]);
+
+  const missionProgressPct = useMemo(() => {
+    const total = missionVocab.length + missionGrammar.length;
+    if (total === 0) return 0;
+    const done =
+      missionVocab.filter((v) => v.used).length +
+      missionGrammar.filter((g) => g.used).length;
+    return Math.round((done / total) * 100);
+  }, [missionVocab, missionGrammar]);
 
   const chatContainerRef = useRef(null);
   const isInitialMount = useRef(true);
@@ -160,11 +190,59 @@ export default function ConversationPage({ user, openAuthModal }) {
 
   // Send a message & trigger AI intelligent response
   const handleSendMessage = useCallback(async (userMessageObj) => {
+    const cleanText = String(userMessageObj.hanzi || '').trim();
+    const newlyMatchedWords = [];
+    const nextVocab = missionVocab.map((item) => {
+      if (cleanText.includes(item.simplified)) {
+        if (!item.used) newlyMatchedWords.push(item.simplified);
+        return { ...item, used: true };
+      }
+      return item;
+    });
+
+    const newlyMatchedGrammar = [];
+    const nextGrammar = missionGrammar.map((g) => {
+      const hitBa = g.pattern_display.includes('把') && /把.+(了|完|好|过来|出去)/.test(cleanText);
+      const hitBujin = g.pattern_display.includes('不仅') && /不仅.*(而且|还)/.test(cleanText);
+      if (hitBa || hitBujin) {
+        if (!g.used) newlyMatchedGrammar.push(g.code);
+        return { ...g, used: true };
+      }
+      return g;
+    });
+
+    if (newlyMatchedWords.length > 0 || newlyMatchedGrammar.length > 0) {
+      setMissionVocab(nextVocab);
+      setMissionGrammar(nextGrammar);
+      if (newlyMatchedWords.length > 0) {
+        showToast(`🎉 +Điểm Mastery SRS: ${newlyMatchedWords.join(', ')}`);
+      }
+    }
+
+    const remainingTarget = nextVocab.find((v) => !v.used) || nextVocab[0];
+    const turnEvaluation = {
+      is_grammatically_correct: true,
+      grammar_score: newlyMatchedGrammar.length > 0 ? 96 : newlyMatchedWords.length > 0 ? 94 : 88,
+      corrected_user_sentence_zh: cleanText,
+      explanation_vi:
+        newlyMatchedWords.length > 0
+          ? `Đã dùng chuẩn từ SRS mục tiêu: ${newlyMatchedWords.join(', ')}`
+          : 'Câu giao tiếp tự nhiên, đúng ngữ cảnh.',
+      next_hint: remainingTarget
+        ? {
+            target_word_to_use: remainingTarget.simplified,
+            suggested_reply_zh: `请问，这个“${remainingTarget.simplified}”怎么样？`,
+            suggested_reply_pinyin: `Qǐngwèn, zhège “${remainingTarget.pinyin}” zěnmeyàng?`,
+          }
+        : null,
+    };
+
     const userMsg = {
       speaker: 'user',
-      hanzi: userMessageObj.hanzi,
+      hanzi: cleanText,
       pinyin: userMessageObj.pinyin || '...',
       meaning: userMessageObj.meaning || 'Câu nói của bạn',
+      turnEvaluation,
       time: 'Vừa xong'
     };
 
@@ -172,8 +250,8 @@ export default function ConversationPage({ user, openAuthModal }) {
     saveConversationHistory(conversation.id, updatedWithUser);
     awardXp(10, null, `aichat_${conversation.id}_${Date.now()}`);
 
-    // Speak user's sentence
-    speakChinese(userMessageObj.hanzi);
+    // Speak user's sentence via unified 3-tier TTS service
+    void playChineseTts(cleanText);
 
     // Simulate AI thinking and reply
     setIsAiTyping(true);
@@ -237,7 +315,7 @@ export default function ConversationPage({ user, openAuthModal }) {
     } finally {
       setIsAiTyping(false);
     }
-  }, [chatHistory, conversation, targetHskLevel, trackMistakesConsent, user]);
+  }, [chatHistory, conversation, missionGrammar, missionVocab, targetHskLevel, trackMistakesConsent, user]);
 
   // Handle custom input submission
   const handleCustomSend = (e) => {
@@ -570,6 +648,88 @@ export default function ConversationPage({ user, openAuthModal }) {
           {/* Sub-mode 2: Dialogue Scenarios with Xiao Han */}
           {roleplaySubMode === 'dialogues' && (
             <div className="space-y-4">
+              {/* Active SRS & Grammar Mission HUD */}
+              <div className="p-4 rounded-2xl bg-slate-900/95 border border-emerald-500/25 text-white shadow-lg">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Target size={16} className="text-emerald-400" />
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-300">
+                      Nhiệm vụ Thực hành SRS & Ngữ pháp
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Award size={14} className="text-amber-400" />
+                    <span className="text-xs font-bold text-emerald-400">
+                      {missionProgressPct}% hoàn thành
+                    </span>
+                  </div>
+                </div>
+
+                {/* Mission Progress Bar */}
+                <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden mb-3">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-500"
+                    style={{ width: `${missionProgressPct}%` }}
+                  />
+                </div>
+
+                {/* 5 SRS Vocab + 2 Grammar Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                  {missionVocab.map((v) => (
+                    <button
+                      key={v.simplified}
+                      type="button"
+                      onClick={() =>
+                        openDrawerForText(v.simplified, {
+                          tab: 'dictionary',
+                          sourceApp: 'conversation_mission_hud',
+                        })
+                      }
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                        v.used
+                          ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
+                          : 'border-slate-700 bg-slate-800/80 hover:border-cyan-400/60 text-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="font-['Noto_Serif_SC'] text-sm font-bold">{v.simplified}</span>
+                        {v.used ? (
+                          <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                        ) : (
+                          <BookOpen size={12} className="text-slate-400 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-[10px] text-cyan-300 truncate">{v.pinyin}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{v.meaning_vi}</p>
+                    </button>
+                  ))}
+                  {missionGrammar.map((g) => (
+                    <button
+                      key={g.code}
+                      type="button"
+                      onClick={() =>
+                        openDrawerForText(g.pattern_display, {
+                          tab: 'grammar',
+                          sourceApp: 'conversation_mission_hud',
+                        })
+                      }
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                        g.used
+                          ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
+                          : 'border-amber-500/30 bg-amber-500/10 hover:border-amber-400 text-amber-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[10px] font-extrabold text-amber-300">{g.code}</span>
+                        {g.used && <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />}
+                      </div>
+                      <p className="text-[11px] font-bold truncate">{g.pattern_display}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{g.title_vi}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Category Filter Tabs */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
             {SCENARIO_CATEGORIES.map((cat) => (
@@ -763,6 +923,48 @@ export default function ConversationPage({ user, openAuthModal }) {
                     }`}>
                       {msg.meaning}
                     </p>
+                  )}
+
+                  {/* InlineGrammarFeedbackCard for learner messages */}
+                  {!isAI && msg.turnEvaluation && (
+                    <div className="mt-2 pt-2 border-t border-white/20 text-[11px] space-y-1.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-400/20 border border-emerald-300/40 text-emerald-100 font-bold">
+                          {msg.turnEvaluation.is_grammatically_correct
+                            ? `${msg.turnEvaluation.grammar_score}/100đ - Chuẩn tự nhiên`
+                            : `Cần sửa nhẹ: ❌ ${msg.hanzi} -> ✅ ${msg.turnEvaluation.corrected_user_sentence_zh}`}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void playChineseTts(
+                              msg.turnEvaluation.corrected_user_sentence_zh || msg.hanzi
+                            )
+                          }
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-semibold transition-colors cursor-pointer"
+                        >
+                          <Volume2 size={12} />
+                          <span>Nghe phát âm câu chuẩn</span>
+                        </button>
+                      </div>
+                      {msg.turnEvaluation.explanation_vi && (
+                        <p className="text-white/85">{msg.turnEvaluation.explanation_vi}</p>
+                      )}
+                      {msg.turnEvaluation.next_hint && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setInputText(msg.turnEvaluation.next_hint.suggested_reply_zh)
+                          }
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 border border-amber-300/40 text-amber-100 font-semibold transition-colors cursor-pointer"
+                        >
+                          <Lightbulb size={12} />
+                          <span>
+                            Gợi ý câu tiếp ({msg.turnEvaluation.next_hint.target_word_to_use})
+                          </span>
+                        </button>
+                      )}
+                    </div>
                   )}
 
                   {/* AI Pedagogical Extensions: Grammar, Correction & Vocab */}

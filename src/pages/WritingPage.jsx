@@ -17,6 +17,7 @@ import CharacterDetailCard from '../components/dictionary/CharacterDetailCard';
 import RadicalBrowserModal from '../components/dictionary/RadicalBrowserModal';
 import AiCharacterTutorModal from '../components/dictionary/AiCharacterTutorModal';
 import WorksheetGeneratorModal from '../components/dictionary/WorksheetGeneratorModal';
+import HskWritingEvaluator from '../features/writing/HskWritingEvaluator.tsx';
 import AudioButton from '../components/AudioButton';
 import { 
   searchCharacters, 
@@ -592,6 +593,11 @@ export default function WritingPage({
       </div>
 
       {/* 5. Modals */}
+      {/* 5. HSK 4-6 Constructed-Response Writing & Summary Evaluator (Task 26.05) */}
+      <div className="pt-4">
+        <HskWritingEvaluator user={user} />
+      </div>
+
       <RadicalBrowserModal
         isOpen={radicalModalOpen}
         onClose={() => setRadicalModalOpen(false)}

@@ -33,7 +33,9 @@ import { callUnifiedAiProvider } from '../../_utils/aiProviderAdapter.js';
 import {
   retrieveRagKnowledge,
   formatKnowledgeForPrompt,
-  normalizeQueryForRetrieval
+  normalizeQueryForRetrieval,
+  retrieveContextualKnowledgeForQuery,
+  retrieveLearnerAdaptiveProfile
 } from '../../_utils/ragRetriever.js';
 
 // Các giới hạn an toàn
@@ -322,6 +324,10 @@ export default async function handler(req, res) {
   // 4. Kiểm tra và làm sạch dữ liệu đầu vào (Input Validation & Sanitization)
   const {
     question,
+    mode = null,
+    questionId = null,
+    userSelectedOption = null,
+    userSentence = null,
     conversation_id = null,
     context_type = 'general',
     learner_level = null,
@@ -329,13 +335,27 @@ export default async function handler(req, res) {
     learner_context = null
   } = req.body || {};
 
-  if (!question || typeof question !== 'string' || !question.trim()) {
+  const activeMode =
+    mode === 'explain_hsk_mistake' || mode === 'sentence_doctor' || mode === 'general_qa'
+      ? mode
+      : null;
+
+  const rawQuestionText =
+    (typeof question === 'string' && question.trim())
+      ? question.trim()
+      : activeMode === 'sentence_doctor' && typeof userSentence === 'string' && userSentence.trim()
+        ? userSentence.trim()
+        : activeMode === 'explain_hsk_mistake' && (questionId || userSentence)
+          ? `Giải thích câu hỏi HSK ${questionId || ''} (đáp án đã chọn: ${userSelectedOption || 'N/A'}) ${userSentence || ''}`.trim()
+          : '';
+
+  if (!rawQuestionText) {
     return res.status(400).json({
       error: 'Nội dung câu hỏi không được để trống.'
     });
   }
 
-  const cleanQuestion = question.trim();
+  const cleanQuestion = rawQuestionText;
 
   // Giới hạn độ dài câu hỏi
   if (cleanQuestion.length < 2 || cleanQuestion.length > MAX_QUESTION_LENGTH) {
@@ -450,14 +470,89 @@ export default async function handler(req, res) {
 
   const ragLatencyMs = Date.now() - ragStartTime;
 
+  // 5b. Task 34.04: Truy xuất ngữ cảnh đa bảng + hồ sơ cá nhân hóa + câu hỏi HSK (nếu có)
+  const numericHskLevel = Number.parseInt(String(effectiveHskLevel).replace(/\D/g, ''), 10) || 4;
+  const adminClientForTutor = getSupabaseAdminClient();
+
+  const [contextualKnowledge, adaptiveProfile, examQuestionRow] = await Promise.all([
+    retrieveContextualKnowledgeForQuery(cleanQuestion, {
+      hskLevel: numericHskLevel,
+      userId: auth.user.id,
+      includeExamQuestions: true,
+      supabaseClient: adminClientForTutor,
+    }).catch(() => ({ contextBlocks: [], structuredCitations: [], formattedPromptContext: '', extractedTokens: {} })),
+    activeMode
+      ? retrieveLearnerAdaptiveProfile(auth.user.id, numericHskLevel, {
+          supabaseClient: adminClientForTutor,
+        }).catch(() => null)
+      : Promise.resolve(null),
+    activeMode === 'explain_hsk_mistake' && questionId && adminClientForTutor
+      ? Promise.resolve(
+          adminClientForTutor
+            .from('hsk_question_bank')
+            .select('id, paper_code, hsk_level, section, question_number_start, question_type, stimulus_payload, sub_questions, target_vocab, target_grammar_codes')
+            .eq('id', questionId)
+            .maybeSingle()
+        )
+          .then((r) => r?.data || null)
+          .catch(() => null)
+      : Promise.resolve(null),
+  ]);
+
+  const interactiveCitations = [];
+  const seenCitationKeys = new Set();
+  const pushInteractiveCitation = (type, key, label) => {
+    const uid = `${type}:${key}`;
+    if (!key || seenCitationKeys.has(uid)) return;
+    seenCitationKeys.add(uid);
+    interactiveCitations.push({ type, key, label });
+  };
+
+  for (const cit of contextualKnowledge?.structuredCitations || []) {
+    if (cit.source_type === 'dictionary_entries') {
+      pushInteractiveCitation('dictionary', cit.label, `Mở thẻ từ ${cit.label}`);
+      if (Array.from(cit.label).length === 1) {
+        pushInteractiveCitation('writing', cit.label, `Luyện viết chữ ${cit.label}`);
+      }
+    } else if (cit.source_type === 'grammar_points') {
+      pushInteractiveCitation('grammar', cit.source_id, `Xem ngữ pháp ${cit.source_id}`);
+    } else if (cit.source_type === 'chengyu_entries') {
+      pushInteractiveCitation('chengyu', cit.source_id, `Khám phá thành ngữ ${cit.source_id}`);
+    }
+  }
+  for (const hCluster of contextualKnowledge?.extractedTokens?.hanziClusters || []) {
+    if (Array.from(hCluster).length <= 4) {
+      pushInteractiveCitation('dictionary', hCluster, `Mở thẻ từ ${hCluster}`);
+    }
+  }
+
   // 6. XÂY DỰNG LỊCH SỬ HỘI THOẠI & PROMPT GIA SƯ
-  const systemPrompt = buildTutorSystemPrompt({
-    learnerLevel: effectiveHskLevel,
-    contextType: safeContextType,
-    knowledgeXml,
-    hasGroundedKnowledge,
-    learnerSummary: sanitizedLearner
-  });
+  const extraModePrompt = [
+    activeMode === 'explain_hsk_mistake'
+      ? `CHẾ ĐỘ: Giải thích lỗi sai đề thi HSK. Câu hỏi: ${JSON.stringify(examQuestionRow || { questionId })}. Học viên chọn: ${userSelectedOption || 'N/A'}. Hãy phân tích bẫy (Distractor Analysis) và công thức ngữ pháp cốt lõi.`
+      : activeMode === 'sentence_doctor'
+        ? `CHẾ ĐỘ: Bác sĩ câu tiếng Trung (Sentence Doctor). Hãy phân tích thành phần Chủ - Vị - Tân - Định - Trạng - Bổ cho câu "${userSentence || cleanQuestion}" và đối chiếu lỗi thường gặp.`
+        : activeMode === 'general_qa'
+          ? 'CHẾ ĐỘ: Trợ giảng Hỏi-Đáp kèm ví dụ cá nhân hóa từ sổ từ vựng của học viên.'
+          : '',
+    contextualKnowledge?.formattedPromptContext || '',
+    adaptiveProfile?.systemPromptInjection || '',
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+
+  const systemPrompt = [
+    buildTutorSystemPrompt({
+      learnerLevel: effectiveHskLevel,
+      contextType: safeContextType,
+      knowledgeXml,
+      hasGroundedKnowledge: hasGroundedKnowledge || (contextualKnowledge?.contextBlocks?.length || 0) > 0,
+      learnerSummary: sanitizedLearner
+    }),
+    extraModePrompt,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 
   // Làm sạch và giới hạn lịch sử trò chuyện
   const safeHistory = Array.isArray(conversation_history)
@@ -525,11 +620,52 @@ export default async function handler(req, res) {
     }
 
     // 8. ĐÓNG GÓI PHẢN HỒI AN TOÀN (RESPONSE ENVELOPE)
+    const answerMarkdown =
+      tutorData?.explanation ||
+      tutorData?.grammar_rule ||
+      (contextualKnowledge?.contextBlocks?.length
+        ? contextualKnowledge.contextBlocks.map((b) => `**${b.title}**\n${b.body}`).join('\n\n')
+        : cleanQuestion);
+
+    const structuredBreakdown = {
+      mode: activeMode || 'general_qa',
+      examQuestion: examQuestionRow
+        ? {
+            id: examQuestionRow.id,
+            paper_code: examQuestionRow.paper_code,
+            section: examQuestionRow.section,
+            userSelectedOption,
+            target_grammar_codes: examQuestionRow.target_grammar_codes || [],
+          }
+        : null,
+      sentenceAnalysis:
+        activeMode === 'sentence_doctor'
+          ? {
+              input: userSentence || cleanQuestion,
+              grammarPointsChecked: (contextualKnowledge?.contextBlocks || [])
+                .filter((b) => b.sourceType === 'grammar')
+                .map((b) => b.title),
+            }
+          : null,
+      personalizedVocabUsed: (adaptiveProfile?.targetVocabList || [])
+        .slice(0, 3)
+        .map((v) => v.simplified),
+      groundedSourcesCount:
+        (ragResult?.chunks?.length || 0) + (contextualKnowledge?.contextBlocks?.length || 0),
+    };
+
     const responsePayload = {
       success: true,
+      mode: activeMode || 'general_qa',
       data: tutorData,
-      citations,
-      evidence_status: hasGroundedKnowledge ? 'grounded' : 'insufficient_evidence',
+      answerMarkdown,
+      structuredBreakdown,
+      citations: activeMode ? interactiveCitations : citations,
+      interactive_citations: interactiveCitations,
+      evidence_status:
+        hasGroundedKnowledge || (contextualKnowledge?.contextBlocks?.length || 0) > 0
+          ? 'grounded'
+          : 'insufficient_evidence',
       context_type: safeContextType,
       learner_level: effectiveHskLevel,
       conversation_id: conversation_id || null,

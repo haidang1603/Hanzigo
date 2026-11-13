@@ -1,32 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import UserAvatar from '../common/UserAvatar.jsx';
-import { 
-  BookOpen, 
-  Compass, 
-  Award, 
-  GraduationCap, 
-  Sparkles, 
-  Headphones, 
-  Layers, 
-  Mic, 
-  PenTool, 
-  MessageSquare, 
-  FolderDown, 
-  Users, 
-  Trophy, 
-  ShieldCheck, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
-  Play, 
+  Play,
   Target,
-  LogOut
+  LogOut,
+  Pin,
+  Search,
+  Folder,
+  FolderOpen,
 } from 'lucide-react';
 import { playClickSound } from '../../utils/audio';
+import { prefetchRoute } from '../../core/routing/lazyWithRetry';
+import {
+  getPinnedNavTabs,
+  togglePinnedNavTab,
+  recordNavigationVisit,
+  SMART_NAV_CATALOG,
+} from '../../utils/smartNavEngine';
+import {
+  CORE_TREE_ITEMS,
+  SKILLS_TREE_ITEMS,
+  EXPLORE_TREE_ITEMS,
+  TEACHER_TREE_ITEMS,
+  ADMIN_TREE_ITEMS,
+  ALL_PRACTICE_SKILL_IDS,
+  isTreeNodeActive,
+  filterTreeNodes,
+} from './navTreeConfig';
+
+const TREE_EXPANDED_STORAGE_KEY = 'hanzigo_sidebar_tree_expanded_v1';
+
+const ACCENT_STYLES = {
+  brand: {
+    activeParent: 'bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-md shadow-[#E85D3F]/25 font-black',
+    activeParentSoft: 'text-[#E85D3F] bg-[#FDEEEB]/70 dark:bg-[#2D1E1B]/40 font-extrabold',
+    activeChild: 'bg-[#E85D3F] text-white font-black shadow-xs',
+    hover: 'text-[#243447] dark:text-[#CBD5E1] hover:text-[#E85D3F] dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]',
+    hoverChild: 'text-[#64748B] dark:text-[#CBD5E1] hover:text-[#E85D3F] dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]',
+    icon: 'text-[#748092] dark:text-[#94A3B8]',
+  },
+  emerald: {
+    activeParent: 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25 font-black',
+    activeParentSoft: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 font-extrabold',
+    activeChild: 'bg-emerald-600 text-white font-black shadow-xs',
+    hover: 'text-[#243447] dark:text-[#CBD5E1] hover:text-emerald-600 dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]',
+    hoverChild: 'text-[#64748B] dark:text-[#CBD5E1] hover:text-emerald-600 dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]',
+    icon: 'text-emerald-600 dark:text-emerald-400',
+  },
+  rose: {
+    activeParent: 'bg-rose-600 text-white shadow-md shadow-rose-600/25 font-black',
+    activeParentSoft: 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 font-extrabold',
+    activeChild: 'bg-rose-600 text-white font-black shadow-xs',
+    hover: 'text-[#243447] dark:text-[#CBD5E1] hover:text-rose-600 dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]',
+    hoverChild: 'text-[#64748B] dark:text-[#CBD5E1] hover:text-rose-600 dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]',
+    icon: 'text-rose-600 dark:text-rose-400',
+  },
+};
+
+function collectActiveBranchKeys(nodes, activeTab, currentHash, acc = []) {
+  for (const node of nodes) {
+    if (node.children && node.children.length > 0) {
+      if (isTreeNodeActive(node, activeTab, currentHash)) {
+        acc.push(node.key);
+        collectActiveBranchKeys(node.children, activeTab, currentHash, acc);
+      }
+    }
+  }
+  return acc;
+}
 
 /**
  * AppSidebar Component
- * Modern Educational SaaS Collapsible Sidebar with Clean Accordion Grouping.
+ * Modern Educational SaaS Collapsible Sidebar with Folder-Tree Navigation.
  */
 export default function AppSidebar({
   activeTab = 'home',
@@ -37,82 +85,311 @@ export default function AppSidebar({
   onContinueLearning = null,
   lastLesson = null,
   onOpenAuth = null,
-  onLogout = null
+  onLogout = null,
 }) {
   const isAdmin = Boolean(user && user.role === 'admin' && user.status !== 'blocked');
   const isTeacher = Boolean(user && (user.role === 'teacher' || isAdmin) && user.status !== 'blocked');
 
-  // Sub-skills belonging to Practice Hub
-  const practiceSkills = [
-    { id: 'listening', label: 'Luyện nghe HSK', icon: Headphones },
-    { id: 'grammar', label: 'Ngữ pháp HSK', icon: Sparkles },
-    { id: 'vocabulary', label: 'Flashcards Từ vựng', icon: Layers },
-    { id: 'pronunciation', label: 'Luyện phát âm AI', icon: Mic },
-    { id: 'writing', label: 'Từ điển & Viết chữ', icon: PenTool },
-    { id: 'conversation', label: 'Hội thoại Lão Sư', icon: MessageSquare },
-    { id: 'reader', label: 'Đọc hiểu & NLP', icon: BookOpen },
-    { id: 'practice', label: 'Trung tâm tổng hợp', icon: Target }
-  ];
+  const [currentHash, setCurrentHash] = useState(() =>
+    typeof window !== 'undefined' ? window.location.hash : ''
+  );
 
-  const isCurrentTabInPractice = practiceSkills.some(s => s.id === activeTab);
+  useEffect(() => {
+    const syncHash = () => setCurrentHash(window.location.hash);
+    window.addEventListener('hashchange', syncHash);
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, []);
 
-  // Accordion state: auto-expand if active tab is in practice skills
-  const [skillsExpanded, setSkillsExpanded] = useState(() => isCurrentTabInPractice);
+  const isCurrentTabInPractice = ALL_PRACTICE_SKILL_IDS.includes(activeTab);
 
-  // Keep expanded if user navigates into practice tab
-  React.useEffect(() => {
-    if (isCurrentTabInPractice) {
-      setSkillsExpanded(true);
+  const [expandedFolders, setExpandedFolders] = useState(() => {
+    const defaults = {
+      skills: isCurrentTabInPractice,
+      'skills:input': isCurrentTabInPractice,
+      'skills:core': isCurrentTabInPractice,
+      'skills:output': isCurrentTabInPractice,
+      hsk: activeTab === 'hsk',
+      reader: activeTab === 'reader',
+      community: activeTab === 'community' || activeTab === 'leaderboard',
+      teacher: activeTab === 'teacher',
+    };
+    try {
+      const saved = localStorage.getItem(TREE_EXPANDED_STORAGE_KEY);
+      if (saved) {
+        return { ...defaults, ...JSON.parse(saved) };
+      }
+    } catch {
+      // ignore storage errors
     }
-  }, [activeTab, isCurrentTabInPractice]);
+    return defaults;
+  });
 
-  // Primary Navigation Groups
-  const coreItems = [
-    { id: 'home', label: 'Trang chủ', icon: BookOpen },
-    { id: 'roadmap', label: 'Lộ trình HSK', icon: Compass },
-    { id: 'hsk', label: 'Thi thử HSK', icon: Award },
-    { id: 'classroom', label: 'Lớp học', icon: GraduationCap }
-  ];
+  const [menuFilter, setMenuFilter] = useState('');
+  const [pinnedIds, setPinnedIds] = useState(() => getPinnedNavTabs());
 
-  const exploreItems = [
-    { id: 'materials', label: 'Thư viện tài liệu', icon: FolderDown },
-    { id: 'community', label: 'Cộng đồng học viên', icon: Users },
-    { id: 'leaderboard', label: 'Bảng vàng cao thủ', icon: Trophy }
-  ];
+  // Auto-expand the active branch whenever route changes
+  useEffect(() => {
+    const allRoots = [
+      ...CORE_TREE_ITEMS,
+      { key: 'skills', id: 'practice', label: 'Kỹ năng & Luyện tập', children: SKILLS_TREE_ITEMS },
+      ...EXPLORE_TREE_ITEMS,
+      ...(isTeacher ? TEACHER_TREE_ITEMS : []),
+    ];
+    const activeBranches = collectActiveBranchKeys(allRoots, activeTab, currentHash);
+    if (activeBranches.length > 0) {
+      setExpandedFolders((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const key of activeBranches) {
+          if (!next[key]) {
+            next[key] = true;
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }
+  }, [activeTab, currentHash, isTeacher]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(TREE_EXPANDED_STORAGE_KEY, JSON.stringify(expandedFolders));
+    } catch {
+      // ignore
+    }
+  }, [expandedFolders]);
 
   // For test compatibility matching
-  const navSections = [
-    { id: 'core', title: 'Học tập cốt lõi', items: coreItems },
-    { id: 'skills', title: 'Kỹ năng & Luyện tập', items: practiceSkills },
-    { id: 'explore', title: 'Khám phá & Cộng đồng', items: exploreItems },
-    ...(isTeacher ? [{
-      id: 'teacher',
-      title: 'Cổng Giáo viên',
-      items: [{ id: 'teacher', label: 'Quản lý giảng dạy', icon: GraduationCap }]
-    }] : []),
-    ...(isAdmin ? [{
-      id: 'admin',
-      title: 'Quản trị hệ thống',
-      items: [{ id: 'admin', label: 'Bảng điều khiển Admin', icon: ShieldCheck }]
-    }] : [])
-  ];
+  const navSections = useMemo(
+    () => [
+      { id: 'core', title: 'Học tập cốt lõi', items: CORE_TREE_ITEMS },
+      { id: 'skills', title: 'Kỹ năng & Luyện tập', items: SKILLS_TREE_ITEMS },
+      { id: 'explore', title: 'Khám phá & Cộng đồng', items: EXPLORE_TREE_ITEMS },
+      ...(isTeacher ? [{
+        id: 'teacher',
+        title: 'Cổng Giáo viên',
+        items: TEACHER_TREE_ITEMS,
+      }] : []),
+      ...(isAdmin ? [{
+        id: 'admin',
+        title: 'Quản trị hệ thống',
+        items: ADMIN_TREE_ITEMS,
+      }] : []),
+    ],
+    [isTeacher, isAdmin]
+  );
 
-  const handleItemClick = (id) => {
+  const handleItemClick = (id, hash = null) => {
     playClickSound();
+    recordNavigationVisit(id);
+    if (hash && typeof window !== 'undefined') {
+      window.location.hash = hash;
+      setCurrentHash(hash);
+    }
     setActiveTab(id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const toggleFolder = (key, e = null) => {
+    if (e) e.stopPropagation();
+    playClickSound();
+    setExpandedFolders((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleTogglePin = (e, id) => {
+    e.stopPropagation();
+    playClickSound();
+    setPinnedIds(togglePinnedNavTab(id));
+  };
+
+  const normalizedFilter = menuFilter.trim().toLowerCase();
+  const filteredCore = useMemo(
+    () => filterTreeNodes(CORE_TREE_ITEMS, normalizedFilter),
+    [normalizedFilter]
+  );
+  const filteredSkills = useMemo(
+    () => filterTreeNodes(SKILLS_TREE_ITEMS, normalizedFilter),
+    [normalizedFilter]
+  );
+  const filteredExplore = useMemo(
+    () => filterTreeNodes(EXPLORE_TREE_ITEMS, normalizedFilter),
+    [normalizedFilter]
+  );
+  const filteredTeacher = useMemo(
+    () => filterTreeNodes(TEACHER_TREE_ITEMS, normalizedFilter),
+    [normalizedFilter]
+  );
+  const filteredAdmin = useMemo(
+    () => filterTreeNodes(ADMIN_TREE_ITEMS, normalizedFilter),
+    [normalizedFilter]
+  );
+
+  const renderTreeNodes = (nodes, depth = 0, accent = 'brand') => {
+    const palette = ACCENT_STYLES[accent] || ACCENT_STYLES.brand;
+
+    return nodes.map((node) => {
+      const Icon = node.icon;
+      const hasChildren = Array.isArray(node.children) && node.children.length > 0;
+      const isExpanded = Boolean(normalizedFilter) || Boolean(expandedFolders[node.key]);
+      const isActive = isTreeNodeActive(node, activeTab, currentHash);
+      const badge = node.badge || (depth === 0 && !hasChildren ? SMART_NAV_CATALOG[node.id]?.badge : null);
+      const canPin =
+        !isCollapsed &&
+        !hasChildren &&
+        !node.isGroupOnly &&
+        Boolean(SMART_NAV_CATALOG[node.id]) &&
+        (!node.hash || node.key === node.id);
+      const isPinned = canPin && pinnedIds.includes(node.id);
+
+      // Collapsed desktop mode renders top-level icons only
+      if (isCollapsed && depth === 0) {
+        return (
+          <button
+            key={node.key}
+            type="button"
+            onMouseEnter={() => prefetchRoute(node.id)}
+            onTouchStart={() => prefetchRoute(node.id)}
+            onClick={() => handleItemClick(node.id, node.hash || null)}
+            title={node.label}
+            className={`w-full flex items-center justify-center p-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+              isActive ? palette.activeParent : palette.hover
+            }`}
+          >
+            <Icon size={18} className={isActive ? 'text-white' : palette.icon} />
+          </button>
+        );
+      }
+
+      const rowButtonClass =
+        depth === 0
+          ? isActive && !hasChildren
+            ? palette.activeParent
+            : isActive && hasChildren
+            ? palette.activeParentSoft
+            : palette.hover
+          : isActive && !hasChildren
+          ? palette.activeChild
+          : isActive && hasChildren
+          ? palette.activeParentSoft
+          : palette.hoverChild;
+
+      const handleNodePress = () => {
+        if (node.isGroupOnly) {
+          toggleFolder(node.key);
+          return;
+        }
+        if (hasChildren) {
+          setExpandedFolders((prev) => ({ ...prev, [node.key]: true }));
+        }
+        handleItemClick(node.id, node.hash || null);
+      };
+
+      return (
+        <div key={node.key} className="space-y-0.5 min-w-0">
+          <div className="group relative flex items-center min-w-0">
+            {depth > 0 && (
+              <span
+                aria-hidden="true"
+                className="w-2.5 h-px bg-[#DFCBB5] dark:bg-[#334155] shrink-0 mr-1"
+              />
+            )}
+            <button
+              type="button"
+              onMouseEnter={() => !node.isGroupOnly && prefetchRoute(node.id)}
+              onTouchStart={() => !node.isGroupOnly && prefetchRoute(node.id)}
+              onClick={handleNodePress}
+              className={`w-full min-w-0 flex items-center gap-2 ${
+                depth === 0 ? 'px-3 py-2 rounded-2xl text-xs' : 'px-2.5 py-1.5 rounded-xl text-[11px]'
+              } font-bold transition-all duration-150 cursor-pointer ${
+                hasChildren ? 'pr-7' : canPin ? 'pr-7' : ''
+              } ${rowButtonClass}`}
+            >
+              {node.isGroupOnly ? (
+                isExpanded ? (
+                  <FolderOpen size={14} className={`shrink-0 ${isActive ? 'text-[#E85D3F]' : 'text-amber-500'}`} />
+                ) : (
+                  <Folder size={14} className={`shrink-0 ${isActive ? 'text-[#E85D3F]' : 'text-amber-500/80'}`} />
+                )
+              ) : (
+                <Icon
+                  size={depth === 0 ? 17 : 14}
+                  className={`shrink-0 ${
+                    isActive && !hasChildren ? 'text-white' : isActive ? 'text-[#E85D3F]' : palette.icon
+                  }`}
+                />
+              )}
+
+              <span className="truncate text-left">{node.label}</span>
+
+              {badge && !(isActive && !hasChildren) && (
+                <span className="ml-auto text-[9px] font-black px-1.5 py-0.2 rounded bg-orange-100 dark:bg-orange-950/60 text-[#E85D3F] shrink-0">
+                  {badge}
+                </span>
+              )}
+
+              {!hasChildren && isActive && (
+                <span className="w-1.5 h-1.5 rounded-full bg-white ml-auto shrink-0 animate-pulse" />
+              )}
+            </button>
+
+            {hasChildren && (
+              <button
+                type="button"
+                onClick={(e) => toggleFolder(node.key, e)}
+                aria-label={isExpanded ? `Thu gọn ${node.label}` : `Mở rộng ${node.label}`}
+                title={isExpanded ? 'Thu gọn nhánh' : 'Mở rộng nhánh'}
+                className="absolute right-1.5 p-1 rounded-lg text-[#748092] dark:text-[#94A3B8] hover:text-[#E85D3F] hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer"
+              >
+                <ChevronDown
+                  size={13}
+                  className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : '-rotate-90'}`}
+                />
+              </button>
+            )}
+
+            {canPin && (
+              <button
+                type="button"
+                onClick={(e) => handleTogglePin(e, node.id)}
+                title={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
+                className={`absolute right-1.5 p-1 rounded-lg transition cursor-pointer ${
+                  isPinned
+                    ? 'opacity-100 text-amber-400'
+                    : 'opacity-0 group-hover:opacity-100 text-[#94A3B8] hover:text-[#E85D3F]'
+                }`}
+              >
+                <Pin size={10} className={isPinned ? 'fill-amber-400' : ''} />
+              </button>
+            )}
+          </div>
+
+          {hasChildren && isExpanded && (
+            <div
+              className={`space-y-0.5 border-l-2 border-[#E9D8C6] dark:border-[#2B3A4F] ${
+                depth === 0 ? 'ml-4 pl-2' : 'ml-3.5 pl-1.5'
+              } animate-in fade-in duration-150`}
+            >
+              {renderTreeNodes(node.children, depth + 1, accent)}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
+  const skillsFolderExpanded = Boolean(normalizedFilter) || Boolean(expandedFolders.skills);
+
   return (
     <aside
       aria-label="Sidebar điều hướng"
+      data-sections={navSections.length}
       className={`hidden lg:flex flex-col border-r border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] transition-all duration-200 select-none z-40 sticky top-0 h-screen ${
         isCollapsed ? 'w-20' : 'w-64'
       }`}
     >
       {/* Brand Header */}
       <div className="h-20 flex items-center justify-between px-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F] shrink-0">
-        <div 
+        <div
           onClick={() => handleItemClick('home')}
           className="flex items-center gap-3 cursor-pointer group min-w-0"
           title="HanziGo - Học tiếng Trung dễ hơn mỗi ngày"
@@ -140,7 +417,7 @@ export default function AppSidebar({
         </div>
       </div>
 
-      {/* Quick Action: Continue Learning CTA (Streamlined & Compact) */}
+      {/* Quick Action: Continue Learning CTA */}
       <div className={`border-b border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70 shrink-0 ${isCollapsed ? 'py-2 px-2' : 'p-2.5'}`}>
         {isCollapsed ? (
           <button
@@ -183,209 +460,168 @@ export default function AppSidebar({
         )}
       </div>
 
-      {/* Streamlined & Compact Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-3 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
-        
-        {/* 1. Core Section */}
-        <div className="space-y-1">
-          {!isCollapsed && (
-            <p className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
-              Học tập cốt lõi
-            </p>
-          )}
-          {coreItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleItemClick(item.id)}
-                title={isCollapsed ? item.label : undefined}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl text-xs font-bold transition-all duration-150 cursor-pointer ${
-                  isCollapsed ? 'justify-center' : 'justify-start'
-                } ${
-                  isActive
-                    ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25 font-black'
-                    : 'text-[#243447] dark:text-[#CBD5E1] hover:text-[#E85D3F] dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]'
-                }`}
-              >
-                <Icon size={18} className={`shrink-0 ${isActive ? 'text-white' : 'text-[#748092] dark:text-[#94A3B8]'}`} />
-                {!isCollapsed && <span className="truncate">{item.label}</span>}
-                {!isCollapsed && isActive && <span className="w-1.5 h-1.5 rounded-full bg-white ml-auto shrink-0 animate-pulse" />}
-              </button>
-            );
-          })}
-        </div>
+      {/* Tree Navigation */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2 space-y-3 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
+        {/* Quick Menu Filter & Pinned Shortcuts (Expanded only) */}
+        {!isCollapsed && (
+          <div className="space-y-2 pb-1">
+            <div className="relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#748092]" />
+              <input
+                type="text"
+                value={menuFilter}
+                onChange={(e) => setMenuFilter(e.target.value)}
+                placeholder="Lọc nhanh cây menu..."
+                className="w-full rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white/90 dark:bg-[#1E293B] pl-8 pr-3 py-1.5 text-[11px] font-medium text-[#243447] dark:text-white placeholder:text-[#94A3B8] focus:border-[#E85D3F] focus:outline-hidden"
+              />
+            </div>
 
-        {/* 2. Compact Collapsible Skills Section (Luyện tập) */}
-        <div className="space-y-1">
-          {!isCollapsed ? (
-            <div>
-              {/* Accordion Header */}
-              <button
-                type="button"
-                onClick={() => {
-                  playClickSound();
-                  setSkillsExpanded(prev => !prev);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-1.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-                  isCurrentTabInPractice
-                    ? 'text-[#E85D3F] bg-[#FDEEEB]/50 dark:bg-[#2D1E1B]/30'
-                    : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Target size={17} className={isCurrentTabInPractice ? 'text-[#E85D3F]' : ''} />
-                  <span>Kỹ năng & Luyện tập</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-orange-100 dark:bg-orange-950/50 text-[#E85D3F] font-bold">
-                    8
-                  </span>
-                </div>
-                <ChevronDown size={14} className={`transition-transform duration-200 ${skillsExpanded ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Sub-items drawer */}
-              {skillsExpanded && (
-                <div className="mt-1 pl-3 space-y-0.5 border-l-2 border-[#F1E5D8] dark:border-[#2B3A4F] ml-4 animate-in fade-in duration-150">
-                  {practiceSkills.map((sub) => {
-                    const SubIcon = sub.icon;
-                    const isSubActive = activeTab === sub.id;
+            {!normalizedFilter && pinnedIds.length > 0 && (
+              <div className="space-y-1">
+                <p className="px-2 text-[9px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8] flex items-center gap-1">
+                  <Pin size={10} className="text-[#E85D3F]" />
+                  Đã ghim nhanh
+                </p>
+                <div className="flex flex-wrap gap-1 px-1">
+                  {pinnedIds.map((pid) => {
+                    const meta = SMART_NAV_CATALOG[pid];
+                    if (!meta) return null;
+                    const isPinActive = activeTab === pid;
                     return (
                       <button
-                        key={sub.id}
+                        key={pid}
                         type="button"
-                        onClick={() => handleItemClick(sub.id)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                          isSubActive
-                            ? 'bg-[#E85D3F] text-white font-black shadow-xs'
-                            : 'text-[#748092] dark:text-[#CBD5E1] hover:text-[#E85D3F] dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]'
+                        onMouseEnter={() => prefetchRoute(pid)}
+                        onTouchStart={() => prefetchRoute(pid)}
+                        onClick={() => handleItemClick(pid)}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                          isPinActive
+                            ? 'bg-[#E85D3F] text-white shadow-2xs'
+                            : 'bg-white dark:bg-[#1E293B] text-[#243447] dark:text-[#CBD5E1] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F] hover:text-[#E85D3F]'
                         }`}
                       >
-                        <SubIcon size={14} className={isSubActive ? 'text-white' : 'text-[#748092] dark:text-[#94A3B8]'} />
-                        <span className="truncate">{sub.label}</span>
+                        {meta.shortLabel}
                       </button>
                     );
                   })}
                 </div>
-              )}
-            </div>
-          ) : (
-            // In Collapsed mode: direct button to Practice Hub
-            <button
-              type="button"
-              onClick={() => handleItemClick('practice')}
-              title="Kỹ năng & Luyện tập (8 kỹ năng)"
-              className={`w-full flex items-center justify-center p-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-                isCurrentTabInPractice
-                  ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25 font-black'
-                  : 'text-[#748092] dark:text-[#CBD5E1] hover:text-[#E85D3F] dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]'
-              }`}
-            >
-              <Target size={18} />
-            </button>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* 3. Explore & Community Section */}
-        <div className="space-y-1">
-          {!isCollapsed && (
-            <p className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
-              Khám phá & Cộng đồng
-            </p>
-          )}
-          {exploreItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
+        {/* 1. Core Section */}
+        {filteredCore.length > 0 && (
+          <div className="space-y-1">
+            {!isCollapsed && (
+              <p className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
+                Học tập cốt lõi
+              </p>
+            )}
+            {renderTreeNodes(filteredCore, 0, 'brand')}
+          </div>
+        )}
+
+        {/* 2. Skills Folder Tree */}
+        {filteredSkills.length > 0 && (
+          <div className="space-y-1">
+            {!isCollapsed ? (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => toggleFolder('skills')}
+                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                    isCurrentTabInPractice
+                      ? 'text-[#E85D3F] bg-[#FDEEEB]/50 dark:bg-[#2D1E1B]/30'
+                      : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Target size={17} className={isCurrentTabInPractice ? 'text-[#E85D3F]' : ''} />
+                    <span>Kỹ năng & Luyện tập</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-orange-100 dark:bg-orange-950/50 text-[#E85D3F] font-bold">
+                      {ALL_PRACTICE_SKILL_IDS.length}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${skillsFolderExpanded ? 'rotate-180' : '-rotate-90'}`}
+                  />
+                </button>
+
+                {skillsFolderExpanded && (
+                  <div className="mt-1 pl-2 space-y-1 border-l-2 border-[#E9D8C6] dark:border-[#2B3A4F] ml-4 animate-in fade-in duration-150">
+                    {renderTreeNodes(filteredSkills, 1, 'brand')}
+                  </div>
+                )}
+              </div>
+            ) : (
               <button
-                key={item.id}
                 type="button"
-                onClick={() => handleItemClick(item.id)}
-                title={isCollapsed ? item.label : undefined}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl text-xs font-bold transition-all duration-150 cursor-pointer ${
-                  isCollapsed ? 'justify-center' : 'justify-start'
-                } ${
-                  isActive
+                onClick={() => handleItemClick('practice')}
+                title={`Kỹ năng & Luyện tập (${ALL_PRACTICE_SKILL_IDS.length} kỹ năng)`}
+                className={`w-full flex items-center justify-center p-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  isCurrentTabInPractice
                     ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25 font-black'
-                    : 'text-[#243447] dark:text-[#CBD5E1] hover:text-[#E85D3F] dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]'
+                    : 'text-[#748092] dark:text-[#CBD5E1] hover:text-[#E85D3F] dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]'
                 }`}
               >
-                <Icon size={18} className={`shrink-0 ${isActive ? 'text-white' : 'text-[#748092] dark:text-[#94A3B8]'}`} />
-                {!isCollapsed && <span className="truncate">{item.label}</span>}
-                {!isCollapsed && isActive && <span className="w-1.5 h-1.5 rounded-full bg-white ml-auto shrink-0 animate-pulse" />}
+                <Target size={18} />
               </button>
-            );
-          })}
-        </div>
+            )}
+          </div>
+        )}
+
+        {/* 3. Explore & Community Section */}
+        {filteredExplore.length > 0 && (
+          <div className="space-y-1">
+            {!isCollapsed && (
+              <p className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
+                Khám phá & Cộng đồng
+              </p>
+            )}
+            {renderTreeNodes(filteredExplore, 0, 'brand')}
+          </div>
+        )}
 
         {/* 4. Role-based: Teacher Portals */}
-        {isTeacher && (
+        {isTeacher && filteredTeacher.length > 0 && (
           <div className="space-y-1 pt-1 border-t border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70">
             {!isCollapsed && (
               <p className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                 Cổng Giáo viên
               </p>
             )}
-            <button
-              type="button"
-              onClick={() => handleItemClick('teacher')}
-              title={isCollapsed ? 'Quản lý giảng dạy' : undefined}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl text-xs font-bold transition-all duration-150 cursor-pointer ${
-                isCollapsed ? 'justify-center' : 'justify-start'
-              } ${
-                activeTab === 'teacher'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25 font-black'
-                  : 'text-[#243447] dark:text-[#CBD5E1] hover:text-emerald-600 dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]'
-              }`}
-            >
-              <GraduationCap size={18} className={`shrink-0 ${activeTab === 'teacher' ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
-              {!isCollapsed && <span className="truncate">Quản lý giảng dạy</span>}
-            </button>
+            {renderTreeNodes(filteredTeacher, 0, 'emerald')}
           </div>
         )}
 
         {/* 5. Role-based: Admin Portals */}
-        {isAdmin && (
+        {isAdmin && filteredAdmin.length > 0 && (
           <div className="space-y-1 pt-1 border-t border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70">
             {!isCollapsed && (
               <p className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">
                 Quản trị hệ thống
               </p>
             )}
-            <button
-              type="button"
-              onClick={() => handleItemClick('admin')}
-              title={isCollapsed ? 'Bảng điều khiển Admin' : undefined}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl text-xs font-bold transition-all duration-150 cursor-pointer ${
-                isCollapsed ? 'justify-center' : 'justify-start'
-              } ${
-                activeTab === 'admin'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-600/25 font-black'
-                  : 'text-[#243447] dark:text-[#CBD5E1] hover:text-rose-600 dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]'
-              }`}
-            >
-              <ShieldCheck size={18} className={`shrink-0 ${activeTab === 'admin' ? 'text-white' : 'text-rose-600 dark:text-rose-400'}`} />
-              {!isCollapsed && <span className="truncate">Bảng điều khiển Admin</span>}
-            </button>
+            {renderTreeNodes(filteredAdmin, 0, 'rose')}
           </div>
         )}
-
       </nav>
 
       {/* Sidebar Footer: User Card & Collapse Toggle */}
       <div className="p-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] bg-white/50 dark:bg-[#1E293B]/40 shrink-0 space-y-2">
         {user ? (
           <div className={`flex items-center gap-2.5 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-            <div 
+            <div
               onClick={() => handleItemClick('profile')}
               className="flex items-center gap-2.5 min-w-0 cursor-pointer group"
               title="Xem hồ sơ cá nhân"
             >
-              <UserAvatar 
-                user={user} 
-                size="md" 
-                className="group-hover:scale-105 transition-transform" 
+              <UserAvatar
+                user={user}
+                size="md"
+                className="group-hover:scale-105 transition-transform"
               />
               {!isCollapsed && (
                 <div className="min-w-0">
@@ -430,9 +666,11 @@ export default function AppSidebar({
             if (onToggleCollapse) onToggleCollapse();
           }}
           title={isCollapsed ? 'Mở rộng sidebar' : 'Thu gọn sidebar'}
-          className={`w-full py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer`}
+          className="w-full py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
         >
-          {isCollapsed ? <ChevronRight size={15} /> : (
+          {isCollapsed ? (
+            <ChevronRight size={15} />
+          ) : (
             <>
               <ChevronLeft size={15} />
               <span className="text-[11px]">Thu gọn</span>
@@ -440,7 +678,6 @@ export default function AppSidebar({
           )}
         </button>
       </div>
-
     </aside>
   );
 }

@@ -27,7 +27,9 @@ import {
   Eye,
   EyeOff,
   Flame,
-  Compass
+  Compass,
+  Video,
+  Languages
 } from 'lucide-react';
 import { 
   speakChinese, 
@@ -38,11 +40,19 @@ import {
   checkChineseVoiceSupport 
 } from '../utils/audio';
 import { awardXp } from '../utils/gamification';
+import {
+  recordAdaptiveMistake,
+  markAdaptiveItemMastered,
+  consumeAdaptiveNavigationTarget
+} from '../services/adaptiveLearningService';
 import { 
   PRACTICE_LEVELS, 
   GRAMMAR_DRILLS_BY_LEVEL, 
   LISTENING_DRILLS_BY_LEVEL 
 } from '../data/practiceLevelData';
+import { ChineseListeningStudio } from '../features/listening-studio/ChineseListeningStudio.tsx';
+import { DualSubInteractiveVideoStudio } from '../features/video-studio/DualSubInteractiveVideoStudio.tsx';
+import { Hsk30TranslationStudio } from '../features/hsk30-translation/Hsk30TranslationStudio.tsx';
 
 /**
  * =========================================================================
@@ -63,10 +73,12 @@ export default function PracticePage({
   onSelectPronounce,
   onSelectLesson
 }) {
-  // 1. Practice Skill Mode: 'overview' | 'grammar' | 'listening'
+  // 1. Practice Skill Mode: 'overview' | 'grammar' | 'listening' | 'listening-studio' | 'video-studio'
   const [practiceSkill, setPracticeSkill] = useState(() => {
     if (initialSkill === 'grammar') return 'grammar';
     if (initialSkill === 'listening') return 'listening';
+    if (initialSkill === 'listening-studio') return 'listening-studio';
+    if (initialSkill === 'video' || initialSkill === 'video-studio') return 'video-studio';
     return 'overview';
   });
 
@@ -74,6 +86,8 @@ export default function PracticePage({
   useEffect(() => {
     if (initialSkill === 'grammar') setPracticeSkill('grammar');
     else if (initialSkill === 'listening') setPracticeSkill('listening');
+    else if (initialSkill === 'listening-studio') setPracticeSkill('listening-studio');
+    else if (initialSkill === 'video' || initialSkill === 'video-studio') setPracticeSkill('video-studio');
     else if (initialSkill === 'overview') setPracticeSkill('overview');
   }, [initialSkill]);
 
@@ -92,6 +106,27 @@ export default function PracticePage({
 
   // Check browser speech support on mount
   const [hasVoiceSupport] = useState(() => checkChineseVoiceSupport());
+
+  // Consume deep-link target when arriving from Adaptive Review Queue
+  useEffect(() => {
+    const target = consumeAdaptiveNavigationTarget('practice');
+    if (!target) return;
+
+    const targetLevel = Math.min(Math.max(Number(target.levelNum) || 1, 1), 6);
+    setSelectedLevelId(targetLevel);
+
+    if (target.source === 'grammar') {
+      setPracticeSkill('grammar');
+      const drills = GRAMMAR_DRILLS_BY_LEVEL.filter(item => item.level === targetLevel);
+      const idx = drills.findIndex(item => String(item.id) === String(target.targetRef));
+      if (idx >= 0) setSelectedGrammarIndex(idx);
+    } else if (target.source === 'listening') {
+      setPracticeSkill('listening');
+      const drills = LISTENING_DRILLS_BY_LEVEL.filter(item => item.level === targetLevel);
+      const idx = drills.findIndex(item => String(item.id) === String(target.targetRef));
+      if (idx >= 0) setSelectedListeningIndex(idx);
+    }
+  }, []);
 
   // =========================================================================
   // GRAMMAR SENTENCE BUILDER STATE & HANDLERS
@@ -188,9 +223,23 @@ export default function PracticePage({
         setCompletedGrammarIds(prev => new Set(prev).add(currentGrammarItem.id));
         awardXp(12, null, `practice_grammar_${currentGrammarItem.id}`);
       }
+      markAdaptiveItemMastered({
+        user,
+        source: 'grammar',
+        targetRef: currentGrammarItem.id
+      });
     } else {
       playErrorSound();
       setGrammarNewlyAwarded(false);
+      recordAdaptiveMistake({
+        user,
+        source: 'grammar',
+        skill: 'grammar',
+        level: `HSK ${currentGrammarItem.level || selectedLevelId}`,
+        targetRef: currentGrammarItem.id,
+        title: currentGrammarItem.grammarPoint || currentGrammarItem.meaning || 'Cấu trúc câu HSK',
+        detail: `Ghép sai thành "${userGrammarTokens.join('')}" (Đáp án: "${currentGrammarItem.correctTokens.join('')}")`
+      });
     }
   };
 
@@ -296,9 +345,23 @@ export default function PracticePage({
         setCompletedListeningIds(prev => new Set(prev).add(currentListeningItem.id));
         awardXp(10, null, `practice_listening_${currentListeningItem.id}`);
       }
+      markAdaptiveItemMastered({
+        user,
+        source: 'listening',
+        targetRef: currentListeningItem.id
+      });
     } else {
       playErrorSound();
       setListeningNewlyAwarded(false);
+      recordAdaptiveMistake({
+        user,
+        source: 'listening',
+        skill: 'listening',
+        level: `HSK ${currentListeningItem.level || selectedLevelId}`,
+        targetRef: currentListeningItem.id,
+        title: currentListeningItem.question || currentListeningItem.audioText || 'Bài nghe hiểu HSK',
+        detail: `Chọn sai đáp án nghe câu "${currentListeningItem.audioText || ''}"`
+      });
     }
   };
 
@@ -359,52 +422,71 @@ export default function PracticePage({
           </p>
         </div>
 
-        {/* Skill Selector Tabs */}
-        <div className="inline-flex items-center bg-gray-100/80 dark:bg-gray-800/80 p-1.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
-          <button
-            id="tab-practice-overview"
-            onClick={() => handleSwitchSkill('overview')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              practiceSkill === 'overview'
-                ? 'bg-white dark:bg-[#1E293B] text-[#E85D3F] shadow-xs'
-                : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
-            }`}
-          >
-            <Target size={15} />
-            <span>Tổng quan</span>
-          </button>
-
-          <button
-            id="tab-practice-grammar"
-            onClick={() => handleSwitchSkill('grammar')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              practiceSkill === 'grammar'
-                ? 'bg-[#E85D3F] text-white shadow-xs'
-                : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
-            }`}
-          >
-            <Sparkles size={15} />
-            <span>Luyện Ngữ Pháp</span>
-          </button>
-
-          <button
-            id="tab-practice-listening"
-            onClick={() => handleSwitchSkill('listening')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              practiceSkill === 'listening'
-                ? 'bg-[#E85D3F] text-white shadow-xs'
-                : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
-            }`}
-          >
-            <Headphones size={15} />
-            <span>Luyện Nghe HSK</span>
-          </button>
+        {/* Skill Selector Tabs - Compact Single-Line */}
+        <div className="inline-flex items-center gap-1 max-w-full overflow-x-auto bg-gray-100/80 dark:bg-gray-800/80 p-1 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
+          {[
+            { id: 'overview', domId: 'tab-practice-overview', label: 'Tổng quan', title: 'Tổng quan luyện tập', icon: Target, activeClass: 'bg-white dark:bg-[#1E293B] text-[#E85D3F] shadow-xs' },
+            { id: 'grammar', domId: 'tab-practice-grammar', label: 'Ngữ pháp', title: 'Luyện Ngữ Pháp', icon: Sparkles, activeClass: 'bg-[#E85D3F] text-white shadow-xs' },
+            { id: 'listening', domId: 'tab-practice-listening', label: 'Nghe HSK', title: 'Luyện Nghe HSK', icon: Headphones, activeClass: 'bg-[#E85D3F] text-white shadow-xs' },
+            { id: 'listening-studio', domId: 'tab-practice-listening-studio', label: 'Dictation', title: 'Listening Studio & Dictation', icon: Sparkles, activeClass: 'bg-emerald-600 text-white shadow-xs' },
+            { id: 'video-studio', domId: 'tab-practice-video-studio', label: 'Video', title: 'Video Studio (Song ngữ)', icon: Video, activeClass: 'bg-rose-600 text-white shadow-xs' },
+            { id: 'hsk30-translation', domId: 'tab-practice-hsk30-translation', label: 'Xưởng Dịch', title: 'Xưởng Dịch & HSK 7–9', icon: Languages, activeClass: 'bg-indigo-600 text-white shadow-xs' },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = practiceSkill === tab.id;
+            return (
+              <button
+                key={tab.id}
+                id={tab.domId}
+                type="button"
+                title={tab.title}
+                onClick={() => handleSwitchSkill(tab.id)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                  isActive
+                    ? tab.activeClass
+                    : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
+                }`}
+              >
+                <Icon size={14} className="shrink-0" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* ======================================================== */}
-      {/* 2. OVERVIEW HUB VIEW */}
+      {/* 2. OVERVIEW HUB & STUDIO VIEWS */}
       {/* ======================================================== */}
+      {practiceSkill === 'listening-studio' && (
+        <ChineseListeningStudio user={user} />
+      )}
+
+      {practiceSkill === 'hsk30-translation' && (
+        <Hsk30TranslationStudio
+          user={user}
+          onOpenDictionary={(term) => {
+            window.dispatchEvent(new CustomEvent('hanzigo:open-dict', { detail: { term } }));
+          }}
+        />
+      )}
+
+      {practiceSkill === 'video-studio' && (
+        <DualSubInteractiveVideoStudio
+          user={user}
+          onOpenDictionary={(term) => {
+            window.dispatchEvent(new CustomEvent('hanzigo:open-dict', { detail: { term } }));
+          }}
+          onOpenPronunciation={(hanzi, pinyin) => {
+            if (onSelectPronounce) {
+              onSelectPronounce(hanzi, pinyin);
+            } else if (setActiveTab) {
+              setActiveTab('pronunciation');
+            }
+          }}
+        />
+      )}
+
       {practiceSkill === 'overview' && (
         <div className="space-y-8 animate-in fade-in">
           {/* Hero Banner */}
@@ -436,6 +518,15 @@ export default function PracticePage({
                 >
                   <Headphones size={15} />
                   <span>Vào Luyện Nghe Phản Xạ</span>
+                  <ArrowRight size={14} />
+                </button>
+                <button
+                  id="overview-btn-video"
+                  onClick={() => handleSwitchSkill('video-studio')}
+                  className="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-bold flex items-center gap-2 hover:bg-rose-700 shadow-md shadow-rose-600/25 cursor-pointer"
+                >
+                  <Video size={15} />
+                  <span>Vào Video Song Ngữ</span>
                   <ArrowRight size={14} />
                 </button>
               </div>
@@ -504,7 +595,19 @@ export default function PracticePage({
             <h3 className="text-sm font-black text-[#243447] dark:text-white uppercase tracking-wider">
               Kết nối nhanh các kỹ năng bổ trợ
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <button
+                onClick={() => handleSwitchSkill('video-studio')}
+                className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-left hover:border-rose-500 transition-all cursor-pointer group"
+              >
+                <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center mb-2">
+                  <Video size={16} />
+                </div>
+                <h4 className="text-xs font-bold text-[#243447] dark:text-white group-hover:text-rose-500">
+                  Video Song Ngữ
+                </h4>
+                <p className="text-[10px] text-[#748092]">Sub đa tầng & ngắt câu</p>
+              </button>
               <button
                 onClick={() => setActiveTab && setActiveTab('vocabulary')}
                 className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-left hover:border-[#E85D3F] transition-all cursor-pointer group"

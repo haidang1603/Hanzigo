@@ -29,10 +29,12 @@ import { PINYIN_DATA, VOCABULARY_LIST } from '../data/chineseData';
 import { triggerCloudSync, getPronunciationItemsFromDb, addPronunciationItemToDb } from '../supabase/services';
 import { awardXp, getUserStorageKey, getLocalDateString } from '../utils/gamification';
 import { updateDailyMissionProgress } from '../services';
+import { recordAdaptiveMistake, markAdaptiveItemMastered } from '../services/adaptiveLearningService';
 import { evaluateRealPronunciation } from '../utils/pronunciationEvaluator';
 import { scorePronunciationWithAi } from '../services/aiPronunciationService';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
 import { PRONUNCIATION_ITEMS_BY_LEVEL } from '../data/practiceLevelData';
+import { ChinesePronunciationLab } from '../features/pronunciation-lab/ChinesePronunciationLab.tsx';
 
 const STORAGE_CUSTOM_PRONOUNCE = 'hanzigo_custom_pronounce_list';
 const STORAGE_PRONOUNCE_HISTORY = 'hanzigo_pronounce_history';
@@ -400,6 +402,28 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
     awardXp(10, user, `pronounce_${selectedItem?.hanzi || 'item'}_${getLocalDateString()}`);
     updateDailyMissionProgress('speaking', 1, user);
 
+    // Record adaptive signal for pronunciation accuracy
+    if (selectedItem?.hanzi && typeof result.overall === 'number') {
+      if (result.overall < 65 || (typeof result.toneScore === 'number' && result.toneScore < 65)) {
+        recordAdaptiveMistake({
+          user,
+          source: 'pronunciation',
+          skill: 'pronunciation',
+          level: selectedItem.level || 'Phát âm',
+          targetRef: selectedItem.hanzi,
+          title: `Phát âm: ${selectedItem.hanzi} (${selectedItem.pinyin || ''})`,
+          detail: `Điểm tổng: ${result.overall}/100 • Thanh điệu: ${result.toneScore ?? '--'}/100`,
+          lastScore: result.overall
+        });
+      } else if (result.overall >= 80) {
+        markAdaptiveItemMastered({
+          user,
+          source: 'pronunciation',
+          targetRef: selectedItem.hanzi
+        });
+      }
+    }
+
     triggerCloudSync(user?.uid || user?.id);
   };
 
@@ -740,6 +764,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
       <div className="flex flex-wrap items-center justify-center gap-2 bg-white dark:bg-[#1E293B] p-2 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm max-w-3xl mx-auto">
         {[
           { id: 'record', label: '🎙️ AI Chấm Phát Âm' },
+          { id: 'lab', label: '🔬 Pronunciation Lab (Cao độ & Sandhi)' },
           { id: 'tones', label: '4 Thanh Điệu' },
           { id: 'initials', label: 'Thanh Mẫu (21 âm)' },
           { id: 'finals', label: 'Vận Mẫu (15 âm)' },
@@ -761,6 +786,11 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
           </button>
         ))}
       </div>
+
+      {/* TAB: PRONUNCIATION LAB */}
+      {activeTab === 'lab' && (
+        <ChinesePronunciationLab user={user} />
+      )}
 
       {/* TAB: AI PRONUNCIATION RECORDER & CUSTOM SENTENCES */}
       {activeTab === 'record' && (

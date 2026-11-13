@@ -4,10 +4,14 @@ import handler, {
   escapeSsml, 
   computeTtsCacheKey, 
   buildSsml,
+  buildTtsStoragePath,
+  resolveTtsVoice,
+  normalizeTtsRate,
   ALLOWED_VOICES,
   DEFAULT_VOICE,
   DEFAULT_RATE
 } from '../api/audio/tts.js';
+import { setSupabaseAdminClientForTesting } from '../api/_utils/supabaseServer.js';
 
 // Mock request / response helper
 function createMockHttp(options = {}) {
@@ -105,8 +109,8 @@ test('TTS Proxy Input Validation: Rejects empty text with 400 Bad Request', asyn
   assert.ok(res.data.error.includes('không được để trống'));
 });
 
-test('TTS Proxy Input Validation: Rejects text > 150 characters with 400 Bad Request', async () => {
-  const longText = '你好'.repeat(80); // 160 chars
+test('TTS Proxy Input Validation: Rejects text > 600 characters with 400 Bad Request', async () => {
+  const longText = '你好'.repeat(305); // 610 chars
   const { req, res } = createMockHttp({
     method: 'POST',
     headers: { 'x-user-id': 'test-user-id' },
@@ -130,23 +134,92 @@ test('TTS Proxy Input Validation: Rejects non-Chinese strings with 400 Bad Reque
   assert.ok(res.data.error.includes('chứa ít nhất một ký tự chữ Hán'));
 });
 
-test('TTS Proxy Graceful Fallback: Returns fallbackToWebSpeech when AZURE_SPEECH_KEY is missing', async () => {
-  const oldKey = process.env.AZURE_SPEECH_KEY;
+test('TTS Proxy Graceful Fallback: Returns client_fallback_required when TTS providers are unconfigured', async () => {
+  const oldAzureKey = process.env.AZURE_SPEECH_KEY;
+  const oldOpenAiKey = process.env.OPENAI_API_KEY;
+  const oldEdgeEndpoint = process.env.EDGE_TTS_ENDPOINT;
   delete process.env.AZURE_SPEECH_KEY;
+  delete process.env.OPENAI_API_KEY;
+  delete process.env.EDGE_TTS_ENDPOINT;
 
   try {
     const { req, res } = createMockHttp({
       method: 'POST',
       headers: { 'x-user-id': 'test-user-id' },
-      body: { text: '早上好' }
+      body: { text: '早上好', voice: 'female_standard', rate: 0.9 }
     });
 
     await handler(req, res);
     assert.equal(res.statusCode, 200);
+    assert.equal(res.data.status, 'client_fallback_required');
     assert.equal(res.data.fallbackToWebSpeech, true);
-    assert.ok(res.data.reason.includes('chưa cấu hình AZURE_SPEECH_KEY'));
+    assert.equal(res.data.reason, 'tts_provider_unconfigured');
     assert.ok(res.data.cacheKey);
   } finally {
-    if (oldKey) process.env.AZURE_SPEECH_KEY = oldKey;
+    if (oldAzureKey) process.env.AZURE_SPEECH_KEY = oldAzureKey;
+    if (oldOpenAiKey) process.env.OPENAI_API_KEY = oldOpenAiKey;
+    if (oldEdgeEndpoint) process.env.EDGE_TTS_ENDPOINT = oldEdgeEndpoint;
+  }
+});
+
+test('TTS Proxy Canonicalization & Cache Hit: Resolves aliases, shards path, and returns CDN hit', async () => {
+  assert.equal(resolveTtsVoice('female_standard'), 'zh-CN-XiaoxiaoNeural');
+  assert.equal(resolveTtsVoice('male_standard'), 'zh-CN-YunxiNeural');
+  assert.equal(resolveTtsVoice('female_news'), 'zh-CN-XiaoyiNeural');
+  assert.equal(normalizeTtsRate(0.88), 0.90);
+  assert.equal(normalizeTtsRate(1.2), 1.25);
+
+  const key = computeTtsCacheKey('male_standard', 1.0, '  你好   世界  ');
+  const storagePath = buildTtsStoragePath('male_standard', 1.0, key);
+  assert.equal(storagePath, `zh-CN-YunxiNeural/1.00/${key.slice(0, 2)}/${key}.mp3`);
+
+  const rpcCalls = [];
+  setSupabaseAdminClientForTesting({
+    from(table) {
+      assert.equal(table, 'tts_audio_cache_registry');
+      return {
+        select() {
+          return {
+            eq() {
+              return {
+                async maybeSingle() {
+                  return {
+                    data: {
+                      public_url: `https://cdn.example.com/${storagePath}`,
+                      provider: 'azure_neural',
+                    },
+                    error: null,
+                  };
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+    async rpc(fnName, params) {
+      rpcCalls.push({ fnName, params });
+      return { data: 2, error: null };
+    },
+  });
+
+  try {
+    const { req, res } = createMockHttp({
+      method: 'POST',
+      headers: { 'x-user-id': 'test-user-id' },
+      body: { text: '你好 世界', voice: 'male_standard', rate: 1.0 }
+    });
+
+    await handler(req, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.data.status, 'hit');
+    assert.equal(res.data.cached, true);
+    assert.equal(res.data.audioUrl, `https://cdn.example.com/${storagePath}`);
+    assert.equal(res.headers['Cache-Control'], 'public, max-age=31536000, immutable');
+    assert.equal(rpcCalls.length, 1);
+    assert.equal(rpcCalls[0].fnName, 'increment_tts_cache_hit');
+    assert.equal(rpcCalls[0].params.p_cache_key, key);
+  } finally {
+    setSupabaseAdminClientForTesting(null);
   }
 });

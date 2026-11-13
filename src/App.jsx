@@ -1,50 +1,70 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
 import AdminGuard from './components/AdminGuard';
-import PageLoader from './components/PageLoader';
+import RouteSuspenseFallback from './components/common/RouteSuspenseFallback';
+import { lazyWithRetry } from './core/routing/lazyWithRetry';
+import HomePage from './pages/HomePage';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { calculateTotalXp, awardXp, getStreakStatus, getUserStorageKey } from './utils/gamification';
 import { loadAllUserDataFromDb, triggerCloudSync, saveUserProgress } from './services';
 
-// Lazy loading all page views for code-splitting and rapid initial bundle loading
-const HomePage = lazy(() => import('./pages/HomePage'));
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-const RoadmapPage = lazy(() => import('./pages/RoadmapPage'));
-const VocabularyPage = lazy(() => import('./pages/VocabularyPage'));
-const PronunciationPage = lazy(() => import('./pages/PronunciationPage'));
-const WritingPage = lazy(() => import('./pages/WritingPage'));
-const ConversationPage = lazy(() => import('./pages/ConversationPage'));
-const CommunityPage = lazy(() => import('./pages/CommunityPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const MaterialsPage = lazy(() => import('./pages/MaterialsPage'));
-const AdminPage = lazy(() => import('./pages/AdminPage'));
-const TeacherDashboardPage = lazy(() => import('./pages/TeacherDashboardPage'));
-const ClassroomPage = lazy(() => import('./pages/ClassroomPage'));
-const LiveClassroomPage = lazy(() => import('./pages/LiveClassroomPage'));
-const HskPracticePage = lazy(() => import('./pages/HskPracticePage'));
-const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
-const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
-const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
-const RefundPolicyPage = lazy(() => import('./pages/RefundPolicyPage'));
-const ReaderPage = lazy(() => import('./pages/ReaderPage'));
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
-const PracticePage = lazy(() => import('./pages/PracticePage'));
-import StorageConsentBanner from './components/StorageConsentBanner';
+// Route-level code splitting with network retry & deploy-manifest auto-reload
+const DashboardPage = lazyWithRetry(() => import('./pages/DashboardPage'), ['dashboard']);
+const RoadmapPage = lazyWithRetry(() => import('./pages/RoadmapPage'), ['roadmap', 'lesson']);
+const LearningIntelligenceHub = lazyWithRetry(() => import('./features/intelligence/LearningIntelligenceHub.tsx'), ['intelligence']);
+const VocabularyPage = lazyWithRetry(() => import('./pages/VocabularyPage'), ['vocabulary']);
+const PronunciationPage = lazyWithRetry(() => import('./pages/PronunciationPage'), ['pronunciation']);
+const WritingPage = lazyWithRetry(() => import('./pages/WritingPage'), ['writing']);
+const ConversationPage = lazyWithRetry(() => import('./pages/ConversationPage'), ['conversation']);
+const CommunityPage = lazyWithRetry(() => import('./pages/CommunityPage'), ['community', 'leaderboard']);
+const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'), ['profile']);
+const MaterialsPage = lazyWithRetry(() => import('./pages/MaterialsPage'), ['materials']);
+const AdminPage = lazyWithRetry(() => import('./pages/AdminPage'), ['admin']);
+const TeacherDashboardPage = lazyWithRetry(() => import('./pages/TeacherDashboardPage'), ['teacher']);
+const ClassroomPage = lazyWithRetry(() => import('./pages/ClassroomPage'), ['classroom']);
+const LiveClassroomPage = lazyWithRetry(() => import('./pages/LiveClassroomPage'), ['live']);
+const HskPracticePage = lazyWithRetry(() => import('./pages/HskPracticePage'), ['hsk', 'hsk-practice']);
+const PrivacyPolicyPage = lazyWithRetry(() => import('./pages/PrivacyPolicyPage'), ['privacy']);
+const TermsOfServicePage = lazyWithRetry(() => import('./pages/TermsOfServicePage'), ['terms']);
+const CookiePolicyPage = lazyWithRetry(() => import('./pages/CookiePolicyPage'), ['cookies']);
+const RefundPolicyPage = lazyWithRetry(() => import('./pages/RefundPolicyPage'), ['refund']);
+const StoragePreferencesPage = lazyWithRetry(() => import('./pages/StoragePreferencesPage'), ['storage-preferences']);
+const ReaderPage = lazyWithRetry(() => import('./pages/ReaderPage'), ['reader']);
+const ResetPasswordPage = lazyWithRetry(() => import('./pages/ResetPasswordPage'), ['reset-password']);
+const PracticePage = lazyWithRetry(() => import('./pages/PracticePage'), ['practice', 'listening', 'grammar']);
+import CookieStorageConsentBanner from './components/legal/CookieStorageConsentBanner';
 import TeacherGuard from './components/TeacherGuard';
 import CommandPaletteModal from './components/dictionary/CommandPaletteModal.jsx';
 import { AppSidebar, AppHeader, MobileNavigation, SmartCommandPalette } from './components/navigation';
 import { UnifiedDashboard } from './components/dashboard';
 import { getRecommendedNextLesson, getLessonById } from './services/learningPathService';
+import { UnifiedToolsProvider, useUnifiedTools } from './core/ecosystem/UnifiedToolsContext.tsx';
+import { GlobalTextSelectionActionBar } from './features/unified-ecosystem/GlobalTextSelectionActionBar.tsx';
+const UniversalSlideOverDrawer = lazyWithRetry(() =>
+  import('./features/unified-ecosystem/UniversalSlideOverDrawer.tsx').then((m) => ({
+    default: m.UniversalSlideOverDrawer,
+  }))
+);
+
+function LazyGlobalDrawer() {
+  const { isOpen } = useUnifiedTools();
+  if (!isOpen) return null;
+  return (
+    <Suspense fallback={null}>
+      <UniversalSlideOverDrawer />
+    </Suspense>
+  );
+}
 
 const VALID_TABS = [
-  'home', 'dashboard', 'roadmap', 'lesson', 'vocabulary', 
+  'home', 'dashboard', 'intelligence', 'roadmap', 'lesson', 'vocabulary', 
   'pronunciation', 'writing', 'dictionary', 'reader', 'conversation', 'community', 
   'materials', 'admin', 'profile', 'leaderboard',
-  'teacher', 'classroom', 'hsk', 'privacy', 'terms', 'cookies', 'refund',
+  'teacher', 'classroom', 'hsk', 'privacy', 'terms', 'cookies', 'refund', 'storage-preferences',
   'reset-password', 'practice', 'grammar', 'listening'
 ];
 
@@ -61,6 +81,7 @@ function MainApp() {
       if (path === 'terms-of-service' || path === 'terms') return { tab: 'terms', sub: null, param: null, extra: null };
       if (path === 'cookie-policy' || path === 'cookies') return { tab: 'cookies', sub: null, param: null, extra: null };
       if (path === 'refund-policy' || path === 'refund') return { tab: 'refund', sub: null, param: null, extra: null };
+      if (path === 'storage-preferences' || path === 'tuy-chon-luu-tru') return { tab: 'storage-preferences', sub: null, param: null, extra: null };
       if (path === 'reset-password' || path === 'reset') return { tab: 'reset-password', sub: null, param: null, extra: null };
 
       // Recovery flow detection: if URL hash contains recovery token, route directly to reset-password
@@ -78,6 +99,7 @@ function MainApp() {
         rawTab === 'terms-of-service' ? 'terms' :
         rawTab === 'cookie-policy' ? 'cookies' :
         rawTab === 'refund-policy' ? 'refund' :
+        rawTab === 'tuy-chon-luu-tru' ? 'storage-preferences' :
         rawTab === 'reset-password' ? 'reset-password' :
         rawTab;
       const sub = parts[1] || null;
@@ -315,7 +337,7 @@ function MainApp() {
   const isLiveRoom = activeTab === 'classroom' && routeInfo.param === 'live' && Boolean(routeInfo.extra);
   if (isLiveRoom) {
     return (
-      <Suspense fallback={<PageLoader />}>
+      <Suspense fallback={<RouteSuspenseFallback />}>
         <LiveClassroomPage
           user={user}
           classId={routeInfo.sub}
@@ -368,7 +390,7 @@ function MainApp() {
 
         {/* Main Content Area (pb-20 on mobile for bottom navigation bar) */}
         <main className="flex-1 pb-20 lg:pb-0">
-        <Suspense fallback={<PageLoader />}>
+        <Suspense fallback={<RouteSuspenseFallback />}>
           {(activeTab === 'home' || activeTab === 'dashboard') && (
             <UnifiedDashboard 
               user={user}
@@ -394,6 +416,14 @@ function MainApp() {
                   window.location.hash = '#teacher/ai-studio';
                 }
               }}
+            />
+          )}
+
+          {activeTab === 'intelligence' && (
+            <LearningIntelligenceHub
+              user={user}
+              streak={streak}
+              setActiveTab={setActiveTab}
             />
           )}
 
@@ -442,6 +472,7 @@ function MainApp() {
             <ReaderPage 
               user={user}
               setActiveTab={setActiveTab}
+              initialMode={routeInfo.sub || 'graded'}
               onSelectWritingChar={handleSelectWriting}
             />
           )}
@@ -450,11 +481,23 @@ function MainApp() {
             <ConversationPage user={user} openAuthModal={handleOpenAuth} />
           )}
 
-          {(activeTab === 'practice' || activeTab === 'grammar' || activeTab === 'listening') && (
+          {(activeTab === 'practice' || activeTab === 'grammar' || activeTab === 'listening' || activeTab === 'listening-studio' || activeTab === 'video' || activeTab === 'video-studio' || activeTab === 'hsk30-translation') && (
             <PracticePage
               user={user}
               setActiveTab={setActiveTab}
-              initialSkill={activeTab === 'grammar' ? 'grammar' : activeTab === 'listening' ? 'listening' : (routeInfo.sub || 'overview')}
+              initialSkill={
+                activeTab === 'grammar'
+                  ? 'grammar'
+                  : activeTab === 'listening'
+                  ? 'listening'
+                  : activeTab === 'listening-studio'
+                  ? 'listening-studio'
+                  : activeTab === 'video' || activeTab === 'video-studio'
+                  ? 'video-studio'
+                  : activeTab === 'hsk30-translation'
+                  ? 'hsk30-translation'
+                  : (routeInfo.sub || 'overview')
+              }
               initialLevel={routeInfo.param ? parseInt(routeInfo.param, 10) : 1}
               onSelectWriting={handleSelectWriting}
               onSelectPronounce={handleSelectPronounce}
@@ -470,7 +513,15 @@ function MainApp() {
             <CommunityPage 
               user={user} 
               setActiveTab={setActiveTab}
-              initialView={activeTab === 'leaderboard' ? 'leaderboard' : 'feed'}
+              initialView={
+                activeTab === 'leaderboard' || routeInfo.sub === 'leaderboard'
+                  ? 'leaderboard'
+                  : routeInfo.sub === 'partners'
+                  ? 'partners'
+                  : routeInfo.sub === 'challenge'
+                  ? 'challenge'
+                  : 'feed'
+              }
             />
           )}
 
@@ -582,6 +633,10 @@ function MainApp() {
                   window.location.hash = '#hsk/resources';
                 } else if (view === 'structure') {
                   window.location.hash = '#hsk/structure';
+                } else if (view === 'hsk6_simulator') {
+                  window.location.hash = '#hsk/hsk6_simulator';
+                } else if (view === 'hskk_simulator') {
+                  window.location.hash = '#hsk/hskk_simulator';
                 } else if (view === 'exam' && id) {
                   window.location.hash = `#hsk/exam/${id}`;
                 } else if (view === 'take' && id) {
@@ -621,6 +676,9 @@ function MainApp() {
           {activeTab === 'refund' && (
             <RefundPolicyPage setActiveTab={setActiveTab} />
           )}
+          {activeTab === 'storage-preferences' && (
+            <StoragePreferencesPage setActiveTab={setActiveTab} />
+          )}
 
           {activeTab === 'reset-password' && (
             <ResetPasswordPage 
@@ -640,7 +698,7 @@ function MainApp() {
         </main>
 
         {/* 3. Global Footer */}
-        <Footer setActiveTab={setActiveTab} />
+        <Footer setActiveTab={setActiveTab} user={user} />
       </div>
 
       {/* 4. Mobile Navigation Drawer & Bottom Bar */}
@@ -666,7 +724,7 @@ function MainApp() {
       />
 
       {/* 6. Cookie & Storage Consent Banner */}
-      <StorageConsentBanner setActiveTab={setActiveTab} />
+      <CookieStorageConsentBanner setActiveTab={setActiveTab} />
 
       {/* 7. Global Smart Command Palette Modal (Ctrl + K) */}
       <SmartCommandPalette
@@ -677,6 +735,10 @@ function MainApp() {
         onSelectLesson={handleSelectLesson}
       />
 
+      {/* 8. Unified Ecosystem Global Overlay & Action Bar */}
+      <GlobalTextSelectionActionBar />
+      <LazyGlobalDrawer />
+
     </div>
   );
 }
@@ -685,7 +747,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <MainApp />
+        <UnifiedToolsProvider>
+          <MainApp />
+        </UnifiedToolsProvider>
       </AuthProvider>
     </ThemeProvider>
   );

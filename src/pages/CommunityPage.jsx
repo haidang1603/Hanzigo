@@ -219,7 +219,9 @@ function isFakePartner(p) {
 
 export default function CommunityPage({ user, setActiveTab, initialView = 'feed' }) {
   const [communityView, setCommunityView] = useState(() => {
-    if (initialView === 'leaderboard') return 'leaderboard';
+    if (['feed', 'leaderboard', 'partners', 'challenge'].includes(initialView)) {
+      return initialView;
+    }
     try {
       const hash = window.location.hash.toLowerCase();
       if (hash.includes('leaderboard')) return 'leaderboard';
@@ -230,8 +232,8 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
   });
 
   useEffect(() => {
-    if (initialView === 'leaderboard') {
-      setCommunityView('leaderboard');
+    if (['feed', 'leaderboard', 'partners', 'challenge'].includes(initialView)) {
+      setCommunityView(initialView);
     }
   }, [initialView]);
 
@@ -1274,64 +1276,64 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
       )}
 
       {/* 1. HERO HEADER BANNER (ASIAN-MODERN PALETTE) */}
-      <div className="relative overflow-hidden p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#991B1B] text-white shadow-2xl">
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-20 w-80 h-80 rounded-full bg-rose-400/20 blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#991B1B] text-white shadow-lg">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-16 w-56 h-56 rounded-full bg-rose-400/20 blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 text-white text-xs font-bold backdrop-blur-md border border-white/20 shadow-xs">
-              <Users size={14} className="text-amber-300" />
-              <span>Không gian Học tập & Giao lưu Trực tuyến HanziGo</span>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-white text-[11px] font-bold backdrop-blur-md border border-white/20">
+              <Users size={13} className="text-amber-300" />
+              <span>Không gian Học tập & Giao lưu HanziGo</span>
             </div>
             
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
               Cộng Đồng Người Học HanziGo
             </h1>
             
-            <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-medium">
-              Không gian hỏi đáp ngữ pháp, thảo luận kinh nghiệm thi HSK, ghép đôi luyện nói 1-1 và vinh danh bảng vàng thành tích cao thủ chữ Hán.
+            <p className="text-xs text-white/90 leading-relaxed font-medium line-clamp-2">
+              Hỏi đáp ngữ pháp, thảo luận kinh nghiệm thi HSK, ghép đôi luyện nói 1-1 và vinh danh bảng vàng cao thủ chữ Hán.
             </p>
             
-            <div className="flex flex-wrap items-center gap-2.5 pt-1 text-xs">
-              <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px]">
+              <span className="px-2.5 py-1 rounded-lg bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1">
                 💬 <strong>{posts.length}</strong> bài thảo luận
               </span>
-              <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5">
+              <span className="px-2.5 py-1 rounded-lg bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1">
                 🤝 <strong>{studyPartners.length}</strong> học viên tìm bạn
               </span>
-              <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-amber-300">
-                🔥 <strong>{totalUserXp} XP</strong> điểm tích lũy của bạn
+              <span className="px-2.5 py-1 rounded-lg bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1 text-amber-300">
+                🔥 <strong>{totalUserXp} XP</strong> tích lũy
               </span>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-3 shrink-0">
+          <div className="flex flex-wrap items-center lg:justify-end gap-2 shrink-0">
             <button
               onClick={() => {
                 playClickSound();
                 setIsPartnerModalOpen(true);
               }}
-              className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-gray-900 font-black text-xs sm:text-sm shadow-xl hover:scale-105 active:scale-100 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-gray-900 font-black text-xs shadow-md transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
             >
-              <Users size={16} />
-              <span>Đăng tin tìm bạn luyện nói</span>
+              <Users size={15} />
+              <span>Tìm bạn luyện nói</span>
             </button>
 
             <button
               onClick={handleRefreshCloud}
               disabled={isRefreshing}
               title="Đồng bộ dữ liệu cộng đồng mới nhất từ Supabase"
-              className="px-4 py-2.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
               <RefreshCw size={13} className={isRefreshing ? 'animate-spin' : ''} />
-              <span>{isRefreshing ? 'Đang tải...' : isCloudSynced ? 'Đã đồng bộ máy chủ' : 'Làm mới máy chủ'}</span>
+              <span>{isRefreshing ? 'Đang tải...' : isCloudSynced ? 'Đã đồng bộ' : 'Làm mới'}</span>
             </button>
           </div>
         </div>
 
         {/* Decorative Chinese watermark */}
-        <div className="absolute right-6 -bottom-8 font-['Noto_Serif_SC'] text-8xl sm:text-9xl font-black text-white/10 select-none pointer-events-none">
+        <div className="absolute right-4 -bottom-4 font-['Noto_Serif_SC'] text-6xl sm:text-7xl font-black text-white/10 select-none pointer-events-none">
           志同道合
         </div>
       </div>

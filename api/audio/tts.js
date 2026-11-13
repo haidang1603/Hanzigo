@@ -1,66 +1,95 @@
 /**
  * =========================================================================
- * HANZIGO — SECURE SERVERLESS API: /api/audio/tts (PHASE 11)
+ * HANZIGO — CONTENT-ADDRESSABLE TTS PROXY & STORAGE CACHE (TASK 32.02)
  * =========================================================================
- * Azure Neural TTS Caching Proxy with 4 Security & Cost Safeguards:
- * 1. Chốt chặn 1: Zero-Trust Auth (Bắt buộc Supabase Bearer Token).
- * 2. Chốt chặn 2: Ràng buộc nội dung nghiêm ngặt (1 - 150 chars, bắt buộc có
- *    chữ Hán, whitelist voices, escape SSML injection).
- * 3. Chốt chặn 3: Định danh Cache bất biến SHA-256 (kiểm tra Supabase Storage
- *    bucket audio-cache, trả về ngay nếu Cache HIT).
- * 4. Chốt chặn 4: Gọi Azure REST API khi Cache MISS, tự động lưu đệm vào Storage,
- *    và Graceful Fallback về Web Speech API nếu chưa có khóa hoặc lỗi mạng.
- * =========================================================================
+ * 1. Rate Limiting (60 req/min/user or IP via distributedRateLimiter.js) & Zero-Trust Auth.
+ * 2. Strict Validation (1 - 600 chars, must contain Hanzi [\u4e00-\u9fa5], canonical voice & rate).
+ * 3. Content-Addressable SHA-256 Cache Key + Bucket 'tts-audio-cache' + Registry Table.
+ * 4. 2-Tier Lookup: Fast Registry Hit -> Azure/OpenAI/Edge Synthesis -> Persist to Storage.
+ * 5. Graceful fallback (`client_fallback_required`) without ever throwing HTTP 500 on provider miss.
  */
 
 import crypto from 'crypto';
 import { verifyRequestAuth, getSupabaseAdminClient } from '../_utils/supabaseServer.js';
+import { checkRateLimitAndQuota } from '../_utils/distributedRateLimiter.js';
+import {
+  ALLOWED_VOICES,
+  ALLOWED_RATES,
+  DEFAULT_VOICE,
+  DEFAULT_RATE,
+  VOICE_ALIAS_MAP,
+  resolveTtsVoice,
+  normalizeTtsRate,
+  escapeSsml,
+  buildSsml,
+  synthesizeChineseSpeechBuffer,
+} from '../_utils/ttsProviderAdapter.js';
 
-// Danh sách giọng đọc Azure Neural Trung văn được phép (Whitelist)
-export const ALLOWED_VOICES = {
-  'zh-CN-XiaoxiaoNeural': { gender: 'Female', name: 'Xiaoxiao (Nữ chuẩn)' },
-  'zh-CN-YunxiNeural': { gender: 'Male', name: 'Yunxi (Nam chuẩn)' },
-  'zh-CN-XiaoyiNeural': { gender: 'Female', name: 'Xiaoyi (Nữ trẻ trung)' }
+export {
+  ALLOWED_VOICES,
+  ALLOWED_RATES,
+  DEFAULT_VOICE,
+  DEFAULT_RATE,
+  VOICE_ALIAS_MAP,
+  resolveTtsVoice,
+  normalizeTtsRate,
+  escapeSsml,
+  buildSsml,
 };
 
-export const DEFAULT_VOICE = 'zh-CN-XiaoxiaoNeural';
-export const DEFAULT_RATE = 0.85;
+const TTS_BUCKET = 'tts-audio-cache';
+const TTS_REGISTRY_TABLE = 'tts_audio_cache_registry';
+const MAX_TEXT_LENGTH = 600;
 
 /**
- * Escape các ký tự đặc biệt chống SSML Injection
+ * Normalize Chinese text for deterministic hashing.
  */
-export function escapeSsml(text = '') {
-  return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+export function normalizeTtsText(text = '') {
+  return String(text || '').trim().replace(/\s+/g, ' ');
 }
 
 /**
- * Tính toán mã băm SHA-256 bất biến làm Cache Key
+ * Compute deterministic SHA-256 cache key.
+ * Supports both `(voice, rate, text)` and `({ text, voice, rate })` signatures.
  */
-export function computeTtsCacheKey(voice, rate, text) {
-  const normalized = (text || '').trim().replace(/\s+/g, ' ');
-  const payload = `${voice}_${rate.toFixed(2)}_${normalized}`;
+export function computeTtsCacheKey(voiceOrInput, rateArg, textArg) {
+  let voice = voiceOrInput;
+  let rate = rateArg;
+  let text = textArg;
+
+  if (voiceOrInput && typeof voiceOrInput === 'object') {
+    voice = voiceOrInput.voice;
+    rate = voiceOrInput.rate;
+    text = voiceOrInput.text;
+  }
+
+  const normalizedText = normalizeTtsText(text);
+  const resolvedVoice = resolveTtsVoice(voice);
+  const numericRate = Number.parseFloat(rate);
+  const formattedRate = (Number.isFinite(numericRate) ? numericRate : DEFAULT_RATE).toFixed(2);
+
+  const payload = `${normalizedText}|${resolvedVoice}|${formattedRate}`;
   return crypto.createHash('sha256').update(payload).digest('hex');
 }
 
 /**
- * Xây dựng chuỗi SSML hợp lệ cho Microsoft Cognitive Speech Services
+ * Compute sharded Supabase Storage path for optimal prefix distribution.
  */
-export function buildSsml(voice, rate, text) {
-  const safeVoice = ALLOWED_VOICES[voice] ? voice : DEFAULT_VOICE;
-  const gender = ALLOWED_VOICES[safeVoice]?.gender || 'Female';
-  const escapedText = escapeSsml(text.trim());
-  const prosodyRate = `${Math.round((rate - 1.0) * 100)}%`;
+export function buildTtsStoragePath(voice, rate, cacheKey) {
+  const resolvedVoice = resolveTtsVoice(voice);
+  const normalizedRate = normalizeTtsRate(rate);
+  return `${resolvedVoice}/${normalizedRate.toFixed(2)}/${cacheKey.slice(0, 2)}/${cacheKey}.mp3`;
+}
 
-  return `<speak version='1.0' xml:lang='zh-CN'><voice xml:lang='zh-CN' xml:gender='${gender}' name='${safeVoice}'><prosody rate='${prosodyRate}'>${escapedText}</prosody></voice></speak>`;
+function getClientIp(req) {
+  const forwarded = req.headers?.['x-forwarded-for'];
+  if (forwarded) {
+    return String(forwarded).split(',')[0].trim();
+  }
+  return req.headers?.['x-real-ip'] || req.socket?.remoteAddress || 'unknown-ip';
 }
 
 export default async function handler(req, res) {
-  // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-User-Id, Accept');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -69,169 +98,183 @@ export default async function handler(req, res) {
     return res.status(204).end();
   }
 
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed. Chỉ hỗ trợ GET hoặc POST.' });
+  }
+
   try {
-    // -----------------------------------------------------------------------
-    // Chốt chặn 1: Zero-Trust Auth
-    // -----------------------------------------------------------------------
+    // 1. Zero-Trust Auth
     const auth = await verifyRequestAuth(req);
     if (!auth.authenticated || !auth.user) {
       return res.status(401).json({
-        error: 'Unauthorized: Yêu cầu cung cấp Bearer Token hợp lệ để sử dụng dịch vụ TTS.'
+        error: 'Unauthorized: Yêu cầu cung cấp Bearer Token hợp lệ để sử dụng dịch vụ TTS.',
       });
     }
 
-    // -----------------------------------------------------------------------
-    // Chốt chặn 2: Ràng buộc Nội dung Nghiêm ngặt (Input Validation)
-    // -----------------------------------------------------------------------
+    // 2. Distributed Rate Limiting (60 requests/min/user or IP)
+    const clientKey = auth.user.id || getClientIp(req);
+    const rateCheck = await checkRateLimitAndQuota({
+      clientKey,
+      windowMs: 60 * 1000,
+      maxRequests: 60,
+      dailyQuotaMax: 2000,
+      prefix: 'tts',
+    });
+
+    if (!rateCheck.allowed) {
+      return res.status(rateCheck.statusCode || 429).json({
+        error: rateCheck.reason || 'Quá nhiều yêu cầu TTS. Vui lòng thử lại sau 1 phút.',
+      });
+    }
+
+    // 3. Input Validation & Canonicalization
     const body = req.method === 'POST' ? req.body || {} : {};
     const query = req.query || {};
 
-    const rawText = (body.text || query.text || '').trim();
+    const rawText = normalizeTtsText(body.text ?? query.text ?? '');
     if (!rawText) {
       return res.status(400).json({ error: 'Nội dung văn bản cần phát âm không được để trống.' });
     }
 
-    if (rawText.length > 150) {
-      return res.status(400).json({ error: 'Độ dài văn bản vượt quá giới hạn tối đa (150 ký tự).' });
-    }
-
-    // Bắt buộc chứa ít nhất một ký tự chữ Hán (CJK Unified Ideographs)
-    const hasChinese = /[\u4e00-\u9fa5]/.test(rawText);
-    if (!hasChinese) {
+    if (rawText.length > MAX_TEXT_LENGTH) {
       return res.status(400).json({
-        error: 'Văn bản cần phát âm bắt buộc phải chứa ít nhất một ký tự chữ Hán hợp lệ.'
+        error: `Độ dài văn bản vượt quá giới hạn tối đa (${MAX_TEXT_LENGTH} ký tự).`,
       });
     }
 
-    // Kiểm tra và escape SSML injection
-    const requestedVoice = body.voice || query.voice || DEFAULT_VOICE;
-    const safeVoice = ALLOWED_VOICES[requestedVoice] ? requestedVoice : DEFAULT_VOICE;
+    if (!/[\u4e00-\u9fa5]/.test(rawText)) {
+      return res.status(400).json({
+        error: 'Văn bản cần phát âm bắt buộc phải chứa ít nhất một ký tự chữ Hán hợp lệ.',
+      });
+    }
 
-    const parsedRate = parseFloat(body.rate || query.rate || DEFAULT_RATE);
-    const safeRate = isNaN(parsedRate) ? DEFAULT_RATE : Math.max(0.7, Math.min(1.2, parsedRate));
+    const resolvedVoice = resolveTtsVoice(body.voice ?? query.voice);
+    const normalizedRate = normalizeTtsRate(body.rate ?? query.rate);
 
-    // -----------------------------------------------------------------------
-    // Chốt chặn 3: Định danh Cache Bất biến SHA-256 (Deterministic Cache Key)
-    // -----------------------------------------------------------------------
-    const cacheKey = computeTtsCacheKey(safeVoice, safeRate, rawText);
-    const storagePath = `tts/${cacheKey}.mp3`;
-    const prefersJson = req.headers['accept']?.includes('application/json') || query.format === 'json';
+    const cacheKey = computeTtsCacheKey(resolvedVoice, normalizedRate, rawText);
+    const storagePath = buildTtsStoragePath(resolvedVoice, normalizedRate, cacheKey);
 
     const admin = getSupabaseAdminClient();
 
-    // Kiểm tra cache từ Supabase Storage bucket 'audio-cache'
+    // 4. Tier 1: Fast Registry Lookup (Cache Hit)
     if (admin) {
       try {
-        const { data: cachedBlob, error: downloadError } = await admin.storage
-          .from('audio-cache')
-          .download(storagePath);
+        const { data: record, error: lookupError } = await admin
+          .from(TTS_REGISTRY_TABLE)
+          .select('public_url, provider')
+          .eq('cache_key', cacheKey)
+          .maybeSingle();
 
-        if (cachedBlob && !downloadError) {
-          const arrayBuffer = await cachedBlob.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
+        if (!lookupError && record?.public_url) {
+          // Non-blocking hit counter update
+          Promise.resolve(
+            admin.rpc('increment_tts_cache_hit', { p_cache_key: cacheKey })
+          ).catch(() => {});
 
-          if (prefersJson) {
-            const { data: publicUrlData } = admin.storage.from('audio-cache').getPublicUrl(storagePath);
-            return res.status(200).json({
-              success: true,
-              cached: true,
-              cacheKey,
-              audioUrl: publicUrlData?.publicUrl || null,
-              audioBase64: buffer.toString('base64'),
-              contentType: 'audio/mpeg'
-            });
-          }
-
-          res.setHeader('Content-Type', 'audio/mpeg');
-          res.setHeader('X-Cache', 'HIT');
+          res.setHeader('X-TTS-Cache', 'HIT');
           res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-          return res.status(200).send(buffer);
+          return res.status(200).json({
+            status: 'hit',
+            cached: true,
+            audioUrl: record.public_url,
+            cacheKey,
+            provider: record.provider || 'azure_neural',
+            voice: resolvedVoice,
+            rate: normalizedRate,
+          });
         }
-      } catch (storageCheckErr) {
-        // Tiếp tục gọi Azure nếu bucket chưa tạo hoặc download lỗi
-        console.warn('[Audio TTS] Cache check notice:', storageCheckErr.message);
+      } catch {
+        // Proceed to Tier 2 synthesis on registry lookup error
       }
     }
 
-    // -----------------------------------------------------------------------
-    // Chốt chặn 4: Gọi Azure REST TTS & Lưu Cache (Cache MISS)
-    // -----------------------------------------------------------------------
-    const azureKey = process.env.AZURE_SPEECH_KEY;
-    const azureRegion = process.env.AZURE_SPEECH_REGION || 'eastus';
-
-    if (!azureKey) {
-      // Graceful fallback nếu chưa cấu hình khóa Azure
-      return res.status(200).json({
-        fallbackToWebSpeech: true,
-        reason: 'Máy chủ chưa cấu hình AZURE_SPEECH_KEY. Chuyển sang Web Speech API.',
-        cacheKey,
-        text: rawText
-      });
-    }
-
-    const ssml = buildSsml(safeVoice, safeRate, rawText);
-    const azureEndpoint = `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/v1`;
-
-    const azureResponse = await fetch(azureEndpoint, {
-      method: 'POST',
-      headers: {
-        'Ocp-Apim-Subscription-Key': azureKey,
-        'Content-Type': 'application/ssml+xml',
-        'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
-        'User-Agent': 'HanziGo'
-      },
-      body: ssml
+    // 5. Tier 2: Synthesize Audio Buffer via Provider Adapter
+    const synthResult = await synthesizeChineseSpeechBuffer({
+      text: rawText,
+      voice: resolvedVoice,
+      rate: normalizedRate,
     });
 
-    if (!azureResponse.ok) {
-      const errText = await azureResponse.text().catch(() => '');
-      console.warn(`[Audio TTS] Azure trả về lỗi HTTP ${azureResponse.status}: ${errText}`);
+    if (!synthResult.ok || !synthResult.buffer) {
       return res.status(200).json({
+        status: 'client_fallback_required',
         fallbackToWebSpeech: true,
-        reason: `Azure Speech API trả về HTTP ${azureResponse.status}. Tự động fallback về Web Speech API.`,
+        reason: synthResult.reason || 'tts_provider_unconfigured',
         cacheKey,
-        text: rawText
+        voice: resolvedVoice,
+        rate: normalizedRate,
       });
     }
 
-    const audioArrayBuffer = await azureResponse.arrayBuffer();
-    const audioBuffer = Buffer.from(audioArrayBuffer);
-
-    // Lưu đệm bất đồng bộ vào Supabase Storage bucket 'audio-cache'
+    // 6. Tier 3: Persist to Supabase Storage & Registry
     if (admin) {
       try {
-        await admin.storage
-          .from('audio-cache')
-          .upload(storagePath, audioBuffer, {
-            contentType: 'audio/mpeg',
-            upsert: true
+        const { error: uploadError } = await admin.storage
+          .from(TTS_BUCKET)
+          .upload(storagePath, synthResult.buffer, {
+            contentType: synthResult.contentType || 'audio/mpeg',
+            upsert: true,
           });
-      } catch (uploadErr) {
-        console.warn('[Audio TTS] Lưu cache thất bại (không ảnh hưởng trả kết quả):', uploadErr.message);
+
+        if (!uploadError) {
+          const { data: publicUrlData } = admin.storage
+            .from(TTS_BUCKET)
+            .getPublicUrl(storagePath);
+          const publicUrl = publicUrlData?.publicUrl || null;
+
+          if (publicUrl) {
+            await admin.from(TTS_REGISTRY_TABLE).upsert(
+              {
+                cache_key: cacheKey,
+                text_zh: rawText,
+                voice_id: resolvedVoice,
+                speed_rate: normalizedRate,
+                storage_path: storagePath,
+                public_url: publicUrl,
+                byte_size: synthResult.buffer.length,
+                provider: synthResult.provider,
+              },
+              { onConflict: 'cache_key' }
+            );
+
+            res.setHeader('X-TTS-Cache', 'MISS');
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            return res.status(200).json({
+              status: 'miss_synthesized',
+              cached: false,
+              audioUrl: publicUrl,
+              cacheKey,
+              provider: synthResult.provider,
+              byteSize: synthResult.buffer.length,
+              voice: resolvedVoice,
+              rate: normalizedRate,
+            });
+          }
+        }
+      } catch {
+        // Fall through to inline base64 delivery if storage write fails
       }
     }
 
-    if (prefersJson) {
-      return res.status(200).json({
-        success: true,
-        cached: false,
-        cacheKey,
-        audioBase64: audioBuffer.toString('base64'),
-        contentType: 'audio/mpeg'
-      });
-    }
-
-    res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('X-Cache', 'MISS');
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    return res.status(200).send(audioBuffer);
-
-  } catch (error) {
-    console.error('[Audio TTS] Lỗi xử lý nghiêm trọng:', error);
+    // Fallback delivery if Supabase Storage is unavailable in local dev
+    res.setHeader('X-TTS-Cache', 'BYPASS');
     return res.status(200).json({
+      status: 'miss_synthesized',
+      cached: false,
+      audioUrl: null,
+      audioBase64: synthResult.buffer.toString('base64'),
+      contentType: synthResult.contentType || 'audio/mpeg',
+      cacheKey,
+      provider: synthResult.provider,
+      byteSize: synthResult.buffer.length,
+      voice: resolvedVoice,
+      rate: normalizedRate,
+    });
+  } catch {
+    return res.status(200).json({
+      status: 'client_fallback_required',
       fallbackToWebSpeech: true,
-      reason: 'Lỗi không xác định trong quá trình xử lý TTS. Chuyển sang Web Speech API.',
-      error: error.message
+      reason: 'tts_internal_fallback',
     });
   }
 }

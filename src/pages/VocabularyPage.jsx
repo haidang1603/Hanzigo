@@ -43,6 +43,8 @@ import { saveUserVocabSrsCard, syncUserVocabSrsFromCloud, updateDailyMissionProg
 import AiContextBadge from '../components/personalization/AiContextBadge.jsx';
 import { getPersonalizedExercises } from '../services/aiGateway.js';
 import { searchDictionaryPaginated, formatDictionaryItemForDisplay } from '../services/dictionaryService.js';
+import { VocabularyWorkspace } from '../features/vocabulary-workspace/VocabularyWorkspace.tsx';
+import { ChengyuCollocationExplorer } from '../features/chengyu-explorer/ChengyuCollocationExplorer.tsx';
 
 const STORAGE_REMEMBERED = 'hanzigo_vocab_remembered';
 const STORAGE_REVIEW = 'hanzigo_vocab_review';
@@ -1261,6 +1263,38 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
               <BookOpen size={15} />
               <span className="hidden sm:inline">Từ điển 120.000 từ</span>
             </button>
+
+            <button
+              onClick={() => {
+                playClickSound();
+                setViewMode('workspace');
+              }}
+              title="Vocabulary Workspace: Quản lý Decks & Ẩn từ đã thuộc"
+              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                viewMode === 'workspace' 
+                  ? 'bg-emerald-600 text-white shadow-sm' 
+                  : 'text-[#748092] hover:text-[#243447]'
+              }`}
+            >
+              <Sparkles size={15} />
+              <span className="hidden sm:inline">Workspace SRS</span>
+            </button>
+
+            <button
+              onClick={() => {
+                playClickSound();
+                setViewMode('chengyu');
+              }}
+              title="Khám phá Thành ngữ 4 chữ & Kết hợp từ cố định"
+              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                viewMode === 'chengyu' 
+                  ? 'bg-amber-600 text-white shadow-sm' 
+                  : 'text-[#748092] hover:text-[#243447]'
+              }`}
+            >
+              <Layers size={15} />
+              <span className="hidden sm:inline">Thành ngữ &amp; Collocations</span>
+            </button>
           </div>
 
         </div>
@@ -1327,7 +1361,11 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
       </div>
 
       {/* Main Content Area */}
-      {filteredVocab.length === 0 ? (
+      {viewMode === 'workspace' ? (
+        <VocabularyWorkspace user={user} />
+      ) : viewMode === 'chengyu' ? (
+        <ChengyuCollocationExplorer user={user} onOpenWriting={onSelectWriting} />
+      ) : filteredVocab.length === 0 ? (
         
         /* Empty State */
         <div className="text-center py-16 bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-4 max-w-xl mx-auto p-6 shadow-sm">

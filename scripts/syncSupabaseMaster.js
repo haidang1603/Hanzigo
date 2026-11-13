@@ -33,6 +33,7 @@ import { HSK_EXAMS, HSK_QUESTIONS } from '../src/data/hskExamsData.js';
 import { VOCABULARY_LIST } from '../src/data/chineseData.js';
 import { HSK6_IDIOMS_DATABASE } from '../src/data/hsk6IdiomsData.js';
 import { DEFAULT_MATERIALS } from '../src/utils/materialsStorage.js';
+import { HSK_RESOURCES } from '../src/data/hskResourcesData.js';
 import { DAILY_QUOTES } from '../src/data/dailyQuotesData.js';
 
 const isDryRun = process.argv.includes('--dry-run');
@@ -471,7 +472,17 @@ async function syncMaterials() {
   console.log('\n--- 7. ĐỒNG BỘ THƯ VIỆN TÀI LIỆU (MATERIALS) ---');
   if (target !== 'all' && target !== 'materials') return;
 
-  const materialsPayload = DEFAULT_MATERIALS.map(m => ({
+  const SKILL_LABEL_MAP = {
+    mixed: 'Tổng hợp đa kỹ năng',
+    listening: 'Nghe hiểu',
+    speaking: 'Nói & Khẩu ngữ',
+    reading: 'Đọc hiểu',
+    writing: 'Viết chữ',
+    vocabulary: 'Từ vựng',
+    grammar: 'Ngữ pháp',
+  };
+
+  const defaultPayload = DEFAULT_MATERIALS.map(m => ({
     id: String(m.id),
     title: m.title,
     category: m.category || 'Giáo trình chuẩn',
@@ -479,12 +490,46 @@ async function syncMaterials() {
     format: m.format || 'PDF',
     file_size: m.fileSize || '10 MB',
     author: m.author || 'HanziGo Biên soạn',
+    publisher: m.publisher || 'HanziGo Academic',
     description: m.description || '',
-    download_url: m.downloadUrl || '',
+    download_url: m.downloadUrl || m.sourceUrl || '',
+    source_url: m.sourceUrl || m.downloadUrl || '',
+    skills: Array.isArray(m.skills) ? m.skills.join(', ') : (m.skills || 'Tổng hợp đa kỹ năng'),
+    language: m.language || 'Song ngữ Trung - Việt',
+    license: m.license || 'Tài liệu giáo dục công cộng',
+    verification_status: m.verificationStatus || 'verified',
+    related_lesson_id: m.relatedLessonId || null,
     tags: Array.isArray(m.tags) ? m.tags.join(', ') : (m.tags || ''),
     storage_bucket: 'materials',
     storage_path: `general/system/${m.id}.pdf`
   }));
+
+  const existingIds = new Set(defaultPayload.map(m => m.id));
+  const hskResourcesPayload = HSK_RESOURCES
+    .filter(r => !existingIds.has(String(r.id)))
+    .map(r => ({
+      id: String(r.id),
+      title: r.title,
+      category: r.category || 'Tài liệu học thuật',
+      level: r.level || 'HSK 1',
+      format: r.format || 'web_link',
+      file_size: 'Tài liệu số',
+      author: r.source_author || r.publisher || 'HanziGo Academic',
+      publisher: r.publisher || 'HanziGo Academic',
+      description: r.description || '',
+      download_url: r.download_url || r.source_url || '',
+      source_url: r.source_url || r.download_url || '',
+      skills: SKILL_LABEL_MAP[r.skill] || 'Tổng hợp đa kỹ năng',
+      language: r.language_of_instruction || 'Song ngữ Trung - Việt',
+      license: r.license_status || 'Tài liệu giáo dục công cộng',
+      verification_status: r.permission_status === 'reproducible' ? 'verified_official' : 'curated',
+      related_lesson_id: Array.isArray(r.related_lesson_ids) && r.related_lesson_ids.length > 0 ? r.related_lesson_ids[0] : null,
+      tags: Array.isArray(r.tags) ? r.tags.join(', ') : (r.tags || ''),
+      storage_bucket: 'materials',
+      storage_path: `general/academic/${r.id}`
+    }));
+
+  const materialsPayload = [...defaultPayload, ...hskResourcesPayload];
 
   if (isDryRun) {
     recordMetric('materials', { total: materialsPayload.length, skipped: materialsPayload.length, notes: 'DRY-RUN' });

@@ -13,7 +13,7 @@ import {
   Zap,
   Info
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { fireConfetti as confetti } from '../../utils/confetti';
 import { 
   getStreakStatus, 
   getLongestStreak, 

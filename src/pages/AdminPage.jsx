@@ -960,7 +960,13 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
         (m.author && m.author.toLowerCase().includes(matSearch.toLowerCase())) ||
         (Array.isArray(m.tags) && m.tags.some(t => t.toLowerCase().includes(matSearch.toLowerCase())));
       const matchCat = matCategoryFilter === 'Tất cả' || m.category === matCategoryFilter;
-      const matchLevel = matLevelFilter === 'Tất cả' || m.level === matLevelFilter;
+      const lvl = (m.level || '').toUpperCase();
+      const filterLvl = matLevelFilter.toUpperCase();
+      const matchLevel = matLevelFilter === 'Tất cả' ||
+        lvl === filterLvl ||
+        lvl.includes(filterLvl) ||
+        (lvl.includes('4-6') && ['HSK 4', 'HSK 5', 'HSK 6'].includes(filterLvl)) ||
+        lvl.includes('1-6');
       return matchSearch && matchCat && matchLevel;
     }).sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
   }, [materials, matSearch, matCategoryFilter, matLevelFilter]);

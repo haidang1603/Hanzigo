@@ -48,9 +48,13 @@ import {
   getRecommendedNextLesson 
 } from '../services/learningPathService';
 import { getRecentReadingProgress } from '../services/readingProgressService';
+import { DailySmartStudyFlow } from '../features/unified-ecosystem/DailySmartStudyFlow.tsx';
 import { evaluateUserAchievements } from '../services/gamificationService';
 import StreakModal from '../components/learning/StreakModal';
 import AiLearningCoachWidget from '../components/learning/AiLearningCoachWidget';
+import StudentAnalyticsDashboard from '../features/analytics/StudentAnalyticsDashboard.tsx';
+import SrsRetentionDashboard from '../features/srs/SrsRetentionDashboard.tsx';
+import DailyAdaptivePlan from '../features/adaptive/DailyAdaptivePlan.tsx';
 
 export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   const userName = user ? (user.name ? user.name.split(' ').pop() : 'Bạn') : 'Bạn';
@@ -438,6 +442,9 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
       
+      {/* Smart Daily Loop (Unified Ecosystem Hub) */}
+      <DailySmartStudyFlow user={user} onNavigateModule={(mod) => setActiveTab(mod === 'vocab' ? 'vocabulary' : mod)} />
+
       {/* 1. Header Greeting & Quick Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-r from-white via-[#FFF9F2] to-white dark:from-[#1E293B] dark:via-[#131B24] dark:to-[#1E293B] p-6 sm:p-8 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm relative overflow-hidden">
         
@@ -702,6 +709,25 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
         user={user}
         setActiveTab={setActiveTab}
         onSelectLesson={onSelectLesson}
+      />
+
+      {/* 2.55 Daily Adaptive Smart Session (Task 26.04) */}
+      <DailyAdaptivePlan
+        user={user}
+        setActiveTab={setActiveTab}
+      />
+
+      {/* 2.6 Student Analytics Dashboard (Task 26.02) */}
+      <StudentAnalyticsDashboard
+        user={user}
+        streak={user?.streak || 0}
+        setActiveTab={setActiveTab}
+      />
+
+      {/* 2.7 SRS Retention Analytics (Task 26.03) */}
+      <SrsRetentionDashboard
+        user={user}
+        setActiveTab={setActiveTab}
       />
 
       {/* 3. Main Dashboard Content Grid */}

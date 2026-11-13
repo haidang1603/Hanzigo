@@ -34,6 +34,11 @@ import {
   saveUserDailyGoalMinutes 
 } from '../../services/learningPathService';
 import { playClickSound, playSuccessSound } from '../../utils/audio';
+import {
+  buildAdaptiveReviewQueue,
+  setAdaptiveNavigationTarget,
+  markAdaptiveItemMastered
+} from '../../services/adaptiveLearningService';
 import PlacementTestModal from './PlacementTestModal';
 
 export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLesson }) {
@@ -46,6 +51,7 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
   const [learningGoal, setLearningGoal] = useState(() => getUserLearningGoal(user));
   const [activeTabSub, setActiveTabSub] = useState('recommendations'); // 'recommendations' | 'plan' | 'review' | 'skills' | 'weaknesses' | 'materials'
   const [showPlacementModal, setShowPlacementModal] = useState(false);
+  const [adaptiveData, setAdaptiveData] = useState({ queue: [], skillGapSummary: {}, totalPendingCount: 0, estimatedMinutes: 0, hasAnyGaps: false });
 
   // Load coach recommendation
   const loadCoachRecommendation = useCallback(async (forceRefresh = false) => {
@@ -56,13 +62,19 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
       const currentProfile = buildStudentLearningProfile(user);
       setProfile(currentProfile);
 
-      const res = await getAiCoachRecommendation(user, { 
-        forceRefresh, 
-        durationMinutes,
-        learningGoal
-      });
+      const [res, adaptiveQueue] = await Promise.all([
+        getAiCoachRecommendation(user, { 
+          forceRefresh, 
+          durationMinutes,
+          learningGoal
+        }),
+        buildAdaptiveReviewQueue(user).catch(() => ({ queue: [], skillGapSummary: {}, totalPendingCount: 0, estimatedMinutes: 0, hasAnyGaps: false }))
+      ]);
       if (res && res.data) {
         setCoachData(res.data);
+      }
+      if (adaptiveQueue) {
+        setAdaptiveData(adaptiveQueue);
       }
     } catch (err) {
       console.warn('Error loading AI Coach recommendation:', err);
@@ -421,7 +433,12 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
           }`}
         >
           <RotateCcw size={14} />
-          <span>Bài cần ôn lại ({reviewLessons.length})</span>
+          <span>Bài cần ôn lại ({reviewLessons.length + (adaptiveData?.totalPendingCount || 0)})</span>
+          {(adaptiveData?.totalPendingCount || 0) > 0 && (
+            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500 text-white">
+              {adaptiveData.totalPendingCount}
+            </span>
+          )}
         </button>
 
         <button
@@ -630,9 +647,132 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
         </div>
       )}
 
-      {/* 7. Tab Content 2: REVIEW LESSONS LIST */}
+      {/* 7. Tab Content 2: REVIEW LESSONS LIST & ADAPTIVE QUEUE */}
       {activeTabSub === 'review' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
+          {/* Adaptive Learning Review Queue */}
+          <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-900/10 p-3.5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                  <Brain size={14} />
+                  Hàng đợi Ôn tập Thích ứng (Adaptive Learning)
+                </h4>
+                <p className="text-[11px] text-[#748092] dark:text-gray-400 mt-0.5">
+                  Tự động tổng hợp từ lỗi sai CBT, Ngữ pháp/Nghe hiểu, Phát âm (&lt;65đ) và Từ vựng SRS đến hạn.
+                </p>
+              </div>
+              {adaptiveData?.totalPendingCount > 0 && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                  ~{adaptiveData.estimatedMinutes} phút · {adaptiveData.totalPendingCount} mục
+                </span>
+              )}
+            </div>
+
+            {/* Skill-gap breakdown pills */}
+            {adaptiveData?.hasAnyGaps && adaptiveData?.skillGapSummary && (
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { key: 'cbt', label: 'CBT', count: adaptiveData.skillGapSummary.cbt },
+                  { key: 'grammar', label: 'Ngữ pháp', count: adaptiveData.skillGapSummary.grammar },
+                  { key: 'listening', label: 'Nghe hiểu', count: adaptiveData.skillGapSummary.listening },
+                  { key: 'pronunciation', label: 'Phát âm', count: adaptiveData.skillGapSummary.pronunciation },
+                  { key: 'srs', label: 'Từ vựng SRS', count: adaptiveData.skillGapSummary.srs },
+                ]
+                  .filter((pill) => pill.count > 0)
+                  .map((pill) => (
+                    <span
+                      key={pill.key}
+                      className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-white dark:bg-[#1a1a1d] border border-amber-200 dark:border-amber-800/60 text-[#243447] dark:text-gray-200"
+                    >
+                      {pill.label}: <strong className="text-[#E85D3F]">{pill.count}</strong>
+                    </span>
+                  ))}
+              </div>
+            )}
+
+            {!adaptiveData?.queue || adaptiveData.queue.length === 0 ? (
+              <div className="text-xs text-[#748092] dark:text-gray-400 bg-white/80 dark:bg-[#1a1a1d] rounded-lg p-3 border border-amber-100 dark:border-gray-700">
+                Chưa phát hiện lỗi sai mới cần vá. Hãy tiếp tục luyện tập CBT, Ngữ pháp hoặc Phát âm — hệ thống sẽ tự động ghi nhận điểm yếu nếu có.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {adaptiveData.queue.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2.5 rounded-lg bg-white dark:bg-[#1a1a1d] border border-amber-100 dark:border-gray-700"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span
+                          className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                            item.priority === 'high'
+                              ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                              : item.priority === 'medium'
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                          }`}
+                        >
+                          {item.skill}
+                        </span>
+                        <span className="text-[11px] font-semibold text-[#748092] dark:text-gray-400">
+                          {item.level}
+                        </span>
+                        {item.errorCount > 1 && (
+                          <span className="text-[10px] font-semibold text-red-600 dark:text-red-400">
+                            · Sai {item.errorCount} lần
+                          </span>
+                        )}
+                        {typeof item.lastScore === 'number' && (
+                          <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                            · {item.lastScore}đ
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs font-bold text-[#243447] dark:text-white truncate mt-1">
+                        {item.title}
+                      </div>
+                      {item.detail && (
+                        <div className="text-[11px] text-[#748092] dark:text-gray-400 truncate">
+                          {item.detail}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClickSound();
+                          setAdaptiveNavigationTarget(item);
+                          if (setActiveTab) setActiveTab(item.targetTab);
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#E85D3F] hover:bg-[#d44d30] text-white text-[11px] font-bold cursor-pointer transition-colors"
+                      >
+                        Ôn ngay
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          playClickSound();
+                          markAdaptiveItemMastered({
+                            user,
+                            source: item.source,
+                            targetRef: item.targetRef,
+                          });
+                          await loadCoachRecommendation(true);
+                        }}
+                        className="px-2 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold cursor-pointer transition-colors"
+                      >
+                        Đã nắm
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <p className="text-xs text-[#748092] dark:text-gray-400">
             Hệ thống tự động phát hiện các bài học có điểm thi trắc nghiệm dưới 90% (chưa đạt chuẩn thuần thục 3 sao) hoặc đã hoàn thành quá 7 ngày để đề xuất bạn ôn tập lại.
           </p>

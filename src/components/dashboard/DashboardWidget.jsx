@@ -5,11 +5,11 @@ import React from 'react';
  * Standardized surface container for unified dashboard widgets
  */
 export default function DashboardWidget({
-  title,
-  subtitle,
-  icon: Icon,
-  action,
-  children,
+  title = undefined,
+  subtitle = undefined,
+  icon: Icon = undefined,
+  action = undefined,
+  children = undefined,
   className = '',
   loading = false,
   error = null,

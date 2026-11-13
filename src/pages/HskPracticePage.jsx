@@ -1,6 +1,9 @@
 import { HskResourcesView, HskReportModal, HskAdminImportModal } from '../components/HskPhase3Components';
 import HskStructureView from '../components/HskStructureView';
 import HskAiDiagnosticPanel from '../components/personalization/HskAiDiagnosticPanel';
+import { Hsk6SimulatorWorkspace } from '../features/hsk-exam/renderers/hsk6/Hsk6SimulatorWorkspace.tsx';
+import { HskkSpeakingSimulator } from '../features/hskk-exam/HskkSpeakingSimulator.tsx';
+import { PostExamMistakeRemediationPanel } from '../features/hsk-exam/analytics/PostExamMistakeRemediationPanel.tsx';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Award, 
@@ -97,6 +100,10 @@ export default function HskPracticePage({
         window.location.hash = '#hsk/exams';
       } else if (view === 'structure') {
         window.location.hash = '#hsk/structure';
+      } else if (view === 'hsk6_simulator') {
+        window.location.hash = '#hsk/hsk6_simulator';
+      } else if (view === 'hskk_simulator') {
+        window.location.hash = '#hsk/hskk_simulator';
       } else if (view === 'resources') {
         window.location.hash = '#hsk/resources';
       } else if (view === 'history') {
@@ -119,6 +126,8 @@ export default function HskPracticePage({
   const currentView = useMemo(() => {
     if (subRoute === 'exams') return 'exams';
     if (subRoute === 'structure') return 'structure';
+    if (subRoute === 'hsk6_simulator') return 'hsk6_simulator';
+    if (subRoute === 'hskk_simulator') return 'hskk_simulator';
     if (subRoute === 'resources') return 'resources';
     if (subRoute === 'history') return 'history';
     if (subRoute === 'mistakes') return 'mistakes';
@@ -151,6 +160,18 @@ export default function HskPracticePage({
       {currentView === 'structure' && (
         <HskStructureView 
           onNavigate={navigateTo} 
+        />
+      )}
+
+      {currentView === 'hsk6_simulator' && (
+        <Hsk6SimulatorWorkspace
+          onBack={() => navigateTo('home')}
+        />
+      )}
+
+      {currentView === 'hskk_simulator' && (
+        <HskkSpeakingSimulator
+          onBack={() => navigateTo('home')}
         />
       )}
 
@@ -505,42 +526,56 @@ function HskHomeView({ onNavigate, onOpenRandomModal }) {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5">
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#E85D3F] via-[#CB4529] to-[#992E17] text-white p-8 sm:p-12 shadow-xl shadow-orange-500/10 mb-10">
-        <div className="relative z-10 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold uppercase tracking-wider mb-4">
-            <Sparkles className="w-4 h-4 text-amber-300" />
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#E85D3F] via-[#CB4529] to-[#992E17] text-white p-5 sm:p-7 shadow-lg shadow-orange-500/10 mb-7">
+        <div className="relative z-10 max-w-4xl">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] font-bold uppercase tracking-wider mb-2.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
             Nền tảng Luyện Thi HSK Miễn Phí 100%
           </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight mb-4">
-            Thi Thử HSK Trực Tuyến <br className="hidden sm:inline"/>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug mb-2">
+            Thi Thử HSK Trực Tuyến{' '}
             <span className="text-amber-200">Không Cần Đăng Nhập</span>
           </h1>
-          <p className="text-white/90 text-base sm:text-lg mb-8 leading-relaxed">
-            Hệ thống đề thi mô phỏng chuẩn quốc tế từ HSK 1 đến HSK 6: Đầy đủ 26 đề thi chuẩn hóa & 417 câu hỏi thực chiến, tự động tính điểm theo thang chuẩn và cung cấp lời giải thích chi tiết bằng tiếng Việt.
+          <p className="text-white/90 text-xs sm:text-sm mb-5 leading-relaxed max-w-2xl">
+            Hệ thống đề thi mô phỏng chuẩn quốc tế từ HSK 1 đến HSK 6: Đầy đủ 26 đề thi chuẩn hóa &amp; 417 câu hỏi thực chiến, tự động tính điểm và giải thích chi tiết bằng tiếng Việt.
           </p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-2.5">
             <button
               onClick={() => onNavigate('exams')}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-white text-[#E85D3F] font-bold text-base shadow-lg hover:bg-orange-50 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-[#E85D3F] font-bold text-xs sm:text-sm shadow-sm hover:bg-orange-50 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
-              <Award className="w-5 h-5" />
-              Khám phá toàn bộ đề thi ({exams.length})
+              <Award className="w-4 h-4" />
+              Toàn bộ đề thi ({exams.length})
             </button>
             <button
               onClick={onOpenRandomModal}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 font-black text-base shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
-              <Dices className="w-5 h-5 text-slate-950" />
+              <Dices className="w-4 h-4 text-slate-950" />
               Thi ngẫu nhiên 🎲
             </button>
             <button
               onClick={() => onNavigate('structure')}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-base shadow-sm transition-all cursor-pointer border border-white/20"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer border border-white/20"
             >
-              <ShieldCheck className="w-5 h-5 text-amber-300" />
-              Tra cứu Cấu trúc Đề HSK
+              <ShieldCheck className="w-4 h-4 text-amber-300" />
+              Cấu trúc Đề HSK
+            </button>
+            <button
+              onClick={() => onNavigate('hsk6_simulator')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/70 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer border border-white/20"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-300" />
+              Mô phỏng HSK 6 (51–60 &amp; 101)
+            </button>
+            <button
+              onClick={() => onNavigate('hskk_simulator')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer border border-white/20"
+            >
+              <Volume2 className="w-4 h-4 text-white" />
+              Phòng thi nói HSKK
             </button>
           </div>
         </div>
@@ -2463,12 +2498,20 @@ function HskExamResultView({ attemptId, user, onNavigate }) {
 
       {/* AI Sư phạm Chẩn đoán lỗi bài làm */}
       {attempt.incorrectCount > 0 && (
-        <HskAiDiagnosticPanel
-          mistakes={(attempt.detailedResults || []).filter(r => !r.isCorrect)}
-          attempts={[attempt]}
-          user={user}
-          onNavigate={onNavigate}
-        />
+        <>
+          <HskAiDiagnosticPanel
+            mistakes={(attempt.detailedResults || []).filter(r => !r.isCorrect)}
+            attempts={[attempt]}
+            user={user}
+            onNavigate={onNavigate}
+          />
+          <PostExamMistakeRemediationPanel
+            mistakes={(attempt.detailedResults || []).filter(r => !r.isCorrect)}
+            paperCode={attempt.examId || 'HSK-CBT'}
+            user={user}
+            onOpenGrammarExplorer={() => onNavigate('structure')}
+          />
+        </>
       )}
 
       {/* Answer Review Filter & List */}

@@ -16,6 +16,7 @@ import joinHandler from '../_handlers/classroom/join.js';
 import membersHandler from '../_handlers/classroom/members.js';
 import removeHandler from '../_handlers/classroom/remove.js';
 import createHandler from '../_handlers/classroom/create.js';
+import assignmentsHandler from '../_handlers/classroom/assignments.js';
 
 export default async function handler(req, res) {
   const urlPath = req.url ? req.url.split('?')[0] : '';
@@ -40,6 +41,10 @@ export default async function handler(req, res) {
 
   if (action === 'remove') {
     return removeHandler(req, res);
+  }
+
+  if (action === 'assignments') {
+    return assignmentsHandler(req, res);
   }
 
   return res.status(404).json({

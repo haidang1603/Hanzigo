@@ -25,8 +25,11 @@ import {
   WifiOff,
   Activity,
   CheckCircle2,
-  Volume2
+  Volume2,
+  PenTool,
+  LayoutGrid
 } from 'lucide-react';
+import LiveHanziWhiteboardStage from '../features/classroom/live/LiveHanziWhiteboardStage';
 import { 
   verifySessionAccess,
   joinLiveSession,
@@ -175,6 +178,7 @@ export default function LiveClassroomPage({
 
   // Layout & UI state
   const [activeSideTab, setActiveSideTab] = useState('chat'); // 'chat' | 'participants' | null
+  const [viewMode, setViewMode] = useState('video_grid'); // 'video_grid' | 'whiteboard_split'
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [toast, setToast] = useState(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
@@ -1135,6 +1139,44 @@ export default function LiveClassroomPage({
                   ))}
                 </div>
               </div>
+            ) : viewMode === 'whiteboard_split' ? (
+              /* 1B. WHITEBOARD TEACHING SPLIT-VIEW */
+              <div className="flex-1 flex flex-col gap-3 min-h-0">
+                <LiveHanziWhiteboardStage
+                  room={livekitManagerRef.current?.room || null}
+                  currentUser={user}
+                  isTeacher={myRole === 'teacher'}
+                  participants={participants}
+                />
+
+                {/* Mini Video Strip */}
+                <div className="h-24 flex gap-3 overflow-x-auto pb-1 custom-scrollbar shrink-0">
+                  <div className="w-40 aspect-video rounded-xl bg-black/80 border border-white/20 overflow-hidden relative shrink-0">
+                    {isTeacherCameraOn ? (
+                      <video
+                        ref={teacherVideoRef}
+                        autoPlay
+                        playsInline
+                        muted={myRole === 'teacher'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-[#0F172A] p-2 text-center">
+                        <span className="text-[11px] font-bold text-white/80">GV: {teacherName}</span>
+                      </div>
+                    )}
+                    <span className="absolute bottom-1 left-2 text-[9px] bg-black/60 px-1 rounded text-white font-bold">
+                      GV: {teacherName}
+                    </span>
+                  </div>
+
+                  {remoteLkParticipants.filter(p => p.role !== 'teacher').map(p => (
+                    <div key={p.identity} className="w-36 shrink-0">
+                      <RemoteParticipantTile participant={p} lkManager={livekitManagerRef.current} />
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               /* 2. GALLERY & SPOTLIGHT VIDEO GRID MODE */
               <div className="flex-1 flex flex-col gap-4">
@@ -1392,6 +1434,25 @@ export default function LiveClassroomPage({
 
               {/* Side Panels Toggle & Fullscreen */}
               <div className="flex items-center gap-2">
+                {/* Whiteboard Teaching Split-View Toggle */}
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    setViewMode(prev => prev === 'whiteboard_split' ? 'video_grid' : 'whiteboard_split');
+                  }}
+                  className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    viewMode === 'whiteboard_split'
+                      ? 'bg-[#E85D3F] text-white shadow-md'
+                      : 'bg-white/10 hover:bg-white/20 text-white/80'
+                  }`}
+                  title={viewMode === 'whiteboard_split' ? 'Chuyển sang Lưới Video' : 'Mở Bảng trắng Chữ Hán'}
+                >
+                  {viewMode === 'whiteboard_split' ? <LayoutGrid size={16} /> : <PenTool size={16} />}
+                  <span className="hidden sm:inline">
+                    {viewMode === 'whiteboard_split' ? 'Lưới Video' : 'Bảng trắng Hán tự'}
+                  </span>
+                </button>
+
                 {/* Chat Panel Toggle */}
                 <button
                   onClick={() => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import confetti from 'canvas-confetti';
+import { fireConfetti as confetti } from '../../utils/confetti';
 import { 
   Compass, 
   X, 

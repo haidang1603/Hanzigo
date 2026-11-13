@@ -41,6 +41,7 @@ import {
   ChevronRight,
   BookMarked
 } from 'lucide-react';
+import { TextbookCompanionStudio } from '../features/textbook-companion/TextbookCompanionStudio.tsx';
 import { 
   getStoredMaterials, 
   saveMaterial, 
@@ -374,12 +375,22 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
     ? propIsAdmin 
     : Boolean(authContext?.isAdmin || (user?.role === 'admin' && user?.status === 'active'));
 
-  // Helper to combine legacy stored materials with master academic resources
-  const initializeMasterMaterials = () => {
-    const stored = getStoredMaterials();
-    const storedIds = new Set(stored.map(m => String(m.id)));
-    
-    const enrichedStored = stored.map(m => {
+  // Helper to normalize academic resources and merge with stored/DB materials
+  const SKILL_LABEL_MAP = {
+    mixed: 'Tổng hợp đa kỹ năng',
+    listening: 'Nghe hiểu',
+    speaking: 'Nói & Khẩu ngữ',
+    reading: 'Đọc hiểu',
+    writing: 'Viết chữ',
+    vocabulary: 'Từ vựng',
+    grammar: 'Ngữ pháp',
+  };
+
+  const enrichAndMergeMaterials = (baseItems) => {
+    const safeBase = Array.isArray(baseItems) ? baseItems : [];
+    const baseIds = new Set(safeBase.map(m => String(m.id)));
+
+    const enrichedBase = safeBase.map(m => {
       if (m.academic_category) return m;
       let acad = 'textbooks_courses';
       const cat = (m.category || '').toLowerCase();
@@ -410,9 +421,24 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
       };
     });
 
-    const additionalAcademic = HSK_LEARNING_RESOURCES.filter(r => !storedIds.has(String(r.id)));
-    return [...enrichedStored, ...additionalAcademic];
+    const additionalAcademic = HSK_LEARNING_RESOURCES
+      .filter(r => !baseIds.has(String(r.id)))
+      .map(r => ({
+        ...r,
+        sourceUrl: r.sourceUrl || r.source_url || '',
+        downloadUrl: r.downloadUrl || r.download_url || r.source_url || '',
+        author: r.author || r.source_author || r.publisher || 'HanziGo Academic',
+        language: r.language || r.language_of_instruction || 'Song ngữ Trung - Việt',
+        skills: Array.isArray(r.skills) && r.skills.length > 0
+          ? r.skills
+          : [SKILL_LABEL_MAP[r.skill] || 'Tổng hợp đa kỹ năng'],
+        createdAt: r.createdAt || r.verified_date || '2026-10-12',
+      }));
+
+    return [...enrichedBase, ...additionalAcademic];
   };
+
+  const initializeMasterMaterials = () => enrichAndMergeMaterials(getStoredMaterials());
 
   // Core Data State
   const [materials, setMaterials] = useState(() => initializeMasterMaterials());
@@ -546,7 +572,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
   // Authoritative database update helper
   const applyAuthoritativeMaterials = (dbItems) => {
     if (!Array.isArray(dbItems)) return;
-    setMaterials(dbItems);
+    setMaterials(enrichAndMergeMaterials(dbItems));
   };
 
   // Fetch materials from Supabase on mount
@@ -928,6 +954,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
         const filterLvl = selectedLevel.toUpperCase();
         matchesLevel = itemLevel.includes(filterLvl) || 
           (filterLvl === 'HSK 1' && itemLevel.includes('HSK 1')) ||
+          (itemLevel.includes('4-6') && ['HSK 4', 'HSK 5', 'HSK 6'].includes(filterLvl)) ||
           (itemLevel.includes('1-6') || itemLevel.includes('1-3') || itemLevel.includes('3-4') || itemLevel.includes('3.0'));
       }
 
@@ -1074,50 +1101,50 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
       )}
 
       {/* 1. HERO HEADER BANNER (ASIAN-MODERN PALETTE) */}
-      <div className="relative overflow-hidden p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#991B1B] text-white shadow-2xl">
+      <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#991B1B] text-white shadow-lg">
         {/* Ambient glows */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-20 w-80 h-80 rounded-full bg-rose-400/20 blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-16 w-56 h-56 rounded-full bg-rose-400/20 blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-          <div className="space-y-4 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 text-white text-xs font-bold backdrop-blur-md border border-white/20 shadow-xs">
-              <FolderDown size={14} className="text-amber-300" />
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-white text-[11px] font-bold backdrop-blur-md border border-white/20">
+              <FolderDown size={13} className="text-amber-300" />
               <span>Kho học liệu & Giáo trình số HanziGo</span>
               {isAdmin && (
-                <span className="ml-1 px-2 py-0.5 rounded-full bg-amber-400 text-black text-[10px] font-black uppercase tracking-wider">
-                  Admin Access
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-400 text-black text-[10px] font-black uppercase tracking-wider">
+                  Admin
                 </span>
               )}
             </div>
             
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
               Thư Viện Tài Liệu Tiếng Trung
             </h1>
             
-            <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-medium">
-              Tuyển tập giáo trình chuẩn CTI & BLCU, kho tài nguyên giáo dục mở (OER), bách khoa ngữ pháp Wiki, đề thi HSK có đáp án và file nghe Audio bản ngữ. Tất cả tài liệu đều được thẩm định học thuật và trích dẫn bản quyền minh bạch.
+            <p className="text-xs text-white/90 leading-relaxed font-medium line-clamp-2">
+              Tuyển tập giáo trình chuẩn CTI & BLCU, kho OER, bách khoa ngữ pháp Wiki, đề thi HSK có đáp án và Audio bản ngữ minh bạch bản quyền.
             </p>
             
             {/* Quick Stats Badges */}
-            <div className="flex flex-wrap items-center gap-2.5 pt-1 text-xs">
-              <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5">
-                📚 <strong>{materials.length}</strong> tài liệu học tập
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px]">
+              <span className="px-2.5 py-1 rounded-lg bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1">
+                📚 <strong>{materials.length}</strong> tài liệu
               </span>
-              <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5">
-                🛡️ <strong>{verifiedCount}</strong> tài liệu CTI & OER
+              <span className="px-2.5 py-1 rounded-lg bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1">
+                🛡️ <strong>{verifiedCount}</strong> CTI & OER
               </span>
-              <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5">
-                🎧 <strong>{audioMaterialsCount}</strong> tài liệu có Audio
+              <span className="px-2.5 py-1 rounded-lg bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1">
+                🎧 <strong>{audioMaterialsCount}</strong> có Audio
               </span>
-              <span className="px-3 py-1.5 rounded-xl bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-amber-300">
-                ⭐ <strong>{bookmarkedIds.length}</strong> đã lưu yêu thích
+              <span className="px-2.5 py-1 rounded-lg bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1 text-amber-300">
+                ⭐ <strong>{bookmarkedIds.length}</strong> yêu thích
               </span>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-3 shrink-0">
+          <div className="flex flex-wrap items-center lg:justify-end gap-2 lg:max-w-sm shrink-0">
             
             {/* Primary Add Material Button (Admin Only) */}
             {isAdmin && (
@@ -1126,10 +1153,10 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   playClickSound();
                   setShowAddModal(true);
                 }}
-                className="px-5 py-3 rounded-2xl bg-white text-[#E85D3F] hover:bg-[#FFF9F2] font-black text-xs sm:text-sm shadow-xl hover:scale-105 active:scale-100 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-white text-[#E85D3F] hover:bg-[#FFF9F2] font-black text-xs shadow-md transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
               >
-                <Plus size={18} />
-                <span>Thêm tài liệu (Admin)</span>
+                <Plus size={15} />
+                <span>Thêm tài liệu</span>
               </button>
             )}
 
@@ -1139,10 +1166,10 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                 playClickSound();
                 setShowMizigeGenModal(true);
               }}
-              className="px-4 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-gray-900 font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+              className="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-gray-900 font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
-              <Printer size={15} />
-              <span>✍️ Tạo & In Ô Mễ Tự A4</span>
+              <Printer size={14} />
+              <span>In Ô Mễ Tự A4</span>
             </button>
 
             {/* Return to Roadmap Button */}
@@ -1152,10 +1179,10 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   playClickSound();
                   setActiveTab('roadmap');
                 }}
-                className="px-4 py-2.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
-                <Compass size={14} />
-                <span>🗺️ Quay lại Lộ trình</span>
+                <Compass size={13} />
+                <span>Lộ trình</span>
               </button>
             )}
 
@@ -1165,10 +1192,10 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                 playClickSound();
                 setShowRequestModal(true);
               }}
-              className="px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
-              <Send size={14} />
-              <span>📬 Yêu cầu tài liệu mới</span>
+              <Send size={13} />
+              <span>Yêu cầu mới</span>
             </button>
 
             {/* Refresh from Supabase */}
@@ -1176,16 +1203,16 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
               onClick={handleRefreshCloud}
               disabled={isSyncing}
               title="Đồng bộ lại danh mục tài liệu từ máy chủ"
-              className="px-3 py-1.5 rounded-xl bg-black/25 hover:bg-black/35 text-white/90 text-xs font-semibold backdrop-blur-md transition-all flex items-center justify-center gap-1.5 self-center md:self-end cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-black/25 hover:bg-black/35 text-white/90 text-xs font-semibold backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
               <RefreshCw size={13} className={isSyncing ? 'animate-spin' : ''} />
-              <span>{isSyncing ? 'Đang tải...' : 'Làm mới máy chủ'}</span>
+              <span>{isSyncing ? 'Đang tải...' : 'Làm mới'}</span>
             </button>
           </div>
         </div>
 
         {/* Decorative Chinese calligraphy watermark */}
-        <div className="absolute right-6 -bottom-8 font-['Noto_Serif_SC'] text-8xl sm:text-9xl font-black text-white/10 select-none pointer-events-none">
+        <div className="absolute right-4 -bottom-4 font-['Noto_Serif_SC'] text-6xl sm:text-7xl font-black text-white/10 select-none pointer-events-none">
           博览群书
         </div>
       </div>
@@ -1458,6 +1485,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
           <div className="flex items-center gap-2 overflow-x-auto">
             {[
               { id: 'all', label: `Tất cả tài liệu (${materials.length})` },
+              { id: 'textbook', label: '📚 Giáo trình Đồng hành' },
               { id: 'bookmarked', label: `❤️ Đã lưu yêu thích (${bookmarkedIds.length})` },
               { id: 'custom', label: `🌟 Đóng góp (${customMaterialsCount})` }
             ].map(tab => (
@@ -1673,8 +1701,13 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
 
       </div>
 
+      {/* 5. TEXTBOOK CURRICULUM COMPANION VIEW */}
+      {activeTabFilter === 'textbook' && (
+        <TextbookCompanionStudio user={user} onNavigateTab={setActiveTab} />
+      )}
+
       {/* 5. LOADING SKELETON STATE */}
-      {isLoading && (
+      {activeTabFilter !== 'textbook' && isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
           {[1, 2, 3, 4, 5, 6].map(sk => (
             <div key={sk} className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-4">
@@ -1694,7 +1727,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
       )}
 
       {/* 6. MATERIALS GRID */}
-      {!isLoading && (
+      {activeTabFilter !== 'textbook' && !isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredMaterials.map((item) => {
             const isBookmarked = bookmarkedIds.includes(item.id);
@@ -1997,7 +2030,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
       )}
 
       {/* 7. EMPTY STATE */}
-      {!isLoading && filteredMaterials.length === 0 && (
+      {activeTabFilter !== 'textbook' && !isLoading && filteredMaterials.length === 0 && (
         <div className="p-12 sm:p-16 text-center rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-4 max-w-lg mx-auto shadow-sm animate-in fade-in">
           <FileText size={48} className="mx-auto text-[#748092]" />
           <h3 className="text-base font-bold text-[#243447] dark:text-white">

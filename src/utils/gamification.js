@@ -152,14 +152,28 @@ export function calculateTotalXp(user = null) {
   return xp;
 }
 
+export const STREAK_MILESTONES = [
+  { days: 3, xp: 50, title: 'Tân Binh Chăm Chỉ', icon: '🌱' },
+  { days: 7, xp: 120, title: 'Tuần Lễ Rực Lửa', icon: '🔥' },
+  { days: 14, xp: 300, title: 'Ngọn Lửa Kiên Định', icon: '⚡' },
+  { days: 30, xp: 800, title: 'Bất Diệt Hán Ngữ', icon: '👑' },
+];
+
 /**
  * Award XP to the specific learner, update streak activity, and sync to DB.
  * Supports idempotencyKey to prevent duplicate XP on repetitive clicks.
  */
-export function awardXp(amount, user = null, idempotencyKey = null) {
-  if (typeof amount !== 'number' || amount <= 0) return calculateTotalXp(user);
+export function awardXp(amount, user = null, idempotencyKey = null, options = {}) {
+  if (typeof amount !== 'number' || amount <= 0) return calculateTotalXp(typeof user === 'object' ? user : null);
 
+  // Support legacy/accidental (amount, reasonString, userObj) call signature safely
   let targetUser = user;
+  let resolvedKey = idempotencyKey;
+  if (typeof user === 'string') {
+    resolvedKey = user;
+    targetUser = idempotencyKey && typeof idempotencyKey === 'object' ? idempotencyKey : null;
+  }
+
   if (!targetUser) {
     try {
       const saved = localStorage.getItem('hanzigo_user');
@@ -170,12 +184,12 @@ export function awardXp(amount, user = null, idempotencyKey = null) {
   const today = getLocalDateString();
 
   // Idempotency check: prevent duplicate awarding for the exact same action today
-  if (idempotencyKey) {
+  if (resolvedKey) {
     const actionHistoryKey = getUserStorageKey('hanzigo_awarded_actions', targetUser);
     try {
       const rawActions = localStorage.getItem(actionHistoryKey);
       const actions = rawActions ? JSON.parse(rawActions) : {};
-      const fullActionId = `${idempotencyKey}_${today}`;
+      const fullActionId = `${resolvedKey}_${today}`;
       if (actions[fullActionId]) {
         // Already awarded today, do not award duplicate points
         return calculateTotalXp(targetUser);
@@ -220,7 +234,9 @@ export function awardXp(amount, user = null, idempotencyKey = null) {
   }
 
   // Record streak activity specifically for this user
-  recordStudyActivity(targetUser);
+  const activeStreak = options?.skipStreakRecord
+    ? getStreakStatus(targetUser).streak
+    : recordStudyActivity(targetUser);
 
   // Recalculate total XP
   const updatedXp = calculateTotalXp(targetUser);
@@ -233,6 +249,7 @@ export function awardXp(amount, user = null, idempotencyKey = null) {
         const u = JSON.parse(saved);
         if (u && (u.uid === targetUser.uid || u.email === targetUser.email)) {
           u.xp = updatedXp;
+          u.streak = activeStreak;
           localStorage.setItem('hanzigo_user', JSON.stringify(u));
         }
       }
@@ -253,7 +270,7 @@ export function awardXp(amount, user = null, idempotencyKey = null) {
         avatar: targetUser?.avatar || null,
         level: targetUser?.level || 'HSK 1 - Sơ cấp',
         xp: updatedXp,
-        streak: targetUser?.streak || 1,
+        streak: activeStreak || 1,
         status: 'active'
       };
       localStorage.setItem('hanzigo_shared_profiles_cache', JSON.stringify(cache));
@@ -262,7 +279,7 @@ export function awardXp(amount, user = null, idempotencyKey = null) {
 
   // Trigger cloud sync for this user with authoritative XP
   triggerCloudSync(targetId, updatedXp);
-  broadcastGamificationUpdate('LEADERBOARD_UPDATED', { xp: updatedXp, userId: targetId });
+  broadcastGamificationUpdate('LEADERBOARD_UPDATED', { xp: updatedXp, streak: activeStreak, userId: targetId });
 
   return updatedXp;
 }
@@ -317,9 +334,21 @@ export function recordStudyActivity(user = null) {
 
     localStorage.setItem(dateKey, today);
     localStorage.setItem(streakKey, String(currentStreak));
+    localStorage.removeItem(getUserStorageKey('hanzigo_streak_before_reset', targetUser));
     if (isGuest) {
       localStorage.setItem('hanzigo_last_study_date', today);
       localStorage.setItem('hanzigo_streak_count', String(currentStreak));
+    }
+
+    // Award Streak Milestone Bonus XP (3, 7, 14, 30 days) once per milestone achievement
+    for (const milestone of STREAK_MILESTONES) {
+      if (currentStreak >= milestone.days) {
+        const milestoneAwardKey = getUserStorageKey(`hanzigo_streak_milestone_${milestone.days}`, targetUser);
+        if (!localStorage.getItem(milestoneAwardKey)) {
+          localStorage.setItem(milestoneAwardKey, today);
+          awardXp(milestone.xp, targetUser, `streak_milestone_${milestone.days}`, { skipStreakRecord: true });
+        }
+      }
     }
 
     // Update longest streak
@@ -435,6 +464,9 @@ export function getStreakStatus(user = null) {
 
     // TH 3: Tài khoản đã off 1 ngày trở lên (hôm qua không điểm danh/không học) -> Chuỗi quay về 0!
     try {
+      if (candidateStreak > 0) {
+        localStorage.setItem(getUserStorageKey('hanzigo_streak_before_reset', targetUser), String(candidateStreak));
+      }
       localStorage.setItem(streakKey, '0');
       if (isGuest) {
         localStorage.setItem('hanzigo_streak_count', '0');
@@ -478,8 +510,9 @@ export function checkInDaily(user = null) {
   }
 
   const today = getLocalDateString();
+  const isGuest = !targetUser?.uid && !targetUser?.id && !targetUser?.email;
   const dateKey = getUserStorageKey('hanzigo_last_study_date', targetUser);
-  const rawDate = localStorage.getItem(dateKey) || localStorage.getItem('hanzigo_last_study_date') || targetUser?.last_study_date || targetUser?.lastActiveDate;
+  const rawDate = localStorage.getItem(dateKey) || (isGuest ? localStorage.getItem('hanzigo_last_study_date') : null) || targetUser?.last_study_date || targetUser?.lastActiveDate;
   const lastDate = normalizeDateString(rawDate);
 
   // Nếu hôm nay đã điểm danh hoặc đã học rồi
@@ -496,9 +529,9 @@ export function checkInDaily(user = null) {
   // Ghi nhận chuỗi ngày học / điểm danh
   const newStreak = recordStudyActivity(targetUser);
 
-  // Thưởng 15 XP điểm danh hàng ngày
+  // Thưởng 15 XP điểm danh hàng ngày (truyền đúng targetUser + idempotencyKey)
   try {
-    awardXp(15, 'Điểm danh hàng ngày', targetUser);
+    awardXp(15, targetUser, 'daily_checkin');
   } catch (err) {
     console.warn('Checkin award XP notice:', err);
   }
@@ -593,8 +626,11 @@ export function consumeStreakFreeze(user = null) {
     }
     const rawStreak = localStorage.getItem(streakKey) || (isGuest ? localStorage.getItem('hanzigo_streak_count') : null);
     const storedStreak = parseInt(rawStreak || '0', 10);
-    const preservedStreak = Math.max(1, storedStreak, typeof targetUser?.streak === 'number' ? targetUser.streak : 0);
+    const beforeResetKey = getUserStorageKey('hanzigo_streak_before_reset', targetUser);
+    const beforeResetStreak = parseInt(localStorage.getItem(beforeResetKey) || '0', 10);
+    const preservedStreak = Math.max(1, storedStreak, beforeResetStreak, typeof targetUser?.streak === 'number' ? targetUser.streak : 0);
     localStorage.setItem(streakKey, String(preservedStreak));
+    localStorage.removeItem(beforeResetKey);
     if (isGuest) {
       localStorage.setItem('hanzigo_streak_count', String(preservedStreak));
     }

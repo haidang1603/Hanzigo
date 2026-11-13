@@ -65,6 +65,8 @@ import CreateAnnouncementModal from '../components/teacher/CreateAnnouncementMod
 import UploadMaterialModal from '../components/teacher/UploadMaterialModal';
 import GradingDrawerModal from '../components/teacher/GradingDrawerModal';
 import StudentDetailModal from '../components/teacher/StudentDetailModal';
+import CreateHskAssignmentModal from '../features/classroom/assignments/CreateHskAssignmentModal';
+import ClassMistakeHeatmapPanel from '../features/classroom/assignments/ClassMistakeHeatmapPanel';
 import { playClickSound, playSuccessSound } from '../utils/audio';
 
 export default function TeacherDashboardPage({
@@ -114,6 +116,7 @@ export default function TeacherDashboardPage({
   // Modals state
   const [createClassModalOpen, setCreateClassModalOpen] = useState(false);
   const [createAsgModalOpen, setCreateAsgModalOpen] = useState(false);
+  const [hskAssignModalOpen, setHskAssignModalOpen] = useState(false);
   const [createAnnModalOpen, setCreateAnnModalOpen] = useState(false);
   const [uploadMatModalOpen, setUploadMatModalOpen] = useState(false);
   const [gradingModalSub, setGradingModalSub] = useState(null);
@@ -1318,6 +1321,14 @@ export default function TeacherDashboardPage({
               }}
               onSelectStudent={handleOpenStudentAnalytics}
             />
+
+            <ClassMistakeHeatmapPanel
+              classroomId={analyticsClassId === 'all' ? (classId || classrooms[0]?.id || '') : analyticsClassId}
+              onOpenCreateModal={() => setHskAssignModalOpen(true)}
+              onLaunchLiveReview={(pack) => {
+                showToast(`Đã chuẩn bị ${pack.missedQuestions?.length || 0} câu sai để chữa trong phòng LiveKit!`);
+              }}
+            />
           </div>
         )}
 
@@ -1381,6 +1392,14 @@ export default function TeacherDashboardPage({
                 setAiStudioModalOpen(true);
               }}
               onSelectStudent={handleOpenStudentAnalytics}
+            />
+
+            <ClassMistakeHeatmapPanel
+              classroomId={analyticsClassId === 'all' ? (classId || classrooms[0]?.id || '') : analyticsClassId}
+              onOpenCreateModal={() => setHskAssignModalOpen(true)}
+              onLaunchLiveReview={(pack) => {
+                showToast(`Đã chuẩn bị ${pack.missedQuestions?.length || 0} câu sai để chữa trong phòng LiveKit!`);
+              }}
             />
           </div>
         )}
@@ -2358,6 +2377,17 @@ export default function TeacherDashboardPage({
         onPublishAssignment={handlePublishAiAssignment}
         onSaveLessonPlan={handleSaveLessonPlanToMaterials}
         showToast={showToast}
+      />
+
+      <CreateHskAssignmentModal
+        isOpen={hskAssignModalOpen}
+        onClose={() => setHskAssignModalOpen(false)}
+        classrooms={classrooms}
+        defaultClassroomId={analyticsClassId === 'all' ? (classId || classrooms[0]?.id) : analyticsClassId}
+        onCreated={(asg) => {
+          showToast(`Đã giao bài tập HSK: ${asg?.title || ''}`);
+          loadTeacherData(true);
+        }}
       />
 
     </div>

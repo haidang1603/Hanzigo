@@ -43,7 +43,8 @@ const DEFAULT_QUOTE = {
   author: 'Tuân Tử — Khuyến Học'
 };
 
-export default function Footer({ setActiveTab }) {
+export default function Footer({ setActiveTab, user = null }) {
+  const isAdmin = Boolean(user && user.role === 'admin' && user.status !== 'blocked');
   const [emailInput, setEmailInput] = useState('');
   const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'already' | 'error'
   const [errorMessage, setErrorMessage] = useState('');
@@ -269,12 +270,14 @@ export default function Footer({ setActiveTab }) {
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#F4B942]">
               Khóa học & Lộ trình
             </h4>
-            <ul className="space-y-2.5 text-xs sm:text-sm text-[#94A3B8]">
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Nhập môn Pinyin & Bút thuận</button></li>
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Khóa HSK 1 – 150 từ cơ bản</button></li>
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Khóa HSK 2 – Sơ cấp đàm thoại</button></li>
-              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left">Khóa HSK 3 – 4 Giao tiếp công sở</button></li>
-              <li className="pt-2"><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left font-medium">Luyện thi HSK 5–6 Chuyên sâu</button></li>
+            <ul className="space-y-2 text-xs sm:text-sm text-[#94A3B8]">
+              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Nhập môn Pinyin & Bút thuận</button></li>
+              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Khóa HSK 1 – 150 từ cơ bản</button></li>
+              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Khóa HSK 2 – Sơ cấp đàm thoại</button></li>
+              <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Khóa HSK 3–4 Giao tiếp công sở</button></li>
+              <li><button onClick={() => handleNav('hsk')} className="hover:text-white hover:translate-x-1 transition-all text-left font-medium cursor-pointer">Thi thử HSK 1–6 &amp; Nói HSKK</button></li>
+              <li><button onClick={() => handleNav('hsk30-translation')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">HSK 3.0 (Cấp 7–9) &amp; Xưởng Dịch</button></li>
+              <li><button onClick={() => handleNav('classroom')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Lớp học trực tuyến (Live)</button></li>
             </ul>
           </div>
 
@@ -283,13 +286,18 @@ export default function Footer({ setActiveTab }) {
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#F4B942]">
               Tính năng nổi bật
             </h4>
-            <ul className="space-y-2.5 text-xs sm:text-sm text-[#94A3B8]">
-              <li><button onClick={() => handleNav('materials')} className="text-[#F4B942] hover:text-amber-300 hover:translate-x-1 transition-all text-left font-medium">Thư viện Tài liệu & Giáo trình</button></li>
-              <li><button onClick={() => handleNav('vocabulary')} className="hover:text-white hover:translate-x-1 transition-all text-left">Flashcard 3D thông minh SRS</button></li>
-              <li><button onClick={() => handleNav('pronunciation')} className="hover:text-white hover:translate-x-1 transition-all text-left">Luyện phát âm & Nhận diện giọng</button></li>
-              <li><button onClick={() => handleNav('writing')} className="hover:text-white hover:translate-x-1 transition-all text-left">Canvas tập viết chữ Hán mễ tự</button></li>
-              <li><button onClick={() => handleNav('conversation')} className="hover:text-white hover:translate-x-1 transition-all text-left">Hội thoại AI Tiểu Hàm</button></li>
-              <li><button onClick={() => handleNav('community')} className="hover:text-white hover:translate-x-1 transition-all text-left">Cộng đồng & Tìm bạn luyện nói</button></li>
+            <ul className="space-y-2 text-xs sm:text-sm text-[#94A3B8]">
+              <li><button onClick={() => handleNav('materials')} className="text-[#F4B942] hover:text-amber-300 hover:translate-x-1 transition-all text-left font-medium cursor-pointer">Thư viện Tài liệu &amp; Giáo trình</button></li>
+              <li><button onClick={() => handleNav('intelligence')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Trung tâm AI Học tập</button></li>
+              <li><button onClick={() => handleNav('vocabulary')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Flashcard 3D thông minh SRS</button></li>
+              <li><button onClick={() => handleNav('reader')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Đọc hiểu &amp; Đào câu (i+1)</button></li>
+              <li><button onClick={() => handleNav('listening-studio')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Listening Studio &amp; Dictation</button></li>
+              <li><button onClick={() => handleNav('video-studio')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Video Studio Song ngữ</button></li>
+              <li><button onClick={() => handleNav('grammar')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Ngữ pháp HSK &amp; Bắt lỗi</button></li>
+              <li><button onClick={() => handleNav('pronunciation')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Luyện phát âm &amp; Nhận diện giọng</button></li>
+              <li><button onClick={() => handleNav('writing')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Từ điển &amp; Canvas viết mễ tự</button></li>
+              <li><button onClick={() => handleNav('conversation')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Hội thoại AI Tiểu Hàm</button></li>
+              <li><button onClick={() => handleNav('community')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Cộng đồng &amp; Tìm bạn luyện nói</button></li>
             </ul>
           </div>
 
@@ -424,13 +432,15 @@ export default function Footer({ setActiveTab }) {
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-[#94A3B8] gap-4 relative z-10">
           <p>© 2026 HanziGo. Dự án giáo dục phi thương mại dành cho người Việt.</p>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-            <button 
-              onClick={() => handleNav('admin')} 
-              className="text-[#DF5334] hover:text-[#f87171] font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <ShieldCheck size={14} className="text-[#DF5334]" />
-              <span>Quản trị viên (Admin)</span>
-            </button>
+            {isAdmin && (
+              <button 
+                onClick={() => handleNav('admin')} 
+                className="text-[#DF5334] hover:text-[#f87171] font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <ShieldCheck size={14} className="text-[#DF5334]" />
+                <span>Quản trị viên (Admin)</span>
+              </button>
+            )}
             <a 
               href="#privacy" 
               onClick={(e) => {
@@ -470,6 +480,16 @@ export default function Footer({ setActiveTab }) {
               className="hover:text-white transition-colors cursor-pointer"
             >
               Học phí & Hoàn tiền
+            </a>
+            <a 
+              href="#storage-preferences" 
+              onClick={(e) => {
+                e.preventDefault();
+                handleNav('storage-preferences');
+              }}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              Tùy chọn lưu trữ
             </a>
             <button
               type="button"

@@ -33,6 +33,7 @@ import {
   EMBEDDING_MODEL_IDENTIFIER,
   EMBEDDING_DIMENSION
 } from './embeddingProvider.js';
+import { getSupabaseAdminClient } from './supabaseServer.js';
 
 export const DEFAULT_MATCH_THRESHOLD = 0.45;
 export const MIN_RETRIEVAL_CHUNKS = 3;
@@ -750,5 +751,300 @@ export async function retrieveRagKnowledge({
       model: EMBEDDING_MODEL_IDENTIFIER,
       dimension: EMBEDDING_DIMENSION
     }
+  };
+}
+
+/**
+ * =========================================================================
+ * TASK 34.02: ADAPTIVE LEARNER MEMORY & HYBRID KNOWLEDGE RETRIEVER
+ * =========================================================================
+ */
+
+/**
+ * 1. Truy xuất hồ sơ điểm yếu & từ vựng SRS đến hạn của học viên qua RPC
+ * `get_user_adaptive_ai_context` để nhúng vào System Prompt của Roleplay / Tutor / Coach.
+ */
+export async function retrieveLearnerAdaptiveProfile(
+  userId,
+  targetHskLevel = 4,
+  { supabaseClient = null } = {}
+) {
+  const safeLevel = Math.max(1, Math.min(9, Number(targetHskLevel) || 4));
+  const client = supabaseClient || getSupabaseAdminClient();
+
+  let rawContext = null;
+  if (client && userId) {
+    try {
+      const { data, error } = await client.rpc('get_user_adaptive_ai_context', {
+        p_user_id: userId,
+        p_hsk_level: safeLevel,
+      });
+      if (!error && data) {
+        rawContext = data;
+      }
+    } catch {
+      // Graceful fallback when RPC is unavailable in local dev/test
+    }
+  }
+
+  const rawVocab = Array.isArray(rawContext?.due_and_leech_vocab)
+    ? rawContext.due_and_leech_vocab
+    : [];
+  const rawGrammar = Array.isArray(rawContext?.weak_grammar_points)
+    ? rawContext.weak_grammar_points
+    : [];
+  const rawHanzi = Array.isArray(rawContext?.problematic_hanzi)
+    ? rawContext.problematic_hanzi
+    : [];
+
+  const targetVocabList = rawVocab.map((v) => ({
+    simplified: v.simplified || '',
+    pinyin: v.pinyin || '',
+    meaning_vi: v.meaning_vi || '',
+    lapses: Number(v.lapses || 0),
+    overall_mastery: Number(v.overall_mastery || 0),
+  }));
+
+  const targetGrammarList = rawGrammar.map((g) => ({
+    code: g.code || '',
+    pattern_display: g.pattern_display || '',
+    title_vi: g.title_vi || '',
+    formula_tokens: Array.isArray(g.formula_tokens) ? g.formula_tokens : [],
+    common_mistakes: Array.isArray(g.common_mistakes) ? g.common_mistakes : [],
+  }));
+
+  const problematicHanzi = rawHanzi.map((h) => ({
+    character: String(h.character || '').trim(),
+    avg_accuracy: Number(h.avg_accuracy || 0),
+    total_attempts: Number(h.total_attempts || 0),
+  }));
+
+  const lines = [`### Hồ sơ Học tập Cá nhân hóa (HSK ${safeLevel})`];
+  if (targetVocabList.length > 0) {
+    lines.push('**Từ vựng SRS ưu tiên ôn tập / dễ quên:**');
+    for (const v of targetVocabList) {
+      lines.push(
+        `- ${v.simplified} (${v.pinyin}) — ${v.meaning_vi || 'Từ vựng HSK'} [lapses: ${v.lapses}, mastery: ${v.overall_mastery}%]`
+      );
+    }
+  } else {
+    lines.push('- Chưa có từ vựng SRS đến hạn; ưu tiên dùng từ vựng chuẩn HSK phù hợp trình độ.');
+  }
+
+  if (targetGrammarList.length > 0) {
+    lines.push('**Điểm ngữ pháp cần củng cố:**');
+    for (const g of targetGrammarList) {
+      lines.push(`- [${g.code}] ${g.pattern_display}: ${g.title_vi}`);
+    }
+  }
+
+  if (problematicHanzi.length > 0) {
+    const chars = problematicHanzi.map((h) => `${h.character} (${h.avg_accuracy}%)`).join(', ');
+    lines.push(`**Chữ Hán hay viết sai nét:** ${chars}`);
+  }
+
+  return {
+    userId: userId || null,
+    hskLevel: safeLevel,
+    targetVocabList,
+    targetGrammarList,
+    problematicHanzi,
+    systemPromptInjection: lines.join('\n'),
+  };
+}
+
+/**
+ * Extract Hanzi clusters, Grammar codes (HSK3-BA-01), and HSK Exam Paper codes (H41001).
+ */
+export function extractStructuredQueryTokens(queryText = '') {
+  const text = String(queryText || '');
+  const hanziClusters = Array.from(new Set(text.match(/[\u4e00-\u9fa5]+/g) || []));
+  const grammarCodes = Array.from(
+    new Set((text.match(/HSK\d-[A-Z0-9-]+/gi) || []).map((c) => c.toUpperCase()))
+  );
+  const examPaperCodes = Array.from(
+    new Set((text.match(/\bH\d{5}\b/gi) || []).map((c) => c.toUpperCase()))
+  );
+  const chengyuCandidates = hanziClusters.filter((c) => Array.from(c).length === 4);
+
+  return {
+    hanziClusters,
+    grammarCodes,
+    examPaperCodes,
+    chengyuCandidates,
+  };
+}
+
+/**
+ * 2. Truy xuất song song kiến thức chuẩn từ 4 bảng Database (Phase 27-30)
+ * để AI trích dẫn chính xác 100%, không bịa công thức ngữ pháp.
+ */
+export async function retrieveContextualKnowledgeForQuery(
+  queryText,
+  { hskLevel = 6, userId = null, includeExamQuestions = true, supabaseClient = null } = {}
+) {
+  const safeLevel = Math.max(1, Math.min(9, Number(hskLevel) || 6));
+  const cleanQuery = String(queryText || '').trim();
+  const tokens = extractStructuredQueryTokens(cleanQuery);
+  const client = supabaseClient || getSupabaseAdminClient();
+
+  const contextBlocks = [];
+  const structuredCitations = [];
+
+  if (!client || !cleanQuery) {
+    return {
+      userId,
+      hskLevel: safeLevel,
+      extractedTokens: tokens,
+      contextBlocks,
+      structuredCitations,
+      formattedPromptContext: '',
+    };
+  }
+
+  const dictPromise =
+    tokens.hanziClusters.length > 0
+      ? client
+          .from('dictionary_entries')
+          .select(
+            'id, simplified, traditional, pinyin_display, han_viet, pos_meanings, decomposition, synonyms_antonyms, examples'
+          )
+          .in('simplified', tokens.hanziClusters.slice(0, 8))
+          .limit(6)
+      : Promise.resolve({ data: [], error: null });
+
+  const grammarPromise = (() => {
+    if (tokens.grammarCodes.length > 0) {
+      return client
+        .from('grammar_points')
+        .select('code, title_vi, pattern_display, hsk_level, formula_tokens, explanation_vi, common_mistakes')
+        .in('code', tokens.grammarCodes.slice(0, 5))
+        .limit(5);
+    }
+    if (tokens.hanziClusters.length > 0) {
+      const firstCluster = tokens.hanziClusters[0];
+      return client
+        .from('grammar_points')
+        .select('code, title_vi, pattern_display, hsk_level, formula_tokens, explanation_vi, common_mistakes')
+        .lte('hsk_level', safeLevel)
+        .or(`pattern_display.ilike.%${firstCluster}%,title_vi.ilike.%${firstCluster}%`)
+        .limit(4);
+    }
+    return Promise.resolve({ data: [], error: null });
+  })();
+
+  const chengyuPromise =
+    tokens.chengyuCandidates.length > 0
+      ? client
+          .from('chengyu_entries')
+          .select(
+            'chengyu, pinyin, han_viet, literal_meaning_vi, figurative_meaning_vi, vietnamese_equivalent_idiom'
+          )
+          .in('chengyu', tokens.chengyuCandidates.slice(0, 4))
+          .limit(4)
+      : Promise.resolve({ data: [], error: null });
+
+  const examPromise = (() => {
+    if (!includeExamQuestions) return Promise.resolve({ data: [], error: null });
+    if (tokens.examPaperCodes.length > 0) {
+      return client
+        .from('hsk_question_bank')
+        .select('id, paper_code, hsk_level, section, question_number_start, question_type, stimulus_payload, target_vocab, target_grammar_codes')
+        .in('paper_code', tokens.examPaperCodes.slice(0, 3))
+        .limit(4);
+    }
+    if (tokens.hanziClusters.length > 0) {
+      return client
+        .from('hsk_question_bank')
+        .select('id, paper_code, hsk_level, section, question_number_start, question_type, stimulus_payload, target_vocab, target_grammar_codes')
+        .lte('hsk_level', Math.min(6, safeLevel))
+        .overlaps('target_vocab', tokens.hanziClusters.slice(0, 5))
+        .limit(3);
+    }
+    return Promise.resolve({ data: [], error: null });
+  })();
+
+  const [dictRes, grammarRes, chengyuRes, examRes] = await Promise.all([
+    Promise.resolve(dictPromise).catch(() => ({ data: [], error: null })),
+    Promise.resolve(grammarPromise).catch(() => ({ data: [], error: null })),
+    Promise.resolve(chengyuPromise).catch(() => ({ data: [], error: null })),
+    Promise.resolve(examPromise).catch(() => ({ data: [], error: null })),
+  ]);
+
+  for (const row of dictRes?.data || []) {
+    const meaningsText = Array.isArray(row.pos_meanings)
+      ? row.pos_meanings.map((m) => `${m.pos || ''}: ${(m.definitions || []).join('; ')}`).join(' | ')
+      : '';
+    contextBlocks.push({
+      sourceType: 'dictionary',
+      id: row.id || row.simplified,
+      title: `${row.simplified} (${row.pinyin_display} · ${row.han_viet})`,
+      body: `Nghĩa: ${meaningsText}. Chiết tự: ${JSON.stringify(row.decomposition || {})}. Đồng/Trái nghĩa: ${JSON.stringify(row.synonyms_antonyms || {})}`,
+    });
+    structuredCitations.push({
+      source_type: 'dictionary_entries',
+      source_id: row.id || row.simplified,
+      label: row.simplified,
+    });
+  }
+
+  for (const row of grammarRes?.data || []) {
+    contextBlocks.push({
+      sourceType: 'grammar',
+      id: row.code,
+      title: `[${row.code}] ${row.pattern_display} — ${row.title_vi}`,
+      body: `Giải thích: ${row.explanation_vi}. Công thức: ${JSON.stringify(row.formula_tokens || [])}. Lỗi thường gặp: ${JSON.stringify(row.common_mistakes || [])}`,
+    });
+    structuredCitations.push({
+      source_type: 'grammar_points',
+      source_id: row.code,
+      label: `${row.code}: ${row.pattern_display}`,
+    });
+  }
+
+  for (const row of chengyuRes?.data || []) {
+    contextBlocks.push({
+      sourceType: 'chengyu',
+      id: row.chengyu,
+      title: `${row.chengyu} (${row.pinyin} · ${row.han_viet})`,
+      body: `Nghĩa đen: ${row.literal_meaning_vi}. Nghĩa bóng: ${row.figurative_meaning_vi}. Tương đương tiếng Việt: ${row.vietnamese_equivalent_idiom || 'N/A'}`,
+    });
+    structuredCitations.push({
+      source_type: 'chengyu_entries',
+      source_id: row.chengyu,
+      label: row.chengyu,
+    });
+  }
+
+  for (const row of examRes?.data || []) {
+    contextBlocks.push({
+      sourceType: 'hsk_question',
+      id: row.id || row.paper_code,
+      title: `Đề ${row.paper_code} (${row.section} #${row.question_number_start})`,
+      body: `Ngữ liệu: ${JSON.stringify(row.stimulus_payload || {})}`,
+    });
+    structuredCitations.push({
+      source_type: 'hsk_question_bank',
+      source_id: row.id || row.paper_code,
+      label: `${row.paper_code}#${row.question_number_start}`,
+    });
+  }
+
+  const formattedPromptContext =
+    contextBlocks.length > 0
+      ? [
+          '<verified_knowledge>',
+          ...contextBlocks.map((b, i) => `[${i + 1}] (${b.sourceType}) ${b.title}\n${b.body}`),
+          '</verified_knowledge>',
+        ].join('\n\n')
+      : '';
+
+  return {
+    userId,
+    hskLevel: safeLevel,
+    extractedTokens: tokens,
+    contextBlocks,
+    structuredCitations,
+    formattedPromptContext,
   };
 }

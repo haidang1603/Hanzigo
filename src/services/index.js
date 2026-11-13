@@ -22,6 +22,12 @@ export * from './customVocabularyService.js';
 export * from './customLessonService.js';
 export * from './adminAnalyticsService.js';
 export * from './teacherAnalyticsService.js';
+export * from './adaptiveLearningService.js';
+export * from './learningDataService.ts';
+export * from './srsRetentionService.ts';
+export * from './adaptiveEngine.ts';
+export * from './writingEvaluationService.ts';
+export * from './learningIntelligenceOrchestrator.ts';
 export {
   GAMIFICATION_KEYS,
   REWARD_LIMITS,

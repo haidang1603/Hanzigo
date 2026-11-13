@@ -14,9 +14,11 @@ import {
   ShieldCheck, 
   GraduationCap, 
   Play,
-  Award
+  Award,
+  Sparkles
 } from 'lucide-react';
 import { playClickSound } from '../../utils/audio';
+import { getSmartNavSuggestions, recordNavigationVisit } from '../../utils/smartNavEngine';
 import Breadcrumbs from './Breadcrumbs';
 import UserAvatar from '../common/UserAvatar.jsx';
 import StreakModal from '../learning/StreakModal';
@@ -64,10 +66,13 @@ export default function AppHeader({
 
   const handleNavClick = (id) => {
     playClickSound();
+    recordNavigationVisit(id);
     setActiveTab(id);
     setUserDropdownOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const smartPicks = getSmartNavSuggestions(activeTab, user, 2);
 
   return (
     <header className="sticky top-0 z-30 bg-[#FFF9F2]/95 dark:bg-[#131B24]/95 backdrop-blur-md border-b border-[#F1E5D8] dark:border-[#2B3A4F] transition-colors duration-200">
@@ -108,8 +113,28 @@ export default function AppHeader({
           </div>
         </div>
 
-        {/* Right Side: Command Search + Gamification + Toggles + User */}
+        {/* Right Side: Smart Suggestions + Command Search + Gamification + Toggles + User */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Smart Contextual Next-Step Pills */}
+          {smartPicks.length > 0 && (
+            <div className="hidden 2xl:flex items-center gap-1.5 mr-1 px-2 py-1 rounded-2xl bg-white/80 dark:bg-[#1E293B]/80 border border-[#F1E5D8] dark:border-[#2B3A4F]">
+              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-[#E85D3F] px-1">
+                <Sparkles size={11} />
+                Gợi ý:
+              </span>
+              {smartPicks.map((pick) => (
+                <button
+                  key={pick.id}
+                  type="button"
+                  onClick={() => handleNavClick(pick.id)}
+                  className="px-2 py-1 rounded-lg text-[11px] font-bold text-[#243447] dark:text-[#CBD5E1] hover:bg-[#FDEEEB] hover:text-[#E85D3F] dark:hover:bg-[#2D1E1B] transition cursor-pointer"
+                  title={`${pick.reason}: ${pick.label}`}
+                >
+                  {pick.shortLabel}
+                </button>
+              ))}
+            </div>
+          )}
           
           {/* Quick Action: Continue Learning (Tablet/Desktop) */}
           <button

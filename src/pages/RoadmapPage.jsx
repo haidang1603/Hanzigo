@@ -55,6 +55,7 @@ import {
 } from '../services/customLessonService';
 import { supabase, isSupabaseConfigured } from '../supabase/config';
 import AiContextBadge from '../components/personalization/AiContextBadge.jsx';
+import HskAdvancedModule from '../features/curriculum/HskAdvancedModule.tsx';
 
 export default function RoadmapPage({ 
   user, 
@@ -66,6 +67,7 @@ export default function RoadmapPage({
   onSelectPronounce = null
 }) {
   // View mode switcher: 'journey' (Interactive Map) | 'syllabus' (Structured List) | 'skills' (Mastery Radar)
+  const [curriculumBand, setCurriculumBand] = useState('foundation'); // 'foundation' (HSK 1-6) | 'advanced' (HSK 7-9)
   const [roadmapView, setRoadmapView] = useState('journey');
   const [activeLessonToPlay, setActiveLessonToPlay] = useState(null);
   const [activeBossChallenge, setActiveBossChallenge] = useState(null);
@@ -331,6 +333,44 @@ export default function RoadmapPage({
       )}
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        {/* Band Switcher: Foundation-Intermediate (HSK 1-6) vs Advanced Band (HSK 7-9) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurriculumBand('foundation')}
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold cursor-pointer transition-all ${
+                curriculumBand === 'foundation'
+                  ? 'bg-[#E85D3F] text-white shadow-xs'
+                  : 'text-[#5B6B7F] dark:text-gray-300 hover:bg-[#FAF6F0] dark:hover:bg-[#0F172A]'
+              }`}
+            >
+              Foundation-Intermediate (HSK 1–6)
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurriculumBand('advanced')}
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold cursor-pointer transition-all ${
+                curriculumBand === 'advanced'
+                  ? 'bg-[#243447] text-amber-300 shadow-xs'
+                  : 'text-[#5B6B7F] dark:text-gray-300 hover:bg-[#FAF6F0] dark:hover:bg-[#0F172A]'
+              }`}
+            >
+              Advanced Professional Band (HSK 7–9 · 三等九级)
+            </button>
+          </div>
+          <span className="text-[11px] font-semibold text-[#748092] dark:text-gray-400 px-2">
+            Chuẩn năng lực Hán ngữ Quốc tế (3 Bậc · 9 Cấp)
+          </span>
+        </div>
+
+        {curriculumBand === 'advanced' ? (
+          <HskAdvancedModule
+            user={user}
+            onSwitchToFoundation={() => setCurriculumBand('foundation')}
+          />
+        ) : (
+          <>
 
         {/* ========================================================== */}
         {/* 1. HERO BANNER: ASIAN-MODERN PORTAL & LIVE KPIS */}
@@ -1195,6 +1235,8 @@ export default function RoadmapPage({
               </div>
             )}
           </div>
+        )}
+          </>
         )}
 
       </div>

@@ -1,35 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import UserAvatar from '../common/UserAvatar.jsx';
-import { 
-  X, 
-  Home, 
-  Compass, 
-  Target, 
-  Award, 
-  GraduationCap, 
-  Sparkles, 
-  Headphones, 
-  Layers, 
-  Mic, 
-  PenTool, 
-  MessageSquare, 
-  BookOpen, 
-  FolderDown, 
-  Users, 
-  Trophy, 
-  ShieldCheck, 
-  Play, 
+import {
+  X,
+  Home,
+  Compass,
+  Target,
+  Award,
+  Play,
   Menu,
   ChevronRight,
   ChevronDown,
-  LogOut
+  LogOut,
+  Folder,
+  FolderOpen,
 } from 'lucide-react';
 import { playClickSound } from '../../utils/audio';
+import {
+  CORE_TREE_ITEMS,
+  SKILLS_TREE_ITEMS,
+  EXPLORE_TREE_ITEMS,
+  TEACHER_TREE_ITEMS,
+  ADMIN_TREE_ITEMS,
+  ALL_PRACTICE_SKILL_IDS,
+  isTreeNodeActive,
+} from './navTreeConfig';
 
 /**
  * MobileNavigation Component
  * Provides:
- * 1. Off-canvas Drawer for detailed full menu navigation on mobile
+ * 1. Off-canvas Drawer for detailed folder-tree menu navigation on mobile
  * 2. Fixed Bottom Navigation Bar for rapid one-thumb primary switching
  */
 export default function MobileNavigation({
@@ -41,37 +40,147 @@ export default function MobileNavigation({
   onContinueLearning = null,
   lastLesson = null,
   onOpenAuth = null,
-  onLogout = null
+  onLogout = null,
 }) {
   const isAdmin = Boolean(user && user.role === 'admin' && user.status !== 'blocked');
   const isTeacher = Boolean(user && (user.role === 'teacher' || isAdmin) && user.status !== 'blocked');
 
-  const practiceSkills = [
-    { id: 'listening', label: 'Luyện nghe HSK', icon: Headphones },
-    { id: 'grammar', label: 'Ngữ pháp HSK', icon: Sparkles },
-    { id: 'vocabulary', label: 'Từ vựng Flashcards', icon: Layers },
-    { id: 'pronunciation', label: 'Luyện phát âm AI', icon: Mic },
-    { id: 'writing', label: 'Từ điển & Viết chữ', icon: PenTool },
-    { id: 'conversation', label: 'Hội thoại Lão Sư', icon: MessageSquare },
-    { id: 'reader', label: 'Đọc hiểu & Báo chí', icon: BookOpen },
-    { id: 'practice', label: 'Trung tâm tổng hợp', icon: Target }
-  ];
+  const [currentHash, setCurrentHash] = useState(() =>
+    typeof window !== 'undefined' ? window.location.hash : ''
+  );
 
-  const isCurrentTabInPractice = practiceSkills.some(s => s.id === activeTab);
-  const [skillsExpanded, setSkillsExpanded] = useState(() => isCurrentTabInPractice);
+  useEffect(() => {
+    const syncHash = () => setCurrentHash(window.location.hash);
+    window.addEventListener('hashchange', syncHash);
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, []);
+
+  const isCurrentTabInPractice = ALL_PRACTICE_SKILL_IDS.includes(activeTab);
+  const [expandedFolders, setExpandedFolders] = useState(() => ({
+    skills: isCurrentTabInPractice,
+    'skills:input': isCurrentTabInPractice,
+    'skills:core': isCurrentTabInPractice,
+    'skills:output': isCurrentTabInPractice,
+    hsk: activeTab === 'hsk',
+    reader: activeTab === 'reader',
+    community: activeTab === 'community' || activeTab === 'leaderboard',
+    teacher: activeTab === 'teacher',
+  }));
 
   useEffect(() => {
     if (isCurrentTabInPractice) {
-      setSkillsExpanded(true);
+      setExpandedFolders((prev) => ({ ...prev, skills: true, 'skills:input': true }));
+    }
+    if (activeTab === 'hsk' || activeTab === 'reader' || activeTab === 'teacher') {
+      setExpandedFolders((prev) => ({ ...prev, [activeTab]: true }));
+    }
+    if (activeTab === 'community' || activeTab === 'leaderboard') {
+      setExpandedFolders((prev) => ({ ...prev, community: true }));
     }
   }, [activeTab, isCurrentTabInPractice]);
 
-  const handleItemClick = (id) => {
+  const handleItemClick = (id, hash = null) => {
     playClickSound();
+    if (hash && typeof window !== 'undefined') {
+      window.location.hash = hash;
+      setCurrentHash(hash);
+    }
     setActiveTab(id);
     onClose();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const toggleFolder = (key, e = null) => {
+    if (e) e.stopPropagation();
+    playClickSound();
+    setExpandedFolders((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const renderMobileTree = (nodes, depth = 0) =>
+    nodes.map((node) => {
+      const Icon = node.icon;
+      const hasChildren = Array.isArray(node.children) && node.children.length > 0;
+      const isExpanded = Boolean(expandedFolders[node.key]);
+      const isActive = isTreeNodeActive(node, activeTab, currentHash);
+
+      const handlePress = () => {
+        if (node.isGroupOnly) {
+          toggleFolder(node.key);
+          return;
+        }
+        if (hasChildren) {
+          setExpandedFolders((prev) => ({ ...prev, [node.key]: true }));
+        }
+        handleItemClick(node.id, node.hash || null);
+      };
+
+      return (
+        <div key={node.key} className="space-y-0.5 min-w-0">
+          <div className="relative flex items-center min-w-0">
+            {depth > 0 && (
+              <span
+                aria-hidden="true"
+                className="w-2.5 h-px bg-[#DFCBB5] dark:bg-[#334155] shrink-0 mr-1"
+              />
+            )}
+            <button
+              type="button"
+              onClick={handlePress}
+              className={`w-full min-w-0 flex items-center gap-2.5 ${depth === 0 ? 'px-3 py-2.5 rounded-xl text-xs' : 'px-2.5 py-2 rounded-xl text-[11px]'
+                } font-bold transition-all cursor-pointer ${hasChildren ? 'pr-8' : ''
+                } ${isActive && !hasChildren
+                  ? 'bg-[#E85D3F] text-white font-black shadow-xs'
+                  : isActive && hasChildren
+                    ? 'text-[#E85D3F] bg-[#FDEEEB]/60 dark:bg-[#2D1E1B]/40 font-extrabold'
+                    : 'text-[#243447] dark:text-[#CBD5E1] hover:bg-white dark:hover:bg-[#1E293B]'
+                }`}
+            >
+              {node.isGroupOnly ? (
+                isExpanded ? (
+                  <FolderOpen size={15} className="shrink-0 text-amber-500" />
+                ) : (
+                  <Folder size={15} className="shrink-0 text-amber-500/80" />
+                )
+              ) : (
+                <Icon
+                  size={depth === 0 ? 16 : 14}
+                  className={isActive && !hasChildren ? 'text-white' : 'text-[#748092] dark:text-[#94A3B8]'}
+                />
+              )}
+              <span className="truncate text-left">{node.label}</span>
+              {node.badge && !(isActive && !hasChildren) && (
+                <span className="ml-auto text-[9px] font-black px-1.5 py-0.2 rounded bg-orange-100 dark:bg-orange-950/60 text-[#E85D3F]">
+                  {node.badge}
+                </span>
+              )}
+            </button>
+
+            {hasChildren && (
+              <button
+                type="button"
+                onClick={(e) => toggleFolder(node.key, e)}
+                aria-label={isExpanded ? `Thu gọn ${node.label}` : `Mở rộng ${node.label}`}
+                className="absolute right-1.5 p-1.5 rounded-lg text-[#748092] hover:text-[#E85D3F] cursor-pointer"
+              >
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : '-rotate-90'}`}
+                />
+              </button>
+            )}
+          </div>
+
+          {hasChildren && isExpanded && (
+            <div
+              className={`space-y-0.5 border-l-2 border-[#E9D8C6] dark:border-[#2B3A4F] ${depth === 0 ? 'ml-3.5 pl-2' : 'ml-3 pl-1.5'
+                } animate-in fade-in duration-150`}
+            >
+              {renderMobileTree(node.children, depth + 1)}
+            </div>
+          )}
+        </div>
+      );
+    });
 
   // 5 primary items for the bottom navigation bar
   const bottomBarItems = [
@@ -79,31 +188,30 @@ export default function MobileNavigation({
     { id: 'roadmap', label: 'Lộ trình', icon: Compass },
     { id: 'practice', label: 'Luyện tập', icon: Target },
     { id: 'hsk', label: 'Thi HSK', icon: Award },
-    { id: 'more-drawer', label: 'Thêm', icon: Menu, isDrawerTrigger: true }
+    { id: 'more-drawer', label: 'Thêm', icon: Menu, isDrawerTrigger: true },
   ];
 
   return (
     <>
       {/* 1. OFF-CANVAS MOBILE DRAWER */}
       {isOpen && (
-        <div 
+        <div
           role="dialog"
           aria-modal="true"
           aria-label="Menu điều hướng di động"
           className="fixed inset-0 z-50 lg:hidden flex"
         >
           {/* Backdrop blur */}
-          <div 
+          <div
             onClick={onClose}
             className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in"
           />
 
           {/* Drawer Content */}
-          <div className="relative w-4/5 max-w-xs bg-[#FFF9F2] dark:bg-[#131B24] h-full shadow-2xl flex flex-col z-10 border-r border-[#F1E5D8] dark:border-[#2B3A4F] animate-in slide-in-from-left duration-200">
-            
+          <div className="relative w-[85vw] max-w-xs bg-[#FFF9F2] dark:bg-[#131B24] h-full shadow-2xl flex flex-col z-10 border-r border-[#F1E5D8] dark:border-[#2B3A4F] animate-in slide-in-from-left duration-200">
             {/* Drawer Header */}
             <div className="p-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
-              <div 
+              <div
                 onClick={() => handleItemClick('home')}
                 className="flex items-center gap-2.5 cursor-pointer"
               >
@@ -147,92 +255,51 @@ export default function MobileNavigation({
                   </div>
                   <div className="text-left min-w-0">
                     <span className="text-[10px] text-amber-200 block uppercase font-bold">Tiếp tục học</span>
-                    <span className="text-xs font-bold truncate block">{lastLesson ? lastLesson.title : 'Vào Lộ trình HSK'}</span>
+                    <span className="text-xs font-bold truncate block">
+                      {lastLesson ? lastLesson.title : 'Vào Lộ trình HSK'}
+                    </span>
                   </div>
                 </div>
                 <ChevronRight size={14} className="shrink-0" />
               </button>
             </div>
 
-            {/* Grouped Links */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-4">
-              
+            {/* Grouped Folder-Tree Links */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-4">
               {/* Group 1: Core */}
               <div className="space-y-1">
                 <p className="px-3 text-[10px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
                   Học tập cốt lõi
                 </p>
-                {[
-                  { id: 'home', label: 'Trang chủ', icon: Home },
-                  { id: 'roadmap', label: 'Lộ trình HSK', icon: Compass },
-                  { id: 'hsk', label: 'Thi thử HSK', icon: Award },
-                  { id: 'classroom', label: 'Lớp học', icon: GraduationCap }
-                ].map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => handleItemClick(item.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                        isActive
-                          ? 'bg-[#E85D3F] text-white font-black shadow-xs'
-                          : 'text-[#243447] dark:text-[#CBD5E1] hover:bg-white dark:hover:bg-[#1E293B]'
-                      }`}
-                    >
-                      <Icon size={16} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
+                {renderMobileTree(CORE_TREE_ITEMS, 0)}
               </div>
 
-              {/* Group 2: Compact Practice Skills Accordion */}
+              {/* Group 2: Practice Skills Folder Tree */}
               <div className="space-y-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    playClickSound();
-                    setSkillsExpanded(prev => !prev);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    isCurrentTabInPractice
+                  onClick={() => toggleFolder('skills')}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${isCurrentTabInPractice
                       ? 'text-[#E85D3F] bg-[#FDEEEB]/60 dark:bg-[#2D1E1B]/40'
                       : 'text-[#243447] dark:text-[#CBD5E1] hover:bg-white dark:hover:bg-[#1E293B]'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Target size={16} className={isCurrentTabInPractice ? 'text-[#E85D3F]' : ''} />
                     <span>Kỹ năng & Luyện tập</span>
                     <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-orange-100 dark:bg-orange-950/50 text-[#E85D3F] font-bold">
-                      8
+                      {ALL_PRACTICE_SKILL_IDS.length}
                     </span>
                   </div>
-                  <ChevronDown size={14} className={`transition-transform duration-200 ${skillsExpanded ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${expandedFolders.skills ? 'rotate-180' : '-rotate-90'}`}
+                  />
                 </button>
 
-                {skillsExpanded && (
-                  <div className="mt-1 pl-3 space-y-0.5 border-l-2 border-[#F1E5D8] dark:border-[#2B3A4F] ml-3 animate-in fade-in duration-150">
-                    {practiceSkills.map((sub) => {
-                      const SubIcon = sub.icon;
-                      const isSubActive = activeTab === sub.id;
-                      return (
-                        <button
-                          key={sub.id}
-                          type="button"
-                          onClick={() => handleItemClick(sub.id)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                            isSubActive
-                              ? 'bg-[#E85D3F] text-white font-black shadow-xs'
-                              : 'text-[#748092] dark:text-[#CBD5E1] hover:text-[#E85D3F] dark:hover:text-white hover:bg-white dark:hover:bg-[#1E293B]'
-                          }`}
-                        >
-                          <SubIcon size={14} className={isSubActive ? 'text-white' : 'text-[#748092] dark:text-[#94A3B8]'} />
-                          <span className="truncate">{sub.label}</span>
-                        </button>
-                      );
-                    })}
+                {expandedFolders.skills && (
+                  <div className="mt-1 pl-2 space-y-1 border-l-2 border-[#E9D8C6] dark:border-[#2B3A4F] ml-3 animate-in fade-in duration-150">
+                    {renderMobileTree(SKILLS_TREE_ITEMS, 1)}
                   </div>
                 )}
               </div>
@@ -242,29 +309,7 @@ export default function MobileNavigation({
                 <p className="px-3 text-[10px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
                   Cộng đồng & Mở rộng
                 </p>
-                {[
-                  { id: 'materials', label: 'Thư viện tài liệu', icon: FolderDown },
-                  { id: 'community', label: 'Cộng đồng học viên', icon: Users },
-                  { id: 'leaderboard', label: 'Bảng vàng cao thủ', icon: Trophy }
-                ].map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => handleItemClick(item.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                        isActive
-                          ? 'bg-[#E85D3F] text-white font-black shadow-xs'
-                          : 'text-[#243447] dark:text-[#CBD5E1] hover:bg-white dark:hover:bg-[#1E293B]'
-                      }`}
-                    >
-                      <Icon size={16} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
+                {renderMobileTree(EXPLORE_TREE_ITEMS, 0)}
               </div>
 
               {/* Role-based Portals */}
@@ -273,16 +318,7 @@ export default function MobileNavigation({
                   <p className="px-3 text-[10px] font-black uppercase tracking-wider text-orange-600 dark:text-orange-400">
                     Cổng Giáo viên
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => handleItemClick('teacher')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold ${
-                      activeTab === 'teacher' ? 'bg-[#E85D3F] text-white' : 'text-orange-700 dark:text-orange-300'
-                    }`}
-                  >
-                    <GraduationCap size={16} />
-                    <span>Quản lý giảng dạy</span>
-                  </button>
+                  {renderMobileTree(TEACHER_TREE_ITEMS, 0)}
                 </div>
               )}
 
@@ -291,26 +327,16 @@ export default function MobileNavigation({
                   <p className="px-3 text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                     Quản trị viên
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => handleItemClick('admin')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold ${
-                      activeTab === 'admin' ? 'bg-[#E85D3F] text-white' : 'text-emerald-700 dark:text-emerald-300'
-                    }`}
-                  >
-                    <ShieldCheck size={16} />
-                    <span>Bảng điều khiển Admin</span>
-                  </button>
+                  {renderMobileTree(ADMIN_TREE_ITEMS, 0)}
                 </div>
               )}
-
             </div>
 
             {/* Drawer Footer: User Profile / Logout */}
             <div className="p-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] bg-white/50 dark:bg-[#1E293B]/40">
               {user ? (
                 <div className="flex items-center justify-between">
-                  <div 
+                  <div
                     onClick={() => handleItemClick('profile')}
                     className="flex items-center gap-2 cursor-pointer min-w-0"
                   >
@@ -347,19 +373,18 @@ export default function MobileNavigation({
                 </button>
               )}
             </div>
-
           </div>
         </div>
       )}
 
       {/* 2. FIXED MOBILE BOTTOM NAVIGATION BAR */}
-      <nav 
+      <nav
         aria-label="Điều hướng nhanh di động"
-        className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white/95 dark:bg-[#131B24]/95 backdrop-blur-lg border-t border-[#F1E5D8] dark:border-[#2B3A4F] px-2 py-1.5 flex items-center justify-around shadow-lg"
+        className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white/95 dark:bg-[#131B24]/95 backdrop-blur-lg border-t border-[#F1E5D8] dark:border-[#2B3A4F] px-1.5 sm:px-3 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] flex items-center justify-around shadow-lg"
       >
         {bottomBarItems.map((item) => {
           const Icon = item.icon;
-          const isSelected = item.isDrawerTrigger ? isOpen : (activeTab === item.id);
+          const isSelected = item.isDrawerTrigger ? isOpen : activeTab === item.id;
 
           return (
             <button
@@ -369,17 +394,16 @@ export default function MobileNavigation({
                 playClickSound();
                 if (item.isDrawerTrigger) {
                   if (isOpen) onClose();
-                  else onClose(true); // Toggle
+                  else onClose(true);
                 } else {
                   setActiveTab(item.id);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl min-w-[56px] min-h-[44px] transition-all cursor-pointer ${
-                isSelected
+              className={`flex-1 max-w-[76px] flex flex-col items-center justify-center py-1 px-1 sm:px-2 rounded-2xl min-w-[52px] min-h-[44px] transition-all cursor-pointer ${isSelected
                   ? 'text-[#E85D3F]'
                   : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
-              }`}
+                }`}
             >
               <div className={`p-1 rounded-xl transition-transform ${isSelected ? 'scale-110' : ''}`}>
                 <Icon size={19} />
@@ -394,4 +418,3 @@ export default function MobileNavigation({
     </>
   );
 }
-

@@ -1,6 +1,10 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Preload .env into process.env before serverless handlers initialize
 const _initialEnv = loadEnv('', process.cwd(), '');
@@ -523,26 +527,63 @@ export default defineConfig({
     react(),
     localAiTutorDevPlugin()
   ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   build: {
+    target: 'es2022',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 450,
     rollupOptions: {
       output: {
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
         manualChunks(id) {
           const normalizedId = id.replace(/\\/g, '/');
+
           if (normalizedId.includes('node_modules')) {
-            if (normalizedId.includes('react') || normalizedId.includes('react-dom')) {
-              return 'vendor-react';
+            if (
+              normalizedId.includes('/node_modules/livekit-client/') ||
+              normalizedId.includes('/node_modules/@livekit/components-react/') ||
+              normalizedId.includes('/node_modules/@livekit/components-core/') ||
+              normalizedId.includes('/node_modules/webrtc-adapter/')
+            ) {
+              return 'vendor-livekit';
             }
-            if (normalizedId.includes('lucide-react')) {
-              return 'vendor-lucide';
+            if (
+              normalizedId.includes('/node_modules/hanzi-writer/') ||
+              normalizedId.includes('/node_modules/canvas-confetti/')
+            ) {
+              return 'vendor-hanzi';
             }
             if (normalizedId.includes('@supabase')) {
               return 'vendor-supabase';
             }
-            if (normalizedId.includes('canvas-confetti')) {
-              return 'vendor-confetti';
+            if (normalizedId.includes('/node_modules/lucide-react/')) {
+              return 'vendor-icons';
+            }
+            if (
+              normalizedId.includes('/node_modules/react/') ||
+              normalizedId.includes('/node_modules/react-dom/') ||
+              normalizedId.includes('/node_modules/scheduler/') ||
+              normalizedId.includes('/node_modules/react-router/') ||
+              normalizedId.includes('/node_modules/react-router-dom/')
+            ) {
+              return 'vendor-react-core';
             }
             return 'vendor-deps';
           }
+
+          if (
+            normalizedId.includes('/src/features/hsk-exam/') ||
+            normalizedId.includes('/src/features/hskk-exam/')
+          ) {
+            return 'feature-hsk-exam-engine';
+          }
+
           if (normalizedId.includes('curriculum/hsk1Lessons')) {
             return 'data-curriculum-hsk1';
           }
@@ -569,7 +610,6 @@ export default defineConfig({
           }
         }
       }
-    },
-    chunkSizeWarningLimit: 600
+    }
   }
 })
