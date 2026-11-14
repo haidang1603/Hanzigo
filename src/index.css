@@ -30,6 +30,11 @@
     --success-light: #162B21;
   }
 
+  html,
+  body {
+    overflow-anchor: none;
+  }
+
   body {
     background-color: var(--bg-warm);
     color: var(--dark);

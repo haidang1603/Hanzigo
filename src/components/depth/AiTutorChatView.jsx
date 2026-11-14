@@ -141,14 +141,24 @@ export default function AiTutorChatView({ user, openAuthModal }) {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Tự động cuộn xuống đáy khi có tin nhắn mới
+  // Tự động cuộn xuống đáy khi có tin nhắn mới (bỏ qua lần mount đầu để không kéo trang xuống cuối)
+  const didMountChatScrollRef = useRef(false);
   const scrollToBottom = useCallback((behavior = 'smooth') => {
-    if (chatBottomRef.current) {
-      chatBottomRef.current.scrollIntoView({ behavior, block: 'end' });
+    const el = chatBottomRef.current;
+    if (!el) return;
+    const scrollParent = el.closest('.overflow-y-auto');
+    if (scrollParent) {
+      scrollParent.scrollTo({ top: scrollParent.scrollHeight, behavior });
+    } else {
+      el.scrollIntoView({ behavior, block: 'nearest' });
     }
   }, []);
 
   useEffect(() => {
+    if (!didMountChatScrollRef.current) {
+      didMountChatScrollRef.current = true;
+      return;
+    }
     scrollToBottom('smooth');
   }, [messages, isLoading, scrollToBottom]);
 

@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle2, FileSearch, PenTool } from 'lucide-react';
 import { Hsk6FaultySentenceRenderer } from './Hsk6FaultySentenceRenderer.tsx';
 import { Hsk6TwoPhaseSummarySimulator } from './Hsk6TwoPhaseSummarySimulator.tsx';
-import { SAMPLE_HSK6_FAULTY_QUESTIONS } from './hsk6StateMachine.ts';
+import {
+  HSK6_SUMMARY_PASSAGES,
+  SAMPLE_HSK6_FAULTY_QUESTIONS,
+} from './hsk6StateMachine.ts';
 
 interface Hsk6SimulatorWorkspaceProps {
   onBack?: () => void;
@@ -14,6 +17,13 @@ export const Hsk6SimulatorWorkspace: React.FC<Hsk6SimulatorWorkspaceProps> = ({ 
   );
   const [answers, setAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>({});
   const [reviewFaultyMode, setReviewFaultyMode] = useState(false);
+  const [selectedPassageId, setSelectedPassageId] = useState<string>(HSK6_SUMMARY_PASSAGES[0].id);
+
+  const selectedPassage =
+    HSK6_SUMMARY_PASSAGES.find((p) => p.id === selectedPassageId) || HSK6_SUMMARY_PASSAGES[0];
+  const faultyCorrectCount = SAMPLE_HSK6_FAULTY_QUESTIONS.filter(
+    (q) => answers[q.id] === q.correct_answer
+  ).length;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
@@ -71,16 +81,23 @@ export const Hsk6SimulatorWorkspace: React.FC<Hsk6SimulatorWorkspaceProps> = ({ 
         <div className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/50 px-4 py-3 text-xs">
             <span className="font-semibold text-amber-900">
-              Mẹo: Dùng công cụ gạch chân nháp Chủ - Vị - Tân ngay trên từng phương án trước khi chọn đáp án.
+              Trọn bộ {SAMPLE_HSK6_FAULTY_QUESTIONS.length} câu (51–60) phủ đủ 8 nhóm bệnh cú HSK 6 · Mẹo: gạch chân nháp Chủ – Vị – Tân trước khi chọn đáp án.
             </span>
-            <button
-              type="button"
-              onClick={() => setReviewFaultyMode((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 py-2 font-bold text-white cursor-pointer transition"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              {reviewFaultyMode ? 'Quay lại chế độ làm bài' : 'Chấm điểm & Giải phẫu câu sai'}
-            </button>
+            <div className="flex items-center gap-2">
+              {reviewFaultyMode && (
+                <span className="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-black">
+                  Đúng {faultyCorrectCount}/{SAMPLE_HSK6_FAULTY_QUESTIONS.length} câu
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setReviewFaultyMode((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 py-2 font-bold text-white cursor-pointer transition"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                {reviewFaultyMode ? 'Quay lại chế độ làm bài' : 'Chấm điểm & Giải phẫu câu sai'}
+              </button>
+            </div>
           </div>
 
           {SAMPLE_HSK6_FAULTY_QUESTIONS.map((q) => (
@@ -99,7 +116,34 @@ export const Hsk6SimulatorWorkspace: React.FC<Hsk6SimulatorWorkspaceProps> = ({ 
           ))}
         </div>
       ) : (
-        <Hsk6TwoPhaseSummarySimulator practiceMode />
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+            <span className="text-xs font-extrabold text-slate-600 px-2">
+              Chọn đề tự sự (~1.000 chữ):
+            </span>
+            {HSK6_SUMMARY_PASSAGES.map((passage) => (
+              <button
+                key={passage.id}
+                type="button"
+                onClick={() => setSelectedPassageId(passage.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition ${
+                  selectedPassageId === passage.id
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {passage.title_hint}
+              </button>
+            ))}
+          </div>
+
+          <Hsk6TwoPhaseSummarySimulator
+            key={selectedPassage.id}
+            attemptKey={selectedPassage.id}
+            passageParagraphs={selectedPassage.paragraphs}
+            practiceMode
+          />
+        </div>
       )}
     </div>
   );

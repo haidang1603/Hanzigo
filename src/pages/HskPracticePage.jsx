@@ -2,6 +2,7 @@ import { HskResourcesView, HskReportModal, HskAdminImportModal } from '../compon
 import HskStructureView from '../components/HskStructureView';
 import HskAiDiagnosticPanel from '../components/personalization/HskAiDiagnosticPanel';
 import { Hsk6SimulatorWorkspace } from '../features/hsk-exam/renderers/hsk6/Hsk6SimulatorWorkspace.tsx';
+import { Hsk6TwoPhaseSummarySimulator } from '../features/hsk-exam/renderers/hsk6/Hsk6TwoPhaseSummarySimulator.tsx';
 import { HskkSpeakingSimulator } from '../features/hskk-exam/HskkSpeakingSimulator.tsx';
 import { PostExamMistakeRemediationPanel } from '../features/hsk-exam/analytics/PostExamMistakeRemediationPanel.tsx';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -539,7 +540,7 @@ function HskHomeView({ onNavigate, onOpenRandomModal }) {
             <span className="text-amber-200">Không Cần Đăng Nhập</span>
           </h1>
           <p className="text-white/90 text-xs sm:text-sm mb-5 leading-relaxed max-w-2xl">
-            Hệ thống đề thi mô phỏng chuẩn quốc tế từ HSK 1 đến HSK 6: Đầy đủ 26 đề thi chuẩn hóa &amp; 417 câu hỏi thực chiến, tự động tính điểm và giải thích chi tiết bằng tiếng Việt.
+            Hệ thống đề thi mô phỏng chuẩn quốc tế từ HSK 1 đến HSK 6: Đầy đủ {exams.length} đề thi chuẩn hóa thực chiến (bao gồm đề HSK 6 đủ 101 câu &amp; HSKK 3 cấp), tự động tính điểm và giải thích chi tiết bằng tiếng Việt.
           </p>
           <div className="flex flex-wrap gap-2.5">
             <button
@@ -568,7 +569,7 @@ function HskHomeView({ onNavigate, onOpenRandomModal }) {
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/70 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer border border-white/20"
             >
               <Sparkles className="w-4 h-4 text-emerald-300" />
-              Mô phỏng HSK 6 (51–60 &amp; 101)
+              Mô phỏng HSK 6
             </button>
             <button
               onClick={() => onNavigate('hskk_simulator')}
@@ -1903,8 +1904,30 @@ function HskExamTakingView({ examId, user, onNavigate }) {
             </div>
           )}
 
-          {/* Standard Options List (Trắc nghiệm phương án cho các câu không phải dạng Sentence Reorder) */}
-          {currentQ.question_type !== 'writing_reorder' && currentQ.question_type !== 'reorder_sentence' && !(currentQ.part_type === 'writing' && (currentQ.scrambledWords || currentQ.words)) && currentQ.options && currentQ.options.length > 0 && (
+          {/* =========================================================================
+              QUESTION TYPE: HSK 6 TWO-PHASE SUMMARY ESSAY (缩写 — Câu 101)
+          ========================================================================= */}
+          {currentQ.question_type === 'essay_summary' && (
+            <div className="mb-8 space-y-3">
+              <Hsk6TwoPhaseSummarySimulator
+                attemptKey={`${exam.id}_${currentQ.id}`}
+                passageParagraphs={currentQ.summary_passage_paragraphs || undefined}
+                practiceMode={examMode === 'practice'}
+                onSubmitSummary={(payload) => {
+                  const formatted = `《${payload.title || '无题'}》\n${payload.summary || ''}`.trim();
+                  recordAnswerChange(currentQ.id, formatted);
+                }}
+              />
+              {answers[currentQ.id] && (
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200 font-semibold">
+                  ✅ Đã lưu bài tóm tắt vào phiếu làm bài ({String(answers[currentQ.id]).length} ký tự). Hãy bấm "Nộp bài thi" khi hoàn tất toàn bộ đề!
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Standard Options List (Trắc nghiệm phương án cho các câu không phải dạng Sentence Reorder / Essay Summary) */}
+          {currentQ.question_type !== 'essay_summary' && currentQ.question_type !== 'writing_reorder' && currentQ.question_type !== 'reorder_sentence' && !(currentQ.part_type === 'writing' && (currentQ.scrambledWords || currentQ.words)) && currentQ.options && currentQ.options.length > 0 && (
             <div className="space-y-3 mb-8">
               <div className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">
                 Chọn phương án trả lời:

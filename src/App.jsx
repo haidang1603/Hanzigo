@@ -216,6 +216,15 @@ function MainApp() {
     setXp(calculateTotalXp(user));
   }, [activeTab, user]);
 
+  // Reset scroll to top on every route/tab navigation so Suspense/Footer never anchor to bottom
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    const rafId = requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [activeTab, routeInfo.param, routeInfo.sub]);
+
   useEffect(() => {
     const handleGamificationUpdated = () => {
       setStreak(getEffectiveStreak(user));
@@ -396,7 +405,7 @@ function MainApp() {
         />
 
         {/* Main Content Area (pb-20 on mobile for bottom navigation bar) */}
-        <main className="flex-1 pb-20 lg:pb-0">
+        <main className="flex-1 pb-20 lg:pb-0 min-h-[70vh] [overflow-anchor:none]">
         <GlobalErrorBoundary
           scope="route"
           resetKey={activeTab}

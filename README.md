@@ -206,7 +206,7 @@ erDiagram
 
 ### 7. Tái Cấu Trúc Kiến Trúc `App.jsx` & Code-Splitting
 * **Context & Custom Hooks**: Tách xác thực vào `AuthContext`, giao diện vào `ThemeContext`.
-* **Lazy Loading (`React.lazy` + `Suspense`)**: Tách toàn bộ 12 trang thành các chunk riêng biệt, giảm kích thước gói bundle ban đầu từ **1.15 MB xuống còn 510 kB** (giảm hơn 55%).
+* **Lazy Loading (`React.lazy` + `Suspense`)**: Tách các trang thành các chunk riêng biệt giúp giảm kích thước gói bundle khởi tạo.
 * **Component `PageLoader`**: Hiệu ứng chuyển trang mượt mà chuẩn UX.
 
 ### 8. Chuẩn Hóa Cấu Trúc Dịch Vụ Supabase

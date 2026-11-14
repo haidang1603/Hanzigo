@@ -12,6 +12,7 @@
 import { EXPANDED_MOCK_EXAMS, EXPANDED_MOCK_QUESTIONS } from './hskMockExamsExpanded.js';
 import { REAL_SIMULATION_QUESTIONS } from './hskRealExamQuestions.js';
 import { OFFICIAL_PUBLIC_EXAMS, OFFICIAL_PUBLIC_QUESTIONS } from './hskOfficialPublicExams.js';
+import { HSK6_FULL_101_EXAM, HSK6_FULL_101_QUESTIONS } from './hsk6FullExamData.js';
 
 const BASE_HSK_EXAMS = [
   {
@@ -1688,6 +1689,7 @@ const BASE_HSK_QUESTIONS = [
 
 export const HSK_EXAMS = [
   ...BASE_HSK_EXAMS,
+  HSK6_FULL_101_EXAM,
   ...OFFICIAL_PUBLIC_EXAMS,
   ...EXPANDED_MOCK_EXAMS
 ];
@@ -1708,6 +1710,7 @@ const curatedBaseQuestions = BASE_HSK_QUESTIONS.filter(q => !REAL_SIMULATION_EXA
 
 export const HSK_QUESTIONS = [
   ...REAL_SIMULATION_QUESTIONS,
+  ...HSK6_FULL_101_QUESTIONS,
   ...OFFICIAL_PUBLIC_QUESTIONS,
   ...curatedBaseQuestions,
   ...EXPANDED_MOCK_QUESTIONS
@@ -1768,6 +1771,7 @@ export function getSanitizedExamForTaking(examId) {
     words: q.words || q.scrambledWords || [],
     scrambledWords: q.scrambledWords || q.words || [],
     writing_criteria: q.writing_criteria || [],
+    summary_passage_paragraphs: q.summary_passage_paragraphs || null,
     min_words: q.min_words || 0,
     max_words: q.max_words || 0,
     is_subjective: !!q.is_subjective,

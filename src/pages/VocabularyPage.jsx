@@ -1253,7 +1253,7 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
                 playClickSound();
                 setViewMode('dictionary');
               }}
-              title="Tra cứu kho từ điển quy mô lớn CC-CEDICT (120.000 từ)"
+              title="Tra cứu kho từ điển CC-CEDICT"
               className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
                 viewMode === 'dictionary' 
                   ? 'bg-[#E85D3F] text-white shadow-sm' 
@@ -1261,7 +1261,7 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
               }`}
             >
               <BookOpen size={15} />
-              <span className="hidden sm:inline">Từ điển 120.000 từ</span>
+              <span className="hidden sm:inline">Từ điển CC-CEDICT</span>
             </button>
 
             <button
@@ -2055,7 +2055,7 @@ export default function VocabularyPage({ user, setActiveTab, onSelectWriting, on
           {dictLoading ? (
             <div className="py-16 text-center bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#E85D3F] border-t-transparent mb-3" />
-              <p className="text-xs font-bold text-[#748092]">Đang tải dữ liệu từ kho từ điển 120.000 mục từ...</p>
+              <p className="text-xs font-bold text-[#748092]">Đang tải dữ liệu từ kho từ điển CC-CEDICT...</p>
             </div>
           ) : dictResults.length === 0 ? (
             <div className="py-16 text-center bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3">

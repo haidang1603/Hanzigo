@@ -61,7 +61,8 @@ import {
 } from '../services/customLessonService';
 import { supabase, isSupabaseConfigured } from '../supabase/config';
 import AiContextBadge from '../components/personalization/AiContextBadge.jsx';
-import HskAdvancedModule from '../features/curriculum/HskAdvancedModule.tsx';
+import Hsk79RoadmapSection from '../features/curriculum/Hsk79RoadmapSection.jsx';
+import { getHsk79LessonWithContent } from '../features/curriculum/lessonContentSynthesizer.js';
 
 const LOCAL_FREE_EXPLORE_KEY = 'hanzigo_roadmap_free_explore_v1';
 
@@ -345,9 +346,11 @@ export default function RoadmapPage({
   const selectedLevel = useMemo(() => getLevelById(selectedLevelId), [selectedLevelId]);
   const chaptersForSelectedLevel = useMemo(() => getChaptersByLevel(selectedLevelId), [selectedLevelId]);
 
-  // Overall Statistics across all levels
+  // Overall Statistics across all levels (Foundation Band: 120 lessons)
   const overallStats = useMemo(() => {
-    const completedLessonIds = Object.keys(progress.completedLessons || {});
+    const completedLessonIds = Object.keys(progress.completedLessons || {}).filter(
+      id => !id.startsWith('hsk79-')
+    );
     const totalCompleted = completedLessonIds.length;
     let totalMastered = 0;
     completedLessonIds.forEach(id => {
@@ -376,8 +379,11 @@ export default function RoadmapPage({
   // If navigated from Home or Dashboard with a specific initial lesson id, open it directly
   useEffect(() => {
     if (initialLessonId) {
-      const target = getLessonById(initialLessonId);
+      const target = getLessonById(initialLessonId) || getHsk79LessonWithContent(initialLessonId);
       if (target) {
+        if (target.isHsk79) {
+          setCurriculumBand('advanced');
+        }
         setActiveLessonToPlay(target);
       }
       if (onClearInitialLesson) {
@@ -427,7 +433,7 @@ export default function RoadmapPage({
             setJourneyVersion(v => v + 1);
           }}
           onNextLesson={(nextId) => {
-            const next = getLessonById(nextId);
+            const next = getLessonById(nextId) || getHsk79LessonWithContent(nextId);
             if (next) {
               setActiveLessonToPlay(next);
             } else {
@@ -465,7 +471,7 @@ export default function RoadmapPage({
                   : 'text-[#5B6B7F] dark:text-gray-300 hover:bg-[#FAF6F0] dark:hover:bg-[#0F172A]'
               }`}
             >
-              Foundation-Intermediate (HSK 1–6)
+              Chuẩn HSK 1–6 (120 bài · 5.456 từ)
             </button>
             <button
               type="button"
@@ -476,18 +482,25 @@ export default function RoadmapPage({
                   : 'text-[#5B6B7F] dark:text-gray-300 hover:bg-[#FAF6F0] dark:hover:bg-[#0F172A]'
               }`}
             >
-              Advanced Professional Band (HSK 7–9 · 三等九级)
+              Chuẩn HSK 7–9 (60 bài · 11.092 từ · 三等九级)
             </button>
           </div>
           <span className="text-[11px] font-semibold text-[#748092] dark:text-gray-400 px-2">
-            Chuẩn năng lực Hán ngữ Quốc tế (3 Bậc · 9 Cấp)
+            Tổng lộ trình 180 bài (HSK 1–9 · Chuẩn 3 Bậc 9 Cấp)
           </span>
         </div>
 
         {curriculumBand === 'advanced' ? (
-          <HskAdvancedModule
+          <Hsk79RoadmapSection
             user={user}
+            completedLessonsMap={progress.completedLessons || {}}
+            onStartLesson={(lessonObj) => {
+              playClickSound();
+              setActiveLessonToPlay(lessonObj);
+            }}
             onSwitchToFoundation={() => setCurriculumBand('foundation')}
+            onOpenHskExam={() => setActiveTab && setActiveTab('hsk')}
+            speakChinese={speakChinese}
           />
         ) : (
           <>

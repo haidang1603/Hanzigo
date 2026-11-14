@@ -50,6 +50,7 @@ import RoleplayStudioModal from './RoleplayStudioModal.jsx';
 import { buildScenarioForLesson } from '../../utils/roleplayScenarioBuilder.js';
 import StrokeOrderPlayer from '../dictionary/StrokeOrderPlayer';
 import InteractiveWritingPad from '../dictionary/InteractiveWritingPad';
+import Hsk79StudioPanel from './Hsk79StudioPanel.jsx';
 import {
   Step1Learn,
   Step2Vocabulary,
@@ -1050,6 +1051,9 @@ export default function InteractiveLessonPlayer({
                 ) : null}
               </div>
             </div>
+
+            {/* HSK 7-9 Academic Passage, 3-Tier Translation Drills & Essay Blueprint */}
+            <Hsk79StudioPanel lesson={lesson} handleSpeak={handleSpeak} />
           </>
         ) : (
           /* COMPLETION CELEBRATION MODAL */

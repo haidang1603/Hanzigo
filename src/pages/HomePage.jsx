@@ -178,8 +178,8 @@ const FAQS = [
     a: 'Hoàn toàn học được! HanziGo thiết kế lộ trình Nhập môn dành riêng cho người mới bắt đầu từ con số 0: từ cách đặt khẩu hình phát âm chuẩn Pinyin, quy tắc 4 thanh điệu, đến 8 nét viết cơ bản và mẹo ghép vần cực dễ hiểu.'
   },
   {
-    q: 'Tại sao phương pháp Hán-Việt lại giúp người Việt học nhanh hơn 50%?',
-    a: 'Tiếng Việt có hơn 70% từ ngữ bắt nguồn từ gốc Hán (từ Hán-Việt). Nhờ sự tương đồng kỳ diệu này, người Việt khi học tiếng Trung chỉ cần nắm được quy luật chuyển âm là có thể đoán đúng nghĩa và ghi nhớ hàng ngàn từ vựng mà không phải học vẹt.'
+    q: 'Tại sao phương pháp Hán-Việt lại giúp người Việt học tiếng Trung hiệu quả hơn?',
+    a: 'Rất nhiều từ vựng tiếng Việt bắt nguồn từ gốc Hán (từ Hán-Việt). Nhờ sự tương đồng về âm và nghĩa này, người Việt khi học tiếng Trung có thể nắm quy luật chuyển âm để liên tưởng và ghi nhớ từ vựng tự nhiên hơn.'
   },
   {
     q: 'Tôi có thể luyện phát âm và viết chữ Hán trên máy tính hoặc điện thoại không?',
@@ -292,7 +292,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
 
               {/* Subtitle */}
               <p className="text-base sm:text-lg text-[#748092] dark:text-[#94A3B8] font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Phương pháp liên tưởng <strong className="text-[#243447] dark:text-white">Hán-Việt 70%</strong>, hiểu sâu bản chất chiết tự, luyện phát âm cùng AI và ôn tập ngắt quãng chống quên.
+                Phương pháp liên tưởng <strong className="text-[#243447] dark:text-white">gốc Hán-Việt</strong>, hiểu sâu bản chất chiết tự, luyện phát âm cùng AI và ôn tập ngắt quãng chống quên.
                 <span className="block mt-1 font-semibold text-[#E85D3F]">
                   “Chỉ 15 phút mỗi ngày – Từng bước xây dựng phản xạ và làm chủ ngữ âm tiếng Trung.”
                 </span>
@@ -345,7 +345,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
               <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-5 text-xs text-[#748092] dark:text-[#94A3B8]">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-[#45B97C]" />
-                  <span>100% Khung chuẩn HSK 3.0</span>
+                  <span>Bám sát khung chuẩn HSK</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-[#45B97C]" />
@@ -634,22 +634,22 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
         </div>
       </section>
 
-      {/* 3. SINO-VIETNAMESE BRIDGING COGNATES (LỢI THẾ HÁN-VIỆT 70%) */}
+      {/* 3. SINO-VIETNAMESE BRIDGING COGNATES (LỢI THẾ HÁN-VIỆT) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-6">
             <div>
               <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Bí quyết ghi nhớ</span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
-                Lợi Thế Hán - Việt: Học 1 Đoán 10
+                Lợi Thế Hán - Việt: Liên Tưởng Nhanh Hơn
               </h2>
               <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-1 max-w-xl">
-                Hơn 70% từ vựng tiếng Việt có gốc Hán. Chỉ cần nắm vững quy tắc chuyển thanh mẫu và vận mẫu, bạn sẽ nhớ hàng ngàn từ vựng tự nhiên mà không cần học vẹt.
+                Nhiều từ vựng tiếng Việt có gốc Hán. Khi nắm vững quy tắc chuyển thanh mẫu và vận mẫu, bạn có thể liên tưởng nghĩa và ghi nhớ từ vựng tự nhiên hơn.
               </p>
             </div>
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] text-xs font-bold shrink-0">
               <Zap size={14} />
-              <span>Tiết kiệm 50% thời gian ghi nhớ</span>
+              <span>Ghi nhớ qua gốc Hán-Việt</span>
             </div>
           </div>
 
