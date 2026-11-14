@@ -508,19 +508,19 @@ export default function RoadmapPage({
         {/* ========================================================== */}
         {/* 1. HERO BANNER: ASIAN-MODERN PORTAL & LIVE KPIS */}
         {/* ========================================================== */}
-        <div className="relative overflow-hidden p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] text-white shadow-2xl border border-white/5">
+        <div className="relative overflow-hidden p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] text-white shadow-lg border border-white/5">
           {/* Ambient Glows */}
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-[#E85D3F]/20 blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/3 -mb-20 w-80 h-80 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-[#E85D3F]/20 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/3 -mb-16 w-56 h-56 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 text-white text-xs font-bold backdrop-blur-md border border-white/15 shadow-xs">
-                <Sparkles size={14} className="text-amber-400" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-2 max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white text-[11px] font-bold backdrop-blur-md border border-white/15 shadow-xs">
+                <Sparkles size={12} className="text-amber-400" />
                 <span>Khung Chuẩn HSK 3.0 Mới • Bản Đồ Học Tập Độc Quyền</span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-snug">
                 Lộ Trình Học HSK Toàn Diện
               </h1>
 
@@ -530,40 +530,40 @@ export default function RoadmapPage({
               </p>
 
               {/* 4 Realtime KPI Pills */}
-              <div className="flex flex-wrap items-center gap-2.5 pt-2 text-xs">
-                <div className="px-3 py-1.5 rounded-xl bg-white/10 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5">
-                  <GraduationCap size={14} className="text-emerald-400" />
+              <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+                <div className="px-2.5 py-1 rounded-lg bg-white/10 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5">
+                  <GraduationCap size={13} className="text-emerald-400" />
                   <span>Trình độ: <strong>HSK {overallStats.unlockedLevel}</strong></span>
                 </div>
 
-                <div className="px-3 py-1.5 rounded-xl bg-white/10 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5">
-                  <BookOpen size={14} className="text-blue-400" />
+                <div className="px-2.5 py-1 rounded-lg bg-white/10 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5">
+                  <BookOpen size={13} className="text-blue-400" />
                   <span>Đã xong: <strong>{overallStats.totalCompleted}</strong> / {overallStats.totalCurriculumLessons} bài ({overallStats.completionPercent}%)</span>
                 </div>
 
-                <div className="px-3 py-1.5 rounded-xl bg-white/10 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-amber-300">
-                  <Star size={14} className="text-amber-400 fill-amber-400" />
+                <div className="px-2.5 py-1 rounded-lg bg-white/10 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-amber-300">
+                  <Star size={13} className="text-amber-400 fill-amber-400" />
                   <span>Thành thạo 3★: <strong>{overallStats.totalMastered}</strong> bài</span>
                 </div>
 
-                <div className="px-3 py-1.5 rounded-xl bg-white/10 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-rose-300">
-                  <Trophy size={14} className="text-rose-400" />
+                <div className="px-2.5 py-1 rounded-lg bg-white/10 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-rose-300">
+                  <Trophy size={13} className="text-rose-400" />
                   <span>Hạ gục Boss: <strong>{overallStats.totalBossDefeated}</strong> / 12</span>
                 </div>
               </div>
             </div>
 
             {/* Header Right Action Buttons */}
-            <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-3 shrink-0">
+            <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-2 shrink-0">
               {resumeInfo?.lesson && (
                 <button
                   onClick={() => {
                     playClickSound();
                     setActiveLessonToPlay(resumeInfo.lesson);
                   }}
-                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#f06e52] hover:to-[#db4f33] text-white font-black text-xs sm:text-sm shadow-xl hover:scale-105 active:scale-100 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#f06e52] hover:to-[#db4f33] text-white font-black text-xs sm:text-sm shadow-lg hover:scale-[1.02] active:scale-100 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
                 >
-                  <Play size={16} fill="currentColor" />
+                  <Play size={15} fill="currentColor" />
                   <span>Học tiếp bài {resumeInfo.lesson.lessonNumber} ngay</span>
                 </button>
               )}
@@ -574,7 +574,7 @@ export default function RoadmapPage({
                     playClickSound();
                     setShowPlacementTest(true);
                   }}
-                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-white/10"
+                  className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-white/10"
                 >
                   <Compass size={14} className="text-amber-400" />
                   <span>Xếp lớp HSK</span>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ZaloBrandIcon, FacebookBrandIcon } from '../components/common/SocialBrandIcons';
 import { 
   CreditCard, 
   ShieldCheck, 
@@ -42,73 +43,68 @@ export default function RefundPolicyPage({ setActiveTab }) {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10 animate-in fade-in duration-300">
       
-      {/* 1. Header Banner */}
-      <div className="relative overflow-hidden p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] text-white shadow-2xl border border-white/10">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-72 h-72 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 -mb-16 w-72 h-72 rounded-full bg-[#E85D3F]/10 blur-3xl pointer-events-none" />
+      {/* 1. Slim Header Banner */}
+      <div className="relative overflow-hidden p-3.5 sm:p-4 rounded-xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] text-white shadow-md border border-white/10">
+        <div className="relative z-10 space-y-1.5">
+          {/* Top bar: Breadcrumb + Metadata */}
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+            <div className="flex items-center gap-1.5 font-semibold">
+              <button 
+                onClick={() => handleNav('home')} 
+                className="hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <ArrowLeft size={12} />
+                <span>Trang chủ</span>
+              </button>
+              <span>/</span>
+              <span className="text-[#E85D3F]">Chính sách học phí & Hoàn tiền</span>
+            </div>
 
-        <div className="relative z-10 space-y-4 max-w-3xl">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-xs text-[#94A3B8] font-semibold">
-            <button 
-              onClick={() => handleNav('home')} 
-              className="hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-            >
-              <ArrowLeft size={13} />
-              <span>Trang chủ</span>
-            </button>
-            <span>/</span>
-            <span className="text-[#E85D3F]">Chính sách học phí & Hoàn tiền</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
+                <Sparkles size={12} />
+                Miễn phí toàn phần (Non-commercial)
+              </span>
+              <span>•</span>
+              <span>Cập nhật: <strong>09/11/2026</strong></span>
+            </div>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-emerald-400 text-xs font-bold backdrop-blur-md border border-white/10">
-            <Sparkles size={14} />
-            <span>Nền tảng giáo dục mở — Hiện tại hoàn toàn miễn phí</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+          <h1 className="text-lg sm:text-xl font-black tracking-tight leading-snug">
             Chính Sách Học Phí, Giao Dịch & Hoàn Tiền
           </h1>
 
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
-            Thông tin minh bạch về mô hình vận hành phi thương mại hiện tại của HanziGo, quy định về miễn phí học liệu và khung nguyên tắc xử lý giao dịch dự kiến khi triển khai các dịch vụ nâng cao trong tương lai.
+          <p className="text-xs text-slate-300 leading-relaxed max-w-4xl">
+            Thông tin minh bạch về mô hình vận hành phi thương mại hiện tại của HanziGo, quy định miễn phí học liệu và nguyên tắc hoàn tiền dự kiến.
           </p>
-
-          <div className="pt-2 flex flex-wrap items-center gap-4 text-xs text-slate-400">
-            <span>📅 Ngày hiệu lực: <strong>01/01/2026</strong></span>
-            <span>•</span>
-            <span>🔍 Cập nhật gần nhất: <strong>09/11/2026</strong></span>
-            <span>•</span>
-            <span>Trạng thái: <strong>Miễn phí toàn phần (Non-commercial)</strong></span>
-          </div>
         </div>
 
         {/* Tab switch */}
-        <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap items-center gap-3">
+        <div className="relative z-10 mt-2.5 pt-2.5 border-t border-white/10 flex flex-wrap items-center gap-1.5">
           <button
             onClick={() => handleNav('privacy')}
-            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-2.5 py-1 rounded-md bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
           >
-            <ShieldCheck size={14} />
+            <ShieldCheck size={12} />
             <span>Chính sách bảo mật</span>
           </button>
           <button
             onClick={() => handleNav('terms')}
-            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-2.5 py-1 rounded-md bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
           >
-            <FileText size={14} />
+            <FileText size={12} />
             <span>Điều khoản dịch vụ</span>
           </button>
           <button
             onClick={() => handleNav('cookies')}
-            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-2.5 py-1 rounded-md bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
           >
             <span>Chính sách cookie</span>
           </button>
           <button
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-xs shadow-md flex items-center gap-1.5 cursor-default"
+            className="px-2.5 py-1 rounded-md bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-[11px] shadow-xs flex items-center gap-1 cursor-default"
           >
-            <CreditCard size={14} />
+            <CreditCard size={12} />
             <span>Học phí & Hoàn tiền</span>
           </button>
         </div>
@@ -284,6 +280,18 @@ export default function RefundPolicyPage({ setActiveTab }) {
               <p><strong>Dự án:</strong> Nền tảng học tiếng Trung HanziGo</p>
               <p><strong>Người đại diện dự án:</strong> Lê Hải Đăng</p>
               <p><strong>Email:</strong> <a href="mailto:lehaidang16032006@gmail.com" className="text-[#E85D3F] font-bold hover:underline">lehaidang16032006@gmail.com</a></p>
+              <p className="flex flex-wrap items-center gap-3">
+                <strong>Kênh hỗ trợ trực tiếp:</strong>
+                <a href="https://zalo.me/03995095780" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[#0068FF] dark:text-sky-400 font-bold hover:underline">
+                  <ZaloBrandIcon size={15} />
+                  <span>Zalo liên hệ</span>
+                </a>
+                <span>•</span>
+                <a href="https://www.facebook.com/hdang.1603" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[#1877F2] dark:text-blue-400 font-bold hover:underline">
+                  <FacebookBrandIcon size={15} />
+                  <span>Facebook liên hệ</span>
+                </a>
+              </p>
               <p><strong>Địa chỉ:</strong> Thành phố Đà Nẵng, Việt Nam</p>
             </div>
           </section>

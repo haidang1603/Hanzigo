@@ -74,6 +74,9 @@ export const DualSubVideoPlayer: React.FC<DualSubVideoPlayerProps> = ({
   const [isMining, setIsMining] = useState(false);
 
   const activeCue: SubtitleCue | undefined = video.subtitles[activeCueIndex];
+  const hasSubtitles = video.subtitles.length > 0;
+  const youtubeOrigin =
+    typeof window !== 'undefined' ? `&origin=${encodeURIComponent(window.location.origin)}` : '';
 
   useEffect(() => {
     if (activeCueIndex >= 0) {
@@ -148,83 +151,87 @@ export const DualSubVideoPlayer: React.FC<DualSubVideoPlayerProps> = ({
         {video.source_type === 'youtube' ? (
           <iframe
             ref={iframeRef}
-            src={`https://www.youtube-nocookie.com/embed/${video.external_video_id}?enablejsapi=1&controls=0&rel=0&modestbranding=1`}
+            src={`https://www.youtube-nocookie.com/embed/${video.external_video_id}?enablejsapi=1&controls=1&rel=0&modestbranding=1${youtubeOrigin}`}
             title={video.title_zh}
-            className="w-full h-full pointer-events-none"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            className="w-full h-full pointer-events-auto"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
           />
         ) : (
           <video
             ref={videoElementRef}
             src={video.external_video_id}
+            controls
             className="w-full h-full object-cover"
           />
         )}
 
         {/* Top Video Header Overlay */}
-        <div className="absolute top-0 inset-x-0 p-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent flex items-center justify-between text-white">
-          <div>
-            <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/80 uppercase">
+        <div className="pointer-events-none absolute top-0 inset-x-0 p-3 bg-gradient-to-b from-black/70 via-black/30 to-transparent flex items-center justify-between text-white">
+          <div className="truncate pr-3">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-500/85 uppercase">
               HSK {video.hsk_level}
             </span>
-            <span className="text-sm font-semibold ml-2">{video.title_zh}</span>
+            <span className="text-xs sm:text-sm font-semibold ml-2">{video.title_zh}</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                setPinyinVisibility((v) => (v === 'all' ? 'hard_only' : v === 'hard_only' ? 'off' : 'all'))
-              }
-              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur transition"
-            >
-              Pinyin: {pinyinVisibility === 'all' ? 'Tất cả' : pinyinVisibility === 'hard_only' ? 'Từ khó' : 'Tắt'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setBlurTranslation((v) => !v)}
-              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur transition flex items-center gap-1"
-            >
-              {blurTranslation ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              {blurTranslation ? 'Che dịch' : 'Hiện dịch'}
-            </button>
-          </div>
+          {hasSubtitles && (
+            <div className="pointer-events-auto flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() =>
+                  setPinyinVisibility((v) => (v === 'all' ? 'hard_only' : v === 'hard_only' ? 'off' : 'all'))
+                }
+                className="text-xs font-medium px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur transition"
+              >
+                Pinyin: {pinyinVisibility === 'all' ? 'Tất cả' : pinyinVisibility === 'hard_only' ? 'Từ khó' : 'Tắt'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setBlurTranslation((v) => !v)}
+                className="text-xs font-medium px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur transition flex items-center gap-1"
+              >
+                {blurTranslation ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                {blurTranslation ? 'Che dịch' : 'Hiện dịch'}
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Interactive Subtitle Overlay Bar */}
-        <div className="absolute bottom-3 inset-x-4 bg-black/75 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10 shadow-2xl space-y-1.5">
-          {activeCue ? (
-            <>
-              {/* Hanzi line with Pinyin ruby */}
-              <div className="text-2xl sm:text-3xl font-bold text-white flex flex-wrap items-center justify-center gap-x-1 gap-y-1 leading-relaxed">
-                {activeCue.tokens.map((tok, idx) =>
-                  tok.is_punctuation ? (
-                    <span key={`punc-${idx}`} className="text-white/80">
-                      {tok.text}
-                    </span>
-                  ) : (
-                    <button
-                      key={`tok-${idx}`}
-                      type="button"
-                      onClick={() => handleTokenClick(tok)}
-                      className={`inline-flex flex-col items-center rounded px-1 transition hover:bg-white/20 cursor-pointer ${getHskUnderlineColor(
-                        tok.hsk_level
-                      )}`}
-                    >
-                      <ruby className="ruby-align-center">
-                        <span className="text-white">{tok.text}</span>
-                        {shouldShowPinyin(tok) && (
-                          <rt className="text-xs font-normal text-emerald-300 select-none pb-0.5">
-                            {tok.pinyin}
-                          </rt>
-                        )}
-                      </ruby>
-                    </button>
-                  )
-                )}
-              </div>
+        {/* Interactive Subtitle Overlay Bar (shown only when subtitles exist) */}
+        {hasSubtitles && activeCue && (
+          <div className="absolute bottom-12 inset-x-4 bg-black/75 backdrop-blur-md rounded-2xl p-3.5 text-center border border-white/10 shadow-2xl space-y-1.5">
+            {/* Hanzi line with Pinyin ruby */}
+            <div className="text-xl sm:text-2xl font-bold text-white flex flex-wrap items-center justify-center gap-x-1 gap-y-1 leading-relaxed">
+              {activeCue.tokens.map((tok, idx) =>
+                tok.is_punctuation ? (
+                  <span key={`punc-${idx}`} className="text-white/80">
+                    {tok.text}
+                  </span>
+                ) : (
+                  <button
+                    key={`tok-${idx}`}
+                    type="button"
+                    onClick={() => handleTokenClick(tok)}
+                    className={`inline-flex flex-col items-center rounded px-1 transition hover:bg-white/20 cursor-pointer ${getHskUnderlineColor(
+                      tok.hsk_level
+                    )}`}
+                  >
+                    <ruby className="ruby-align-center">
+                      <span className="text-white">{tok.text}</span>
+                      {shouldShowPinyin(tok) && (
+                        <rt className="text-xs font-normal text-emerald-300 select-none pb-0.5">
+                          {tok.pinyin}
+                        </rt>
+                      )}
+                    </ruby>
+                  </button>
+                )
+              )}
+            </div>
 
-              {/* Vietnamese Translation Line */}
+            {/* Vietnamese Translation Line */}
+            {activeCue.vi_translation && (
               <p
                 className={`text-sm text-slate-200 transition duration-200 ${
                   blurTranslation ? 'blur-xs hover:blur-none select-none' : ''
@@ -232,11 +239,9 @@ export const DualSubVideoPlayer: React.FC<DualSubVideoPlayerProps> = ({
               >
                 {activeCue.vi_translation}
               </p>
-            </>
-          ) : (
-            <p className="text-sm text-white/50 py-2">Đang phát video tiếng Trung...</p>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Quick Word Lookup Popover */}

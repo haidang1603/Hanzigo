@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Headphones, CheckCircle2, XCircle, Crosshair, Award } from 'lucide-react';
+import { Headphones, CheckCircle2, XCircle, Crosshair, Award, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   getBuiltInListeningTracks,
   listListeningTracks,
@@ -30,6 +30,7 @@ export const ChineseListeningStudio: React.FC<ChineseListeningStudioProps> = ({ 
   const [activeTab, setActiveTab] = useState<'transcript' | 'dictation'>('transcript');
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [showTrackList, setShowTrackList] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -123,39 +124,81 @@ export const ChineseListeningStudio: React.FC<ChineseListeningStudioProps> = ({ 
             </div>
           </div>
 
-          <div className="text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl">
-            Tốc độ gốc: <strong>{currentTrack.speech_rate_wpm} chữ/phút</strong>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl">
+              Tốc độ gốc: <strong>{currentTrack.speech_rate_wpm} chữ/phút</strong>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowTrackList((v) => !v)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-xl transition"
+            >
+              {showTrackList ? (
+                <>
+                  <ChevronUp className="w-3.5 h-3.5" />
+                  Thu gọn danh sách
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                  Chọn bài nghe ({tracks.length})
+                </>
+              )}
+            </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {tracks.map((trk) => {
-            const active = trk.id === currentTrack.id;
-            return (
-              <button
-                key={trk.id}
-                type="button"
-                onClick={() => handleSelectTrack(trk.id)}
-                className={`rounded-xl border px-3 py-2 text-left transition ${
-                  active
-                    ? 'bg-emerald-50 border-emerald-400 text-emerald-950'
-                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-white'
-                }`}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-white border border-slate-200">
-                    HSK {trk.hsk_level}
-                  </span>
-                  <span className="text-[11px] font-medium text-slate-500">
-                    {CATEGORY_LABELS[trk.category]}
-                  </span>
-                </div>
-                <div className="text-sm font-semibold mt-1">{trk.title_zh}</div>
-                <div className="text-xs text-slate-500">{trk.title_vi}</div>
-              </button>
-            );
-          })}
-        </div>
+        {/* Compact Active Track Bar when collapsed */}
+        {!showTrackList ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white border border-emerald-200 text-emerald-800">
+                HSK {currentTrack.hsk_level}
+              </span>
+              <span className="text-[11px] font-medium text-slate-500">
+                {CATEGORY_LABELS[currentTrack.category]}
+              </span>
+              <span className="text-sm font-bold text-slate-900 truncate">
+                {currentTrack.title_zh}
+              </span>
+              <span className="text-xs text-slate-600 truncate">
+                — {currentTrack.title_vi}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {tracks.map((trk) => {
+              const active = trk.id === currentTrack.id;
+              return (
+                <button
+                  key={trk.id}
+                  type="button"
+                  onClick={() => {
+                    handleSelectTrack(trk.id);
+                    setShowTrackList(false);
+                  }}
+                  className={`rounded-xl border px-3 py-2 text-left transition ${
+                    active
+                      ? 'bg-emerald-50 border-emerald-400 text-emerald-950'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-white border border-slate-200">
+                      HSK {trk.hsk_level}
+                    </span>
+                    <span className="text-[11px] font-medium text-slate-500">
+                      {CATEGORY_LABELS[trk.category]}
+                    </span>
+                  </div>
+                  <div className="text-sm font-semibold mt-1">{trk.title_zh}</div>
+                  <div className="text-xs text-slate-500">{trk.title_vi}</div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Hidden HTMLAudioElement for external audio URLs */}

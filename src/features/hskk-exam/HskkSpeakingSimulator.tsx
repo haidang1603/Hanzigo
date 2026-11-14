@@ -14,6 +14,7 @@ import {
 import { speakChinese } from '../../utils/audio.js';
 import {
   gradeHskkSpeakingResponse,
+  gradeHskkSpeakingWithAi,
   HSKK_FULL_EXAMS,
   HSKK_LEVEL_META,
   HSKK_OFFICIAL_SPEC,
@@ -226,6 +227,16 @@ export const HskkSpeakingSimulator: React.FC<HskkSpeakingSimulatorProps> = ({ on
       );
       setResults(graded);
       setStage('COMPLETED');
+
+      void Promise.all(
+        questions.map((q) =>
+          gradeHskkSpeakingWithAi(q, allTranscripts[q.id] || '', contoursRef.current[q.id])
+        )
+      )
+        .then((aiGraded) => {
+          setResults(aiGraded);
+        })
+        .catch(() => {});
     }
   };
 

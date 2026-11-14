@@ -134,7 +134,7 @@ Hãy phân tích và trả về đúng JSON format sau:
         }
       ],
       generationConfig: {
-        temperature: 0.3,
+        temperature: 0.1,
         responseMimeType: 'application/json'
       }
     };

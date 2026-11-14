@@ -305,9 +305,29 @@ export function evaluatePronunciationAttempt(params: {
   const toneScore = Math.round(
     breakdown.reduce((acc, s) => acc + s.score, 0) / Math.max(1, breakdown.length)
   );
-  const initialFinalScore = Math.max(55, Math.min(100, Math.round(toneScore * 0.6 + 38)));
-  const fluencyScore = userContour.length >= 10 ? Math.min(100, Math.round(toneScore * 0.8 + 18)) : 65;
-  const overallScore = Math.round(toneScore * 0.5 + initialFinalScore * 0.3 + fluencyScore * 0.2);
+
+  // Đo độ trôi chảy thực tế từ độ mượt cao độ (ít giật cục giữa các khung F0) & độ phủ thời lượng thu âm
+  let avgFrameJump = 0;
+  if (resampledUser.length > 1) {
+    let jumpSum = 0;
+    for (let i = 1; i < resampledUser.length; i += 1) {
+      jumpSum += Math.abs(resampledUser[i] - resampledUser[i - 1]);
+    }
+    avgFrameJump = jumpSum / (resampledUser.length - 1);
+  }
+  const smoothnessScore = Math.max(30, Math.min(100, Math.round(100 - avgFrameJump * 2.2)));
+  const coverageRatio = Math.min(1, userContour.length / Math.max(6, reference.length * 0.5));
+  const fluencyScore = Math.max(
+    25,
+    Math.min(100, Math.round(smoothnessScore * 0.65 + coverageRatio * 35))
+  );
+
+  // Độ ổn định khớp đường bao âm tiết (thay cho công thức suy diễn tuyến tính từ toneScore)
+  const initialFinalScore = Math.max(
+    20,
+    Math.min(100, Math.round(toneScore * 0.7 + smoothnessScore * 0.3))
+  );
+  const overallScore = Math.round(toneScore * 0.6 + fluencyScore * 0.25 + initialFinalScore * 0.15);
 
   return {
     overall_score: overallScore,

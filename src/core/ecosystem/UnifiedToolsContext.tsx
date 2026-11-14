@@ -2,6 +2,11 @@ import React, { createContext, useCallback, useContext, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../../supabase/config.js';
 import { playChineseTts } from '../../services/ttsAudioService.js';
 import {
+  searchDictionaryMultimodal,
+  segmentSentenceIntoTokens,
+  type DictionaryEntry,
+} from '../../services/dictionaryService.ts';
+import {
   useUnifiedEcosystemStore,
   type UnifiedSourceContext,
 } from './useUnifiedEcosystemStore.ts';
@@ -64,7 +69,13 @@ export interface UnifiedToolsContextValue
   dismissToast: (id?: string) => void;
 }
 
-const UnifiedToolsContext = createContext<UnifiedToolsContextValue | null>(null);
+const GLOBAL_CTX_KEY = '__HANZIGO_UNIFIED_TOOLS_CONTEXT__';
+const UnifiedToolsContext: React.Context<UnifiedToolsContextValue | null> =
+  ((globalThis as Record<string, unknown>)[GLOBAL_CTX_KEY] as
+    | React.Context<UnifiedToolsContextValue | null>
+    | undefined) ||
+  (((globalThis as Record<string, unknown>)[GLOBAL_CTX_KEY] =
+    createContext<UnifiedToolsContextValue | null>(null)) as React.Context<UnifiedToolsContextValue | null>);
 
 interface UnifiedToolsProviderProps {
   user?: { id?: string | null } | null;
@@ -118,77 +129,183 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
     });
   }, []);
 
+  const mapDictEntryToRow = (entry: DictionaryEntry): DictionaryEntryRow => ({
+    id: entry.id,
+    simplified: entry.simplified,
+    traditional: entry.traditional || entry.simplified,
+    pinyin_numeric: entry.pinyin_numeric || entry.pinyin_display,
+    pinyin_display: entry.pinyin_display,
+    pinyin_clean: entry.pinyin_clean,
+    han_viet: entry.han_viet || '',
+    hsk_2_level: entry.hsk_2_level ?? null,
+    hsk_3_level: entry.hsk_3_level ?? null,
+    frequency_rank: entry.frequency_rank ?? 5000,
+    pos_meanings: entry.pos_meanings || [],
+    examples: entry.examples || [],
+    radical_breakdown: entry.radical_breakdown || null,
+    etymology_note: entry.etymology_note || '',
+  });
+
   const fetchUnifiedDataForText = useCallback(async (rawText: string, contextSentence?: string) => {
     const cleanText = rawText.trim();
-    if (!cleanText || !supabase || !isSupabaseConfigured()) return;
+    if (!cleanText) return;
 
+    const hasSupabase = Boolean(supabase && isSupabaseConfigured);
     setIsLoading(true);
     try {
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
+      let finalDictEntries: DictionaryEntryRow[] = [];
 
-      const { data: exactDict } = await supabase
-        .from('dictionary_entries')
-        .select('*')
-        .or(`simplified.eq.${cleanText},traditional.eq.${cleanText},pinyin_clean.ilike.${cleanText}`)
-        .limit(5);
-
-      let finalDictEntries: DictionaryEntryRow[] = (exactDict as DictionaryEntryRow[]) || [];
-
-      if (finalDictEntries.length === 0) {
-        const firstTwoChars = cleanText.slice(0, 2);
-        const { data: fuzzyDict } = await supabase
+      if (hasSupabase && supabase) {
+        const { data: exactDict } = await supabase
           .from('dictionary_entries')
           .select('*')
-          .ilike('simplified', `%${firstTwoChars}%`)
-          .order('frequency_rank', { ascending: true })
-          .limit(8);
-        finalDictEntries = (fuzzyDict as DictionaryEntryRow[]) || [];
+          .or(`simplified.eq.${cleanText},traditional.eq.${cleanText},pinyin_clean.ilike.${cleanText}`)
+          .limit(5);
+
+        finalDictEntries = (exactDict as DictionaryEntryRow[]) || [];
+
+        if (finalDictEntries.length === 0) {
+          const firstTwoChars = cleanText.slice(0, 2);
+          const { data: fuzzyDict } = await supabase
+            .from('dictionary_entries')
+            .select('*')
+            .ilike('simplified', `%${firstTwoChars}%`)
+            .order('frequency_rank', { ascending: true })
+            .limit(8);
+          finalDictEntries = (fuzzyDict as DictionaryEntryRow[]) || [];
+        }
+      }
+
+      // Fallback & sentence segmentation: tách từ trong câu dài + tra từ điển cục bộ + AI
+      const hasExactMatch = finalDictEntries.some((e) => e.simplified === cleanText);
+      if (!hasExactMatch) {
+        const segmentedTokens = segmentSentenceIntoTokens(cleanText);
+        const tokenEntries = segmentedTokens
+          .map((t) => t.entry)
+          .filter((e): e is DictionaryEntry => Boolean(e))
+          .map(mapDictEntryToRow);
+
+        const multimodal = await searchDictionaryMultimodal(cleanText, { limit: 8 });
+        const multiRows = (multimodal.entries || []).map(mapDictEntryToRow);
+
+        // Gọi AI giải thích toàn bộ từ/cụm/câu nếu chưa có mục từ chính xác (kèm cache localStorage)
+        let aiEntry: DictionaryEntryRow | null = null;
+        try {
+          const cacheKey = 'hanzigo_ai_unified_dict_v1';
+          const rawCache =
+            typeof localStorage !== 'undefined' ? localStorage.getItem(cacheKey) : null;
+          const cacheObj: Record<string, DictionaryEntryRow> = rawCache ? JSON.parse(rawCache) : {};
+
+          if (cacheObj[cleanText]) {
+            aiEntry = cacheObj[cleanText];
+          } else if (typeof fetch !== 'undefined') {
+            const aiRes = await fetch('/api/ai/grade', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'dictionary',
+                query: cleanText,
+                contextSentence: contextSentence || cleanText,
+              }),
+            });
+            if (aiRes.ok) {
+              const payload = await aiRes.json();
+              const r = payload?.result;
+              if (r && r.simplified) {
+                aiEntry = {
+                  id: `ai-dict-${cleanText}-${Date.now()}`,
+                  simplified: String(r.simplified || cleanText),
+                  traditional: String(r.traditional || cleanText),
+                  pinyin_display: String(r.pinyin_display || ''),
+                  pinyin_numeric: String(r.pinyin_numeric || r.pinyin_display || ''),
+                  pinyin_clean: String(r.pinyin_clean || ''),
+                  han_viet: String(r.han_viet || ''),
+                  hsk_2_level: typeof r.hsk_2_level === 'number' ? r.hsk_2_level : null,
+                  hsk_3_level: typeof r.hsk_3_level === 'number' ? r.hsk_3_level : null,
+                  frequency_rank: 9999,
+                  pos_meanings: Array.isArray(r.pos_meanings) ? r.pos_meanings : [],
+                  examples: Array.isArray(r.examples) ? r.examples : [],
+                  radical_breakdown: null,
+                  etymology_note: String(r.etymology_note || ''),
+                };
+                if (typeof localStorage !== 'undefined') {
+                  cacheObj[cleanText] = aiEntry;
+                  localStorage.setItem(cacheKey, JSON.stringify(cacheObj));
+                }
+              }
+            }
+          }
+        } catch {
+          // ignore AI fallback errors
+        }
+
+        const seen = new Set<string>();
+        const combined: DictionaryEntryRow[] = [];
+        for (const row of [
+          ...(aiEntry ? [aiEntry] : []),
+          ...finalDictEntries,
+          ...multiRows,
+          ...tokenEntries,
+        ]) {
+          if (!seen.has(row.simplified)) {
+            seen.add(row.simplified);
+            combined.push(row);
+          }
+        }
+        finalDictEntries = combined.slice(0, 12);
       }
 
       setDictionaryResults(finalDictEntries);
       const primaryEntry = finalDictEntries[0] || null;
       setActiveDictionaryEntry(primaryEntry);
 
-      const sentenceToAnalyze = contextSentence || cleanText;
-      const { data: allGrammarPoints } = await supabase
-        .from('grammar_points')
-        .select('*')
-        .order('hsk_level', { ascending: true })
-        .limit(30);
+      if (hasSupabase && supabase) {
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
 
-      if (allGrammarPoints) {
-        const matchedGrammar = (allGrammarPoints as GrammarPointRow[]).filter((gp) => {
-          const coreTokens = gp.pattern_display
-            .replace(/[SOV+……/\s()]/g, ' ')
-            .split(' ')
-            .filter((t) => t.length >= 1 && /[\u4e00-\u9fa5]/.test(t));
-
-          return (
-            coreTokens.some((kw) => sentenceToAnalyze.includes(kw)) ||
-            gp.pattern_display.includes(cleanText)
-          );
-        });
-
-        setGrammarResults(
-          matchedGrammar.length > 0
-            ? matchedGrammar
-            : (allGrammarPoints as GrammarPointRow[]).slice(0, 3)
-        );
-      }
-
-      if (authUser) {
-        const targetWord = primaryEntry ? primaryEntry.simplified : cleanText;
-        const { data: existingVocab } = await supabase
-          .from('user_vocab_items')
+        const sentenceToAnalyze = contextSentence || cleanText;
+        const { data: allGrammarPoints } = await supabase
+          .from('grammar_points')
           .select('*')
-          .eq('user_id', authUser.id)
-          .eq('simplified', targetWord)
-          .maybeSingle();
+          .order('hsk_level', { ascending: true })
+          .limit(30);
 
-        setSavedVocabItem((existingVocab as UserVocabItemRow) || null);
+        if (allGrammarPoints) {
+          const matchedGrammar = (allGrammarPoints as GrammarPointRow[]).filter((gp) => {
+            const coreTokens = gp.pattern_display
+              .replace(/[SOV+……/\s()]/g, ' ')
+              .split(' ')
+              .filter((t) => t.length >= 1 && /[\u4e00-\u9fa5]/.test(t));
+
+            return (
+              coreTokens.some((kw) => sentenceToAnalyze.includes(kw)) ||
+              gp.pattern_display.includes(cleanText)
+            );
+          });
+
+          setGrammarResults(
+            matchedGrammar.length > 0
+              ? matchedGrammar
+              : (allGrammarPoints as GrammarPointRow[]).slice(0, 3)
+          );
+        }
+
+        if (authUser) {
+          const targetWord = primaryEntry ? primaryEntry.simplified : cleanText;
+          const { data: existingVocab } = await supabase
+            .from('user_vocab_items')
+            .select('*')
+            .eq('user_id', authUser.id)
+            .eq('simplified', targetWord)
+            .maybeSingle();
+
+          setSavedVocabItem((existingVocab as UserVocabItemRow) || null);
+        } else {
+          setSavedVocabItem(null);
+        }
       } else {
+        setGrammarResults([]);
         setSavedVocabItem(null);
       }
     } finally {
@@ -257,7 +374,7 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
         return;
       }
 
-      if (!supabase || !isSupabaseConfigured()) {
+      if (!supabase || !isSupabaseConfigured) {
         await store.quickSaveToVocabulary(
           { simplified: wordOrText.trim() },
           context as UnifiedSourceContext | undefined
@@ -354,7 +471,7 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
       dimension: 'meaning' | 'writing' | 'pronunciation',
       score: number
     ) => {
-      if (!supabase || !isSupabaseConfigured()) return;
+      if (!supabase || !isSupabaseConfigured) return;
 
       const {
         data: { user: authUser },

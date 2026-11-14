@@ -4,44 +4,83 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   getBuiltInVideos,
+  parseYouTubeVideoId,
+  parseSubtitlesInput,
+  createCustomYouTubeVideo,
   findActiveSubtitleCueIndex,
   mineVideoSentenceToSRS,
   saveVideoProgress,
 } from '../src/services/videoStudioService.ts';
 
-test('getBuiltInVideos provides videos with tokenized subtitles', () => {
+test('getBuiltInVideos returns empty list (no fake dummy videos)', () => {
   const videos = getBuiltInVideos();
-  assert.ok(videos.length >= 2);
-  for (const video of videos) {
-    assert.ok(video.subtitles.length > 0);
-    for (const cue of video.subtitles) {
-      assert.ok(cue.end_ms > cue.start_ms);
-      assert.ok(cue.tokens.length > 0);
-      assert.ok(cue.tokens.every((t) => t.text.length > 0));
-    }
-  }
+  assert.deepEqual(videos, []);
+});
+
+test('parseYouTubeVideoId extracts ID from standard, short, shorts, and embed URLs', () => {
+  assert.equal(parseYouTubeVideoId('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+  assert.equal(parseYouTubeVideoId('https://youtu.be/dQw4w9WgXcQ?t=15'), 'dQw4w9WgXcQ');
+  assert.equal(parseYouTubeVideoId('https://www.youtube.com/shorts/abc123XYZ_9'), 'abc123XYZ_9');
+  assert.equal(parseYouTubeVideoId('https://www.youtube.com/embed/dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+  assert.equal(parseYouTubeVideoId('dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+  assert.equal(parseYouTubeVideoId('https://example.com/video'), null);
+  assert.equal(parseYouTubeVideoId(''), null);
+});
+
+test('parseSubtitlesInput parses SRT and plain Chinese lines with tokenized words', () => {
+  const srt = `1
+00:00:00,000 --> 00:00:04,500
+欢迎来到今天的茶文化体验馆。
+Chào mừng đến với trải nghiệm văn hóa trà hôm nay.
+
+2
+00:00:04,500 --> 00:00:11,200
+喝茶不仅是一种习惯。
+Uống trà không chỉ là một thói quen.`;
+
+  const cues = parseSubtitlesInput(srt);
+  assert.equal(cues.length, 2);
+  assert.equal(cues[0].start_ms, 0);
+  assert.equal(cues[0].end_ms, 4500);
+  assert.ok(cues[0].tokens.length > 0);
+  assert.equal(cues[1].start_ms, 4500);
+  assert.equal(cues[1].end_ms, 11200);
+  assert.ok(cues[1].tokens.some((t) => t.text === '习惯'));
+
+  const plainCues = parseSubtitlesInput('你好 | Xin chào\n谢谢 | Cảm ơn');
+  assert.equal(plainCues.length, 2);
+  assert.equal(plainCues[0].vi_translation, 'Xin chào');
+  assert.equal(plainCues[1].start_ms, 5000);
 });
 
 test('findActiveSubtitleCueIndex locates the correct cue in O(log n)', () => {
-  const video = getBuiltInVideos()[0];
+  const video = createCustomYouTubeVideo({
+    videoId: 'dQw4w9WgXcQ',
+    title: 'Test Video',
+    rawSubtitles: `1
+00:00:00,000 --> 00:00:04,500
+欢迎来到这里。
+Chào mừng tới đây.
+
+2
+00:00:04,500 --> 00:00:11,200
+喝茶是一种习惯。
+Uống trà là một thói quen.`,
+  });
   const subs = video.subtitles;
 
-  // Exact mid of cue 0: 0 to 4500ms
-  const idx0 = findActiveSubtitleCueIndex(subs, 2000);
-  assert.equal(idx0, 0);
-
-  // Exact mid of cue 1: 4500 to 11200ms
-  const idx1 = findActiveSubtitleCueIndex(subs, 7000);
-  assert.equal(idx1, 1);
-
-  // Out of range returns -1 or nearest
-  const idxBefore = findActiveSubtitleCueIndex(subs, -500);
-  assert.equal(idxBefore, -1);
+  assert.equal(findActiveSubtitleCueIndex(subs, 2000), 0);
+  assert.equal(findActiveSubtitleCueIndex(subs, 7000), 1);
+  assert.equal(findActiveSubtitleCueIndex(subs, -500), -1);
 });
 
 test('mineVideoSentenceToSRS saves token with contextual video sentence', async () => {
-  const video = getBuiltInVideos()[0];
-  const cue = video.subtitles[1];
+  const video = createCustomYouTubeVideo({
+    videoId: 'dQw4w9WgXcQ',
+    title: 'Test Video',
+    rawSubtitles: '喝茶是一种习惯 | Uống trà là một thói quen',
+  });
+  const cue = video.subtitles[0];
   const token = cue.tokens.find((t) => t.text === '习惯');
   assert.ok(token);
 
@@ -56,7 +95,10 @@ test('mineVideoSentenceToSRS saves token with contextual video sentence', async 
 });
 
 test('saveVideoProgress saves position and cue indices safely', async () => {
-  const video = getBuiltInVideos()[0];
+  const video = createCustomYouTubeVideo({
+    videoId: 'dQw4w9WgXcQ',
+    title: 'Test Video',
+  });
   await saveVideoProgress({
     user: null,
     videoId: video.id,
@@ -75,4 +117,3 @@ test('video studio SQL migration defines immersion_videos and user_video_progres
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.user_video_progress/i);
   assert.match(sql, /ENABLE ROW LEVEL SECURITY/i);
 });
-

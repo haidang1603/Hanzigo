@@ -437,7 +437,7 @@ export function gradeHskkSpeakingResponse(
     };
   }
 
-  // Listen & Repeat / Advanced Read Aloud -> match Hanzi characters + pitch tone contour
+  // Listen & Repeat / Advanced Read Aloud -> match Hanzi characters + real F0 pitch tone contour (no fake sine wave)
   if (question.taskType === 'listen_and_repeat' || question.taskType === 'read_aloud') {
     const targetChars: string[] = question.promptZh.match(/[\u4e00-\u9fa5]/g) ?? [];
     const spokenChars: string[] = clean.match(/[\u4e00-\u9fa5]/g) ?? [];
@@ -445,12 +445,18 @@ export function gradeHskkSpeakingResponse(
     const hanziMatchPct =
       targetChars.length > 0 ? Math.round((matchedCount / targetChars.length) * 100) : 100;
 
-    const contourLen = Math.max(12, Math.min(80, targetChars.length * 3));
-    const effectiveContour = usedRealPitch
-      ? userContour!
-      : Array.from({ length: contourLen }, (_, i) =>
-          hanziMatchPct >= 80 ? 3 + Math.sin(i * 0.5) * 1.2 : 2.5
-        );
+    const taskLabel = question.taskType === 'read_aloud' ? 'Đọc thành tiếng' : 'Lặp lại / Kể lại';
+
+    if (!usedRealPitch) {
+      return {
+        questionId: question.id,
+        taskType: question.taskType,
+        transcript: clean,
+        score: hanziMatchPct,
+        usedRealPitch: false,
+        feedbackVi: `${taskLabel}: ${hanziMatchPct}/100 (Khớp nội dung ASR: ${hanziMatchPct}%; chưa ghi nhận F0 micro).`,
+      };
+    }
 
     const pronResult = evaluatePronunciationAttempt({
       drill: {
@@ -465,24 +471,18 @@ export function gradeHskkSpeakingResponse(
         articulation_tip_vi: 'Giữ chuẩn thanh điệu và ngắt nhịp tự nhiên theo cụm từ.',
         reference_pitch_contour: [],
       },
-      userContour: effectiveContour,
+      userContour: userContour!,
     });
 
-    const toneWeight = usedRealPitch ? 0.45 : 0.15;
-    const combinedScore = Math.round(
-      hanziMatchPct * (1 - toneWeight) + pronResult.tone_score * toneWeight
-    );
-    const taskLabel = question.taskType === 'read_aloud' ? 'Đọc thành tiếng' : 'Lặp lại / Kể lại';
+    const combinedScore = Math.round(hanziMatchPct * 0.55 + pronResult.tone_score * 0.45);
     return {
       questionId: question.id,
       taskType: question.taskType,
       transcript: clean,
       score: combinedScore,
       pronunciationDetail: pronResult,
-      usedRealPitch,
-      feedbackVi: `${taskLabel}: ${combinedScore}/100 (Khớp nội dung: ${hanziMatchPct}%, Thanh điệu${
-        usedRealPitch ? ' [Đo F0 micro thật]' : ' [Ước lượng]'
-      }: ${pronResult.tone_score}%).`,
+      usedRealPitch: true,
+      feedbackVi: `${taskLabel}: ${combinedScore}/100 (Khớp nội dung: ${hanziMatchPct}%, Thanh điệu [Đo F0 micro thật]: ${pronResult.tone_score}%).`,
     };
   }
 
@@ -515,4 +515,49 @@ export function gradeHskkSpeakingResponse(
         : 'Nên mở rộng thêm ý và sử dụng liên từ (因为, 所以, 首先, 此外) để tăng điểm.'
     }`,
   };
+}
+
+/**
+ * Nâng cấp chấm điểm HSKK bằng AI (/api/ai/grade) để hiểu ngữ nghĩa & từ đồng nghĩa.
+ * Tự động fallback về `gradeHskkSpeakingResponse` nếu offline hoặc chưa cấu hình API.
+ */
+export async function gradeHskkSpeakingWithAi(
+  question: HskkQuestion,
+  transcript: string,
+  userContour?: number[],
+  audioBase64?: string | null
+): Promise<HskkEvaluationResult> {
+  const baseline = gradeHskkSpeakingResponse(question, transcript, userContour);
+  if (!transcript.trim() && !audioBase64) return baseline;
+  if (typeof fetch === 'undefined') return baseline;
+
+  try {
+    const res = await fetch('/api/ai/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'hskk',
+        promptZh: question.promptZh,
+        promptVi: question.promptVi,
+        taskType: question.taskType,
+        level: question.level,
+        expectedKeywords: question.expectedKeywords || [],
+        transcript,
+        audioBase64: audioBase64 || null,
+      }),
+    });
+
+    if (!res.ok) return baseline;
+    const data = await res.json();
+    const ai = data?.result;
+    if (!ai || typeof ai.score !== 'number') return baseline;
+
+    return {
+      ...baseline,
+      score: Math.max(0, Math.min(100, Math.round(ai.score))),
+      feedbackVi: `${ai.feedbackVi || baseline.feedbackVi} [Chấm bởi AI]`,
+    };
+  } catch {
+    return baseline;
+  }
 }

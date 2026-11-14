@@ -17,6 +17,7 @@
 
 import chatHandler from '../_handlers/ai/chat.js';
 import coachHandler from '../_handlers/ai/coach.js';
+import gradeHandler from '../_handlers/ai/grade.js';
 import personalizeHandler from '../_handlers/ai/personalize.js';
 import pronunciationHandler from '../_handlers/ai/pronunciation.js';
 import roleplayHandler from '../_handlers/ai/roleplay.js';
@@ -33,6 +34,8 @@ export default async function handler(req, res) {
       return chatHandler(req, res);
     case 'coach':
       return coachHandler(req, res);
+    case 'grade':
+      return gradeHandler(req, res);
     case 'personalize':
       return personalizeHandler(req, res);
     case 'pronunciation':

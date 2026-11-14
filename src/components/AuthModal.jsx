@@ -72,7 +72,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
     password: '',
     level: 'HSK 1 - Sơ cấp'
   });
-  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(true);
   const [agreeMarketing, setAgreeMarketing] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');

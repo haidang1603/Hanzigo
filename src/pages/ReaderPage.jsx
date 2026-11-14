@@ -405,13 +405,13 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
   };
 
   return (
-    <div className="w-full max-w-[1500px] mx-auto px-3 sm:px-6 lg:px-8 py-6 space-y-8">
+    <div className="w-full max-w-[1500px] mx-auto px-3 sm:px-6 lg:px-8 py-5 space-y-5">
       
-      {/* 1. Header Hero Banner */}
-      <div className="bg-gradient-to-br from-[#FFF9F2] via-white to-[#FCEEE2] dark:from-[#131B24] dark:via-[#1E293B] dark:to-[#0F172A] rounded-3xl p-6 sm:p-8 border border-[#F1E5D8] dark:border-[#334155] shadow-sm relative overflow-hidden">
-        <div className="relative z-10 max-w-4xl space-y-3">
+      {/* 1. Compact Header Hero Banner */}
+      <div className="bg-gradient-to-br from-[#FFF9F2] via-white to-[#FCEEE2] dark:from-[#131B24] dark:via-[#1E293B] dark:to-[#0F172A] rounded-2xl p-4 sm:p-6 border border-[#F1E5D8] dark:border-[#334155] shadow-sm relative overflow-hidden">
+        <div className="relative z-10 max-w-4xl space-y-2.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#E85D3F]/10 text-[#E85D3F] border border-[#E85D3F]/20 flex items-center gap-1.5">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E85D3F]/10 text-[#E85D3F] border border-[#E85D3F]/20 flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5" />
               Smart Chinese Reader & NLP
             </span>
@@ -420,16 +420,16 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#243447] dark:text-[#F3F4F6] tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#243447] dark:text-[#F3F4F6] tracking-tight">
             Đọc hiểu Thông minh & Bóc tách Từ vựng
           </h1>
 
-          <p className="text-sm sm:text-base text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
             Khám phá 24 bài đọc văn hóa phân cấp HSK 1–6 hoặc phân tích bất kỳ đoạn văn nào của bạn. Bấm vào từ bất kỳ để xem Pinyin ngữ cảnh, âm Hán-Việt, chiết tự IDS, ngữ pháp chuyên sâu và lưu vào Flashcard ôn tập lặp lại ngắt quãng (SM-2).
           </p>
 
           {/* Mode Tabs: Graded Readers vs Custom Text Input */}
-          <div className="pt-2 flex items-center gap-3 flex-wrap">
+          <div className="pt-1 flex items-center gap-2.5 flex-wrap">
             <button
               type="button"
               onClick={() => { playClickSound(); setActiveMode('graded'); }}
@@ -700,7 +700,8 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
         </div>
       )}
 
-      {/* 3. Main Interactive Workspace (2 Columns Grid) */}
+      {/* 3. Main Interactive Workspace (2 Columns Grid) — only for Graded Reader & Custom NLP */}
+      {(activeMode === 'graded' || activeMode === 'custom') && (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* Left Column (8 Cols): Interactive Text Reader */}
@@ -1496,6 +1497,7 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
           </div>
         </div>
       </div>
+      )}
 
       {/* Floating Toast Notification */}
       {toastMsg && (

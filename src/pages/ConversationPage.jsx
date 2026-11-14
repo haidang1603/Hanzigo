@@ -28,7 +28,7 @@ import { ALL_CONVERSATION_SCENARIOS, SCENARIO_CATEGORIES } from '../data/convers
 import AiContextBadge from '../components/personalization/AiContextBadge';
 import { speakChinese, playSuccessSound, playClickSound } from '../utils/audio';
 import { playChineseTts } from '../services/ttsAudioService';
-import { useUnifiedTools } from '../core/ecosystem/UnifiedToolsContext';
+import { useUnifiedTools } from '../core/ecosystem/UnifiedToolsContext.tsx';
 import { triggerCloudSync } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
 import { sendTutorMessage } from '../services/aiTutorService';

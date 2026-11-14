@@ -1030,24 +1030,24 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
         </div>
       )}
 
-      {/* 1. Header Banner */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E293B] text-white p-6 sm:p-8 border border-white/10 shadow-xl">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      {/* 1. Compact Header Banner */}
+      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E293B] text-white p-4 sm:p-6 border border-white/10 shadow-lg">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
-          <div className="space-y-3 max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wide uppercase bg-[#E85D3F]/20 text-[#E85D3F] border border-[#E85D3F]/30">
-                <ShieldCheck size={14} />
+          <div className="space-y-2 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wide uppercase bg-[#E85D3F]/20 text-[#E85D3F] border border-[#E85D3F]/30">
+                <ShieldCheck size={12} />
                 Bảng Điều Khiển Quản Trị Hệ Thống
               </span>
 
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                <Crown size={13} />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                <Crown size={12} />
                 <span>Toàn quyền quản trị viên</span>
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight">
               Trung Tâm Quản Trị HanziGo
             </h1>
             <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">

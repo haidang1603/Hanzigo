@@ -19,6 +19,7 @@ import { speakChinese, playSuccessSound, playClickSound, playErrorSound } from '
 import { recordAuditLog, AUDIT_CATEGORIES, AUDIT_SEVERITY } from '../services/auditLogService';
 import { getDailyQuote, getRandomQuote } from '../data/dailyQuotesData';
 import { fetchDailyQuotes, getNextRandomQuote, calculateQuoteOfTheDay } from '../services/dailyQuotesService';
+import { ZaloBrandIcon, FacebookBrandIcon } from './common/SocialBrandIcons';
 
 const DEFAULT_WELCOME_LESSON = {
   character: '好',
@@ -258,6 +259,24 @@ export default function Footer({ setActiveTab, user = null }) {
                 <Mail size={14} className="text-[#DF5334] shrink-0" />
                 <span>lehaidang16032006@gmail.com</span>
               </p>
+              <a
+                href="https://zalo.me/03995095780"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:text-white transition-colors w-fit"
+              >
+                <ZaloBrandIcon size={14} className="shrink-0" />
+                <span>Zalo liên hệ</span>
+              </a>
+              <a
+                href="https://www.facebook.com/hdang.1603"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:text-white transition-colors w-fit"
+              >
+                <FacebookBrandIcon size={14} className="shrink-0" />
+                <span>Facebook liên hệ</span>
+              </a>
               <p className="flex items-center gap-2">
                 <Globe size={14} className="text-[#45B97C] shrink-0" />
                 <span>Đà Nẵng, Việt Nam</span>

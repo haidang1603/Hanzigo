@@ -587,8 +587,32 @@ export async function evaluateHskWriting(
   input: WritingEvaluationInput
 ): Promise<WritingEvaluationResult> {
   const precheck = runDeterministicPreChecks(input.task, input.responseText);
+
+  let aiRaw = input.aiRawResponse;
+  if (aiRaw === undefined && input.responseText.trim() && typeof fetch !== 'undefined') {
+    try {
+      const res = await fetch('/api/ai/grade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'writing',
+          task: input.task,
+          responseText: input.responseText,
+        }),
+      });
+      if (res.ok) {
+        const payload = await res.json();
+        if (payload?.success && payload?.result) {
+          aiRaw = payload.result;
+        }
+      }
+    } catch {
+      // Fallback gracefully to deterministic rubric
+    }
+  }
+
   const graded = parseWritingEvaluationResponse(
-    input.aiRawResponse,
+    aiRaw,
     input.task,
     input.responseText,
     precheck

@@ -20,6 +20,17 @@ interface DailySmartStudyFlowProps {
   onNavigateModule?: (moduleKey: 'vocab' | 'writing' | 'pronunciation' | 'reading' | 'listening') => void;
 }
 
+const STARTER_DAILY_VOCAB: UserVocabItem[] = [
+  { id: 'starter-1', simplified: '学习', traditional: '學習', pinyin: 'xuéxí', meaning_vi: 'Học tập', mastery_level: 1 } as UserVocabItem,
+  { id: 'starter-2', simplified: '习惯', traditional: '習慣', pinyin: 'xíguàn', meaning_vi: 'Thói quen', mastery_level: 1 } as UserVocabItem,
+  { id: 'starter-3', simplified: '早上', traditional: '早上', pinyin: 'zǎoshang', meaning_vi: 'Buổi sáng', mastery_level: 1 } as UserVocabItem,
+  { id: 'starter-4', simplified: '咖啡', traditional: '咖啡', pinyin: 'kāfēi', meaning_vi: 'Cà phê', mastery_level: 1 } as UserVocabItem,
+  { id: 'starter-5', simplified: '朋友', traditional: '朋友', pinyin: 'péngyou', meaning_vi: 'Bạn bè', mastery_level: 1 } as UserVocabItem,
+  { id: 'starter-6', simplified: '时间', traditional: '時間', pinyin: 'shíjiān', meaning_vi: 'Thời gian', mastery_level: 1 } as UserVocabItem,
+  { id: 'starter-7', simplified: '准备', traditional: '準備', pinyin: 'zhǔnbèi', meaning_vi: 'Chuẩn bị', mastery_level: 1 } as UserVocabItem,
+  { id: 'starter-8', simplified: '努力', traditional: '努力', pinyin: 'nǔlì', meaning_vi: 'Cố gắng, nỗ lực', mastery_level: 1 } as UserVocabItem,
+];
+
 export const DailySmartStudyFlow: React.FC<DailySmartStudyFlowProps> = ({
   user,
   onNavigateModule,
@@ -39,13 +50,16 @@ export const DailySmartStudyFlow: React.FC<DailySmartStudyFlowProps> = ({
     };
   }, [user]);
 
+  const effectiveVocab = vocabItems.length > 0 ? vocabItems : STARTER_DAILY_VOCAB;
+  const usingStarterFallback = vocabItems.length === 0;
+
   const plan = useMemo(() => {
     return createSmartDailyLoopPlan(
-      vocabItems,
+      effectiveVocab,
       getBuiltInReadingArticles(),
       getBuiltInListeningTracks()
     );
-  }, [vocabItems]);
+  }, [effectiveVocab]);
 
   const toggleStep = (step: number) => {
     setCompletedSteps((prev) => {
@@ -86,7 +100,7 @@ export const DailySmartStudyFlow: React.FC<DailySmartStudyFlowProps> = ({
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700">
               <BookMarked className="w-4 h-4" />
-              Bước 1 · Ôn {plan.dueVocabItems.length} từ vựng đến hạn
+              Bước 1 · Ôn {plan.dueVocabItems.length} từ vựng {usingStarterFallback ? 'gợi ý' : 'đến hạn'}
             </span>
             <button
               type="button"
@@ -194,7 +208,7 @@ export const DailySmartStudyFlow: React.FC<DailySmartStudyFlowProps> = ({
                 key={pt.hanzi}
                 type="button"
                 onClick={() => openQuickPronunciationModal(pt.hanzi, pt.pinyin)}
-                className="w-full text-left rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 px-3 py-2 flex items-center justify-between text-xs"
+                className="w-full text-left rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 px-3 py-2 flex items-center justify-between text-xs cursor-pointer"
               >
                 <span>
                   <strong className="text-sm text-slate-900 mr-2">{pt.hanzi}</strong>
@@ -204,6 +218,14 @@ export const DailySmartStudyFlow: React.FC<DailySmartStudyFlowProps> = ({
               </button>
             ))}
           </div>
+
+          <button
+            type="button"
+            onClick={() => onNavigateModule?.('pronunciation')}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700 hover:underline cursor-pointer"
+          >
+            Mở Pronunciation Lab <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         {/* Step 4: Contextual Reading & Listening */}

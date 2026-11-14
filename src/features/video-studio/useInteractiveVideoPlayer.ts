@@ -31,6 +31,12 @@ export function useInteractiveVideoPlayer({
   const totalDurationMs = Math.max(1000, video.duration_seconds * 1000);
   const subtitles = useMemo(() => video.subtitles || [], [video.subtitles]);
 
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentTimeMs(0);
+    setActiveCueIndex(subtitles.length > 0 ? 0 : -1);
+  }, [video.id, subtitles.length]);
+
   const pause = useCallback(() => {
     setIsPlaying(false);
     if (videoElementRef.current) {
@@ -217,6 +223,67 @@ export function useInteractiveVideoPlayer({
     seekToMs,
     onTimeUpdate,
   ]);
+
+  // Sync state & currentTime from YouTube iframe postMessage (when user interacts directly with YouTube controls)
+  useEffect(() => {
+    if (video.source_type !== 'youtube' || typeof window === 'undefined') return;
+
+    const sendListeningHandshake = () => {
+      try {
+        iframeRef.current?.contentWindow?.postMessage(
+          JSON.stringify({ event: 'listening', id: video.id, channel: 'widget' }),
+          '*'
+        );
+      } catch {
+        // ignore cross-origin handshake errors
+      }
+    };
+
+    const iframeEl = iframeRef.current;
+    iframeEl?.addEventListener('load', sendListeningHandshake);
+    sendListeningHandshake();
+
+    const handleMessage = (event: MessageEvent) => {
+      if (
+        event.origin !== 'https://www.youtube-nocookie.com' &&
+        event.origin !== 'https://www.youtube.com'
+      ) {
+        return;
+      }
+
+      let payload: { event?: string; info?: { playerState?: number; currentTime?: number } } | null = null;
+      try {
+        payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+      } catch {
+        return;
+      }
+
+      if (!payload || !payload.info) return;
+
+      if (typeof payload.info.currentTime === 'number') {
+        const nextMs = Math.max(0, Math.round(payload.info.currentTime * 1000));
+        setCurrentTimeMs(nextMs);
+        const idx = findActiveSubtitleCueIndex(subtitles, nextMs);
+        setActiveCueIndex(idx);
+        onTimeUpdate?.(nextMs);
+      }
+
+      if (typeof payload.info.playerState === 'number') {
+        // YouTube PlayerState: 1 = playing, 2 = paused, 0 = ended
+        if (payload.info.playerState === 1) {
+          setIsPlaying(true);
+        } else if (payload.info.playerState === 2 || payload.info.playerState === 0) {
+          setIsPlaying(false);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      iframeEl?.removeEventListener('load', sendListeningHandshake);
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [video.id, video.source_type, subtitles, onTimeUpdate]);
 
   // Clean up timers on unmount
   useEffect(() => {

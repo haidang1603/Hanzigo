@@ -236,10 +236,10 @@ export const UniversalSlideOverDrawer: React.FC = () => {
   if (!isOpen) return null;
 
   const TABS: Array<{ id: UnifiedToolTab; label: string; icon: React.ReactNode }> = [
-    { id: 'dictionary', label: 'Từ điển (27.01)', icon: <BookOpen className="w-4 h-4" /> },
-    { id: 'grammar', label: 'Ngữ pháp (27.02)', icon: <Sparkles className="w-4 h-4" /> },
-    { id: 'writing', label: 'Luyện viết (27.03)', icon: <PenTool className="w-4 h-4" /> },
-    { id: 'pronunciation', label: 'Phát âm (27.07)', icon: <Mic className="w-4 h-4" /> },
+    { id: 'dictionary', label: 'Từ điển', icon: <BookOpen className="w-4 h-4" /> },
+    { id: 'grammar', label: 'Ngữ pháp', icon: <Sparkles className="w-4 h-4" /> },
+    { id: 'writing', label: 'Luyện viết', icon: <PenTool className="w-4 h-4" /> },
+    { id: 'pronunciation', label: 'Phát âm', icon: <Mic className="w-4 h-4" /> },
   ];
 
   const overallMastery =

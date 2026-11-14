@@ -802,13 +802,63 @@ export function evaluateTranslationSubmission(
 /**
  * Persist user's translation submission to Supabase or localStorage
  */
+export async function evaluateTranslationWithAi(
+  drill: TranslationDrill,
+  userOutput: string
+): Promise<TranslationCritique> {
+  const baseline = evaluateTranslationSubmission(drill, userOutput);
+  if (!userOutput.trim() || typeof fetch === 'undefined') return baseline;
+
+  try {
+    const res = await fetch('/api/ai/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'translation',
+        sourceText: drill.source_text,
+        direction: drill.direction,
+        requiredKeywords: drill.required_keywords.map((k) => k.word_or_pattern),
+        referenceTranslations: drill.reference_translations,
+        userOutput,
+      }),
+    });
+
+    if (!res.ok) return baseline;
+    const data = await res.json();
+    const ai = data?.result;
+    if (!ai || typeof ai.overall_score !== 'number') return baseline;
+
+    return {
+      ...baseline,
+      overall_score: Math.max(0, Math.min(100, Math.round(ai.overall_score))),
+      accuracy_score:
+        typeof ai.accuracy_score === 'number'
+          ? Math.max(0, Math.min(100, Math.round(ai.accuracy_score)))
+          : baseline.accuracy_score,
+      grammar_score:
+        typeof ai.grammar_score === 'number'
+          ? Math.max(0, Math.min(100, Math.round(ai.grammar_score)))
+          : baseline.grammar_score,
+      naturalness_score:
+        typeof ai.naturalness_score === 'number'
+          ? Math.max(0, Math.min(100, Math.round(ai.naturalness_score)))
+          : baseline.naturalness_score,
+      corrected_version: ai.corrected_version || baseline.corrected_version,
+      superior_native_version: ai.superior_native_version || baseline.superior_native_version,
+      detailed_feedback_vi: `${ai.detailed_feedback_vi || baseline.detailed_feedback_vi} [Chấm bởi AI]`,
+    };
+  } catch {
+    return baseline;
+  }
+}
+
 export async function submitTranslationAttempt(params: {
   drill: TranslationDrill;
   userOutput: string;
   user?: { id?: string | null } | null;
 }): Promise<UserTranslationSubmission> {
   const { drill, userOutput, user } = params;
-  const critique = evaluateTranslationSubmission(drill, userOutput);
+  const critique = await evaluateTranslationWithAi(drill, userOutput);
 
   const submission: UserTranslationSubmission = {
     id: `sub-${Date.now()}`,

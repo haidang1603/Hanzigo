@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Filter, Mic, Pickaxe, Volume2 } from 'lucide-react';
+import { Check, FileText, Filter, Mic, Pickaxe, Volume2 } from 'lucide-react';
 import type { SubtitleCue } from '../../services/videoStudioService.ts';
 import {
   analyzeSentenceComprehensibility,
@@ -14,6 +14,7 @@ interface VideoTranscriptSidebarProps {
   activeCueIndex: number;
   onSelectCue: (index: number) => void;
   onOpenPronunciation?: (hanzi: string, pinyin: string) => void;
+  onUpdateSubtitles?: (rawSubtitles: string) => void;
   videoId?: string;
   videoTitle?: string;
   thumbnailUrl?: string;
@@ -24,6 +25,7 @@ export const VideoTranscriptSidebar: React.FC<VideoTranscriptSidebarProps> = ({
   activeCueIndex,
   onSelectCue,
   onOpenPronunciation,
+  onUpdateSubtitles,
   videoId = 'video-studio',
   videoTitle = 'Video Studio',
   thumbnailUrl,
@@ -32,6 +34,7 @@ export const VideoTranscriptSidebar: React.FC<VideoTranscriptSidebarProps> = ({
   const [knownWords, setKnownWords] = useState<Set<string>>(() => new Set());
   const [minedCueIndices, setMinedCueIndices] = useState<Record<number, boolean>>({});
   const [miningCueIndex, setMiningCueIndex] = useState<number | null>(null);
+  const [draftSubtitles, setDraftSubtitles] = useState('');
   const itemRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   useEffect(() => {
@@ -118,9 +121,44 @@ export const VideoTranscriptSidebar: React.FC<VideoTranscriptSidebarProps> = ({
         </button>
       </div>
 
-      {/* Cues List */}
+      {/* Cues List or Empty Subtitles State */}
       <div className="flex-1 overflow-y-auto space-y-2.5 pt-3 pr-1">
-        {displayedCues.map((cue) => {
+        {subtitles.length === 0 ? (
+          <div className="h-full flex flex-col justify-center space-y-3 text-center px-2">
+            <div className="mx-auto w-10 h-10 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-800">Video này chưa có phụ đề tương tác</p>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Bạn có thể xem video trực tiếp (bật CC trên YouTube) hoặc dán phụ đề `.srt`, `.vtt` hoặc từng dòng tiếng Trung vào đây:
+              </p>
+            </div>
+            {onUpdateSubtitles && (
+              <div className="space-y-2 text-left">
+                <textarea
+                  value={draftSubtitles}
+                  onChange={(e) => setDraftSubtitles(e.target.value)}
+                  rows={6}
+                  placeholder={`Ví dụ:\n1\n00:00:01,000 --> 00:00:05,000\n你好，欢迎来到我的频道。\nXin chào, chào mừng đến với kênh của tôi.\n\nHoặc mỗi dòng 1 câu:\n今天天气很好 | Hôm nay thời tiết rất đẹp`}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-800 focus:border-emerald-500 focus:bg-white focus:outline-none"
+                />
+                <button
+                  type="button"
+                  disabled={!draftSubtitles.trim()}
+                  onClick={() => {
+                    onUpdateSubtitles(draftSubtitles);
+                    setDraftSubtitles('');
+                  }}
+                  className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold py-2 transition"
+                >
+                  Nạp phụ đề vào video
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          displayedCues.map((cue) => {
           const isActive = cue.cue_index === activeCueIndex;
           const analysis = cueAnalyses.get(cue.cue_index);
           const isIPlusOne = Boolean(analysis?.is_i_plus_one);
@@ -214,7 +252,8 @@ export const VideoTranscriptSidebar: React.FC<VideoTranscriptSidebarProps> = ({
               </div>
             </div>
           );
-        })}
+        })
+        )}
       </div>
     </div>
   );

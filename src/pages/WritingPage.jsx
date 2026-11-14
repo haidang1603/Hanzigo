@@ -226,13 +226,13 @@ export default function WritingPage({
   const currentCharStatus = progressMap[selectedChar]?.status || WRITING_STATUS.NOT_STARTED;
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-5 space-y-5">
       
-      {/* 1. Page Header & Search Bar */}
-      <div className="bg-gradient-to-br from-[#FFF9F2] via-white to-[#FCEEE2] dark:from-[#131B24] dark:via-[#1E293B] dark:to-[#0F172A] rounded-3xl p-6 sm:p-8 border border-[#F1E5D8] dark:border-[#334155] shadow-sm relative overflow-hidden">
-        <div className="relative z-10 max-w-4xl space-y-4">
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#E85D3F]/10 text-[#E85D3F] border border-[#E85D3F]/20 flex items-center gap-1.5">
+      {/* 1. Compact Page Header & Search Bar */}
+      <div className="bg-gradient-to-br from-[#FFF9F2] via-white to-[#FCEEE2] dark:from-[#131B24] dark:via-[#1E293B] dark:to-[#0F172A] rounded-2xl p-4 sm:p-6 border border-[#F1E5D8] dark:border-[#334155] shadow-sm relative overflow-hidden">
+        <div className="relative z-10 max-w-4xl space-y-2.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E85D3F]/10 text-[#E85D3F] border border-[#E85D3F]/20 flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5" />
               Từ điển Chữ Hán & Thứ tự Nét
             </span>
@@ -241,25 +241,25 @@ export default function WritingPage({
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#243447] dark:text-[#F3F4F6] tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#243447] dark:text-[#F3F4F6] tracking-tight">
             Tra cứu Chữ Hán & Luyện viết Nét thuận
           </h1>
 
-          <p className="text-sm sm:text-base text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
             Tra cứu theo Chữ Hán giản/phồn, Pinyin có dấu hoặc không dấu, nghĩa tiếng Việt, bộ thủ và số nét. Quan sát hoạt ảnh bút thuận chi tiết và tự tay luyện viết trên ô Mễ tự.
           </p>
 
           {/* Search Box */}
-          <div className="pt-2">
+          <div className="pt-1">
             <form onSubmit={handleSearchSubmit}>
-              <div className="relative flex items-center shadow-md shadow-[#E85D3F]/5 rounded-2xl overflow-hidden border-2 border-[#E85D3F]/40 focus-within:border-[#E85D3F] bg-white dark:bg-[#0F172A] transition-all">
-                <Search className="w-5 h-5 absolute left-4 text-gray-400" />
+              <div className="relative flex items-center shadow-sm rounded-xl overflow-hidden border-2 border-[#E85D3F]/40 focus-within:border-[#E85D3F] bg-white dark:bg-[#0F172A] transition-all">
+                <Search className="w-4 h-4 absolute left-3.5 text-gray-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm chữ Hán (học, 你, nihao, hao3, nước, con người, bộ thủ...)"
-                  className="w-full pl-12 pr-24 py-3.5 sm:py-4 text-sm sm:text-base text-[#243447] dark:text-[#F3F4F6] bg-transparent focus:outline-hidden"
+                  className="w-full pl-10 pr-24 py-2.5 sm:py-3 text-xs sm:text-sm text-[#243447] dark:text-[#F3F4F6] bg-transparent focus:outline-hidden"
                 />
                 {searchQuery && (
                   <button

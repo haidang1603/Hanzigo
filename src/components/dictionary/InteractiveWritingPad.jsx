@@ -140,7 +140,9 @@ export default function InteractiveWritingPad({
                 captureWeakVocabulary(character, 'writing_mistake');
               }
 
-              const finalScore = Math.max(50, Math.round(100 - (summary.totalMistakes * 12)));
+              const totalStrokes = Math.max(1, Number(quizState.totalStrokes || strokesCount || 6));
+              const penaltyPerMistake = Math.max(6, Math.round(45 / totalStrokes));
+              const finalScore = Math.max(0, Math.round(100 - summary.totalMistakes * penaltyPerMistake));
               setQuizState(prev => ({
                 ...prev,
                 isActive: false,

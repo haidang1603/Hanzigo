@@ -41,6 +41,35 @@ export function extractTone(pinyinStr = '') {
  * @param {number} params.audioEnergyRms - Năng lượng âm thanh thu được từ Web Audio Analyser
  * @returns {Object} Kết quả đánh giá chi tiết
  */
+// Nhóm chữ đồng âm phổ biến mà ASR hay nhận nhầm khi chấm phát âm offline
+const HOMOPHONE_GROUPS = [
+  '他她它',
+  '在再',
+  '的得地',
+  '做作坐座',
+  '和合河',
+  '以已椅',
+  '有友又右',
+  '是事市试室',
+  '那哪',
+  '这着',
+  '吗妈马骂',
+  '没每妹',
+  '几己',
+  '工公功',
+  '进近',
+  '快块',
+  '期七妻',
+  '新心',
+  '看刊',
+  '听厅',
+];
+
+function isHomophonePair(a, b) {
+  if (!a || !b || a === b) return false;
+  return HOMOPHONE_GROUPS.some((group) => group.includes(a) && group.includes(b));
+}
+
 export function evaluateRealPronunciation({
   targetHanzi = '',
   targetPinyin: _targetPinyin = '',
@@ -70,17 +99,21 @@ export function evaluateRealPronunciation({
     };
   }
 
-  // 2. Phân tích từng ký tự
+  // 2. Phân tích từng ký tự (hỗ trợ nhận diện chữ đồng âm ASR)
   const targetChars = Array.from(cleanTarget);
   let exactCount = 0;
   let partialCount = 0;
 
   const charBreakdown = targetChars.map((char, index) => {
-    if (cleanSpoken[index] === char) {
+    const spokenAtIdx = cleanSpoken[index];
+    if (spokenAtIdx === char) {
       exactCount += 1;
       return { char, status: 'correct', label: 'Chuẩn xác' };
+    } else if (isHomophonePair(char, spokenAtIdx)) {
+      partialCount += 0.75;
+      return { char, status: 'warning', label: `Đồng âm ASR (${spokenAtIdx})` };
     } else if (cleanSpoken.includes(char)) {
-      partialCount += 1;
+      partialCount += 0.5;
       return { char, status: 'warning', label: 'Cần chỉnh thanh điệu/âm tiết' };
     } else {
       return { char, status: 'incorrect', label: 'Phát âm chưa đúng' };
@@ -89,7 +122,7 @@ export function evaluateRealPronunciation({
 
   // 3. Tính điểm độ chính xác (Accuracy Score) dựa trên tỷ lệ khớp thực tế
   const totalChars = targetChars.length || 1;
-  const matchRatio = (exactCount * 1.0 + partialCount * 0.5) / totalChars;
+  const matchRatio = Math.min(1, (exactCount + partialCount) / totalChars);
   const accuracyScore = Math.round(matchRatio * 100);
 
   // 4. Tính điểm độ trôi chảy (Fluency Score) dựa trên thời lượng phát âm thực

@@ -21,7 +21,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { useLiveHanziWhiteboard } from './useLiveHanziWhiteboard';
-import { useUnifiedTools } from '../../../core/ecosystem/UnifiedToolsContext';
+import { useUnifiedTools } from '../../../core/ecosystem/UnifiedToolsContext.tsx';
 
 const STAGE_SIZE = 340;
 
