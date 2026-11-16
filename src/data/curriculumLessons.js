@@ -11,24 +11,32 @@
  * All 60 lessons strictly follow the 9-step pedagogical standard.
  */
 
-import { HSK_1_LESSONS } from './curriculum/hsk1Lessons.js';
-import { HSK_2_LESSONS } from './curriculum/hsk2Lessons.js';
-import { HSK_3_LESSONS } from './curriculum/hsk3Lessons.js';
-import { CURRICULUM_HSK4_6_LESSONS } from './curriculumLessonsHsk4to6.js';
+import {
+  HSK_1_TO_3_ENRICHED,
+  HSK_4_TO_6_ENRICHED,
+  HSK_120_LESSONS,
+  FUNCTION_WORDS_SYSTEM,
+  GRAMMAR_MATRIX_HSK1_6,
+  HSK6_FAULTY_SENTENCE_8_TYPES,
+  HSK6_SUMMARY_1000_TO_400_RULES,
+  HSK_EXAM_22_QUESTION_TYPES,
+} from '../features/curriculum/hsk120CurriculumData.js';
 
-export const CURRICULUM_60_LESSONS = [
-  ...HSK_1_LESSONS,
-  ...HSK_2_LESSONS,
-  ...HSK_3_LESSONS
-];
+export const CURRICULUM_60_LESSONS = HSK_1_TO_3_ENRICHED;
 
-export { CURRICULUM_HSK4_6_LESSONS };
+export const CURRICULUM_HSK4_6_LESSONS = HSK_4_TO_6_ENRICHED;
 
 // Full 120 lessons across all 24 chapters (Levels 1 to 6)
-export const CURRICULUM_ALL_LESSONS = [
-  ...CURRICULUM_60_LESSONS,
-  ...CURRICULUM_HSK4_6_LESSONS
-];
+export const CURRICULUM_ALL_LESSONS = HSK_120_LESSONS;
+
+export {
+  HSK_120_LESSONS,
+  FUNCTION_WORDS_SYSTEM,
+  GRAMMAR_MATRIX_HSK1_6,
+  HSK6_FAULTY_SENTENCE_8_TYPES,
+  HSK6_SUMMARY_1000_TO_400_RULES,
+  HSK_EXAM_22_QUESTION_TYPES,
+};
 
 // Helper: Find lesson by id from curriculum dataset (searches all 120 lessons)
 export function getCurriculumLessonById(lessonId) {

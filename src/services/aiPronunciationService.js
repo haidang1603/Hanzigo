@@ -7,7 +7,7 @@
  * =========================================================================
  */
 
-import { evaluateRealPronunciation } from '../utils/pronunciationEvaluator';
+import { evaluateRealPronunciation } from '../utils/pronunciationEvaluator.js';
 
 /**
  * Chuyển Blob âm thanh sang base64 string
@@ -47,12 +47,15 @@ export async function scorePronunciationWithAi({
   }
 
   // 1. Thử gọi qua API backend serverless (/api/ai/pronunciation)
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 9000) : null;
   try {
     const res = await fetch('/api/ai/pronunciation', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
+      ...(controller ? { signal: controller.signal } : {}),
       body: JSON.stringify({
         targetHanzi,
         targetPinyin,
@@ -75,6 +78,8 @@ export async function scorePronunciationWithAi({
     }
   } catch (apiErr) {
     console.warn('[AI Pronunciation Service] Backend serverless API not reachable, falling back to offline evaluator...', apiErr);
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
   }
 
   // 2. Fallback ngoại tuyến: Bộ máy chấm điểm ngữ âm chuyên sâu tại máy khách (Zero Leaks, KHÔNG cố định 93 điểm)

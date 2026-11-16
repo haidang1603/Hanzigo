@@ -809,10 +809,13 @@ export async function evaluateTranslationWithAi(
   const baseline = evaluateTranslationSubmission(drill, userOutput);
   if (!userOutput.trim() || typeof fetch === 'undefined') return baseline;
 
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 9000) : null;
   try {
     const res = await fetch('/api/ai/grade', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      ...(controller ? { signal: controller.signal } : {}),
       body: JSON.stringify({
         type: 'translation',
         sourceText: drill.source_text,
@@ -849,6 +852,8 @@ export async function evaluateTranslationWithAi(
     };
   } catch {
     return baseline;
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
   }
 }
 

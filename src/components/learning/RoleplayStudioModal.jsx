@@ -487,7 +487,7 @@ export default function RoleplayStudioModal({
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === 'Enter' && !e.nativeEvent?.isComposing && !e.isComposing) {
                     e.preventDefault();
                     handleSendMessage();
                   }

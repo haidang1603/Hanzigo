@@ -3,10 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 const getEnvVar = (key, fallback) => {
   try {
     if (typeof import.meta !== 'undefined' && import.meta?.env?.[key]) {
-      return import.meta.env[key];
+      return String(import.meta.env[key]).trim();
     }
     if (typeof process !== 'undefined' && process?.env?.[key]) {
-      return process.env[key];
+      return String(process.env[key]).trim();
     }
   } catch {
     // fallback
@@ -14,8 +14,13 @@ const getEnvVar = (key, fallback) => {
   return fallback;
 };
 
-const supabaseUrl = getEnvVar('VITE_SUPABASE_URL', '');
-const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY', '');
+const isNodeTestEnv =
+  typeof process !== 'undefined' &&
+  Boolean(process?.env?.NODE_TEST_CONTEXT) &&
+  process?.env?.HANZIGO_LIVE_CLIENT_SUPABASE !== 'true';
+
+const supabaseUrl = isNodeTestEnv ? '' : getEnvVar('VITE_SUPABASE_URL', '');
+const supabaseAnonKey = isNodeTestEnv ? '' : getEnvVar('VITE_SUPABASE_ANON_KEY', '');
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && 

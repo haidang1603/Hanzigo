@@ -27,6 +27,8 @@ const FOCUS_META = {
   reading: { label: 'Đọc báo chí', icon: BookOpen, cls: 'text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/40 border-cyan-200 dark:border-cyan-800' },
   speaking: { label: 'Biện luận AI', icon: Mic, cls: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800' },
   grammar: { label: 'Văn viết cổ', icon: Sparkles, cls: 'text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800' },
+  roleplay: { label: 'Biện luận hội thảo', icon: Mic, cls: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800' },
+  listening: { label: 'Nghe học thuật', icon: FileText, cls: 'text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800' },
   exam: { label: 'Tổng ôn CBT', icon: Trophy, cls: 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800' },
 };
 

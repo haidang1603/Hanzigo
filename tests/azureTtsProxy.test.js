@@ -6,10 +6,7 @@ import handler, {
   buildSsml,
   buildTtsStoragePath,
   resolveTtsVoice,
-  normalizeTtsRate,
-  ALLOWED_VOICES,
-  DEFAULT_VOICE,
-  DEFAULT_RATE
+  normalizeTtsRate
 } from '../api/audio/tts.js';
 import { setSupabaseAdminClientForTesting } from '../api/_utils/supabaseServer.js';
 

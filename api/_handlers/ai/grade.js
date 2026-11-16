@@ -8,6 +8,21 @@
  */
 
 import { getGeminiApiKeys, markGeminiKeyRateLimited } from '../../_utils/aiProviderAdapter.js';
+import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
+
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 30;
+const DAILY_QUOTA_MAX_REQUESTS = 300;
+const MAX_TEXT_LEN = 3000;
+const MAX_AUDIO_BASE64_LEN = 4_000_000;
+
+function getClientKey(req) {
+  const forwarded = req.headers?.['x-forwarded-for'];
+  if (forwarded) {
+    return `ip:${String(forwarded).split(',')[0].trim()}`;
+  }
+  return `ip:${req.headers?.['x-real-ip'] || req.socket?.remoteAddress || 'anon-client'}`;
+}
 
 async function callGeminiJson({ systemInstruction, parts }) {
   const apiKeys = getGeminiApiKeys();
@@ -67,6 +82,19 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Chỉ chấp nhận POST' });
 
   try {
+    const rateCheck = await checkRateLimitAndQuota({
+      clientKey: getClientKey(req),
+      windowMs: RATE_LIMIT_WINDOW_MS,
+      maxRequests: RATE_LIMIT_MAX_REQUESTS,
+      dailyQuotaMax: DAILY_QUOTA_MAX_REQUESTS,
+      prefix: 'ai_grade',
+    });
+    if (!rateCheck.allowed) {
+      return res.status(rateCheck.statusCode || 429).json({
+        error: rateCheck.reason || 'Quá nhiều yêu cầu chấm điểm AI. Vui lòng thử lại sau.',
+      });
+    }
+
     const body = req.body || {};
     const { type } = body;
 
@@ -81,6 +109,16 @@ export default async function handler(req, res) {
         audioBase64 = null,
         mimeType = 'audio/webm',
       } = body;
+
+      if (
+        String(transcript || '').length > MAX_TEXT_LEN ||
+        String(promptZh || '').length > MAX_TEXT_LEN ||
+        (audioBase64 && String(audioBase64).length > MAX_AUDIO_BASE64_LEN)
+      ) {
+        return res.status(400).json({
+          error: `Dữ liệu đầu vào vượt quá giới hạn cho phép (tối đa ${MAX_TEXT_LEN} ký tự).`,
+        });
+      }
 
       const systemInstruction = `Bạn là giám khảo khảo thí HSKK (汉语水平口语考试) chuẩn quốc tế.
 Chấm điểm phần trả lời nói của thí sinh một cách khách quan, công bằng và bám sát trình độ HSKK (${level}).
@@ -121,6 +159,11 @@ Trả về JSON:
       const { task = {}, responseText = '' } = body;
       if (!String(responseText).trim()) {
         return res.status(400).json({ error: 'Thiếu nội dung bài viết (responseText)' });
+      }
+      if (String(responseText).length > MAX_TEXT_LEN) {
+        return res.status(400).json({
+          error: `Nội dung bài viết vượt quá giới hạn ${MAX_TEXT_LEN} ký tự.`,
+        });
       }
 
       const systemInstruction = `Bạn là giám khảo chấm thi viết HSK ${task.hskLevel || 5} chuẩn CTI/Hanban.
@@ -179,6 +222,14 @@ Trả về đúng JSON:
       if (!String(userOutput).trim()) {
         return res.status(400).json({ error: 'Thiếu bản dịch (userOutput)' });
       }
+      if (
+        String(userOutput).length > MAX_TEXT_LEN ||
+        String(sourceText).length > MAX_TEXT_LEN
+      ) {
+        return res.status(400).json({
+          error: `Độ dài bản dịch vượt quá giới hạn ${MAX_TEXT_LEN} ký tự.`,
+        });
+      }
 
       const systemInstruction = `Bạn là chuyên gia biên phiên dịch Trung - Việt (chuẩn HSK 3.0 / HSK 7-9).
 Chấm bản dịch theo ngữ nghĩa thực tế: chấp nhận từ đồng nghĩa và cấu trúc tương đương tự nhiên, không bắt bẻ máy móc nếu đúng nghĩa và đúng văn phong.
@@ -213,6 +264,14 @@ Trả về đúng JSON:
       const cleanQuery = String(query).trim();
       if (!cleanQuery) {
         return res.status(400).json({ error: 'Thiếu từ hoặc câu cần tra (query)' });
+      }
+      if (
+        cleanQuery.length > MAX_TEXT_LEN ||
+        String(contextSentence || '').length > MAX_TEXT_LEN
+      ) {
+        return res.status(400).json({
+          error: `Nội dung tra cứu vượt quá giới hạn ${MAX_TEXT_LEN} ký tự.`,
+        });
       }
 
       const systemInstruction = `Bạn là từ điển Hán-Việt & chuyên gia ngữ pháp tiếng Trung HSK.

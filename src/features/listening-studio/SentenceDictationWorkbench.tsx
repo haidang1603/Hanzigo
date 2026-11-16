@@ -53,7 +53,11 @@ export const SentenceDictationWorkbench: React.FC<SentenceDictationWorkbenchProp
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (
+      e.key === 'Enter' &&
+      !e.nativeEvent?.isComposing &&
+      !(e as unknown as { isComposing?: boolean }).isComposing
+    ) {
       e.preventDefault();
       void handleCheck();
     }

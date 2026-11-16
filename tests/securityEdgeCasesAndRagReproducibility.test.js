@@ -52,20 +52,28 @@ const clientCache = {};
 function getAuthClientFor(email) {
   if (clientCache[email]) return clientCache[email];
   clientCache[email] = (async () => {
-    const { data: link, error: lErr } = await serviceClient.auth.admin.generateLink({ type: 'magiclink', email });
-    if (lErr || !link?.properties?.hashed_token) {
-      throw new Error(`GenerateLink failed for ${email}: ${lErr?.message}`);
+    let lastError = null;
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      const { data: link, error: lErr } = await serviceClient.auth.admin.generateLink({ type: 'magiclink', email });
+      if (lErr || !link?.properties?.hashed_token) {
+        lastError = new Error(`GenerateLink failed for ${email}: ${lErr?.message}`);
+      } else {
+        const freshAnon = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+        const { data: sess, error: vErr } = await freshAnon.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: 'magiclink' });
+        if (!vErr && sess?.session) {
+          const client = createClient(url, anonKey, {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: `Bearer ${sess.session.access_token}` } }
+          });
+          return { client, user: sess.user, token: sess.session.access_token };
+        }
+        lastError = new Error(`VerifyOtp failed for ${email}: ${vErr?.message}`);
+      }
+      if (attempt < 4) {
+        await new Promise((r) => setTimeout(r, 150 + Math.floor(Math.random() * 250)));
+      }
     }
-    const freshAnon = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: sess, error: vErr } = await freshAnon.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: 'magiclink' });
-    if (vErr || !sess?.session) {
-      throw new Error(`VerifyOtp failed for ${email}: ${vErr?.message}`);
-    }
-    const client = createClient(url, anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { Authorization: `Bearer ${sess.session.access_token}` } }
-    });
-    return { client, user: sess.user, token: sess.session.access_token };
+    throw lastError;
   })();
   return clientCache[email];
 }

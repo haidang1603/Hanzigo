@@ -21,35 +21,42 @@ import participantsHandler from '../_handlers/live/participants.js';
 import endHandler from '../_handlers/live/end.js';
 
 export default async function handler(req, res) {
-  const urlPath = req.url ? req.url.split('?')[0] : '';
-  const pathAction = urlPath.split('/').filter(Boolean).pop();
-  const action = req.query?.action || pathAction;
+  try {
+    const urlPath = req.url ? req.url.split('?')[0] : '';
+    const pathAction = urlPath.split('/').filter(Boolean).pop();
+    const action = req.query?.action || pathAction;
 
-  if (action === 'session') {
-    return sessionHandler(req, res);
+    if (action === 'session') {
+      return await sessionHandler(req, res);
+    }
+
+    if (action === 'join') {
+      return await joinHandler(req, res);
+    }
+
+    if (action === 'leave') {
+      return await leaveHandler(req, res);
+    }
+
+    if (action === 'moderation') {
+      return await moderationHandler(req, res);
+    }
+
+    if (action === 'participants') {
+      return await participantsHandler(req, res);
+    }
+
+    if (action === 'end') {
+      return await endHandler(req, res);
+    }
+
+    return res.status(404).json({
+      error: `Live Classroom endpoint không tồn tại: ${action || 'unknown'}`
+    });
+  } catch (err) {
+    console.error('[Live Router Error]:', err);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'Lỗi máy chủ nội bộ.', message: err?.message });
+    }
   }
-
-  if (action === 'join') {
-    return joinHandler(req, res);
-  }
-
-  if (action === 'leave') {
-    return leaveHandler(req, res);
-  }
-
-  if (action === 'moderation') {
-    return moderationHandler(req, res);
-  }
-
-  if (action === 'participants') {
-    return participantsHandler(req, res);
-  }
-
-  if (action === 'end') {
-    return endHandler(req, res);
-  }
-
-  return res.status(404).json({
-    error: `Live Classroom endpoint không tồn tại: ${action || 'unknown'}`
-  });
 }

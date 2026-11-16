@@ -25,6 +25,12 @@ export const memoryParticipants = new Map();
  */
 export function getSupabaseAdminClient() {
   if (cachedAdminClient) return cachedAdminClient;
+  if (
+    process.env.NODE_TEST_CONTEXT &&
+    process.env.HANZIGO_LIVE_SERVER_SUPABASE !== 'true'
+  ) {
+    return null;
+  }
   const { url, anonKey, serviceKey } = getSupabaseConfig();
   const key = serviceKey || anonKey;
   if (!url || !key) return null;

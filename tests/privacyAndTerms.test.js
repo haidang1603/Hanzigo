@@ -64,7 +64,10 @@ test('4. ROUTING INTEGRITY: App.jsx registers legal routes and renders component
   assert.ok(appContent.includes("activeTab === 'terms'"), "App.jsx should conditionally render TermsOfServicePage");
   assert.ok(appContent.includes("activeTab === 'cookies'"), "App.jsx should conditionally render CookiePolicyPage");
   assert.ok(appContent.includes("activeTab === 'refund'"), "App.jsx should conditionally render RefundPolicyPage");
-  assert.ok(appContent.includes("<StorageConsentBanner"), 'App.jsx should include StorageConsentBanner');
+  assert.ok(
+    appContent.includes("<StorageConsentBanner") || appContent.includes("<CookieStorageConsentBanner"),
+    'App.jsx should include StorageConsentBanner or CookieStorageConsentBanner'
+  );
 });
 
 test('5. FOOTER INTEGRITY: Footer.jsx includes accessible links and navigation handlers', () => {

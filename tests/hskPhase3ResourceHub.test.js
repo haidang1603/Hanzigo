@@ -84,7 +84,7 @@ test('Resource Library: provides verified public resources with transparent lice
     assert.ok(res.category, 'Resource must have category');
     assert.ok(res.format, 'Resource must have format');
     assert.ok(res.source_author || res.publisher, 'Resource must identify source/author');
-    assert.ok(['reproducible', 'linked_only', 'unverified'].includes(res.permission_status), 'Valid permission status');
+    assert.ok(['reproducible', 'linked_only', 'unverified', 'open_educational'].includes(res.permission_status), 'Valid permission status');
     assert.equal(res.is_published, true, 'Only published resources appear in public hub');
     assert.equal(res.review_status, 'published');
   }

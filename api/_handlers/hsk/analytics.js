@@ -14,15 +14,20 @@ export default async function analyticsHandler(req, res) {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức GET.' });
   }
 
-  const attempts = await getUserExamHistory();
-  const mistakes = await getMistakeNotebook();
+  try {
+    const attempts = await getUserExamHistory();
+    const mistakes = await getMistakeNotebook();
 
-  const analytics = generateStudyAnalytics(attempts, mistakes);
-  const recommendations = generateStudyRecommendations(analytics, mistakes);
+    const analytics = generateStudyAnalytics(attempts, mistakes);
+    const recommendations = generateStudyRecommendations(analytics, mistakes);
 
-  return res.status(200).json({
-    success: true,
-    analytics,
-    recommendations
-  });
+    return res.status(200).json({
+      success: true,
+      analytics,
+      recommendations
+    });
+  } catch (err) {
+    console.error('[HSK Analytics Error]:', err);
+    return res.status(500).json({ error: 'Lỗi máy chủ nội bộ khi tải phân tích HSK.', message: err?.message });
+  }
 }

@@ -74,11 +74,15 @@ export function getGeminiApiKeys(now = Date.now()) {
     if (numbered) candidates.push(numbered);
   }
 
+  const isIsolatedTestEnv =
+    Boolean(process.env.NODE_TEST_CONTEXT) && process.env.HANZIGO_LIVE_AI_TEST !== 'true';
+
   const deduped = [];
   const seen = new Set();
   for (const raw of candidates) {
     const key = String(raw || '').trim();
     if (!key || key === 'your_gemini_api_key_here' || seen.has(key)) continue;
+    if (isIsolatedTestEnv && (key.startsWith('AIza') || key.startsWith('AQ.'))) continue;
     seen.add(key);
     deduped.push(key);
   }

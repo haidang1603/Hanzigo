@@ -32,63 +32,70 @@ import reportHandler from '../_handlers/hsk/report.js';
 import { handleVerifyCertificate, handleIssueCertificate } from '../_handlers/hsk/certificate.js';
 
 export default async function handler(req, res) {
-  const urlPath = req.url ? req.url.split('?')[0] : '';
-  const pathAction = urlPath.split('/').filter(Boolean).pop();
-  const action = req.query?.action || pathAction;
+  try {
+    const urlPath = req.url ? req.url.split('?')[0] : '';
+    const pathAction = urlPath.split('/').filter(Boolean).pop();
+    const action = req.query?.action || pathAction;
 
-  if (action === 'verify-certificate') {
-    return handleVerifyCertificate(req, res);
+    if (action === 'verify-certificate') {
+      return await handleVerifyCertificate(req, res);
+    }
+
+    if (action === 'issue-certificate') {
+      return await handleIssueCertificate(req, res);
+    }
+
+    if (action === 'exams') {
+      return await examsHandler(req, res);
+    }
+
+    if (action === 'exam') {
+      return await examDetailHandler(req, res);
+    }
+
+    if (action === 'submit') {
+      return await submitHandler(req, res);
+    }
+
+    if (action === 'attempt') {
+      return await attemptHandler(req, res);
+    }
+
+    if (action === 'history') {
+      return await historyHandler(req, res);
+    }
+
+    if (action === 'mistakes') {
+      return await mistakesHandler(req, res);
+    }
+
+    if (action === 'analytics') {
+      return await analyticsHandler(req, res);
+    }
+
+    if (action === 'resources') {
+      return await resourcesHandler(req, res);
+    }
+
+    if (action === 'import') {
+      return await importHandler(req, res);
+    }
+
+    if (action === 'review') {
+      return await reviewHandler(req, res);
+    }
+
+    if (action === 'report') {
+      return await reportHandler(req, res);
+    }
+
+    return res.status(404).json({
+      error: `HSK Practice endpoint không tồn tại: ${action || 'unknown'}`
+    });
+  } catch (err) {
+    console.error('[HSK Router Error]:', err);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'Lỗi máy chủ nội bộ.', message: err?.message });
+    }
   }
-
-  if (action === 'issue-certificate') {
-    return handleIssueCertificate(req, res);
-  }
-
-  if (action === 'exams') {
-    return examsHandler(req, res);
-  }
-
-  if (action === 'exam') {
-    return examDetailHandler(req, res);
-  }
-
-  if (action === 'submit') {
-    return submitHandler(req, res);
-  }
-
-  if (action === 'attempt') {
-    return attemptHandler(req, res);
-  }
-
-  if (action === 'history') {
-    return historyHandler(req, res);
-  }
-
-  if (action === 'mistakes') {
-    return mistakesHandler(req, res);
-  }
-
-  if (action === 'analytics') {
-    return analyticsHandler(req, res);
-  }
-
-  if (action === 'resources') {
-    return resourcesHandler(req, res);
-  }
-
-  if (action === 'import') {
-    return importHandler(req, res);
-  }
-
-  if (action === 'review') {
-    return reviewHandler(req, res);
-  }
-
-  if (action === 'report') {
-    return reportHandler(req, res);
-  }
-
-  return res.status(404).json({
-    error: `HSK Practice endpoint không tồn tại: ${action || 'unknown'}`
-  });
 }

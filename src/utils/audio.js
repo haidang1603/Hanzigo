@@ -197,7 +197,17 @@ export const speakChinese = (text, optionsOrRate = 0.85) => {
       }
 
       const url = `/api/audio/tts?text=${encodeURIComponent(text.trim())}&voice=${encodeURIComponent(preferredVoice)}&rate=${rate}&format=json`;
-      const res = await fetch(url, { headers });
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timeoutId = controller ? setTimeout(() => controller.abort(), 6000) : null;
+      let res;
+      try {
+        res = await fetch(url, {
+          headers,
+          ...(controller ? { signal: controller.signal } : {}),
+        });
+      } finally {
+        if (timeoutId !== null) clearTimeout(timeoutId);
+      }
 
       if (!res.ok) {
         // Fallback nếu server trả về mã lỗi HTTP

@@ -50,7 +50,7 @@ export const VocabWorkspaceDashboard: React.FC<VocabWorkspaceDashboardProps> = (
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
-    items.forEach((it) => it.tags.forEach((t) => tagSet.add(t)));
+    items.forEach((it) => (Array.isArray(it.tags) ? it.tags : []).forEach((t) => tagSet.add(t)));
     return Array.from(tagSet);
   }, [items]);
 
@@ -60,7 +60,7 @@ export const VocabWorkspaceDashboard: React.FC<VocabWorkspaceDashboardProps> = (
       if (hideMastered && isVocabItemMastered(item)) return false;
       if (selectedDeckId !== 'all' && item.deck_id !== selectedDeckId) return false;
       if (selectedHsk !== 'all' && item.hsk_level !== selectedHsk) return false;
-      if (selectedTag !== 'all' && !item.tags.includes(selectedTag)) return false;
+      if (selectedTag !== 'all' && !(Array.isArray(item.tags) && item.tags.includes(selectedTag))) return false;
       if (onlyLeeches && item.lapses < 3) return false;
       if (q) {
         const hay = `${item.simplified} ${item.pinyin} ${item.meaning_vi} ${item.han_viet}`.toLowerCase();
@@ -349,7 +349,7 @@ export const VocabWorkspaceDashboard: React.FC<VocabWorkspaceDashboardProps> = (
                     Mẹo nhớ: {item.personal_mnemonic}
                   </p>
                 )}
-                {item.tags.length > 0 && (
+                {Array.isArray(item.tags) && item.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 pt-0.5">
                     {item.tags.map((t) => (
                       <span

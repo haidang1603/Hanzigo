@@ -6,6 +6,7 @@ import {
   segmentSentenceIntoTokens,
   type DictionaryEntry,
 } from '../../services/dictionaryService.ts';
+import { listVocabItems } from '../../services/vocabWorkspaceService.ts';
 import {
   useUnifiedEcosystemStore,
   type UnifiedSourceContext,
@@ -199,15 +200,23 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
           if (cacheObj[cleanText]) {
             aiEntry = cacheObj[cleanText];
           } else if (typeof fetch !== 'undefined') {
-            const aiRes = await fetch('/api/ai/grade', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'dictionary',
-                query: cleanText,
-                contextSentence: contextSentence || cleanText,
-              }),
-            });
+            const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            const timeoutId = controller ? setTimeout(() => controller.abort(), 9000) : null;
+            let aiRes: Response;
+            try {
+              aiRes = await fetch('/api/ai/grade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                ...(controller ? { signal: controller.signal } : {}),
+                body: JSON.stringify({
+                  type: 'dictionary',
+                  query: cleanText,
+                  contextSentence: contextSentence || cleanText,
+                }),
+              });
+            } finally {
+              if (timeoutId !== null) clearTimeout(timeoutId);
+            }
             if (aiRes.ok) {
               const payload = await aiRes.json();
               const r = payload?.result;
@@ -302,11 +311,50 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
 
           setSavedVocabItem((existingVocab as UserVocabItemRow) || null);
         } else {
-          setSavedVocabItem(null);
+          const targetWord = primaryEntry ? primaryEntry.simplified : cleanText;
+          const localItems = await listVocabItems(null);
+          const localMatch = localItems.find((it) => it.simplified === targetWord);
+          setSavedVocabItem(
+            localMatch
+              ? {
+                  id: localMatch.id,
+                  user_id: 'guest',
+                  deck_id: localMatch.deck_id,
+                  simplified: localMatch.simplified,
+                  pinyin: localMatch.pinyin,
+                  han_viet: localMatch.han_viet,
+                  meaning_vi: localMatch.meaning_vi,
+                  hsk_level: localMatch.hsk_level,
+                  source_context: (localMatch.source_context || []) as SourceContextPayload[],
+                  meaning_mastery: localMatch.meaning_mastery,
+                  writing_mastery: localMatch.writing_mastery,
+                  pronunciation_mastery: localMatch.pronunciation_mastery,
+                }
+              : null
+          );
         }
       } else {
         setGrammarResults([]);
-        setSavedVocabItem(null);
+        const localItems = await listVocabItems(null);
+        const localMatch = localItems.find((it) => it.simplified === cleanText);
+        setSavedVocabItem(
+          localMatch
+            ? {
+                id: localMatch.id,
+                user_id: 'guest',
+                deck_id: localMatch.deck_id,
+                simplified: localMatch.simplified,
+                pinyin: localMatch.pinyin,
+                han_viet: localMatch.han_viet,
+                meaning_vi: localMatch.meaning_vi,
+                hsk_level: localMatch.hsk_level,
+                source_context: (localMatch.source_context || []) as SourceContextPayload[],
+                meaning_mastery: localMatch.meaning_mastery,
+                writing_mastery: localMatch.writing_mastery,
+                pronunciation_mastery: localMatch.pronunciation_mastery,
+              }
+            : null
+        );
       }
     } finally {
       setIsLoading(false);
@@ -374,32 +422,31 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
         return;
       }
 
-      if (!supabase || !isSupabaseConfigured) {
-        await store.quickSaveToVocabulary(
-          { simplified: wordOrText.trim() },
-          context as UnifiedSourceContext | undefined
-        );
-        return;
-      }
-
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
-
-      if (!authUser) {
-        pushToast('Vui lòng đăng nhập để lưu từ vựng vào sổ tay cá nhân.', 'error');
-        return;
-      }
-
       const cleanWord = wordOrText.trim();
+      if (!cleanWord) return;
+
+      let authUser: { id: string } | null = null;
+      if (supabase && isSupabaseConfigured) {
+        try {
+          const { data } = await supabase.auth.getUser();
+          authUser = data?.user || null;
+        } catch {
+          authUser = null;
+        }
+      }
+
       let entry = explicitEntry || activeDictionaryEntry;
-      if (!entry || entry.simplified !== cleanWord) {
-        const { data } = await supabase
-          .from('dictionary_entries')
-          .select('*')
-          .eq('simplified', cleanWord)
-          .maybeSingle();
-        if (data) entry = data as DictionaryEntryRow;
+      if ((!entry || entry.simplified !== cleanWord) && supabase && isSupabaseConfigured) {
+        try {
+          const { data } = await supabase
+            .from('dictionary_entries')
+            .select('*')
+            .eq('simplified', cleanWord)
+            .maybeSingle();
+          if (data) entry = data as DictionaryEntryRow;
+        } catch {
+          // ignore
+        }
       }
 
       const simplified = entry ? entry.simplified : cleanWord;
@@ -419,6 +466,122 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
               sentence_pinyin: (context as UnifiedSourceContext | undefined)?.sentencePinyin,
               sentence_vi: (context as UnifiedSourceContext | undefined)?.sentenceVi,
             };
+
+      const persistLocalFallback = async (userIdLabel: string) => {
+        await store.quickSaveToVocabulary(
+          {
+            simplified,
+            pinyin: pinyin === 'Đang cập nhật' ? '' : pinyin,
+            han_viet: hanViet,
+            meaning_vi: primaryMeaning,
+            hsk_level: hskLevel,
+          },
+          {
+            sourceType:
+              normalizedContext.source_type === 'reading' ||
+              normalizedContext.source_type === 'listening' ||
+              normalizedContext.source_type === 'grammar'
+                ? normalizedContext.source_type
+                : 'dictionary',
+            sourceId: normalizedContext.source_id,
+            sentenceZh: normalizedContext.sentence_zh,
+            sentencePinyin: normalizedContext.sentence_pinyin,
+            sentenceVi: normalizedContext.sentence_vi,
+          }
+        );
+
+        try {
+          const STORAGE_ITEMS_KEY = 'hanzigo_vocab_workspace_items_v1';
+          const currentItems = await listVocabItems(null);
+          const existingLocal = currentItems.find((it) => it.simplified === simplified);
+          const existingContexts = Array.isArray(existingLocal?.source_context)
+            ? existingLocal.source_context
+            : [];
+          const mappedCtx = {
+            source_type: (
+              normalizedContext.source_type === 'reading' ||
+              normalizedContext.source_type === 'listening' ||
+              normalizedContext.source_type === 'grammar'
+                ? normalizedContext.source_type
+                : 'dictionary'
+            ) as 'reading' | 'listening' | 'dictionary' | 'grammar',
+            source_id: normalizedContext.source_id,
+            sentence_zh: normalizedContext.sentence_zh,
+            sentence_pinyin: normalizedContext.sentence_pinyin || '',
+            sentence_vi: normalizedContext.sentence_vi || '',
+          };
+          const mergedLocalContexts = [
+            mappedCtx,
+            ...existingContexts.filter((c) => c.sentence_zh !== mappedCtx.sentence_zh),
+          ].slice(0, 5);
+
+          const savedLocalRow = existingLocal
+            ? {
+                ...existingLocal,
+                pinyin: existingLocal.pinyin || (pinyin === 'Đang cập nhật' ? '' : pinyin),
+                han_viet: existingLocal.han_viet || hanViet,
+                meaning_vi: existingLocal.meaning_vi || primaryMeaning,
+                source_context: mergedLocalContexts,
+              }
+            : {
+                id: `vitem-local-${Date.now()}`,
+                deck_id: 'deck-default-core',
+                simplified,
+                pinyin: pinyin === 'Đang cập nhật' ? '' : pinyin,
+                han_viet: hanViet,
+                meaning_vi: primaryMeaning,
+                hsk_level: hskLevel,
+                personal_mnemonic: entry?.decomposition?.mnemonic_vi || '',
+                tags: ['tra-nhanh'],
+                source_context: mergedLocalContexts,
+                srs_state: 'new',
+                stability: 0,
+                difficulty: 5.0,
+                ease_factor: 2.5,
+                interval_days: 0,
+                repetitions: 0,
+                lapses: 0,
+                next_review_at: new Date().toISOString(),
+                last_reviewed_at: null,
+                meaning_mastery: 25,
+                writing_mastery: 0,
+                pronunciation_mastery: 0,
+              };
+
+          const updatedList = existingLocal
+            ? currentItems.map((it) => (it.simplified === simplified ? savedLocalRow : it))
+            : [savedLocalRow, ...currentItems];
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(STORAGE_ITEMS_KEY, JSON.stringify(updatedList));
+          }
+
+          setSavedVocabItem({
+            id: savedLocalRow.id,
+            user_id: userIdLabel,
+            deck_id: savedLocalRow.deck_id,
+            simplified: savedLocalRow.simplified,
+            pinyin: savedLocalRow.pinyin,
+            han_viet: savedLocalRow.han_viet,
+            meaning_vi: savedLocalRow.meaning_vi,
+            hsk_level: savedLocalRow.hsk_level,
+            source_context: [normalizedContext],
+            meaning_mastery: savedLocalRow.meaning_mastery,
+            writing_mastery: savedLocalRow.writing_mastery,
+            pronunciation_mastery: savedLocalRow.pronunciation_mastery,
+          });
+        } catch {
+          // ignore localStorage failure
+        }
+
+        pushToast(
+          `Đã lưu “${simplified}” (${pinyin}) kèm ngữ cảnh vào Sổ tay cục bộ!`
+        );
+      };
+
+      if (!supabase || !isSupabaseConfigured || !authUser) {
+        await persistLocalFallback(authUser?.id || 'guest');
+        return;
+      }
 
       const { data: existing } = await supabase
         .from('user_vocab_items')
@@ -455,7 +618,7 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
         .single();
 
       if (error) {
-        pushToast(`Lỗi lưu từ vựng: ${error.message}`, 'error');
+        await persistLocalFallback(authUser.id);
         return;
       }
 

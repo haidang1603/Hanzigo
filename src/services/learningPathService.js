@@ -25,6 +25,7 @@ import { isValidUuid } from './authService.js';
 
 const STORAGE_KEYS = {
   JOURNEY_PROGRESS: 'hanzigo_journey_progress',
+  ROADMAP_120_PROGRESS: 'hanzigo_roadmap_120_progress_v1',
   DAILY_MISSIONS: 'hanzigo_daily_missions',
   SKILL_MASTERY: 'hanzigo_skill_mastery',
   PLACEMENT_RESULT: 'hanzigo_placement_result',
@@ -103,7 +104,20 @@ export function getLessonsByChapter(chapterId) {
 }
 
 export function getLessonById(lessonId) {
-  return LEARNING_LESSONS.find(l => l.id === lessonId) || null;
+  if (lessonId === undefined || lessonId === null || lessonId === '') return null;
+  const raw = String(lessonId).trim();
+  const direct = LEARNING_LESSONS.find(l => l.id === raw);
+  if (direct) return direct;
+
+  // Support sequential lookup 1..120 or lesson-1..lesson-120
+  const numMatch = raw.match(/^(?:lesson[-_]?)?(\d{1,3})$/i);
+  if (numMatch) {
+    const seq = parseInt(numMatch[1], 10);
+    if (seq >= 1 && seq <= LEARNING_LESSONS.length) {
+      return LEARNING_LESSONS[seq - 1] || null;
+    }
+  }
+  return null;
 }
 
 export function getNextLessonId(lessonId) {
@@ -142,23 +156,58 @@ export function getBossChallengeById(bossId) {
 
 export function getUserJourneyProgress(user = null) {
   const key = getUserStorageKey(STORAGE_KEYS.JOURNEY_PROGRESS, user);
-  try {
-    const saved = localStorage.getItem(key);
-    if (saved) {
+  const roadmap120UserKey = getUserStorageKey(STORAGE_KEYS.ROADMAP_120_PROGRESS, user);
+  const candidateKeys = Array.from(
+    new Set([key, roadmap120UserKey, STORAGE_KEYS.ROADMAP_120_PROGRESS])
+  );
+
+  const merged = {
+    completedLessons: {},
+    completedBosses: {},
+    unlockedLevelNumber: 1,
+    activeLessonId: 'l-101'
+  };
+  let foundAny = false;
+
+  for (const k of candidateKeys) {
+    try {
+      const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(k) : null;
+      if (!saved) continue;
       const parsed = JSON.parse(saved);
-      return {
-        completedLessons: parsed.completedLessons || {}, // { [lessonId]: { score, stars, completedAt } }
-        completedBosses: parsed.completedBosses || {},   // { [bossId]: { score, completedAt } }
-        unlockedLevelNumber: parsed.unlockedLevelNumber || 1,
-        activeLessonId: parsed.activeLessonId || 'l-101'
-      };
+      if (!parsed || typeof parsed !== 'object') continue;
+      foundAny = true;
+
+      const parsedCompleted = parsed.completedLessons || {};
+      for (const [lid, info] of Object.entries(parsedCompleted)) {
+        const existing = merged.completedLessons[lid];
+        const nextScore = typeof info?.score === 'number' ? info.score : 100;
+        if (!existing || nextScore > (existing.score || 0)) {
+          merged.completedLessons[lid] = {
+            score: nextScore,
+            stars: info?.stars || (nextScore >= 90 ? 3 : nextScore >= 80 ? 2 : 1),
+            completedAt: info?.completedAt || existing?.completedAt || new Date().toISOString(),
+            lastReviewedAt: info?.lastReviewedAt || existing?.lastReviewedAt || new Date().toISOString()
+          };
+        }
+      }
+
+      if (parsed.completedBosses && typeof parsed.completedBosses === 'object') {
+        merged.completedBosses = { ...merged.completedBosses, ...parsed.completedBosses };
+      }
+      if (parsed.unlockedLevelNumber) {
+        merged.unlockedLevelNumber = Math.max(merged.unlockedLevelNumber, Number(parsed.unlockedLevelNumber) || 1);
+      }
+      if (k === key && parsed.activeLessonId) {
+        merged.activeLessonId = parsed.activeLessonId;
+      } else if (merged.activeLessonId === 'l-101' && parsed.activeLessonId) {
+        merged.activeLessonId = parsed.activeLessonId;
+      }
+    } catch (err) {
+      console.warn('Error reading journey progress:', err);
     }
-  } catch (err) {
-    console.warn('Error reading journey progress:', err);
   }
 
-  // Default initial state
-  return {
+  return foundAny ? merged : {
     completedLessons: {},
     completedBosses: {},
     unlockedLevelNumber: 1,
@@ -169,8 +218,14 @@ export function getUserJourneyProgress(user = null) {
 export function saveUserJourneyProgress(progress, user = null) {
   const targetUid = user?.id || user?.uid;
   const key = getUserStorageKey(STORAGE_KEYS.JOURNEY_PROGRESS, user);
+  const roadmap120UserKey = getUserStorageKey(STORAGE_KEYS.ROADMAP_120_PROGRESS, user);
+  const serialized = JSON.stringify(progress);
   try {
-    localStorage.setItem(key, JSON.stringify(progress));
+    localStorage.setItem(key, serialized);
+    localStorage.setItem(roadmap120UserKey, serialized);
+    if (roadmap120UserKey !== STORAGE_KEYS.ROADMAP_120_PROGRESS) {
+      localStorage.setItem(STORAGE_KEYS.ROADMAP_120_PROGRESS, serialized);
+    }
   } catch (err) {
     console.error('Error saving journey progress:', err);
   }

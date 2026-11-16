@@ -269,7 +269,13 @@ export const SmartFlashcardSession: React.FC<SmartFlashcardSessionProps> = ({
                     value={clozeInput}
                     onChange={(e) => setClozeInput(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') setFlipped(true);
+                      if (
+                        e.key === 'Enter' &&
+                        !e.nativeEvent?.isComposing &&
+                        !(e as unknown as { isComposing?: boolean }).isComposing
+                      ) {
+                        setFlipped(true);
+                      }
                     }}
                     placeholder="Gõ từ còn thiếu rồi nhấn Enter..."
                     className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-center"

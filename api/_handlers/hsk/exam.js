@@ -48,7 +48,11 @@ export default async function examDetailHandler(req, res) {
           exam: {
             ...examData,
             questions: (questionsData || []).map(q => {
-              const { correct_option_index, explanation, ...safeQ } = q;
+              const {
+                correct_option_index: _correctOptionIndex,
+                explanation: _explanation,
+                ...safeQ
+              } = q;
               return safeQ;
             })
           }

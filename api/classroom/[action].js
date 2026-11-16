@@ -19,35 +19,42 @@ import createHandler from '../_handlers/classroom/create.js';
 import assignmentsHandler from '../_handlers/classroom/assignments.js';
 
 export default async function handler(req, res) {
-  const urlPath = req.url ? req.url.split('?')[0] : '';
-  const pathAction = urlPath.split('/').filter(Boolean).pop();
-  const action = req.query?.action || pathAction;
+  try {
+    const urlPath = req.url ? req.url.split('?')[0] : '';
+    const pathAction = urlPath.split('/').filter(Boolean).pop();
+    const action = req.query?.action || pathAction;
 
-  if (action === 'lookup') {
-    return lookupHandler(req, res);
+    if (action === 'lookup') {
+      return await lookupHandler(req, res);
+    }
+
+    if (action === 'create') {
+      return await createHandler(req, res);
+    }
+
+    if (action === 'join') {
+      return await joinHandler(req, res);
+    }
+
+    if (action === 'members') {
+      return await membersHandler(req, res);
+    }
+
+    if (action === 'remove') {
+      return await removeHandler(req, res);
+    }
+
+    if (action === 'assignments') {
+      return await assignmentsHandler(req, res);
+    }
+
+    return res.status(404).json({
+      error: `Classroom endpoint không tồn tại: ${action || 'unknown'}`
+    });
+  } catch (err) {
+    console.error('[Classroom Router Error]:', err);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'Lỗi máy chủ nội bộ.', message: err?.message });
+    }
   }
-
-  if (action === 'create') {
-    return createHandler(req, res);
-  }
-
-  if (action === 'join') {
-    return joinHandler(req, res);
-  }
-
-  if (action === 'members') {
-    return membersHandler(req, res);
-  }
-
-  if (action === 'remove') {
-    return removeHandler(req, res);
-  }
-
-  if (action === 'assignments') {
-    return assignmentsHandler(req, res);
-  }
-
-  return res.status(404).json({
-    error: `Classroom endpoint không tồn tại: ${action || 'unknown'}`
-  });
 }

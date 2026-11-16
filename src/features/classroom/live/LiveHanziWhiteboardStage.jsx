@@ -189,6 +189,12 @@ export default function LiveHanziWhiteboardStage({
     }
 
     return () => {
+      if (writerRef.current) {
+        try {
+          writerRef.current.cancelQuiz?.();
+          writerRef.current.pauseAnimation?.();
+        } catch {}
+      }
       writerRef.current = null;
       if (host) host.innerHTML = '';
     };
@@ -403,16 +409,19 @@ export default function LiveHanziWhiteboardStage({
         {/* 340x340 Dual-Layer Interactive Stage */}
         <div className="flex flex-col items-center gap-3">
           <div
-            className="relative rounded-2xl bg-[#FFFDF8] shadow-2xl border-4 border-slate-700/80 overflow-hidden select-none"
-            style={{ width: STAGE_SIZE, height: STAGE_SIZE }}
+            className="relative rounded-2xl bg-[#FFFDF8] shadow-2xl border-4 border-slate-700/80 overflow-hidden select-none touch-none"
+            style={{ width: STAGE_SIZE, height: STAGE_SIZE, touchAction: 'none' }}
           >
             {renderGridSvg(boardState.gridType)}
 
             {/* Layer 1: HanziWriter Vector Layer */}
             <div
               ref={writerHostRef}
-              className="absolute inset-0"
-              style={{ pointerEvents: activeTool === 'hanzi' && canDrawOnBoard ? 'auto' : 'none' }}
+              className="absolute inset-0 touch-none"
+              style={{
+                pointerEvents: activeTool === 'hanzi' && canDrawOnBoard ? 'auto' : 'none',
+                touchAction: 'none',
+              }}
             />
 
             {/* Layer 2: HTML5 Canvas Freehand / Laser Overlay */}

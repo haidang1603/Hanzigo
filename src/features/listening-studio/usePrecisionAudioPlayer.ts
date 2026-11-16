@@ -312,7 +312,17 @@ export function usePrecisionAudioPlayer({
 
   // Cleanup on unmount
   useEffect(() => {
+    const audioEl = audioRef.current;
     return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      if (audioEl) {
+        try {
+          audioEl.pause();
+        } catch {}
+      }
       stopSpeech();
     };
   }, [stopSpeech]);

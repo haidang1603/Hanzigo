@@ -1332,7 +1332,7 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
             <button
               onClick={() => {
                 playClickSound();
-                setActiveTab('exam-center');
+                setActiveTab('hsk');
               }}
               className="w-full p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:border-[#E85D3F] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-left transition-all group"
             >

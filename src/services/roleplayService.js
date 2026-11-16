@@ -48,10 +48,13 @@ export async function sendRoleplayMessage({
   }
 
   // 2. Gửi request tới Serverless API
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 10000) : null;
   try {
     const res = await fetch('/api/ai/roleplay', {
       method: 'POST',
       headers,
+      ...(controller ? { signal: controller.signal } : {}),
       body: JSON.stringify({
         userMessage: cleanMsg,
         scenario,
@@ -68,6 +71,8 @@ export async function sendRoleplayMessage({
     }
   } catch (err) {
     console.warn('[RoleplayService] Lỗi kết nối API, kích hoạt fallback cục bộ:', err.message);
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
   }
 
   // 3. Fallback Cục bộ (Trường hợp mất mạng hoặc không kết nối được server)

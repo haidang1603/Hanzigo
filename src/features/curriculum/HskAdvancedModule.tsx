@@ -254,7 +254,13 @@ export default function HskAdvancedModule({
               value={lookupInput}
               onChange={(e) => setLookupInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') void handleLookup(lookupInput);
+                if (
+                  e.key === 'Enter' &&
+                  !e.nativeEvent?.isComposing &&
+                  !(e as unknown as { isComposing?: boolean }).isComposing
+                ) {
+                  void handleLookup(lookupInput);
+                }
               }}
               placeholder="Tra từ HSK 7–9 / CC-CEDICT..."
               className="bg-transparent text-xs text-white placeholder:text-slate-300 focus:outline-none w-44 sm:w-56"

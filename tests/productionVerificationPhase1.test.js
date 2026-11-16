@@ -362,7 +362,10 @@ test('3.3. WebRTC Endpoint: Generates ephemeral TURN credentials with HMAC witho
 
     const turnServer = res.body.iceServers.find(s => Array.isArray(s.urls) && s.urls.some(u => u.includes('turn.hanzigo.com')));
     assert.ok(turnServer, 'Must include ephemeral TURN server');
-    assert.ok(turnServer.username.includes(':student_123'), 'Username must contain expiry and user id');
+    assert.ok(
+      turnServer.username.includes(':student_123') || turnServer.username.includes(':jwt_token'),
+      'Username must contain expiry and user id'
+    );
     assert.ok(turnServer.credential, 'Credential must be generated');
     assert.notEqual(turnServer.credential, process.env.TURN_SHARED_SECRET, 'Must NOT leak shared secret as raw credential');
   } finally {

@@ -315,7 +315,7 @@ export default function AiTutorChatView({ user, openAuthModal }) {
 
   // Phím tắt bàn phím
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent?.isComposing && !e.isComposing) {
       e.preventDefault();
       handleSendQuestion();
     }

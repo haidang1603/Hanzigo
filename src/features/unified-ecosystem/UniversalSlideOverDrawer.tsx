@@ -64,6 +64,7 @@ export const UniversalSlideOverDrawer: React.FC = () => {
   const [isListeningSpeech, setIsListeningSpeech] = useState(false);
   const [spokenTranscript, setSpokenTranscript] = useState('');
   const [pronunciationScore, setPronunciationScore] = useState<number | null>(null);
+  const [isSavingVocab, setIsSavingVocab] = useState(false);
 
   // Tách danh sách từng chữ Hán đơn lẻ để luyện viết trong Tab 27.03
   const hanziCharacters = Array.from(
@@ -302,14 +303,21 @@ export const UniversalSlideOverDrawer: React.FC = () => {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() =>
-                  quickSaveToVocabulary(
-                    activeDictionaryEntry?.simplified || selectedText,
-                    sourceContext || undefined,
-                    activeDictionaryEntry || undefined
-                  )
-                }
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition ${
+                disabled={isSavingVocab}
+                onClick={async () => {
+                  if (isSavingVocab) return;
+                  setIsSavingVocab(true);
+                  try {
+                    await quickSaveToVocabulary(
+                      activeDictionaryEntry?.simplified || selectedText,
+                      sourceContext || undefined,
+                      activeDictionaryEntry || undefined
+                    );
+                  } finally {
+                    setIsSavingVocab(false);
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition disabled:opacity-60 ${
                   savedVocabItem
                     ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
                     : 'bg-[#00D4FF]/15 border-[#00D4FF]/50 text-[#00D4FF] hover:bg-[#00D4FF]/25'
@@ -323,7 +331,7 @@ export const UniversalSlideOverDrawer: React.FC = () => {
                 ) : (
                   <>
                     <BookmarkPlus className="w-4 h-4" />
-                    <span>Lưu vào Sổ từ</span>
+                    <span>{isSavingVocab ? 'Đang lưu...' : 'Lưu vào Sổ từ'}</span>
                   </>
                 )}
               </button>
@@ -411,18 +419,21 @@ export const UniversalSlideOverDrawer: React.FC = () => {
                         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                           Nghĩa & Cụm từ cố định (Collocations)
                         </h3>
-                        {activeDictionaryEntry.pos_meanings.map((pm, idx) => (
+                        {(Array.isArray(activeDictionaryEntry.pos_meanings)
+                          ? activeDictionaryEntry.pos_meanings
+                          : []
+                        ).map((pm, idx) => (
                           <div key={idx} className="space-y-2">
                             <div className="flex items-start gap-2">
                               <span className="px-2 py-0.5 rounded bg-[#00D4FF]/20 text-[#00D4FF] text-xs font-bold uppercase shrink-0">
                                 {pm.pos}
                               </span>
                               <p className="text-sm font-medium text-slate-100">
-                                {pm.definitions_vi.join('; ')}
+                                {(Array.isArray(pm.definitions_vi) ? pm.definitions_vi : []).join('; ')}
                               </p>
                             </div>
 
-                            {pm.collocations && pm.collocations.length > 0 && (
+                            {Array.isArray(pm.collocations) && pm.collocations.length > 0 && (
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-8 pt-1">
                                 {pm.collocations.map((col, cIdx) => (
                                   <div
@@ -484,7 +495,8 @@ export const UniversalSlideOverDrawer: React.FC = () => {
                         </section>
                       )}
 
-                      {activeDictionaryEntry.examples && activeDictionaryEntry.examples.length > 0 && (
+                      {Array.isArray(activeDictionaryEntry.examples) &&
+                        activeDictionaryEntry.examples.length > 0 && (
                         <section className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-3">
                           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                             Ví dụ thực tế
@@ -556,7 +568,7 @@ export const UniversalSlideOverDrawer: React.FC = () => {
 
                       <h3 className="text-base font-bold text-white">{gp.title_vi}</h3>
 
-                      {gp.formula_tokens && gp.formula_tokens.length > 0 && (
+                      {Array.isArray(gp.formula_tokens) && gp.formula_tokens.length > 0 && (
                         <div className="flex flex-wrap items-center gap-1.5 p-3 rounded-xl bg-slate-950 border border-slate-800">
                           {gp.formula_tokens.map((tok, idx) => (
                             <React.Fragment key={idx}>
@@ -640,7 +652,10 @@ export const UniversalSlideOverDrawer: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col items-center justify-center p-5 rounded-2xl bg-slate-900/80 border border-slate-800 relative">
-                    <div className="relative w-[240px] h-[240px] rounded-2xl bg-[#070716] border-2 border-[#00D4FF]/40 shadow-inner overflow-hidden">
+                    <div
+                      className="relative w-[240px] h-[240px] rounded-2xl bg-[#070716] border-2 border-[#00D4FF]/40 shadow-inner overflow-hidden touch-none select-none"
+                      style={{ touchAction: 'none' }}
+                    >
                       <svg
                         className="absolute inset-0 w-full h-full pointer-events-none opacity-25"
                         viewBox="0 0 240 240"
@@ -678,7 +693,11 @@ export const UniversalSlideOverDrawer: React.FC = () => {
                           strokeDasharray="3 5"
                         />
                       </svg>
-                      <div ref={writerContainerRef} className="relative z-10 w-full h-full" />
+                      <div
+                        ref={writerContainerRef}
+                        className="relative z-10 w-full h-full touch-none select-none"
+                        style={{ touchAction: 'none' }}
+                      />
                     </div>
 
                     <p className="mt-3 text-xs text-center text-slate-300 font-medium">

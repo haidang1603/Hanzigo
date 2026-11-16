@@ -1,407 +1,311 @@
-# 🐉 HanziGo - Nền Tảng Học Tiếng Trung & Hán Tự Toàn Diện
+# 🐉 HanziGo — Nền Tảng Học Tiếng Trung, Hán Tự & Luyện Thi HSK/HSKK Toàn Diện
 
-> **HanziGo** là nền tảng học tiếng Trung trực tuyến dành cho người Việt, tích hợp lộ trình **HSK 1–6 & HSK 3.0 (Cấp 7–9)**, AI Tutor, thuật toán lặp lại ngắt quãng **SuperMemo-2 (SM-2 SRS)**, phòng luyện phát âm, từ điển Hán-Việt & luyện viết chữ Hán, phòng thi thử **HSK/HSKK CBT**, lớp học trực tuyến **LiveKit**, hệ thống chịu lỗi **GlobalErrorBoundary (Exam Draft Rescue)**, SEO động và kiểm toán bảo mật **Supabase RLS / Vercel**.
+> **HanziGo** là nền tảng học tiếng Trung trực tuyến dành cho người Việt, kết hợp lộ trình chuẩn **HSK 1–6 & HSK 3.0 (Cấp 7–9)**, hệ sinh thái **Unified Dictionary & SM-2 SRS**, **Smart Reader (Chinese NLP + OCR + Web Importer)**, **Listening & Dual-Sub Video Studio**, **Hanzi Writing Studio**, **Pronunciation Lab & Neural TTS**, **Gia sư AI (RAG + Chấm điểm + Roleplay)**, **Phòng thi thử HSK/HSKK CBT**, **Lớp học trực tuyến LiveKit/WebRTC**, cùng hệ thống **SRE GlobalErrorBoundary (Exam Draft Rescue)**, **SEO động** và **Supabase RLS / Vercel Security Hardening**.
 
 ---
 
 ## 📑 Mục Lục
-1. [Kiến Trúc Hệ Thống (Architecture & Diagrams)](#-kiến-trúc-hệ-thống)
-2. [Sơ Đồ Thực Thể Quan Hệ (Database ERD)](#-sơ-đồ-thực-thể-quan-hệ-database-erd)
-3. [Công Nghệ Sử Dụng (Tech Stack)](#-công-nghệ-sử-dụng)
-4. [Tổng Hợp 12 Tính Năng Trọng Tâm Đã Nâng Cấp](#-tổng-hợp-12-tính-năng-trọng-tâm-đã-nâng-cấp)
-5. [Bảo Mật & Phân Quyền Cơ Sở Dữ Liệu (Security & RBAC)](#-bảo-mật--phân-quyền-cơ-sở-dữ-liệu)
-6. [Thuật Toán Lặp Lại Ngắt Quãng SM-2 (SRS Engine)](#-thuật-toán-lặp-lại-ngắt-quãng-sm-2)
-7. [Động Cơ Đánh Giá Phát Âm Khoa Học (Phonetics & Tone)](#-động-cơ-đánh-giá-phát-âm-khoa-học)
-8. [Hướng Dẫn Cài Đặt & Chạy Cục Bộ (Getting Started)](#-hướng-dẫn-cài-đặt--chạy-cục-bộ)
-9. [Cấu Hình Biến Môi Trường (Environment Variables)](#-cấu-hình-biến-môi-trường--kiến-trúc-bảo-mật-api)
-10. [Hướng Dẫn Chạy Migration Database (Supabase Migrations)](#-hướng-dẫn-chạy-migration-database)
-11. [Kiểm Thử Tự Động & Go-Live Audit](#-kiểm-thử-tự-động--go-live-audit)
-12. [Sẵn Sàng Production (SRE, SEO, PWA & Bảo Mật Hạ Tầng)](#-sẵn-sàng-production-sre-seo-pwa--bảo-mật-hạ-tầng)
+
+1. [Kiến Trúc Hệ Thống](#-kiến-trúc-hệ-thống)
+2. [Công Nghệ Sử Dụng](#-công-nghệ-sử-dụng)
+3. [Hệ Sinh Thái Tính Năng Toàn Diện](#-hệ-sinh-thái-tính-năng-toàn-diện)
+4. [Cấu Trúc Thư Mục Dự Án](#-cấu-trúc-thư-mục-dự-án)
+5. [Kiến Trúc API Serverless & Bảo Mật](#-kiến-trúc-api-serverless--bảo-mật)
+6. [Cơ Sở Dữ Liệu & Migrations (Supabase)](#-cơ-sở-dữ-liệu--migrations-supabase)
+7. [Hướng Dẫn Cài Đặt & Chạy Cục Bộ](#-hướng-dẫn-cài-đặt--chạy-cục-bộ)
+8. [Cấu Hình Biến Môi Trường](#-cấu-hình-biến-môi-trường)
+9. [Kiểm Thử Tự Động, Lint & Go-Live Audit](#-kiểm-thử-tự-động-lint--go-live-audit)
+10. [Sẵn Sàng Production (SRE, SEO, PWA & Hạ Tầng)](#-sẵn-sàng-production-sre-seo-pwa--hạ-tầng)
+11. [Giấy Phép & Bản Quyền](#-giấy-phép--bản-quyền)
 
 ---
 
 ## 🏗️ Kiến Trúc Hệ Thống
 
-HanziGo được tái cấu trúc theo mô hình phân lớp rõ ràng (Decoupled Layered Architecture):
+HanziGo được thiết kế theo kiến trúc phân lớp rõ ràng, tách biệt hoàn toàn giữa giao diện React, động cơ nghiệp vụ phía client, các Serverless Dispatchers bảo mật trên Vercel và tầng dữ liệu PostgreSQL/RLS trên Supabase:
 
 ```mermaid
 graph TD
-    subgraph UI ["Tầng Trình Diễn (Presentation Layer)"]
-        Pages["React 19 Lazy Chunks<br/>(Dashboard, Vocab, Lesson, Pronounce, AI Tutor, Admin...)"]
-        Components["UI Components, Modals & Toast<br/>(AuthModal, AdminGuard, PageLoader)"]
+    subgraph UI ["Tầng Giao Diện (React 19 + Lazy Pages & Studios)"]
+        Pages["24 Pages (Dashboard, HskPractice, Reader, Writing, Pronounce, Conversation, LiveClassroom, Admin...)"]
+        Ecosystem["Unified Ecosystem (UnifiedToolsContext, UniversalSlideOverDrawer, DailySmartStudyFlow)"]
+        ErrorShield["GlobalErrorBoundary (2 tầng + Exam Draft Rescue)"]
     end
 
-    subgraph State ["Tầng Trạng Thái & Điều Hướng (Context & State Layer)"]
-        AuthContext["AuthContext<br/>(Supabase Session, Verified RBAC)"]
-        ThemeContext["ThemeContext<br/>(Dark Mode, Sound FX)"]
+    subgraph Engines ["Tầng Động Cơ Nghiệp Vụ (Domain & Engines)"]
+        SRS["SM-2 SRS Engine (Ease Factor, Interval, Due Queue)"]
+        NLP["Chinese NLP & Smart Reader (Segmentation, HSK Coloring, Pinyin)"]
+        Phonetic["Pronunciation Evaluator (ASR + Tone + Duration & RMS)"]
+        ExamEngine["HSK CBT & HSKK Speaking Engine"]
     end
 
-    subgraph Logic ["Tầng Nghiệp Vụ & Động Cơ Tính Toán (Domain & Engine Layer)"]
-        SRSEngine["SM-2 SRS Algorithm<br/>(EF calculation, Interval, Due queues)"]
-        PhoneticEngine["Pronunciation Evaluator<br/>(Tone analysis, Syllables, Duration)"]
-        AIEngine["AI Tutor Service<br/>(Gemini API / Hybrid Pedagogical Engine)"]
-        Gamification["Gamification Engine<br/>(Idempotent daily XP, Streak tracking)"]
+    subgraph Serverless ["Tầng Backend Proxy (8 Vercel Serverless Dispatchers)"]
+        AI["/api/ai/[action] (Gemini Key Rotation + RAG + Offline Fallback)"]
+        Audio["/api/audio/tts (Azure Neural TTS + SHA-256 Cache)"]
+        Live["/api/live/[action] & /api/webrtc/[action] (LiveKit Token + Ephemeral TURN)"]
+        HSKApi["/api/hsk/[action], /api/classroom/[action], /api/admin/[action], /api/newsletter/[action]"]
     end
 
-    subgraph Services ["Tầng Dịch Vụ Dữ Liệu (Modular Services Layer)"]
-        AuthSvc["authService.js"]
-        ProfileSvc["profileService.js"]
-        VocabSvc["vocabularyService.js"]
-        ProgressSvc["progressService.js"]
-        AdminSvc["adminService.js"]
-        CommSvc["communityService.js"]
-        MatSvc["materialsService.js"]
+    subgraph Data ["Tầng Lưu Trữ & Xác Thực"]
+        Supabase[("Supabase PostgreSQL + RLS + RPC + Storage")]
+        Redis[("Upstash Redis (Distributed Rate Limiter)")]
+        Local[("LocalStorage / SessionStorage (Scoped per User ID)")]
     end
 
-    subgraph Persistence ["Tầng Lưu Trữ & Bảo Mật (Persistence & Cloud Layer)"]
-        SupabaseDB[("PostgreSQL Database<br/>(RLS Policies, Security Functions)")]
-        SupabaseAuth["Supabase Auth (PKCE OAuth & Email)"]
-        LocalStore[("LocalStorage Sandbox<br/>(Scoped per User ID)")]
-    end
-
-    UI --> State
-    State --> Logic
-    UI --> Logic
-    Logic --> Services
-    Services --> SupabaseDB
-    Services --> SupabaseAuth
-    Services --> LocalStore
-```
-
----
-
-## 🗄️ Sơ Đồ Thực Thể Quan Hệ (Database ERD)
-
-Dữ liệu học tập đã được chuẩn hóa từ JSON nguyên khối sang các bảng quan hệ độc lập:
-
-```mermaid
-erDiagram
-    PROFILES ||--o{ USER_VOCAB_SRS : "has srs records"
-    PROFILES ||--o{ USER_LESSON_PROGRESS : "tracks lesson progress"
-    PROFILES ||--o{ USER_STUDY_LOGS : "logs daily XP activity"
-    PROFILES ||--o{ AI_CONVERSATIONS : "participates in"
-    AI_CONVERSATIONS ||--o{ AI_MESSAGES : "contains messages"
-    PROFILES ||--o{ COMMUNITY_POSTS : "authors"
-    COMMUNITY_POSTS ||--o{ COMMUNITY_COMMENTS : "receives"
-    PROFILES ||--o{ MATERIALS : "uploads/manages"
-
-    PROFILES {
-        uuid id PK "auth.users.id"
-        text email "unique"
-        text full_name
-        text avatar_url
-        text hsk_level
-        text role "student | moderator | admin"
-        text status "active | suspended | blocked"
-        int streak
-        int xp
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    USER_VOCAB_SRS {
-        uuid id PK
-        uuid user_id FK
-        text vocab_id
-        text simplified
-        text pinyin
-        int repetitions "Lần ôn liên tiếp"
-        numeric ease_factor "Hệ số dễ (>= 1.30)"
-        int interval_days "Khoảng cách ngày ôn"
-        timestamp next_review_at "Thời điểm ôn tiếp"
-        int last_quality "0-5 SM-2 grade"
-        timestamp last_reviewed_at
-    }
-
-    USER_LESSON_PROGRESS {
-        uuid id PK
-        uuid user_id FK
-        text lesson_id
-        int score
-        boolean completed
-        timestamp completed_at
-    }
-
-    USER_STUDY_LOGS {
-        uuid id PK
-        uuid user_id FK
-        text action_type "vocab_review | lesson_done | pronounce"
-        text idempotency_key "unique per day"
-        int xp_earned
-        timestamp created_at
-    }
-
-    AI_CONVERSATIONS {
-        uuid id PK
-        uuid user_id FK
-        text scenario
-        text hsk_level
-        timestamp created_at
-    }
-
-    AI_MESSAGES {
-        uuid id PK
-        uuid conversation_id FK
-        text sender "user | assistant"
-        text content
-        jsonb pedagogical_meta "Grammar & Vocab info"
-        timestamp created_at
-    }
+    UI --> Engines
+    UI --> Serverless
+    Engines --> Supabase
+    Engines --> Local
+    Serverless --> Supabase
+    Serverless --> Redis
 ```
 
 ---
 
 ## 🛠️ Công Nghệ Sử Dụng
 
-| Lĩnh vực | Công nghệ & Thư viện | Vai trò |
+| Lĩnh vực | Công nghệ & Thư viện | Vai trò trong hệ thống |
 | :--- | :--- | :--- |
-| **Frontend Framework** | [React 19](https://react.dev/) + [Vite 8](https://vitejs.dev/) | Tốc độ biên dịch cực nhanh, Suspense & Dynamic Code Splitting |
-| **Styling & Giao diện** | [Tailwind CSS v4](https://tailwindcss.com/) + CSS Modules | Glassmorphism, Theme Tokens HSL, Dark Mode nhất quán |
-| **Quản lý Trạng Thái** | React Context API + Custom Hooks | `AuthContext`, `ThemeContext` tách biệt hoàn toàn |
-| **Cơ sở dữ liệu & Auth** | [Supabase](https://supabase.com/) (PostgreSQL + RLS) | Phân quyền DB-level, Real Google OAuth 2.0, RPC Admin Functions |
-| **Thuật toán Học Tập** | SuperMemo-2 (SM-2) Spaced Repetition | Tính toán chu kỳ giãn cách, Ease Factor (EF) và hàng đợi ôn tập |
-| **Đánh giá Ngữ âm** | Phonetic & Tone Diagnostic Engine | Phân tách âm tiết, thanh điệu 1-4, biến điệu, nhịp điệu |
-| **AI Conversation** | Gemini API + Hybrid Pedagogical Engine | Phân tích ngữ pháp, chữa câu, gợi ý từ vựng theo HSK |
-| **Kiểm thử tự động** | Node.js Native Test Runner (`node --test`) | Kiểm thử unit test cho thuật toán SRS, RBAC và Pronunciation |
+| **Frontend** | React 19 (`^19.2.8`) + Vite 8 (`^8.3.0`) | Giao diện SPA, `React.lazy` code-splitting, tốc độ build nhanh |
+| **Styling & Icons** | Tailwind CSS v4 (`@tailwindcss/vite`) + `lucide-react` | Hệ thống theme sáng/tối, responsive layout, icon thống nhất |
+| **Luyện viết Hán tự** | `hanzi-writer` (`^3.7.3`) + `canvas-confetti` | Mô phỏng thứ tự nét, chấm điểm nét viết tương tác |
+| **Lớp học trực tuyến** | `livekit-client`, `livekit-server-sdk`, `@livekit/components-react` | Video/Audio SFU thời gian thực, chia sẻ màn hình, bảng trắng Hán tự |
+| **Backend & Auth** | Supabase (`@supabase/supabase-js`) + PostgreSQL RLS | Xác thực Email/Google OAuth PKCE, phân quyền RBAC cấp DB, Storage |
+| **AI & RAG** | Google Gemini API + `ragRetriever.js` + `embeddingProvider.js` | Gia sư AI, roleplay, chấm viết/dịch/phát âm, tra từ điển ngữ cảnh |
+| **Neural TTS** | Azure Cognitive Services Speech + Web Speech API fallback | Giọng đọc `zh-CN-XiaoxiaoNeural` / `zh-CN-YunxiNeural`, cache SHA-256 |
+| **Rate Limit & Cache** | Upstash Redis REST (fallback In-Memory) | Giới hạn tần suất & quota an toàn cho các serverless endpoints |
+| **Chất lượng & Test** | `oxlint` (`^1.81.0`) + Node.js Native Test Runner (`node --test`) | Kiểm tra lint tốc độ cao và chạy bộ unit/integration test |
+| **Triển khai** | Vercel Serverless Functions + `vercel.json` | 8 API entrypoints, SPA rewrites, security headers & asset caching |
 
 ---
 
-## 🚀 Tổng Hợp 12 Tính Năng Trọng Tâm Đã Nâng Cấp
+## 🚀 Hệ Sinh Thái Tính Năng Toàn Diện
 
-### 1. Bảo mật Admin và Phân Quyền (RBAC Cấp Database)
-* **Loại bỏ tin cậy mù quáng ở frontend**: Không còn kiểm tra logic `user.role === 'admin'` đơn giản trên client.
-* **Hàm bảo mật `public.is_admin()`**: Được định nghĩa bằng SQL với quyền `SECURITY DEFINER` trên PostgreSQL.
-* **Row-Level Security (RLS)**: Mọi bảng nhạy cảm đều kiểm tra quyền qua RLS; trigger database chặn người dùng tự thăng chức vai trò `role` của chính mình.
-* **Component `AdminGuard`**: Bảo vệ routing, tự động đá học viên thường về `#dashboard` kèm cảnh báo bảo mật.
+### 1. Lộ Trình HSK 1–9 & Phòng Thi Thử CBT / HSKK
+* **Giáo trình HSK 1–6 & HSK 3.0 (Cấp 7–9)**: Lộ trình bài học, từ vựng, ngữ pháp, luyện dịch HSK 3.0 (`hsk30-translation`) và bài tập phân cấp (`curriculum`, `RoadmapPage`, `LessonPage`, `PracticePage`).
+* **Phòng thi thử HSK CBT & HSKK (`HskPracticePage`, `hsk-exam`, `hskk-exam`)**: Mô phỏng thi máy tính, lưu nháp tự động, chấm điểm xác định + AI, phân tích lỗi sai, cấp chứng chỉ (`certificateEngine`) và **Exam Draft Rescue** khi gặp sự cố kỹ thuật.
 
-### 2. Bảo Mật Cấu Hình & Biến Môi Trường
-* **Untrack `.env`**: Loại bỏ `.env` khỏi git index, cấu hình `.gitignore` chặn toàn bộ file môi trường (`.env`, `.env.*`, `*.local`).
-* **Không lưu hardcoded key**: Gỡ bỏ URL và Supabase key dự phòng hardcoded trong mã nguồn; sử dụng cơ chế fallback thông minh chỉ khi dev local.
-* **Hướng dẫn Vercel**: Chuẩn bị đầy đủ template `.env.example` và quy trình đưa biến môi trường lên Vercel Production.
+### 2. Smart Reader & Khai Thác Ngôn Ngữ (Immersion & NLP)
+* **Smart Reader (`ReaderPage`, `reading-studio`)**: Tách từ tiếng Trung, hiển thị Pinyin ngữ cảnh, tô màu cấp độ HSK, chỉnh cỡ chữ, đọc TTS và tra từ trực tiếp trên từng từ.
+* **Nhập liệu đa nguồn**: Quét ảnh chữ Hán (`ocr-scanner`), nhập bài báo từ web (`web-importer`), đồng hành giáo trình (`textbook-companion`), khám phá thành ngữ & collocation (`chengyu-explorer`), và kho khai thác câu (`immersion-hub`).
 
-### 3. Đăng Nhập Google Chuẩn OAuth 2.0
-* **Vô hiệu hóa giả lập Instant Login**: Gỡ bỏ hoàn toàn popup giả lập chọn tài khoản trên production.
-* **Google OAuth PKCE thực thụ**: Sử dụng luồng `supabase.auth.signInWithOAuth({ provider: 'google' })`.
-* **Phục hồi phiên và điều hướng chính xác**: Lắng nghe sự kiện `SIGNED_IN`, tự động đồng bộ profile và đưa người dùng về đúng trang (`activeTab`) đang học dở.
+### 3. Listening Studio & Dual-Sub Interactive Video Studio
+* **Chinese Listening Studio (`listening-studio`)**: Đồng bộ transcript theo thời gian thực, lặp đoạn A–B, điều chỉnh tốc độ, luyện nghe chép chính tả từng chữ, danh sách bài nghe đa cấp độ HSK kèm chế độ thu gọn/mở rộng danh sách.
+* **Dual-Sub Interactive Video Studio (`video-studio`)**: Học qua liên kết YouTube kết hợp dán phụ đề `.SRT`/`.VTT`, đồng bộ phụ đề song ngữ tương tác theo dòng thời gian video.
 
-### 4. Trợ Lý Đàm Thoại AI Thông Minh (AI Tutor)
-* **Tích hợp mô hình AI**: Kết nối Google Gemini API thông qua backend/service an toàn.
-* **Động cơ Sư phạm Thông minh (Offline/Hybrid Pedagogical Engine)**:
-  * Nhận biết cấp độ HSK (HSK 1 đến HSK 6).
-  * Tự động phát hiện lỗi sai trong câu tiếng Trung của học viên và đề xuất câu sửa chuẩn bản xứ (`correction`).
-  * Trích xuất cấu trúc ngữ pháp trọng tâm (`grammar_point`).
-  * Gợi ý từ vựng bổ trợ liên quan trực tiếp đến ngữ cảnh đối thoại.
+### 4. Hanzi Writing Studio & Pronunciation Lab
+* **Hanzi Writing Studio (`WritingPage`, `writing`, `writing-studio`)**: Luyện viết chữ Hán theo đúng thứ tự nét với `hanzi-writer`, bảng tương tác `InteractiveWritingPad` và chấm điểm bài viết (`writingEvaluationService`).
+* **Pronunciation Lab (`PronunciationPage`, `pronunciation-lab`)**: Kết hợp ASR (Web Speech API), phân tách âm tiết, nhận diện thanh điệu (1–4 & khinh thanh), đo thời lượng/năng lượng thu âm (Web Audio API) và chẩn đoán chi tiết qua `/api/ai/pronunciation` — không tạo điểm ảo ngẫu nhiên.
 
-### 5. Đánh Giá Phát Âm Khoa Học (Loại Bỏ Điểm Ảo)
-* **Tách bạch Nhận diện giọng nói với Chấm điểm**: Không đánh đồng việc Web Speech API nhận diện được văn bản là phát âm điểm cao.
-* **Bộ đo đạc 3 chiều (Multi-metric evaluation)**:
-  * Độ chính xác âm tiết (Syllable accuracy).
-  * Độ chính xác thanh điệu (Tone accuracy: nhận biết dấu 1, 2, 3, 4 và thanh nhẹ qua Pinyin).
-  * Độ trôi chảy và thời lượng phát âm (Duration & Fluency check).
-* **Tuyệt đối không dùng `Math.random()`**: Trả về chẩn đoán âm vị thực tế, hướng dẫn cụ thể khẩu hình và vị trí đặt lưỡi.
+### 5. Gia Sư AI, RAG & Chấm Điểm Đa Chiều
+* **AI Tutor & Roleplay (`ConversationPage`, `api/ai/[action].js`)**: Hội thoại theo tình huống & cấp độ HSK, gợi ý từ vựng, sửa lỗi câu (`correction`), giải thích ngữ pháp (`grammar_point`) kết hợp bộ nhớ người học (`ragRetriever.js`).
+* **AI Grading (`api/_handlers/ai/grade.js`)**: Hỗ trợ chấm dịch HSK 3.0, chấm viết, chấm nói và tra cứu từ điển ngữ cảnh bằng AI khi cụm từ chưa có trong kho cục bộ, kèm cơ chế xoay vòng nhiều Gemini API key và fallback xác định khi offline/quá tải.
 
-### 6. Chuẩn Hóa Dữ Liệu & Hỗ Trợ Offline
-* **Không lưu JSON nguyên khối khổng lồ**: Chuyển dữ liệu học tập sang các bảng có cấu trúc (`user_vocab_srs`, `user_lesson_progress`, `user_study_logs`).
-* **Lưu trữ Offline độc lập**: LocalStorage được phân vùng theo từng `userId` (`getUserStorageKey`), tránh xung đột giữa nhiều tài khoản trên cùng thiết bị.
+### 6. Unified Dictionary Ecosystem & Lặp Lại Ngắt Quãng SM-2
+* **Ngăn kéo công cụ hợp nhất (`UnifiedToolsContext.tsx`, `UniversalSlideOverDrawer.tsx`)**: Tra từ điển nhanh (kết hợp tách từ cục bộ + AI dictionary fallback), xem ngữ pháp, luyện viết và phát âm ngay trong ngăn kéo trượt mọi lúc khi đang học.
+* **Vocabulary Workspace & SM-2 SRS (`VocabularyPage`, `vocabulary-workspace`, `srs`)**: Lưu từ từ bài đọc/từ điển, tính toán chu kỳ ôn tập SuperMemo-2 (`Ease Factor >= 1.30`, khoảng cách `1 -> 6 -> I × EF`), khóa chống trùng lặp XP theo ngày.
 
-### 7. Tái Cấu Trúc Kiến Trúc `App.jsx` & Code-Splitting
-* **Context & Custom Hooks**: Tách xác thực vào `AuthContext`, giao diện vào `ThemeContext`.
-* **Lazy Loading (`React.lazy` + `Suspense`)**: Tách các trang thành các chunk riêng biệt giúp giảm kích thước gói bundle khởi tạo.
-* **Component `PageLoader`**: Hiệu ứng chuyển trang mượt mà chuẩn UX.
+### 7. Lớp Học Trực Tuyến (LiveKit & WebRTC)
+* **Classroom & Live Classroom (`ClassroomPage`, `LiveClassroomPage`, `TeacherDashboardPage`)**: Tạo/tham gia lớp học bằng mã lớp, giao bài tập, theo dõi tiến độ học viên, phòng học trực tuyến LiveKit (video/audio, điều phối người tham gia, bảng trắng Hán tự `LiveHanziWhiteboardStage`) và cấp ephemeral TURN/ICE credentials qua `/api/webrtc/ice-servers`.
 
-### 8. Chuẩn Hóa Cấu Trúc Dịch Vụ Supabase
-* Phân rã file `services.js` hơn 1000 dòng thành các module chuyên biệt tại `src/services/`:
-  * `authService.js`, `profileService.js`, `vocabularyService.js`, `progressService.js`, `materialsService.js`, `communityService.js`, `adminService.js`.
-* Chuẩn hóa cơ chế xử lý lỗi (try-catch thống nhất, fallback an toàn).
-
-### 9. Quản Lý Migration Database & Phiên Bản
-* Thiết lập hệ thống migration SQL có phiên bản tại thư mục `supabase/migrations/`:
-  * `01_initial_schema.sql` (Cấu trúc bảng cốt lõi)
-  * `02_normalized_learning_tables.sql` (Bảng SRS, Progress, Logs, AI Conversation)
-  * `03_security_and_rls.sql` (Chính sách Row-Level Security & Triggers chống nâng quyền)
-  * `04_admin_functions_and_triggers.sql` (Stored Procedures quản trị người dùng an toàn)
-
-### 10. Thuật Toán Lặp Lại Ngắt Quãng SM-2 & Chống Lạm Dụng XP
-* **SuperMemo-2 (SM-2)**: Tính toán chính xác hệ số dễ (Ease Factor $\ge 1.30$), chu kỳ lặp (1 ngày -> 6 ngày -> $I \times EF$), lọc danh sách thẻ đến hạn ôn tập (`isCardDueForReview`).
-* **Khóa chống trùng lặp XP (Idempotency Key)**: Ngăn chặn người dùng bấm liên tục vào nút "Đã thuộc" để cày điểm ảo; chỉ ghi nhận XP một lần duy nhất cho mỗi từ/bài trong một ngày.
-
-### 11. Chất Lượng Trải Nghiệm Sản Phẩm (UX States)
-* Bổ sung đầy đủ trạng thái: Loading Skeletons, Empty State khi không có dữ liệu, Error State kèm nút Thử lại.
-* Giao diện Responsive tối ưu cho thiết bị di động, máy tính bảng và màn hình lớn.
-
-### 12. Tài Liệu Hóa, Kiểm Thử & Triển Khai
-* Bộ unit test tự động cho thuật toán SRS, bộ đánh giá ngữ âm và hệ thống RBAC.
-* Sơ đồ kiến trúc Mermaid và hướng dẫn triển khai hoàn chỉnh.
+### 8. Cộng Đồng, Tài Liệu, Gamification & Quản Trị
+* **Cộng đồng & Tài liệu (`CommunityPage`, `MaterialsPage`)**: Đăng bài, bình luận, thả cảm xúc, tìm bạn học, báo cáo/kiểm duyệt nội dung và quản lý học liệu tải lên Supabase Storage.
+* **Admin & Analytics (`AdminPage`, `DashboardPage`)**: Thống kê học tập theo vai trò, quản lý người dùng qua Supabase RPC bảo mật (`is_admin()`, `admin_update_user_status`, `admin_delete_user`), chặn tự nâng quyền bằng DB trigger.
 
 ---
 
-## 🔒 Bảo Mật & Phân Quyền Cơ Sở Dữ Liệu
+## 📁 Cấu Trúc Thư Mục Dự Án
 
-### 1. Phân quyền vai trò (RBAC)
-* `student`: Chỉ đọc tài liệu công khai, đọc/ghi dữ liệu học tập cá nhân của chính mình.
-* `moderator`: Quản lý kho tài liệu, duyệt bài viết cộng đồng.
-* `admin`: Toàn quyền hệ thống, thay đổi vai trò người dùng, xóa tài khoản thông qua hàm PostgreSQL bảo mật `admin_delete_user`.
-
-### 2. Chính sách RLS nổi bật
-```sql
--- Ví dụ: Người dùng chỉ được sửa thông tin cá nhân của chính mình,
--- nhưng trigger prevent_self_role_escalation sẽ chặn sửa đổi cột 'role'.
-CREATE POLICY "Users can update their own profile"
-    ON public.profiles FOR UPDATE
-    USING (auth.uid() = id);
-
--- Quản trị viên sử dụng hàm is_admin() để kiểm tra quyền ở cấp database
-CREATE POLICY "Admins have full access to materials"
-    ON public.materials FOR ALL
-    USING (public.is_admin());
+```text
+HanziGo/
+├── api/                          # 8 Vercel Serverless Entrypoints + Handlers & Utils
+│   ├── admin/[action].js
+│   ├── ai/[action].js            # chat, coach, grade, personalize, pronunciation, roleplay, teacher, tutor
+│   ├── audio/tts.js              # Azure Neural TTS Caching Proxy
+│   ├── classroom/[action].js     # assignments, create, join, lookup, members, remove
+│   ├── hsk/[action].js           # analytics, attempt, certificate, exam(s), history, import, mistakes, report, resources, review, submit
+│   ├── live/[action].js          # end, join, leave, moderation, participants, session
+│   ├── newsletter/[action].js    # subscribe
+│   ├── webrtc/[action].js        # ice-servers, livekit-token
+│   ├── _handlers/                # Implementation cho từng endpoint
+│   ├── _utils/                   # aiProviderAdapter, distributedRateLimiter, embeddingProvider, ragRetriever, supabaseServer, ttsProviderAdapter, verifyAuth
+│   └── _webrtc/                  # ice-servers.js, livekit-token.js
+├── public/                       # Tài nguyên tĩnh, SEO & học liệu HTML (214 bộ thủ, Pinyin, A4 tập viết, sitemap.xml, robots.txt, manifest.webmanifest)
+├── scripts/                      # Audit & DB seeding (preFlightGoLiveAudit.js, verifyBuildBudget.js, syncSupabaseMaster.js, seed*.js)
+├── src/
+│   ├── components/               # UI components dùng chung, AuthModal, GlobalErrorBoundary, InteractiveWritingPad, Footer...
+│   ├── core/                     # ecosystem (UnifiedToolsContext), seo (SeoHeadManager, routeSeoConfig), telemetry (errorReporter)
+│   ├── data/                     # Dữ liệu HSK, từ điển, ngữ pháp, đề thi cục bộ
+│   ├── features/                 # 25 feature modules (adaptive, analytics, chengyu-explorer, classroom, curriculum, dictionary, hsk-exam, hsk30-translation, hskk-exam, immersion-hub, intelligence, listening-studio, ocr-scanner, pronunciation-lab, reading-studio, srs, textbook-companion, unified-ecosystem, video-studio, vocabulary-workspace, web-importer, writing, writing-studio...)
+│   ├── pages/                    # 24 trang chính (lazy-loaded)
+│   ├── services/                 # Các service kết nối Supabase, AI, TTS, Video, Listening, Writing, Classroom...
+│   └── utils/                    # pronunciationEvaluator, hàm chuẩn hóa Pinyin/NLP...
+├── supabase/
+│   ├── schema.sql                # Schema tổng hợp
+│   └── migrations/               # Chuỗi migration SQL theo timestamp (20261106_* -> 20261114_3701_*)
+├── tests/                        # Bộ kiểm thử Node.js Native Test Runner (node --test)
+├── .env.example                  # Mẫu biến môi trường chuẩn
+├── package.json                  # Scripts dev, build, lint, test, audit, db:seed
+└── vercel.json                   # Cấu hình rewrites, security headers & cache control
 ```
 
 ---
 
-## 🧠 Thuật Toán Lặp Lại Ngắt Quãng SM-2
+## 🛡️ Kiến Trúc API Serverless & Bảo Mật
 
-Hệ thống tính toán thời điểm ôn tập từ vựng dựa trên điểm số đánh giá từ người dùng ($q \in [0, 5]$):
-- **$q < 3$ (Quên / Chưa thuộc)**: Chu kỳ bị reset về 1 ngày, số lần nhớ liên tiếp quay về 0.
-- **$q \ge 3$ (Đã nhớ / Nhớ tốt)**:
-  - Lần 1: $I(1) = 1$ ngày
-  - Lần 2: $I(2) = 6$ ngày
-  - Lần $n > 2$: $I(n) = I(n-1) \times EF$
-- **Hệ số dễ (Ease Factor)**:
-  $$EF' = EF + (0.1 - (5 - q) \times (0.08 + (5 - q) \times 0.02))$$
-  *(Luôn đảm bảo $EF \ge 1.30$ để tránh khoảng cách ôn tập bị co lại quá mức).*
+1. **Giới hạn Entrypoints cho Vercel Hobby/Pro**: Toàn bộ backend được gộp gọn thành **8 Serverless Dispatchers** trong `api/` (`admin`, `ai`, `audio/tts`, `classroom`, `hsk`, `live`, `newsletter`, `webrtc`) và điều phối qua `vercel.json` rewrites.
+2. **Bảo vệ Secret Key tuyệt đối**:
+   * Các khóa nhạy cảm (`GEMINI_API_KEY`, `GEMINI_API_KEYS`, `AZURE_SPEECH_KEY`, `LIVEKIT_API_SECRET`, `TURN_SHARED_SECRET`, `UPSTASH_REDIS_REST_TOKEN`) **không dùng tiền tố `VITE_`**, chỉ đọc ở phía server/serverless.
+   * Frontend chỉ dùng `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY`, kết hợp xác thực JWT qua `api/_utils/verifyAuth.js`.
+3. **Chống lạm dụng & Chịu lỗi**:
+   * `api/_utils/distributedRateLimiter.js` dùng Upstash Redis REST (tự fallback về In-Memory nếu chưa cấu hình Redis).
+   * `api/_utils/aiProviderAdapter.js` hỗ trợ xoay vòng nhiều Gemini API Key khi gặp `429`/`403`, có feature flag `ENABLE_AI_TUTOR` và công tắc ngắt khẩn cấp `AI_TUTOR_KILL_SWITCH`.
+4. **Phân quyền Cấp Database (Supabase RLS)**:
+   * Các hàm quản trị và thao tác nhạy cảm sử dụng `SECURITY DEFINER` kèm `SET search_path = public` và kiểm tra `auth.uid()` / `public.is_admin()`.
+   * Trigger database chặn người dùng tự sửa cột `role` trên bảng `profiles`.
 
 ---
 
-## 🎙️ Động Cơ Đánh Giá Phát Âm & Ngữ Âm (Pronunciation & Speech Diagnostic Engine)
+## 🗄️ Cơ Sở Dữ Liệu & Migrations (Supabase)
 
-Động cơ thẩm định phát âm tại [`src/utils/pronunciationEvaluator.js`](src/utils/pronunciationEvaluator.js) được thiết kế theo nguyên lý minh bạch, trung thực và khoa học:
-1. **Nhận dạng âm vị & ký tự (ASR & Character Alignment)**: Tiếp nhận văn bản giọng nói thực tế từ Web Speech API, phân tách và so khớp từng ký tự chữ Hán cùng hệ thống phiên âm Pinyin mục tiêu.
-2. **Kiểm tra Thanh điệu & Ký âm (Tone Notation Mapping)**: Trích xuất chính xác số thanh điệu (1, 2, 3, 4 hoặc 5 - khinh thanh) từ ký tự Pinyin có dấu (ví dụ: `mā` -> 1, `má` -> 2, `mǎ` -> 3, `mà` -> 4).
-3. **Phân tích Trường âm & Năng lượng (Acoustic Duration & RMS)**: Đo lường thời lượng phát âm thực tế (chuẩn trung bình 300ms - 900ms cho mỗi âm tiết) và năng lượng thu âm từ Web Audio API AnalyserNode nhằm phát hiện phát âm quá vội, ngập ngừng hoặc thiếu âm lượng.
-4. **Chẩn đoán phản hồi sư phạm thực chất**: Đưa ra nhận xét cụ thể (ví dụ: phát âm chuẩn từng chữ, lệch thanh điệu, hay chưa thu được tín hiệu micro) — **tuyệt đối không sử dụng `Math.random()` để tạo điểm số ảo 98/100**.
-5. **Minh định kỹ thuật**: Hệ thống định vị trung thực là **Pronunciation & Speech Diagnostic Engine** dựa trên nhận diện âm vị và phân tích trường âm (ASR + Acoustic Heuristics), không nhận vơ là trích xuất đường cong cao độ F0 (Fundamental Frequency Pitch Contour) phức tạp từ DSP âm thanh.
+Toàn bộ lược đồ PostgreSQL được quản lý trong `supabase/schema.sql` và thư mục `supabase/migrations/` (theo thứ tự thời gian từ `20261106_daily_quotes.sql` đến `20261114_3701_security_rls_and_telemetry_audit.sql`), bao gồm:
+* **Hồ sơ, Bảo mật & Telemetry**: `profiles`, RLS policies, chống nâng quyền, `system_error_logs`.
+* **Học tập & SRS**: Các bảng tiến độ bài học, lịch sử đọc, từ vựng workspace, SM-2 SRS, kho đề thi HSK/HSKK và nhật ký học tập.
+* **Studios & Mở rộng**: Smart Dictionary, Writing Studio, Reading Studio, Listening Studio, Video Studio, OCR Scanner, Web Importer, Chengyu/Collocations, HSK 3.0 Translation, HSK 7–9 Curriculum, TTS Audio Cache (`audio-cache`), AI Learner Memory RAG (`20261114_3401_ai_learner_memory_rag.sql`), Classroom Assignments & Whiteboard (`20261114_3301_classroom_assignments_and_whiteboard.sql`).
+
+### Đồng bộ & Nạp dữ liệu mẫu (Scripts)
+```bash
+# Đồng bộ master schema/data lên Supabase (đọc biến từ .env)
+npm run db:sync
+
+# Nạp dữ liệu mẫu tổng quát
+npm run db:seed
+
+# Nạp lộ trình học & toàn bộ từ điển HSK
+npm run db:seed:learning
+
+# Nạp riêng từ điển HSK / đề thi HSK / danh ngôn mỗi ngày
+npm run db:seed:dictionary
+npm run db:seed:hsk
+npm run db:seed:quotes
+```
 
 ---
 
 ## 💻 Hướng Dẫn Cài Đặt & Chạy Cục Bộ
 
-### 1. Yêu cầu môi trường
-* [Node.js](https://nodejs.org/) phiên bản 18.0 trở lên.
-* [npm](https://www.npmjs.com/) (đi kèm Node.js).
+### Yêu cầu môi trường
+* [Node.js](https://nodejs.org/) phiên bản **18.0** trở lên (khuyến nghị Node 20+ để hỗ trợ tốt `--env-file=.env`).
+* `npm` đi kèm Node.js.
 
-### 2. Các bước cài đặt
+### Các bước khởi chạy
 ```bash
 # 1. Clone repository về máy
 git clone https://github.com/haidang1603/Hanzigo.git
 cd HanziGo
 
-# 2. Cài đặt các thư viện phụ thuộc
+# 2. Cài đặt thư viện phụ thuộc
 npm install
 
-# 3. Tạo file cấu hình môi trường từ mẫu
+# 3. Tạo file môi trường từ mẫu
 cp .env.example .env
-# Mở file .env và điền thông tin Supabase của bạn
+# (Trên Windows PowerShell: Copy-Item .env.example .env)
+# Mở .env và điền thông tin Supabase / Gemini / LiveKit / Azure TTS của bạn
 
-# 4. Khởi chạy máy chủ phát triển
+# 4. Khởi chạy môi trường phát triển
 npm run dev
 ```
-Truy cập tại: `http://localhost:5173/`
+Mở trình duyệt tại: `http://localhost:5173/`
 
-### 3. Đóng gói cho Production
+### Đóng gói Production
 ```bash
+# Build tiêu chuẩn
 npm run build
+
+# Build kèm kiểm tra ngân sách bundle (scripts/verifyBuildBudget.js)
+npm run build:verify
+
+# Xem trước bản build production cục bộ
+npm run preview
 ```
 
 ---
 
-## ⚙️ Cấu Hình Biến Môi Trường & Kiến Trúc Bảo Mật API
+## ⚙️ Cấu Hình Biến Môi Trường
 
-Tạo file `.env` tại thư mục gốc của dự án (hoặc thêm vào **Environment Variables** trên Vercel):
+Tham khảo đầy đủ trong [`.env.example`](.env.example). Các nhóm biến chính gồm:
 
 ```env
-# 1. Supabase Configuration (Frontend an toàn với anon key)
-VITE_SUPABASE_URL=https://your-project.supabase.co
+# 1. Supabase (An toàn cho Frontend với anon key)
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
 
-# 2. Server-side Secret (Bảo mật tuyệt đối - KHÔNG dùng tiền tố VITE_)
-# Biến này chỉ được đọc bởi Vercel Serverless Function (/api/ai/chat) hoặc Vite Dev Server
-GEMINI_API_KEY=your-gemini-api-key-here
+# 2. AI Personalization & Grading (Server-side ONLY - KHÔNG dùng tiền tố VITE_)
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEYS=your_backup_gemini_key_1,your_backup_gemini_key_2
+GEMINI_MODEL=gemini-3.5-flash-lite
+ENABLE_AI_TUTOR=true
+AI_TUTOR_KILL_SWITCH=false
+VITE_ENABLE_AI_TUTOR=true
 
-# 3. Môi trường ứng dụng
-VITE_APP_ENV=production
-```
+# 3. LiveKit WebRTC SFU (Lớp học trực tuyến)
+VITE_LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_api_secret
 
-### 🛡️ Kiến trúc bảo mật Backend Proxy cho AI Tutor:
+# 4. Ephemeral TURN / STUN (Server-side REST credential 1 giờ)
+TURN_SERVER_URL=turn.your-domain.com:3478
+TURN_SHARED_SECRET=your_coturn_static_auth_secret_here
+
+# 5. Azure Cognitive Services Speech (Neural TTS Caching Proxy)
+AZURE_SPEECH_KEY=your_azure_speech_resource_key_here
+AZURE_SPEECH_REGION=eastasia
+
+# 6. Distributed Rate Limiting (Tùy chọn - fallback In-Memory nếu trống)
+UPSTASH_REDIS_REST_URL=https://your-upstash-instance.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_upstash_rest_token_here
 ```
-[Trình duyệt / React Frontend]
-       │
-       ▼  (POST /api/ai/chat - không chứa Secret Key)
-[Vercel Serverless Function / Vite Dev Server]
-       │
-       ▼  (Sử dụng process.env.GEMINI_API_KEY phía Server)
-[Google Gemini API]
-```
-> **Cảnh báo bảo mật**: 
-> 1. Biến `GEMINI_API_KEY` **tuyệt đối không đặt tiền tố `VITE_`** để ngăn chặn việc Vite tự động đóng gói khóa bí mật vào bundle Javascript gửi về trình duyệt của người dùng.
-> 2. Tuyệt đối **KHÔNG** đưa `SUPABASE_SERVICE_ROLE_KEY` vào frontend; frontend chỉ sử dụng `anon` key kết hợp Supabase RLS.
-> 3. Các tác vụ quản trị người dùng (`admin_update_user_status`, `admin_delete_user`) thực thi độc quyền qua PostgreSQL Stored Procedures, không fallback sửa bảng trực tiếp từ client.
 
 ---
 
-## 🗃️ Hướng Dẫn Chạy Migration Database
+## 🧪 Kiểm Thử Tự Động, Lint & Go-Live Audit
 
-Để khởi tạo cấu trúc cơ sở dữ liệu và kích hoạt toàn bộ cơ chế bảo mật RLS, hãy vào mục **SQL Editor** trên trang quản trị Supabase Dashboard và thực thi tuần tự các file trong thư mục `supabase/migrations/`:
-
-1. `01_initial_schema.sql`: Khởi tạo bảng `profiles`, `materials`, `community_posts`, `community_comments`.
-2. `02_normalized_learning_tables.sql`: Khởi tạo các bảng học tập chuẩn hóa (`user_vocab_srs`, `user_lesson_progress`, `user_study_logs`, `ai_conversations`, `ai_messages`).
-3. `03_security_and_rls.sql`: Thiết lập hàm `is_admin()`, kích hoạt Row-Level Security (RLS) và triggers ngăn người dùng tự nâng quyền.
-4. `04_admin_functions_and_triggers.sql`: Tạo các stored procedures bảo mật (`admin_delete_user`, `admin_update_user_status`).
-
-*(Hoặc có thể chạy file tổng hợp [`supabase/schema.sql`](supabase/schema.sql) để áp dụng toàn bộ).*
-
----
-
-## 🧪 Kiểm Thử Tự Động & Go-Live Audit
-
-HanziGo tích hợp bộ kiểm thử tự động sử dụng **Node.js Native Test Runner** cùng công cụ kiểm định trước khi phát hành (**Pre-Flight Go-Live Auditor**):
+HanziGo sử dụng **Node.js Native Test Runner** (`node --test`), **Oxlint** và **Pre-Flight Go-Live Auditor**:
 
 ```bash
-# 1. Chạy toàn bộ bộ kiểm thử tự động
+# 1. Chạy bộ kiểm thử chính (trong package.json)
 npm test
 
-# 2. Chạy Pre-Flight Go-Live Readiness Scorecard (/100 điểm)
+# 2. Chạy kiểm thử riêng lẻ cho từng studio/module (ví dụ)
+node --test tests/videoStudio.test.js tests/chineseListeningStudio.test.js tests/unifiedEcosystem.test.js
+
+# 3. Kiểm tra tĩnh với Oxlint
+npm run lint
+
+# 4. Chạy Pre-Flight Go-Live Audit Scorecard
 npm run audit:golive
 
-# 3. Kiểm tra lint và build production
-npm run lint
-npm run build
+# 5. Build và kiểm tra dung lượng bundle
+npm run build:verify
 ```
-
-Một số nhóm kiểm thử trọng tâm:
-* `tests/srsEngine.test.js`: Thuật toán lặp lại ngắt quãng SuperMemo-2 (SM-2), Ease Factor và hàng đợi ôn tập.
-* `tests/pronunciationEvaluator.test.js`: Trích xuất thanh điệu Pinyin, đánh giá âm vị và xử lý trạng thái micro.
-* `tests/securityRbac.test.js` & `tests/securityAudit.test.js`: Kiểm thử phân quyền RBAC, Vercel security headers và migration bảo mật RLS/RPC.
-* `tests/globalErrorBoundary.test.js`: Lọc PII/JWT/password trong client telemetry, deduplication 60 giây, hàng đợi offline 10 log và Exam Draft Rescue.
-* `tests/seoMetadata.test.js`: Metadata tiếng Việt cho 31 route, Schema.org JSON-LD, `robots.txt` và `sitemap.xml`.
-* `tests/phase37GoLiveAudit.test.js`: Quét rò rỉ secret ở `src/`, đếm Serverless Entrypoints (`<= 12` trên Vercel) và xác nhận điểm Go-Live **100/100**.
 
 ---
 
-## 🚀 Sẵn Sàng Production (SRE, SEO, PWA & Bảo Mật Hạ Tầng)
+## 🌐 Sẵn Sàng Production (SRE, SEO, PWA & Hạ Tầng)
 
 * **SRE & Exam Draft Rescue**:
-  * `src/core/telemetry/errorReporter.js`: Bắt lỗi toàn cục (`error`, `unhandledrejection`), che email/JWT/mật khẩu, chống gửi trùng trong 60 giây và lưu tối đa 10 log vào `sessionStorage` khi offline.
-  * `src/components/common/GlobalErrorBoundary.jsx`: Bọc 2 tầng trong `src/App.jsx` (toàn app & khu vực `<main>`) giúp `AppSidebar` vẫn hoạt động khi một trang gặp lỗi, kèm nút tải bản sao bài làm HSK (`.JSON`) và xóa riêng nhóm bộ nhớ đệm `functional`.
+  * `src/core/telemetry/errorReporter.js`: Bắt lỗi toàn cục (`error`, `unhandledrejection`), lọc thông tin nhạy cảm (email/JWT/password), chống gửi trùng 60 giây và lưu hàng đợi offline khi mất mạng.
+  * `src/components/common/GlobalErrorBoundary.jsx`: Bảo vệ 2 tầng trong `src/App.jsx`, cho phép khôi phục khu vực lỗi, xóa bộ nhớ đệm giao diện, tải bản sao bài thi HSK (`.JSON`) và quay về trang chủ an toàn.
 * **SEO & PWA**:
-  * `src/core/seo/routeSeoConfig.js` & `src/core/seo/SeoHeadManager.jsx`: Cập nhật `document.title`, canonical URL (`https://hanzigo-xi.vercel.app`), OpenGraph (`vi_VN`), Twitter Card và Schema.org JSON-LD (`WebApplication`, `EducationalOrganization`, `Course`).
-  * `public/robots.txt`, `public/sitemap.xml` và `public/manifest.webmanifest`.
-* **Vercel & Supabase Hardening**:
-  * `vercel.json`: Gộp gọn còn **8 Serverless Dispatchers** trong `api/`, cấu hình SPA rewrites, `Cache-Control` cho `/assets/*` và đầy đủ HTTP Security Headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Strict-Transport-Security`, `Permissions-Policy`).
-  * `supabase/migrations/20261114_3701_security_rls_and_telemetry_audit.sql`: Tạo bảng `public.system_error_logs` (chỉ Admin `SELECT/DELETE`), bật RLS cho các bảng Phase 27–36 và gia cố `SET search_path = public` + kiểm tra `auth.uid()` cho các hàm `SECURITY DEFINER`.
+  * `src/core/seo/routeSeoConfig.js` & `src/core/seo/SeoHeadManager.jsx`: Quản lý `title`, `canonical`, OpenGraph (`vi_VN`), Twitter Card và Schema.org JSON-LD.
+  * Kèm sẵn `public/robots.txt`, `public/sitemap.xml`, `public/manifest.webmanifest` và các trang tài liệu học tập tĩnh phục vụ SEO trong `public/`.
+* **Vercel HTTP Security Headers (`vercel.json`)**:
+  * Cấu hình `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`, `Strict-Transport-Security`, `Permissions-Policy` (`camera=(self), microphone=(self), geolocation=()`), và `Cache-Control: public, max-age=31536000, immutable` cho `/assets/*`.
 
 ---
 
 ## 📜 Giấy Phép & Bản Quyền
 
-Dự án được phát triển và duy trì bởi **HanziGo Team**.
-Toàn bộ tài liệu giáo trình và từ điển được trích xuất từ các nguồn học thuật chuẩn HSK và Khổng Tử Học Viện vì mục đích giáo dục phi thương mại.
+Dự án được phát triển và duy trì bởi **HanziGo Team**.  
+Toàn bộ nội dung giáo trình, từ điển và công cụ luyện tập được xây dựng phục vụ mục đích học tập và nghiên cứu tiếng Trung phi thương mại.

@@ -9,19 +9,24 @@ export default async function reportHandler(req, res) {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
   }
 
-  const { resourceId, examId, questionId, reportType, description, reporterEmail } = req.body || {};
-  const result = await submitContentReport({
-    resourceId,
-    examId,
-    questionId,
-    reportType,
-    description,
-    reporterEmail
-  });
+  try {
+    const { resourceId, examId, questionId, reportType, description, reporterEmail } = req.body || {};
+    const result = await submitContentReport({
+      resourceId,
+      examId,
+      questionId,
+      reportType,
+      description,
+      reporterEmail
+    });
 
-  if (!result.success) {
-    return res.status(400).json(result);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error('[HSK Report Error]:', err);
+    return res.status(500).json({ error: 'Lỗi máy chủ nội bộ khi gửi báo cáo nội dung.', message: err?.message });
   }
-
-  return res.status(200).json(result);
 }

@@ -1,9 +1,10 @@
 import React, { lazy, Suspense } from 'react';
 import PageLoader from '../PageLoader';
 import HomePage from '../../pages/HomePage';
-import DashboardPage from '../../pages/DashboardPage';
 import TeacherDashboard from './TeacherDashboard';
 import AdminDashboard from './AdminDashboard';
+
+const DashboardPage = lazy(() => import('../../pages/DashboardPage'));
 
 /**
  * UnifiedDashboard Component
@@ -80,11 +81,13 @@ export default function UnifiedDashboard({
 
   // 5. Student User: Default & Primary Personalized Learning Dashboard
   return (
-    <DashboardPage
-      user={user}
-      setActiveTab={setActiveTab}
-      onSelectLesson={onSelectLesson}
-    />
+    <Suspense fallback={<PageLoader />}>
+      <DashboardPage
+        user={user}
+        setActiveTab={setActiveTab}
+        onSelectLesson={onSelectLesson}
+      />
+    </Suspense>
   );
 }
 

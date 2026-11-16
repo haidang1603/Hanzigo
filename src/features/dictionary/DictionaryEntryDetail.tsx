@@ -92,6 +92,12 @@ export default function DictionaryEntryDetail({
     setActiveTab?.('pronunciation');
   };
 
+  const posMeanings = Array.isArray(entry?.pos_meanings) ? entry.pos_meanings : [];
+  const measureWords = Array.isArray(entry?.measure_words) ? entry.measure_words : [];
+  const synonyms = Array.isArray(entry?.synonyms_antonyms?.synonyms) ? entry.synonyms_antonyms.synonyms : [];
+  const antonyms = Array.isArray(entry?.synonyms_antonyms?.antonyms) ? entry.synonyms_antonyms.antonyms : [];
+  const examples = Array.isArray(entry?.examples) ? entry.examples : [];
+
   return (
     <div className="space-y-5">
       {/* Header Card */}
@@ -243,7 +249,7 @@ export default function DictionaryEntryDetail({
           }`}
         >
           <BookOpen size={14} />
-          <span>Ví dụ ({entry.examples.length})</span>
+          <span>Ví dụ ({examples.length})</span>
         </button>
       </div>
 
@@ -252,7 +258,11 @@ export default function DictionaryEntryDetail({
         <div className="space-y-4">
           {/* POS Meanings */}
           <div className="space-y-3">
-            {entry.pos_meanings.map((pm, idx) => (
+            {posMeanings.map((pm, idx) => {
+              const defsVi = Array.isArray(pm.definitions_vi) ? pm.definitions_vi : [];
+              const defsEn = Array.isArray(pm.definitions_en) ? pm.definitions_en : [];
+              const collocations = Array.isArray(pm.collocations) ? pm.collocations : [];
+              return (
               <div
                 key={`${pm.pos}-${idx}`}
                 className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#EFE4D6] dark:border-[#2B3A4F] space-y-3"
@@ -261,27 +271,27 @@ export default function DictionaryEntryDetail({
                   {POS_LABELS[pm.pos] || pm.pos}
                 </span>
 
-                {pm.definitions_vi.length > 0 && (
+                {defsVi.length > 0 && (
                   <ul className="list-disc pl-5 space-y-1 text-sm text-[#243447] dark:text-white font-medium">
-                    {pm.definitions_vi.map((def, i) => (
+                    {defsVi.map((def, i) => (
                       <li key={i}>{def}</li>
                     ))}
                   </ul>
                 )}
 
-                {pm.definitions_en.length > 0 && (
+                {defsEn.length > 0 && (
                   <p className="text-xs text-[#748092] dark:text-slate-400">
-                    EN: {pm.definitions_en.join(' · ')}
+                    EN: {defsEn.join(' · ')}
                   </p>
                 )}
 
-                {pm.collocations.length > 0 && (
+                {collocations.length > 0 && (
                   <div className="pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2">
                     <div className="text-[11px] font-bold uppercase tracking-wider text-[#748092]">
                       Cụm từ cố định (Collocations)
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {pm.collocations.map((col, cIdx) => (
+                      {collocations.map((col, cIdx) => (
                         <button
                           key={`${col.word}-${cIdx}`}
                           type="button"
@@ -303,17 +313,18 @@ export default function DictionaryEntryDetail({
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Measure Words */}
-          {entry.measure_words.length > 0 && (
+          {measureWords.length > 0 && (
             <div className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#EFE4D6] dark:border-[#2B3A4F] space-y-2">
               <div className="text-xs font-extrabold text-[#243447] dark:text-white uppercase tracking-wider">
                 Lượng từ đi kèm
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {entry.measure_words.map((mw, idx) => (
+                {measureWords.map((mw, idx) => (
                   <div
                     key={`${mw.simplified}-${idx}`}
                     className="p-3 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F]"
@@ -334,10 +345,9 @@ export default function DictionaryEntryDetail({
           )}
 
           {/* Synonyms & Antonyms */}
-          {(entry.synonyms_antonyms.synonyms.length > 0 ||
-            entry.synonyms_antonyms.antonyms.length > 0) && (
+          {(synonyms.length > 0 || antonyms.length > 0) && (
             <div className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#EFE4D6] dark:border-[#2B3A4F] space-y-3">
-              {entry.synonyms_antonyms.synonyms.length > 0 && (
+              {synonyms.length > 0 && (
                 <div className="space-y-2">
                   <div className="text-xs font-extrabold text-[#243447] dark:text-white uppercase tracking-wider">
                     Phân biệt từ đồng nghĩa
@@ -351,7 +361,7 @@ export default function DictionaryEntryDetail({
                         </tr>
                       </thead>
                       <tbody>
-                        {entry.synonyms_antonyms.synonyms.map((syn, idx) => (
+                        {synonyms.map((syn, idx) => (
                           <tr
                             key={`${syn.word}-${idx}`}
                             className="border-b last:border-b-0 border-[#F1E5D8] dark:border-[#2B3A4F]"
@@ -376,10 +386,10 @@ export default function DictionaryEntryDetail({
                 </div>
               )}
 
-              {entry.synonyms_antonyms.antonyms.length > 0 && (
+              {antonyms.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   <span className="text-xs font-bold text-[#748092]">Từ trái nghĩa:</span>
-                  {entry.synonyms_antonyms.antonyms.map((ant) => (
+                  {antonyms.map((ant) => (
                     <button
                       key={ant}
                       type="button"
@@ -408,12 +418,12 @@ export default function DictionaryEntryDetail({
       {/* Tab 3: Graded Examples */}
       {activeTab === 'examples' && (
         <div className="space-y-3">
-          {entry.examples.length === 0 ? (
+          {examples.length === 0 ? (
             <div className="p-6 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#EFE4D6] dark:border-[#2B3A4F] text-center text-xs text-[#748092]">
               Chưa có câu ví dụ cho mục từ này.
             </div>
           ) : (
-            entry.examples.map((ex, idx) => (
+            examples.map((ex, idx) => (
               <div
                 key={idx}
                 className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#EFE4D6] dark:border-[#2B3A4F] flex items-start justify-between gap-3"

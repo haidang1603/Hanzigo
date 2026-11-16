@@ -786,7 +786,12 @@ export default function ClassroomPage({
                     placeholder="HZG-XXXXX hoặc XXXXX"
                     value={inputCode}
                     onChange={e => setInputCode(e.target.value.toUpperCase())}
-                    onKeyDown={e => e.key === 'Enter' && handleLookupCode()}
+                    onKeyDown={e =>
+                      e.key === 'Enter' &&
+                      !e.nativeEvent?.isComposing &&
+                      !e.isComposing &&
+                      handleLookupCode()
+                    }
                     className="flex-1 p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-mono font-bold text-center text-lg tracking-wider focus:outline-none focus:ring-2 focus:ring-[#E85D3F]"
                   />
                   <button

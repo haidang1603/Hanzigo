@@ -25,31 +25,38 @@ import teacherHandler from '../_handlers/ai/teacher.js';
 import tutorHandler from '../_handlers/ai/tutor.js';
 
 export default async function handler(req, res) {
-  const urlPath = req.url ? req.url.split('?')[0] : '';
-  const pathAction = urlPath.split('/').filter(Boolean).pop();
-  const action = req.query?.action || pathAction;
+  try {
+    const urlPath = req.url ? req.url.split('?')[0] : '';
+    const pathAction = urlPath.split('/').filter(Boolean).pop();
+    const action = req.query?.action || pathAction;
 
-  switch (action) {
-    case 'chat':
-      return chatHandler(req, res);
-    case 'coach':
-      return coachHandler(req, res);
-    case 'grade':
-      return gradeHandler(req, res);
-    case 'personalize':
-      return personalizeHandler(req, res);
-    case 'pronunciation':
-      return pronunciationHandler(req, res);
-    case 'roleplay':
-      return roleplayHandler(req, res);
-    case 'teacher':
-      return teacherHandler(req, res);
-    case 'tutor':
-      return tutorHandler(req, res);
-    default:
-      return res.status(404).json({
-        error: `AI endpoint không tồn tại: ${action || 'unknown'}`
-      });
+    switch (action) {
+      case 'chat':
+        return await chatHandler(req, res);
+      case 'coach':
+        return await coachHandler(req, res);
+      case 'grade':
+        return await gradeHandler(req, res);
+      case 'personalize':
+        return await personalizeHandler(req, res);
+      case 'pronunciation':
+        return await pronunciationHandler(req, res);
+      case 'roleplay':
+        return await roleplayHandler(req, res);
+      case 'teacher':
+        return await teacherHandler(req, res);
+      case 'tutor':
+        return await tutorHandler(req, res);
+      default:
+        return res.status(404).json({
+          error: `AI endpoint không tồn tại: ${action || 'unknown'}`
+        });
+    }
+  } catch (err) {
+    console.error('[AI Router Error]:', err);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'Lỗi máy chủ nội bộ.', message: err?.message });
+    }
   }
 }
 

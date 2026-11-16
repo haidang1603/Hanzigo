@@ -25,6 +25,7 @@ export default function StrokeOrderPlayer({
 }) {
   const containerRef = useRef(null);
   const writerRef = useRef(null);
+  const resetTimeoutRef = useRef(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -82,13 +83,21 @@ export default function StrokeOrderPlayer({
   }, [character, playbackSpeed, showOutline]);
 
   useEffect(() => {
+    const containerEl = containerRef.current;
     initWriter();
     return () => {
+      if (resetTimeoutRef.current) {
+        clearTimeout(resetTimeoutRef.current);
+        resetTimeoutRef.current = null;
+      }
       if (writerRef.current) {
         try {
           writerRef.current.pauseAnimation();
         } catch {}
         writerRef.current = null;
+      }
+      if (containerEl) {
+        containerEl.innerHTML = '';
       }
     };
   }, [initWriter]);
@@ -117,7 +126,11 @@ export default function StrokeOrderPlayer({
         onComplete: () => {
           setIsPlaying(false);
           setCurrentStroke(totalStrokes);
-          setTimeout(() => {
+          if (resetTimeoutRef.current) {
+            clearTimeout(resetTimeoutRef.current);
+          }
+          resetTimeoutRef.current = setTimeout(() => {
+            resetTimeoutRef.current = null;
             if (writerRef.current) {
               writerRef.current.hideCharacter();
               if (showOutline) writerRef.current.showOutline();
@@ -217,7 +230,7 @@ export default function StrokeOrderPlayer({
       {/* Main Animation Box */}
       <div className="relative flex flex-col items-center justify-center">
         {/* Tianzige / Mizige Grid container */}
-        <div className="relative w-[280px] h-[280px] rounded-xl overflow-hidden border-2 border-[#E85D3F]/40 shadow-inner bg-[#FFFCF8] dark:bg-[#0F172A]">
+        <div className="relative w-[280px] h-[280px] rounded-xl overflow-hidden border-2 border-[#E85D3F]/40 shadow-inner bg-[#FFFCF8] dark:bg-[#0F172A] touch-none select-none">
           {/* Grid lines */}
           {gridStyle === 'mizige' && (
             <svg className="absolute inset-0 w-full h-full pointer-events-none stroke-[#E85D3F]/25 stroke-dasharray-[4,4] stroke-1" viewBox="0 0 280 280">
@@ -236,7 +249,11 @@ export default function StrokeOrderPlayer({
           )}
 
           {/* HanziWriter Canvas mount point */}
-          <div ref={containerRef} className="w-full h-full flex items-center justify-center" />
+          <div
+            ref={containerRef}
+            className="w-full h-full flex items-center justify-center touch-none select-none"
+            style={{ touchAction: 'none' }}
+          />
 
           {/* Loading Overlay */}
           {isLoading && (

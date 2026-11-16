@@ -37,6 +37,8 @@ export default function HanziStrokeOrderBoard({
   // HanziWriter interactive stroke engine refs & state
   const writerBoxRef = useRef(null);
   const writerInstanceRef = useRef(null);
+  const animIntervalRef = useRef(null);
+  const animTimeoutRef = useRef(null);
   const [writerLoaded, setWriterLoaded] = useState(false);
 
   // Student Writing Canvas state
@@ -61,13 +63,14 @@ export default function HanziStrokeOrderBoard({
 
   // Initialize HanziWriter on character change
   useEffect(() => {
-    if (!writerBoxRef.current) return;
-    writerBoxRef.current.innerHTML = '';
+    const box = writerBoxRef.current;
+    if (!box) return;
+    box.innerHTML = '';
     writerInstanceRef.current = null;
     setWriterLoaded(false);
 
     try {
-      const writer = HanziWriter.create(writerBoxRef.current, selectedChar, {
+      const writer = HanziWriter.create(box, selectedChar, {
         width: 224,
         height: 224,
         padding: 16,
@@ -90,7 +93,23 @@ export default function HanziStrokeOrderBoard({
     }
 
     return () => {
-      writerInstanceRef.current = null;
+      if (animIntervalRef.current) {
+        clearInterval(animIntervalRef.current);
+        animIntervalRef.current = null;
+      }
+      if (animTimeoutRef.current) {
+        clearTimeout(animTimeoutRef.current);
+        animTimeoutRef.current = null;
+      }
+      if (writerInstanceRef.current) {
+        try {
+          writerInstanceRef.current.pauseAnimation?.();
+        } catch {}
+        writerInstanceRef.current = null;
+      }
+      if (box) {
+        box.innerHTML = '';
+      }
     };
   }, [selectedChar, showWatermarkGuide]);
 
@@ -106,6 +125,8 @@ export default function HanziStrokeOrderBoard({
   // Stroke Order Animation
   const handlePlayAnimation = () => {
     playClickSound();
+    if (animIntervalRef.current) clearInterval(animIntervalRef.current);
+    if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
     setIsAnimating(true);
     setAnimatedStrokeIndex(-1);
 
@@ -116,15 +137,19 @@ export default function HanziStrokeOrderBoard({
       step++;
       if (step >= totalStrokes) {
         clearInterval(interval);
+        if (animIntervalRef.current === interval) animIntervalRef.current = null;
       }
     }, 450);
+    animIntervalRef.current = interval;
 
     if (writerInstanceRef.current && writerLoaded) {
       try {
         writerInstanceRef.current.animateCharacter({
           onComplete: () => {
             clearInterval(interval);
-            setTimeout(() => {
+            if (animIntervalRef.current === interval) animIntervalRef.current = null;
+            animTimeoutRef.current = setTimeout(() => {
+              animTimeoutRef.current = null;
               setIsAnimating(false);
               setAnimatedStrokeIndex(-1);
               if (writerInstanceRef.current) {
@@ -140,8 +165,10 @@ export default function HanziStrokeOrderBoard({
       }
     }
 
-    setTimeout(() => {
+    animTimeoutRef.current = setTimeout(() => {
+      animTimeoutRef.current = null;
       clearInterval(interval);
+      if (animIntervalRef.current === interval) animIntervalRef.current = null;
       setIsAnimating(false);
       setAnimatedStrokeIndex(-1);
     }, totalStrokes * 650 + 500);
@@ -424,7 +451,8 @@ export default function HanziStrokeOrderBoard({
                 onTouchStart={startDrawing}
                 onTouchMove={draw}
                 onTouchEnd={stopDrawing}
-                className="w-full h-full relative z-10 cursor-crosshair"
+                className="w-full h-full relative z-10 cursor-crosshair touch-none"
+                style={{ touchAction: 'none' }}
               />
             </div>
 

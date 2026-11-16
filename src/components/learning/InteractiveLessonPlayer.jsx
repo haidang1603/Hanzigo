@@ -185,6 +185,8 @@ export default function InteractiveLessonPlayer({
   const [currentQuizIdx, setCurrentQuizIdx] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [quizFeedbacks, setQuizFeedbacks] = useState({});
+  const [quizMistakes, setQuizMistakes] = useState({});
+  const quizCompletionSyncedRef = useRef(false);
 
   // Check if previously completed
   const journeyProgress = getUserJourneyProgress(user);
@@ -421,18 +423,43 @@ export default function InteractiveLessonPlayer({
     if (quizFeedbacks[quizId] === true) return; // Locked once answered correctly
     playClickSound();
     const isCorrect = optIdx === correctIdx;
+    const nextFeedbacks = { ...quizFeedbacks, [quizId]: isCorrect };
+    const nextMistakes = isCorrect ? quizMistakes : { ...quizMistakes, [quizId]: true };
     setSelectedAnswers(prev => ({ ...prev, [quizId]: optIdx }));
-    setQuizFeedbacks(prev => ({ ...prev, [quizId]: isCorrect }));
+    setQuizFeedbacks(nextFeedbacks);
+    if (!isCorrect) {
+      setQuizMistakes(nextMistakes);
+    }
 
+    const quizList = Array.isArray(lesson?.step8_quiz) ? lesson.step8_quiz : [];
     if (isCorrect) {
-      setQuizScore(prev => prev + 25);
+      const correctCount = quizList.filter(q => nextFeedbacks[q.id] === true).length;
+      const totalQ = quizList.length || 1;
+      const firstTryCorrect = quizList.filter(q => nextFeedbacks[q.id] === true && !nextMistakes[q.id]).length;
+      const computedPct = Math.round((firstTryCorrect / totalQ) * 100);
+      setQuizScore(computedPct);
       playSuccessSound();
       setStepWarning(null);
+
+      // Persist completion immediately once all quiz questions are passed with >= 75%
+      if (
+        correctCount === totalQ &&
+        computedPct >= 75 &&
+        !quizCompletionSyncedRef.current &&
+        lesson?.id
+      ) {
+        quizCompletionSyncedRef.current = true;
+        const result = completeLesson(lesson.id, computedPct, user);
+        if (result?.success !== false) {
+          const stars = result?.stars || (computedPct >= 90 ? 3 : computedPct >= 80 ? 2 : 1);
+          if (onCompleteLesson) onCompleteLesson(computedPct, stars);
+        }
+      }
     } else {
       playErrorSound();
       setStepWarning('❌ Đáp án chưa chính xác, hãy suy nghĩ và chọn lại phương án đúng để vượt qua!');
       try {
-        const targetQuiz = (lesson.step8_quiz || []).find(q => q.id === quizId);
+        const targetQuiz = quizList.find(q => q.id === quizId);
         const targetWord = targetQuiz?.targetWord || targetQuiz?.audioText || (lesson.step2_vocab && lesson.step2_vocab[0]?.hanzi);
         if (targetWord) {
           captureWeakVocabulary(targetWord, 'quiz_mistake', user);
@@ -711,6 +738,8 @@ export default function InteractiveLessonPlayer({
     }
     setSelectedAnswers({});
     setQuizFeedbacks({});
+    setQuizMistakes({});
+    quizCompletionSyncedRef.current = false;
     setStepWarning(null);
   };
 
@@ -723,7 +752,7 @@ export default function InteractiveLessonPlayer({
     }
     handleStopChallengeRecording();
     
-    const finalScore = Math.min(100, Math.max(70, 75 + quizScore));
+    const finalScore = Math.min(100, Math.max(75, quizScore || 85));
     const result = completeLesson(lesson.id, finalScore, user);
 
     if (result.success === false || result.passed === false) {

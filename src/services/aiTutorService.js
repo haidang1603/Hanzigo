@@ -49,19 +49,27 @@ async function callBackendAiTutor(userText, hskLevel = 'HSK 1', conversationHist
     authUid = 'dev_student_user';
   }
 
-  const response = await fetch('/api/ai/chat', {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
-      ...(authUid ? { 'x-user-id': authUid } : {})
-    },
-    body: JSON.stringify({
-      userText,
-      hskLevel,
-      conversationHistory
-    })
-  });
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 10000) : null;
+  let response;
+  try {
+    response = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+        ...(authUid ? { 'x-user-id': authUid } : {})
+      },
+      ...(controller ? { signal: controller.signal } : {}),
+      body: JSON.stringify({
+        userText,
+        hskLevel,
+        conversationHistory
+      })
+    });
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));

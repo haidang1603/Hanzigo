@@ -590,10 +590,13 @@ export async function evaluateHskWriting(
 
   let aiRaw = input.aiRawResponse;
   if (aiRaw === undefined && input.responseText.trim() && typeof fetch !== 'undefined') {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 9000) : null;
     try {
       const res = await fetch('/api/ai/grade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        ...(controller ? { signal: controller.signal } : {}),
         body: JSON.stringify({
           type: 'writing',
           task: input.task,
@@ -608,6 +611,8 @@ export async function evaluateHskWriting(
       }
     } catch {
       // Fallback gracefully to deterministic rubric
+    } finally {
+      if (timeoutId !== null) clearTimeout(timeoutId);
     }
   }
 

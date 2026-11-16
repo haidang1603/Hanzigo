@@ -1,6 +1,16 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { saveWordToDeck, type DictionaryEntry } from './dictionaryService.ts';
+import type { PosTag } from '../types/dictionary.types.ts';
 import { createVocabDeck, type VocabDeck } from './vocabWorkspaceService.ts';
+
+const VALID_POS_TAGS = new Set<PosTag>([
+  'v', 'n', 'adj', 'mw', 'adv', 'prep', 'conj', 'pron', 'num', 'idiom', 'other',
+]);
+
+function toPosTag(rawPos?: string): PosTag {
+  const normalized = (rawPos || 'n').trim().toLowerCase() as PosTag;
+  return VALID_POS_TAGS.has(normalized) ? normalized : 'other';
+}
 
 export interface TextbookSeries {
   id: string;
@@ -426,6 +436,8 @@ export const CURATED_TEXTBOOK_UNITS: TextbookUnit[] = [
 // Data Loading & Ecosystem Sync
 // ---------------------------------------------------------------------------
 
+const remoteSeriesSlugCache = new Map<string, string>();
+
 export async function listTextbookSeries(): Promise<TextbookSeries[]> {
   if (!isSupabaseConfigured || !supabase) {
     return CURATED_TEXTBOOK_SERIES;
@@ -438,6 +450,9 @@ export async function listTextbookSeries(): Promise<TextbookSeries[]> {
 
     if (!error && data && data.length > 0) {
       const remote = data as TextbookSeries[];
+      remote.forEach((r) => {
+        if (r.id && r.series_slug) remoteSeriesSlugCache.set(r.id, r.series_slug);
+      });
       const remoteSlugs = new Set(remote.map((r) => r.series_slug));
       return [...remote, ...CURATED_TEXTBOOK_SERIES.filter((s) => !remoteSlugs.has(s.series_slug))];
     }
@@ -448,7 +463,31 @@ export async function listTextbookSeries(): Promise<TextbookSeries[]> {
 }
 
 export async function listUnitsForSeries(seriesId: string): Promise<TextbookUnit[]> {
-  const localUnits = CURATED_TEXTBOOK_UNITS.filter((u) => u.series_id === seriesId);
+  let slug = remoteSeriesSlugCache.get(seriesId);
+  if (!slug && isSupabaseConfigured && supabase) {
+    try {
+      const { data: sRow } = await supabase
+        .from('textbook_series')
+        .select('id, series_slug')
+        .eq('id', seriesId)
+        .maybeSingle();
+      if (sRow?.series_slug) {
+        const resolvedSlug = String(sRow.series_slug);
+        slug = resolvedSlug;
+        remoteSeriesSlugCache.set(seriesId, resolvedSlug);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const matchedCuratedSeries = CURATED_TEXTBOOK_SERIES.find(
+    (s) => s.id === seriesId || s.series_slug === seriesId || (slug && s.series_slug === slug)
+  );
+  const localUnits = CURATED_TEXTBOOK_UNITS.filter(
+    (u) => u.series_id === seriesId || (matchedCuratedSeries && u.series_id === matchedCuratedSeries.id)
+  );
+
   if (!isSupabaseConfigured || !supabase) {
     return localUnits;
   }
@@ -463,7 +502,11 @@ export async function listUnitsForSeries(seriesId: string): Promise<TextbookUnit
     if (!error && data && data.length > 0) {
       const remote = data as TextbookUnit[];
       const remoteIds = new Set(remote.map((r) => r.id));
-      return [...remote, ...localUnits.filter((u) => !remoteIds.has(u.id))];
+      const remoteKeys = new Set(remote.map((r) => `${r.volume_number}-${r.unit_number}`));
+      return [
+        ...remote,
+        ...localUnits.filter((u) => !remoteIds.has(u.id) && !remoteKeys.has(`${u.volume_number}-${u.unit_number}`)),
+      ];
     }
   } catch {
     // fallback
@@ -474,8 +517,9 @@ export async function listUnitsForSeries(seriesId: string): Promise<TextbookUnit
 export function extractUniqueHanziFromUnit(unit: TextbookUnit): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
-  for (const item of unit.unit_vocab_list) {
-    for (const ch of Array.from(item.simplified)) {
+  const vocabList = Array.isArray(unit?.unit_vocab_list) ? unit.unit_vocab_list : [];
+  for (const item of vocabList) {
+    for (const ch of Array.from(String(item?.simplified || ''))) {
       if (/[\u4e00-\u9fa5]/.test(ch) && !seen.has(ch)) {
         seen.add(ch);
         result.push(ch);
@@ -543,15 +587,30 @@ export async function syncTextbookUnitToWorkspace(
   );
 
   for (const vocab of unit.unit_vocab_list) {
+    const cleanPy = vocab.pinyin.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const hskLvl = Math.min(9, Math.max(1, unit.volume_number));
     const dictEntry: DictionaryEntry = {
       id: vocab.dictionary_entry_id || `tb-${unit.id}-${vocab.order}`,
       simplified: vocab.simplified,
       traditional: vocab.simplified,
-      pinyin: vocab.pinyin,
-      pinyin_numbered: vocab.pinyin,
-      hsk_level: Math.min(9, Math.max(1, unit.volume_number)),
-      pos: vocab.pos,
-      meanings_vi: [vocab.meaning_vi],
+      pinyin_display: vocab.pinyin,
+      pinyin_numeric: vocab.pinyin,
+      pinyin_clean: cleanPy,
+      han_viet: '',
+      hsk_2_level: hskLvl <= 6 ? hskLvl : null,
+      hsk_3_level: hskLvl,
+      frequency_rank: 5000,
+      pos_meanings: [
+        {
+          pos: toPosTag(vocab.pos),
+          definitions_vi: [vocab.meaning_vi],
+          definitions_en: [],
+          collocations: [],
+        },
+      ],
+      decomposition: null,
+      measure_words: [],
+      synonyms_antonyms: { synonyms: [], antonyms: [] },
       examples: [],
     };
     await saveWordToDeck(dictEntry, user);

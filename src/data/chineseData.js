@@ -1,4 +1,5 @@
 // Comprehensive Chinese Learning Dataset tailored for Vietnamese Learners
+import { FUNCTION_WORDS_VOCAB_LIST } from './functionWordsData.js';
 
 export const ROADMAP_LEVELS = [
   {
@@ -16757,7 +16758,8 @@ export const VOCABULARY_LIST = [
       "meaning": "Nhờ chuẩn bị chu đáo và diễn tập nhiều lần, anh ấy trả lời các câu hỏi của hội đồng giám khảo với phong thái vô cùng tự tin, nắm chắc thành công."
     },
     "source": "Tô Đông Pha - Văn Dữ Khả họa dứu đương cốc yển trúc ký."
-  }
+  },
+  ...FUNCTION_WORDS_VOCAB_LIST
 ];
 
 export const TOPIC_FILTERS = [

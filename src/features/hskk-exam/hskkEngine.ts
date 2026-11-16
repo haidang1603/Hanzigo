@@ -531,10 +531,13 @@ export async function gradeHskkSpeakingWithAi(
   if (!transcript.trim() && !audioBase64) return baseline;
   if (typeof fetch === 'undefined') return baseline;
 
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 9000) : null;
   try {
     const res = await fetch('/api/ai/grade', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      ...(controller ? { signal: controller.signal } : {}),
       body: JSON.stringify({
         type: 'hskk',
         promptZh: question.promptZh,
@@ -559,5 +562,7 @@ export async function gradeHskkSpeakingWithAi(
     };
   } catch {
     return baseline;
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
   }
 }

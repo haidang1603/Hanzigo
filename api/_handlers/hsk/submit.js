@@ -5,6 +5,7 @@
  * lưu trữ kết quả và trả về lời giải thích chi tiết.
  */
 import { getFullExamById } from '../../../src/data/hskExamsData.js';
+import { calculateHskCbtScore } from '../../../src/utils/examScoringEngine.js';
 import { getSupabaseAdminClient, verifyRequestAuth } from '../../_utils/supabaseServer.js';
 
 // In-memory idempotency cache for deduplication on retry or double-submission
@@ -165,9 +166,15 @@ export default async function submitHandler(req, res) {
       audio_url: q.audio_url,
       audio_script: q.audio_script,
       options: q.options,
+      words: q.words || [],
+      writingCriteria: q.writing_criteria || [],
+      sampleAnswer: q.sample_answer || '',
       selectedIndex,
       userAnswer: rawAnswer,
       correctIndex: q.correct_option_index,
+      correctOrder: q.correct_order,
+      correctSentence: q.correct_sentence,
+      acceptedAnswers: q.accepted_answers,
       isCorrect,
       isSubjective,
       explanation: q.explanation,
@@ -185,12 +192,25 @@ export default async function submitHandler(req, res) {
   const maxScore = fullExam.max_score || 200;
   const passingScore = fullExam.passing_score || Math.round(maxScore * 0.6);
 
+  const cbtScoring = calculateHskCbtScore({
+    exam: fullExam,
+    submittedAnswers: answers,
+    timeSpentSeconds: Number(timeSpentSeconds) || 0
+  });
+
   const totalMaxRawPoints = questions.reduce((acc, cur) => acc + cur.points, 0);
   const estimatedScore = totalMaxRawPoints > 0 
     ? Math.round((totalScore / totalMaxRawPoints) * maxScore)
     : totalScore;
 
-  const passed = estimatedScore >= passingScore;
+  const passed = (fullExam.skill_category === 'mixed' && cbtScoring.maxScore === maxScore)
+    ? cbtScoring.passed
+    : estimatedScore >= passingScore;
+
+  const finalScore = (fullExam.skill_category === 'mixed' && cbtScoring.maxScore === maxScore)
+    ? cbtScoring.totalScore
+    : estimatedScore;
+
   const attemptId = clientAttemptId || ('hsk-att-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7));
 
   const attemptResult = {
@@ -204,7 +224,8 @@ export default async function submitHandler(req, res) {
     anonymousSessionId: anonSessionId,
     timeSpentSeconds: Number(timeSpentSeconds) || 0,
     submittedAnswers: answers,
-    score: estimatedScore,
+    score: finalScore,
+    cbtScore: cbtScoring.totalScore,
     maxScore,
     passingScore,
     passed,
@@ -215,6 +236,10 @@ export default async function submitHandler(req, res) {
     unansweredCount,
     subjectiveCount,
     skillBreakdown: skillStats,
+    sectionsBreakdown: cbtScoring.sectionsBreakdown,
+    strongestSkill: cbtScoring.strongestSkill,
+    weakestSkill: cbtScoring.weakestSkill,
+    recommendations: cbtScoring.recommendations,
     detailedResults,
     createdAt: new Date().toISOString()
   };

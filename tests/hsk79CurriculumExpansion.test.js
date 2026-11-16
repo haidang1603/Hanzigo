@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import {
   HSK79_CBT_CONFIG,
@@ -9,6 +11,11 @@ import {
   getHsk79LessonMetaById,
 } from '../src/features/curriculum/hsk7to9CurriculumData.js';
 import { getHsk79LessonWithContent } from '../src/features/curriculum/lessonContentSynthesizer.js';
+import {
+  HSK_7_TO_9_EXAM_PAPER,
+  HSK_7_TO_9_PAPER_CATALOG,
+  getHsk7to9PaperByCode,
+} from '../src/features/hsk-exam/data/hsk7to9SampleExamPaper.js';
 import {
   LEARNING_LESSONS,
   LEARNING_CHAPTERS,
@@ -73,4 +80,56 @@ test('lessonContentSynthesizer produces 9-step + 3-tier translation + essay blue
     assert.equal(synthesized.essayBlueprint.outline.length, 3);
     assert.ok(synthesized.essayBlueprint.discourseMarkers.length >= 5);
   }
+});
+
+test('HSK 7-9 integrated exam paper & simulator wire all 5 sections (300 pts) and HSK 7/8/9 thresholds', () => {
+  assert.equal(HSK_7_TO_9_EXAM_PAPER.paperCode, 'H79001');
+  assert.equal(HSK_7_TO_9_EXAM_PAPER.totalDurationSeconds, 12600);
+  assert.equal(HSK_7_TO_9_EXAM_PAPER.maxScore, 300);
+  assert.deepEqual(HSK_7_TO_9_EXAM_PAPER.levelThresholds, {
+    hsk7: 180,
+    hsk8: 210,
+    hsk9: 240,
+  });
+
+  assert.equal(HSK_7_TO_9_EXAM_PAPER.sections.length, 5);
+  const totalSectionMax = HSK_7_TO_9_EXAM_PAPER.sections.reduce(
+    (sum, sec) => sum + sec.maxScore,
+    0
+  );
+  assert.equal(totalSectionMax, 300);
+
+  const [listening, reading, translation, writing, speaking] = HSK_7_TO_9_EXAM_PAPER.sections;
+  assert.equal(listening.questions.length, 3);
+  assert.equal(reading.chartData.rows.length, 5);
+  assert.equal(reading.questions.length, 3);
+  assert.equal(translation.tasks.length, 2);
+  assert.equal(writing.partA_ChartEssay.targetChars, 250);
+  assert.equal(writing.partB_ArgumentativeEssay.targetChars, 600);
+  assert.ok(speaking.requiredDiscourseMarkers.length >= 5);
+
+  assert.equal(HSK_7_TO_9_PAPER_CATALOG.length, 3);
+  assert.deepEqual(
+    HSK_7_TO_9_PAPER_CATALOG.map((p) => p.paperCode),
+    ['H79001', 'H79002', 'H79003']
+  );
+  const p2 = getHsk7to9PaperByCode('H79002');
+  assert.equal(p2.paperCode, 'H79002');
+  assert.ok(p2.titleVi.includes('Kiến trúc Hệ thống Phân tán'));
+  const p3 = getHsk7to9PaperByCode('h79003');
+  assert.equal(p3.paperCode, 'H79003');
+
+  const simSrc = fs.readFileSync(
+    path.resolve('src/features/hsk-exam/components/Hsk7to9IntegratedExamSimulator.jsx'),
+    'utf8'
+  );
+  assert.ok(simSrc.includes('getHsk7to9PaperByCode'));
+  assert.ok(simSrc.includes('handleFillSampleMasterSubmission'));
+  assert.ok(simSrc.includes('isComposingIme'));
+
+  const hskPageSrc = fs.readFileSync(path.resolve('src/pages/HskPracticePage.jsx'), 'utf8');
+  assert.ok(hskPageSrc.includes('Hsk7to9IntegratedExamSimulator'));
+  assert.ok(hskPageSrc.includes("subRoute === 'hsk7_9_simulator'"));
+  assert.ok(hskPageSrc.includes('export function parseHskExamUrlParams'));
+  assert.ok(hskPageSrc.includes('export function Hsk7to9ExamCenterSection'));
 });

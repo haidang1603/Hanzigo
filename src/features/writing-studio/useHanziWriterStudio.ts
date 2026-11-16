@@ -197,6 +197,12 @@ export function useHanziWriterStudio({
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      if (writerRef.current) {
+        try {
+          writerRef.current.cancelQuiz?.();
+          writerRef.current.pauseAnimation?.();
+        } catch {}
+      }
       writerRef.current = null;
       container.innerHTML = '';
     };

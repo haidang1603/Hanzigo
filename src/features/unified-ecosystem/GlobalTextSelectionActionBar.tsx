@@ -46,7 +46,9 @@ export const GlobalTextSelectionActionBar: React.FC = () => {
   const [selectedHanzi, setSelectedHanzi] = useState('');
   const [contextSentence, setContextSentence] = useState('');
   const [position, setPosition] = useState<FloatingPosition>({ top: 0, left: 0 });
+  const [isSaving, setIsSaving] = useState(false);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const selectionTimeoutRef = useRef<number | null>(null);
 
   const handleSelectionChange = useCallback(() => {
     const selection = window.getSelection();
@@ -70,15 +72,19 @@ export const GlobalTextSelectionActionBar: React.FC = () => {
     }
 
     const surroundingSentence = extractSurroundingChineseSentence(selection);
-    const toolbarWidth = 440;
+    const maxToolbarWidth = Math.min(440, window.innerWidth - 24);
     const clampedLeft = Math.max(
-      16,
+      12,
       Math.min(
-        window.innerWidth - toolbarWidth - 16,
-        rect.left + rect.width / 2 - toolbarWidth / 2
+        window.innerWidth - maxToolbarWidth - 12,
+        rect.left + rect.width / 2 - maxToolbarWidth / 2
       )
     );
-    const computedTop = rect.top > 68 ? rect.top - 54 : rect.bottom + 12;
+    const rawComputedTop = rect.top > 68 ? rect.top - 54 : rect.bottom + 12;
+    const computedTop = Math.max(
+      12,
+      Math.min(window.innerHeight - 64, rawComputedTop)
+    );
 
     setSelectedHanzi(rawText);
     setContextSentence(surroundingSentence);
@@ -87,21 +93,33 @@ export const GlobalTextSelectionActionBar: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const onMouseUp = (e: MouseEvent) => {
+    const onPointerRelease = (e: Event) => {
       if (toolbarRef.current && toolbarRef.current.contains(e.target as Node)) {
         return;
       }
-      setTimeout(handleSelectionChange, 15);
+      if (selectionTimeoutRef.current !== null) {
+        window.clearTimeout(selectionTimeoutRef.current);
+      }
+      selectionTimeoutRef.current = window.setTimeout(() => {
+        selectionTimeoutRef.current = null;
+        handleSelectionChange();
+      }, 25);
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setVisible(false);
     };
 
-    document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('mouseup', onPointerRelease);
+    document.addEventListener('touchend', onPointerRelease, { passive: true });
     document.addEventListener('keyup', onKeyDown);
     return () => {
-      document.removeEventListener('mouseup', onMouseUp);
+      if (selectionTimeoutRef.current !== null) {
+        window.clearTimeout(selectionTimeoutRef.current);
+        selectionTimeoutRef.current = null;
+      }
+      document.removeEventListener('mouseup', onPointerRelease);
+      document.removeEventListener('touchend', onPointerRelease);
       document.removeEventListener('keyup', onKeyDown);
     };
   }, [handleSelectionChange]);
@@ -118,7 +136,7 @@ export const GlobalTextSelectionActionBar: React.FC = () => {
       ref={toolbarRef}
       style={{ top: `${position.top}px`, left: `${position.left}px` }}
       onMouseDown={(e) => e.preventDefault()} // Giữ nguyên vùng bôi đen khi bấm vào nút trên thanh
-      className="fixed z-[105] flex items-center gap-1 px-2 py-1.5 rounded-2xl bg-[#0a0a1f]/95 border border-[#00D4FF]/40 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,212,255,0.22)] text-slate-100 animate-in fade-in zoom-in-95 duration-150"
+      className="fixed z-[105] max-w-[calc(100vw-24px)] overflow-x-auto flex items-center gap-1 px-2 py-1.5 rounded-2xl bg-[#0a0a1f]/95 border border-[#00D4FF]/40 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,212,255,0.22)] text-slate-100 animate-in fade-in zoom-in-95 duration-150"
     >
       {/* Badge hiển thị chữ Hán đang chọn + Nút nghe nhanh */}
       <button
@@ -190,14 +208,21 @@ export const GlobalTextSelectionActionBar: React.FC = () => {
       {/* 5. Lưu 1-Click vào Vocabulary Workspace (27.06) */}
       <button
         type="button"
+        disabled={isSaving}
         onClick={async () => {
-          await quickSaveToVocabulary(selectedHanzi, currentContext);
-          setVisible(false);
+          if (isSaving) return;
+          setIsSaving(true);
+          try {
+            await quickSaveToVocabulary(selectedHanzi, currentContext);
+            setVisible(false);
+          } finally {
+            setIsSaving(false);
+          }
         }}
-        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30 transition text-xs font-semibold"
+        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-60 transition text-xs font-semibold"
       >
         <BookmarkPlus className="w-3.5 h-3.5" />
-        <span>Lưu từ</span>
+        <span>{isSaving ? 'Đang lưu...' : 'Lưu từ'}</span>
       </button>
     </div>
   );

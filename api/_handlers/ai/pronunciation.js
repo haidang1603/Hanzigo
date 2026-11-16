@@ -11,6 +11,22 @@
  */
 
 import { getGeminiApiKeys, markGeminiKeyRateLimited } from '../../_utils/aiProviderAdapter.js';
+import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
+
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 30;
+const DAILY_QUOTA_MAX_REQUESTS = 300;
+const MAX_TARGET_HANZI_LEN = 200;
+const MAX_TRANSCRIPT_LEN = 500;
+const MAX_AUDIO_BASE64_LEN = 4_000_000;
+
+function getClientKey(req) {
+  const forwarded = req.headers?.['x-forwarded-for'];
+  if (forwarded) {
+    return `ip:${String(forwarded).split(',')[0].trim()}`;
+  }
+  return `ip:${req.headers?.['x-real-ip'] || req.socket?.remoteAddress || 'anon-client'}`;
+}
 
 export default async function handler(req, res) {
   // CORS & Methods
@@ -27,6 +43,19 @@ export default async function handler(req, res) {
   }
 
   try {
+    const rateCheck = await checkRateLimitAndQuota({
+      clientKey: getClientKey(req),
+      windowMs: RATE_LIMIT_WINDOW_MS,
+      maxRequests: RATE_LIMIT_MAX_REQUESTS,
+      dailyQuotaMax: DAILY_QUOTA_MAX_REQUESTS,
+      prefix: 'ai_pronunciation',
+    });
+    if (!rateCheck.allowed) {
+      return res.status(rateCheck.statusCode || 429).json({
+        error: rateCheck.reason || 'Quá nhiều yêu cầu chấm phát âm AI. Vui lòng thử lại sau.',
+      });
+    }
+
     const {
       targetHanzi = '',
       targetPinyin = '',
@@ -36,8 +65,21 @@ export default async function handler(req, res) {
       mimeType = 'audio/webm'
     } = req.body || {};
 
-    if (!targetHanzi.trim()) {
+    if (!String(targetHanzi).trim()) {
       return res.status(400).json({ error: 'Thiếu chữ Hán mục tiêu (targetHanzi)' });
+    }
+
+    const cleanTarget = String(targetHanzi).trim();
+    const cleanSpoken = String(spokenTranscript || '').trim();
+
+    if (
+      cleanTarget.length > MAX_TARGET_HANZI_LEN ||
+      cleanSpoken.length > MAX_TRANSCRIPT_LEN ||
+      (audioBase64 && String(audioBase64).length > MAX_AUDIO_BASE64_LEN)
+    ) {
+      return res.status(400).json({
+        error: `Dữ liệu phát âm vượt quá giới hạn cho phép (targetHanzi <= ${MAX_TARGET_HANZI_LEN}, transcript <= ${MAX_TRANSCRIPT_LEN} ký tự).`,
+      });
     }
 
     const apiKeys = getGeminiApiKeys();
@@ -47,9 +89,6 @@ export default async function handler(req, res) {
     if (apiKeys.length === 0) {
       return res.status(500).json({ error: 'Chưa cấu hình GEMINI_API_KEY trên server' });
     }
-
-    const cleanTarget = targetHanzi.trim();
-    const cleanSpoken = (spokenTranscript || '').trim();
 
     // Prompt chuyên sâu cho chuyên gia ngữ âm tiếng Trung
     const systemInstruction = `Bạn là một chuyên gia khảo thí ngữ âm tiếng Trung Bắc Kinh (Standard Mandarin Phonetics Evaluator).

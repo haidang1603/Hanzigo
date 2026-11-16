@@ -18,8 +18,10 @@ export async function checkRateLimitAndQuota({
   prefix = 'ratelimit',
   timeoutMs = REDIS_TIMEOUT_MS
 }) {
-  const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
-  const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const isIsolatedTestEnv =
+    Boolean(process.env.NODE_TEST_CONTEXT) && process.env.HANZIGO_TEST_UPSTASH !== 'true';
+  const upstashUrl = isIsolatedTestEnv ? '' : process.env.UPSTASH_REDIS_REST_URL;
+  const upstashToken = isIsolatedTestEnv ? '' : process.env.UPSTASH_REDIS_REST_TOKEN;
   const isProduction = process.env.NODE_ENV === 'production' && process.env.NODE_ENV !== 'test';
   const allowMemoryInProd = process.env.ALLOW_IN_MEMORY_RATE_LIMIT === 'true';
 

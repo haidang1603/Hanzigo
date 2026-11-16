@@ -28,8 +28,6 @@ const DAILY_QUOTA_MAX_REQUESTS = 150;
 
 // Maximum bounds
 const MAX_PAYLOAD_LENGTH = 15000;
-const MAX_TEXT_LENGTH = 500;
-const ALLOWED_HSK_LEVELS = ['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7-9'];
 
 // Prompt injection & abuse detection patterns
 const INJECTION_PATTERNS = [

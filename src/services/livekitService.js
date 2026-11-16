@@ -68,7 +68,8 @@ export async function fetchLiveKitToken({ sessionId, user, role = 'student' }) {
       });
     } catch (fetchErr) {
       if (typeof window === 'undefined' || !window.location?.origin) {
-        const livekitTokenHandler = (await import('../../api/_webrtc/livekit-token.js')).default;
+        const serverTokenModule = ['..', '..', 'api', '_webrtc', 'livekit-token.js'].join('/');
+        const livekitTokenHandler = (await import(/* @vite-ignore */ serverTokenModule)).default;
         let statusCode = 200;
         let jsonData = null;
         const mockReq = {

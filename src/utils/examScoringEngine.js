@@ -313,6 +313,8 @@ export function calculateHskCbtScore(arg1 = {}, arg2 = {}, arg3 = 0) {
       name: sec.name,
       score: sectionScore,
       maxScore: 100,
+      correct: secCorrectCount,
+      total: secQList.length,
       totalQuestions: secQList.length,
       correctQuestions: secCorrectCount,
       accuracyPercentage: totalSecQ > 0 ? Math.round((secCorrectCount / totalSecQ) * 100) : 0,

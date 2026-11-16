@@ -193,18 +193,26 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
         headers['x-anonymous-session-id'] = anonSessionId;
       }
 
-      const res = await window.fetch('/api/hsk/submit', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          examId,
-          answers: submittedAnswers,
-          timeSpentSeconds,
-          anonymousSessionId: anonSessionId,
-          examMode,
-          attemptId
-        })
-      });
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timeoutId = controller ? setTimeout(() => controller.abort(), 8000) : null;
+      let res;
+      try {
+        res = await window.fetch('/api/hsk/submit', {
+          method: 'POST',
+          headers,
+          ...(controller ? { signal: controller.signal } : {}),
+          body: JSON.stringify({
+            examId,
+            answers: submittedAnswers,
+            timeSpentSeconds,
+            anonymousSessionId: anonSessionId,
+            examMode,
+            attemptId
+          })
+        });
+      } finally {
+        if (timeoutId !== null) clearTimeout(timeoutId);
+      }
 
       if (res.ok) {
         const data = await res.json();
@@ -557,6 +565,8 @@ export function saveTemporaryAnswers(examId, answers, extra = {}) {
       flaggedQuestionIds: extra.flaggedQuestionIds || [],
       examMode: extra.examMode || 'simulation',
       currentIdx: extra.currentIdx || 0,
+      timeLeft: typeof extra.timeLeft === 'number' ? extra.timeLeft : null,
+      timeSpentSeconds: typeof extra.timeSpentSeconds === 'number' ? extra.timeSpentSeconds : 0,
       savedAt: Date.now()
     }));
   } catch {}

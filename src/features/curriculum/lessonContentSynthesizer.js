@@ -1,366 +1,416 @@
 // =========================================================================
-// HANZIGO HSK 7–9 LESSON CONTENT SYNTHESIZER (LESSONS 121–180)
-// Synthesizes 9-step InteractiveLessonPlayer-compatible lessons PLUS
-// HSK 7-9 Academic Passage, 3-Tier Translation Drills & Essay Blueprints
+// HANZIGO UNIFIED LESSON CONTENT SYNTHESIZER (HSK 1–9 · LESSONS 1–180)
+// File: src/features/curriculum/lessonContentSynthesizer.js
+// Synthesizes both:
+// - Unified 180-lesson LessonPage detail (buildSynthesizedLessonDetail)
+// - 9-step InteractiveLessonPlayer + 3-Tier Translation (synthesizeHsk79Lesson)
 // =========================================================================
 
 import {
+  HSK_120_LESSONS,
+  ALL_9_STAGE_CONFIGS,
+  ALL_180_LESSONS,
+} from './hsk120CurriculumData.js';
+import {
+  HSK_7_TO_9_LESSONS,
   HSK_79_60_LESSONS,
   HSK79_STAGE_CONFIGS,
   getHsk79LessonMetaById,
 } from './hsk7to9CurriculumData.js';
+import {
+  HSK_7_TO_9_RAW_LEXICON,
+  HSK_7_TO_9_GRAMMAR_AST_MAP,
+  buildHsk7to9TranslationDrill,
+} from './hsk7to9LexiconAndGrammarBank.js';
+import { RAW_LEXICON_ENTRIES, resolveCuratedLexiconItem } from './hsk120LexiconBank.js';
+import { resolveCuratedGrammarAST } from './hsk120GrammarAstBank.js';
+import { HSK79_VOCAB_GLOSSARY } from './hsk79VocabGlossary.js';
+import {
+  MODULE_PASSAGE_TEMPLATES,
+  getGrammarAstDetail,
+} from './hsk79PassagesAndGrammar.js';
 
-const VOCAB_GLOSSARY = {
-  // HSK 7
-  赋能: {
-    pinyin: 'fù néng',
-    hanViet: 'PHÚ NĂNG',
-    pos: 'v',
-    meaning: 'Trao quyền, tiếp sức mạnh công nghệ/năng lực cho (Empower)',
-    register: '书面语 / 科技商务',
-    synonymComparison: 'Khác với 帮助 (giúp đỡ thông thường), 赋能 nhấn mạnh dùng công nghệ hoặc cơ chế mới nâng tầm năng lực nội tại của cả hệ thống.',
-    collocations: ['人工智能赋能实体经济', '数字化赋能转型', '科技赋能教育'],
-  },
-  转型: {
-    pinyin: 'zhuǎn xíng',
-    hanViet: 'CHUYỂN HÌNH',
-    pos: 'v / n',
-    meaning: 'Chuyển đổi mô hình / chuyển dịch cơ cấu',
-    register: '书面语 / 经济',
-    synonymComparison: 'Khác với 改变 (thay đổi nói chung), 转型 chỉ sự thay đổi căn bản về mô hình tăng trưởng, cơ cấu ngành hoặc phương thức vận hành.',
-    collocations: ['产业转型升级', '绿色低碳转型', '数字化转型'],
-  },
-  凸显: {
-    pinyin: 'tū xiǎn',
-    hanViet: 'ĐỘT HIỂN',
-    pos: 'v',
-    meaning: 'Làm nổi bật rõ rệt, bộc lộ rõ nét (vấn đề, ưu thế)',
-    register: '书面语 / 新闻',
-    synonymComparison: 'Khác với 表现 (biểu hiện thông thường), 凸显 mang sắc thái trang trọng, thường đi với mâu thuẫn, thách thức hoặc vai trò chiến lược.',
-    collocations: ['矛盾日益凸显', '战略地位凸显', '优势进一步凸显'],
-  },
-  瓶颈: {
-    pinyin: 'píng jǐng',
-    hanViet: 'BÌNH CẢNH',
-    pos: 'n',
-    meaning: 'Nút thắt cổ chai, điểm nghẽn phát triển',
-    register: '书面语 / 经管',
-    synonymComparison: 'Nghĩa bóng chỉ khâu then chốt cản trở toàn bộ tiến trình tăng trưởng hoặc vận hành.',
-    collocations: ['突破技术瓶颈', '遭遇发展瓶颈', '缓解供应链瓶颈'],
-  },
-  相辅相成: {
-    pinyin: 'xiāng fǔ xiāng chéng',
-    hanViet: 'TƯƠNG PHỤ TƯƠNG THÀNH',
-    pos: '成语',
-    meaning: 'Bổ trợ và thúc đẩy lẫn nhau cùng phát triển',
-    register: '书面语 · 四字成语 (褒义)',
-    synonymComparison: 'Khác với 互相帮助 (cụ thể giữa người với người), 相辅相成 dùng cho hai khái niệm, chính sách hoặc trụ cột trừu tượng.',
-    collocations: ['二者相辅相成', '发展与安全相辅相成'],
-  },
-  潜移默化: {
-    pinyin: 'qián yí mò huà',
-    hanViet: 'TIỀM DI MẶC HÓA',
-    pos: '成语',
-    meaning: 'Thấm dần một cách âm thầm nhưng sâu sắc',
-    register: '书面语 · 四字成语 (中性偏褒)',
-    synonymComparison: 'Khác với 不知不觉 (phó từ nhấn mạnh cảm giác không hay biết), 潜移默化 nhấn mạnh quá trình ảnh hưởng tự nhiên của văn hóa/môi trường.',
-    collocations: ['潜移默化的影响', '在潜移默化中改变'],
-  },
-  宏观: {
-    pinyin: 'hóng guān',
-    hanViet: 'HOÀNH QUAN',
-    pos: 'adj',
-    meaning: 'Vĩ mô, tổng thể',
-    register: '书面语 / 学术',
-    synonymComparison: 'Đối lập với 微观 (vi mô). Thường đứng trước 经济, 调控, 视角.',
-    collocations: ['宏观调控', '宏观经济指标', '从宏观视角审视'],
-  },
-  调控: {
-    pinyin: 'tiáo kòng',
-    hanViet: 'ĐIỀU KHỐNG',
-    pos: 'v / n',
-    meaning: 'Điều tiết và kiểm soát (chính sách tiền tệ, thị trường)',
-    register: '书面语 / 政经',
-    synonymComparison: 'Mang tính điều hành chính sách vĩ mô, khác với 管理 (quản lý doanh nghiệp/cá nhân).',
-    collocations: ['国家宏观调控', '精准调控', '稳健调控政策'],
-  },
-  遏制: {
-    pinyin: 'è zhì',
-    hanViet: 'ÁT CHẾ',
-    pos: 'v',
-    meaning: 'Kiềm chế, ngăn chặn xu hướng tiêu cực lan rộng',
-    register: '书面语 / 政经',
-    synonymComparison: 'Khác với 控制 (trung tính), 遏制 chỉ đi với đối tượng tiêu cực như 通胀 (lạm phát), 犯罪 (tội phạm), 蔓延 (lan tràn).',
-    collocations: ['有效遏制通胀', '遏制风险蔓延'],
-  },
-  衍生: {
-    pinyin: 'yǎn shēng',
-    hanViet: 'DIỄN SINH',
-    pos: 'v',
-    meaning: 'Phái sinh, nảy sinh thêm từ cái gốc ban đầu',
-    register: '书面语 / 金融科技',
-    synonymComparison: 'Chuyên dùng cho sản phẩm tài chính phái sinh hoặc hệ lụy/mô hình mới phát sinh từ hiện tượng chính.',
-    collocations: ['金融衍生品', '衍生出新业态'],
-  },
-  居高不下: {
-    pinyin: 'jū gāo bù xià',
-    hanViet: 'CƯ CAO BẤT HẠ',
-    pos: '成语',
-    meaning: 'Duy trì ở mức cao kéo dài không giảm',
-    register: '书面语 · 新闻高频',
-    synonymComparison: 'Chủ yếu đi với 物价, 利率, 失业率, 成本 (giá cả, lãi suất, tỷ lệ thất nghiệp).',
-    collocations: ['通胀率居高不下', '运营成本居高不下'],
-  },
-  未雨绸缪: {
-    pinyin: 'wèi yǔ chóu móu',
-    hanViet: 'VỊ VŨ TRÙ MÂU',
-    pos: '成语',
-    meaning: 'Lo xa phòng bị trước khi biến cố xảy ra',
-    register: '书面语 · 四字成语 (褒义)',
-    synonymComparison: 'Tương đồng với 防患未然 nhưng nhấn mạnh việc chủ động chuẩn bị phương án dự phòng từ sớm.',
-    collocations: ['及早未雨绸缪', '未雨绸缪做好预案'],
-  },
-  契机: {
-    pinyin: 'qì jī',
-    hanViet: 'KHẾ CƠ',
-    pos: 'n',
-    meaning: 'Thời cơ then chốt, bước ngoặt thuận lợi',
-    register: '书面语 / 商务',
-    synonymComparison: 'Trang trọng hơn 机会, thường chỉ điều kiện chuyển biến tạo đà đột phá.',
-    collocations: ['以此为契机', '迎来转型契机'],
-  },
-  壁垒: {
-    pinyin: 'bì lěi',
-    hanViet: 'BÍCH LŨY',
-    pos: 'n',
-    meaning: 'Rào cản (thương mại, kỹ thuật, gia nhập thị trường)',
-    register: '书面语 / 国际贸易',
-    synonymComparison: 'Nhấn mạnh rào cản mang tính hệ thống hoặc quy chuẩn cạnh tranh, khác với 障碍 (chướng ngại vật chung).',
-    collocations: ['打破贸易壁垒', '筑起技术壁垒'],
-  },
-  重塑: {
-    pinyin: 'chóng sù',
-    hanViet: 'TRÙNG TỐ',
-    pos: 'v',
-    meaning: 'Tái định hình, tái thiết cấu trúc',
-    register: '书面语 / 新闻',
-    synonymComparison: 'Mạnh mẽ hơn 修改 hoặc 调整; mang nghĩa kiến tạo lại hình thái hoàn toàn mới.',
-    collocations: ['重塑全球产业链', '重塑品牌形象'],
-  },
-  跻身: {
-    pinyin: 'jī shēn',
-    hanViet: 'TÊ THÂN',
-    pos: 'v',
-    meaning: 'Bước chân vào hàng ngũ (nhóm dẫn đầu, thị trường lớn)',
-    register: '书面语 / 新闻',
-    synonymComparison: 'Không nói 跻身 trong khẩu ngữ; bắt buộc dùng với vị thế cao như 世界前列, 行业领军.',
-    collocations: ['跻身世界先进行列', '跻身全球十强'],
-  },
-  颠覆: {
-    pinyin: 'diān fù',
-    hanViet: 'ĐIÊN PHÚC',
-    pos: 'v',
-    meaning: 'Làm đảo lộn triệt để, mang tính đột phá lật đổ mô hình cũ',
-    register: '书面语 / 科技经济',
-    synonymComparison: 'Mang cả nghĩa trung tính trong công nghệ (颠覆性创新 - đổi mới đột phá) lẫn nghĩa tiêu cực về chính trị.',
-    collocations: ['颠覆性技术创新', '颠覆传统行业格局'],
-  },
-  迭代: {
-    pinyin: 'dié dài',
-    hanViet: 'ĐIỆP ĐẠI',
-    pos: 'v / n',
-    meaning: 'Lặp lại nâng cấp qua từng phiên bản, thay cũ đổi mới nhanh',
-    register: '科技商务语体',
-    synonymComparison: 'Xuất phát từ toán học & phần mềm, nay dùng rộng rãi cho chu kỳ nâng cấp sản phẩm.',
-    collocations: ['技术快速迭代', '产品迭代更新'],
-  },
-  鸿沟: {
-    pinyin: 'hóng gōu',
-    hanViet: 'HỒNG CÂU',
-    pos: 'n',
-    meaning: 'Hố sâu ngăn cách, khoảng cách lớn khó vượt qua',
-    register: '书面语 / 文化典故',
-    synonymComparison: 'Bắt nguồn từ điển cố Sở–Hán phân giới Hồng Câu; trang trọng hơn 差距 rất nhiều.',
-    collocations: ['弥合数字鸿沟', '难以逾越的鸿沟'],
-  },
-  迫在眉睫: {
-    pinyin: 'pò zài méi jié',
-    hanViet: 'BÁCH TẠI MI TIỆP',
-    pos: '成语',
-    meaning: 'Cấp bách ngay trước mắt, không thể chậm trễ',
-    register: '书面语 · 四字成语',
-    synonymComparison: 'Mạnh và trang trọng hơn 很紧急; chuyên dùng cho cải cách, chuyển đổi, ứng phó khủng hoảng.',
-    collocations: ['改革迫在眉睫', '转型升级迫在眉睫'],
-  },
-  因地制宜: {
-    pinyin: 'yīn dì zhì yí',
-    hanViet: 'NHÂN ĐỊA CHẾ NGHI',
-    pos: '成语',
-    meaning: 'Tùy theo điều kiện cụ thể từng địa phương mà áp dụng biện pháp phù hợp',
-    register: '书面语 · 政经高频',
-    synonymComparison: 'Trái nghĩa với 一刀切 (áp đặt rập khuôn đồng loạt).',
-    collocations: ['坚持因地制宜', '因地制宜发展新质生产力'],
-  },
-  不可抗力: {
-    pinyin: 'bù kě kàng lì',
-    hanViet: 'BẤT KHẢ KHÁNG LỰC',
-    pos: 'n',
-    meaning: 'Sự kiện bất khả kháng (thuật ngữ pháp lý hợp đồng)',
-    register: '法律公文语体',
-    synonymComparison: 'Thuật ngữ pháp định chỉ thiên tai, chiến tranh, dịch bệnh vượt ngoài tầm kiểm soát hợp lý của các bên.',
-    collocations: ['不可抗力条款', '构成不可抗力'],
-  },
-  履约: {
-    pinyin: 'lǚ yuē',
-    hanViet: 'LÝ ƯỚC',
-    pos: 'v',
-    meaning: 'Thực hiện đúng nghĩa vụ hợp đồng đã ký kết',
-    register: '法律商务语体',
-    synonymComparison: 'Trang trọng hơn 遵守合同; trái nghĩa với 违约 (vi phạm hợp đồng).',
-    collocations: ['全面履约', '履约能力', '按期履约'],
-  },
-  方兴未艾: {
-    pinyin: 'fāng xīng wèi ài',
-    hanViet: 'PHƯƠNG HƯNG VỊ NGẢI',
-    pos: '成语',
-    meaning: 'Đang phát triển mạnh mẽ và chưa có dấu hiệu dừng lại',
-    register: '书面语 · 四字成语 (褒义)',
-    synonymComparison: 'Không bao giờ dùng cho hiện tượng tiêu cực; hay mô tả trào lưu công nghệ, thị trường mới.',
-    collocations: ['低空经济方兴未艾', '人工智能应用方兴未艾'],
-  },
-  言简意赅: {
-    pinyin: 'yán jiǎn yì gāi',
-    hanViet: 'NGÔN GIẢN Ý CAI',
-    pos: '成语',
-    meaning: 'Lời lẽ ngắn gọn mà hàm chứa ý nghĩa súc tích, trọn vẹn',
-    register: '书面语 · 文学评价',
-    synonymComparison: 'Khác với 啰唆 (dài dòng), 言简意赅 là tiêu chuẩn vàng trong văn phong HSK 8–9.',
-    collocations: ['表述言简意赅', '行文言简意赅'],
-  },
-  处心积虑: {
-    pinyin: 'chǔ xīn jī lǜ',
-    hanViet: 'XỬ TÂM TÍCH LỰ',
-    pos: '成语',
-    meaning: 'Suy tính thâm hiểm, mưu đồ từ lâu (nghĩa XẤU)',
-    register: '书面语 · 贬义成语 (Nghĩa chê)',
-    synonymComparison: 'Tuyệt đối phân biệt với 煞费苦心 (lao tâm khổ tứ làm việc tốt). Dùng nhầm sắc thái sẽ mất điểm HSK 8!',
-    collocations: ['处心积虑地破坏', '绝非偶然而是处心积虑'],
-  },
-  煞费苦心: {
-    pinyin: 'shà fèi kǔ xīn',
-    hanViet: 'SÁT PHÍ KHỔ TÂM',
-    pos: '成语',
-    meaning: 'Dồn hết tâm huyết, suy nghĩ vất vả (nghĩa TỐT / trung tính)',
-    register: '书面语 · 褒义/中性成语',
-    synonymComparison: 'Trái ngược sắc thái với 处心积虑 về mục đích thiện ý vs ác ý.',
-    collocations: ['为科研煞费苦心', '父母煞费苦心的安排'],
-  },
-  秉持: {
-    pinyin: 'bǐng chí',
-    hanViet: 'BỈNH TRÌ',
-    pos: 'v',
-    meaning: 'Kiên trì giữ vững (nguyên tắc, tinh thần, tôn chỉ)',
-    register: '外交 / 高阶书面语',
-    synonymComparison: 'Trang trọng hơn 坚持 và 保持; chuyên xuất hiện trong tuyên bố ngoại giao và báo cáo chiến lược.',
-    collocations: ['秉持共商共建共享原则', '秉持互信精神'],
-  },
-  求同存异: {
-    pinyin: 'qiú tóng cún yì',
-    hanViet: 'CẦU ĐỒNG TỒN DỊ',
-    pos: '成语',
-    meaning: 'Tìm kiếm điểm tương đồng, gác lại khác biệt',
-    register: '外交高频成语',
-    synonymComparison: 'Khẩu quyết kinh điển trong đàm phán đa phương khi hai bên còn bất đồng lợi ích.',
-    collocations: ['坚持求同存异原则', '在分歧中求同存异'],
-  },
-  博弈: {
-    pinyin: 'bó yì',
-    hanViet: 'BÁC DỊCH',
-    pos: 'n / v',
-    meaning: 'Cuộc đấu trí chiến lược, lý thuyết trò chơi (Game theory)',
-    register: '高级政经语体',
-    synonymComparison: 'Chủ yếu chỉ sự cạnh tranh, mặc cả và cân bằng thế lực giữa các quốc gia hoặc tập đoàn.',
-    collocations: ['地缘政治博弈', '零和博弈', '多方利益博弈'],
-  },
-  外溢: {
-    pinyin: 'wài yì',
-    hanViet: 'NGOẠI DẬT',
-    pos: 'v / n',
-    meaning: 'Tác động lan tỏa ra bên ngoài biên giới hoặc lĩnh vực gốc (Spillover)',
-    register: '宏观金融语体',
-    synonymComparison: 'Chuyên dùng cho hiệu ứng chính sách tiền tệ, rủi ro tài chính hoặc công nghệ.',
-    collocations: ['政策外溢效应', '风险跨市场外溢'],
-  },
-  融会贯通: {
-    pinyin: 'róng huì guàn tōng',
-    hanViet: 'DUNG HỘI QUÁN THÔNG',
-    pos: '成语',
-    meaning: 'Thâu tóm, kết nối nhuần nhuyễn các kiến thức thành hệ thống xuyên suốt',
-    register: '高级学术成语',
-    synonymComparison: 'Mức độ cao hơn 熟练掌握, chỉ năng lực tổng hợp liên ngành.',
-    collocations: ['将知识融会贯通', '跨学科融会贯通'],
-  },
-};
+export { ALL_9_STAGE_CONFIGS, ALL_180_LESSONS, HSK_7_TO_9_LESSONS, HSK_79_60_LESSONS, HSK_120_LESSONS };
 
-const MODULE_PASSAGE_TEMPLATES = {
-  '7.1': {
-    paragraphsZh: [
-      '在全球经济数字化浪潮的推动下，数字经济已不再仅仅停留在消费互联网层面，而是全面向制造、物流与金融等核心产业深度赋能，成为推动经济结构转型升级的关键引擎。',
-      '然而，产业转型的推进过程并非一帆风顺。技术研发瓶颈尚且制约着部分中小企业的升级步伐，何况宏观环境波动叠加合规成本居高不下，更凸显了稳健调控与未雨绸缪的紧迫性。',
-      '因此，政府引导与企业创新必须相辅相成。唯有持续打破制度与技术壁垒，充分激发内需潜力并优化供应链韧性，区域经济方能跻身高质量发展行列，实现持久的互利共赢。',
+const VOCAB_GLOSSARY = HSK79_VOCAB_GLOSSARY;
+
+/**
+ * Tra cứu từ vựng hợp nhất cho cả 180 bài học (HSK 1 - HSK 9)
+ */
+export function resolveUnifiedLexiconItem(word, lessonMeta, orderIndex = 1) {
+  const rawAdvanced = HSK_7_TO_9_RAW_LEXICON[word];
+  if (rawAdvanced) {
+    const [
+      pinyin = '',
+      hanViet = '',
+      pos = 'Từ vựng',
+      meaningVi = '',
+      radical = `Bộ ${word[0] || '汉字'}`,
+    ] = String(rawAdvanced).split('|');
+    const shortMeaning = meaningVi.split(',')[0]?.trim() || meaningVi;
+    return {
+      order: orderIndex,
+      simplified: word,
+      traditional: word,
+      pinyin,
+      hanViet,
+      pos,
+      meaningVi,
+      radical,
+      strokeCount: word.length * 9,
+      mnemonicVi: `Thuật ngữ / Thành ngữ HSK ${lessonMeta.level} “${word}” (${hanViet} — ${meaningVi}), trọng tâm của Bài #${lessonMeta.id} 《${lessonMeta.zh}》.`,
+      exampleZh: `在探讨《${lessonMeta.zh}》这一议题时，恰当运用“${word}”能够显著提升论述的严谨性与学术深度。`,
+      examplePinyin: `Zài tàntǎo “${lessonMeta.pinyin}” zhè yī yìtí shí, qiàdàng yùnyòng “${pinyin}” nénggòu xiǎnzhù tíshēng lùnshù de yánjǐnxìng yǔ xuéshù shēndù.`,
+      exampleVi: `Khi bàn luận về chủ đề “${lessonMeta.vi}”, vận dụng chuẩn xác từ “${word}” (${shortMeaning}) giúp nâng cao rõ rệt tính chặt chẽ và chiều sâu học thuật.`,
+    };
+  }
+  return resolveCuratedLexiconItem(word, lessonMeta, orderIndex);
+}
+
+/**
+ * Tra cứu cấu trúc Ngữ pháp AST hợp nhất cho cả 180 bài học (HSK 1 - HSK 9)
+ */
+export function resolveUnifiedGrammarAST(lessonMeta) {
+  const advGrammar = HSK_7_TO_9_GRAMMAR_AST_MAP[lessonMeta.grammarCode];
+  if (advGrammar) {
+    return {
+      code: lessonMeta.grammarCode,
+      titleVi: lessonMeta.vi,
+      patternDisplay: advGrammar.patternDisplay,
+      hskLevel: lessonMeta.level,
+      category: advGrammar.category,
+      formulaTokens: advGrammar.formulaTokens,
+      explanationVi: advGrammar.explanationVi,
+      commonMistakes: [
+        {
+          wrong_zh: advGrammar.wrong_zh,
+          right_zh: advGrammar.right_zh,
+          pinyin: advGrammar.pinyin,
+          meaning_vi: advGrammar.meaning_vi,
+          reason_vi: advGrammar.reason_vi,
+        },
+      ],
+    };
+  }
+  return resolveCuratedGrammarAST(lessonMeta);
+}
+
+/**
+ * Xây dựng dàn ý Luận văn học thuật / Biểu đồ số liệu cho các bài HSK 7 - 9
+ */
+function buildAdvancedEssayBlueprint(lessonMeta, vocabularyList) {
+  if (lessonMeta.level < 7) return null;
+
+  const isChartEssay = lessonMeta.level === 8;
+  const targetChars = lessonMeta.level === 7 ? 350 : lessonMeta.level === 8 ? 450 : 600;
+
+  return {
+    essayType: isChartEssay
+      ? 'Phân tích Biểu đồ Số liệu & Quy nhân (图表作文)'
+      : 'Luận văn Nghị luận Học thuật Biện chứng (深度议论文)',
+    titleZh: `论《${lessonMeta.zh}》的现实意义与未来趋势`,
+    targetCharCount: targetChars,
+    discourseMarkers: [
+      '诚然 (Đành rằng)',
+      '与其说……毋宁说…… (Thay vì nói... chi bằng nói...)',
+      '究其原因，主要归因于 (Xét kỹ nguyên nhân, chủ yếu do...)',
+      '由此可见 (Từ đó có thể thấy)',
+      '综上所述 (Tóm lại những điều trên)',
     ],
-    translationVi:
-      'Dưới sức đẩy của làn sóng số hóa kinh tế toàn cầu, kinh tế số không còn dừng ở tầng internet tiêu dùng mà đang tiếp sức sâu rộng cho sản xuất, logistics và tài chính, trở thành động cơ then chốt thúc đẩy chuyển đổi cơ cấu ngành. Tuy nhiên, tiến trình chuyển đổi không hề bằng phẳng: nút thắt nghiên cứu công nghệ còn đang kìm hãm bước tiến của doanh nghiệp vừa và nhỏ, huống hồ biến động vĩ mô cộng hưởng cùng chi phí tuân thủ neo cao càng làm nổi bật tính cấp bách của điều tiết ổn định và phòng bị từ sớm. Do đó, dẫn dắt chính sách và đổi mới doanh nghiệp phải bổ trợ lẫn nhau để kiến tạo tăng trưởng bền vững.',
-  },
-  '7.2': {
-    paragraphsZh: [
-      '以生成式人工智能为代表的新一代信息技术正以前所未有的速度重塑社会分工。与其说人工智能单纯取代了重复性岗位，毋宁说它正在倒逼整个劳动力市场进行能力结构的深度重构。',
-      '与此同时，算法推荐与海量数据采集所衍生的“信息茧房”与隐私泄露隐患日益凸显。若缺乏有效的制度制约与透明审查，技术红利恐将被算法偏见所抵消，甚至动摇公众信任底线。',
-      '正因如此，“科技向善”绝非一句空洞口号。如何在鼓励技术快速迭代与严守伦理安全边界之间取得动态平衡，既要依靠行业自律，亦离不开防微杜渐式的精准法治监管。',
+    paragraphsOutline: [
+      {
+        step: 'Đoạn 1: Mở bài & Phá đề (破题与背景)',
+        guideVi: `Dẫn nhập trực tiếp bối cảnh 《${lessonMeta.zh}》 (${lessonMeta.vi}), sử dụng từ khóa “${vocabularyList[0]?.simplified || ''}” để nêu luận điểm trung tâm.`,
+      },
+      {
+        step: 'Đoạn 2: Phân tích Đa chiều & Phản biện (思辨与论证)',
+        guideVi: `Vận dụng cấu trúc ${lessonMeta.grammarCode} kết hợp thành ngữ “${vocabularyList[2]?.simplified || ''}” để phân tích sâu nguyên nhân và tác động hai mặt.`,
+      },
+      {
+        step: 'Đoạn 3: Giải pháp Chiến lược & Kết luận (对策与升华)',
+        guideVi: `Đưa ra kiến nghị thực tiễn với từ khóa “${vocabularyList[3]?.simplified || ''}” và chốt lại tầm nhìn dài hạn.`,
+      },
     ],
-    translationVi:
-      'Công nghệ thông tin thế hệ mới mà đại diện là AI tạo sinh đang tái định hình phân công lao động xã hội với tốc độ chưa từng có. Thà nói AI đơn thuần thay thế công việc lặp lại, còn hơn nói nó đang buộc toàn bộ thị trường lao động tái cấu trúc sâu sắc về năng lực. Song song đó, hệ lụy "kén thông tin" và rủi ro rò rỉ dữ liệu từ thuật toán gợi ý ngày càng bộc lộ rõ. Vì vậy, "công nghệ vị nhân sinh" tuyệt đối không thể là khẩu hiệu sáo rỗng, mà đòi hỏi sự cân bằng giữa đổi mới nhanh và hành lang pháp lý phòng ngừa từ gốc.',
-  },
-  '8.1': {
-    paragraphsZh: [
-      '在跨国商事交易实践中，合同条款的严密性往往决定着风险分配的合理边界。凡因地震、战乱或突发公共事件导致客观履约不能者，均应依据事先约定的不可抗力条款予以审慎界定。',
-      '然而，实务中部分企业常以市场价格剧烈波动为由主张免责，殊不知商业风险与法定不可抗力之间泾渭分明。除法定及约定情形外，任何一方概不得单方面中止履约，否则将依法承担违约赔偿责任。',
-      '此外，随着技术壁垒与知识产权保护趋严，企业在出海布局前必须筑牢合规防线，在争议解决机制中明确管辖权与国际仲裁规则，方能在复杂的国际市场中行稳致远。',
-    ],
-    translationVi:
-      'Trong thực tiễn thương mại xuyên biên giới, tính chặt chẽ của điều khoản hợp đồng quyết định ranh giới phân bổ rủi ro. Phàm những trường hợp không thể thực hiện nghĩa vụ do động đất, chiến sự hay biến cố công cộng bất ngờ đều phải căn cứ điều khoản bất khả kháng để xác định thận trọng. Tuy nhiên, thực tế nhiều doanh nghiệp viện cớ biến động giá thị trường để xin miễn trách nhiệm, mà không biết rủi ro thương mại và bất khả kháng rạch ròi như hai dòng nước. Chỉ khi tuân thủ nghiêm pháp chế trọng tài và bảo hộ sở hữu trí tuệ, doanh nghiệp mới có thể đi xa bền vững.',
-  },
-  '8.3': {
-    paragraphsZh: [
-      '现代汉语高级书面语之所以言简意赅、张力十足，很大程度上得益于对文言虚词与四字成语的精准承继。“乃”“鉴于”“尤以”等虚词的运用，使长句逻辑层次条分缕析，避免冗赘口语化。',
-      '值得注意的是，成语不仅承载着历史典故的文化意蕴，更具有鲜明的褒贬色彩。例如“煞费苦心”重在肯定苦心孤诣之付出，而“处心积虑”则专指蓄意谋划之恶行，二者万不可混为一谈。',
-      '若能将古典审美意境与汉越文化词源的细微差异融会贯通，学习者便能在跨文化写作与学术答辩中做到字斟句酌、恰如其分，真正迈入高级表达之境。',
-    ],
-    translationVi:
-      'Văn viết cao cấp trong tiếng Hán hiện đại sở dĩ cô đọng và giàu sức nặng phần lớn nhờ kế thừa chính xác hư từ văn ngôn và thành ngữ Tứ tự. Việc vận dụng các hư từ như 乃, 鉴于, 尤以 giúp tầng bậc logic của câu dài rành mạch, tránh dài dòng khẩu ngữ. Đáng chú ý, thành ngữ không chỉ mang điển cố lịch sử mà còn mang sắc thái khen chê rõ rệt (như 煞费苦心 mang nghĩa nỗ lực tận tâm, trái ngược hoàn toàn với 处心积虑 chỉ mưu đồ thâm hiểm). Nắm vững điều này là chìa khóa đạt chuẩn HSK 8.',
-  },
-  '9.1': {
-    paragraphsZh: [
-      '纵观当前国际格局演变，多边主义虽屡遭单边博弈冲击，然各方在气候治理、金融稳定及公共安全等全球议题上的深层利益依然休戚与共。秉持求同存异、相向而行之外交精神，实乃化解结构性分歧的理性之道。',
-      '在联合公报与多边谈判话语体系中，措辞的每一处微调皆折射出战略关切与谈判底线。高阶外交语言既讲求委婉周全、不失体面，又必须在核心原则上阐明严正立场，做到不卑不亢。',
-      '正因如此，从事高级外交编译与国际传译者，不仅需具备纵观全局之政治敏锐度，更需精研四字格及规范政经公文体例，使译文在信、达、雅之间达到高度统一。',
-    ],
-    translationVi:
-      'Nhìn tổng thể cục diện quốc tế hiện nay, chủ nghĩa đa phương tuy nhiều lần chịu tác động từ các cuộc đấu trí đơn phương, nhưng lợi ích sâu xa của các bên trong quản trị khí hậu và ổn định tài chính vẫn gắn bó sống còn. Giữ vững tinh thần cầu đồng tồn dị, tiến bước cùng chiều là con đường lý trí hóa giải bất đồng. Trong ngôn từ thông cáo chung, mỗi điều chỉnh câu chữ đều phản ánh quan ngại chiến lược và lằn ranh nguyên tắc, đòi hỏi biên phiên dịch HSK 9 dung hòa trọn vẹn ba chuẩn mực Tín – Đạt – Nhã.',
-  },
-  '9.3': {
-    paragraphsZh: [
-      '在全球金融市场高度联动的背景下，主要经济体货币政策的转向往往产生显著的外溢效应，致使新兴市场在汇率稳定与跨境资本流动性上面临严峻承压。',
-      '倘若金融机构在追求高收益的同时忽视杠杆率失控与资产泡沫积聚，风险便极易在不同市场间跨界传染，甚至“牵一发而动全身”，演变为难以收拾的系统性危机。',
-      '唯有强化审慎监管、完善多边本币清算基础设施并引导企业稳健对冲汇率风险，方能在波谲云诡的全球金融博弈中守住底线，实现真正意义上的稳中求进。',
-    ],
-    translationVi:
-      'Trong bối cảnh thị trường tài chính toàn cầu liên thông chặt chẽ, sự xoay trục chính sách tiền tệ của các nền kinh tế lớn thường tạo hiệu ứng lan tỏa mạnh mẽ, khiến các thị trường mới nổi chịu áp lực nặng nề về tỷ giá và thanh khoản dòng vốn. Nếu định chế tài chính chạy theo lợi nhuận mà xem nhẹ đòn bẩy mất kiểm soát, rủi ro sẽ "chạm một sợi tóc mà động toàn thân", bùng phát thành khủng hoảng hệ thống. Chỉ bằng giám sát thận trọng và hạ tầng thanh toán vững vàng mới có thể vững tiến giữa sóng gió.',
-  },
-};
+  };
+}
+
+function buildContextualDialogue(lessonMeta, vocabularyList, grammarDetail) {
+  const v1 = vocabularyList[0] || {
+    simplified: lessonMeta.zh,
+    pinyin: lessonMeta.pinyin,
+    meaningVi: lessonMeta.vi,
+    exampleZh: lessonMeta.zh,
+    examplePinyin: lessonMeta.pinyin,
+    exampleVi: lessonMeta.vi,
+  };
+  const v2 = vocabularyList[1] || v1;
+  const v3 = vocabularyList[2] || v2;
+  const teacherSpeaker = lessonMeta.level >= 7 ? '陈教授' : '林老师';
+  const teacherRole =
+    lessonMeta.level >= 7
+      ? `Giáo sư Chuyên gia HSK ${lessonMeta.level}`
+      : `Giảng viên HSK ${lessonMeta.level}`;
+
+  return [
+    {
+      speaker: teacherSpeaker,
+      role: teacherRole,
+      zh: `今天我们深入研讨第${lessonMeta.id}课《${lessonMeta.zh}》，请大家重点关注“${v1.simplified}”与“${v2.simplified}”在正式语境中的搭配。`,
+      pinyin: `Jīntiān wǒmen shēnrù yántǎo dì ${lessonMeta.id} kè “${lessonMeta.pinyin}”, qǐng dàjiā zhòngdiǎn guānzhù “${v1.pinyin}” yǔ “${v2.pinyin}” zài zhèngshì yǔjìng zhōng de dāpèi.`,
+      vi: `Hôm nay chúng ta đi sâu nghiên cứu Bài ${lessonMeta.id} “${lessonMeta.zh}”, mọi người hãy đặc biệt chú ý cách kết hợp của “${v1.simplified}” (${(v1.meaningVi || '').split(',')[0]}) và “${v2.simplified}” (${(v2.meaningVi || '').split(',')[0]}).`,
+    },
+    {
+      speaker: '海登',
+      role: 'Học viên',
+      zh: `请问在《${lessonMeta.zh}》的论述中，如何将“${v3.simplified}”与句式${grammarDetail.code}自然地结合起来？`,
+      pinyin: `Qǐngwèn zài “${lessonMeta.pinyin}” de lùnshù zhōng, rúhé jiāng “${v3.pinyin}” yǔ jùshì ${grammarDetail.code} zìrán de jiéhé qǐlái?`,
+      vi: `Xin hỏi trong phần bàn luận về “${lessonMeta.zh}”, làm thế nào để kết hợp tự nhiên từ “${v3.simplified}” (${(v3.meaningVi || '').split(',')[0]}) với cấu trúc ${grammarDetail.code} ạ?`,
+    },
+    {
+      speaker: teacherSpeaker,
+      role: teacherRole,
+      zh: `我们可以这样表达：“${v1.exampleZh}”关键是要把握住${grammarDetail.code}的逻辑重心。`,
+      pinyin: `Wǒmen kěyǐ zhèyàng biǎodá: “${v1.examplePinyin}” Guānjiàn shì yào bǎwò zhù ${grammarDetail.code} de luójí zhòngxīn.`,
+      vi: `Chúng ta có thể diễn đạt như sau: “${v1.exampleVi}” Mấu chốt là nắm vững trọng tâm logic của cấu trúc ${grammarDetail.code}.`,
+    },
+    {
+      speaker: '海登',
+      role: 'Học viên',
+      zh: `醍醐灌顶！我马上用“${v1.simplified}”和“${v2.simplified}”来进行翻译与造句实训。`,
+      pinyin: `Tíhú guàndǐng! Wǒ mǎshàng yòng “${v1.pinyin}” hé “${v2.pinyin}” lái jìnxíng fānyì yǔ zàojù shíxùn.`,
+      vi: `Thật sáng tỏ! Em sẽ dùng ngay “${v1.simplified}” và “${v2.simplified}” để thực hành luyện dịch và đặt câu.`,
+    },
+  ];
+}
+
+function buildLessonMasteryQuizzes(lessonMeta, vocabularyList, grammarDetail) {
+  const targetVocab = vocabularyList[0] || {
+    simplified: lessonMeta.zh,
+    pinyin: lessonMeta.pinyin,
+    hanViet: lessonMeta.zh,
+    meaningVi: lessonMeta.vi,
+    exampleZh: lessonMeta.zh,
+  };
+  const siblingLessons = ALL_180_LESSONS.filter(
+    (l) => l.level === lessonMeta.level && l.id !== lessonMeta.id
+  );
+  const distractorWords = siblingLessons
+    .slice(0, 3)
+    .map((l) => resolveUnifiedLexiconItem(l.keyVocab?.[0] || l.zh, l, 1).meaningVi);
+
+  const cleanTitle = String(lessonMeta.zh || '').replace(/[？。！，、：《》“”（）\s]/g, '');
+  const tokens =
+    cleanTitle.length >= 4
+      ? [
+          cleanTitle.slice(0, Math.ceil(cleanTitle.length / 3)),
+          cleanTitle.slice(
+            Math.ceil(cleanTitle.length / 3),
+            Math.ceil((cleanTitle.length * 2) / 3)
+          ),
+          cleanTitle.slice(Math.ceil((cleanTitle.length * 2) / 3)),
+        ].filter(Boolean)
+      : [
+          vocabularyList[0]?.simplified || '我们',
+          vocabularyList[1]?.simplified || '学习',
+          lessonMeta.zh,
+        ];
+
+  return [
+    {
+      id: `q1_${lessonMeta.id}`,
+      type: 'multiple_choice',
+      prompt: `Từ/Thuật ngữ trọng tâm “${targetVocab.simplified}” (/${targetVocab.pinyin}/ — Hán Việt: ${targetVocab.hanViet}) trong Bài #${lessonMeta.id} có nghĩa chính xác là gì?`,
+      options: [targetVocab.meaningVi, ...distractorWords],
+      correctIndex: 0,
+      explanation: `“${targetVocab.simplified}” (/${targetVocab.pinyin}/, Hán Việt: ${targetVocab.hanViet}) mang nghĩa: ${targetVocab.meaningVi}.`,
+    },
+    {
+      id: `q2_${lessonMeta.id}`,
+      type: 'multiple_choice',
+      prompt: `Chủ điểm ngữ pháp & kỹ năng học thuật cốt lõi của Bài #${lessonMeta.id} 《${lessonMeta.zh}》 là gì?`,
+      options: [
+        `${lessonMeta.vi} (${grammarDetail.code})`,
+        siblingLessons[0]?.vi || 'Câu tồn hiện trạng thái tĩnh',
+        siblingLessons[1]?.vi || 'Bổ ngữ thời lượng phủ định',
+        siblingLessons[2]?.vi || 'Đại từ nghi vấn phiếm chỉ',
+      ],
+      correctIndex: 0,
+      explanation: `Bài #${lessonMeta.id} rèn luyện trực tiếp: ${lessonMeta.vi} (${grammarDetail.code}).`,
+    },
+    {
+      id: `q3_${lessonMeta.id}`,
+      type: 'multiple_choice',
+      prompt: `Theo chuẩn ngữ pháp HSK ${lessonMeta.level} (${grammarDetail.code}), cách diễn đạt nào dưới đây là CHUẨN XÁC nhất?`,
+      options: [
+        grammarDetail.commonMistakes?.[0]?.right_zh?.replace(/^(?:✅|🏆)\s*/u, '') ||
+          targetVocab.exampleZh,
+        grammarDetail.commonMistakes?.[0]?.wrong_zh?.replace(/^❌\s*/u, '') ||
+          `把${targetVocab.simplified}没用好。`,
+        `比昨天非常${targetVocab.simplified}。`,
+        `通过这次分析，使我们掌握了${targetVocab.simplified}。`,
+      ],
+      correctIndex: 0,
+      explanation:
+        grammarDetail.commonMistakes?.[0]?.reason_vi ||
+        `Câu đúng tuân thủ chuẩn cấu trúc ${grammarDetail.patternDisplay}.`,
+    },
+    {
+      id: `q4_${lessonMeta.id}`,
+      type: 'reorder',
+      prompt: `Sắp xếp các thành tố sau để ghép thành chủ đề chuẩn của Bài #${lessonMeta.id}:`,
+      shuffledTokens: [...tokens].reverse(),
+      correctAnswer: tokens.join(''),
+      explanation: `Cụm hoàn chỉnh của Bài #${lessonMeta.id} là: “${tokens.join('')}” (${lessonMeta.pinyin} — ${lessonMeta.vi}).`,
+    },
+  ];
+}
+
+function resolveLessonMeta(lessonId) {
+  if (lessonId !== null && lessonId !== undefined && lessonId !== '') {
+    const rawStr = String(lessonId).trim();
+    const byCanonical = ALL_180_LESSONS.find(
+      (item) => item.canonicalId === rawStr || item.stringId === rawStr
+    );
+    if (byCanonical) return byCanonical;
+
+    const match = rawStr.match(/^(?:lesson[-_]?|hsk79-)?(\d{1,3})$/i);
+    if (match) {
+      const clampedNum = Math.max(1, Math.min(180, parseInt(match[1], 10) || 1));
+      return ALL_180_LESSONS.find((item) => item.id === clampedNum) || ALL_180_LESSONS[0];
+    }
+  }
+
+  const numericId = Math.max(1, Math.min(180, Number(lessonId) || 1));
+  return ALL_180_LESSONS.find((item) => item.id === numericId) || ALL_180_LESSONS[0];
+}
+
+/**
+ * Hàm tổng hợp dữ liệu bài học cho toàn bộ 180 bài (Bài 01 đến Bài 180)
+ */
+export function buildSynthesizedLessonDetail(lessonId, dbDictRows = [], dbGrammarRow = null) {
+  const lessonMeta = resolveLessonMeta(lessonId);
+  const numericId = lessonMeta.numericId || lessonMeta.id;
+  const stageMeta =
+    ALL_9_STAGE_CONFIGS.find((s) => s.level === lessonMeta.level) || ALL_9_STAGE_CONFIGS[0];
+
+  const safeDbRows = Array.isArray(dbDictRows) ? dbDictRows : [];
+  const dbDictMap = new Map(safeDbRows.map((row) => [row.simplified, row]));
+
+  // 1. Danh sách từ vựng
+  const vocabularyList = (lessonMeta.keyVocab || []).map((word, idx) => {
+    const curated = resolveUnifiedLexiconItem(word, lessonMeta, idx + 1);
+    const dbMatch = dbDictMap.get(word);
+
+    if (!dbMatch) return curated;
+
+    const posMeanings = Array.isArray(dbMatch.pos_meanings) ? dbMatch.pos_meanings : [];
+    const firstDefsVi = Array.isArray(posMeanings[0]?.definitions_vi)
+      ? posMeanings[0].definitions_vi
+      : [];
+    const examples = Array.isArray(dbMatch.examples) ? dbMatch.examples : [];
+
+    return {
+      order: idx + 1,
+      simplified: dbMatch.simplified || curated.simplified,
+      traditional: dbMatch.traditional || curated.traditional,
+      pinyin: dbMatch.pinyin_display || dbMatch.pinyin_tone || curated.pinyin,
+      hanViet: dbMatch.han_viet || curated.hanViet,
+      pos: posMeanings[0]?.pos || curated.pos,
+      meaningVi: firstDefsVi.length > 0 ? firstDefsVi.join('; ') : curated.meaningVi,
+      radical: dbMatch.decomposition?.radical || curated.radical,
+      strokeCount: dbMatch.decomposition?.stroke_count || curated.strokeCount,
+      mnemonicVi: dbMatch.decomposition?.mnemonic_vi || curated.mnemonicVi,
+      exampleZh: examples[0]?.hanzi || curated.exampleZh,
+      examplePinyin: examples[0]?.pinyin || curated.examplePinyin,
+      exampleVi: examples[0]?.vi || curated.exampleVi,
+    };
+  });
+
+  // 2. Điểm ngữ pháp AST
+  const curatedGrammar = resolveUnifiedGrammarAST(lessonMeta);
+  const grammarDetail = dbGrammarRow
+    ? {
+        code: dbGrammarRow.code || curatedGrammar.code,
+        titleVi: dbGrammarRow.title_vi || curatedGrammar.titleVi,
+        patternDisplay: dbGrammarRow.pattern_display || curatedGrammar.patternDisplay,
+        hskLevel: dbGrammarRow.hsk_level || curatedGrammar.hskLevel,
+        category: dbGrammarRow.category || curatedGrammar.category,
+        formulaTokens:
+          Array.isArray(dbGrammarRow.formula_tokens) && dbGrammarRow.formula_tokens.length > 0
+            ? dbGrammarRow.formula_tokens
+            : curatedGrammar.formulaTokens,
+        explanationVi: dbGrammarRow.explanation_vi || curatedGrammar.explanationVi,
+        commonMistakes:
+          Array.isArray(dbGrammarRow.common_mistakes) && dbGrammarRow.common_mistakes.length > 0
+            ? dbGrammarRow.common_mistakes
+            : curatedGrammar.commonMistakes,
+      }
+    : curatedGrammar;
+
+  // 3. Hội thoại / Tọa đàm học thuật
+  const dialogueLines = buildContextualDialogue(lessonMeta, vocabularyList, grammarDetail);
+
+  // 4. Xưởng Dịch Thuật 3 Tầng & Dàn ý Luận văn (Dành riêng cho HSK 7 - 9: Bài 121 - 180)
+  const translationDrill =
+    lessonMeta.level >= 7
+      ? buildHsk7to9TranslationDrill(lessonMeta, vocabularyList)
+      : null;
+
+  const essayBlueprint = buildAdvancedEssayBlueprint(lessonMeta, vocabularyList);
+
+  // 5. Câu hỏi Kiểm tra cuối bài
+  const masteryQuizzes = buildLessonMasteryQuizzes(
+    lessonMeta,
+    vocabularyList,
+    grammarDetail
+  );
+
+  // 6. Danh sách chữ Hán đơn lẻ để luyện viết
+  const uniqueCharacters = Array.from(
+    new Set(
+      (String(lessonMeta.zh || '') + (lessonMeta.keyVocab || []).join(''))
+        .split('')
+        .filter((ch) => /[\u4e00-\u9fa5]/.test(ch))
+    )
+  );
+
+  return {
+    id: lessonMeta.id,
+    numericId,
+    lessonNumber: numericId,
+    lessonMeta,
+    stageMeta,
+    vocabularyList,
+    grammarDetail,
+    dialogueLines,
+    translationDrill,
+    essayBlueprint,
+    masteryQuizzes,
+    uniqueCharacters,
+  };
+}
+
+// =========================================================================
+// LEGACY / AUDIT COMPATIBLE 9-STEP HSK 7-9 SYNTHESIZER (HSK_79_60_LESSONS)
+// Preserves full 9-step InteractiveLessonPlayer & curriculumCompletenessAudit
+// =========================================================================
 
 function buildGlossaryEntry(word, lessonMeta) {
-  const known = VOCAB_GLOSSARY[word];
+  let known = VOCAB_GLOSSARY[word];
+  if (!known && RAW_LEXICON_ENTRIES[word]) {
+    const [pinyin = '', hanViet = '', pos = '', meaning = '', radical = ''] = String(
+      RAW_LEXICON_ENTRIES[word]
+    ).split('|');
+    known = {
+      pinyin,
+      hanViet,
+      pos,
+      meaning,
+      register: pos === 'idiom' ? '书面语 · 四字成语' : `HSK ${lessonMeta.level} 书面语`,
+      synonymComparison: `${word} (${hanViet}) — ${meaning}${radical ? ` (${radical})` : ''}.`,
+      collocations: [`深入理解${word}`, `准确使用${word}`, `围绕${word}展开探讨`],
+    };
+  }
   if (known) {
     return {
       simplified: word,
@@ -379,16 +429,15 @@ function buildGlossaryEntry(word, lessonMeta) {
     };
   }
 
-  // Algorithmic clean fallback with accurate topic integration
   return {
     simplified: word,
-    pinyin: lessonMeta.level === 9 ? 'gāo jiē cí huì' : 'shū miàn cí huì',
-    hanViet: 'HÁN VIỆT CHUẨN',
-    pos: word.length === 4 ? '成语 / 固定短语' : '书面语核心词',
-    meaning: `Thuật ngữ trọng tâm cấp HSK ${lessonMeta.level} trong chuyên đề "${lessonMeta.vi}"`,
-    register: `HSK ${lessonMeta.level} 书面语 (Văn viết học thuật)`,
-    synonymComparison: `Từ vựng chuẩn HSK ${lessonMeta.level} thuộc nhóm ngữ vực trang trọng, ưu tiên dùng trong nghị luận, báo cáo và biên dịch thay cho khẩu ngữ thông thường.`,
-    collocations: [`深入理解${word}`, `高度重视${word}`, `精准运用${word}`],
+    pinyin: lessonMeta.pinyin || '',
+    hanViet: word,
+    pos: word.length === 4 ? '成语' : '书面语词',
+    meaning: `${word} — từ khóa chuyên đề ${lessonMeta.vi} (${lessonMeta.zh})`,
+    register: `HSK ${lessonMeta.level} 书面语`,
+    synonymComparison: `Thuộc lớp từ vựng học thuật HSK ${lessonMeta.level} dùng trong văn cảnh "${lessonMeta.vi}".`,
+    collocations: [`${word}的实践应用`, `深入剖析${word}`, `统筹推进${word}`],
     example: {
       hanzi: `围绕“${lessonMeta.zh}”，合理运用“${word}”能够显著提升论证的专业度。`,
       pinyin: `Wéirào "${lessonMeta.pinyin}", hélǐ yùnyòng "${word}" nénggòu xiǎnzhù tíshēng lùnzhèng de zhuānyè dù.`,
@@ -636,6 +685,7 @@ export function synthesizeHsk79Lesson(lessonOrId) {
 
   const targetSpeakSentence = `围绕${lessonMeta.zh}，唯有坚持${primaryWord.hanzi}与${secondWord.hanzi}${idiomWord.hanzi}，方能行稳致远。`;
 
+  const grammarAst = getGrammarAstDetail(lessonMeta);
   const nextLessonMeta =
     lessonMeta.id < 180 ? getHsk79LessonMetaById(lessonMeta.id + 1) : null;
 
@@ -669,18 +719,20 @@ export function synthesizeHsk79Lesson(lessonOrId) {
     vocabularyList: vocabEntries,
     academicPassage,
     translationDrills,
+    translationDrill: lessonMeta.level >= 7 ? buildHsk7to9TranslationDrill(lessonMeta, vocabEntries) : null,
     essayBlueprint,
     writingAndSpeakingPrompt: essayBlueprint,
     grammarDetail: {
       code: lessonMeta.grammarCode,
       pattern: lessonMeta.grammarPattern,
       titleVi: lessonMeta.grammarTitleVi,
-      explanationVi: `Mẫu cấu trúc "${lessonMeta.grammarPattern}" thuộc nhóm văn viết trang trọng (书面语) bậc ${stageCfg.code}, thường đứng ở câu bản lề chuyển ý trong văn bản nghị luận và biên dịch.`,
+      formula_tokens: grammarAst.formula_tokens,
+      explanationVi: `Mẫu cấu trúc "${lessonMeta.grammarPattern}" (${lessonMeta.grammarTitleVi}) thuộc nhóm văn viết trang trọng (书面语) bậc ${stageCfg.code}. ${grammarAst.reason}`,
       commonMistakes: [
         {
-          wrong: `虽然面临挑战，可是我们一定可以成功。 (Khẩu ngữ HSK 3–4)`,
-          correct: `诚然挑战重重，然若未雨绸缪，亦未尝不可化危为机。 (Văn viết ${stageCfg.code})`,
-          reason: `Thiếu tính hàn lâm (书面语) và không sử dụng được cụm Tứ tự cách tạo nhịp cân xứng.`,
+          wrong: grammarAst.wrong,
+          correct: grammarAst.correct,
+          reason: grammarAst.reason,
         },
       ],
     },
@@ -707,9 +759,11 @@ export function synthesizeHsk79Lesson(lessonOrId) {
     step2_vocabulary: vocabEntries,
     step3_hanzi: step3Hanzi,
     step4_grammar: {
+      code: lessonMeta.grammarCode,
       title: `${lessonMeta.grammarPattern} — ${lessonMeta.grammarTitleVi}`,
       formula: lessonMeta.grammarPattern,
-      explanation: `Cấu trúc chuẩn văn viết (书面语) cấp ${stageCfg.code}: ${lessonMeta.grammarTitleVi}. Dùng để kết nối mệnh đề nhân quả, nhượng bộ hoặc tương phản sắc bén trong báo chí và luận văn.`,
+      formula_tokens: grammarAst.formula_tokens,
+      explanation: `Cấu trúc chuẩn văn viết (书面语) cấp ${stageCfg.code}: ${lessonMeta.grammarTitleVi}. ${grammarAst.reason}`,
       examples: [
         {
           hanzi: academicPassage.paragraphsZh[0],
@@ -717,15 +771,15 @@ export function synthesizeHsk79Lesson(lessonOrId) {
           meaning: 'Mệnh đề mở đầu xác lập bối cảnh học thuật.',
         },
         {
-          hanzi: academicPassage.paragraphsZh[1],
+          hanzi: grammarAst.correct,
           pinyin: `${primaryWord.pinyin} · ${secondWord.pinyin}`,
-          meaning: `Minh họa trực tiếp mẫu câu ${lessonMeta.grammarPattern} trong ngữ cảnh thực chiến.`,
+          meaning: `Câu chuẩn HSK ${lessonMeta.level} minh họa trực tiếp mẫu "${lessonMeta.grammarPattern}".`,
         },
       ],
       commonMistake: {
-        wrong: 'Dịch thẳng khẩu ngữ "bởi vì... cho nên..." hoặc ghép thành ngữ sai sắc thái khen chê',
-        correct: lessonMeta.grammarPattern,
-        explanation: `Người Việt hay dịch word-by-word; ở HSK ${lessonMeta.level} cần ưu tiên hư từ cô đọng và kiểm tra kỹ sắc thái khen/chê (褒贬色彩).`,
+        wrong: grammarAst.wrong,
+        correct: grammarAst.correct,
+        explanation: grammarAst.reason,
       },
     },
     step5_listening: {
@@ -785,5 +839,3 @@ export function getHsk79LessonWithContent(lessonId) {
   if (!meta) return null;
   return synthesizeHsk79Lesson(meta);
 }
-
-export { HSK_79_60_LESSONS };

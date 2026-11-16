@@ -70,7 +70,7 @@ test('HSK CBT Exam Simulator & Data Integrity Test Suite', async (t) => {
     allExams.forEach(exam => {
       const details = getFullExamById(exam.id);
 
-      details.questions.forEach((q, idx) => {
+      details.questions.forEach((q) => {
         const sec = q.section || q.part_type || 'reading';
         const qType = q.question_type || q.questionType;
 

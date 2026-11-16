@@ -5,7 +5,8 @@ import { Hsk6SimulatorWorkspace } from '../features/hsk-exam/renderers/hsk6/Hsk6
 import { Hsk6TwoPhaseSummarySimulator } from '../features/hsk-exam/renderers/hsk6/Hsk6TwoPhaseSummarySimulator.tsx';
 import { HskkSpeakingSimulator } from '../features/hskk-exam/HskkSpeakingSimulator.tsx';
 import { PostExamMistakeRemediationPanel } from '../features/hsk-exam/analytics/PostExamMistakeRemediationPanel.tsx';
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { HSK_7_TO_9_PAPER_CATALOG } from '@/features/hsk-exam/data/hsk7to9SampleExamPaper';
+import React, { useState, useEffect, useMemo, useRef, Suspense, lazy } from 'react';
 import { 
   Award, 
   BookOpen, 
@@ -47,8 +48,15 @@ import {
   Check,
   Zap,
   Target,
-  Dices
+  Dices,
+  GraduationCap,
+  Play
 } from 'lucide-react';
+
+// Lazy-load trình mô phỏng HSK 7-9 để giữ gói tải chính siêu nhẹ
+const Hsk7to9IntegratedExamSimulator = lazy(() =>
+  import('@/features/hsk-exam/components/Hsk7to9IntegratedExamSimulator')
+);
 import { 
   getHskExams, 
   getHskExamDetails, 
@@ -79,6 +87,162 @@ import { speakChinese } from '../utils/audio';
 import SentenceReorderQuestion from '../components/hsk/SentenceReorderQuestion.jsx';
 import { saveCustomVocab } from '../utils/materialsStorage.js';
 
+const HSK_7_TO_9_CODES = new Set(['H79001', 'H79002', 'H79003']);
+
+/**
+ * Đọc tham số level (1..9) và paper (ví dụ: H41005, H79001, H79002, H79003)
+ * Hỗ trợ cả window.location.search (?level=7&paper=H79001) và Hash Router (#hsk?level=7&paper=H79001)
+ */
+export function parseHskExamUrlParams() {
+  if (typeof window === 'undefined') {
+    return { level: 4, paperCode: null, autoStartHsk79: false };
+  }
+
+  const searchParams = new URLSearchParams(window.location.search);
+  let rawLevel = searchParams.get('level');
+  let rawPaper = searchParams.get('paper');
+
+  if (window.location.hash.includes('?')) {
+    const hashQuery = window.location.hash.split('?')[1];
+    const hashParams = new URLSearchParams(hashQuery);
+    if (!rawLevel) rawLevel = hashParams.get('level');
+    if (!rawPaper) rawPaper = hashParams.get('paper');
+  }
+
+  const normalizedPaper = rawPaper ? rawPaper.trim().toUpperCase() : null;
+  const parsedLevel = Number(rawLevel);
+
+  const isHsk79Paper = normalizedPaper && HSK_7_TO_9_CODES.has(normalizedPaper);
+  const isHsk79Level = Number.isFinite(parsedLevel) && parsedLevel >= 7 && parsedLevel <= 9;
+
+  return {
+    level: isHsk79Level
+      ? parsedLevel
+      : isHsk79Paper
+      ? 7
+      : Number.isFinite(parsedLevel) && parsedLevel >= 1 && parsedLevel <= 6
+      ? parsedLevel
+      : 4,
+    paperCode: isHsk79Paper
+      ? normalizedPaper
+      : isHsk79Level
+      ? `H7900${parsedLevel - 6}`
+      : normalizedPaper,
+    autoStartHsk79: Boolean(isHsk79Paper),
+  };
+}
+
+/**
+ * Component Banner & Danh sách 3 Đề thi Tích hợp HSK 7–9 (H79001, H79002, H79003)
+ */
+export function Hsk7to9ExamCenterSection({
+  selectedLevel = 7,
+  onSelectLevel,
+  onLaunchHsk7to9Paper,
+}) {
+  return (
+    <section className="space-y-5">
+      <div className="relative overflow-hidden p-5 sm:p-7 rounded-3xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] border border-amber-400/35 shadow-xl space-y-5 text-white">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-[#E85D3F]/20 blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-extrabold uppercase tracking-wider">
+              <GraduationCap className="w-4 h-4" />
+              <span>Chuẩn Khảo Thí HSK 3.0 Mới • Kỳ Thi Tích Hợp Cấp 7 – 9</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white font-['Noto_Serif_SC']">
+              Phòng Thi Tích Hợp HSK 7–9 (Nghe • Đọc Biểu Đồ • Dịch Thuật • Luận Văn 600 Chữ • Khẩu Ngữ)
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
+              Một bài thi tổng hợp <strong className="text-white">300 điểm / 210 phút</strong> tự động phân loại năng lực
+              học thuật theo 3 bậc:{' '}
+              <span className="text-cyan-300 font-bold">HSK 7 (≥ 180đ)</span> •{' '}
+              <span className="text-purple-300 font-bold">HSK 8 (≥ 210đ)</span> •{' '}
+              <span className="text-amber-300 font-bold">Đại sư HSK 9 (≥ 240đ)</span>.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-start lg:self-center shrink-0">
+            {[7, 8, 9].map((lvl) => (
+              <button
+                key={lvl}
+                type="button"
+                onClick={() => onSelectLevel && onSelectLevel(lvl)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-extrabold border transition cursor-pointer ${
+                  selectedLevel === lvl
+                    ? 'bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white border-[#E85D3F] shadow-md'
+                    : 'bg-white/10 border-white/15 text-amber-300 hover:bg-white/20'
+                }`}
+              >
+                HSK {lvl}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Lưới 3 Đề thi H79001, H79002, H79003 */}
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+          {HSK_7_TO_9_PAPER_CATALOG.map((paper) => {
+            const isHighlighted = selectedLevel === paper.targetLevel;
+            return (
+              <div
+                key={paper.paperCode}
+                className={`p-5 rounded-2xl border transition flex flex-col justify-between gap-4 ${
+                  isHighlighted
+                    ? 'bg-white/15 border-amber-400/70 ring-2 ring-amber-400/30 shadow-xl'
+                    : 'bg-black/25 border-white/15 hover:bg-black/35'
+                }`}
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-extrabold">
+                      Mã đề: {paper.paperCode}
+                    </span>
+                    <span className="text-xs font-bold text-orange-300">
+                      Trọng tâm: HSK {paper.targetLevel}
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-extrabold text-white leading-snug font-['Noto_Serif_SC']">
+                    {paper.titleZh}
+                  </h3>
+                  <p className="text-xs text-slate-200 font-medium leading-relaxed">
+                    {paper.titleVi}
+                  </p>
+
+                  <div className="pt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-300">
+                    <span className="px-2 py-0.5 rounded bg-white/10 border border-white/10">
+                      ⏱️ {paper.durationMinutes} phút
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-white/10 border border-white/10">
+                      📊 Biểu đồ số liệu
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-white/10 border border-white/10">
+                      🈯 Dịch Tín-Đạt-Nhã
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-white/10 border border-white/10">
+                      ✍️ Luận 600 chữ
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onLaunchHsk7to9Paper && onLaunchHsk7to9Paper(paper.paperCode)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-extrabold text-xs hover:opacity-95 transition shadow-md cursor-pointer"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Vào Phòng Thi {paper.paperCode} Ngay</span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function HskPracticePage({ 
   user, 
   setActiveTab, 
@@ -89,6 +253,24 @@ export default function HskPracticePage({
   const [reportTarget, setReportTarget] = useState(null);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [randomModalOpen, setRandomModalOpen] = useState(false);
+  const initialUrlConfig = useMemo(() => parseHskExamUrlParams(), []);
+  const [selectedLevel, setSelectedLevel] = useState(initialUrlConfig.level);
+  const [activeHsk7to9PaperCode, setActiveHsk7to9PaperCode] = useState(
+    initialUrlConfig.autoStartHsk79 ? initialUrlConfig.paperCode : null
+  );
+
+  // Tự động đồng bộ khi người dùng chuyển từ RoadmapPage sang (#hsk?level=7&paper=H79001)
+  useEffect(() => {
+    const syncFromHash = () => {
+      const parsed = parseHskExamUrlParams();
+      if (parsed.level) setSelectedLevel(parsed.level);
+      if (parsed.autoStartHsk79 && parsed.paperCode) {
+        setActiveHsk7to9PaperCode(parsed.paperCode);
+      }
+    };
+    window.addEventListener('hashchange', syncFromHash);
+    return () => window.removeEventListener('hashchange', syncFromHash);
+  }, []);
 
   // Navigation helper
   const navigateTo = (view, id = null) => {
@@ -103,6 +285,8 @@ export default function HskPracticePage({
         window.location.hash = '#hsk/structure';
       } else if (view === 'hsk6_simulator') {
         window.location.hash = '#hsk/hsk6_simulator';
+      } else if (view === 'hsk7_9_simulator') {
+        window.location.hash = '#hsk/hsk7_9_simulator';
       } else if (view === 'hskk_simulator') {
         window.location.hash = '#hsk/hskk_simulator';
       } else if (view === 'resources') {
@@ -123,8 +307,16 @@ export default function HskPracticePage({
     }
   };
 
+  const launchHsk7to9Paper = (code) => {
+    setActiveHsk7to9PaperCode(code);
+    window.location.hash = `#hsk?level=${selectedLevel >= 7 ? selectedLevel : 7}&paper=${code}`;
+  };
+
   // Determine current active view based on subRoute
   const currentView = useMemo(() => {
+    if (subRoute === 'hsk7_9_simulator' || activeHsk7to9PaperCode) {
+      return 'hsk7_9_simulator';
+    }
     if (subRoute === 'exams') return 'exams';
     if (subRoute === 'structure') return 'structure';
     if (subRoute === 'hsk6_simulator') return 'hsk6_simulator';
@@ -137,7 +329,35 @@ export default function HskPracticePage({
     if (subRoute === 'take' && paramId) return 'exam_taking';
     if (subRoute === 'result' && paramId) return 'exam_result';
     return 'home';
-  }, [subRoute, paramId]);
+  }, [subRoute, paramId, activeHsk7to9PaperCode]);
+
+  if (currentView === 'hsk7_9_simulator') {
+    const resolvedPaper =
+      activeHsk7to9PaperCode ||
+      (selectedLevel >= 7 ? `H7900${selectedLevel - 6}` : 'H79001');
+    return (
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-[#FFF9F2] dark:bg-[#131B24] flex flex-col items-center justify-center gap-3 text-[#5B6B7F] dark:text-slate-300">
+            <div className="w-9 h-9 border-2 border-[#E85D3F] border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs font-bold text-[#E85D3F]">
+              Đang khởi tạo Phòng thi Tích hợp HSK 7–9 ({resolvedPaper})...
+            </p>
+          </div>
+        }
+      >
+        <Hsk7to9IntegratedExamSimulator
+          paperCode={resolvedPaper}
+          initialLevel={selectedLevel >= 7 ? selectedLevel : 7}
+          onExit={() => {
+            setActiveHsk7to9PaperCode(null);
+            window.location.hash = '#hsk';
+            if (onNavigate) onNavigate('home');
+          }}
+        />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FFF9F2] dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors pb-16">
@@ -155,6 +375,9 @@ export default function HskPracticePage({
         <HskHomeView 
           onNavigate={navigateTo} 
           onOpenRandomModal={() => setRandomModalOpen(true)}
+          selectedLevel={selectedLevel}
+          onSelectLevel={setSelectedLevel}
+          onLaunchHsk7to9Paper={launchHsk7to9Paper}
         />
       )}
 
@@ -180,6 +403,9 @@ export default function HskPracticePage({
         <HskExamsListView 
           onNavigate={navigateTo} 
           onOpenRandomModal={() => setRandomModalOpen(true)}
+          selectedLevel={selectedLevel}
+          onSelectLevel={setSelectedLevel}
+          onLaunchHsk7to9Paper={launchHsk7to9Paper}
         />
       )}
 
@@ -456,7 +682,13 @@ function HskRandomExamModal({ isOpen, onClose, onNavigate }) {
 // =========================================================================
 // 1. HOME VIEW: Tổng quan & Chọn cấp độ HSK 1 - 6
 // =========================================================================
-function HskHomeView({ onNavigate, onOpenRandomModal }) {
+function HskHomeView({
+  onNavigate,
+  onOpenRandomModal,
+  selectedLevel = 7,
+  onSelectLevel,
+  onLaunchHsk7to9Paper,
+}) {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pastAttempts, setPastAttempts] = useState([]);
@@ -523,6 +755,16 @@ function HskHomeView({ onNavigate, onOpenRandomModal }) {
       color: 'border-indigo-500 hover:border-indigo-600',
       tagColor: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300',
       duration: '140 phút • 180/300 điểm đạt'
+    },
+    {
+      level: 'HSK 7–9',
+      title: 'HSK 7–9 — Bậc Thầy HSK 3.0',
+      desc: '11.092 từ vựng học thuật, 5 kỹ năng Nghe giảng - Đọc biểu đồ - Dịch 2 chiều - Luận 600 chữ - Biện luận.',
+      badge: '🎓 Bậc Thầy (Chuẩn HSK 3.0)',
+      color: 'border-amber-500 hover:border-amber-600',
+      tagColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300',
+      duration: '210 phút • 180/210/240 điểm xét cấp',
+      routeView: 'hsk7_9_simulator',
     }
   ];
 
@@ -570,6 +812,13 @@ function HskHomeView({ onNavigate, onOpenRandomModal }) {
             >
               <Sparkles className="w-4 h-4 text-emerald-300" />
               Mô phỏng HSK 6
+            </button>
+            <button
+              onClick={() => onNavigate('hsk7_9_simulator')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#243447] hover:bg-slate-900 text-amber-300 font-extrabold text-xs sm:text-sm shadow-xs transition-all cursor-pointer border border-amber-300/40"
+            >
+              <Award className="w-4 h-4 text-amber-300" />
+              Mô phỏng HSK 7–9 (300đ)
             </button>
             <button
               onClick={() => onNavigate('hskk_simulator')}
@@ -732,7 +981,7 @@ function HskHomeView({ onNavigate, onOpenRandomModal }) {
             return (
               <div
                 key={card.level}
-                onClick={() => onNavigate('exams')}
+                onClick={() => onNavigate(card.routeView || 'exams')}
                 className={`bg-white dark:bg-slate-900 rounded-2xl p-6 border-2 ${card.color} shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group`}
               >
                 <div>
@@ -741,7 +990,7 @@ function HskHomeView({ onNavigate, onOpenRandomModal }) {
                       {card.badge}
                     </span>
                     <span className="text-xs font-semibold text-slate-400">
-                      {count} đề thi
+                      {card.routeView === 'hsk7_9_simulator' ? 'Đề tích hợp H79001' : `${count} đề thi`}
                     </span>
                   </div>
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-[#E85D3F] transition-colors mb-2">
@@ -761,6 +1010,15 @@ function HskHomeView({ onNavigate, onOpenRandomModal }) {
             );
           })}
         </div>
+      </div>
+
+      {/* Khu vực Phòng Thi Tích Hợp HSK 7–9 (H79001, H79002, H79003) */}
+      <div className="mb-12">
+        <Hsk7to9ExamCenterSection
+          selectedLevel={selectedLevel}
+          onSelectLevel={onSelectLevel}
+          onLaunchHsk7to9Paper={onLaunchHsk7to9Paper}
+        />
       </div>
 
       {/* Đề thi tiêu biểu nổi bật */}
@@ -905,7 +1163,13 @@ function HskHomeView({ onNavigate, onOpenRandomModal }) {
 // =========================================================================
 // 2. EXAM LIST VIEW: Bộ lọc & Khám phá đề thi
 // =========================================================================
-function HskExamsListView({ onNavigate, onOpenRandomModal }) {
+function HskExamsListView({
+  onNavigate,
+  onOpenRandomModal,
+  selectedLevel = 7,
+  onSelectLevel,
+  onLaunchHsk7to9Paper,
+}) {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [levelFilter, setLevelFilter] = useState('all');
@@ -973,10 +1237,15 @@ function HskExamsListView({ onNavigate, onOpenRandomModal }) {
           {/* Level Filter */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-slate-400">Cấp độ:</span>
-            {['all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map(lvl => (
+            {['all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7–9'].map(lvl => (
               <button
                 key={lvl}
-                onClick={() => setLevelFilter(lvl)}
+                onClick={() => {
+                  setLevelFilter(lvl);
+                  if (lvl === 'HSK 7–9' && onSelectLevel) {
+                    onSelectLevel(selectedLevel >= 7 ? selectedLevel : 7);
+                  }
+                }}
                 className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
                   levelFilter === lvl 
                     ? 'bg-[#E85D3F] text-white' 
@@ -1064,8 +1333,19 @@ function HskExamsListView({ onNavigate, onOpenRandomModal }) {
         </div>
       </div>
 
+      {/* Khu vực Đề thi Tích hợp HSK 7–9 (Hiển thị khi chọn Tất cả hoặc HSK 7–9) */}
+      {(levelFilter === 'all' || levelFilter === 'HSK 7–9') && (
+        <div className="mb-8">
+          <Hsk7to9ExamCenterSection
+            selectedLevel={selectedLevel}
+            onSelectLevel={onSelectLevel}
+            onLaunchHsk7to9Paper={onLaunchHsk7to9Paper}
+          />
+        </div>
+      )}
+
       {/* Exam Grid */}
-      {loading ? (
+      {levelFilter === 'HSK 7–9' ? null : loading ? (
         <div className="text-center py-16 text-slate-400">Đang tìm kiếm đề thi...</div>
       ) : exams.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-800">
@@ -1351,6 +1631,23 @@ function HskExamTakingView({ examId, user, onNavigate }) {
   const [showPracticeScript, setShowPracticeScript] = useState(false);
   const [showPracticeExplanation, setShowPracticeExplanation] = useState(false);
 
+  // Refs to avoid stale closures on timer auto-submit & periodic auto-save
+  const answersRef = useRef(answers);
+  const flaggedIdsRef = useRef(flaggedIds);
+  const examModeRef = useRef(examMode);
+  const currentIdxRef = useRef(currentIdx);
+  const timeLeftRef = useRef(timeLeft);
+  const timeSpentRef = useRef(timeSpentSeconds);
+  const isSubmittingRef = useRef(isSubmitting);
+
+  answersRef.current = answers;
+  flaggedIdsRef.current = flaggedIds;
+  examModeRef.current = examMode;
+  currentIdxRef.current = currentIdx;
+  timeLeftRef.current = timeLeft;
+  timeSpentRef.current = timeSpentSeconds;
+  isSubmittingRef.current = isSubmitting;
+
   useEffect(() => {
     setShowPracticeScript(false);
     setShowPracticeExplanation(false);
@@ -1384,24 +1681,49 @@ function HskExamTakingView({ examId, user, onNavigate }) {
 
   // Khởi tạo bài thi & phục hồi phiên làm bài dang dở
   useEffect(() => {
-    let timer = null;
+    let mounted = true;
     getExamForTaking(examId).then(data => {
+      if (!mounted) return;
       setExam(data);
+
+      const defaultDurationSeconds = (data.duration_minutes || 40) * 60;
+      let resolvedTimeLeft = defaultDurationSeconds;
+      let resolvedTimeSpent = 0;
 
       // Phục hồi bản nháp từ localStorage nếu có
       const session = getTemporaryExamSession(examId);
-      if (session && session.answers && Object.keys(session.answers).length > 0) {
-        setAnswers(session.answers);
-        if (session.flaggedQuestionIds) setFlaggedIds(session.flaggedQuestionIds);
-        if (session.examMode) setExamMode(session.examMode);
-        if (typeof session.currentIdx === 'number') setCurrentIdx(Math.min(session.currentIdx, data.questions.length - 1));
-        setRestoredToast(true);
-        setTimeout(() => setRestoredToast(false), 5000);
+      if (session) {
+        if (session.answers && Object.keys(session.answers).length > 0) {
+          setAnswers(session.answers);
+          answersRef.current = session.answers;
+          setRestoredToast(true);
+          setTimeout(() => setRestoredToast(false), 5000);
+        }
+        if (session.flaggedQuestionIds) {
+          setFlaggedIds(session.flaggedQuestionIds);
+          flaggedIdsRef.current = session.flaggedQuestionIds;
+        }
+        if (session.examMode) {
+          setExamMode(session.examMode);
+          examModeRef.current = session.examMode;
+        }
+        if (typeof session.currentIdx === 'number' && data.questions?.length > 0) {
+          const safeIdx = Math.max(0, Math.min(session.currentIdx, data.questions.length - 1));
+          setCurrentIdx(safeIdx);
+          currentIdxRef.current = safeIdx;
+        }
+        if (typeof session.timeLeft === 'number' && session.timeLeft > 0) {
+          resolvedTimeLeft = Math.min(defaultDurationSeconds, session.timeLeft);
+        }
+        if (typeof session.timeSpentSeconds === 'number' && session.timeSpentSeconds > 0) {
+          resolvedTimeSpent = session.timeSpentSeconds;
+        }
       }
 
-      // Khởi tạo thời gian làm bài (giây)
-      const durationSeconds = (data.duration_minutes || 40) * 60;
-      setTimeLeft(durationSeconds);
+      setTimeLeft(resolvedTimeLeft);
+      timeLeftRef.current = resolvedTimeLeft;
+      setTimeSpentSeconds(resolvedTimeSpent);
+      timeSpentRef.current = resolvedTimeSpent;
       setLoading(false);
     }).catch(err => {
       alert(err.message);
@@ -1409,83 +1731,116 @@ function HskExamTakingView({ examId, user, onNavigate }) {
     });
 
     return () => {
-      if (timer) clearInterval(timer);
+      mounted = false;
     };
   }, [examId]);
 
-  // Bộ đếm thời gian
+  // Bộ đếm thời gian & tự động lưu trạng thái thời gian thi chống mất khi F5
   useEffect(() => {
     if (loading || !exam || isSubmitting) return;
 
     const timer = setInterval(() => {
-      setTimeSpentSeconds(prev => prev + 1);
+      const nextSpent = timeSpentRef.current + 1;
+      timeSpentRef.current = nextSpent;
+      setTimeSpentSeconds(nextSpent);
 
-      if (examMode === 'simulation') {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            handleAutoSubmit();
-            return 0;
-          }
-          return prev - 1;
+      if (examModeRef.current === 'simulation') {
+        const nextLeft = Math.max(0, timeLeftRef.current - 1);
+        timeLeftRef.current = nextLeft;
+        setTimeLeft(nextLeft);
+
+        if (nextSpent % 5 === 0) {
+          saveTemporaryAnswers(examId, answersRef.current, {
+            flaggedQuestionIds: flaggedIdsRef.current,
+            examMode: examModeRef.current,
+            currentIdx: currentIdxRef.current,
+            timeLeft: nextLeft,
+            timeSpentSeconds: nextSpent
+          });
+        }
+
+        if (nextLeft <= 0) {
+          clearInterval(timer);
+          handleAutoSubmit();
+        }
+      } else if (nextSpent % 5 === 0) {
+        saveTemporaryAnswers(examId, answersRef.current, {
+          flaggedQuestionIds: flaggedIdsRef.current,
+          examMode: examModeRef.current,
+          currentIdx: currentIdxRef.current,
+          timeLeft: timeLeftRef.current,
+          timeSpentSeconds: nextSpent
         });
       }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [loading, exam, isSubmitting, examMode]);
+  }, [loading, exam, isSubmitting, examMode, examId]);
 
   // Tự động lưu bản nháp vào localStorage
   const recordAnswerChange = (questionId, value) => {
-    const updated = { ...answers, [questionId]: value };
+    const updated = { ...answersRef.current, [questionId]: value };
+    answersRef.current = updated;
     setAnswers(updated);
     saveTemporaryAnswers(examId, updated, {
-      flaggedQuestionIds: flaggedIds,
-      examMode,
-      currentIdx
+      flaggedQuestionIds: flaggedIdsRef.current,
+      examMode: examModeRef.current,
+      currentIdx: currentIdxRef.current,
+      timeLeft: timeLeftRef.current,
+      timeSpentSeconds: timeSpentRef.current
     });
   };
 
   // Bật/tắt đánh dấu câu hỏi xem lại
   const toggleFlagQuestion = (qId) => {
-    const nextFlagged = flaggedIds.includes(qId)
-      ? flaggedIds.filter(id => id !== qId)
-      : [...flaggedIds, qId];
+    const curFlagged = flaggedIdsRef.current;
+    const nextFlagged = curFlagged.includes(qId)
+      ? curFlagged.filter(id => id !== qId)
+      : [...curFlagged, qId];
+    flaggedIdsRef.current = nextFlagged;
     setFlaggedIds(nextFlagged);
-    saveTemporaryAnswers(examId, answers, {
+    saveTemporaryAnswers(examId, answersRef.current, {
       flaggedQuestionIds: nextFlagged,
-      examMode,
-      currentIdx
+      examMode: examModeRef.current,
+      currentIdx: currentIdxRef.current,
+      timeLeft: timeLeftRef.current,
+      timeSpentSeconds: timeSpentRef.current
     });
   };
 
   // Tự động nộp bài khi hết giờ ở chế độ thi thử
   const handleAutoSubmit = async () => {
-    if (isSubmitting) return;
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
-    alert('⏱️ Đã hết thời gian làm bài thi! Hệ thống đang tự động nộp bài của bạn.');
+    try {
+      alert('⏱️ Đã hết thời gian làm bài thi! Hệ thống đang tự động nộp bài của bạn.');
+    } catch {}
     await executeSubmission(true);
   };
 
   // Nộp bài thi
   const executeSubmission = async (isAuto = false) => {
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
-      const calculatedTimeSpent = examMode === 'simulation'
-        ? Math.max(1, ((exam.duration_minutes || 40) * 60) - timeLeft)
-        : Math.max(1, timeSpentSeconds);
+      const latestMode = examModeRef.current;
+      const calculatedTimeSpent = latestMode === 'simulation'
+        ? Math.max(1, ((exam?.duration_minutes || 40) * 60) - timeLeftRef.current)
+        : Math.max(1, timeSpentRef.current);
 
       const attempt = await submitExamAttempt({
         examId: exam.id,
-        submittedAnswers: answers,
+        submittedAnswers: answersRef.current,
         timeSpentSeconds: calculatedTimeSpent,
         user,
-        examMode
+        examMode: latestMode
       });
       clearTemporaryAnswers(examId);
       onNavigate('result', attempt.id);
     } catch (err) {
       alert('Lỗi nộp bài: ' + err.message);
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -2374,7 +2729,7 @@ function HskExamResultView({ attemptId, user, onNavigate }) {
                       <span className="text-xs text-slate-400 font-bold"> / 100đ</span>
                     </span>
                     <span className="text-[11px] font-bold text-slate-500">
-                      {secData.correct}/{secData.total} câu
+                      {secData.correct ?? secData.correctQuestions ?? 0}/{secData.total ?? secData.totalQuestions ?? 0} câu
                     </span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mb-1.5">
@@ -2560,7 +2915,7 @@ function HskExamResultView({ attemptId, user, onNavigate }) {
                 filterMode === 'incorrect' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-500'
               }`}
             >
-              Câu sai ({attempt.incorrectCount})
+              Câu sai / Bỏ qua ({results.filter(r => r.isCorrect === false).length})
             </button>
             <button
               onClick={() => setFilterMode('correct')}
@@ -2574,7 +2929,9 @@ function HskExamResultView({ attemptId, user, onNavigate }) {
         </div>
 
         {/* Detailed Questions List */}
-        {filteredResults.map(q => (
+        {filteredResults.map(q => {
+          const isUnanswered = q.isCorrect === false && (q.userAnswer === undefined || q.userAnswer === null || q.userAnswer === '');
+          return (
           <div 
             key={q.questionId}
             className={`p-6 rounded-3xl border-2 bg-white dark:bg-slate-900 transition-all ${
@@ -2582,6 +2939,8 @@ function HskExamResultView({ attemptId, user, onNavigate }) {
                 ? 'border-amber-200 dark:border-amber-950/60'
                 : q.isCorrect 
                 ? 'border-emerald-200 dark:border-emerald-950/60' 
+                : isUnanswered
+                ? 'border-slate-200 dark:border-slate-700 shadow-xs'
                 : 'border-rose-200 dark:border-rose-950/60 shadow-xs'
             }`}
           >
@@ -2593,12 +2952,16 @@ function HskExamResultView({ attemptId, user, onNavigate }) {
                     ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
                     : q.isCorrect 
                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' 
+                    : isUnanswered
+                    ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                     : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
                 }`}>
                   {q.isSubjective ? (
                     '✍️ Tự luận (Đối chiếu tự chấm)'
                   ) : q.isCorrect ? (
                     <><CheckCircle2 className="w-3.5 h-3.5" /> Câu {q.questionNumber}: Đúng</>
+                  ) : isUnanswered ? (
+                    <>Câu {q.questionNumber}: Bỏ qua</>
                   ) : (
                     <><XCircle className="w-3.5 h-3.5" /> Câu {q.questionNumber}: Sai</>
                   )}
@@ -2740,7 +3103,8 @@ function HskExamResultView({ attemptId, user, onNavigate }) {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

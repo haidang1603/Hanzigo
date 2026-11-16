@@ -4,8 +4,14 @@ const url = process.env.VITE_SUPABASE_URL;
 const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const anonClient = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-const adminClient = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+const anonClient =
+  url && anonKey
+    ? createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } })
+    : null;
+const adminClient =
+  url && serviceKey
+    ? createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+    : null;
 
 // Ground Truth Benchmark Dataset: Exactly 32 queries
 export const BENCHMARK_32_QUERIES = [
@@ -235,5 +241,12 @@ async function runBenchmarkReproducible() {
   console.log('================================================================\n');
 }
 
-runBenchmarkReproducible();
+const isDirectExecution =
+  typeof process !== 'undefined' &&
+  Array.isArray(process.argv) &&
+  process.argv[1]?.includes('benchmark_rag_32_reproducible');
+
+if (isDirectExecution) {
+  runBenchmarkReproducible();
+}
 

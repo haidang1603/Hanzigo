@@ -251,7 +251,7 @@ export default function SmartCommandPalette({
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setSelectedIndex(prev => (allResults.length > 0 ? (prev - 1 + allResults.length) % allResults.length : 0));
-    } else if (e.key === 'Enter') {
+    } else if (e.key === 'Enter' && !e.isComposing && !e.nativeEvent?.isComposing) {
       e.preventDefault();
       if (allResults[selectedIndex]) {
         executeItem(allResults[selectedIndex]);

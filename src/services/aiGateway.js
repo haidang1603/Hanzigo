@@ -73,6 +73,7 @@ async function getClientAuthHeaders(user = null) {
 
 /**
  * Hàm điều phối chính gửi yêu cầu tới serverless `/api/ai/personalize`
+ * @param {{ action: string, payload?: Record<string, any>, user?: { id?: string | null, uid?: string | null } | null, bypassCache?: boolean, cacheTtlMs?: number }} options
  */
 export async function invokeAiPersonalization({
   action,
@@ -112,42 +113,52 @@ export async function invokeAiPersonalization({
   // 3. Chuẩn bị headers và dữ liệu đã làm sạch
   const authHeaders = await getClientAuthHeaders(user);
   const cleanPayload = sanitizeContextForAi(payload);
+  const hasAuthCredentials = Boolean(
+    authHeaders['Authorization'] || authHeaders['x-user-id']
+  );
 
-  // 4. Thử gọi backend serverless
-  try {
-    const response = await fetch('/api/ai/personalize', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders
-      },
-      body: JSON.stringify({
-        action,
-        payload: cleanPayload
-      })
-    });
+  // 4. Thử gọi backend serverless (tránh spam lỗi 401 ở chế độ Khách chưa đăng nhập)
+  if (hasAuthCredentials) {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 9000) : null;
+    try {
+      const response = await fetch('/api/ai/personalize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders
+        },
+        ...(controller ? { signal: controller.signal } : {}),
+        body: JSON.stringify({
+          action,
+          payload: cleanPayload
+        })
+      });
 
-    if (response.ok) {
-      const json = await response.json();
-      if (json && typeof json === 'object') {
-        // Lưu Cache
-        try {
-          localStorage.setItem(cacheKey, JSON.stringify(json));
-        } catch {}
+      if (response.ok) {
+        const json = await response.json();
+        if (json && typeof json === 'object') {
+          // Lưu Cache
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(json));
+          } catch {}
 
-        return {
-          success: true,
-          data: json,
-          fromCache: false,
-          isOffline: false
-        };
+          return {
+            success: true,
+            data: json,
+            fromCache: false,
+            isOffline: false
+          };
+        }
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        console.warn(`[AI Gateway] Backend returned status ${response.status}:`, errData.error);
       }
-    } else {
-      const errData = await response.json().catch(() => ({}));
-      console.warn(`[AI Gateway] Backend returned status ${response.status}:`, errData.error);
+    } catch (netErr) {
+      console.warn(`[AI Gateway] Network or endpoint unreachable (${action}), activating offline heuristics:`, netErr.message);
+    } finally {
+      if (timeoutId !== null) clearTimeout(timeoutId);
     }
-  } catch (netErr) {
-    console.warn(`[AI Gateway] Network or endpoint unreachable (${action}), activating offline heuristics:`, netErr.message);
   }
 
   // 5. Fallback an toàn sang Deterministic Offline Engine

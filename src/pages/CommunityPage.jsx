@@ -2336,7 +2336,11 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                               value={commentInputs[post.id] || ''}
                               onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
+                                if (
+                                  e.key === 'Enter' &&
+                                  !e.nativeEvent?.isComposing &&
+                                  !e.isComposing
+                                ) {
                                   handleAddComment(post.id);
                                 }
                               }}

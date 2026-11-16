@@ -35,6 +35,15 @@ export default function DataSubjectRequestModal({ isOpen, onClose, user, onLogou
 
   const isTeacher = user?.role === 'teacher';
 
+  const safeParseLocalStorage = (key, fallback) => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
   const handleExportData = () => {
     playClickSound();
     try {
@@ -52,11 +61,11 @@ export default function DataSubjectRequestModal({ isOpen, onClose, user, onLogou
           xp: user?.xp || 0
         },
         learningProgress: {
-          completedLessons: JSON.parse(localStorage.getItem('hanzigo_completed_lessons') || '[]'),
-          vocabRemembered: JSON.parse(localStorage.getItem('hanzigo_vocab_remembered') || '[]'),
-          hskExamHistory: JSON.parse(localStorage.getItem('hanzigo_hsk_exam_history') || '[]'),
-          hskMistakes: JSON.parse(localStorage.getItem('hanzigo_hsk_mistakes') || '[]'),
-          personalizationProfile: JSON.parse(localStorage.getItem('hanzigo_learner_context') || '{}')
+          completedLessons: safeParseLocalStorage('hanzigo_completed_lessons', []),
+          vocabRemembered: safeParseLocalStorage('hanzigo_vocab_remembered', []),
+          hskExamHistory: safeParseLocalStorage('hanzigo_hsk_exam_history', []),
+          hskMistakes: safeParseLocalStorage('hanzigo_hsk_mistakes', []),
+          personalizationProfile: safeParseLocalStorage('hanzigo_learner_context', {})
         }
       };
 

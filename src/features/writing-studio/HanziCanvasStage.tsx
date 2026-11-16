@@ -283,11 +283,15 @@ export default function HanziCanvasStage({
 
       {/* Main Responsive Canvas Stage (320px - 420px) */}
       <div className="flex flex-col items-center gap-4">
-        <div className="relative w-[320px] h-[320px] sm:w-[360px] sm:h-[360px] lg:w-[400px] lg:h-[400px] rounded-2xl bg-[#FFFDF9] dark:bg-[#0F172A] shadow-inner flex items-center justify-center overflow-hidden">
+        <div
+          className="relative w-[320px] h-[320px] sm:w-[360px] sm:h-[360px] lg:w-[400px] lg:h-[400px] rounded-2xl bg-[#FFFDF9] dark:bg-[#0F172A] shadow-inner flex items-center justify-center overflow-hidden touch-none select-none"
+          style={{ touchAction: 'none' }}
+        >
           <GridOverlaySvg gridType={gridType} />
           <div
             ref={containerRef}
-            className="relative z-10 flex items-center justify-center"
+            className="relative z-10 flex items-center justify-center touch-none select-none"
+            style={{ touchAction: 'none' }}
             aria-label={`Khung tập viết chữ ${character}`}
           />
         </div>

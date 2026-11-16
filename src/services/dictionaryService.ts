@@ -3,11 +3,16 @@ import { getHanziDecomposition } from '../data/hanziDecomposition.js';
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { invokeAiPersonalization } from './aiGateway.js';
 import {
+  // @ts-ignore TypeScript bundler resolution maps .js to .ts when both exist
   cleanPinyin,
+  // @ts-ignore TypeScript bundler resolution maps .js to .ts when both exist
   cleanVietnamese,
+  // @ts-ignore TypeScript bundler resolution maps .js to .ts when both exist
   normalizeNumberedPinyin,
+  // @ts-ignore TypeScript bundler resolution maps .js to .ts when both exist
   searchLocalDictionary,
 } from './dictionaryService.js';
+// @ts-ignore TypeScript bundler resolution maps .js to .ts when both exist
 export { searchDictionaryHybrid } from './dictionaryService.js';
 import type {
   CharacterDecomposition,
@@ -23,6 +28,7 @@ import type {
   StructureType,
   SynonymsAntonyms,
 } from '../types/dictionary.types.ts';
+export type { DictionaryEntry } from '../types/dictionary.types.ts';
 
 const HISTORY_STORAGE_KEY = 'hanzigo_smart_dict_history_v1';
 const SAVED_DECK_STORAGE_KEY = 'hanzigo_smart_dict_saved_deck_v1';
@@ -450,7 +456,7 @@ export async function fetchOrGenerateDictionaryEntry(
 
   try {
     const aiResponse = (await invokeAiPersonalization({
-      taskType: 'dictionary_lexicographer',
+      action: 'dictionary_lexicographer',
       payload: {
         query: trimmed,
         schema: {

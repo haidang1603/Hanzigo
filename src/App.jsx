@@ -17,7 +17,8 @@ import { loadAllUserDataFromDb, triggerCloudSync, saveUserProgress } from './ser
 
 // Route-level code splitting with network retry & deploy-manifest auto-reload
 const DashboardPage = lazyWithRetry(() => import('./pages/DashboardPage'), ['dashboard']);
-const RoadmapPage = lazyWithRetry(() => import('./pages/RoadmapPage'), ['roadmap', 'lesson']);
+const RoadmapPage = lazyWithRetry(() => import('./pages/RoadmapPage'), ['roadmap']);
+const LessonPage = lazyWithRetry(() => import('./pages/LessonPage'), ['lesson']);
 const LearningIntelligenceHub = lazyWithRetry(() => import('./features/intelligence/LearningIntelligenceHub.tsx'), ['intelligence']);
 const VocabularyPage = lazyWithRetry(() => import('./pages/VocabularyPage'), ['vocabulary']);
 const PronunciationPage = lazyWithRetry(() => import('./pages/PronunciationPage'), ['pronunciation']);
@@ -68,7 +69,8 @@ const VALID_TABS = [
   'pronunciation', 'writing', 'dictionary', 'reader', 'conversation', 'community', 
   'materials', 'admin', 'profile', 'leaderboard',
   'teacher', 'classroom', 'hsk', 'privacy', 'terms', 'cookies', 'refund', 'storage-preferences',
-  'reset-password', 'practice', 'grammar', 'listening'
+  'reset-password', 'practice', 'grammar', 'listening',
+  'listening-studio', 'video', 'video-studio', 'hsk30-translation'
 ];
 
 function MainApp() {
@@ -78,8 +80,13 @@ function MainApp() {
   // Helper to parse detailed sub-routes for teacher and classroom
   const parseCurrentRoute = () => {
     try {
-      // Check pathname first for clean legal routes (e.g., /privacy-policy, /terms-of-service)
+      // Check pathname first for clean legal routes & /lesson?id=...
       const path = (window.location.pathname || '').replace(/^\//, '').toLowerCase();
+      const searchParams = new URLSearchParams(window.location.search || '');
+      const searchLessonId = searchParams.get('id');
+      if (path === 'lesson') {
+        return { tab: 'lesson', sub: searchLessonId || null, param: null, extra: null };
+      }
       if (path === 'privacy-policy' || path === 'privacy') return { tab: 'privacy', sub: null, param: null, extra: null };
       if (path === 'terms-of-service' || path === 'terms') return { tab: 'terms', sub: null, param: null, extra: null };
       if (path === 'cookie-policy' || path === 'cookies') return { tab: 'cookies', sub: null, param: null, extra: null };
@@ -93,11 +100,14 @@ function MainApp() {
         return { tab: 'reset-password', sub: null, param: null, extra: null };
       }
 
-      const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
-      const parts = hash.split('/').filter(Boolean);
+      const [hashPathPart = '', hashQueryPart = ''] = window.location.hash.replace(/^#\/?/, '').split('?');
+      const parts = hashPathPart.split('/').filter(Boolean);
+      const hashQueryParams = new URLSearchParams(hashQueryPart || '');
+      const queryLessonId = hashQueryParams.get('id') || searchLessonId;
       const rawTab = (parts[0] || 'home').toLowerCase();
       const tab = 
         rawTab === 'dictionary' ? 'writing' :
+        rawTab === 'hsk-practice' || rawTab === 'exam-center' ? 'hsk' :
         rawTab === 'privacy-policy' ? 'privacy' :
         rawTab === 'terms-of-service' ? 'terms' :
         rawTab === 'cookie-policy' ? 'cookies' :
@@ -105,7 +115,7 @@ function MainApp() {
         rawTab === 'tuy-chon-luu-tru' ? 'storage-preferences' :
         rawTab === 'reset-password' ? 'reset-password' :
         rawTab;
-      const sub = parts[1] || null;
+      const sub = parts[1] || ((tab === 'lesson' || tab === 'roadmap') ? queryLessonId : null) || null;
       const param = parts[2] || null;
       const extra = parts[3] || null;
       return { tab, sub, param, extra };
@@ -134,7 +144,7 @@ function MainApp() {
       localStorage.setItem('hanzigo_active_tab', activeTab);
       if (!window.location.hash.includes('access_token=') && !window.location.hash.includes('error=')) {
         const parsed = parseCurrentRoute();
-        if (parsed.tab !== activeTab) {
+        if (parsed.tab !== activeTab && !(activeTab === 'roadmap' && parsed.tab === 'lesson')) {
           window.location.hash = `#${activeTab}`;
         }
       }
@@ -188,8 +198,21 @@ function MainApp() {
   // Smart quick-access next recommended lesson
   const lastLesson = React.useMemo(() => {
     try {
-      const nextId = getRecommendedNextLesson(user);
-      return getLessonById(nextId) || { id: nextId, title: `Bài ${nextId}` };
+      const rec = getRecommendedNextLesson(user);
+      const lessonId =
+        typeof rec === 'string'
+          ? rec
+          : rec?.lessonId || rec?.lesson?.id || rec?.id || 'l-101';
+      return (
+        rec?.lesson ||
+        getLessonById(lessonId) || {
+          id: lessonId,
+          title:
+            rec && typeof rec === 'object' && rec.title
+              ? rec.title
+              : `Bài ${lessonId}`,
+        }
+      );
     } catch {
       return { id: 'l-101', title: 'Bài 101: Chào hỏi' };
     }
@@ -306,11 +329,11 @@ function MainApp() {
     } else if (lessonIdOrObj && typeof lessonIdOrObj === 'object') {
       id = lessonIdOrObj.id || 'l-101';
     } else if (typeof lessonIdOrObj === 'number') {
-      const indexMap = ['l-101', 'l-102', 'l-103', 'l-104', 'l-105', 'l-106'];
-      id = indexMap[lessonIdOrObj] || 'l-101';
+      id = lessonIdOrObj >= 1 ? String(lessonIdOrObj) : 'l-101';
     }
     setTargetRoadmapLessonId(id);
-    setActiveTab('roadmap');
+    window.location.hash = `#lesson?id=${encodeURIComponent(id)}`;
+    setActiveTab('lesson');
   };
 
   const handleSelectWriting = (vocabItem) => {
@@ -451,15 +474,25 @@ function MainApp() {
             />
           )}
 
-          {(activeTab === 'roadmap' || activeTab === 'lesson') && (
+          {activeTab === 'roadmap' && (
             <RoadmapPage 
               user={user}
               setActiveTab={setActiveTab} 
-              initialLessonId={targetRoadmapLessonId}
+              initialLessonId={targetRoadmapLessonId || routeInfo.sub}
               onClearInitialLesson={() => setTargetRoadmapLessonId(null)}
               onAddXp={handleAddXp}
               onSelectWriting={handleSelectWriting}
               onSelectPronounce={handleSelectPronounce}
+            />
+          )}
+
+          {activeTab === 'lesson' && (
+            <LessonPage
+              user={user}
+              setActiveTab={setActiveTab}
+              initialLessonId={targetRoadmapLessonId || routeInfo.sub}
+              onClearInitialLesson={() => setTargetRoadmapLessonId(null)}
+              onAddXp={handleAddXp}
             />
           )}
 
@@ -531,8 +564,8 @@ function MainApp() {
               onSelectWriting={handleSelectWriting}
               onSelectPronounce={handleSelectPronounce}
               onSelectLesson={(lessonId) => {
-                window.location.hash = `#roadmap/${lessonId}`;
-                setActiveTab('roadmap');
+                window.location.hash = `#lesson?id=${encodeURIComponent(lessonId)}`;
+                setActiveTab('lesson');
               }}
             />
           )}
@@ -664,6 +697,8 @@ function MainApp() {
                   window.location.hash = '#hsk/structure';
                 } else if (view === 'hsk6_simulator') {
                   window.location.hash = '#hsk/hsk6_simulator';
+                } else if (view === 'hsk7_9_simulator') {
+                  window.location.hash = '#hsk/hsk7_9_simulator';
                 } else if (view === 'hskk_simulator') {
                   window.location.hash = '#hsk/hskk_simulator';
                 } else if (view === 'exam' && id) {
