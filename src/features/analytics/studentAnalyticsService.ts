@@ -621,7 +621,7 @@ function buildRealLocalFallbackEvents(params: {
     derived.push(
       normalizeLearningEvent({
         userId: user?.id ?? null,
-        sourceModule: 'hsk_cbt',
+        sourceModule: 'cbt_mock_exam',
         hskLevel,
         skillDomain,
         itemId,

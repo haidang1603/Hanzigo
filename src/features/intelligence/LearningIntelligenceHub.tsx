@@ -11,7 +11,6 @@ import {
   Zap,
 } from 'lucide-react';
 import DailyAdaptivePlan from '../adaptive/DailyAdaptivePlan.tsx';
-import StudentAnalyticsDashboard from '../analytics/StudentAnalyticsDashboard.tsx';
 import SrsRetentionDashboard from '../srs/SrsRetentionDashboard.tsx';
 import HskWritingEvaluator from '../writing/HskWritingEvaluator.tsx';
 import HskAdvancedModule from '../curriculum/HskAdvancedModule.tsx';
@@ -259,30 +258,23 @@ export default function LearningIntelligenceHub({
         )}
 
         {activeSubTab === 'analytics' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-              <div className="lg:col-span-4">
-                <HskReadinessRadarCard
-                  snapshot={telemetrySnapshot}
-                  targetHskLevel={dailyPrescription.targetHskLevel}
-                  onLaunchExam={() => setActiveTab?.('hsk')}
-                />
-              </div>
-              <div className="lg:col-span-8">
-                <TelemetryVisualAnalyticsGrid
-                  snapshot={telemetrySnapshot}
-                  setActiveTab={setActiveTab}
-                  onSelectLevel={(_lvl, startLessonId) =>
-                    navigateToLesson(startLessonId)
-                  }
-                />
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            <div className="lg:col-span-4">
+              <HskReadinessRadarCard
+                snapshot={telemetrySnapshot}
+                targetHskLevel={dailyPrescription.targetHskLevel}
+                onLaunchExam={() => setActiveTab?.('hsk')}
+              />
             </div>
-            <StudentAnalyticsDashboard
-              user={user}
-              streak={streak}
-              setActiveTab={setActiveTab}
-            />
+            <div className="lg:col-span-8">
+              <TelemetryVisualAnalyticsGrid
+                snapshot={telemetrySnapshot}
+                setActiveTab={setActiveTab}
+                onSelectLevel={(_lvl, startLessonId) =>
+                  navigateToLesson(startLessonId)
+                }
+              />
+            </div>
           </div>
         )}
 
