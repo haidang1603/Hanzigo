@@ -500,6 +500,7 @@ function MainApp() {
             <VocabularyPage 
               user={user}
               setActiveTab={setActiveTab} 
+              initialView={routeInfo.sub || 'flashcard'}
               onSelectWriting={handleSelectWriting}
               onSelectPronounce={handleSelectPronounce}
             />

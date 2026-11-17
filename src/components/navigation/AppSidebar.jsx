@@ -109,8 +109,10 @@ export default function AppSidebar({
       'skills:core': isCurrentTabInPractice,
       'skills:output': isCurrentTabInPractice,
       hsk: activeTab === 'hsk',
+      vocabulary: activeTab === 'vocabulary',
       reader: activeTab === 'reader',
       community: activeTab === 'community' || activeTab === 'leaderboard',
+      classroom: activeTab === 'classroom',
       teacher: activeTab === 'teacher',
     };
     try {

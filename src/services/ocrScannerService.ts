@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
+import { getUserStorageKey } from '../utils/gamification.js';
 import { tokenizeChineseText } from '../utils/chineseTokenizer.ts';
 import { createCustomReadingArticle, type ReadingArticle } from './readingStudioService.ts';
 import { createVocabDeck, type VocabDeck } from './vocabWorkspaceService.ts';
@@ -548,17 +549,23 @@ export function sanitizeOcrDoc(doc: OcrScanDocument): OcrScanDocument {
 /**
  * List all OCR Documents (Cloud Supabase with localStorage fallback)
  */
-export async function listOcrDocuments(user?: { id?: string | null } | null): Promise<OcrScanDocument[]> {
+export async function listOcrDocuments(
+  user?: { id?: string | null; uid?: string | null } | null
+): Promise<OcrScanDocument[]> {
   const samples = getSampleOcrDocuments().map(sanitizeOcrDoc);
-  const rawLocalDocs = safeReadJson<OcrScanDocument[]>(LOCAL_STORAGE_KEY, []);
+  const storageKey = getUserStorageKey(LOCAL_STORAGE_KEY, user);
+  const uid = user?.id || user?.uid || null;
+  const rawLocalDocs = safeReadJson<OcrScanDocument[]>(storageKey, []);
 
   // Filter out any stale sample docs from local storage so samples always stay updated with fresh vector SVGs and full pinyin
   const sampleIds = new Set(samples.map((s) => s.id));
-  const localDocs = rawLocalDocs.filter((d) => !sampleIds.has(d.id)).map(sanitizeOcrDoc);
+  const localDocs = rawLocalDocs
+    .filter((d) => !sampleIds.has(d.id) && (uid ? d.user_id === uid : !d.user_id))
+    .map(sanitizeOcrDoc);
 
   const fallbackDocs = [...localDocs, ...samples];
 
-  if (!isSupabaseConfigured || !supabase || !user?.id) {
+  if (!isSupabaseConfigured || !supabase || !uid) {
     return fallbackDocs;
   }
 
@@ -566,7 +573,7 @@ export async function listOcrDocuments(user?: { id?: string | null } | null): Pr
     const { data, error } = await supabase
       .from('ocr_scan_documents')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', uid)
       .order('created_at', { ascending: false });
 
     if (!error && data && data.length > 0) {
@@ -648,8 +655,9 @@ export async function processImageWithOCR(params: {
   };
 
   // Local storage cache
-  const localDocs = safeReadJson<OcrScanDocument[]>(LOCAL_STORAGE_KEY, []);
-  safeWriteJson(LOCAL_STORAGE_KEY, [newDoc, ...localDocs].slice(0, 30));
+  const storageKey = getUserStorageKey(LOCAL_STORAGE_KEY, user);
+  const localDocs = safeReadJson<OcrScanDocument[]>(storageKey, []);
+  safeWriteJson(storageKey, [newDoc, ...localDocs].slice(0, 30));
 
   // Remote Supabase persistence
   if (isSupabaseConfigured && supabase && user?.id) {
@@ -702,9 +710,10 @@ export async function convertOcrToInteractiveArticle(
   doc.converted_article_id = article.id;
 
   // Update local cache
-  const localDocs = safeReadJson<OcrScanDocument[]>(LOCAL_STORAGE_KEY, []);
+  const storageKey = getUserStorageKey(LOCAL_STORAGE_KEY, user);
+  const localDocs = safeReadJson<OcrScanDocument[]>(storageKey, []);
   const updated = localDocs.map((d) => (d.id === doc.id ? { ...d, converted_article_id: article.id } : d));
-  safeWriteJson(LOCAL_STORAGE_KEY, updated);
+  safeWriteJson(storageKey, updated);
 
   // Update remote database
   if (isSupabaseConfigured && supabase && user?.id && !doc.id.startsWith('ocr-doc-')) {

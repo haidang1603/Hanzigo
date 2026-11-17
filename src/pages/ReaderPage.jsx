@@ -14,6 +14,8 @@ import {
   PenTool, 
   HelpCircle, 
   ChevronRight, 
+  ChevronDown,
+  ChevronUp,
   X,
   Aperture,
   CheckCircle2,
@@ -105,6 +107,7 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
   }, [initialMode]);
   const [selectedHskFilter, setSelectedHskFilter] = useState('all');
   const [selectedTopicFilter, setSelectedTopicFilter] = useState('all');
+  const [showTopicFilters, setShowTopicFilters] = useState(false);
   const [activeReaderId, setActiveReaderId] = useState('gr-101');
   const [nlpTab, setNlpTab] = useState('grammar'); // 'grammar', 'keywords', 'readability', 'summary'
   
@@ -429,43 +432,43 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
           </p>
 
           {/* Mode Tabs: Graded Readers vs Custom Text Input */}
-          <div className="pt-1 flex items-center gap-2.5 flex-wrap">
+          <div className="pt-1 pb-1 flex items-center gap-1.5 flex-nowrap overflow-x-auto">
             <button
               type="button"
               onClick={() => { playClickSound(); setActiveMode('graded'); }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-all cursor-pointer ${
                 activeMode === 'graded'
-                  ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/20 scale-102'
+                  ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/20'
                   : 'bg-white dark:bg-[#1E293B] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-[#E85D3F]'
               }`}
             >
-              <Layers className="w-4 h-4" />
+              <Layers className="w-3.5 h-3.5 shrink-0" />
               <span>Kho Bài đọc HSK 1–6 (24 bài)</span>
             </button>
 
             <button
               type="button"
               onClick={() => { playClickSound(); setActiveMode('custom'); }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-all cursor-pointer ${
                 activeMode === 'custom'
-                  ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/20 scale-102'
+                  ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/20'
                   : 'bg-white dark:bg-[#1E293B] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-[#E85D3F]'
               }`}
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="w-3.5 h-3.5 shrink-0" />
               <span>Dán đoạn văn tùy chỉnh (NLP Analyzer)</span>
             </button>
 
             <button
               type="button"
               onClick={() => { playClickSound(); setActiveMode('studio'); }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-all cursor-pointer ${
                 activeMode === 'studio'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 scale-102'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
                   : 'bg-white dark:bg-[#1E293B] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-emerald-600'
               }`}
             >
-              <Sparkles className="w-4 h-4 text-emerald-500" />
+              <Sparkles className={`w-3.5 h-3.5 shrink-0 ${activeMode === 'studio' ? 'text-white' : 'text-emerald-500'}`} />
               <span>Reading Studio (Độ phủ & Quiz)</span>
             </button>
 
@@ -473,13 +476,13 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
               type="button"
               id="tab-reader-ocr-scanner"
               onClick={() => { playClickSound(); setActiveMode('ocr'); }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-all cursor-pointer ${
                 activeMode === 'ocr'
-                  ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20 scale-102'
+                  ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20'
                   : 'bg-white dark:bg-[#1E293B] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-teal-600'
               }`}
             >
-              <Camera className="w-4 h-4 text-teal-500" />
+              <Camera className={`w-3.5 h-3.5 shrink-0 ${activeMode === 'ocr' ? 'text-white' : 'text-teal-500'}`} />
               <span>Quét ảnh & Sách (OCR)</span>
             </button>
 
@@ -487,13 +490,13 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
               type="button"
               id="tab-reader-web-clipper"
               onClick={() => { playClickSound(); setActiveMode('importer'); }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-all cursor-pointer ${
                 activeMode === 'importer'
-                  ? 'bg-cyan-700 text-white shadow-md shadow-cyan-700/20 scale-102'
+                  ? 'bg-cyan-700 text-white shadow-md shadow-cyan-700/20'
                   : 'bg-white dark:bg-[#1E293B] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-cyan-600'
               }`}
             >
-              <Globe className="w-4 h-4 text-cyan-500" />
+              <Globe className={`w-3.5 h-3.5 shrink-0 ${activeMode === 'importer' ? 'text-white' : 'text-cyan-500'}`} />
               <span>Web Clipper & Báo chí</span>
             </button>
 
@@ -501,13 +504,13 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
               type="button"
               id="tab-reader-immersion-hub"
               onClick={() => { playClickSound(); setActiveMode('immersion'); }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-all cursor-pointer ${
                 activeMode === 'immersion'
-                  ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20 scale-102'
+                  ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
                   : 'bg-white dark:bg-[#1E293B] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-amber-500'
               }`}
             >
-              <Pickaxe className="w-4 h-4 text-amber-500" />
+              <Pickaxe className={`w-3.5 h-3.5 shrink-0 ${activeMode === 'immersion' ? 'text-white' : 'text-amber-500'}`} />
               <span>Immersion Hub (i+1)</span>
             </button>
           </div>
@@ -576,43 +579,66 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
                 ))}
               </div>
 
-              <div className="text-xs font-semibold text-gray-500">
-                Hiển thị <span className="text-[#E85D3F] font-bold">{filteredGradedReaders.length}</span> bài đọc
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => { playClickSound(); setShowTopicFilters((prev) => !prev); }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer border ${
+                    showTopicFilters || selectedTopicFilter !== 'all'
+                      ? 'bg-[#E85D3F]/10 text-[#E85D3F] border-[#E85D3F]/30'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Compass size={13} />
+                  <span>
+                    {showTopicFilters
+                      ? 'Ẩn chủ đề'
+                      : selectedTopicFilter !== 'all'
+                      ? `Chủ đề: ${selectedTopicFilter}`
+                      : `Chủ đề (${allReaderTopics.length})`}
+                  </span>
+                  {showTopicFilters ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                </button>
+                <div className="text-xs font-semibold text-gray-500">
+                  Hiển thị <span className="text-[#E85D3F] font-bold">{filteredGradedReaders.length}</span> bài đọc
+                </div>
               </div>
             </div>
 
             {/* Topic Filter Pills */}
-            <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-gray-100 dark:border-gray-800 text-xs">
-              <span className="font-bold text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1">
-                <Compass size={13} className="text-[#E85D3F]" />
-                Chủ đề:
-              </span>
-              <button
-                type="button"
-                onClick={() => { playClickSound(); setSelectedTopicFilter('all'); }}
-                className={`px-2.5 py-1 rounded-lg transition-all ${
-                  selectedTopicFilter === 'all'
-                    ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 font-bold shadow-xs'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
-                }`}
-              >
-                Tất cả chủ đề
-              </button>
-              {allReaderTopics.map(tpc => (
+            {showTopicFilters && (
+              <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-gray-100 dark:border-gray-800 text-xs">
+                <span className="font-bold text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1">
+                  <Compass size={13} className="text-[#E85D3F]" />
+                  Chủ đề:
+                </span>
                 <button
-                  key={tpc}
                   type="button"
-                  onClick={() => { playClickSound(); setSelectedTopicFilter(tpc); }}
+                  onClick={() => { playClickSound(); setSelectedTopicFilter('all'); }}
                   className={`px-2.5 py-1 rounded-lg transition-all ${
-                    selectedTopicFilter === tpc
+                    selectedTopicFilter === 'all'
                       ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 font-bold shadow-xs'
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
                   }`}
                 >
-                  {tpc}
+                  Tất cả chủ đề
                 </button>
-              ))}
-            </div>
+                {allReaderTopics.map(tpc => (
+                  <button
+                    key={tpc}
+                    type="button"
+                    onClick={() => { playClickSound(); setSelectedTopicFilter(tpc); }}
+                    className={`px-2.5 py-1 rounded-lg transition-all ${
+                      selectedTopicFilter === tpc
+                        ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 font-bold shadow-xs'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tpc}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Graded Reader Horizontal Selector Cards */}

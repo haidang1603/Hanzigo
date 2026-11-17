@@ -399,62 +399,6 @@ export default function PracticePage({
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 animate-in fade-in duration-200">
-      
-      {/* ======================================================== */}
-      {/* 1. TOP HEADER & NAVIGATION */}
-      {/* ======================================================== */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-5">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-orange-500/10 text-[#E85D3F]">
-              Đa Kỹ Năng HSK
-            </span>
-            <span className="text-xs text-[#748092] dark:text-[#94A3B8]">
-              Chuẩn HSK 3.0
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white tracking-tight flex items-center gap-2">
-            <span>Trung Tâm Luyện Tập</span>
-            <Sparkles size={22} className="text-[#E85D3F]" />
-          </h1>
-          <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-1">
-            Rèn luyện ngữ pháp câu, phản xạ nghe hiểu âm thanh và làm chủ kiến thức theo từng cấp độ
-          </p>
-        </div>
-
-        {/* Skill Selector Tabs - Compact Single-Line */}
-        <div className="inline-flex items-center gap-1 max-w-full overflow-x-auto bg-gray-100/80 dark:bg-gray-800/80 p-1 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
-          {[
-            { id: 'overview', domId: 'tab-practice-overview', label: 'Tổng quan', title: 'Tổng quan luyện tập', icon: Target, activeClass: 'bg-white dark:bg-[#1E293B] text-[#E85D3F] shadow-xs' },
-            { id: 'grammar', domId: 'tab-practice-grammar', label: 'Ngữ pháp', title: 'Luyện Ngữ Pháp', icon: Sparkles, activeClass: 'bg-[#E85D3F] text-white shadow-xs' },
-            { id: 'listening', domId: 'tab-practice-listening', label: 'Nghe HSK', title: 'Luyện Nghe HSK', icon: Headphones, activeClass: 'bg-[#E85D3F] text-white shadow-xs' },
-            { id: 'listening-studio', domId: 'tab-practice-listening-studio', label: 'Dictation', title: 'Listening Studio & Dictation', icon: Sparkles, activeClass: 'bg-emerald-600 text-white shadow-xs' },
-            { id: 'video-studio', domId: 'tab-practice-video-studio', label: 'Video', title: 'Video Studio (Song ngữ)', icon: Video, activeClass: 'bg-rose-600 text-white shadow-xs' },
-            { id: 'hsk30-translation', domId: 'tab-practice-hsk30-translation', label: 'Xưởng Dịch', title: 'Xưởng Dịch & HSK 7–9', icon: Languages, activeClass: 'bg-indigo-600 text-white shadow-xs' },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = practiceSkill === tab.id;
-            return (
-              <button
-                key={tab.id}
-                id={tab.domId}
-                type="button"
-                title={tab.title}
-                onClick={() => handleSwitchSkill(tab.id)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
-                  isActive
-                    ? tab.activeClass
-                    : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
-                }`}
-              >
-                <Icon size={14} className="shrink-0" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* ======================================================== */}
       {/* 2. OVERVIEW HUB & STUDIO VIEWS */}
       {/* ======================================================== */}

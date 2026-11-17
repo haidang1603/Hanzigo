@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
+import { getUserStorageKey } from '../utils/gamification.js';
 import {
   parseCustomArticleToParagraphs,
   type ReadingParagraph,
@@ -345,12 +346,15 @@ export function getSampleWebArticles(): ImportedWebContent[] {
  * List imported web contents (local cache + remote Supabase)
  */
 export async function listImportedWebArticles(
-  user?: { id?: string | null } | null
+  user?: { id?: string | null; uid?: string | null } | null
 ): Promise<ImportedWebContent[]> {
   const samples = getSampleWebArticles();
-  const local = safeReadJson<ImportedWebContent[]>(LOCAL_STORAGE_KEY, []);
+  const storageKey = getUserStorageKey(LOCAL_STORAGE_KEY, user);
+  const uid = user?.id || user?.uid || null;
+  const rawLocal = safeReadJson<ImportedWebContent[]>(storageKey, []);
+  const local = rawLocal.filter((doc) => (uid ? doc.user_id === uid : !doc.user_id));
 
-  if (!isSupabaseConfigured || !supabase || !user?.id) {
+  if (!isSupabaseConfigured || !supabase || !uid) {
     return [...local, ...samples];
   }
 
@@ -358,7 +362,7 @@ export async function listImportedWebArticles(
     const { data, error } = await supabase
       .from('imported_web_contents')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', uid)
       .order('created_at', { ascending: false });
 
     if (!error && data && data.length > 0) {
@@ -421,8 +425,9 @@ export async function importWebContentOrText(params: {
     created_at: new Date().toISOString(),
   };
 
-  const local = safeReadJson<ImportedWebContent[]>(LOCAL_STORAGE_KEY, []);
-  safeWriteJson(LOCAL_STORAGE_KEY, [newDoc, ...local].slice(0, 30));
+  const storageKey = getUserStorageKey(LOCAL_STORAGE_KEY, user);
+  const local = safeReadJson<ImportedWebContent[]>(storageKey, []);
+  safeWriteJson(storageKey, [newDoc, ...local].slice(0, 30));
 
   if (isSupabaseConfigured && supabase && user?.id) {
     try {

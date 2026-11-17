@@ -14,10 +14,31 @@ import { getBuiltInReadingArticles } from '../../services/readingStudioService.t
 import { getBuiltInListeningTracks } from '../../services/listeningStudioService.ts';
 import { createSmartDailyLoopPlan } from '../../core/ecosystem/useUnifiedEcosystemStore.ts';
 import { useUnifiedTools } from '../../core/ecosystem/UnifiedToolsContext.tsx';
+import { trackLearningEvent } from '../../core/telemetry/learningTelemetryService.js';
+
+export interface PrescribedStudyTargets {
+  vocabTargets?: Array<{
+    id: string;
+    simplified: string;
+    pinyin: string;
+    meaning_vi: string;
+    weakestDimension?: string;
+  }>;
+  writingCharacters?: string[];
+  pronunciationTargets?: Array<{
+    hanzi: string;
+    pinyin: string;
+    meaningVi: string;
+  }>;
+  grammarFocusKey?: string;
+  nextLessonId?: number;
+  targetHskLevel?: number;
+}
 
 interface DailySmartStudyFlowProps {
   user?: { id?: string | null } | null;
   onNavigateModule?: (moduleKey: 'vocab' | 'writing' | 'pronunciation' | 'reading' | 'listening') => void;
+  prescribedTargets?: PrescribedStudyTargets | null;
 }
 
 const STARTER_DAILY_VOCAB: UserVocabItem[] = [
@@ -34,6 +55,7 @@ const STARTER_DAILY_VOCAB: UserVocabItem[] = [
 export const DailySmartStudyFlow: React.FC<DailySmartStudyFlowProps> = ({
   user,
   onNavigateModule,
+  prescribedTargets = null,
 }) => {
   const { openQuickWritingModal, openQuickPronunciationModal, openQuickDictionary } =
     useUnifiedTools();
@@ -50,10 +72,24 @@ export const DailySmartStudyFlow: React.FC<DailySmartStudyFlowProps> = ({
     };
   }, [user]);
 
-  const effectiveVocab = vocabItems.length > 0 ? vocabItems : STARTER_DAILY_VOCAB;
-  const usingStarterFallback = vocabItems.length === 0;
+  const effectiveVocab = useMemo(() => {
+    if (prescribedTargets?.vocabTargets && prescribedTargets.vocabTargets.length > 0) {
+      const injected = prescribedTargets.vocabTargets.map((vt, idx) => ({
+        id: vt.id || `rx-${idx + 1}`,
+        simplified: vt.simplified,
+        traditional: vt.simplified,
+        pinyin: vt.pinyin,
+        meaning_vi: vt.meaning_vi,
+        mastery_level: 1,
+      })) as UserVocabItem[];
+      return injected;
+    }
+    return vocabItems.length > 0 ? vocabItems : STARTER_DAILY_VOCAB;
+  }, [prescribedTargets, vocabItems]);
 
-  const plan = useMemo(() => {
+  const usingStarterFallback = vocabItems.length === 0 && !prescribedTargets?.vocabTargets?.length;
+
+  const basePlan = useMemo(() => {
     return createSmartDailyLoopPlan(
       effectiveVocab,
       getBuiltInReadingArticles(),
@@ -61,13 +97,57 @@ export const DailySmartStudyFlow: React.FC<DailySmartStudyFlowProps> = ({
     );
   }, [effectiveVocab]);
 
+  const plan = useMemo(() => {
+    return {
+      ...basePlan,
+      hardCharacters:
+        prescribedTargets?.writingCharacters && prescribedTargets.writingCharacters.length > 0
+          ? prescribedTargets.writingCharacters
+          : basePlan.hardCharacters,
+      pronunciationTargets:
+        prescribedTargets?.pronunciationTargets && prescribedTargets.pronunciationTargets.length > 0
+          ? prescribedTargets.pronunciationTargets
+          : basePlan.pronunciationTargets,
+    };
+  }, [basePlan, prescribedTargets]);
+
   const toggleStep = (step: number) => {
+    const isMarkingDone = !completedSteps.has(step);
     setCompletedSteps((prev) => {
       const next = new Set(prev);
       if (next.has(step)) next.delete(step);
       else next.add(step);
       return next;
     });
+
+    if (isMarkingDone) {
+      const eventTypeByStep: Record<number, string> = {
+        1: 'vocab_review',
+        2: 'hanzi_stroke_quiz',
+        3: 'ai_roleplay_turn',
+        4: 'reading_lookup',
+      };
+      const targetKeyByStep: Record<number, string> = {
+        1: plan.dueVocabItems[0]?.simplified || 'daily-vocab',
+        2: plan.hardCharacters[0] || 'daily-hanzi',
+        3: plan.pronunciationTargets[0]?.hanzi || 'daily-tone',
+        4: prescribedTargets?.grammarFocusKey || plan.recommendedArticle?.title_zh || 'daily-context',
+      };
+      trackLearningEvent(
+        {
+          event_type: eventTypeByStep[step] || 'vocab_review',
+          hsk_level: prescribedTargets?.targetHskLevel || 1,
+          lesson_id: prescribedTargets?.nextLessonId || null,
+          target_key: targetKeyByStep[step] || `daily-step-${step}`,
+          is_correct: true,
+          score_pct: 100,
+          latency_ms: 6000,
+          metadata: { source: 'DailySmartStudyFlow', step },
+          flushNow: step === 4,
+        },
+        { user }
+      );
+    }
   };
 
   return (

@@ -236,7 +236,7 @@ export async function scanEcosystemForImmersionRecommendations(
   }
 
   // 2. Imported Web Articles (29.03)
-  const webArticles = await listImportedWebArticles(user?.id);
+  const webArticles = await listImportedWebArticles(user);
   for (const art of webArticles.slice(0, 4)) {
     const artCandidates: CandidateImmersionSentence[] = [];
     for (const para of art.versions.original || []) {
@@ -275,7 +275,7 @@ export async function scanEcosystemForImmersionRecommendations(
 
   // 3. Reading Studio Stories (27.04 / 29.06)
   try {
-    const stories = await listReadingArticles();
+    const stories = await listReadingArticles(user);
     for (const st of stories.slice(0, 3)) {
       const storyCandidates: CandidateImmersionSentence[] = [];
       for (const para of st.content_paragraphs || []) {

@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ArrowRight,
   Award,
   BarChart3,
   Brain,
@@ -7,13 +8,26 @@ import {
   GraduationCap,
   PenTool,
   Sparkles,
+  Zap,
 } from 'lucide-react';
 import DailyAdaptivePlan from '../adaptive/DailyAdaptivePlan.tsx';
 import StudentAnalyticsDashboard from '../analytics/StudentAnalyticsDashboard.tsx';
 import SrsRetentionDashboard from '../srs/SrsRetentionDashboard.tsx';
 import HskWritingEvaluator from '../writing/HskWritingEvaluator.tsx';
 import HskAdvancedModule from '../curriculum/HskAdvancedModule.tsx';
+import TelemetryVisualAnalyticsGrid from '../analytics/TelemetryVisualAnalyticsGrid.jsx';
+import HskReadinessRadarCard from '../analytics/HskReadinessRadarCard.jsx';
+import { DailySmartStudyFlow } from '../unified-ecosystem/DailySmartStudyFlow.tsx';
 import { getLearningIntelligenceState } from '../../services/learningIntelligenceOrchestrator.ts';
+import {
+  computeLocalTelemetrySnapshot,
+  fetchTelemetryDashboardSummary,
+} from '../../core/telemetry/learningTelemetryService.js';
+import {
+  buildDailyAiPrescription,
+  buildDeterministicTelemetryBriefing,
+  fetchAiTelemetryBriefing,
+} from '../analytics/aiStudyPrescriptionEngine.js';
 
 export type IntelligenceHubTab =
   | 'smart_plan'
@@ -26,6 +40,7 @@ export interface LearningIntelligenceHubProps {
   user?: { id?: string | null; hskLevel?: number | string } | null;
   streak?: number;
   setActiveTab?: (tab: string) => void;
+  onSelectLesson?: (lesson: { id: number }) => void;
   initialSubTab?: IntelligenceHubTab;
 }
 
@@ -45,6 +60,7 @@ export default function LearningIntelligenceHub({
   user = null,
   streak = 0,
   setActiveTab,
+  onSelectLesson,
   initialSubTab = 'smart_plan',
 }: LearningIntelligenceHubProps) {
   const [activeSubTab, setActiveSubTab] =
@@ -54,6 +70,44 @@ export default function LearningIntelligenceHub({
     () => getLearningIntelligenceState({ user }),
     [user]
   );
+
+  const [telemetrySnapshot, setTelemetrySnapshot] = useState(() =>
+    computeLocalTelemetrySnapshot()
+  );
+
+  const dailyPrescription = useMemo(
+    () => buildDailyAiPrescription({ telemetrySnapshot }),
+    [telemetrySnapshot]
+  );
+
+  const [aiBriefing, setAiBriefing] = useState(() =>
+    buildDeterministicTelemetryBriefing(telemetrySnapshot, dailyPrescription)
+  );
+
+  useEffect(() => {
+    let active = true;
+    fetchTelemetryDashboardSummary(user, 14).then((snap) => {
+      if (!active || !snap) return;
+      setTelemetrySnapshot(snap);
+      const rx = buildDailyAiPrescription({ telemetrySnapshot: snap });
+      setAiBriefing(buildDeterministicTelemetryBriefing(snap, rx));
+      fetchAiTelemetryBriefing(user, snap, rx).then((brief) => {
+        if (active && brief) setAiBriefing(brief);
+      });
+    });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const navigateToLesson = (lessonId: number) => {
+    if (onSelectLesson) {
+      onSelectLesson({ id: lessonId });
+    } else if (typeof window !== 'undefined') {
+      window.location.hash = `#lesson?id=${lessonId}`;
+    }
+    setActiveTab?.('lesson');
+  };
 
   return (
     <div className="min-h-screen bg-[#FFF9F2] dark:bg-[#131B24] py-6 sm:py-8 transition-colors duration-200">
@@ -96,6 +150,68 @@ export default function LearningIntelligenceHub({
             </div>
           </div>
 
+          {/* AI Diagnostic Briefing & 4 Daily Prescription Tasks */}
+          <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="text-xs font-extrabold text-amber-300">
+                  {aiBriefing?.greeting || `Chẩn đoán AI · Mục tiêu HSK ${dailyPrescription.targetHskLevel}`}
+                </div>
+                <p className="text-xs text-slate-200 leading-relaxed">
+                  {aiBriefing?.summary}
+                </p>
+                <p className="text-[11px] text-emerald-300 font-semibold">
+                  {aiBriefing?.examTactic}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSubTab('smart_plan');
+                  const el = document.getElementById('intelligence-smart-study-flow');
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className="shrink-0 px-4 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#d44d30] text-white text-xs font-extrabold shadow-md inline-flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              >
+                <Zap size={14} className="fill-white" />
+                <span>⚡ Khởi chạy Phiên Học Thích Ứng 15 Phút</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              {dailyPrescription.tasks.map((task) => (
+                <button
+                  key={task.id}
+                  type="button"
+                  onClick={() => {
+                    if (task.route === 'lesson' && task.lessonId) {
+                      navigateToLesson(task.lessonId);
+                    } else {
+                      setActiveTab?.(task.route);
+                    }
+                  }}
+                  className="text-left rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#E85D3F]/60 p-3 flex flex-col justify-between gap-2 transition-all cursor-pointer group"
+                >
+                  <div className="space-y-1">
+                    <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-amber-300">
+                      {task.badge}
+                    </span>
+                    <div className="text-xs font-bold text-white group-hover:text-amber-200 transition-colors">
+                      {task.title}
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-snug">
+                      {task.description}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] font-bold text-emerald-300 pt-1 border-t border-white/10">
+                    <span>{task.actionLabel}</span>
+                    <ArrowRight size={12} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Unified Hub Sub-Navigation */}
           <div
             role="tablist"
@@ -128,15 +244,46 @@ export default function LearningIntelligenceHub({
 
         {/* Active Module Content */}
         {activeSubTab === 'smart_plan' && (
-          <DailyAdaptivePlan user={user} setActiveTab={setActiveTab} />
+          <div className="space-y-6">
+            <div id="intelligence-smart-study-flow">
+              <DailySmartStudyFlow
+                user={user}
+                prescribedTargets={dailyPrescription.prescribedTargets}
+                onNavigateModule={(mod) =>
+                  setActiveTab?.(mod === 'vocab' ? 'vocabulary' : mod)
+                }
+              />
+            </div>
+            <DailyAdaptivePlan user={user} setActiveTab={setActiveTab} />
+          </div>
         )}
 
         {activeSubTab === 'analytics' && (
-          <StudentAnalyticsDashboard
-            user={user}
-            streak={streak}
-            setActiveTab={setActiveTab}
-          />
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+              <div className="lg:col-span-4">
+                <HskReadinessRadarCard
+                  snapshot={telemetrySnapshot}
+                  targetHskLevel={dailyPrescription.targetHskLevel}
+                  onLaunchExam={() => setActiveTab?.('hsk')}
+                />
+              </div>
+              <div className="lg:col-span-8">
+                <TelemetryVisualAnalyticsGrid
+                  snapshot={telemetrySnapshot}
+                  setActiveTab={setActiveTab}
+                  onSelectLevel={(_lvl, startLessonId) =>
+                    navigateToLesson(startLessonId)
+                  }
+                />
+              </div>
+            </div>
+            <StudentAnalyticsDashboard
+              user={user}
+              streak={streak}
+              setActiveTab={setActiveTab}
+            />
+          </div>
         )}
 
         {activeSubTab === 'srs_retention' && (

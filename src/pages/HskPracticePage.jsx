@@ -784,47 +784,47 @@ function HskHomeView({
           <p className="text-white/90 text-xs sm:text-sm mb-5 leading-relaxed max-w-2xl">
             Hệ thống đề thi mô phỏng chuẩn quốc tế từ HSK 1 đến HSK 6: Đầy đủ {exams.length} đề thi chuẩn hóa thực chiến (bao gồm đề HSK 6 đủ 101 câu &amp; HSKK 3 cấp), tự động tính điểm và giải thích chi tiết bằng tiếng Việt.
           </p>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap lg:flex-nowrap items-center gap-2">
             <button
               onClick={() => onNavigate('exams')}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-[#E85D3F] font-bold text-xs sm:text-sm shadow-sm hover:bg-orange-50 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white text-[#E85D3F] font-bold text-xs whitespace-nowrap shadow-sm hover:bg-orange-50 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shrink-0"
             >
-              <Award className="w-4 h-4" />
+              <Award className="w-3.5 h-3.5" />
               Toàn bộ đề thi ({exams.length})
             </button>
             <button
               onClick={onOpenRandomModal}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 font-black text-xs whitespace-nowrap shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shrink-0"
             >
-              <Dices className="w-4 h-4 text-slate-950" />
+              <Dices className="w-3.5 h-3.5 text-slate-950" />
               Thi ngẫu nhiên 🎲
             </button>
             <button
               onClick={() => onNavigate('structure')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer border border-white/20"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs whitespace-nowrap shadow-xs transition-all cursor-pointer border border-white/20 shrink-0"
             >
-              <ShieldCheck className="w-4 h-4 text-amber-300" />
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
               Cấu trúc Đề HSK
             </button>
             <button
               onClick={() => onNavigate('hsk6_simulator')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/70 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer border border-white/20"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/70 hover:bg-slate-900 text-white font-bold text-xs whitespace-nowrap shadow-xs transition-all cursor-pointer border border-white/20 shrink-0"
             >
-              <Sparkles className="w-4 h-4 text-emerald-300" />
+              <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
               Mô phỏng HSK 6
             </button>
             <button
               onClick={() => onNavigate('hsk7_9_simulator')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#243447] hover:bg-slate-900 text-amber-300 font-extrabold text-xs sm:text-sm shadow-xs transition-all cursor-pointer border border-amber-300/40"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#243447] hover:bg-slate-900 text-amber-300 font-extrabold text-xs whitespace-nowrap shadow-xs transition-all cursor-pointer border border-amber-300/40 shrink-0"
             >
-              <Award className="w-4 h-4 text-amber-300" />
-              Mô phỏng HSK 7–9 (300đ)
+              <Award className="w-3.5 h-3.5 text-amber-300" />
+              Mô phỏng HSK 7–9
             </button>
             <button
               onClick={() => onNavigate('hskk_simulator')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer border border-white/20"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-700 text-white font-bold text-xs whitespace-nowrap shadow-xs transition-all cursor-pointer border border-white/20 shrink-0"
             >
-              <Volume2 className="w-4 h-4 text-white" />
+              <Volume2 className="w-3.5 h-3.5 text-white" />
               Phòng thi nói HSKK
             </button>
           </div>

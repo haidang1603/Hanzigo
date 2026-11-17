@@ -150,6 +150,71 @@ export default async function handler(req, res) {
     });
   }
 
+  // 3.5 Telemetry Briefing Action (with instant deterministic fallback)
+  if (action === 'generate_telemetry_briefing') {
+    const targetHsk = String(payload.hskLevel || 'HSK 1');
+    const retention = Number(payload.retention_rate_pct || 0);
+    const streakDays = Number(payload.study_streak_days || 0);
+    const events7d = Number(payload.events_count_7d || 0);
+    const weakDim = String(payload.weakestDimension || 'writing');
+    const avgLatency = payload.avg_response_latency_ms || {};
+    const bottlenecks = Array.isArray(payload.top_cognitive_bottlenecks)
+      ? payload.top_cognitive_bottlenecks
+      : [];
+
+    const weakDimLabel =
+      weakDim === 'writing'
+        ? 'bút thuận viết chữ Hán'
+        : weakDim === 'pronunciation'
+        ? 'phát âm & thanh điệu'
+        : 'ghi nhớ nghĩa ngữ cảnh';
+
+    const deterministicBriefing = {
+      source: 'deterministic_fallback',
+      greeting: `Chẩn đoán AI cho mục tiêu ${targetHsk}`,
+      summary: `Trong 7 ngày qua bạn đã ghi nhận ${events7d} lượt luyện tập (chuỗi ${streakDays} ngày, tỷ lệ nhớ SRS ${retention}%). Chiều kỹ năng cần ưu tiên kéo lên hôm nay là ${weakDimLabel}.`,
+      examTactic: targetHsk.includes('7') || targetHsk.includes('8') || targetHsk.includes('9')
+        ? `Chiến thuật ${targetHsk}: Kiểm soát tốc độ đọc học thuật dưới 35s/câu và rà lỗi dịch Tín–Đạt–Nhã.`
+        : `Chiến thuật ${targetHsk}: Tập trung ôn các điểm nghẽn ${bottlenecks.slice(0, 2).map(b => b.target_key).join(', ') || 'ngữ pháp cốt lõi'} và giữ nhịp phản xạ ổn định.`,
+    };
+
+    try {
+      const briefingPrompt = `Tóm tắt chẩn đoán telemetry học viên tiếng Trung bằng tiếng Việt (trả về JSON thuần {"greeting": string, "summary": string, "examTactic": string}):
+- Mục tiêu: ${targetHsk}
+- Chuỗi học: ${streakDays} ngày, 7 ngày qua: ${events7d} sự kiện
+- Tỷ lệ ghi nhớ SRS: ${retention}%
+- Kỹ năng yếu nhất: ${weakDimLabel}
+- Tốc độ phản xạ (ms): Nghe=${avgLatency.listening || 0}, Đọc=${avgLatency.reading || 0}, Ngữ pháp=${avgLatency.grammar || 0}, Viết=${avgLatency.writing || 0}
+- Điểm nghẽn: ${bottlenecks.map(b => b.target_key).join(', ') || 'Chưa có'}`;
+
+      const aiBriefing = await callUnifiedAiProvider({
+        action: 'generate_telemetry_briefing',
+        systemPrompt: 'Bạn là Lão Sư HanziGo. Trả về JSON thuần gồm 3 khóa tiếng Việt súc tích, thực tế: greeting, summary, examTactic.',
+        userPrompt: briefingPrompt,
+        temperature: 0.5,
+        maxTokens: 500,
+      });
+
+      if (aiBriefing.success && aiBriefing.data?.summary) {
+        return res.status(200).json({
+          source: 'ai_coach',
+          greeting: aiBriefing.data.greeting || deterministicBriefing.greeting,
+          summary: aiBriefing.data.summary,
+          examTactic: aiBriefing.data.examTactic || deterministicBriefing.examTactic,
+          _metadata: {
+            provider: aiBriefing.provider,
+            model: aiBriefing.model,
+            latencyMs: aiBriefing.latencyMs,
+          },
+        });
+      }
+    } catch {
+      // Fall back deterministically below
+    }
+
+    return res.status(200).json(deterministicBriefing);
+  }
+
   // 4. Construct Prompts
   const { 
     hskLevel = 'HSK 1', 

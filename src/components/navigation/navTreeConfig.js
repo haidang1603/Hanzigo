@@ -119,6 +119,15 @@ export const CORE_TREE_ITEMS = [
         match: (tab, sub) => tab === 'hsk' && sub === 'hsk6_simulator',
       },
       {
+        key: 'hsk:hsk79',
+        id: 'hsk',
+        hash: '#hsk/hsk7_9_simulator',
+        label: 'Mô phỏng HSK 7–9',
+        icon: Award,
+        badge: 'HSK 7–9',
+        match: (tab, sub) => tab === 'hsk' && sub === 'hsk7_9_simulator',
+      },
+      {
         key: 'hsk:hskk',
         id: 'hsk',
         hash: '#hsk/hskk_simulator',
@@ -151,9 +160,41 @@ export const CORE_TREE_ITEMS = [
         icon: BookMarked,
         match: (tab, sub) => tab === 'hsk' && sub === 'structure',
       },
+      {
+        key: 'hsk:resources',
+        id: 'hsk',
+        hash: '#hsk/resources',
+        label: 'Tài liệu ôn thi HSK',
+        icon: FolderDown,
+        match: (tab, sub) => tab === 'hsk' && sub === 'resources',
+      },
     ],
   },
-  { key: 'classroom', id: 'classroom', label: 'Lớp học', icon: GraduationCap },
+  {
+    key: 'classroom',
+    id: 'classroom',
+    hash: '#classroom',
+    label: 'Lớp học',
+    icon: GraduationCap,
+    children: [
+      {
+        key: 'classroom:list',
+        id: 'classroom',
+        hash: '#classroom',
+        label: 'Danh sách lớp học',
+        icon: GraduationCap,
+        match: (tab, sub) => tab === 'classroom' && !sub,
+      },
+      {
+        key: 'classroom:join',
+        id: 'classroom',
+        hash: '#classroom/join',
+        label: 'Tham gia lớp học',
+        icon: Users,
+        match: (tab, sub) => tab === 'classroom' && sub === 'join',
+      },
+    ],
+  },
 ];
 
 export const SKILLS_TREE_ITEMS = [

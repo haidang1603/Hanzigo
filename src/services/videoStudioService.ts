@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { recordLearningEvent } from './learningDataService.ts';
+import { getUserStorageKey } from '../utils/gamification.js';
 import { tokenizeChineseText, type ReadingToken } from '../utils/chineseTokenizer.ts';
 import { saveWordToDeck, type DictionaryEntry } from './dictionaryService.ts';
 
@@ -217,10 +218,13 @@ export async function fetchYouTubeOEmbedMeta(videoId: string): Promise<{
   }
 }
 
-export function getCustomYouTubeVideos(): ImmersionVideo[] {
+export function getCustomYouTubeVideos(
+  user?: { id?: string | null; uid?: string | null } | null
+): ImmersionVideo[] {
   try {
     if (typeof localStorage === 'undefined') return [];
-    const raw = localStorage.getItem(STORAGE_CUSTOM_VIDEOS_KEY);
+    const scopedKey = getUserStorageKey(STORAGE_CUSTOM_VIDEOS_KEY, user);
+    const raw = localStorage.getItem(scopedKey);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? (parsed as ImmersionVideo[]) : [];
@@ -229,10 +233,14 @@ export function getCustomYouTubeVideos(): ImmersionVideo[] {
   }
 }
 
-function persistCustomYouTubeVideos(videos: ImmersionVideo[]): ImmersionVideo[] {
+function persistCustomYouTubeVideos(
+  videos: ImmersionVideo[],
+  user?: { id?: string | null; uid?: string | null } | null
+): ImmersionVideo[] {
   try {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(STORAGE_CUSTOM_VIDEOS_KEY, JSON.stringify(videos));
+      const scopedKey = getUserStorageKey(STORAGE_CUSTOM_VIDEOS_KEY, user);
+      localStorage.setItem(scopedKey, JSON.stringify(videos));
     }
   } catch {
     // ignore storage errors
@@ -270,19 +278,23 @@ export function createCustomYouTubeVideo(params: {
   };
 }
 
-export function saveCustomYouTubeVideo(video: ImmersionVideo): ImmersionVideo[] {
-  const existing = getCustomYouTubeVideos().filter(
+export function saveCustomYouTubeVideo(
+  video: ImmersionVideo,
+  user?: { id?: string | null; uid?: string | null } | null
+): ImmersionVideo[] {
+  const existing = getCustomYouTubeVideos(user).filter(
     (v) => v.external_video_id !== video.external_video_id && v.id !== video.id
   );
-  return persistCustomYouTubeVideos([video, ...existing]);
+  return persistCustomYouTubeVideos([video, ...existing], user);
 }
 
 export function updateCustomYouTubeVideoSubtitles(
   videoId: string,
-  rawSubtitles: string
+  rawSubtitles: string,
+  user?: { id?: string | null; uid?: string | null } | null
 ): ImmersionVideo[] {
   const subtitles = parseSubtitlesInput(rawSubtitles);
-  const existing = getCustomYouTubeVideos();
+  const existing = getCustomYouTubeVideos(user);
   const updated = existing.map((v) => {
     if (v.id !== videoId) return v;
     const lastCueEndSec =
@@ -293,12 +305,15 @@ export function updateCustomYouTubeVideoSubtitles(
       subtitles,
     };
   });
-  return persistCustomYouTubeVideos(updated);
+  return persistCustomYouTubeVideos(updated, user);
 }
 
-export function deleteCustomYouTubeVideo(videoId: string): ImmersionVideo[] {
-  const filtered = getCustomYouTubeVideos().filter((v) => v.id !== videoId);
-  return persistCustomYouTubeVideos(filtered);
+export function deleteCustomYouTubeVideo(
+  videoId: string,
+  user?: { id?: string | null; uid?: string | null } | null
+): ImmersionVideo[] {
+  const filtered = getCustomYouTubeVideos(user).filter((v) => v.id !== videoId);
+  return persistCustomYouTubeVideos(filtered, user);
 }
 
 const BUILT_IN_VIDEOS: ImmersionVideo[] = [];
@@ -307,13 +322,16 @@ export function getBuiltInVideos(): ImmersionVideo[] {
   return BUILT_IN_VIDEOS;
 }
 
-export async function listImmersionVideos(): Promise<ImmersionVideo[]> {
-  const customVideos = getCustomYouTubeVideos();
+export async function listImmersionVideos(
+  user?: { id?: string | null; uid?: string | null } | null
+): Promise<ImmersionVideo[]> {
+  const customVideos = getCustomYouTubeVideos(user);
   if (!isSupabaseConfigured || !supabase) {
     return customVideos;
   }
 
   try {
+    const uid = user?.id || user?.uid || null;
     const { data, error } = await supabase
       .from('immersion_videos')
       .select('*')
@@ -323,20 +341,26 @@ export async function listImmersionVideos(): Promise<ImmersionVideo[]> {
       return customVideos;
     }
 
-    const remoteVideos = data.map((row) => ({
-      id: String(row.id),
-      source_type: (row.source_type as VideoSourceType) || 'youtube',
-      external_video_id: String(row.external_video_id),
-      title_zh: String(row.title_zh),
-      title_vi: String(row.title_vi),
-      channel_name: String(row.channel_name || ''),
-      thumbnail_url: String(row.thumbnail_url || ''),
-      duration_seconds: Number(row.duration_seconds || 60),
-      hsk_level: Number(row.hsk_level || 3),
-      topic_tags: Array.isArray(row.topic_tags) ? (row.topic_tags as string[]) : [],
-      speech_speed: (row.speech_speed as VideoSpeechSpeed) || 'normal',
-      subtitles: Array.isArray(row.subtitles) ? (row.subtitles as SubtitleCue[]) : [],
-    }));
+    const remoteVideos = data
+      .filter((row) => {
+        const owner = row.user_id || row.created_by;
+        if (!owner) return true;
+        return Boolean(uid && owner === uid);
+      })
+      .map((row) => ({
+        id: String(row.id),
+        source_type: (row.source_type as VideoSourceType) || 'youtube',
+        external_video_id: String(row.external_video_id),
+        title_zh: String(row.title_zh),
+        title_vi: String(row.title_vi),
+        channel_name: String(row.channel_name || ''),
+        thumbnail_url: String(row.thumbnail_url || ''),
+        duration_seconds: Number(row.duration_seconds || 60),
+        hsk_level: Number(row.hsk_level || 3),
+        topic_tags: Array.isArray(row.topic_tags) ? (row.topic_tags as string[]) : [],
+        speech_speed: (row.speech_speed as VideoSpeechSpeed) || 'normal',
+        subtitles: Array.isArray(row.subtitles) ? (row.subtitles as SubtitleCue[]) : [],
+      }));
 
     return [...customVideos, ...remoteVideos];
   } catch {
@@ -410,6 +434,9 @@ export async function mineVideoSentenceToSRS(params: {
         collocations: [],
       },
     ],
+    decomposition: null,
+    measure_words: [],
+    synonyms_antonyms: { synonyms: [], antonyms: [] },
     examples: [
       {
         hanzi: cue.zh_raw,
@@ -450,7 +477,7 @@ export async function saveVideoProgress(params: {
   completed?: boolean;
 }): Promise<void> {
   const { user = null, videoId, positionMs, savedCueIndex, shadowedCueIndex, completed = false } = params;
-  const key = `${STORAGE_VIDEO_PROGRESS_PREFIX}${videoId}`;
+  const key = getUserStorageKey(`${STORAGE_VIDEO_PROGRESS_PREFIX}${videoId}`, user);
 
   try {
     if (typeof localStorage !== 'undefined') {

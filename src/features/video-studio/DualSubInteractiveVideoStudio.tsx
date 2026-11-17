@@ -39,17 +39,17 @@ export const DualSubInteractiveVideoStudio: React.FC<DualSubInteractiveVideoStud
 
   useEffect(() => {
     let active = true;
-    listImmersionVideos().then((loaded) => {
+    listImmersionVideos(user).then((loaded) => {
       if (!active) return;
       setVideos(loaded);
-      if (loaded.length > 0) {
-        setSelectedVideoId((prev) => prev || loaded[0].id);
-      }
+      setSelectedVideoId((prev) =>
+        loaded.some((v) => v.id === prev) ? prev : loaded[0]?.id || ''
+      );
     });
     return () => {
       active = false;
     };
-  }, []);
+  }, [user]);
 
   const currentVideo = useMemo(() => {
     if (videos.length === 0) return null;
@@ -79,8 +79,8 @@ export const DualSubInteractiveVideoStudio: React.FC<DualSubInteractiveVideoStud
         rawSubtitles: rawSubtitlesInput,
       });
 
-      saveCustomYouTubeVideo(newVideo);
-      const refreshed = await listImmersionVideos();
+      saveCustomYouTubeVideo(newVideo, user);
+      const refreshed = await listImmersionVideos(user);
       setVideos(refreshed);
       setSelectedVideoId(newVideo.id);
       setActiveCueIndex(0);
@@ -94,8 +94,8 @@ export const DualSubInteractiveVideoStudio: React.FC<DualSubInteractiveVideoStud
   };
 
   const handleDeleteVideo = async (videoId: string) => {
-    deleteCustomYouTubeVideo(videoId);
-    const refreshed = await listImmersionVideos();
+    deleteCustomYouTubeVideo(videoId, user);
+    const refreshed = await listImmersionVideos(user);
     setVideos(refreshed);
     if (selectedVideoId === videoId) {
       setSelectedVideoId(refreshed[0]?.id || '');
@@ -105,8 +105,8 @@ export const DualSubInteractiveVideoStudio: React.FC<DualSubInteractiveVideoStud
 
   const handleUpdateCurrentSubtitles = async (rawSubs: string) => {
     if (!currentVideo) return;
-    updateCustomYouTubeVideoSubtitles(currentVideo.id, rawSubs);
-    const refreshed = await listImmersionVideos();
+    updateCustomYouTubeVideoSubtitles(currentVideo.id, rawSubs, user);
+    const refreshed = await listImmersionVideos(user);
     setVideos(refreshed);
     setActiveCueIndex(0);
   };

@@ -42,7 +42,7 @@ export const ChineseReadingStudio: React.FC<ChineseReadingStudioProps> = ({ user
 
   useEffect(() => {
     let active = true;
-    listReadingArticles().then((items) => {
+    listReadingArticles(user).then((items) => {
       if (!active || items.length === 0) return;
       setArticles(items);
       setSelectedId((prev) => prev || items[0].id);
@@ -50,7 +50,7 @@ export const ChineseReadingStudio: React.FC<ChineseReadingStudioProps> = ({ user
     return () => {
       active = false;
     };
-  }, []);
+  }, [user]);
 
   const currentArticle = useMemo(() => {
     return articles.find((a) => a.id === selectedId) || articles[0];

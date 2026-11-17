@@ -23,19 +23,19 @@ const supabaseUrl = isNodeTestEnv ? '' : getEnvVar('VITE_SUPABASE_URL', '');
 const supabaseAnonKey = isNodeTestEnv ? '' : getEnvVar('VITE_SUPABASE_ANON_KEY', '');
 
 export const isSupabaseConfigured = Boolean(
-  supabaseUrl && 
-  supabaseAnonKey && 
+  supabaseUrl &&
+  supabaseAnonKey &&
   supabaseUrl.includes('supabase.co')
 );
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      }
-    })
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  })
   : null;
 
 if (isSupabaseConfigured) {

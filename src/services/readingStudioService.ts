@@ -1,5 +1,6 @@
 import { VOCABULARY_LIST } from '../data/chineseData.js';
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
+import { getUserStorageKey } from '../utils/gamification.js';
 import {
   parseCustomArticleToParagraphs,
   tokenizeChineseText,
@@ -467,9 +468,17 @@ export function getBuiltInReadingArticles(): ReadingArticle[] {
   });
 }
 
-export async function listReadingArticles(): Promise<ReadingArticle[]> {
+export async function listReadingArticles(
+  user?: { id?: string | null; uid?: string | null } | null
+): Promise<ReadingArticle[]> {
   const builtins = getBuiltInReadingArticles();
-  const customLocal = safeReadJson<ReadingArticle[]>(CUSTOM_ARTICLES_KEY, []);
+  const storageKey = getUserStorageKey(CUSTOM_ARTICLES_KEY, user);
+  const uid = user?.id || user?.uid || null;
+  const rawCustomLocal = safeReadJson<ReadingArticle[]>(storageKey, []);
+  const customLocal = rawCustomLocal.filter((c) => {
+    const owner = (c as ReadingArticle & { created_by?: string | null }).created_by;
+    return uid ? !owner || owner === uid : !owner;
+  });
 
   if (isSupabaseConfigured && supabase) {
     try {
@@ -479,7 +488,9 @@ export async function listReadingArticles(): Promise<ReadingArticle[]> {
         .order('hsk_level', { ascending: true })
         .limit(30);
       if (!error && Array.isArray(data) && data.length > 0) {
-        const dbArticles = data as ReadingArticle[];
+        const dbArticles = (data as Array<ReadingArticle & { created_by?: string | null }>).filter(
+          (a) => !a.is_user_custom || Boolean(uid && a.created_by === uid)
+        );
         const dbIds = new Set(dbArticles.map((a) => a.id));
         return [...dbArticles, ...customLocal.filter((c) => !dbIds.has(c.id)), ...builtins.filter((b) => !dbIds.has(b.id))];
       }
@@ -496,10 +507,11 @@ export async function createCustomReadingArticle(params: {
   titleVi?: string;
   rawText: string;
   hskLevel?: number;
-  user?: { id?: string | null } | null;
+  user?: { id?: string | null; uid?: string | null } | null;
 }): Promise<ReadingArticle> {
   const { paragraphs, wordCount } = parseCustomArticleToParagraphs(params.rawText);
-  const article: ReadingArticle = {
+  const uid = params.user?.id || params.user?.uid || null;
+  const article: ReadingArticle & { created_by?: string | null } = {
     id: `custom-art-${Date.now()}`,
     title_zh: params.titleZh.trim() || 'Bài đọc tùy chỉnh',
     title_vi: params.titleVi?.trim() || 'Văn bản người dùng tự nhập',
@@ -510,12 +522,14 @@ export async function createCustomReadingArticle(params: {
     paragraphs,
     comprehension_questions: [],
     is_user_custom: true,
+    created_by: uid,
   };
 
-  const existing = safeReadJson<ReadingArticle[]>(CUSTOM_ARTICLES_KEY, []);
-  safeWriteJson(CUSTOM_ARTICLES_KEY, [article, ...existing].slice(0, 20));
+  const storageKey = getUserStorageKey(CUSTOM_ARTICLES_KEY, params.user);
+  const existing = safeReadJson<ReadingArticle[]>(storageKey, []);
+  safeWriteJson(storageKey, [article, ...existing].slice(0, 20));
 
-  if (isSupabaseConfigured && supabase && params.user?.id) {
+  if (isSupabaseConfigured && supabase && uid) {
     try {
       await supabase.from('reading_articles').insert({
         title_zh: article.title_zh,
@@ -527,7 +541,7 @@ export async function createCustomReadingArticle(params: {
         paragraphs: article.paragraphs,
         comprehension_questions: [],
         is_user_custom: true,
-        created_by: params.user.id,
+        created_by: uid,
       });
     } catch {
       // non-fatal

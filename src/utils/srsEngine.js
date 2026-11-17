@@ -247,7 +247,7 @@ export function captureWeakVocabulary(wordData, sourceContext = 'quiz_mistake', 
   try {
     const raw = localStorage.getItem(srsKey);
     if (raw) srsMap = JSON.parse(raw);
-  } catch {}
+  } catch { }
 
   const now = new Date();
   const existingCard = srsMap[hanzi];
@@ -314,7 +314,7 @@ export function captureWeakVocabulary(wordData, sourceContext = 'quiz_mistake', 
   srsMap[hanzi] = updatedCard;
   try {
     localStorage.setItem(srsKey, JSON.stringify(srsMap));
-  } catch {}
+  } catch { }
 
   // 2. Thêm vào danh sách reviewIds
   try {
@@ -324,7 +324,7 @@ export function captureWeakVocabulary(wordData, sourceContext = 'quiz_mistake', 
       reviewList.push(hanzi);
       localStorage.setItem(reviewKey, JSON.stringify(reviewList));
     }
-  } catch {}
+  } catch { }
 
   // 3. Dispatch sự kiện thông báo toàn ứng dụng
   if (typeof window !== 'undefined') {
@@ -335,7 +335,7 @@ export function captureWeakVocabulary(wordData, sourceContext = 'quiz_mistake', 
       window.dispatchEvent(new CustomEvent('hanzigo_vocab_saved', {
         detail: { hanzi, source: sourceContext }
       }));
-    } catch {}
+    } catch { }
   }
 
   return updatedCard;
