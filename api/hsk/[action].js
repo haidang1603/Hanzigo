@@ -30,6 +30,7 @@ import importHandler from '../_handlers/hsk/import.js';
 import reviewHandler from '../_handlers/hsk/review.js';
 import reportHandler from '../_handlers/hsk/report.js';
 import { handleVerifyCertificate, handleIssueCertificate } from '../_handlers/hsk/certificate.js';
+import { sendSafeServerError } from '../_utils/supabaseServer.js';
 
 export default async function handler(req, res) {
   try {
@@ -94,8 +95,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('[HSK Router Error]:', err);
-    if (!res.headersSent) {
-      return res.status(500).json({ error: 'Lỗi máy chủ nội bộ.', message: err?.message });
-    }
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ.', err);
   }
 }

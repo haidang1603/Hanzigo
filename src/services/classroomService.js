@@ -3,6 +3,7 @@ import { isValidUuid } from './authService.js';
 import { sanitizeUserErrorMessage } from '../utils/errorSanitizer.js';
 import { recordAuditLog, AUDIT_CATEGORIES, AUDIT_SEVERITY } from './auditLogService.js';
 import { deleteMaterialFromStorage, getMaterialSignedUrl } from './storageService.js';
+import { getUserStorageKey } from '../utils/gamification.js';
 
 // Keys for local simulation storage fallback
 const STORAGE_KEYS = {
@@ -132,22 +133,24 @@ export function calculateStudentHealthStatus({
 const memoryStore = new Map();
 
 function getLocalItem(key, fallback = []) {
+  const scopedKey = getUserStorageKey(key);
   try {
     if (typeof localStorage !== 'undefined') {
-      const raw = localStorage.getItem(key);
+      const raw = localStorage.getItem(scopedKey);
       if (raw) return JSON.parse(raw);
     }
   } catch {}
-  return memoryStore.has(key) ? memoryStore.get(key) : fallback;
+  return memoryStore.has(scopedKey) ? memoryStore.get(scopedKey) : fallback;
 }
 
 function setLocalItem(key, data) {
+  const scopedKey = getUserStorageKey(key);
   try {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(key, JSON.stringify(data));
+      localStorage.setItem(scopedKey, JSON.stringify(data));
     }
   } catch {}
-  memoryStore.set(key, data);
+  memoryStore.set(scopedKey, data);
 }
 
 // Automatically purge any legacy fake/mock student accounts and demo submissions by ID

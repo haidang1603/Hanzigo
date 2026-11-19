@@ -1,3 +1,5 @@
+import { getLocalDateString } from '../utils/gamification.js';
+
 /**
  * =========================================================================
  * HANZIGO — SRS RETENTION & MEMORY DECAY ANALYTICS (TASK 26.03)
@@ -648,15 +650,17 @@ export function computeSrsRetentionSnapshot(params: {
 
   const totalMaturity = Object.values(counts).reduce((a, b) => a + b, 0);
 
-  // 3. 7-Day Workload Forecast
+  // 3. 7-Day Workload Forecast (Local Timezone / UTC+7)
   const workloadForecast: WorkloadForecastDay[] = [];
   const startOfToday = new Date(nowMs);
-  startOfToday.setUTCHours(0, 0, 0, 0);
+  startOfToday.setHours(0, 0, 0, 0);
 
   for (let offset = 0; offset < 7; offset += 1) {
-    const dayStartMs = startOfToday.getTime() + offset * 86400000;
+    const dayStart = new Date(startOfToday);
+    dayStart.setDate(startOfToday.getDate() + offset);
+    const dayStartMs = dayStart.getTime();
     const dayEndMs = dayStartMs + 86400000;
-    const dateStr = new Date(dayStartMs).toISOString().slice(0, 10);
+    const dateStr = getLocalDateString(dayStart);
 
     let dueReviews = 0;
     for (const card of filteredCards) {

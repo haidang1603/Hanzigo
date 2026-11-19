@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { isValidUuid } from './authService.js';
 import { getUserStorageKey } from '../utils/gamification.js';
+import { enqueueOfflineMutation } from '../core/sync/OfflineSyncManager.js';
 
 /**
  * Fetch Vocabulary from Database
@@ -64,30 +65,50 @@ export async function getUserVocabSrsProgress(userId) {
 export async function saveUserVocabSrsCard(userId, srsCard) {
   if (!isSupabaseConfigured || !supabase || !isValidUuid(userId) || !srsCard?.hanzi) return false;
 
-  try {
-    const payload = {
-      user_id: userId,
-      hanzi: srsCard.hanzi,
-      pinyin: srsCard.pinyin || '',
-      meaning: srsCard.meaning || '',
-      level: srsCard.level || 'HSK 1',
-      stage: srsCard.stage ?? 0,
-      repetitions: srsCard.repetitions ?? 0,
-      interval_days: srsCard.intervalDays ?? 1,
-      ease_factor: srsCard.easeFactor ?? 2.50,
-      next_review_at: srsCard.nextReviewAt || new Date().toISOString(),
-      last_reviewed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+  const lapseCount = srsCard.lapseCount ?? srsCard.lapse_count ?? 0;
+  const nowIso = new Date().toISOString();
+  const payload = {
+    user_id: userId,
+    hanzi: srsCard.hanzi,
+    pinyin: srsCard.pinyin || '',
+    meaning: srsCard.meaning || '',
+    level: srsCard.level || 'HSK 1',
+    stage: srsCard.stage ?? 0,
+    repetitions: srsCard.repetitions ?? 0,
+    interval_days: srsCard.intervalDays ?? srsCard.interval ?? 1,
+    ease_factor: srsCard.easeFactor ?? 2.50,
+    lapse_count: lapseCount,
+    next_review_at: srsCard.nextReviewAt || (srsCard.nextReview ? new Date(srsCard.nextReview).toISOString() : nowIso),
+    last_reviewed_at: srsCard.lastReviewedAt || (srsCard.lastReviewed ? new Date(srsCard.lastReviewed).toISOString() : nowIso),
+    updated_at: nowIso
+  };
 
-    const { error } = await supabase
+  try {
+    let { error } = await supabase
       .from('user_vocab_srs')
       .upsert(payload, { onConflict: 'user_id,hanzi' });
+
+    if (error && (error.code === '42703' || String(error.message || '').includes('lapse_count'))) {
+      const { lapse_count: _omitted, ...legacyPayload } = payload;
+      const retry = await supabase
+        .from('user_vocab_srs')
+        .upsert(legacyPayload, { onConflict: 'user_id,hanzi' });
+      error = retry.error;
+    }
 
     if (error) throw error;
     return true;
   } catch (err) {
-    console.warn('Could not save user vocab SRS card:', err);
+    console.warn('Could not save user vocab SRS card, queuing for offline sync:', err);
+    if (userId && srsCard?.hanzi) {
+      enqueueOfflineMutation({
+        table: 'user_vocab_srs',
+        action: 'upsert',
+        onConflict: 'user_id,hanzi',
+        idempotencyKey: `srs:${userId}:${srsCard.hanzi}`,
+        payload
+      }, { id: userId });
+    }
     return false;
   }
 }
@@ -126,6 +147,7 @@ export async function syncUserVocabSrsFromCloud(userId) {
           repetitions: item.repetitions ?? local?.repetitions ?? 1,
           intervalDays: item.interval_days ?? local?.intervalDays ?? 1,
           easeFactor: Number(item.ease_factor) || local?.easeFactor || 2.50,
+          lapseCount: item.lapse_count ?? item.lapseCount ?? local?.lapseCount ?? 0,
           stage: item.stage ?? local?.stage ?? 1,
           lastReviewedAt: item.last_reviewed_at || local?.lastReviewedAt || new Date().toISOString(),
           nextReviewAt: item.next_review_at || local?.nextReviewAt || new Date().toISOString()
@@ -141,15 +163,12 @@ export async function syncUserVocabSrsFromCloud(userId) {
 
     try {
       localStorage.setItem(srsKey, JSON.stringify(srsMap));
-      localStorage.setItem('hanzigo_vocab_srs_state', JSON.stringify(srsMap));
 
       const remKey = getUserStorageKey('hanzigo_vocab_remembered', { id: userId });
       localStorage.setItem(remKey, JSON.stringify(remembered));
-      localStorage.setItem('hanzigo_vocab_remembered', JSON.stringify(remembered));
 
       const revKey = getUserStorageKey('hanzigo_vocab_review', { id: userId });
       localStorage.setItem(revKey, JSON.stringify(review));
-      localStorage.setItem('hanzigo_vocab_review', JSON.stringify(review));
     } catch (e) {
       console.warn('LocalStorage save error in syncUserVocabSrsFromCloud:', e);
     }

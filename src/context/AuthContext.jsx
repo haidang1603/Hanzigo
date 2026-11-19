@@ -12,6 +12,7 @@ import {
   syncUserJourneyProgressFromCloud,
   syncUserVocabSrsFromCloud
 } from '../services';
+import { clearLegacyUnscopedLearningKeys } from '../utils/gamification';
 
 const AuthContext = createContext(null);
 
@@ -262,6 +263,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('hanzigo_total_xp');
     localStorage.removeItem('hanzigo_bonus_xp');
     localStorage.removeItem('hanzigo_active_tab');
+    clearLegacyUnscopedLearningKeys();
   };
 
   const updateUser = useCallback((updater) => {

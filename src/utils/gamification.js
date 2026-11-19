@@ -266,28 +266,8 @@ export function awardXp(amount, user = null, idempotencyKey = null, options = {}
     } catch {}
   }
 
-  // Update local shared roster cache
-  const targetId = targetUser?.uid || targetUser?.id;
-  if (targetId) {
-    try {
-      const rawCache = localStorage.getItem('hanzigo_shared_profiles_cache');
-      const cache = rawCache ? JSON.parse(rawCache) : {};
-      cache[targetId] = {
-        ...(cache[targetId] || {}),
-        id: targetId,
-        name: targetUser?.name || 'Học viên',
-        email: targetUser?.email || '',
-        avatar: targetUser?.avatar || null,
-        level: targetUser?.level || 'HSK 1 - Sơ cấp',
-        xp: updatedXp,
-        streak: activeStreak || 1,
-        status: 'active'
-      };
-      localStorage.setItem('hanzigo_shared_profiles_cache', JSON.stringify(cache));
-    } catch {}
-  }
-
   // Trigger cloud sync for this user with authoritative XP
+  const targetId = targetUser?.uid || targetUser?.id;
   triggerCloudSync(targetId, updatedXp);
   broadcastGamificationUpdate('LEADERBOARD_UPDATED', { xp: updatedXp, streak: activeStreak, userId: targetId });
 
@@ -784,4 +764,58 @@ export function getUserLevelInfo(xp) {
     currentProgressPercent: 100,
     xpToNextLevel: 0
   };
+}
+
+export const LEGACY_UNSCOPED_LEARNING_KEYS = [
+  'hanzigo_completed_lessons',
+  'hanzigo_vocab_remembered',
+  'hanzigo_vocab_review',
+  'hanzigo_vocab_srs_state',
+  'hanzigo_vocab_workspace_decks_v1',
+  'hanzigo_vocab_workspace_items_v1',
+  'hanzigo_dict_history_v1',
+  'hanzigo_dict_favorites_v1',
+  'hanzigo_smart_dict_history_v1',
+  'hanzigo_smart_dict_saved_deck_v1',
+  'hanzigo_smart_dict_ai_cache_v1',
+  'hanzigo_hsk_attempts',
+  'hanzigo_hsk_mistakes',
+  'hanzigo_hsk_exam_history',
+  'hanzigo_learner_context',
+  'hanzigo_learning_roadmap_v1',
+  'hanzigo_learning_telemetry_v1',
+  'hanzigo_telemetry_buffer_v1',
+  'hanzigo_telemetry_history_v1',
+  'hanzigo_telemetry_offline_queue_v1',
+  'hanzigo_mistake_records_v1',
+  'hanzigo_study_sessions_v1',
+  'hanzigo_sync_queue_v1',
+  'hanzigo_last_sync_at_v1',
+  'hanzigo_ecosystem_store_v1',
+  'hanzigo_listening_studio_v1',
+  'hanzigo_pronunciation_lab_v1',
+  'hanzigo_translation_studio_v1',
+  'hanzigo_textbook_companion_v1',
+  'hanzigo_classrooms_v1',
+  'hanzigo_teacher_materials_v1',
+  'hanzigo_shared_profiles_cache'
+];
+
+export function clearLegacyUnscopedLearningKeys() {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    for (const key of LEGACY_UNSCOPED_LEARNING_KEYS) {
+      localStorage.removeItem(key);
+    }
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('hanzigo_hsk_draft_')) {
+        keysToRemove.push(key);
+      }
+    }
+    for (const key of keysToRemove) {
+      localStorage.removeItem(key);
+    }
+  } catch {}
 }

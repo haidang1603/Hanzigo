@@ -23,13 +23,43 @@ export function sanitizeSensitiveText(input) {
   // 3. Email addresses
   text = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[REDACTED_EMAIL]');
 
-  // 4. Password / token / secret / api_key assignments in JSON, query strings, or logs
+  // 4. Password / token / secret / cookie / api_key assignments in JSON, query strings, or logs
   text = text.replace(
-    /((?:"|')?(?:password|passwd|pwd|passcode|secret|token|access_token|refresh_token|id_token|api_key|apikey|authorization)(?:"|')?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,&;}\]]+)/gi,
+    /((?:"|')?(?:password|passwd|pwd|passcode|secret|token|access_token|refresh_token|id_token|api_key|apikey|x-api-key|authorization|cookie|set-cookie)(?:"|')?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,&;}\]]+)/gi,
     '$1[REDACTED]'
   );
 
   return text;
+}
+
+export const ERROR_CATEGORIES = ['network', 'database', 'auth', 'validation', 'render', 'sync', 'unknown'];
+
+export function classifyErrorCategory(errorInput, context = {}) {
+  if (context?.category && ERROR_CATEGORIES.includes(context.category)) {
+    return context.category;
+  }
+  const msg = String(errorInput?.message || errorInput?.reason?.message || errorInput || '').toLowerCase();
+  if (context?.componentStack || /render|react|minified react error|hydration/i.test(msg)) return 'render';
+  if (/network|fetch|timeout|econn|offline|failed to fetch|load failed|502|503|504/i.test(msg)) return 'network';
+  if (/jwt|token|unauthori|forbidden|401|403|auth|session|login|permission/i.test(msg)) return 'auth';
+  if (/postgres|supabase|pgrst|sql|relation|column|duplicate key|rls|database|db /i.test(msg)) return 'database';
+  if (/sync|queue|quotaexceeded|localstorage|idempoten/i.test(msg)) return 'sync';
+  if (/invalid|required|validation|schema|400|zod|parse/i.test(msg)) return 'validation';
+  return 'unknown';
+}
+
+export function inferSourceModule(context = {}, routePath = '/') {
+  if (context?.module) return String(context.module);
+  if (context?.boundaryScope) return String(context.boundaryScope);
+  const pathStr = String(routePath || '/').toLowerCase();
+  if (pathStr.includes('hsk')) return 'hsk_exam';
+  if (pathStr.includes('vocab') || pathStr.includes('dict')) return 'vocabulary_srs';
+  if (pathStr.includes('live') || pathStr.includes('classroom')) return 'live_classroom';
+  if (pathStr.includes('roadmap') || pathStr.includes('lesson')) return 'learning_path';
+  if (pathStr.includes('admin')) return 'admin_dashboard';
+  if (pathStr.includes('teacher')) return 'teacher_dashboard';
+  if (pathStr.includes('dashboard')) return 'student_dashboard';
+  return 'app_global';
 }
 
 /**
@@ -111,11 +141,14 @@ export function buildDiagnosticPayload(errorInput, context = {}) {
 
   const rawMessage = errObj.message || errObj.reason?.message || String(errorInput || 'Unknown client error');
   const rawStack = errObj.stack || context.componentStack || '';
+  const routePath = sanitizeSensitiveText(context.routePath || getCurrentRoutePath());
 
   return {
     message: sanitizeSensitiveText(rawMessage).slice(0, 300),
+    category: classifyErrorCategory(errObj, context),
+    module: sanitizeSensitiveText(inferSourceModule(context, routePath)).slice(0, 80),
     stack_summary: summarizeStack(rawStack),
-    route_path: sanitizeSensitiveText(context.routePath || getCurrentRoutePath()),
+    route_path: routePath,
     user_agent: getUserAgent(),
     timestamp: new Date(context.now || Date.now()).toISOString(),
   };

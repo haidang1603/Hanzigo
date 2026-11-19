@@ -205,7 +205,7 @@ export async function getPlatformLearningActivityData() {
   if (isSupabaseConfigured && supabase) {
     try {
       const [subsRes, readRes, postRes, matRes] = await Promise.all([
-        supabase.from('submissions').select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+        supabase.from('classroom_assignment_submissions').select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
         supabase.from('reading_progress').select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
         supabase.from('community_posts').select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
         supabase.from('materials').select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 }))
@@ -225,8 +225,17 @@ export async function getPlatformLearningActivityData() {
       submissionsCount = subs.length;
     } catch {}
     try {
-      const reads = JSON.parse(localStorage.getItem('hanzigo_reading_progress_store') || '[]');
-      readingProgressCount = reads.length;
+      let localReadsCount = 0;
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('hanzigo_reading_progress_')) {
+          const parsed = JSON.parse(localStorage.getItem(key) || '{}');
+          if (parsed && typeof parsed === 'object') {
+            localReadsCount += Array.isArray(parsed) ? parsed.length : Object.keys(parsed).length;
+          }
+        }
+      }
+      readingProgressCount = localReadsCount;
     } catch {}
     try {
       const posts = JSON.parse(localStorage.getItem('hanzigo_community_posts_store') || '[]');

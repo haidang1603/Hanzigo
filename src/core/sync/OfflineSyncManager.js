@@ -1,8 +1,36 @@
 import { supabase, isSupabaseConfigured } from '../../supabase/config.js';
+import { getUserStorageKey } from '../../utils/gamification.js';
 
 export const STORAGE_PREFS_KEY = 'hanzigo_storage_preferences_v1';
 export const SYNC_QUEUE_KEY = 'hanzigo_sync_queue_v1';
+export const FAILED_SYNC_QUEUE_KEY = 'hanzigo_sync_failed_v1';
 export const LAST_SYNC_KEY = 'hanzigo_last_sync_at_v1';
+export const MAX_SYNC_RETRIES = 5;
+
+export function getScopedSyncQueueKey(user = null) {
+  return getUserStorageKey(SYNC_QUEUE_KEY, user);
+}
+
+export function getScopedFailedSyncKey(user = null) {
+  return getUserStorageKey(FAILED_SYNC_QUEUE_KEY, user);
+}
+
+export function getScopedLastSyncKey(user = null) {
+  return getUserStorageKey(LAST_SYNC_KEY, user);
+}
+
+export function getFailedSyncItems(user = null) {
+  const storage = getSafeStorage('localStorage');
+  if (!storage) return [];
+  try {
+    const raw = storage.getItem(getScopedFailedSyncKey(user));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 export const DEFAULT_STORAGE_PREFERENCES = {
   essential: true,
@@ -222,12 +250,12 @@ export async function inspectBrowserStorage() {
   };
 }
 
-export function getPendingSyncItems() {
+export function getPendingSyncItems(user = null) {
   const storage = getSafeStorage('localStorage');
   if (!storage) return [];
 
   try {
-    const raw = storage.getItem(SYNC_QUEUE_KEY);
+    const raw = storage.getItem(getScopedSyncQueueKey(user));
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -236,19 +264,24 @@ export function getPendingSyncItems() {
   }
 }
 
-export function getLastSyncAt() {
+export function getLastSyncAt(user = null) {
   const storage = getSafeStorage('localStorage');
   if (!storage) return null;
-  return storage.getItem(LAST_SYNC_KEY) || null;
+  return storage.getItem(getScopedLastSyncKey(user)) || null;
 }
 
-export function enqueueOfflineMutation({ type, table, action = 'upsert', payload }) {
+export function enqueueOfflineMutation(
+  { type, table, action = 'upsert', payload, onConflict = null, idempotencyKey = null },
+  user = null
+) {
   const prefs = getStoragePreferences();
   if (!prefs.local_learning) {
     return { queued: false, reason: 'local_learning_disabled' };
   }
 
-  const queue = getPendingSyncItems();
+  const targetUser = user || (payload?.user_id ? { id: payload.user_id } : null);
+  const queueKey = getScopedSyncQueueKey(targetUser);
+  const queue = getPendingSyncItems(targetUser);
   const id =
     typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
@@ -260,14 +293,28 @@ export function enqueueOfflineMutation({ type, table, action = 'upsert', payload
     table,
     action,
     payload,
+    ...(onConflict ? { onConflict } : {}),
+    ...(idempotencyKey ? { idempotencyKey } : {}),
     createdAt: new Date().toISOString(),
   };
 
-  const nextQueue = [...queue, entry];
+  let nextQueue;
+  if (idempotencyKey) {
+    const existingIdx = queue.findIndex((item) => item?.idempotencyKey === idempotencyKey);
+    if (existingIdx >= 0) {
+      nextQueue = [...queue];
+      nextQueue[existingIdx] = { ...queue[existingIdx], ...entry, id: queue[existingIdx].id };
+    } else {
+      nextQueue = [...queue, entry];
+    }
+  } else {
+    nextQueue = [...queue, entry];
+  }
+
   const storage = getSafeStorage('localStorage');
   if (storage) {
     try {
-      storage.setItem(SYNC_QUEUE_KEY, JSON.stringify(nextQueue));
+      storage.setItem(queueKey, JSON.stringify(nextQueue));
     } catch {
       return { queued: false, reason: 'storage_quota_exceeded' };
     }
@@ -277,16 +324,21 @@ export function enqueueOfflineMutation({ type, table, action = 'upsert', payload
   return { queued: true, item: entry, pendingCount: nextQueue.length };
 }
 
-export async function flushOfflineQueueToSupabase(supabaseClient = supabase) {
-  const queue = getPendingSyncItems();
+export async function flushOfflineQueueToSupabase(supabaseClient = supabase, user = null, options = {}) {
+  const { maxRetries = MAX_SYNC_RETRIES, ignoreBackoff = false, nowMs = Date.now() } = options;
+  const queueKey = getScopedSyncQueueKey(user);
+  const failedKey = getScopedFailedSyncKey(user);
+  const lastSyncKey = getScopedLastSyncKey(user);
+  const queue = getPendingSyncItems(user);
   if (queue.length === 0) {
-    return { syncedCount: 0, failedCount: 0, remainingCount: 0, errors: [] };
+    return { syncedCount: 0, failedCount: 0, quarantinedCount: 0, remainingCount: 0, errors: [] };
   }
 
   if (hasWindow() && navigator.onLine === false) {
     return {
       syncedCount: 0,
       failedCount: queue.length,
+      quarantinedCount: 0,
       remainingCount: queue.length,
       errors: ['Thiết bị đang ngoại tuyến (Offline).'],
     };
@@ -297,41 +349,88 @@ export async function flushOfflineQueueToSupabase(supabaseClient = supabase) {
     return {
       syncedCount: 0,
       failedCount: queue.length,
+      quarantinedCount: 0,
       remainingCount: queue.length,
       errors: ['Supabase chưa được cấu hình.'],
     };
   }
 
   const remaining = [];
+  const quarantined = [];
   const errors = [];
   let syncedCount = 0;
 
   for (const item of queue) {
+    if (!ignoreBackoff && typeof item.nextRetryAt === 'number' && nowMs < item.nextRetryAt) {
+      remaining.push(item);
+      continue;
+    }
+
+    const currentRetries = Number(item.retryCount || 0);
+    if (currentRetries >= maxRetries) {
+      quarantined.push({
+        ...item,
+        status: 'failed_max_retries',
+        failedAt: new Date(nowMs).toISOString(),
+      });
+      continue;
+    }
+
+    let failureMsg = null;
     try {
       const tableRef = client.from(item.table);
-      const result =
-        item.action === 'insert'
-          ? await tableRef.insert(item.payload)
-          : await tableRef.upsert(item.payload);
+      let result;
+      if (item.action === 'insert') {
+        result = await tableRef.insert(item.payload);
+      } else if (item.onConflict) {
+        result = await tableRef.upsert(item.payload, { onConflict: item.onConflict });
+      } else {
+        result = await tableRef.upsert(item.payload);
+      }
 
       if (result?.error) {
-        remaining.push(item);
-        errors.push(`${item.table}: ${result.error.message}`);
+        failureMsg = `${item.table}: ${result.error.message}`;
       } else {
         syncedCount += 1;
       }
     } catch (err) {
-      remaining.push(item);
-      errors.push(`${item.table}: ${err?.message || 'Unknown sync error'}`);
+      failureMsg = `${item.table}: ${err?.message || 'Unknown sync error'}`;
+    }
+
+    if (failureMsg) {
+      errors.push(failureMsg);
+      const nextRetryCount = currentRetries + 1;
+      if (nextRetryCount >= maxRetries) {
+        quarantined.push({
+          ...item,
+          retryCount: nextRetryCount,
+          status: 'failed_max_retries',
+          lastError: failureMsg,
+          failedAt: new Date(nowMs).toISOString(),
+        });
+      } else {
+        const backoffMs = Math.min(60000, 1000 * 2 ** (nextRetryCount - 1));
+        remaining.push({
+          ...item,
+          retryCount: nextRetryCount,
+          lastError: failureMsg,
+          nextRetryAt: nowMs + backoffMs,
+        });
+      }
     }
   }
 
   const storage = getSafeStorage('localStorage');
   if (storage) {
     try {
-      storage.setItem(SYNC_QUEUE_KEY, JSON.stringify(remaining));
+      storage.setItem(queueKey, JSON.stringify(remaining));
+      if (quarantined.length > 0) {
+        const existingFailed = getFailedSyncItems(user);
+        const mergedFailed = [...quarantined, ...existingFailed].slice(0, 50);
+        storage.setItem(failedKey, JSON.stringify(mergedFailed));
+      }
       if (syncedCount > 0) {
-        storage.setItem(LAST_SYNC_KEY, new Date().toISOString());
+        storage.setItem(lastSyncKey, new Date(nowMs).toISOString());
       }
     } catch {
       // Ignore storage write failure
@@ -341,11 +440,13 @@ export async function flushOfflineQueueToSupabase(supabaseClient = supabase) {
   dispatchSyncEvent('hanzigo:sync-updated', {
     syncedCount,
     remainingCount: remaining.length,
+    quarantinedCount: quarantined.length,
   });
 
   return {
     syncedCount,
-    failedCount: remaining.length,
+    failedCount: remaining.length + quarantined.length,
+    quarantinedCount: quarantined.length,
     remainingCount: remaining.length,
     errors,
   };
@@ -406,30 +507,13 @@ export function clearStorageByCategory(category, { force = false } = {}) {
   };
 }
 
-export async function exportUserLearningSnapshot(supabaseClient = supabase) {
+export async function exportUserLearningSnapshot(supabaseClient = supabase, activeUser = null) {
   const prefs = getStoragePreferences();
   const storageSummary = await inspectBrowserStorage();
-  const pendingSync = getPendingSyncItems();
+  const pendingSync = getPendingSyncItems(activeUser);
   const storage = getSafeStorage('localStorage');
 
-  const localLearningData = {};
-  if (storage) {
-    for (let i = 0; i < storage.length; i += 1) {
-      const key = storage.key(i);
-      if (!key) continue;
-      if (classifyStorageKey(key) === 'essential' && key !== STORAGE_PREFS_KEY) {
-        continue;
-      }
-      const rawVal = storage.getItem(key);
-      try {
-        localLearningData[key] = rawVal ? JSON.parse(rawVal) : rawVal;
-      } catch {
-        localLearningData[key] = rawVal;
-      }
-    }
-  }
-
-  let userInfo = null;
+  let userInfo = activeUser?.id ? { id: activeUser.id, email: activeUser.email || null } : null;
   const cloudData = {
     user_vocab_items: [],
     hsk_attempts: [],
@@ -450,6 +534,27 @@ export async function exportUserLearningSnapshot(supabaseClient = supabase) {
       }
     } catch {
       // Export local snapshot gracefully even if cloud fetch fails
+    }
+  }
+
+  const scopedSuffix = userInfo?.id ? `_${userInfo.id}` : '_guest';
+  const localLearningData = {};
+  if (storage) {
+    for (let i = 0; i < storage.length; i += 1) {
+      const key = storage.key(i);
+      if (!key) continue;
+      if (classifyStorageKey(key) === 'essential' && key !== STORAGE_PREFS_KEY) {
+        continue;
+      }
+      if (key !== STORAGE_PREFS_KEY && !key.endsWith(scopedSuffix)) {
+        continue;
+      }
+      const rawVal = storage.getItem(key);
+      try {
+        localLearningData[key] = rawVal ? JSON.parse(rawVal) : rawVal;
+      } catch {
+        localLearningData[key] = rawVal;
+      }
     }
   }
 

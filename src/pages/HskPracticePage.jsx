@@ -1,12 +1,29 @@
 import { HskResourcesView, HskReportModal, HskAdminImportModal } from '../components/HskPhase3Components';
 import HskStructureView from '../components/HskStructureView';
 import HskAiDiagnosticPanel from '../components/personalization/HskAiDiagnosticPanel';
-import { Hsk6SimulatorWorkspace } from '../features/hsk-exam/renderers/hsk6/Hsk6SimulatorWorkspace.tsx';
-import { Hsk6TwoPhaseSummarySimulator } from '../features/hsk-exam/renderers/hsk6/Hsk6TwoPhaseSummarySimulator.tsx';
-import { HskkSpeakingSimulator } from '../features/hskk-exam/HskkSpeakingSimulator.tsx';
-import { PostExamMistakeRemediationPanel } from '../features/hsk-exam/analytics/PostExamMistakeRemediationPanel.tsx';
 import { HSK_7_TO_9_PAPER_CATALOG } from '@/features/hsk-exam/data/hsk7to9SampleExamPaper';
 import React, { useState, useEffect, useMemo, useRef, Suspense, lazy } from 'react';
+
+const Hsk6SimulatorWorkspace = lazy(() =>
+  import('../features/hsk-exam/renderers/hsk6/Hsk6SimulatorWorkspace.tsx').then((m) => ({
+    default: m.Hsk6SimulatorWorkspace,
+  }))
+);
+const Hsk6TwoPhaseSummarySimulator = lazy(() =>
+  import('../features/hsk-exam/renderers/hsk6/Hsk6TwoPhaseSummarySimulator.tsx').then((m) => ({
+    default: m.Hsk6TwoPhaseSummarySimulator,
+  }))
+);
+const HskkSpeakingSimulator = lazy(() =>
+  import('../features/hskk-exam/HskkSpeakingSimulator.tsx').then((m) => ({
+    default: m.HskkSpeakingSimulator,
+  }))
+);
+const PostExamMistakeRemediationPanel = lazy(() =>
+  import('../features/hsk-exam/analytics/PostExamMistakeRemediationPanel.tsx').then((m) => ({
+    default: m.PostExamMistakeRemediationPanel,
+  }))
+);
 import { 
   Award, 
   BookOpen, 
@@ -388,15 +405,19 @@ export default function HskPracticePage({
       )}
 
       {currentView === 'hsk6_simulator' && (
-        <Hsk6SimulatorWorkspace
-          onBack={() => navigateTo('home')}
-        />
+        <Suspense fallback={<div className="p-8 text-center text-sm text-slate-500">Đang tải trình mô phỏng HSK 6...</div>}>
+          <Hsk6SimulatorWorkspace
+            onBack={() => navigateTo('home')}
+          />
+        </Suspense>
       )}
 
       {currentView === 'hskk_simulator' && (
-        <HskkSpeakingSimulator
-          onBack={() => navigateTo('home')}
-        />
+        <Suspense fallback={<div className="p-8 text-center text-sm text-slate-500">Đang tải trình mô phỏng HSKK...</div>}>
+          <HskkSpeakingSimulator
+            onBack={() => navigateTo('home')}
+          />
+        </Suspense>
       )}
 
       {currentView === 'exams' && (
@@ -2264,15 +2285,17 @@ function HskExamTakingView({ examId, user, onNavigate }) {
           ========================================================================= */}
           {currentQ.question_type === 'essay_summary' && (
             <div className="mb-8 space-y-3">
-              <Hsk6TwoPhaseSummarySimulator
-                attemptKey={`${exam.id}_${currentQ.id}`}
-                passageParagraphs={currentQ.summary_passage_paragraphs || undefined}
-                practiceMode={examMode === 'practice'}
-                onSubmitSummary={(payload) => {
-                  const formatted = `《${payload.title || '无题'}》\n${payload.summary || ''}`.trim();
-                  recordAnswerChange(currentQ.id, formatted);
-                }}
-              />
+              <Suspense fallback={<div className="p-6 text-center text-sm text-slate-500">Đang tải bài viết tóm tắt HSK 6...</div>}>
+                <Hsk6TwoPhaseSummarySimulator
+                  attemptKey={`${exam.id}_${currentQ.id}`}
+                  passageParagraphs={currentQ.summary_passage_paragraphs || undefined}
+                  practiceMode={examMode === 'practice'}
+                  onSubmitSummary={(payload) => {
+                    const formatted = `《${payload.title || '无题'}》\n${payload.summary || ''}`.trim();
+                    recordAnswerChange(currentQ.id, formatted);
+                  }}
+                />
+              </Suspense>
               {answers[currentQ.id] && (
                 <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200 font-semibold">
                   ✅ Đã lưu bài tóm tắt vào phiếu làm bài ({String(answers[currentQ.id]).length} ký tự). Hãy bấm "Nộp bài thi" khi hoàn tất toàn bộ đề!
@@ -2883,12 +2906,14 @@ function HskExamResultView({ attemptId, user, onNavigate }) {
             user={user}
             onNavigate={onNavigate}
           />
-          <PostExamMistakeRemediationPanel
-            mistakes={(attempt.detailedResults || []).filter(r => !r.isCorrect)}
-            paperCode={attempt.examId || 'HSK-CBT'}
-            user={user}
-            onOpenGrammarExplorer={() => onNavigate('structure')}
-          />
+          <Suspense fallback={<div className="p-4 text-center text-sm text-slate-500">Đang tải phân tích khắc phục lỗi...</div>}>
+            <PostExamMistakeRemediationPanel
+              mistakes={(attempt.detailedResults || []).filter(r => !r.isCorrect)}
+              paperCode={attempt.examId || 'HSK-CBT'}
+              user={user}
+              onOpenGrammarExplorer={() => onNavigate('structure')}
+            />
+          </Suspense>
         </>
       )}
 

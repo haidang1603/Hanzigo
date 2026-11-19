@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { saveWordToDeck, type DictionaryEntry } from './dictionaryService.ts';
+import { getUserStorageKey } from '../utils/gamification.js';
 
 export interface DomainTerminologyItem {
   simplified: string;
@@ -878,9 +879,10 @@ export async function submitTranslationAttempt(params: {
   };
 
   try {
-    const raw = localStorage.getItem(LOCAL_SUBMISSIONS_KEY);
+    const storageKey = getUserStorageKey(LOCAL_SUBMISSIONS_KEY, user);
+    const raw = localStorage.getItem(storageKey);
     const existing = raw ? (JSON.parse(raw) as UserTranslationSubmission[]) : [];
-    localStorage.setItem(LOCAL_SUBMISSIONS_KEY, JSON.stringify([submission, ...existing].slice(0, 30)));
+    localStorage.setItem(storageKey, JSON.stringify([submission, ...existing].slice(0, 30)));
   } catch {
     // ignore storage errors
   }

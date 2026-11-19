@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { recordLearningEvent } from './learningDataService.ts';
+import { getUserStorageKey } from '../utils/gamification.js';
 
 export type SrsState = 'new' | 'learning' | 'review' | 'relearning';
 export type ReviewRating = 1 | 2 | 3 | 4; // 1: Again, 2: Hard, 3: Good, 4: Easy
@@ -222,6 +223,14 @@ function createStarterItems(now = new Date()): UserVocabItem[] {
   ];
 }
 
+function getDecksStorageKey(user?: { id?: string | null } | null): string {
+  return getUserStorageKey(DECKS_STORAGE_KEY, user || null);
+}
+
+function getItemsStorageKey(user?: { id?: string | null } | null): string {
+  return getUserStorageKey(ITEMS_STORAGE_KEY, user || null);
+}
+
 function safeReadStorage<T>(key: string, fallback: T): T {
   try {
     if (typeof localStorage === 'undefined') return fallback;
@@ -341,7 +350,8 @@ export function applyCrossModuleLookupPenalty(
 }
 
 export async function listVocabDecks(user?: { id?: string | null } | null): Promise<VocabDeck[]> {
-  const local = safeReadStorage<VocabDeck[]>(DECKS_STORAGE_KEY, DEFAULT_DECKS);
+  const storageKey = getDecksStorageKey(user);
+  const local = safeReadStorage<VocabDeck[]>(storageKey, DEFAULT_DECKS);
   if (!isSupabaseConfigured || !supabase || !user?.id) {
     return local;
   }
@@ -353,7 +363,11 @@ export async function listVocabDecks(user?: { id?: string | null } | null): Prom
       .eq('user_id', user.id)
       .order('created_at', { ascending: true });
 
-    if (error || !Array.isArray(data) || data.length === 0) return local;
+    if (error || !Array.isArray(data)) return local;
+    if (data.length === 0) {
+      safeWriteStorage(storageKey, []);
+      return [];
+    }
     const mapped = data.map((row) => ({
       id: String(row.id),
       name: String(row.name),
@@ -362,7 +376,7 @@ export async function listVocabDecks(user?: { id?: string | null } | null): Prom
       is_default: Boolean(row.is_default),
       created_at: String(row.created_at || new Date().toISOString()),
     }));
-    safeWriteStorage(DECKS_STORAGE_KEY, mapped);
+    safeWriteStorage(storageKey, mapped);
     return mapped;
   } catch {
     return local;
@@ -373,7 +387,8 @@ export async function createVocabDeck(
   params: { name: string; description?: string; color_hex?: string },
   user?: { id?: string | null } | null
 ): Promise<VocabDeck> {
-  const existing = safeReadStorage<VocabDeck[]>(DECKS_STORAGE_KEY, DEFAULT_DECKS);
+  const storageKey = getDecksStorageKey(user);
+  const existing = safeReadStorage<VocabDeck[]>(storageKey, DEFAULT_DECKS);
   const deck: VocabDeck = {
     id: `deck-${Date.now()}`,
     name: params.name.trim(),
@@ -405,17 +420,18 @@ export async function createVocabDeck(
     }
   }
 
-  safeWriteStorage(DECKS_STORAGE_KEY, [...existing, deck]);
+  safeWriteStorage(getDecksStorageKey(user), [...existing, deck]);
   return deck;
 }
 
 export async function listVocabItems(
   user?: { id?: string | null } | null
 ): Promise<UserVocabItem[]> {
-  const cached = safeReadStorage<UserVocabItem[] | null>(ITEMS_STORAGE_KEY, null);
+  const storageKey = getItemsStorageKey(user);
+  const cached = safeReadStorage<UserVocabItem[] | null>(storageKey, null);
   const local = cached && cached.length > 0 ? cached : createStarterItems();
-  if (!cached) {
-    safeWriteStorage(ITEMS_STORAGE_KEY, local);
+  if (!cached && !user?.id) {
+    safeWriteStorage(storageKey, local);
   }
 
   if (!isSupabaseConfigured || !supabase || !user?.id) {
@@ -429,7 +445,11 @@ export async function listVocabItems(
       .eq('user_id', user.id)
       .order('next_review_at', { ascending: true });
 
-    if (error || !Array.isArray(data) || data.length === 0) return local;
+    if (error || !Array.isArray(data)) return cached || [];
+    if (data.length === 0) {
+      safeWriteStorage(storageKey, []);
+      return [];
+    }
     const mapped = data.map((row) => ({
       id: String(row.id),
       deck_id: String(row.deck_id),
@@ -457,10 +477,10 @@ export async function listVocabItems(
       writing_mastery: Number(row.writing_mastery || 0),
       pronunciation_mastery: Number(row.pronunciation_mastery || 0),
     }));
-    safeWriteStorage(ITEMS_STORAGE_KEY, mapped);
+    safeWriteStorage(storageKey, mapped);
     return mapped;
   } catch {
-    return local;
+    return cached || [];
   }
 }
 
@@ -469,9 +489,10 @@ export async function saveVocabItemReview(
   rating: ReviewRating,
   user?: { id?: string | null } | null
 ): Promise<void> {
-  const items = safeReadStorage<UserVocabItem[]>(ITEMS_STORAGE_KEY, createStarterItems());
+  const storageKey = getItemsStorageKey(user);
+  const items = safeReadStorage<UserVocabItem[]>(storageKey, user?.id ? [] : createStarterItems());
   const nextItems = items.map((it) => (it.id === updatedItem.id ? updatedItem : it));
-  safeWriteStorage(ITEMS_STORAGE_KEY, nextItems);
+  safeWriteStorage(storageKey, nextItems);
 
   void recordLearningEvent({
     userId: user?.id ?? null,
@@ -521,11 +542,12 @@ export async function updatePersonalMnemonic(
   mnemonic: string,
   user?: { id?: string | null } | null
 ): Promise<UserVocabItem[]> {
-  const items = safeReadStorage<UserVocabItem[]>(ITEMS_STORAGE_KEY, createStarterItems());
+  const storageKey = getItemsStorageKey(user);
+  const items = safeReadStorage<UserVocabItem[]>(storageKey, user?.id ? [] : createStarterItems());
   const nextItems = items.map((it) =>
     it.id === itemId ? { ...it, personal_mnemonic: mnemonic } : it
   );
-  safeWriteStorage(ITEMS_STORAGE_KEY, nextItems);
+  safeWriteStorage(storageKey, nextItems);
 
   if (isSupabaseConfigured && supabase && user?.id) {
     try {
@@ -559,7 +581,8 @@ export async function markVocabItemAsMastered(
 ): Promise<UserVocabItem[]> {
   const now = new Date();
   const futureDate = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
-  const items = safeReadStorage<UserVocabItem[]>(ITEMS_STORAGE_KEY, createStarterItems());
+  const storageKey = getItemsStorageKey(user);
+  const items = safeReadStorage<UserVocabItem[]>(storageKey, user?.id ? [] : createStarterItems());
   const nextItems = items.map((it) =>
     it.id === itemId
       ? {
@@ -574,7 +597,7 @@ export async function markVocabItemAsMastered(
         }
       : it
   );
-  safeWriteStorage(ITEMS_STORAGE_KEY, nextItems);
+  safeWriteStorage(storageKey, nextItems);
 
   if (isSupabaseConfigured && supabase && user?.id) {
     try {

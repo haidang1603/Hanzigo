@@ -11,14 +11,28 @@ import {
 import { clearStorageByCategory } from '../../core/sync/OfflineSyncManager.js';
 import { reportClientError, sanitizeSensitiveText } from '../../core/telemetry/errorReporter.js';
 
-const EXAM_DRAFT_PREFIX = 'hsk_exam_draft_';
+const LEGACY_EXAM_DRAFT_PREFIX = 'hsk_exam_draft_';
+const HSK_DRAFT_PREFIX = 'hanzigo_hsk_draft_';
 const SYNC_QUEUE_KEY = 'hanzigo_sync_queue_v1';
 
+function resolveActiveUserSuffix(storage, explicitUser = null) {
+  let targetUser = explicitUser;
+  if (!targetUser && storage) {
+    try {
+      const rawUser = storage.getItem('hanzigo_user');
+      if (rawUser) targetUser = JSON.parse(rawUser);
+    } catch {}
+  }
+  const uid = targetUser?.uid || targetUser?.id;
+  if (uid) return `_${uid}`;
+  return '_guest';
+}
+
 /**
- * Inspect localStorage for any in-progress HSK CBT exam drafts or offline sync queue items.
- * Safe against storage access errors.
+ * Inspect localStorage for any in-progress HSK CBT exam drafts or offline sync queue items
+ * belonging to the active user. Safe against storage access errors.
  */
-export function collectExamRescueSnapshot(customStorage) {
+export function collectExamRescueSnapshot(customStorage, user = null) {
   let storage = customStorage;
   if (!storage) {
     try {
@@ -32,6 +46,7 @@ export function collectExamRescueSnapshot(customStorage) {
     return { hasRescueData: false, drafts: [], syncQueue: [], totalItems: 0 };
   }
 
+  const userSuffix = resolveActiveUserSuffix(storage, user);
   const drafts = [];
   let syncQueue = [];
 
@@ -40,7 +55,9 @@ export function collectExamRescueSnapshot(customStorage) {
       const key = storage.key(i);
       if (!key) continue;
 
-      if (key.startsWith(EXAM_DRAFT_PREFIX)) {
+      const isScopedDraft = key.startsWith(HSK_DRAFT_PREFIX) && key.endsWith(userSuffix);
+      const isLegacyDraft = key.startsWith(LEGACY_EXAM_DRAFT_PREFIX);
+      if (isScopedDraft || isLegacyDraft) {
         const raw = storage.getItem(key);
         if (raw) {
           let parsed = raw;
@@ -51,16 +68,16 @@ export function collectExamRescueSnapshot(customStorage) {
           }
           drafts.push({ key, data: parsed });
         }
-      } else if (key === SYNC_QUEUE_KEY) {
+      } else if (key === `${SYNC_QUEUE_KEY}${userSuffix}` || key === SYNC_QUEUE_KEY) {
         const rawQueue = storage.getItem(key);
         if (rawQueue) {
           try {
             const parsedQueue = JSON.parse(rawQueue);
             if (Array.isArray(parsedQueue)) {
-              syncQueue = parsedQueue;
+              syncQueue = [...syncQueue, ...parsedQueue];
             }
           } catch {
-            syncQueue = [];
+            // ignore malformed queue
           }
         }
       }
@@ -137,6 +154,8 @@ export class GlobalErrorBoundary extends React.Component {
       context: {
         componentStack: errorInfo?.componentStack || '',
         boundaryScope: this.props.scope || 'route',
+        module: this.props.module || this.props.scope || 'ui_render',
+        category: 'render',
       },
     });
   }

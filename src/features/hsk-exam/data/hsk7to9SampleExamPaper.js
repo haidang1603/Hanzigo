@@ -339,4 +339,40 @@ export function getHsk7to9PaperByCode(paperCode = 'H79001') {
   };
 }
 
+/**
+ * Adapter chuẩn hóa số lượng nhiệm vụ & thang điểm 300 cho 5 phần thi HSK 7-9
+ * (Bao gồm cả Phần 4 Viết partA/partB và Phần 5 Khẩu ngữ debateTopicZh).
+ */
+export function getHsk7to9PaperNormalizedSummary(paperOrCode = 'H79001') {
+  const paper =
+    typeof paperOrCode === 'string'
+      ? getHsk7to9PaperByCode(paperOrCode)
+      : paperOrCode || HSK_7_TO_9_EXAM_PAPER;
+
+  const sections = (paper.sections || []).map((sec) => {
+    if (Array.isArray(sec.questions)) {
+      return { id: sec.id, taskCount: sec.questions.length, maxScore: Number(sec.maxScore) || 0 };
+    }
+    if (Array.isArray(sec.tasks)) {
+      return { id: sec.id, taskCount: sec.tasks.length, maxScore: Number(sec.maxScore) || 0 };
+    }
+    if (sec.partA_ChartEssay || sec.partB_ArgumentativeEssay) {
+      const count = (sec.partA_ChartEssay ? 1 : 0) + (sec.partB_ArgumentativeEssay ? 1 : 0);
+      return { id: sec.id, taskCount: count, maxScore: Number(sec.maxScore) || 0 };
+    }
+    if (sec.debateTopicZh) {
+      return { id: sec.id, taskCount: 1, maxScore: Number(sec.maxScore) || 0 };
+    }
+    return { id: sec.id, taskCount: 0, maxScore: Number(sec.maxScore) || 0 };
+  });
+
+  return {
+    paperCode: paper.paperCode,
+    sectionCount: sections.length,
+    totalTasks: sections.reduce((sum, s) => sum + s.taskCount, 0),
+    totalMaxScore: sections.reduce((sum, s) => sum + s.maxScore, 0),
+    sections,
+  };
+}
+
 export default HSK_7_TO_9_EXAM_PAPER;

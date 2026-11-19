@@ -418,12 +418,14 @@ export default async function handler(req, res) {
     try {
       const { data: profile } = await adminClient
         .from('profiles')
-        .select('hsk_level, target_hsk')
+        .select('level')
         .eq('id', verifiedUserId)
         .single();
 
-      if (profile?.hsk_level && ALLOWED_HSK_LEVELS.includes(profile.hsk_level)) {
-        effectiveHskLevel = profile.hsk_level;
+      const levelMatch = String(profile?.level || '').match(/HSK\s*(7-9|[1-9])/i);
+      const parsedProfileLevel = levelMatch ? `HSK ${levelMatch[1]}` : null;
+      if (parsedProfileLevel && ALLOWED_HSK_LEVELS.includes(parsedProfileLevel)) {
+        effectiveHskLevel = parsedProfileLevel;
       }
     } catch {}
   }

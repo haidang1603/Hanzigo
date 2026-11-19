@@ -207,7 +207,7 @@ test('Mistake Notebook: records mistakes and avoids duplicate items when same qu
   recordMistakesFromAttempt(mockAttempt1, user);
 
   // Retrieve mistakes
-  const mistakes1 = JSON.parse(localStorage.getItem('hanzigo_hsk_mistakes') || '[]');
+  const mistakes1 = JSON.parse(localStorage.getItem(`hanzigo_hsk_mistakes_${user.id}`) || '[]');
   assert.equal(mistakes1.length, 1, 'Only incorrect question should be recorded');
   assert.equal(mistakes1[0].questionId, 'hsk1-q-01');
   assert.equal(mistakes1[0].mistakeCount, 1);
@@ -234,7 +234,7 @@ test('Mistake Notebook: records mistakes and avoids duplicate items when same qu
   recordMistakesFromAttempt(mockAttempt2, user);
 
   // Verify deduplication: still 1 item, but mistakeCount is incremented to 2!
-  const mistakes2 = JSON.parse(localStorage.getItem('hanzigo_hsk_mistakes') || '[]');
+  const mistakes2 = JSON.parse(localStorage.getItem(`hanzigo_hsk_mistakes_${user.id}`) || '[]');
   assert.equal(mistakes2.length, 1, 'Must NOT create duplicate item in mistake notebook!');
   assert.equal(mistakes2[0].questionId, 'hsk1-q-01');
   assert.equal(mistakes2[0].mistakeCount, 2, 'Mistake count must increment to 2');
@@ -435,11 +435,11 @@ test('Account Sync: validates and merges anonymous local attempts to user withou
   assert.equal(mergeResult.success, true);
   assert.equal(mergeResult.mergedCount, 1);
 
-  // Verify merged data in storage now carries the target userId
-  const mergedAttempts = JSON.parse(localStorage.getItem('hanzigo_hsk_attempts'));
+  // Verify merged data in user-scoped storage now carries the target userId
+  const mergedAttempts = JSON.parse(localStorage.getItem(`hanzigo_hsk_attempts_${targetUserId}`));
   assert.equal(mergedAttempts[0].userId, targetUserId);
 
-  const mergedMistakes = JSON.parse(localStorage.getItem('hanzigo_hsk_mistakes'));
+  const mergedMistakes = JSON.parse(localStorage.getItem(`hanzigo_hsk_mistakes_${targetUserId}`));
   assert.equal(mergedMistakes[0].userId, targetUserId);
 });
 

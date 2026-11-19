@@ -24,6 +24,8 @@ import roleplayHandler from '../_handlers/ai/roleplay.js';
 import teacherHandler from '../_handlers/ai/teacher.js';
 import tutorHandler from '../_handlers/ai/tutor.js';
 
+import { sendSafeServerError } from '../_utils/supabaseServer.js';
+
 export default async function handler(req, res) {
   try {
     const urlPath = req.url ? req.url.split('?')[0] : '';
@@ -54,9 +56,7 @@ export default async function handler(req, res) {
     }
   } catch (err) {
     console.error('[AI Router Error]:', err);
-    if (!res.headersSent) {
-      return res.status(500).json({ error: 'Lỗi máy chủ nội bộ.', message: err?.message });
-    }
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ.', err);
   }
 }
 

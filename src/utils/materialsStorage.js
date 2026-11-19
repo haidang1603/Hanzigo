@@ -1,5 +1,6 @@
 /// Helper for managing Documents, Materials, and Custom Content in HanziGo
 import { triggerCloudSync } from '../supabase/services.js';
+import { getUserStorageKey } from './gamification.js';
 
 export const CURRENT_MATERIALS_VERSION = 'v2.1_academic';
 
@@ -539,9 +540,11 @@ export const VERIFICATION_STATUS_META = {
 
 // Helper functions for Materials
 export function getStoredMaterials() {
+  const materialsKey = getUserStorageKey('hanzigo_materials');
+  const versionKey = getUserStorageKey('hanzigo_materials_version');
   try {
-    const savedVersion = localStorage.getItem('hanzigo_materials_version');
-    const saved = localStorage.getItem('hanzigo_materials');
+    const savedVersion = localStorage.getItem(versionKey);
+    const saved = localStorage.getItem(materialsKey);
 
     if (saved && savedVersion === CURRENT_MATERIALS_VERSION) {
       const parsed = JSON.parse(saved);
@@ -562,15 +565,15 @@ export function getStoredMaterials() {
     }
 
     const merged = [...customItems, ...DEFAULT_MATERIALS];
-    localStorage.setItem('hanzigo_materials', JSON.stringify(merged));
-    localStorage.setItem('hanzigo_materials_version', CURRENT_MATERIALS_VERSION);
+    localStorage.setItem(materialsKey, JSON.stringify(merged));
+    localStorage.setItem(versionKey, CURRENT_MATERIALS_VERSION);
     return merged;
   } catch (err) {
     console.error('Error reading stored materials:', err);
   }
   // Fallback to default
-  localStorage.setItem('hanzigo_materials', JSON.stringify(DEFAULT_MATERIALS));
-  localStorage.setItem('hanzigo_materials_version', CURRENT_MATERIALS_VERSION);
+  localStorage.setItem(materialsKey, JSON.stringify(DEFAULT_MATERIALS));
+  localStorage.setItem(versionKey, CURRENT_MATERIALS_VERSION);
   return DEFAULT_MATERIALS;
 }
 
@@ -589,7 +592,7 @@ export function saveMaterial(material) {
     downloadsCount: material.downloadsCount || 0
   };
   const updated = [newMaterial, ...current];
-  localStorage.setItem('hanzigo_materials', JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey('hanzigo_materials'), JSON.stringify(updated));
   triggerCloudSync();
   return updated;
 }
@@ -597,7 +600,7 @@ export function saveMaterial(material) {
 export function updateMaterial(id, updatedData) {
   const current = getStoredMaterials();
   const updated = current.map((item) => (item.id === id ? { ...item, ...updatedData } : item));
-  localStorage.setItem('hanzigo_materials', JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey('hanzigo_materials'), JSON.stringify(updated));
   triggerCloudSync();
   return updated;
 }
@@ -605,14 +608,14 @@ export function updateMaterial(id, updatedData) {
 export function deleteMaterial(id) {
   const current = getStoredMaterials();
   const updated = current.filter((item) => item.id !== id);
-  localStorage.setItem('hanzigo_materials', JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey('hanzigo_materials'), JSON.stringify(updated));
   triggerCloudSync();
   return updated;
 }
 
 export function resetMaterials() {
-  localStorage.setItem('hanzigo_materials', JSON.stringify(DEFAULT_MATERIALS));
-  localStorage.setItem('hanzigo_materials_version', CURRENT_MATERIALS_VERSION);
+  localStorage.setItem(getUserStorageKey('hanzigo_materials'), JSON.stringify(DEFAULT_MATERIALS));
+  localStorage.setItem(getUserStorageKey('hanzigo_materials_version'), CURRENT_MATERIALS_VERSION);
   triggerCloudSync();
   return DEFAULT_MATERIALS;
 }
@@ -620,7 +623,7 @@ export function resetMaterials() {
 // Custom Vocabulary Helpers
 export function getStoredCustomVocab() {
   try {
-    const saved = localStorage.getItem('hanzigo_custom_vocab');
+    const saved = localStorage.getItem(getUserStorageKey('hanzigo_custom_vocab'));
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) return parsed;
@@ -639,7 +642,7 @@ export function saveCustomVocab(vocab) {
     isCustom: true
   };
   const updated = [newItem, ...current];
-  localStorage.setItem('hanzigo_custom_vocab', JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey('hanzigo_custom_vocab'), JSON.stringify(updated));
   triggerCloudSync();
   return updated;
 }
@@ -647,7 +650,7 @@ export function saveCustomVocab(vocab) {
 export function deleteCustomVocab(id) {
   const current = getStoredCustomVocab();
   const updated = current.filter((item) => item.id !== id);
-  localStorage.setItem('hanzigo_custom_vocab', JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey('hanzigo_custom_vocab'), JSON.stringify(updated));
   triggerCloudSync();
   return updated;
 }
@@ -655,7 +658,7 @@ export function deleteCustomVocab(id) {
 // Custom Lessons Helpers
 export function getStoredCustomLessons() {
   try {
-    const saved = localStorage.getItem('hanzigo_custom_lessons');
+    const saved = localStorage.getItem(getUserStorageKey('hanzigo_custom_lessons'));
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) return parsed;
@@ -674,7 +677,7 @@ export function saveCustomLesson(lesson) {
     isCustom: true
   };
   const updated = [newItem, ...current];
-  localStorage.setItem('hanzigo_custom_lessons', JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey('hanzigo_custom_lessons'), JSON.stringify(updated));
   triggerCloudSync();
   return updated;
 }
@@ -682,7 +685,7 @@ export function saveCustomLesson(lesson) {
 export function deleteCustomLesson(id) {
   const current = getStoredCustomLessons();
   const updated = current.filter((item) => item.id !== id);
-  localStorage.setItem('hanzigo_custom_lessons', JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey('hanzigo_custom_lessons'), JSON.stringify(updated));
   triggerCloudSync();
   return updated;
 }

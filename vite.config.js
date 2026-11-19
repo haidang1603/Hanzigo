@@ -577,11 +577,50 @@ export default defineConfig({
             return 'vendor-deps';
           }
 
+          if (normalizedId.includes('/src/features/hskk-exam/')) {
+            return 'feature-hskk-exam';
+          }
+          if (normalizedId.includes('/src/features/hsk-exam/renderers/hsk6/')) {
+            return 'feature-hsk6-exam';
+          }
           if (
-            normalizedId.includes('/src/features/hsk-exam/') ||
-            normalizedId.includes('/src/features/hskk-exam/')
+            normalizedId.includes('/src/features/hsk-exam/components/Hsk7to9') ||
+            normalizedId.includes('/src/features/hsk-exam/data/hsk7to9')
           ) {
-            return 'feature-hsk-exam-engine';
+            return 'feature-hsk79-exam';
+          }
+          if (normalizedId.includes('/src/utils/chineseNlpEngine')) {
+            return 'utils-chinese-nlp';
+          }
+          if (normalizedId.includes('/src/data/hsk6FullExamData')) {
+            return 'data-hsk6-exam';
+          }
+
+          if (
+            normalizedId.includes('/src/data/hskRealExamQuestions')
+          ) {
+            return 'data-hsk-real-exams';
+          }
+          if (normalizedId.includes('/src/data/hskOfficialPublicExams')) {
+            return 'data-hsk-public-exams';
+          }
+          if (normalizedId.includes('/src/data/hskMockExamsExpanded')) {
+            return 'data-hsk-mock-exams';
+          }
+          if (
+            normalizedId.includes('/src/data/hskResourcesData') ||
+            normalizedId.includes('/src/data/hsk6IdiomsData')
+          ) {
+            return 'data-hsk-resources';
+          }
+          if (
+            normalizedId.includes('/src/data/hskStructureData') ||
+            normalizedId.includes('/src/data/hskExamsData')
+          ) {
+            return 'data-hsk-core';
+          }
+          if (normalizedId.includes('/src/data/hanziDecomposition')) {
+            return 'data-hanzi-decomposition';
           }
 
           if (normalizedId.includes('curriculum/hsk1Lessons')) {

@@ -10,6 +10,7 @@
 
 import { supabase, isSupabaseConfigured } from '../../supabase/config.js';
 import { isValidUuid } from '../../services/authService.js';
+import { getLocalDateString } from '../../utils/gamification.js';
 import {
   getPendingLearningEvents,
   getLocalMistakeRecords,
@@ -175,19 +176,19 @@ function normalizeSkillKey(
 function toUtcDateKey(isoOrDate: string | Date): string {
   const d = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate;
   if (Number.isNaN(d.getTime())) {
-    return new Date().toISOString().slice(0, 10);
+    return getLocalDateString(new Date());
   }
-  return d.toISOString().slice(0, 10);
+  return getLocalDateString(d);
 }
 
 function buildDateRangeKeys(days: number): string[] {
   const keys: string[] = [];
   const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
   for (let i = days - 1; i >= 0; i -= 1) {
     const d = new Date(today);
-    d.setUTCDate(today.getUTCDate() - i);
-    keys.push(d.toISOString().slice(0, 10));
+    d.setDate(today.getDate() - i);
+    keys.push(getLocalDateString(d));
   }
   return keys;
 }

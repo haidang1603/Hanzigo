@@ -1,7 +1,7 @@
 /**
  * HANZI GO - LIVE PARTICIPANTS HANDLER
  */
-import { getSupabaseAdminClient, memoryParticipants } from '../../_utils/supabaseServer.js';
+import { getSupabaseAdminClient, memoryParticipants, verifyRequestAuth } from '../../_utils/supabaseServer.js';
 
 export default async function participantsHandler(req, res) {
   if (req.method !== 'GET') {
@@ -14,6 +14,13 @@ export default async function participantsHandler(req, res) {
   }
 
   const supabase = getSupabaseAdminClient();
+  const isProd = process.env.NODE_ENV === 'production';
+  if (supabase || isProd) {
+    const auth = await verifyRequestAuth(req);
+    if (!auth.authenticated || !auth.user) {
+      return res.status(401).json({ error: 'Yêu cầu xác thực để xem danh sách người tham gia.' });
+    }
+  }
   if (supabase) {
     try {
       const { data, error } = await supabase

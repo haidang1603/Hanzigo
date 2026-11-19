@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { recordLearningEvent } from './learningDataService.ts';
+import { getUserStorageKey } from '../utils/gamification.js';
 
 export type ListeningCategory = 'dialogue' | 'podcast' | 'news' | 'hsk_mock';
 export type DictationMode = 'hanzi' | 'pinyin';
@@ -1314,7 +1315,8 @@ export async function recordListeningProgress(params: {
 
   try {
     if (typeof localStorage !== 'undefined') {
-      const raw = localStorage.getItem(LOGS_STORAGE_KEY);
+      const storageKey = getUserStorageKey(LOGS_STORAGE_KEY, user);
+      const raw = localStorage.getItem(storageKey);
       const parsed = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
       parsed[track.id] = {
         dictationAccuracy,
@@ -1322,7 +1324,7 @@ export async function recordListeningProgress(params: {
         quizScore,
         updatedAt: new Date().toISOString(),
       };
-      localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(parsed));
+      localStorage.setItem(storageKey, JSON.stringify(parsed));
     }
   } catch {
     // ignore storage errors

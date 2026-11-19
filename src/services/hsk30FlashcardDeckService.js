@@ -55,25 +55,25 @@ export function getLocalHsk79Flashcards() {
 }
 
 function getCuratedVietnamesePool(bandId = 'all') {
-  const hsk79Local = getLocalHsk79Flashcards();
-  const basePool = [
-    ...VOCABULARY_LIST.map((v, idx) => ({
-      id: v.id || `local-${idx + 1}`,
-      hanzi: v.hanzi,
-      traditional: v.traditional || v.hanzi,
-      pinyin: v.pinyin || '',
-      hanviet: v.hanviet || '',
-      meaning: v.meaning || '',
-      pos: v.pos || 'Từ vựng',
-      level: v.level || 'HSK 1',
-      topic: v.topic || 'Giáo trình chuẩn',
-      radical: v.radical || '—',
-      strokes: v.strokes,
-      mnemonic: v.mnemonic,
-      example: v.example || null,
-    })),
-    ...hsk79Local,
-  ];
+  const baseVocabList = VOCABULARY_LIST.map((v, idx) => ({
+    id: v.id || `local-${idx + 1}`,
+    hanzi: v.hanzi,
+    traditional: v.traditional || v.hanzi,
+    pinyin: v.pinyin || '',
+    hanviet: v.hanviet || '',
+    meaning: v.meaning || '',
+    pos: v.pos || 'Từ vựng',
+    level: v.level || 'HSK 1',
+    topic: v.topic || 'Giáo trình chuẩn',
+    radical: v.radical || '—',
+    strokes: v.strokes,
+    mnemonic: v.mnemonic,
+    example: v.example || null,
+  }));
+  const baseHanziSet = new Set(baseVocabList.map((item) => item.hanzi));
+  // Loại bỏ 45 từ đã nằm trong VOCABULARY_LIST (HSK 1–6) để tránh ghi đè cấp độ khi gộp kho HSK 7–9
+  const hsk79Local = getLocalHsk79Flashcards().filter((item) => !baseHanziSet.has(item.hanzi));
+  const basePool = [...baseVocabList, ...hsk79Local];
 
   const deduped = Array.from(
     new Map(basePool.filter((it) => isPureCjkWord(it.hanzi)).map((it) => [it.hanzi, it])).values()

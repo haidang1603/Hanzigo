@@ -12,6 +12,7 @@ import {
   FileText 
 } from 'lucide-react';
 import { playClickSound, playErrorSound, playSuccessSound } from '../utils/audio';
+import { getUserStorageKey } from '../utils/gamification';
 
 export default function DataSubjectRequestModal({ isOpen, onClose, user, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'export' | 'delete'
@@ -61,11 +62,11 @@ export default function DataSubjectRequestModal({ isOpen, onClose, user, onLogou
           xp: user?.xp || 0
         },
         learningProgress: {
-          completedLessons: safeParseLocalStorage('hanzigo_completed_lessons', []),
-          vocabRemembered: safeParseLocalStorage('hanzigo_vocab_remembered', []),
-          hskExamHistory: safeParseLocalStorage('hanzigo_hsk_exam_history', []),
-          hskMistakes: safeParseLocalStorage('hanzigo_hsk_mistakes', []),
-          personalizationProfile: safeParseLocalStorage('hanzigo_learner_context', {})
+          completedLessons: safeParseLocalStorage(getUserStorageKey('hanzigo_completed_lessons', user), []),
+          vocabRemembered: safeParseLocalStorage(getUserStorageKey('hanzigo_vocab_remembered', user), []),
+          hskExamHistory: safeParseLocalStorage(getUserStorageKey('hanzigo_hsk_attempts', user), []),
+          hskMistakes: safeParseLocalStorage(getUserStorageKey('hanzigo_hsk_mistakes', user), []),
+          personalizationProfile: safeParseLocalStorage(getUserStorageKey('hanzigo_learner_context', user), {})
         }
       };
 

@@ -34,6 +34,7 @@ import {
   saveUserDailyGoalMinutes 
 } from '../../services/learningPathService';
 import { playClickSound, playSuccessSound } from '../../utils/audio';
+import { getLocalDateString } from '../../utils/gamification';
 import {
   buildAdaptiveReviewQueue,
   setAdaptiveNavigationTarget,
@@ -91,7 +92,7 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
   // Load completed steps from localStorage
   useEffect(() => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const saved = localStorage.getItem(`hanzigo_coach_steps_${today}`);
       if (saved) setCompletedSteps(JSON.parse(saved));
     } catch {}
@@ -103,7 +104,7 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
       const next = { ...prev, [stepId]: !prev[stepId] };
       if (next[stepId]) playSuccessSound();
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
         localStorage.setItem(`hanzigo_coach_steps_${today}`, JSON.stringify(next));
       } catch {}
       return next;

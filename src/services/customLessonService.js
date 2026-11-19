@@ -7,6 +7,8 @@
  */
 
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
+import { getUserJourneyProgress, saveUserJourneyProgress } from './learningPathService.js';
+import { awardXp } from '../utils/gamification.js';
 
 /**
  * Normalize a DB lesson row to frontend schema
@@ -231,9 +233,6 @@ export async function completeCustomLesson(lesson, user = null) {
   if (!lesson || !lesson.id) {
     throw new Error('Missing lesson object or ID.');
   }
-
-  const { getUserJourneyProgress, saveUserJourneyProgress } = await import('./learningPathService.js');
-  const { awardXp } = await import('../utils/gamification.js');
 
   const progress = getUserJourneyProgress(user);
   const isFirstTime = !progress.completedLessons?.[lesson.id];

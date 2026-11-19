@@ -35,12 +35,16 @@ test('Test 1: Vite manualChunks routes vendor & feature paths deterministically'
     'vendor-react-core'
   );
   assert.equal(
-    manualChunks('/app/src/features/hsk-exam/HskExamEngine.jsx'),
-    'feature-hsk-exam-engine'
+    manualChunks('/app/src/features/hsk-exam/components/Hsk7to9IntegratedExamSimulator.jsx'),
+    'feature-hsk79-exam'
+  );
+  assert.equal(
+    manualChunks('/app/src/features/hsk-exam/renderers/hsk6/Hsk6SimulatorWorkspace.tsx'),
+    'feature-hsk6-exam'
   );
   assert.equal(
     manualChunks('/app/src/features/hskk-exam/HskkRecorder.jsx'),
-    'feature-hsk-exam-engine'
+    'feature-hskk-exam'
   );
 });
 

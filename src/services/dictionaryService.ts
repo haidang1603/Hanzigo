@@ -2,6 +2,7 @@ import { VOCABULARY_LIST } from '../data/chineseData.js';
 import { getHanziDecomposition } from '../data/hanziDecomposition.js';
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { invokeAiPersonalization } from './aiGateway.js';
+import { getUserStorageKey } from '../utils/gamification.js';
 import {
   // @ts-ignore TypeScript bundler resolution maps .js to .ts when both exist
   cleanPinyin,
@@ -74,7 +75,7 @@ function safeWriteJson<T>(key: string, value: T): void {
 }
 
 function getUserScopedKey(base: string, user?: { id?: string | null } | null): string {
-  return user?.id ? `${base}_${user.id}` : base;
+  return getUserStorageKey(base, user || null);
 }
 
 /**
@@ -343,7 +344,7 @@ export function segmentSentenceIntoTokens(
  */
 export async function searchDictionaryMultimodal(
   query: string,
-  options: { hskFilter?: number | null; limit?: number } = {}
+  options: { hskFilter?: number | null; limit?: number; user?: { id?: string | null } | null } = {}
 ): Promise<DictionarySearchResult> {
   const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
   const trimmed = (query || '').trim();
@@ -362,8 +363,9 @@ export async function searchDictionaryMultimodal(
     };
   }
 
-  // 1. Local search + AI local cache
-  const aiCache = safeReadJson<Record<string, DictionaryEntry>>(AI_CACHE_STORAGE_KEY, {});
+  // 1. Local search + AI local cache (scoped per user)
+  const aiCacheKey = getUserScopedKey(AI_CACHE_STORAGE_KEY, options.user);
+  const aiCache = safeReadJson<Record<string, DictionaryEntry>>(aiCacheKey, {});
   const localRaw = searchLocalDictionary(trimmed, limit) as Array<Record<string, unknown>>;
   const localEntries = localRaw.map((item) => mapLegacyOrRawToEntry(item));
 
@@ -447,7 +449,8 @@ export async function fetchOrGenerateDictionaryEntry(
   const trimmed = (query || '').trim();
   if (!trimmed) return null;
 
-  const aiCache = safeReadJson<Record<string, DictionaryEntry>>(AI_CACHE_STORAGE_KEY, {});
+  const aiCacheKey = getUserScopedKey(AI_CACHE_STORAGE_KEY, user);
+  const aiCache = safeReadJson<Record<string, DictionaryEntry>>(aiCacheKey, {});
   if (aiCache[trimmed]) {
     return aiCache[trimmed];
   }
@@ -525,7 +528,7 @@ export async function fetchOrGenerateDictionaryEntry(
 
   aiCache[trimmed] = generated;
   aiCache[generated.simplified] = generated;
-  safeWriteJson(AI_CACHE_STORAGE_KEY, aiCache);
+  safeWriteJson(aiCacheKey, aiCache);
 
   // Cache into Supabase dictionary_entries for instant future hits
   if (isSupabaseConfigured && supabase) {

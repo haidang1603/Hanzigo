@@ -146,7 +146,7 @@ const BASE_HSK_EXAMS = [
     license: 'Public Educational Sample Reference (Chỉ tham chiếu học thuật công khai)',
     permission_status: 'reproducible',
     verified_date: '2026-10-25',
-    is_published: true
+    is_published: false
   },
   {
     id: 'hsk5-mock-01',

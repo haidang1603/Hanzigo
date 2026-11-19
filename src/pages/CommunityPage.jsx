@@ -60,7 +60,7 @@ import {
   deleteStudyPartnerFromDb,
   subscribeToCommunityRealtime
 } from '../supabase/services';
-import { awardXp } from '../utils/gamification';
+import { awardXp, getLocalDateString } from '../utils/gamification';
 
 // Helper nén ảnh cục bộ cho mã QR và tệp đính kèm (giữ độ sắc nét cho QR)
 function compressImageFile(file, maxWidth = 600, maxHeight = 600) {
@@ -948,7 +948,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
       });
     } catch {}
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalDateString();
     const updated = {
       joined: true,
       checkIns: 1,
@@ -961,7 +961,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
 
   // Daily Check-in for Challenge
   const handleCheckIn = () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalDateString();
     if (challengeData.lastDate === today) {
       showToast('Hôm nay bạn đã điểm danh rồi! Hãy tiếp tục duy trì ngày mai nhé.');
       return;
@@ -1197,7 +1197,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
   };
 
   const rankTier = getRankTier(totalUserXp);
-  const isCheckedInToday = challengeData.lastDate === new Date().toISOString().slice(0, 10);
+  const isCheckedInToday = challengeData.lastDate === getLocalDateString();
 
   // Filter posts
   const filteredPosts = posts.filter(post => {

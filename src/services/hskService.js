@@ -26,9 +26,10 @@ import {
   HSK_STRUCTURE_DEFINITIONS 
 } from '../data/hskStructureData.js';
 import { supabase } from '../supabase/config.js';
-import { awardXp } from '../utils/gamification.js';
+import { awardXp, getUserStorageKey } from '../utils/gamification.js';
 import { captureWeakVocabulary } from '../utils/srsEngine.js';
 import { calculateHskCbtScore } from '../utils/examScoringEngine.js';
+import { enqueueOfflineMutation } from '../core/sync/OfflineSyncManager.js';
 
 export {
   getHskStructure,
@@ -52,6 +53,18 @@ const STORAGE_ATTEMPTS_KEY = 'hanzigo_hsk_attempts';
 const STORAGE_DRAFT_PREFIX = 'hanzigo_hsk_draft_';
 const STORAGE_ANON_SESSION_KEY = 'hanzigo_anon_session_id';
 const STORAGE_MISTAKES_KEY = 'hanzigo_hsk_mistakes';
+
+function getAttemptsStorageKey(user = null) {
+  return getUserStorageKey(STORAGE_ATTEMPTS_KEY, user);
+}
+
+function getDraftStorageKey(examId, user = null) {
+  return getUserStorageKey(`${STORAGE_DRAFT_PREFIX}${examId}`, user);
+}
+
+function getMistakesStorageKey(user = null) {
+  return getUserStorageKey(STORAGE_MISTAKES_KEY, user);
+}
 
 /**
  * Lấy hoặc khởi tạo ID phiên ẩn danh cho khách vãng lai
@@ -134,11 +147,11 @@ export async function getExamForTaking(examId, user = null) {
   if (!sanitized) {
     throw new Error(`Đề thi không tồn tại: ${examId}`);
   }
-  if (!sanitized.is_published && user?.role !== 'admin') {
-    throw new Error(`Đề thi chưa được xuất bản hoặc đang bảo trì: ${examId}`);
-  }
   if (!sanitized.questions || sanitized.questions.length === 0) {
     throw new Error(`Đề thi [${sanitized.title}] hiện đang được biên soạn nội dung hoặc là tài liệu tham chiếu ngoại bộ.`);
+  }
+  if (!sanitized.is_published && user?.role !== 'admin') {
+    throw new Error(`Đề thi chưa được xuất bản hoặc đang bảo trì: ${examId}`);
   }
   return sanitized;
 }
@@ -458,45 +471,99 @@ export const submitExam = submitExamAttempt;
  */
 function saveAttemptToLocal(attempt) {
   try {
-    const raw = localStorage.getItem(STORAGE_ATTEMPTS_KEY);
+    const storageKey = getAttemptsStorageKey(attempt?.userId ? { id: attempt.userId } : null);
+    const raw = localStorage.getItem(storageKey);
     const list = raw ? JSON.parse(raw) : [];
     // Lưu tối đa 30 lượt làm bài gần nhất
     const updated = [attempt, ...list.filter(a => a.id !== attempt.id)].slice(0, 30);
-    localStorage.setItem(STORAGE_ATTEMPTS_KEY, JSON.stringify(updated));
+    localStorage.setItem(storageKey, JSON.stringify(updated));
   } catch {}
 }
 
 /**
- * Đồng bộ bài thi lên Supabase (không block luồng trả về)
+ * Ánh xạ danh sách hsk_attempts (exam_id, score, max_score) sang điểm CBT cao nhất từng cấp HSK (1..9)
+ */
+export function mapCbtAttemptsToBestScores(attempts = [], exams = HSK_EXAMS) {
+  const best = {};
+  if (!Array.isArray(attempts)) return best;
+
+  const examLevelMap = new Map();
+  if (Array.isArray(exams)) {
+    for (const ex of exams) {
+      if (!ex?.id) continue;
+      const lvlStr = String(ex.level || '');
+      const match = lvlStr.match(/HSK\s*(7-9|[1-9])/i);
+      if (match) {
+        examLevelMap.set(ex.id, match[1] === '7-9' ? 7 : Number(match[1]));
+      }
+    }
+  }
+
+  for (const row of attempts) {
+    if (!row || row.status === 'draft' || row.status === 'in_progress') continue;
+    const examId = row.exam_id || row.examId || '';
+    let lvl = examLevelMap.get(examId) || Number(row.hsk_level || 0);
+    if (!lvl && examId) {
+      if (/hsk[-_]?79|hsk[-_]?7/i.test(examId)) {
+        lvl = 7;
+      } else {
+        const m = String(examId).match(/hsk[-_]?([1-9])/i);
+        if (m) lvl = Number(m[1]);
+      }
+    }
+    const sc = Number(row.score ?? row.total_score) || 0;
+    if (lvl >= 1 && lvl <= 9 && sc > (best[lvl] || 0)) {
+      best[lvl] = sc;
+    }
+  }
+  return best;
+}
+
+/**
+ * Đồng bộ bài thi lên Supabase (không block luồng trả về; fallback hàng đợi offline khi lỗi)
  */
 async function syncAttemptToSupabase(attempt) {
+  const payload = {
+    id: attempt.id,
+    user_id: attempt.userId,
+    anonymous_session_id: attempt.anonymousSessionId,
+    exam_id: attempt.examId,
+    exam_mode: attempt.examMode || 'simulation',
+    time_spent_seconds: attempt.timeSpentSeconds,
+    submitted_answers: attempt.submittedAnswers,
+    writing_answers: attempt.writingAnswers || attempt.writing_answers || {},
+    score: attempt.score,
+    max_score: attempt.maxScore,
+    accuracy_percentage: attempt.accuracyPercentage,
+    passed: attempt.passed,
+    skill_breakdown: attempt.skillBreakdown,
+    detailed_results: attempt.detailedResults,
+    created_at: attempt.createdAt
+  };
   try {
-    if (!supabase) return;
-    await supabase.from('hsk_attempts').insert({
-      id: attempt.id,
-      user_id: attempt.userId,
-      anonymous_session_id: attempt.anonymousSessionId,
-      exam_id: attempt.examId,
-      exam_mode: attempt.examMode || 'simulation',
-      time_spent_seconds: attempt.timeSpentSeconds,
-      submitted_answers: attempt.submittedAnswers,
-      score: attempt.score,
-      max_score: attempt.maxScore,
-      accuracy_percentage: attempt.accuracyPercentage,
-      passed: attempt.passed,
-      skill_breakdown: attempt.skillBreakdown,
-      detailed_results: attempt.detailedResults,
-      created_at: attempt.createdAt
-    });
-  } catch {}
+    if (!supabase) throw new Error('Supabase unavailable');
+    const { error } = await supabase.from('hsk_attempts').upsert(payload, { onConflict: 'id' });
+    if (error) throw error;
+  } catch {
+    if (attempt?.userId) {
+      enqueueOfflineMutation({
+        type: 'hsk_attempt',
+        table: 'hsk_attempts',
+        action: 'upsert',
+        onConflict: 'id',
+        idempotencyKey: `hsk_attempt:${attempt.id}`,
+        payload
+      }, { id: attempt.userId });
+    }
+  }
 }
 
 /**
  * Lấy kết quả bài thi theo attemptId
  */
-export async function getAttemptResult(attemptId) {
+export async function getAttemptResult(attemptId, user = null) {
   try {
-    const raw = localStorage.getItem(STORAGE_ATTEMPTS_KEY);
+    const raw = localStorage.getItem(getAttemptsStorageKey(user));
     if (raw) {
       const list = JSON.parse(raw);
       const found = list.find(a => a.id === attemptId);
@@ -539,9 +606,9 @@ export async function getAttemptResult(attemptId) {
 /**
  * Lấy lịch sử các lần thi trước đây
  */
-export function getPastAttempts(examId = null) {
+export function getPastAttempts(examId = null, user = null) {
   try {
-    const raw = localStorage.getItem(STORAGE_ATTEMPTS_KEY);
+    const raw = localStorage.getItem(getAttemptsStorageKey(user));
     if (!raw) return [];
     let list = JSON.parse(raw);
     if (examId) {
@@ -560,8 +627,9 @@ export function getPastAttempts(examId = null) {
 export function saveTemporaryAnswers(examId, answers, extra = {}) {
   try {
     if (!examId) return;
-    localStorage.setItem(STORAGE_DRAFT_PREFIX + examId, JSON.stringify({
+    localStorage.setItem(getDraftStorageKey(examId, extra?.user || null), JSON.stringify({
       answers,
+      writingAnswers: extra.writingAnswers || {},
       flaggedQuestionIds: extra.flaggedQuestionIds || [],
       examMode: extra.examMode || 'simulation',
       currentIdx: extra.currentIdx || 0,
@@ -575,15 +643,15 @@ export function saveTemporaryAnswers(examId, answers, extra = {}) {
 /**
  * Lấy câu trả lời tạm thời đã lưu (cho tính năng tương thích ngược)
  */
-export function getTemporaryAnswers(examId) {
+export function getTemporaryAnswers(examId, user = null) {
   try {
     if (!examId) return null;
-    const raw = localStorage.getItem(STORAGE_DRAFT_PREFIX + examId);
+    const raw = localStorage.getItem(getDraftStorageKey(examId, user));
     if (!raw) return null;
     const data = JSON.parse(raw);
     // Hết hạn sau 4 tiếng
     if (Date.now() - data.savedAt > 4 * 60 * 60 * 1000) {
-      clearTemporaryAnswers(examId);
+      clearTemporaryAnswers(examId, user);
       return null;
     }
     return data.answers || null;
@@ -595,14 +663,14 @@ export function getTemporaryAnswers(examId) {
 /**
  * Lấy toàn bộ phiên làm bài tạm thời (answers, flagged, examMode, currentIdx)
  */
-export function getTemporaryExamSession(examId) {
+export function getTemporaryExamSession(examId, user = null) {
   try {
     if (!examId) return null;
-    const raw = localStorage.getItem(STORAGE_DRAFT_PREFIX + examId);
+    const raw = localStorage.getItem(getDraftStorageKey(examId, user));
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (Date.now() - data.savedAt > 4 * 60 * 60 * 1000) {
-      clearTemporaryAnswers(examId);
+      clearTemporaryAnswers(examId, user);
       return null;
     }
     return data;
@@ -614,10 +682,10 @@ export function getTemporaryExamSession(examId) {
 /**
  * Xóa câu trả lời tạm thời
  */
-export function clearTemporaryAnswers(examId) {
+export function clearTemporaryAnswers(examId, user = null) {
   try {
     if (!examId) return;
-    localStorage.removeItem(STORAGE_DRAFT_PREFIX + examId);
+    localStorage.removeItem(getDraftStorageKey(examId, user));
   } catch {}
 }
 
@@ -640,7 +708,8 @@ export function recordMistakesFromAttempt(attemptResult, user = null) {
   if (incorrectQuestions.length === 0) return [];
 
   try {
-    const raw = localStorage.getItem(STORAGE_MISTAKES_KEY);
+    const mistakesKey = getMistakesStorageKey(user || (userId ? { id: userId } : null));
+    const raw = localStorage.getItem(mistakesKey);
     const mistakesList = raw ? JSON.parse(raw) : [];
     const updatedList = [...mistakesList];
 
@@ -705,7 +774,7 @@ export function recordMistakesFromAttempt(attemptResult, user = null) {
       } catch {}
     });
 
-    localStorage.setItem(STORAGE_MISTAKES_KEY, JSON.stringify(updatedList.slice(0, 100)));
+    localStorage.setItem(mistakesKey, JSON.stringify(updatedList.slice(0, 100)));
 
     // Đồng bộ lên Supabase nếu có user
     if (supabase && userId && incorrectQuestions.length > 0) {
@@ -769,12 +838,12 @@ export async function getMistakeNotebook({ user = null, level = 'all', skill = '
   // 2. Nếu chưa có trên Supabase hoặc là khách vãng lai, đọc từ LocalStorage
   if (list.length === 0) {
     try {
-      const raw = localStorage.getItem(STORAGE_MISTAKES_KEY);
+      const raw = localStorage.getItem(getMistakesStorageKey(user));
       if (raw) {
         const localList = JSON.parse(raw);
         list = localList.filter(m => {
-          if (user?.id) return m.userId === user.id || m.userId === null;
-          return m.anonymousSessionId === anonSessionId || m.userId === null;
+          if (user?.id) return m.userId === user.id;
+          return m.anonymousSessionId === anonSessionId && !m.userId;
         });
       }
     } catch {}
@@ -814,7 +883,8 @@ export async function updateMistakeStatus(mistakeId, newStatus, user = null, exp
   let updatedCount = 0;
 
   try {
-    const raw = localStorage.getItem(STORAGE_MISTAKES_KEY);
+    const mistakesKey = getMistakesStorageKey(user);
+    const raw = localStorage.getItem(mistakesKey);
     if (raw) {
       const list = JSON.parse(raw);
       const updated = list.map(m => {
@@ -829,7 +899,7 @@ export async function updateMistakeStatus(mistakeId, newStatus, user = null, exp
         }
         return m;
       });
-      localStorage.setItem(STORAGE_MISTAKES_KEY, JSON.stringify(updated));
+      localStorage.setItem(mistakesKey, JSON.stringify(updated));
     }
 
     if (supabase && user?.id) {
@@ -859,7 +929,8 @@ export async function removeMistakeItem(mistakeId, user = null, explicitAnonId =
   let removedCount = 0;
 
   try {
-    const raw = localStorage.getItem(STORAGE_MISTAKES_KEY);
+    const mistakesKey = getMistakesStorageKey(user);
+    const raw = localStorage.getItem(mistakesKey);
     if (raw) {
       const list = JSON.parse(raw);
       const filtered = list.filter(m => {
@@ -874,7 +945,7 @@ export async function removeMistakeItem(mistakeId, user = null, explicitAnonId =
         }
         return true;
       });
-      localStorage.setItem(STORAGE_MISTAKES_KEY, JSON.stringify(filtered));
+      localStorage.setItem(mistakesKey, JSON.stringify(filtered));
     }
 
     if (supabase && user?.id) {
@@ -1255,12 +1326,12 @@ export async function getUserExamHistory({ user = null, examId = null } = {}) {
 
   // 2. Đọc từ local cache để hợp nhất
   try {
-    const raw = localStorage.getItem(STORAGE_ATTEMPTS_KEY);
+    const raw = localStorage.getItem(getAttemptsStorageKey(user));
     if (raw) {
       const localAttempts = JSON.parse(raw);
       const userLocal = localAttempts.filter(a => {
-        if (user?.id) return a.userId === user.id || a.userId === null;
-        return a.anonymousSessionId === anonSessionId || a.userId === null;
+        if (user?.id) return a.userId === user.id;
+        return a.anonymousSessionId === anonSessionId && !a.userId;
       });
 
       const existingIds = new Set(attempts.map(a => a.id));
@@ -1583,29 +1654,64 @@ export async function mergeLocalAttemptsToUser(userId) {
 
   try {
     let mergedCount = 0;
-    const rawAttempts = localStorage.getItem(STORAGE_ATTEMPTS_KEY);
-    if (rawAttempts) {
-      const attempts = JSON.parse(rawAttempts);
-      const updatedAttempts = attempts.map(a => {
+    const guestAttemptsKey = getAttemptsStorageKey({ id: 'guest' });
+    const userAttemptsKey = getAttemptsStorageKey({ id: userId });
+    const rawGuestAttempts = localStorage.getItem(guestAttemptsKey) || localStorage.getItem(STORAGE_ATTEMPTS_KEY);
+    if (rawGuestAttempts) {
+      const guestAttempts = JSON.parse(rawGuestAttempts);
+      const existingUserAttempts = (() => {
+        try {
+          const rawUser = localStorage.getItem(userAttemptsKey);
+          return rawUser ? JSON.parse(rawUser) : [];
+        } catch {
+          return [];
+        }
+      })();
+      const existingIds = new Set(existingUserAttempts.map(a => a.id));
+      const mergedAttempts = [...existingUserAttempts];
+
+      guestAttempts.forEach(a => {
         if (!a.userId) {
           mergedCount++;
           const updated = { ...a, userId };
           if (supabase) {
             syncAttemptToSupabase(updated).catch(() => {});
           }
-          return updated;
+          if (!existingIds.has(updated.id)) {
+            mergedAttempts.unshift(updated);
+            existingIds.add(updated.id);
+          }
         }
-        return a;
       });
-      localStorage.setItem(STORAGE_ATTEMPTS_KEY, JSON.stringify(updatedAttempts));
+      localStorage.setItem(userAttemptsKey, JSON.stringify(mergedAttempts.slice(0, 30)));
+      localStorage.removeItem(guestAttemptsKey);
+      localStorage.removeItem(STORAGE_ATTEMPTS_KEY);
     }
 
     // Đồng bộ cả câu sai
-    const rawMistakes = localStorage.getItem(STORAGE_MISTAKES_KEY);
-    if (rawMistakes) {
-      const mistakes = JSON.parse(rawMistakes);
-      const updatedMistakes = mistakes.map(m => (!m.userId ? { ...m, userId } : m));
-      localStorage.setItem(STORAGE_MISTAKES_KEY, JSON.stringify(updatedMistakes));
+    const guestMistakesKey = getMistakesStorageKey({ id: 'guest' });
+    const userMistakesKey = getMistakesStorageKey({ id: userId });
+    const rawGuestMistakes = localStorage.getItem(guestMistakesKey) || localStorage.getItem(STORAGE_MISTAKES_KEY);
+    if (rawGuestMistakes) {
+      const guestMistakes = JSON.parse(rawGuestMistakes);
+      const existingUserMistakes = (() => {
+        try {
+          const rawUser = localStorage.getItem(userMistakesKey);
+          return rawUser ? JSON.parse(rawUser) : [];
+        } catch {
+          return [];
+        }
+      })();
+      const existingQids = new Set(existingUserMistakes.map(m => m.questionId));
+      const updatedMistakes = [
+        ...existingUserMistakes,
+        ...guestMistakes
+          .filter(m => !m.userId && !existingQids.has(m.questionId))
+          .map(m => ({ ...m, userId }))
+      ];
+      localStorage.setItem(userMistakesKey, JSON.stringify(updatedMistakes.slice(0, 100)));
+      localStorage.removeItem(guestMistakesKey);
+      localStorage.removeItem(STORAGE_MISTAKES_KEY);
       if (supabase) {
         syncMistakesToSupabase(updatedMistakes.filter(m => m.userId === userId)).catch(() => {});
       }

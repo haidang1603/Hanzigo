@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { recordLearningEvent } from './learningDataService.ts';
+import { getUserStorageKey } from '../utils/gamification.js';
 import {
   applyMandarinToneSandhi,
   generateReferencePitchContour,
@@ -349,7 +350,8 @@ export async function savePronunciationAttempt(params: {
 
   try {
     if (typeof localStorage !== 'undefined') {
-      const raw = localStorage.getItem(ATTEMPTS_STORAGE_KEY);
+      const storageKey = getUserStorageKey(ATTEMPTS_STORAGE_KEY, user);
+      const raw = localStorage.getItem(storageKey);
       const list = raw ? (JSON.parse(raw) as Array<Record<string, unknown>>) : [];
       list.unshift({
         drillId: drill.id,
@@ -357,7 +359,7 @@ export async function savePronunciationAttempt(params: {
         overallScore: result.overall_score,
         createdAt: new Date().toISOString(),
       });
-      localStorage.setItem(ATTEMPTS_STORAGE_KEY, JSON.stringify(list.slice(0, 50)));
+      localStorage.setItem(storageKey, JSON.stringify(list.slice(0, 50)));
     }
   } catch {
     // ignore storage errors

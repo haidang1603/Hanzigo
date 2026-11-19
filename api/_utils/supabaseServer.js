@@ -287,3 +287,17 @@ export async function verifyRequestAuth(req) {
     error: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'
   };
 }
+
+/**
+ * Send a structured JSON server error without leaking raw stack traces or
+ * internal PostgreSQL/provider error messages in Production.
+ */
+export function sendSafeServerError(res, publicMessage = 'Lỗi máy chủ nội bộ.', err = null, statusCode = 500) {
+  if (!res || res.headersSent) return null;
+  const isProd = process.env.NODE_ENV === 'production';
+  const payload = { error: publicMessage };
+  if (!isProd && err?.message) {
+    payload.message = err.message;
+  }
+  return res.status(statusCode).json(payload);
+}

@@ -1062,16 +1062,11 @@ export async function getAiCoachRecommendation(user = null, { forceRefresh = fal
           source: 'gemini_ai'
         };
 
-        // Lưu vào Cache
+        // Lưu vào Cache (chuẩn hóa theo ngày địa phương getLocalDateString)
         try {
           const valStr = JSON.stringify(validatedData);
           localStorage.setItem(cacheKey, valStr);
           localStorage.setItem(`${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${todayStr}`, valStr);
-          const utcDateStr = new Date().toISOString().split('T')[0];
-          if (utcDateStr !== todayStr) {
-            localStorage.setItem(`${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${effectiveGoal}_${effectiveMinutes}_${utcDateStr}`, valStr);
-            localStorage.setItem(`${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${utcDateStr}`, valStr);
-          }
         } catch {}
 
         return { success: true, data: validatedData, fromCache: false };
@@ -1091,11 +1086,6 @@ export async function getAiCoachRecommendation(user = null, { forceRefresh = fal
     const valStr = JSON.stringify(offlineResult);
     localStorage.setItem(cacheKey, valStr);
     localStorage.setItem(`${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${todayStr}`, valStr);
-    const utcDateStr = new Date().toISOString().split('T')[0];
-    if (utcDateStr !== todayStr) {
-      localStorage.setItem(`${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${effectiveGoal}_${effectiveMinutes}_${utcDateStr}`, valStr);
-      localStorage.setItem(`${COACH_STORAGE_KEYS.CACHE}_${profile.userId}_${utcDateStr}`, valStr);
-    }
   } catch {}
 
   return { success: true, data: offlineResult, fromCache: false, isOffline: true };

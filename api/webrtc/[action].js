@@ -11,6 +11,7 @@
 
 import iceServersHandler from '../_webrtc/ice-servers.js';
 import livekitTokenHandler from '../_webrtc/livekit-token.js';
+import { sendSafeServerError } from '../_utils/supabaseServer.js';
 
 export default async function handler(req, res) {
   try {
@@ -31,8 +32,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('[WebRTC Router Error]:', err);
-    if (!res.headersSent) {
-      return res.status(500).json({ error: 'Lỗi máy chủ nội bộ.', message: err?.message });
-    }
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ.', err);
   }
 }

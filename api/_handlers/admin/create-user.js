@@ -16,6 +16,7 @@
  */
 
 import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
 
 export default async function createUserHandler(req, res) {
   if (req.method !== 'POST') {
@@ -31,6 +32,20 @@ export default async function createUserHandler(req, res) {
   // Zero-trust: Enforce caller must be an active administrator
   if (auth.user.role !== 'admin' || auth.user.status === 'blocked') {
     return res.status(403).json({ error: 'Quyền truy cập bị từ chối. Chỉ Quản trị viên đang hoạt động mới có quyền tạo tài khoản người dùng.' });
+  }
+
+  // Rate limiting for administrative user creation
+  const rateCheck = await checkRateLimitAndQuota({
+    clientKey: `admin_create:${auth.user.id}`,
+    windowMs: 60000,
+    maxRequests: 20,
+    dailyQuotaMax: 200,
+    prefix: 'admin_create_user',
+  });
+  if (!rateCheck.allowed) {
+    return res.status(rateCheck.statusCode || 429).json({
+      error: rateCheck.reason || 'Quá nhiều yêu cầu tạo tài khoản. Vui lòng thử lại sau.',
+    });
   }
 
   // 2. Validate input parameters
@@ -55,8 +70,8 @@ export default async function createUserHandler(req, res) {
   const allowedRoles = ['student', 'teacher'];
   const targetRole = String(role).trim().toLowerCase();
   if (!allowedRoles.includes(targetRole)) {
-    return res.status(400).json({ 
-      error: `Vai trò không hợp lệ: "${role}". Chỉ được phép tạo tài khoản "student" (Học viên) hoặc "teacher" (Giáo viên).` 
+    return res.status(400).json({
+      error: `Vai trò không hợp lệ: "${role}". Chỉ được phép tạo tài khoản "student" (Học viên) hoặc "teacher" (Giáo viên).`
     });
   }
 
@@ -140,25 +155,32 @@ export default async function createUserHandler(req, res) {
       } catch (rollbackErr) {
         console.error('[/api/admin/create-user] Auth rollback failed:', rollbackErr);
       }
-      return res.status(500).json({ 
-        error: 'Lỗi đồng bộ hồ sơ người dùng trong cơ sở dữ liệu. Thao tác đã được hoàn tác an toàn.' 
+      return res.status(500).json({
+        error: 'Lỗi đồng bộ hồ sơ người dùng trong cơ sở dữ liệu. Thao tác đã được hoàn tác an toàn.'
       });
     }
 
-    // Record administrative audit log
+    // Record administrative audit log (matching public.audit_logs schema)
     try {
-      await adminClient.from('audit_logs').insert({
-        user_id: auth.user.id,
+      const { error: auditError } = await adminClient.from('audit_logs').insert({
         action: 'ADMIN_CREATE_USER',
-        details: {
-          created_user_id: newUserId,
+        category: 'ADMIN',
+        severity: 'INFO',
+        actor_id: auth.user.id,
+        target_id: String(newUserId),
+        metadata: {
           target_email: cleanEmail,
           target_role: targetRole,
           target_name: cleanName
         },
         created_at: new Date().toISOString()
       });
-    } catch {}
+      if (auditError) {
+        console.warn('[/api/admin/create-user] audit_logs insert failed:', auditError.message);
+      }
+    } catch (auditErr) {
+      console.warn('[/api/admin/create-user] audit_logs insert error:', auditErr?.message || auditErr);
+    }
 
     // Return safe user object (Strictly NEVER return password, token, or service role key)
     return res.status(201).json({

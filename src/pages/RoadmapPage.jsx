@@ -51,6 +51,7 @@ import BossChallengeModal from '../components/learning/BossChallengeModal';
 import PlacementTestModal from '../components/learning/PlacementTestModal';
 import DailyMissionsModal from '../components/learning/DailyMissionsModal';
 import SkillMasteryCard from '../components/learning/SkillMasteryCard';
+import { mapCbtAttemptsToBestScores } from '../services/hskService';
 
 const LOCAL_ROADMAP_PROGRESS_KEY = 'hanzigo_roadmap_120_progress_v1';
 const LOCAL_FREE_EXPLORE_KEY = 'hanzigo_roadmap_free_explore_v1';
@@ -239,17 +240,17 @@ export default function RoadmapPage({
 
         const { data: attempts } = await supabase
           .from('hsk_attempts')
-          .select('hsk_level, total_score')
+          .select('exam_id, score, max_score')
           .eq('user_id', targetUid)
-          .order('total_score', { ascending: false });
+          .order('score', { ascending: false });
 
         if (attempts && attempts.length > 0 && isMounted) {
+          const mappedScores = mapCbtAttemptsToBestScores(attempts);
           setBestCbtScores((prev) => {
             const next = { ...prev };
-            for (const row of attempts) {
-              const lvl = Number(row.hsk_level);
-              const sc = Number(row.total_score) || 0;
-              if (lvl >= 1 && lvl <= 9 && sc > (next[lvl] || 0)) {
+            for (const [lvlKey, sc] of Object.entries(mappedScores)) {
+              const lvl = Number(lvlKey);
+              if (sc > (next[lvl] || 0)) {
                 next[lvl] = sc;
               }
             }

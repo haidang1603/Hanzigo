@@ -89,8 +89,8 @@ test('PHASE 4 - SCENARIO 3: Integration of Phase 3 HSK Attempts & Mistakes Noteb
   resetMockStorage();
   const testUser = { id: 'user_hsk_master_03', name: 'Lê Văn Luyện' };
 
-  // Mock HSK attempts and mistakes in localStorage
-  localStorage.setItem('hanzigo_hsk_attempts', JSON.stringify([
+  // Mock HSK attempts and mistakes in user-scoped localStorage
+  localStorage.setItem(`hanzigo_hsk_attempts_${testUser.id}`, JSON.stringify([
     {
       id: 'att-1',
       examId: 'hsk1-mock-01',
@@ -105,7 +105,7 @@ test('PHASE 4 - SCENARIO 3: Integration of Phase 3 HSK Attempts & Mistakes Noteb
     }
   ]));
 
-  localStorage.setItem('hanzigo_hsk_mistakes', JSON.stringify([
+  localStorage.setItem(`hanzigo_hsk_mistakes_${testUser.id}`, JSON.stringify([
     {
       id: 'mst-1',
       userId: testUser.id,

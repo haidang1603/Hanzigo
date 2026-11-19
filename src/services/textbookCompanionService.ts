@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { saveWordToDeck, type DictionaryEntry } from './dictionaryService.ts';
 import type { PosTag } from '../types/dictionary.types.ts';
 import { createVocabDeck, type VocabDeck } from './vocabWorkspaceService.ts';
+import { getUserStorageKey } from '../utils/gamification.js';
 
 const VALID_POS_TAGS = new Set<PosTag>([
   'v', 'n', 'adj', 'mw', 'adv', 'prep', 'conj', 'pron', 'num', 'idiom', 'other',
@@ -529,18 +530,18 @@ export function extractUniqueHanziFromUnit(unit: TextbookUnit): string[] {
   return result;
 }
 
-function readLocalEnrollments(): UserTextbookEnrollment[] {
+function readLocalEnrollments(user: { id?: string | null } | null = null): UserTextbookEnrollment[] {
   try {
-    const raw = localStorage.getItem(LOCAL_ENROLLMENTS_KEY);
+    const raw = localStorage.getItem(getUserStorageKey(LOCAL_ENROLLMENTS_KEY, user));
     return raw ? (JSON.parse(raw) as UserTextbookEnrollment[]) : [];
   } catch {
     return [];
   }
 }
 
-function writeLocalEnrollments(list: UserTextbookEnrollment[]): void {
+function writeLocalEnrollments(list: UserTextbookEnrollment[], user: { id?: string | null } | null = null): void {
   try {
-    localStorage.setItem(LOCAL_ENROLLMENTS_KEY, JSON.stringify(list));
+    localStorage.setItem(getUserStorageKey(LOCAL_ENROLLMENTS_KEY, user), JSON.stringify(list));
   } catch {
     // ignore
   }
@@ -549,7 +550,7 @@ function writeLocalEnrollments(list: UserTextbookEnrollment[]): void {
 export async function getUserTextbookEnrollments(
   user?: { id?: string | null } | null
 ): Promise<UserTextbookEnrollment[]> {
-  const local = readLocalEnrollments();
+  const local = readLocalEnrollments(user || null);
   if (!isSupabaseConfigured || !supabase || !user?.id) {
     return local;
   }

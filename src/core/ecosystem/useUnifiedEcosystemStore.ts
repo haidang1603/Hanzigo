@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../../supabase/config.js';
+import { getUserStorageKey } from '../../utils/gamification.js';
 import { saveWordToDeck, type DictionaryEntry } from '../../services/dictionaryService.ts';
 import {
   isVocabItemMastered,
@@ -169,9 +170,10 @@ export function useUnifiedEcosystemStore(user?: { id?: string | null } | null) {
 
       try {
         if (typeof localStorage !== 'undefined') {
-          const raw = localStorage.getItem(EVENTS_KEY);
+          const eventsKey = getUserStorageKey(EVENTS_KEY, userId ? { id: userId } : null);
+          const raw = localStorage.getItem(eventsKey);
           const list = raw ? (JSON.parse(raw) as UnifiedLearningEvent[]) : [];
-          localStorage.setItem(EVENTS_KEY, JSON.stringify([ev, ...list].slice(0, 50)));
+          localStorage.setItem(eventsKey, JSON.stringify([ev, ...list].slice(0, 50)));
         }
       } catch {
         // ignore storage errors

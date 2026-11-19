@@ -63,6 +63,8 @@ import {
   syncUserVocabSrsFromCloud,
   updateDailyMissionProgress,
 } from '../services';
+import { recordLearningEvent } from '../services/learningDataService.ts';
+import { trackLearningEvent } from '../core/telemetry/learningTelemetryService.js';
 import AiContextBadge from '../components/personalization/AiContextBadge.jsx';
 import { getPersonalizedExercises } from '../services/aiGateway.js';
 import { searchDictionaryPaginated } from '../services/dictionaryService.js';
@@ -1057,7 +1059,7 @@ export default function VocabularyPage({
         }
       }
 
-      // Sync to Supabase user_vocab_srs table
+      // Sync to Supabase user_vocab_srs table & bridge to Unified Telemetry (DQ-HIGH-03)
       try {
         const targetUid = user?.uid || user?.id;
         if (targetUid) {
@@ -1069,6 +1071,36 @@ export default function VocabularyPage({
             ...nextSrs,
           });
         }
+        const hskLvlMatch = String(card.level || '1').match(/\d+/);
+        const parsedHskLvl = hskLvlMatch ? Number(hskLvlMatch[0]) : 1;
+        const isCorrectReview = quality >= SRS_QUALITY.GOOD;
+        void recordLearningEvent({
+          userId: targetUid ?? null,
+          sourceModule: 'srs_review',
+          hskLevel: parsedHskLvl,
+          skillDomain: 'vocabulary',
+          itemId: card.hanzi,
+          isCorrect: isCorrectReview,
+          scoreEarned: isCorrectReview ? 100 : quality === SRS_QUALITY.HARD ? 60 : 20,
+          scoreMax: 100,
+          durationMs: 4000,
+          metadata: {
+            source: 'user_vocab_srs',
+            lapse_count: nextSrs?.lapseCount ?? 0,
+            stage: nextSrs?.stage ?? 0,
+          },
+        });
+        trackLearningEvent(
+          {
+            userId: targetUid ?? null,
+            eventType: 'vocab_review',
+            itemId: card.hanzi,
+            hskLevel: parsedHskLvl,
+            isCorrect: isCorrectReview,
+            metadata: { source: 'user_vocab_srs', lapseCount: nextSrs?.lapseCount ?? 0 },
+          },
+          { user }
+        );
       } catch (e) {
         console.warn('SRS DB sync notice:', e);
       }

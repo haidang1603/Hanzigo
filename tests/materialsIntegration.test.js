@@ -91,7 +91,7 @@ test('4. STORAGE & MIGRATION: Handles auto-migration and CRUD operations cleanly
   // Initial load auto-migrates to default academic materials
   const initial = getStoredMaterials();
   assert.equal(initial.length, 20);
-  assert.equal(localStorage.getItem('hanzigo_materials_version'), 'v2.1_academic');
+  assert.equal(localStorage.getItem('hanzigo_materials_version_guest'), 'v2.1_academic');
 
   // Add custom material
   const testItem = {

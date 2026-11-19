@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
-import { calculateTotalXp, getStreakStatus } from '../utils/gamification.js';
+import { calculateTotalXp, getStreakStatus, getUserStorageKey } from '../utils/gamification.js';
 import { isValidUuid } from './authService.js';
 
 // Honorific titles earned by reaching total XP thresholds
@@ -133,27 +133,8 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
     }
   }
 
-  // 2. Merge local registered shared profiles cache & admin directory
+  // 2. Merge local admin directory (shared cross-account cache removed for privacy)
   try {
-    const rawShared = localStorage.getItem('hanzigo_shared_profiles_cache');
-    if (rawShared) {
-      const sharedCache = JSON.parse(rawShared);
-      Object.values(sharedCache).forEach(u => {
-        if (!isDemoLeaderboardUser(u) && u.status !== 'blocked') {
-          const normEmail = u.email ? u.email.toLowerCase().trim() : '';
-          const key = normEmail || u.id;
-          const existing = usersMap.get(key) || (u.id ? usersMap.get(u.id) : null);
-          if (!existing) {
-            usersMap.set(key, { ...u, isOptedOut: isUserLeaderboardOptedOut(u) });
-          } else {
-            if (typeof u.xp === 'number' && u.xp > existing.xp) {
-              existing.xp = u.xp;
-            }
-          }
-        }
-      });
-    }
-
     const rawLocal = localStorage.getItem('hanzigo_admin_users_directory');
     if (rawLocal) {
       const localUsers = JSON.parse(rawLocal);
@@ -243,31 +224,12 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
           .catch((e) => console.warn('Leaderboard Supabase sync notice:', e));
       }
     }
-
-    // Persist to shared roster cache for multi-account testing
-    try {
-      const rawShared = localStorage.getItem('hanzigo_shared_profiles_cache');
-      const roster = rawShared ? JSON.parse(rawShared) : {};
-      roster[mergedUser.id || userKey] = {
-        id: mergedUser.id,
-        name: mergedUser.name,
-        email: mergedUser.email,
-        avatar: mergedUser.avatar,
-        level: mergedUser.level,
-        xp: mergedUser.xp,
-        streak: mergedUser.streak,
-        wordsLearned: mergedUser.wordsLearned,
-        role: mergedUser.role,
-        status: mergedUser.status
-      };
-      localStorage.setItem('hanzigo_shared_profiles_cache', JSON.stringify(roster));
-    } catch {}
   }
 
-  // 4. Lọc theo lớp học nếu scope === 'class'
+  // 3. Lọc theo lớp học nếu scope === 'class'
   if (scope === 'class' && classroomId) {
     try {
-      const rawMembers = localStorage.getItem('hanzigo_class_members_store');
+      const rawMembers = localStorage.getItem(getUserStorageKey('hanzigo_class_members_store', currentUser));
       if (rawMembers) {
         const members = JSON.parse(rawMembers);
         const classMemberIds = new Set(

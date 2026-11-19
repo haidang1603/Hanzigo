@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { isValidUuid } from './authService.js';
 import { syncUserJourneyProgressFromCloud } from './learningPathService.js';
 import { syncUserVocabSrsFromCloud } from './vocabularyService.js';
+import { getUserStorageKey } from '../utils/gamification.js';
 
 /**
  * Record a study activity in normalized DB table (audit log & anti-abuse)
@@ -56,10 +57,13 @@ export async function triggerCloudSync(uid = null, explicitXp = null) {
   } catch {}
 
   try {
-    const rawRemembered = localStorage.getItem('hanzigo_vocab_remembered');
+    const userObj = { id: targetUid };
+    const rememberedKey = getUserStorageKey('hanzigo_vocab_remembered', userObj);
+    const rawRemembered = localStorage.getItem(rememberedKey);
     const rememberedWords = rawRemembered ? JSON.parse(rawRemembered) : [];
-    
-    const rawCompletedLessons = localStorage.getItem('hanzigo_completed_lessons');
+
+    const completedKey = getUserStorageKey('hanzigo_completed_lessons', userObj);
+    const rawCompletedLessons = localStorage.getItem(completedKey);
     const completedLessons = rawCompletedLessons ? JSON.parse(rawCompletedLessons) : [];
 
     // Sync lesson progress to normalized table
@@ -108,11 +112,15 @@ export async function triggerCloudSync(uid = null, explicitXp = null) {
     }
 
     // Sync high-level stats to `profiles` in Supabase
+    // Prevent empty local cache on a new device from overwriting cloud words_learned with 0
     const profileUpdate = {
-      words_learned: rememberedWords.length,
       xp: finalXp,
       updated_at: new Date().toISOString()
     };
+    if (Array.isArray(rememberedWords) && rememberedWords.length > 0) {
+      const existingWordsCount = typeof targetUser?.wordsLearned === 'number' ? targetUser.wordsLearned : 0;
+      profileUpdate.words_learned = Math.max(rememberedWords.length, existingWordsCount);
+    }
     if (typeof streakVal === 'number' && !isNaN(streakVal)) {
       profileUpdate.streak = streakVal;
     }
@@ -124,25 +132,6 @@ export async function triggerCloudSync(uid = null, explicitXp = null) {
     if (targetUser?.name) profileUpdate.name = targetUser.name;
 
     await supabase.from('profiles').update(profileUpdate).eq('id', targetUid);
-
-    // Also persist in local shared roster cache for multi-account testing
-    try {
-      const rawCache = localStorage.getItem('hanzigo_shared_profiles_cache');
-      const cache = rawCache ? JSON.parse(rawCache) : {};
-      cache[targetUid] = {
-        id: targetUid,
-        name: targetUser?.name || 'Học viên',
-        email: targetUser?.email || '',
-        avatar: targetUser?.avatar || null,
-        level: targetUser?.level || 'HSK 1 - Sơ cấp',
-        xp: finalXp,
-        streak: typeof streakVal === 'number' ? streakVal : 0,
-        wordsLearned: rememberedWords.length,
-        role: targetUser?.role || 'student',
-        status: 'active'
-      };
-      localStorage.setItem('hanzigo_shared_profiles_cache', JSON.stringify(cache));
-    } catch {}
 
     console.log('⚡ HanziGo Progress & XP synced to Cloud DB for user', targetUid, finalXp);
   } catch (err) {
@@ -157,24 +146,21 @@ export async function loadAllUserDataFromDb(uid) {
   if (!isSupabaseConfigured || !supabase || !uid || !isValidUuid(uid)) return null;
 
   try {
-    // 1. Load user profile stats
+    // 1. Load user profile stats (narrow column projection)
     const { data: profile } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, xp, streak, longest_streak, level, words_learned, last_study_date')
       .eq('id', uid)
       .maybeSingle();
 
     if (profile) {
       const effectiveStreak = typeof profile.streak === 'number' ? profile.streak : 0;
       localStorage.setItem(`hanzigo_streak_count_${uid}`, String(effectiveStreak));
-      localStorage.setItem('hanzigo_streak_count', String(effectiveStreak));
 
       if (profile.last_study_date) {
         localStorage.setItem(`hanzigo_last_study_date_${uid}`, String(profile.last_study_date));
-        localStorage.setItem('hanzigo_last_study_date', String(profile.last_study_date));
       } else {
         localStorage.removeItem(`hanzigo_last_study_date_${uid}`);
-        localStorage.removeItem('hanzigo_last_study_date');
       }
       if (typeof profile.longest_streak === 'number') {
         localStorage.setItem(`hanzigo_longest_streak_${uid}`, String(profile.longest_streak));
@@ -202,8 +188,18 @@ export async function loadAllUserDataFromDb(uid) {
       .eq('user_id', uid);
 
     if (lessons && lessons.length > 0) {
-      const lessonIds = lessons.map(l => l.lesson_id);
-      localStorage.setItem('hanzigo_completed_lessons', JSON.stringify(lessonIds));
+      const completedKey = getUserStorageKey('hanzigo_completed_lessons', { id: uid });
+      let localIds = [];
+      try {
+        const existing = localStorage.getItem(completedKey);
+        if (existing) {
+          const parsed = JSON.parse(existing);
+          if (Array.isArray(parsed)) localIds = parsed.map(String);
+        }
+      } catch {}
+      const cloudIds = lessons.map(l => String(l.lesson_id));
+      const mergedIds = Array.from(new Set([...localIds, ...cloudIds]));
+      localStorage.setItem(completedKey, JSON.stringify(mergedIds));
     }
 
     try {

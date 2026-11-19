@@ -13,6 +13,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
+import { getUserStorageKey } from '../utils/gamification.js';
 import { isValidUuid } from './authService.js';
 
 export const SOURCE_MODULES = [
@@ -120,6 +121,14 @@ export interface RecordLearningEventResult {
 const OFFLINE_TELEMETRY_QUEUE_KEY = 'hanzigo_telemetry_offline_queue_v1';
 const LOCAL_MISTAKE_RECORDS_KEY = 'hanzigo_user_mistake_records_v1';
 const SESSION_STORAGE_KEY = 'hanzigo_learning_session_id';
+
+function getMistakesKey(userId?: string | null): string {
+  return getUserStorageKey(LOCAL_MISTAKE_RECORDS_KEY, userId ? { id: userId } : null);
+}
+
+function getTelemetryQueueKey(userId?: string | null): string {
+  return getUserStorageKey(OFFLINE_TELEMETRY_QUEUE_KEY, userId ? { id: userId } : null);
+}
 
 const DEFAULT_FLUSH_DEBOUNCE_MS = 1500;
 const MAX_BATCH_SIZE = 25;
@@ -477,7 +486,8 @@ function upsertLocalMistakeRecord(
   classification: MistakeClassificationResult,
   timestampIso: string
 ): UserMistakeRecord {
-  const records = safeReadJson<UserMistakeRecord[]>(LOCAL_MISTAKE_RECORDS_KEY, []);
+  const storageKey = getMistakesKey(userId);
+  const records = safeReadJson<UserMistakeRecord[]>(storageKey, []);
   const idx = records.findIndex(
     (r) =>
       r.user_id === userId &&
@@ -514,28 +524,29 @@ function upsertLocalMistakeRecord(
     records.unshift(updated);
   }
 
-  safeWriteJson(LOCAL_MISTAKE_RECORDS_KEY, records.slice(0, MAX_OFFLINE_QUEUE_SIZE));
+  safeWriteJson(storageKey, records.slice(0, MAX_OFFLINE_QUEUE_SIZE));
   return updated;
 }
 
 export function getLocalMistakeRecords(userId?: string | null): UserMistakeRecord[] {
-  const records = safeReadJson<UserMistakeRecord[]>(LOCAL_MISTAKE_RECORDS_KEY, []);
+  const records = safeReadJson<UserMistakeRecord[]>(getMistakesKey(userId), []);
   if (userId === undefined) return records;
   return records.filter((r) => r.user_id === userId);
 }
 
-export function getPendingLearningEvents(): NormalizedLearningEvent[] {
-  return safeReadJson<NormalizedLearningEvent[]>(OFFLINE_TELEMETRY_QUEUE_KEY, []);
+export function getPendingLearningEvents(userId?: string | null): NormalizedLearningEvent[] {
+  return safeReadJson<NormalizedLearningEvent[]>(getTelemetryQueueKey(userId), []);
 }
 
 function enqueueOfflineTelemetry(event: NormalizedLearningEvent): void {
-  const queue = getPendingLearningEvents();
+  const queueKey = getTelemetryQueueKey(event.user_id);
+  const queue = getPendingLearningEvents(event.user_id);
   queue.push(event);
   const trimmed =
     queue.length > MAX_OFFLINE_QUEUE_SIZE
       ? queue.slice(queue.length - MAX_OFFLINE_QUEUE_SIZE)
       : queue;
-  safeWriteJson(OFFLINE_TELEMETRY_QUEUE_KEY, trimmed);
+  safeWriteJson(queueKey, trimmed);
 }
 
 function isBrowserOnline(): boolean {
@@ -633,7 +644,7 @@ export async function flushLearningEvents(): Promise<{
 
     flushedCount = batch.length;
     const remaining = [...syncable.slice(MAX_BATCH_SIZE), ...localOnly];
-    safeWriteJson(OFFLINE_TELEMETRY_QUEUE_KEY, remaining);
+    safeWriteJson(getTelemetryQueueKey(), remaining);
     return { flushedCount, remainingCount: remaining.length };
   } catch (err) {
     console.warn('flushLearningEvents failed, keeping offline queue:', err);
@@ -697,7 +708,8 @@ export async function updateMistakeResolvedStatus(
   resolvedStatus: ResolvedStatus,
   userId?: string | null
 ): Promise<boolean> {
-  const records = safeReadJson<UserMistakeRecord[]>(LOCAL_MISTAKE_RECORDS_KEY, []);
+  const storageKey = getMistakesKey(userId);
+  const records = safeReadJson<UserMistakeRecord[]>(storageKey, []);
   let updatedAny = false;
 
   const nextRecords = records.map((rec) => {
@@ -714,7 +726,7 @@ export async function updateMistakeResolvedStatus(
   });
 
   if (updatedAny) {
-    safeWriteJson(LOCAL_MISTAKE_RECORDS_KEY, nextRecords);
+    safeWriteJson(storageKey, nextRecords);
   }
 
   if (isBrowserOnline() && isSupabaseConfigured && supabase && userId && isValidUuid(userId)) {

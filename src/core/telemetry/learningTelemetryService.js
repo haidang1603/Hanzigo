@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../../supabase/config.js';
 import { getStoragePreferences } from '../sync/OfflineSyncManager.js';
+import { getUserStorageKey, getLocalDateString } from '../../utils/gamification.js';
 
 export const TELEMETRY_BUFFER_KEY = 'hanzigo_telemetry_buffer_v1';
 export const TELEMETRY_HISTORY_KEY = 'hanzigo_telemetry_history_v1';
@@ -23,8 +24,18 @@ export const ALLOWED_TELEMETRY_EVENT_TYPES = [
 
 let memoryBuffer = [];
 let memoryHistory = [];
+let loadedStorageScope = null;
 let flushTimerId = null;
 let isFlushing = false;
+
+function getScopedTelemetryKeys(user = null) {
+  return {
+    bufferKey: getUserStorageKey(TELEMETRY_BUFFER_KEY, user),
+    historyKey: getUserStorageKey(TELEMETRY_HISTORY_KEY, user),
+    roadmapKey: getUserStorageKey(ROADMAP_PROGRESS_STORAGE_KEY, user),
+    vocabKey: getUserStorageKey(VOCAB_ITEMS_STORAGE_KEY, user),
+  };
+}
 
 function getSafeLocalStorage() {
   try {
@@ -128,15 +139,21 @@ function normalizeTelemetryEvent(payload = {}) {
   };
 }
 
-function ensureBufferLoaded() {
+function ensureBufferLoaded(user = null) {
+  const { bufferKey, historyKey } = getScopedTelemetryKeys(user);
+  if (loadedStorageScope !== bufferKey) {
+    memoryBuffer = [];
+    memoryHistory = [];
+    loadedStorageScope = bufferKey;
+  }
   if (memoryBuffer.length === 0 && canPersistTelemetryLocally()) {
-    const stored = readJsonStorage(TELEMETRY_BUFFER_KEY, []);
+    const stored = readJsonStorage(bufferKey, []);
     if (Array.isArray(stored) && stored.length > 0) {
       memoryBuffer = stored;
     }
   }
   if (memoryHistory.length === 0 && canPersistTelemetryLocally()) {
-    const storedHist = readJsonStorage(TELEMETRY_HISTORY_KEY, []);
+    const storedHist = readJsonStorage(historyKey, []);
     if (Array.isArray(storedHist) && storedHist.length > 0) {
       memoryHistory = storedHist;
     }
@@ -155,19 +172,20 @@ function scheduleBatchFlush(user = null) {
   }
 }
 
-export function getTelemetryBuffer() {
-  ensureBufferLoaded();
+export function getTelemetryBuffer(user = null) {
+  ensureBufferLoaded(user);
   return [...memoryBuffer];
 }
 
-export function getTelemetryLocalHistory() {
-  ensureBufferLoaded();
+export function getTelemetryLocalHistory(user = null) {
+  ensureBufferLoaded(user);
   return [...memoryHistory];
 }
 
-export function clearTelemetryLocalState() {
+export function clearTelemetryLocalState(user = null) {
   memoryBuffer = [];
   memoryHistory = [];
+  loadedStorageScope = null;
   if (flushTimerId !== null) {
     clearTimeout(flushTimerId);
     flushTimerId = null;
@@ -175,6 +193,9 @@ export function clearTelemetryLocalState() {
   const storage = getSafeLocalStorage();
   if (storage) {
     try {
+      const { bufferKey, historyKey } = getScopedTelemetryKeys(user);
+      storage.removeItem(bufferKey);
+      storage.removeItem(historyKey);
       storage.removeItem(TELEMETRY_BUFFER_KEY);
       storage.removeItem(TELEMETRY_HISTORY_KEY);
     } catch {
@@ -220,7 +241,8 @@ export async function flushTelemetryBuffer(user = null) {
 
     memoryBuffer = memoryBuffer.slice(batch.length);
     if (canPersistTelemetryLocally()) {
-      writeJsonStorage(TELEMETRY_BUFFER_KEY, memoryBuffer);
+      const { bufferKey } = getScopedTelemetryKeys(user);
+      writeJsonStorage(bufferKey, memoryBuffer);
     }
     return { flushed: batch.length, remaining: memoryBuffer.length };
   } catch (err) {
@@ -236,7 +258,8 @@ export async function flushTelemetryBuffer(user = null) {
  * flushes automatically every 10 events, every 15s, or when flushNow is true.
  */
 export function trackLearningEvent(eventPayload = {}, options = {}) {
-  ensureBufferLoaded();
+  const user = options.user || eventPayload.user || null;
+  ensureBufferLoaded(user);
   const normalized = normalizeTelemetryEvent(eventPayload);
 
   memoryBuffer.push(normalized);
@@ -246,11 +269,11 @@ export function trackLearningEvent(eventPayload = {}, options = {}) {
   }
 
   if (canPersistTelemetryLocally()) {
-    writeJsonStorage(TELEMETRY_BUFFER_KEY, memoryBuffer);
-    writeJsonStorage(TELEMETRY_HISTORY_KEY, memoryHistory);
+    const { bufferKey, historyKey } = getScopedTelemetryKeys(user);
+    writeJsonStorage(bufferKey, memoryBuffer);
+    writeJsonStorage(historyKey, memoryHistory);
   }
 
-  const user = options.user || eventPayload.user || null;
   if (eventPayload.flushNow === true || memoryBuffer.length >= BATCH_FLUSH_SIZE) {
     void flushTelemetryBuffer(user);
   } else {
@@ -285,13 +308,13 @@ function averageOrZero(values) {
 }
 
 function formatIsoDate(date) {
-  return date.toISOString().slice(0, 10);
+  return getLocalDateString(date);
 }
 
 function buildSrsForecast7Days(vocabItems = [], now = new Date()) {
-  const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const counts = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(todayUtc.getTime() + i * 86400000);
+    const d = new Date(todayLocal.getFullYear(), todayLocal.getMonth(), todayLocal.getDate() + i);
     const iso = formatIsoDate(d);
     return {
       day_offset: i,
@@ -305,8 +328,8 @@ function buildSrsForecast7Days(vocabItems = [], now = new Date()) {
     if (!item?.next_review_at) continue;
     const dueDate = new Date(item.next_review_at);
     if (Number.isNaN(dueDate.getTime())) continue;
-    const dueUtc = new Date(Date.UTC(dueDate.getUTCFullYear(), dueDate.getUTCMonth(), dueDate.getUTCDate()));
-    const diffDays = Math.floor((dueUtc.getTime() - todayUtc.getTime()) / 86400000);
+    const dueLocal = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+    const diffDays = Math.round((dueLocal.getTime() - todayLocal.getTime()) / 86400000);
     if (diffDays <= 0) {
       counts[0].due_count += 1;
     } else if (diffDays < 7) {
@@ -418,17 +441,19 @@ export function computeLocalTelemetrySnapshot({
   vocabItems = null,
   roadmapProgress = null,
   days = 14,
+  user = null,
 } = {}) {
-  ensureBufferLoaded();
+  ensureBufferLoaded(user);
 
+  const { vocabKey, roadmapKey } = getScopedTelemetryKeys(user);
   const sourceEvents = Array.isArray(events) ? events : memoryHistory;
   const rawVocab = Array.isArray(vocabItems)
     ? vocabItems
-    : readJsonStorage(VOCAB_ITEMS_STORAGE_KEY, []);
+    : readJsonStorage(vocabKey, []);
   const resolvedVocab = filterRealUserVocabItems(rawVocab);
   const resolvedRoadmap = roadmapProgress && typeof roadmapProgress === 'object'
     ? roadmapProgress
-    : readJsonStorage(ROADMAP_PROGRESS_STORAGE_KEY, {});
+    : readJsonStorage(roadmapKey, {});
 
   const now = new Date();
   const windowCutoff = now.getTime() - days * 86400000;
@@ -588,9 +613,9 @@ export async function fetchTelemetryDashboardSummary(user = null, days = 14) {
       srs_forecast_7d:
         Array.isArray(data.srs_forecast_7d) && data.srs_forecast_7d.length === 7
           ? data.srs_forecast_7d.map((row, idx) => ({
-              ...row,
-              label: localSnapshot.srs_forecast_7d[idx]?.label || row.forecast_date,
-            }))
+            ...row,
+            label: localSnapshot.srs_forecast_7d[idx]?.label || row.forecast_date,
+          }))
           : localSnapshot.srs_forecast_7d,
     };
   } catch {
