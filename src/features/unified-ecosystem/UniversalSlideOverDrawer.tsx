@@ -257,7 +257,7 @@ export const UniversalSlideOverDrawer: React.FC = () => {
     <div className="fixed inset-0 z-[100] flex justify-end bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="flex-1" onClick={closeDrawer} />
 
-      <aside className="relative w-full max-w-xl h-full bg-[#0a0a1f] border-l border-[#00D4FF]/30 text-slate-100 shadow-[0_0_60px_rgba(0,212,255,0.18)] flex flex-col overflow-hidden">
+      <aside className="relative w-full max-w-xl h-[100dvh] bg-[#0a0a1f] border-l border-[#00D4FF]/30 text-slate-100 shadow-[0_0_60px_rgba(0,212,255,0.18)] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
         <header className="px-6 pt-5 pb-4 border-b border-slate-800/80 bg-slate-950/60">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -339,7 +339,8 @@ export const UniversalSlideOverDrawer: React.FC = () => {
               <button
                 type="button"
                 onClick={closeDrawer}
-                className="p-2 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white transition"
+                aria-label="Đóng ngăn công cụ"
+                className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 p-2 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white transition flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -653,7 +654,7 @@ export const UniversalSlideOverDrawer: React.FC = () => {
 
                   <div className="flex flex-col items-center justify-center p-5 rounded-2xl bg-slate-900/80 border border-slate-800 relative">
                     <div
-                      className="relative w-[240px] h-[240px] rounded-2xl bg-[#070716] border-2 border-[#00D4FF]/40 shadow-inner overflow-hidden touch-none select-none"
+                      className="relative w-[240px] h-[240px] rounded-2xl bg-[#070716] border-2 border-[#00D4FF]/40 shadow-inner overflow-hidden touch-none overscroll-contain select-none"
                       style={{ touchAction: 'none' }}
                     >
                       <svg
@@ -695,7 +696,7 @@ export const UniversalSlideOverDrawer: React.FC = () => {
                       </svg>
                       <div
                         ref={writerContainerRef}
-                        className="relative z-10 w-full h-full touch-none select-none"
+                        className="relative z-10 w-full h-full touch-none overscroll-contain select-none"
                         style={{ touchAction: 'none' }}
                       />
                     </div>

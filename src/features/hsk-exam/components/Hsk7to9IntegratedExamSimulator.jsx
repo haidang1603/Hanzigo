@@ -449,8 +449,8 @@ export default function Hsk7to9IntegratedExamSimulator({
       {/* =====================================================================
           1. TOP CBT EXAM HEADER: ĐỒNG HỒ 210 PHÚT & THANH 5 KỸ NĂNG HSK 7-9
       ===================================================================== */}
-      <header className="sticky top-0 z-30 border-b border-[#F1E5D8] dark:border-[#2B3A4F] bg-white/95 dark:bg-[#1E293B]/95 backdrop-blur-xl px-4 sm:px-8 py-4 shadow-xs">
-        <div className="max-w-7xl mx-auto space-y-4">
+      <header className="sticky top-0 z-30 border-b border-[#F1E5D8] dark:border-[#2B3A4F] bg-white/95 dark:bg-[#1E293B]/95 backdrop-blur-xl px-3 sm:px-8 py-2.5 sm:py-4 shadow-xs">
+        <div className="max-w-7xl mx-auto space-y-2.5 sm:space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-start gap-3">
               {typeof onExit === 'function' && (
@@ -518,7 +518,7 @@ export default function Hsk7to9IntegratedExamSimulator({
           </div>
 
           {/* Thanh chuyển đổi 5 Phần thi chuẩn HSK 3.0 */}
-          <nav className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <nav className="flex sm:grid sm:grid-cols-5 gap-2 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none">
             {[
               { id: 'listening', label: '1. Nghe Học Thuật (60đ)', icon: Headphones },
               { id: 'reading', label: '2. Đọc Biểu Đồ & Văn Bản (60đ)', icon: BarChart3 },
@@ -533,7 +533,7 @@ export default function Hsk7to9IntegratedExamSimulator({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveSectionId(tab.id)}
-                  className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl text-xs font-bold border transition cursor-pointer ${
+                  className={`flex items-center justify-center gap-1.5 py-2 sm:py-2.5 px-3 rounded-2xl text-xs font-bold border transition cursor-pointer shrink-0 sm:shrink ${
                     isActive
                       ? 'bg-[#E85D3F] text-white border-[#E85D3F] shadow-md shadow-[#E85D3F]/25'
                       : 'bg-[#FFF9F2] dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#5B6B7F] dark:text-slate-300 hover:border-[#E85D3F]/50'
@@ -931,7 +931,7 @@ export default function Hsk7to9IntegratedExamSimulator({
                       }))
                     }
                     placeholder="Nhập bản dịch của bạn tại đây..."
-                    className="w-full p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] focus:border-[#E85D3F] focus:outline-none text-sm text-[#243447] dark:text-white"
+                    className="w-full p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] focus:border-[#E85D3F] focus:outline-none text-base sm:text-sm text-[#243447] dark:text-white"
                   />
 
                   {isSubmitted && (
@@ -1000,7 +1000,7 @@ export default function Hsk7to9IntegratedExamSimulator({
                 onKeyDown={handleTextareaKeyDown}
                 onChange={(e) => setChartEssayText(e.target.value)}
                 placeholder="  如图所示，2022年至2026年间..."
-                className="w-full p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] focus:border-[#E85D3F] focus:outline-none text-sm text-[#243447] dark:text-white leading-relaxed font-['Noto_Serif_SC']"
+                className="w-full p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] focus:border-[#E85D3F] focus:outline-none text-base sm:text-sm text-[#243447] dark:text-white leading-relaxed font-['Noto_Serif_SC']"
               />
             </div>
 
@@ -1073,19 +1073,18 @@ export default function Hsk7to9IntegratedExamSimulator({
                 onKeyDown={handleTextareaKeyDown}
                 onChange={(e) => setArgumentEssayText(e.target.value)}
                 placeholder="  古人云：“审时度势，未雨绸缪。”..."
-                className="w-full p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] focus:border-[#E85D3F] focus:outline-none text-sm text-[#243447] dark:text-white leading-relaxed font-['Noto_Serif_SC']"
+                className="w-full p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] focus:border-[#E85D3F] focus:outline-none text-base sm:text-sm text-[#243447] dark:text-white leading-relaxed font-['Noto_Serif_SC']"
               />
 
-              {/* Lưới Ô Vuông 600 Chữ (稿纸 Preview 20 cột/hàng) */}
+              {/* Lưới Ô Vuông 600 Chữ (稿纸 Preview responsive 10→15→20 cột/hàng) */}
               {showGenkouGrid && (
                 <div className="p-4 rounded-2xl bg-[#FFFDF9] dark:bg-[#0E141D] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#748092] dark:text-slate-400 font-medium">
-                    <span>Giấy thi chuẩn 稿纸 (20 chữ / dòng • Đánh dấu mốc 600 chữ)</span>
+                    <span>Giấy thi chuẩn 稿纸 (20 chữ / dòng trên desktop • Đánh dấu mốc 600 chữ)</span>
                     <span>Mỗi đoạn mới thụt đầu dòng 2 ô vuông (  )</span>
                   </div>
                   <div
-                    style={{ gridTemplateColumns: 'repeat(20, minmax(0, 1fr))' }}
-                    className="grid gap-0.5 max-h-64 overflow-y-auto p-1"
+                    className="grid grid-cols-10 sm:grid-cols-15 lg:grid-cols-20 gap-0.5 max-h-64 overflow-y-auto p-1"
                   >
                     {genkouCells.map((ch, idx) => {
                       const is600Marker = idx === 599;
@@ -1199,7 +1198,7 @@ export default function Hsk7to9IntegratedExamSimulator({
               onKeyDown={handleTextareaKeyDown}
               onChange={(e) => setSpeakingTranscript(e.target.value)}
               placeholder="Nội dung thu âm giọng nói hoặc dàn ý phản biện bằng tiếng Trung của bạn sẽ hiển thị tại đây..."
-              className="w-full p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] focus:border-[#E85D3F] focus:outline-none text-sm text-[#243447] dark:text-white leading-relaxed font-['Noto_Serif_SC']"
+              className="w-full p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] focus:border-[#E85D3F] focus:outline-none text-base sm:text-sm text-[#243447] dark:text-white leading-relaxed font-['Noto_Serif_SC']"
             />
           </div>
         )}

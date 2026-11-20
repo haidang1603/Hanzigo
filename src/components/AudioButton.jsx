@@ -47,8 +47,8 @@ export default function AudioButton({
   };
 
   const sizeClasses = {
-    sm: 'w-7 h-7 text-xs',
-    md: 'w-9 h-9 text-sm',
+    sm: 'min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 w-11 h-11 sm:w-7 sm:h-7 text-xs',
+    md: 'min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 w-11 h-11 sm:w-9 sm:h-9 text-sm',
     lg: 'w-11 h-11 text-base'
   };
 
@@ -71,7 +71,7 @@ export default function AudioButton({
       onClick={handlePlay}
       title={hasError ? `Chưa phát được âm thanh cho '${text}' (Vui lòng kiểm tra âm lượng hoặc gói giọng đọc tiếng Trung zh-CN)` : `Nghe phát âm: ${text}`}
       className={`inline-flex items-center justify-center gap-1.5 rounded-full font-medium transition-all duration-200 active:scale-95 ${
-        label ? 'px-3 py-1.5' : sizeClasses[size]
+        label ? 'px-3 py-1.5 min-h-[44px] sm:min-h-0' : sizeClasses[size]
       } ${hasError ? 'bg-rose-100 text-rose-600 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-300' : variantStyles[variant]} ${isPlaying ? 'ring-2 ring-[#E85D3F] ring-offset-2 animate-pulse' : ''} ${className}`}
     >
       <Volume2 size={iconSizes[size]} className={isPlaying ? 'animate-bounce' : ''} />

@@ -1947,7 +1947,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
       )}
 
       {/* Top Header & Sticky Timer */}
-      <div className="sticky top-0 z-30 bg-[#FFF9F2]/95 dark:bg-slate-950/95 backdrop-blur-md py-3 border-b border-slate-200 dark:border-slate-800 mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="sticky top-0 z-30 bg-[#FFF9F2]/95 dark:bg-slate-950/95 backdrop-blur-md py-2 sm:py-3 border-b border-slate-200 dark:border-slate-800 mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-black text-[#E85D3F] uppercase tracking-wider">
@@ -2268,7 +2268,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                 value={typeof answers[currentQ.id] === 'string' ? answers[currentQ.id] : ''}
                 onChange={(e) => recordAnswerChange(currentQ.id, e.target.value)}
                 placeholder="Nhập bài viết của bạn bằng chữ Hán tại đây..."
-                className="w-full p-3.5 rounded-2xl border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-white focus:border-[#E85D3F] focus:outline-none"
+                className="w-full p-3.5 rounded-2xl border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-base sm:text-sm font-medium text-slate-900 dark:text-white focus:border-[#E85D3F] focus:outline-none"
               />
 
               <div className="flex items-center justify-between text-xs text-slate-500 mt-2">
@@ -3182,7 +3182,7 @@ function HskSubNavHeader({ currentView, user, onNavigate, onOpenAdmin }) {
 
   return (
     <div className="border-b border-amber-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-1.5 sm:py-2.5">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Module Tabs */}
           <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto w-full sm:w-auto scrollbar-none py-1">

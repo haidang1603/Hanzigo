@@ -972,7 +972,7 @@ export default function LiveClassroomPage({
   return (
     <div 
       ref={classroomContainerRef}
-      className="h-screen w-full bg-[#070B14] text-white flex flex-col overflow-hidden select-none font-sans"
+      className="h-[100dvh] w-full bg-[#070B14] text-white flex flex-col overflow-hidden select-none font-sans pb-[env(safe-area-inset-bottom)]"
     >
       {/* Toast Alert */}
       {toast && (

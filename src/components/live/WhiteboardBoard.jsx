@@ -373,7 +373,7 @@ export default function WhiteboardBoard({
           onTouchStart={handleMouseDown}
           onTouchMove={handleMouseMove}
           onTouchEnd={handleMouseUp}
-          className={`w-full h-full relative z-10 touch-none select-none ${canDraw ? 'cursor-crosshair' : 'cursor-default'}`}
+          className={`w-full h-full relative z-10 touch-none overscroll-contain select-none ${canDraw ? 'cursor-crosshair' : 'cursor-default'}`}
         />
 
         <div className="absolute bottom-3 left-4 px-3 py-1 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white/60 pointer-events-none flex items-center gap-2">

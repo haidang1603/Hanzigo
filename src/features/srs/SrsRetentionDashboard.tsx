@@ -218,10 +218,10 @@ export default function SrsRetentionDashboard({
           className="lg:col-span-6"
         >
           <div className="space-y-3">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-w-full">
               <svg
                 viewBox={`0 0 ${curveGeometry.width} ${curveGeometry.height}`}
-                className="w-full min-w-[360px] h-48"
+                className="w-full min-w-[300px] sm:min-w-[360px] h-48"
                 role="img"
                 aria-label="SRS Forgetting Curve Chart"
               >

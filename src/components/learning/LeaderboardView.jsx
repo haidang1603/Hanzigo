@@ -799,7 +799,7 @@ export default function LeaderboardView({ user, onNavigateTab }) {
             </div>
 
             {/* Table Header */}
-            <div className="grid grid-cols-12 px-5 py-3 text-[11px] font-bold text-[#748092] uppercase tracking-wider bg-[#FFF9F2]/60 dark:bg-[#131B24]/60">
+            <div className="grid grid-cols-12 px-3 sm:px-5 py-3 text-[11px] font-bold text-[#748092] uppercase tracking-wider bg-[#FFF9F2]/60 dark:bg-[#131B24]/60">
               <div className="col-span-2 sm:col-span-1 text-center">Hạng</div>
               <div className="col-span-6 sm:col-span-5">Học viên</div>
               <div className="hidden sm:block sm:col-span-3 text-center">Giải đấu & Danh hiệu</div>
@@ -821,7 +821,7 @@ export default function LeaderboardView({ user, onNavigateTab }) {
                 return (
                   <div
                     key={item.id}
-                    className={`grid grid-cols-12 px-5 py-3.5 items-center transition-colors relative ${
+                    className={`grid grid-cols-12 px-3 sm:px-5 py-3.5 items-center transition-colors relative ${
                       item.isCurrentUser
                         ? 'bg-amber-50/80 dark:bg-amber-950/30 border-l-4 border-l-[#E85D3F]'
                         : isPromotionZone

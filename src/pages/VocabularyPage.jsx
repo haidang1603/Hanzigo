@@ -317,6 +317,8 @@ export default function VocabularyPage({
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'due', 'leeches', 'custom', 'remembered', 'review', 'srs_priority'
   const [hideMastered, setHideMastered] = useState(true); // Ẩn các từ đã thuộc vững khỏi danh sách học mặc định
   const [lengthFilter, setLengthFilter] = useState('all'); // 'all', 'single', 'compound'
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const cardTouchMovedRef = useRef(false);
   const [viewMode, setViewMode] = useState(() =>
     VALID_VOCAB_VIEWS.includes(initialView) ? initialView : 'flashcard'
   ); // 'flashcard', 'grid', 'quiz', 'dictionary', 'workspace', 'chengyu'
@@ -1480,7 +1482,7 @@ export default function VocabularyPage({
         {/* Adaptive Progress & Add Button Container */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Spaced Repetition Progress Card (Tự động đổi theo cấp HSK đang chọn) */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm min-w-[240px]">
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm w-full sm:w-auto sm:min-w-[240px]">
             <div className="flex items-center justify-between text-xs font-bold mb-1.5 gap-3">
               <span className="text-[#243447] dark:text-white flex items-center gap-1.5">
                 <CheckCircle2 size={14} className="text-[#45B97C]" />
@@ -1666,6 +1668,21 @@ export default function VocabularyPage({
           </button>
         </div>
 
+        {/* Mobile Filter Toggle Button (One-handed UX) */}
+        <div className="flex lg:hidden items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setShowMobileFilters((prev) => !prev)}
+            className="min-h-[44px] flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white active:scale-95 transition-all cursor-pointer"
+          >
+            <Filter size={14} className="text-[#E85D3F]" />
+            <span>
+              {showMobileFilters ? 'Thu gọn bộ lọc & tìm kiếm' : 'Mở bộ lọc, tìm kiếm & HSK'}
+            </span>
+          </button>
+        </div>
+
+        <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block space-y-4`}>
         {/* Row 2: Wide Search Bar + Topic Select + Length Filter */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
           <div className="relative lg:col-span-6">
@@ -1680,7 +1697,7 @@ export default function VocabularyPage({
                 setSearchTerm(e.target.value);
                 setCurrentIndex(0);
               }}
-              className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+              className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
             />
             {searchTerm && (
               <button
@@ -1704,7 +1721,7 @@ export default function VocabularyPage({
                 setSelectedTopic(e.target.value);
                 setCurrentIndex(0);
               }}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-semibold text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-xs font-semibold text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
             >
               {TOPIC_FILTERS.map((t) => (
                 <option key={t} value={t}>
@@ -1986,6 +2003,7 @@ export default function VocabularyPage({
               {topic}
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -2378,7 +2396,19 @@ export default function VocabularyPage({
 
           {/* Interactive Flip Card */}
           <div
-            onClick={handleFlip}
+            onTouchStart={() => {
+              cardTouchMovedRef.current = false;
+            }}
+            onTouchMove={() => {
+              cardTouchMovedRef.current = true;
+            }}
+            onClick={() => {
+              if (cardTouchMovedRef.current) {
+                cardTouchMovedRef.current = false;
+                return;
+              }
+              handleFlip();
+            }}
             className="perspective-1000 cursor-pointer min-h-[380px] select-none"
           >
             <div
@@ -2427,7 +2457,7 @@ export default function VocabularyPage({
               </div>
 
               {/* BACK OF FLASHCARD */}
-              <div className="absolute inset-0 backface-hidden rotate-y-180 bg-white dark:bg-[#1E293B] rounded-3xl p-7 flex flex-col justify-between text-left overflow-y-auto">
+              <div className="absolute inset-0 backface-hidden rotate-y-180 bg-white dark:bg-[#1E293B] rounded-3xl p-5 sm:p-7 flex flex-col justify-between text-left overflow-y-auto overscroll-contain">
                 <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-3">
                   <div className="flex items-baseline gap-2">
                     <span className="font-['Noto_Serif_SC'] text-3xl font-black text-[#243447] dark:text-white">
@@ -2651,7 +2681,7 @@ export default function VocabularyPage({
             <button
               type="button"
               onClick={() => handleSrsRate(currentCard, SRS_QUALITY.AGAIN)}
-              className="py-3 px-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-950/60 border border-rose-200 dark:border-rose-800/70 text-rose-700 dark:text-rose-300 font-bold text-xs shadow-2xs transition-all flex flex-col items-center justify-center gap-1 active:scale-95 cursor-pointer group"
+              className="min-h-[48px] py-3 px-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-950/60 border border-rose-200 dark:border-rose-800/70 text-rose-700 dark:text-rose-300 font-bold text-xs shadow-2xs transition-all flex flex-col items-center justify-center gap-1 active:scale-95 cursor-pointer group"
             >
               <div className="flex items-center gap-1.5">
                 <span className="w-4 h-4 rounded-md bg-rose-200/70 dark:bg-rose-900/80 text-[10px] font-black flex items-center justify-center">
@@ -2668,7 +2698,7 @@ export default function VocabularyPage({
             <button
               type="button"
               onClick={() => handleSrsRate(currentCard, SRS_QUALITY.HARD)}
-              className="py-3 px-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-950/60 border border-amber-200 dark:border-amber-800/70 text-amber-800 dark:text-amber-300 font-bold text-xs shadow-2xs transition-all flex flex-col items-center justify-center gap-1 active:scale-95 cursor-pointer group"
+              className="min-h-[48px] py-3 px-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-950/60 border border-amber-200 dark:border-amber-800/70 text-amber-800 dark:text-amber-300 font-bold text-xs shadow-2xs transition-all flex flex-col items-center justify-center gap-1 active:scale-95 cursor-pointer group"
             >
               <div className="flex items-center gap-1.5">
                 <span className="w-4 h-4 rounded-md bg-amber-200/80 dark:bg-amber-900/80 text-[10px] font-black flex items-center justify-center">
@@ -2685,7 +2715,7 @@ export default function VocabularyPage({
             <button
               type="button"
               onClick={() => handleSrsRate(currentCard, SRS_QUALITY.GOOD)}
-              className="py-3 px-3 rounded-2xl bg-gradient-to-br from-[#45B97C] to-[#2E8B57] text-white font-bold text-xs shadow-md shadow-[#45B97C]/25 hover:opacity-95 transition-all flex flex-col items-center justify-center gap-1 active:scale-95 cursor-pointer group"
+              className="min-h-[48px] py-3 px-3 rounded-2xl bg-gradient-to-br from-[#45B97C] to-[#2E8B57] text-white font-bold text-xs shadow-md shadow-[#45B97C]/25 hover:opacity-95 transition-all flex flex-col items-center justify-center gap-1 active:scale-95 cursor-pointer group"
             >
               <div className="flex items-center gap-1.5">
                 <span className="w-4 h-4 rounded-md bg-white/20 text-[10px] font-black flex items-center justify-center">
@@ -2702,7 +2732,7 @@ export default function VocabularyPage({
             <button
               type="button"
               onClick={() => handleSrsRate(currentCard, SRS_QUALITY.EASY)}
-              className="py-3 px-3 rounded-2xl bg-gradient-to-br from-[#E85D3F] to-[#CB4529] text-white font-bold text-xs shadow-md shadow-[#E85D3F]/25 hover:opacity-95 transition-all flex flex-col items-center justify-center gap-1 active:scale-95 cursor-pointer group"
+              className="min-h-[48px] py-3 px-3 rounded-2xl bg-gradient-to-br from-[#E85D3F] to-[#CB4529] text-white font-bold text-xs shadow-md shadow-[#E85D3F]/25 hover:opacity-95 transition-all flex flex-col items-center justify-center gap-1 active:scale-95 cursor-pointer group"
             >
               <div className="flex items-center gap-1.5">
                 <span className="w-4 h-4 rounded-md bg-white/20 text-[10px] font-black flex items-center justify-center">
@@ -2722,7 +2752,7 @@ export default function VocabularyPage({
             <button
               onClick={handlePrevCard}
               title="Thẻ trước (←)"
-              className="p-2.5 rounded-full bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white shadow-sm transition-colors active:scale-95 cursor-pointer"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-full bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white shadow-sm transition-colors active:scale-95 cursor-pointer"
             >
               <ChevronLeft size={18} />
             </button>
@@ -2732,7 +2762,7 @@ export default function VocabularyPage({
             <button
               onClick={handleNextCard}
               title="Thẻ tiếp theo (→)"
-              className="p-2.5 rounded-full bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white shadow-sm transition-colors active:scale-95 cursor-pointer"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-full bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#243447] dark:hover:text-white shadow-sm transition-colors active:scale-95 cursor-pointer"
             >
               <ChevronRight size={18} />
             </button>
@@ -3036,7 +3066,7 @@ export default function VocabularyPage({
       ===================================================================== */}
       {selectedDictWord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-lg w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-lg w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90dvh] overflow-y-auto pb-[max(1.5rem,env(safe-area-inset-bottom))]">
             <div className="flex items-start justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <div>
                 <div className="flex items-baseline gap-3">
@@ -3172,7 +3202,7 @@ export default function VocabularyPage({
       ===================================================================== */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-xl w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-xl w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90dvh] overflow-y-auto pb-[max(1.5rem,env(safe-area-inset-bottom))]">
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <div>
                 <h3 className="text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">

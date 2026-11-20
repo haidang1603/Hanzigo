@@ -421,7 +421,7 @@ export default function HanziStrokeOrderBoard({
 
           {/* Practice Canvas with Tianzige Guide & Watermark */}
           <div className="flex flex-col items-center justify-center py-2">
-            <div className="w-72 h-72 sm:w-80 sm:h-80 rounded-3xl bg-[#0B0F19] border-2 border-white/20 relative flex items-center justify-center shadow-inner overflow-hidden touch-none select-none">
+            <div className="w-72 h-72 sm:w-80 sm:h-80 rounded-3xl bg-[#0B0F19] border-2 border-white/20 relative flex items-center justify-center shadow-inner overflow-hidden touch-none overscroll-contain select-none">
               
               {/* Tianzige grid guide */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
@@ -451,7 +451,7 @@ export default function HanziStrokeOrderBoard({
                 onTouchStart={startDrawing}
                 onTouchMove={draw}
                 onTouchEnd={stopDrawing}
-                className="w-full h-full relative z-10 cursor-crosshair touch-none"
+                className="w-full h-full relative z-10 cursor-crosshair touch-none overscroll-contain"
                 style={{ touchAction: 'none' }}
               />
             </div>

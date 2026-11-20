@@ -974,7 +974,7 @@ export default function LessonPage({
 
                 <div
                   style={{ touchAction: 'none' }}
-                  className="touch-none relative w-[260px] h-[260px] rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border-2 border-[#E85D3F]/40 shadow-inner overflow-hidden select-none"
+                  className="touch-none overscroll-contain relative w-[260px] h-[260px] rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border-2 border-[#E85D3F]/40 shadow-inner overflow-hidden select-none"
                 >
                   <div ref={writerContainerRef} className="relative z-10 w-full h-full" />
                 </div>

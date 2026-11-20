@@ -1570,7 +1570,7 @@ export default function RoadmapPage({
 
       {selectedSupplementaryLesson && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90dvh] overflow-y-auto pb-[max(1.5rem,env(safe-area-inset-bottom))]">
             <div className="flex items-start justify-between gap-3 border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">

@@ -245,11 +245,16 @@ export function classifyCardMaturity(params: {
 function getRadicalBreakdownForWord(hanzi: string) {
   const chars = Array.from(String(hanzi || '').trim());
   for (const ch of chars) {
-    const info = getHanziDecomposition(ch);
+    const info = getHanziDecomposition(ch) as {
+      ids?: string;
+      structureName?: string;
+      components?: RadicalComponentInfo[];
+      mnemonic?: string;
+    } | null;
     if (info) {
       return {
         ids: info.ids,
-        structureName: info.structure?.name,
+        structureName: info.structureName,
         components: Array.isArray(info.components) ? info.components : [],
         mnemonic: info.mnemonic,
       };

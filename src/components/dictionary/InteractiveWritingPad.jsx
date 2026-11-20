@@ -387,7 +387,7 @@ export default function InteractiveWritingPad({
           </div>
 
           {/* Tianzige Quiz Canvas */}
-          <div className="relative w-[280px] h-[280px] rounded-xl overflow-hidden border-2 border-[#E85D3F]/40 shadow-inner bg-[#FFFCF8] dark:bg-[#0F172A] touch-none select-none">
+          <div className="relative w-[280px] h-[280px] rounded-xl overflow-hidden border-2 border-[#E85D3F]/40 shadow-inner bg-[#FFFCF8] dark:bg-[#0F172A] touch-none overscroll-contain select-none">
             {/* Grid Lines */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none stroke-[#E85D3F]/25 stroke-dasharray-[4,4] stroke-1" viewBox="0 0 280 280">
               <line x1="140" y1="0" x2="140" y2="280" />
@@ -399,7 +399,7 @@ export default function InteractiveWritingPad({
             {/* Mount HanziWriter Interactive Quiz */}
             <div
               ref={quizContainerRef}
-              className="w-full h-full flex items-center justify-center cursor-crosshair touch-none select-none"
+              className="w-full h-full flex items-center justify-center cursor-crosshair touch-none overscroll-contain select-none"
               style={{ touchAction: 'none' }}
             />
           </div>
@@ -481,7 +481,7 @@ export default function InteractiveWritingPad({
           </div>
 
           {/* Canvas Box */}
-          <div className="relative w-[280px] h-[280px] rounded-xl overflow-hidden border-2 border-[#E85D3F]/40 shadow-inner bg-[#FFFCF8] dark:bg-[#0F172A] touch-none">
+          <div className="relative w-[280px] h-[280px] rounded-xl overflow-hidden border-2 border-[#E85D3F]/40 shadow-inner bg-[#FFFCF8] dark:bg-[#0F172A] touch-none overscroll-contain">
             {/* Grid SVG */}
             {gridMode === 'mizige' ? (
               <svg className="absolute inset-0 w-full h-full pointer-events-none stroke-[#E85D3F]/25 stroke-dasharray-[4,4] stroke-1" viewBox="0 0 280 280">
@@ -515,7 +515,7 @@ export default function InteractiveWritingPad({
               onPointerMove={draw}
               onPointerUp={stopDrawing}
               onPointerLeave={stopDrawing}
-              className="absolute inset-0 w-full h-full cursor-crosshair touch-none"
+              className="absolute inset-0 w-full h-full cursor-crosshair touch-none overscroll-contain"
               style={{ touchAction: 'none' }}
             />
           </div>

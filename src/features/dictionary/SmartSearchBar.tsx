@@ -203,7 +203,7 @@ export default function SmartSearchBar({
             onChange={(e) => setLocalInput(e.target.value)}
             placeholder="Tra Hán tự, Pinyin (ni3 hao3 / nihao), Hán Việt, nghĩa Việt hoặc dán cả câu..."
             aria-label="Tìm kiếm từ điển tiếng Trung"
-            className="w-full bg-transparent text-sm sm:text-base font-medium text-[#243447] dark:text-white placeholder:text-[#94A3B8] focus:outline-none"
+            className="w-full bg-transparent text-base font-medium text-[#243447] dark:text-white placeholder:text-[#94A3B8] focus:outline-none"
           />
 
           {localInput && (
@@ -352,7 +352,7 @@ export default function SmartSearchBar({
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
-              className="w-[220px] h-[180px] rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-dashed border-[#E85D3F]/50 touch-none cursor-crosshair"
+              className="w-[220px] h-[180px] rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-dashed border-[#E85D3F]/50 touch-none overscroll-contain cursor-crosshair"
             />
             <div className="flex items-center gap-2">
               <button
@@ -420,7 +420,7 @@ export default function SmartSearchBar({
                   e.target.value === 'all' ? 'all' : Number(e.target.value)
                 )
               }
-              className="px-2.5 py-1 rounded-lg bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-xs font-bold"
+              className="px-2.5 py-1 rounded-lg bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-base sm:text-xs font-bold"
             >
               <option value="all">Tất cả số nét</option>
               {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (

@@ -389,7 +389,7 @@ function MainApp() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] transition-colors duration-200">
+    <div className="min-h-[100dvh] flex bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] transition-colors duration-200 overflow-x-clip">
       <SeoHeadManager activeTab={activeTab} routeInfo={routeInfo} />
       
       {/* 1. Desktop Smart Adaptive Collapsible Sidebar */}
@@ -406,7 +406,7 @@ function MainApp() {
       />
 
       {/* 2. Main Layout Column */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      <div className="flex-1 flex flex-col min-w-0 min-h-[100dvh]">
         {/* Sticky Top Header with Breadcrumbs, Global Search, Gamification */}
         <AppHeader
           activeTab={activeTab}

@@ -668,7 +668,7 @@ export default function ProfilePage({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg bg-white dark:bg-[#1E293B] rounded-3xl shadow-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] overflow-hidden max-h-[90vh] flex flex-col"
+            className="w-full max-w-lg bg-white dark:bg-[#1E293B] rounded-3xl shadow-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] overflow-hidden max-h-[90dvh] flex flex-col pb-[env(safe-area-inset-bottom)]"
           >
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-[#E85D3F] to-[#CB4529] p-5 text-white flex items-center justify-between">

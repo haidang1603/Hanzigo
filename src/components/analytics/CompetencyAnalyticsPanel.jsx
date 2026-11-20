@@ -368,7 +368,7 @@ export default function CompetencyAnalyticsPanel({
             </div>
 
             {/* Heatmap Grid (Scrollable horizontally) */}
-            <div className="overflow-x-auto pb-2">
+            <div className="overflow-x-auto max-w-full pb-2">
               <div className="inline-grid grid-rows-7 grid-flow-col gap-1 min-w-[650px]">
                 {(heatmapData?.days || []).map((d) => {
                   let bgClass = 'bg-slate-100 dark:bg-slate-800';

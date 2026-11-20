@@ -409,7 +409,7 @@ export default function LiveHanziWhiteboardStage({
         {/* 340x340 Dual-Layer Interactive Stage */}
         <div className="flex flex-col items-center gap-3">
           <div
-            className="relative rounded-2xl bg-[#FFFDF8] shadow-2xl border-4 border-slate-700/80 overflow-hidden select-none touch-none"
+            className="relative rounded-2xl bg-[#FFFDF8] shadow-2xl border-4 border-slate-700/80 overflow-hidden select-none touch-none overscroll-contain"
             style={{ width: STAGE_SIZE, height: STAGE_SIZE, touchAction: 'none' }}
           >
             {renderGridSvg(boardState.gridType)}

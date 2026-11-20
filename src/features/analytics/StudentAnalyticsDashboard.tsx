@@ -602,10 +602,10 @@ export default function StudentAnalyticsDashboard({
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-w-full">
                 <svg
                   viewBox={`0 0 ${timeSeriesGeometry.width} ${timeSeriesGeometry.height}`}
-                  className="w-full min-w-[400px] h-52"
+                  className="w-full min-w-[320px] sm:min-w-[400px] h-52"
                   role="img"
                   aria-label="Dual-axis CBT Mock Exam and Daily Study Chart"
                 >
