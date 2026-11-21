@@ -338,11 +338,7 @@ export default function VocabularyPage({
     }
   }, [initialView]);
 
-  useEffect(() => {
-    setGridPage(1);
-  }, [selectedHsk, selectedTopic, searchTerm, statusFilter, lengthFilter, corpusPage]);
-
-  // Kho 11.092 từ vựng chuẩn HSK 3.0 cho Flashcards (bật mặc định, tải theo lô 50 từ)
+  // Kho 11.000 từ vựng chuẩn HSK 3.0 cho Flashcards (bật mặc định, tải theo lô 50 từ)
   const [corpusMode, setCorpusMode] = useState(true);
   const [corpusPage, setCorpusPage] = useState(1);
   const [corpusCards, setCorpusCards] = useState([]);
@@ -352,6 +348,10 @@ export default function VocabularyPage({
   );
   const [corpusLoading, setCorpusLoading] = useState(false);
   const [corpusSource, setCorpusSource] = useState('supabase_hsk30_corpus');
+
+  useEffect(() => {
+    setGridPage(1);
+  }, [selectedHsk, selectedTopic, searchTerm, statusFilter, lengthFilter, corpusPage]);
 
   // Kho từ điển mở rộng quy mô lớn (120.000+ từ CC-CEDICT)
   const [dictQuery, setDictQuery] = useState('');
