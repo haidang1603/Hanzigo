@@ -452,7 +452,7 @@ export default function Footer({ setActiveTab, user = null }) {
 
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-[#94A3B8] gap-4 relative z-10">
-          <p>© 2026 HanziGo. Dự án giáo dục phi thương mại dành cho người Việt.</p>
+          <p>© 2026 HanziGo. Nền tảng học tiếng Trung trực tuyến dành cho người Việt.</p>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             {isAdmin && (
               <button 
