@@ -56,6 +56,22 @@ function createMockSupabase({ role = 'student', userId = 'user-1' } = {}) {
         };
       }
 
+      if (table === 'classrooms') {
+        return {
+          select() {
+            return {
+              eq() {
+                return {
+                  async maybeSingle() {
+                    return { data: { id: 'cls-1', teacher_id: 'teacher-1' }, error: null };
+                  },
+                };
+              },
+            };
+          },
+        };
+      }
+
       if (table === 'classroom_hsk_assignments') {
         return {
           insert(row) {

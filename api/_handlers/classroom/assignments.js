@@ -8,7 +8,7 @@
  * - POST (action: 'create_assignment')      -> Teacher/Admin creates assignment & initializes 'assigned' rows
  * - POST (action: 'submit_assignment')      -> Student submits score, wrong_question_numbers & weak_vocab_words
  */
-import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, getSupabaseAdminClient, sendSafeServerError } from '../../_utils/supabaseServer.js';
 
 const ALLOWED_ASSIGNMENT_TYPES = new Set([
   'hsk_mock_exam',
@@ -63,7 +63,7 @@ export default async function assignmentsHandler(req, res) {
         ]);
 
         if (rpcErr) {
-          return res.status(500).json({ error: `Lỗi RPC phân tích bài tập: ${rpcErr.message}` });
+          return sendSafeServerError(res, 'Lỗi RPC phân tích bài tập.', rpcErr);
         }
 
         return res.status(200).json({
@@ -73,7 +73,7 @@ export default async function assignmentsHandler(req, res) {
           submissions: subErr ? [] : (submissionRows || []),
         });
       } catch (err) {
-        return res.status(500).json({ error: err?.message || 'Lỗi máy chủ khi lấy phân tích bài tập.' });
+        return sendSafeServerError(res, 'Lỗi máy chủ khi lấy phân tích bài tập.', err);
       }
     }
 
@@ -89,7 +89,7 @@ export default async function assignmentsHandler(req, res) {
         .order('created_at', { ascending: false });
 
       if (listErr) {
-        return res.status(500).json({ error: `Không thể tải danh sách bài tập: ${listErr.message}` });
+        return sendSafeServerError(res, 'Không thể tải danh sách bài tập.', listErr);
       }
 
       const assignmentList = assignments || [];
@@ -146,7 +146,7 @@ export default async function assignmentsHandler(req, res) {
 
       return res.status(200).json({ success: true, assignments: enriched });
     } catch (err) {
-      return res.status(500).json({ error: err?.message || 'Lỗi máy chủ khi tải bài tập.' });
+      return sendSafeServerError(res, 'Lỗi máy chủ khi tải bài tập.', err);
     }
   }
 
@@ -182,6 +182,19 @@ export default async function assignmentsHandler(req, res) {
       }
 
       try {
+        // Verify teacher ownership of the target classroom (Admin bypasses)
+        if (user.role !== 'admin') {
+          const { data: cls, error: clsErr } = await supabase
+            .from('classrooms')
+            .select('id, teacher_id')
+            .eq('id', classroomId)
+            .maybeSingle();
+
+          if (clsErr || !cls || String(cls.teacher_id) !== String(user.id)) {
+            return res.status(403).json({ error: 'Bạn không có quyền giao bài cho lớp học này.' });
+          }
+        }
+
         const { data: created, error: insertErr } = await supabase
           .from('classroom_hsk_assignments')
           .insert({
@@ -201,7 +214,7 @@ export default async function assignmentsHandler(req, res) {
           .single();
 
         if (insertErr || !created) {
-          return res.status(500).json({ error: `Không thể tạo bài tập: ${insertErr?.message || 'Lỗi không xác định'}` });
+          return sendSafeServerError(res, 'Không thể tạo bài tập.', insertErr);
         }
 
         const { data: members } = await supabase
@@ -228,7 +241,7 @@ export default async function assignmentsHandler(req, res) {
           initialized_students_count: studentIds.length,
         });
       } catch (err) {
-        return res.status(500).json({ error: err?.message || 'Lỗi máy chủ khi giao bài tập.' });
+        return sendSafeServerError(res, 'Lỗi máy chủ khi giao bài tập.', err);
       }
     }
 
@@ -283,12 +296,12 @@ export default async function assignmentsHandler(req, res) {
           .single();
 
         if (subErr) {
-          return res.status(500).json({ error: `Không thể lưu bài nộp: ${subErr.message}` });
+          return sendSafeServerError(res, 'Không thể lưu bài nộp.', subErr);
         }
 
         return res.status(200).json({ success: true, submission: savedSub });
       } catch (err) {
-        return res.status(500).json({ error: err?.message || 'Lỗi máy chủ khi nộp bài.' });
+        return sendSafeServerError(res, 'Lỗi máy chủ khi nộp bài.', err);
       }
     }
 

@@ -274,7 +274,7 @@ test('AI Coach, LearningIntelligenceHub, and DailySmartStudyFlow integrate Smart
 });
 
 test('hsk30FlashcardDeckService integrates 11,092 HSK 3.0 corpus bands & HSK 7-9 flashcards into VocabularyPage', async () => {
-  assert.equal(HSK_30_TOTAL_VOCAB_COUNT, 11092);
+  assert.equal(HSK_30_TOTAL_VOCAB_COUNT, 11000);
 
   const bandSum =
     HSK_30_BANDS['HSK 1'].limit +
@@ -284,7 +284,7 @@ test('hsk30FlashcardDeckService integrates 11,092 HSK 3.0 corpus bands & HSK 7-9
     HSK_30_BANDS['HSK 5'].limit +
     HSK_30_BANDS['HSK 6'].limit +
     HSK_30_BANDS['HSK 7-9'].limit;
-  assert.equal(bandSum, 11092);
+  assert.equal(bandSum, 11000);
 
   const localHsk79 = getLocalHsk79Flashcards();
   assert.ok(localHsk79.length >= 450, `Expected >= 450 HSK 7-9 local cards, got ${localHsk79.length}`);

@@ -42,17 +42,6 @@
     overflow-x: hidden;
   }
 
-  /* Accessibility: Accessible focus indicators (WCAG 2.2 AA) */
-  :focus-visible {
-    outline: 2px solid #E85D3F;
-    outline-offset: 2px;
-  }
-
-  .dark :focus-visible {
-    outline: 2px solid #F4B942;
-    outline-offset: 2px;
-  }
-
   /* Accessibility: Respect Reduced Motion */
   @media (prefers-reduced-motion: reduce) {
     *, ::before, ::after {
@@ -62,6 +51,17 @@
       scroll-behavior: auto !important;
     }
   }
+}
+
+/* Accessibility: High-visibility keyboard focus indicator (WCAG 2.2 AA — wins over focus:outline-none) */
+:focus-visible {
+  outline: 2px solid #E85D3F !important;
+  outline-offset: 2px !important;
+}
+
+.dark :focus-visible {
+  outline: 2px solid #F4B942 !important;
+  outline-offset: 2px !important;
 }
 
 /* Custom Tianzige / Mizige Grid for Chinese Character writing */

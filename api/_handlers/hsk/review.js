@@ -3,7 +3,7 @@
  * POST /api/hsk/review
  */
 import { transitionContentState } from '../../../src/services/hskReviewService.js';
-import { verifyRequestAuth } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, sendSafeServerError } from '../../_utils/supabaseServer.js';
 
 export default async function reviewHandler(req, res) {
   if (req.method !== 'POST') {
@@ -40,6 +40,6 @@ export default async function reviewHandler(req, res) {
     return res.status(200).json(result);
   } catch (err) {
     console.error('[HSK Review Error]:', err);
-    return res.status(500).json({ error: 'Lỗi máy chủ nội bộ khi duyệt nội dung HSK.', message: err?.message });
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ khi duyệt nội dung HSK.', err);
   }
 }

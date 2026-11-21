@@ -1,33 +1,28 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Sparkles, 
-  ArrowRight, 
-  CheckCircle2, 
-  BookOpen, 
-  Mic, 
-  PenTool, 
-  Trophy, 
-  Clock, 
+import {
+  Sparkles,
+  ArrowRight,
+  BookOpen,
+  Mic,
+  PenTool,
+  Trophy,
+  Clock,
   Flame,
   Layers,
-  ChevronRight,
   ChevronDown,
   Volume2,
   HelpCircle,
   FolderDown,
-  Users,
   Zap,
   Check,
   UserPlus,
   GraduationCap,
   Compass,
-  Star,
-  Target,
-  Award
+  MessageCircle,
+  LogIn,
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { playClickSound, playSuccessSound, playErrorSound, speakChinese } from '../utils/audio';
-import { ROADMAP_LEVELS } from '../data/chineseData';
 import { getLessonsByChapter } from '../services/learningPathService';
 import useAiPersonalization from '../hooks/useAiPersonalization.js';
 import PersonalizedRecommendationCard from '../components/personalization/PersonalizedRecommendationCard.jsx';
@@ -40,43 +35,44 @@ const QUICK_PRACTICE = [
     pinyin: 'nǐ hǎo',
     options: ['Xin chào', 'Cảm ơn', 'Tạm biệt'],
     correctIndex: 0,
-    explanation: '你好 (nǐ hǎo): Lời chào thông dụng nhất trong tiếng Trung. Hán-Việt: "Nhĩ Hảo" (Chúc bạn luôn an lành).'
+    explanation:
+      '你好 (nǐ hǎo): Lời chào thông dụng nhất trong tiếng Trung. Hán-Việt: "Nhĩ Hảo" (Chúc bạn luôn an lành).',
   },
   {
     hanzi: '谢谢',
     pinyin: 'xièxie',
     options: ['Xin lỗi', 'Cảm ơn', 'Không có chi'],
     correctIndex: 1,
-    explanation: '谢谢 (xièxie): Thể hiện sự cảm kích và cảm ơn chân thành. Hán-Việt: "Tạ Tạ".'
+    explanation: '谢谢 (xièxie): Thể hiện sự cảm kích và cảm ơn chân thành. Hán-Việt: "Tạ Tạ".',
   },
   {
     hanzi: '再见',
     pinyin: 'zàijiàn',
     options: ['Hẹn gặp lại', 'Chúc ngủ ngon', 'Chào buổi sáng'],
     correctIndex: 0,
-    explanation: '再见 (zàijiàn): Hẹn gặp lại. 再 (lại) + 见 (gặp mặt). Hán-Việt: "Tái Kiến".'
+    explanation: '再见 (zàijiàn): Hẹn gặp lại. 再 (lại) + 见 (gặp mặt). Hán-Việt: "Tái Kiến".',
   },
   {
     hanzi: '学习',
     pinyin: 'xuéxí',
     options: ['Nghỉ ngơi', 'Làm việc', 'Học tập'],
     correctIndex: 2,
-    explanation: '学习 (xuéxí): Học hỏi và rèn luyện kiến thức. Đồng âm Hán-Việt: "Học Tập".'
+    explanation: '学习 (xuéxí): Học hỏi và rèn luyện kiến thức. Đồng âm Hán-Việt: "Học Tập".',
   },
   {
     hanzi: '朋友',
     pinyin: 'péngyou',
     options: ['Bạn bè', 'Thầy cô', 'Bố mẹ'],
     correctIndex: 0,
-    explanation: '朋友 (péngyou): Bạn bè, bằng hữu tri kỷ. Hán-Việt: "Bằng Hữu".'
+    explanation: '朋友 (péngyou): Bạn bè, bằng hữu tri kỷ. Hán-Việt: "Bằng Hữu".',
   },
   {
     hanzi: '高兴',
     pinyin: 'gāoxìng',
     options: ['Buồn bã', 'Vui mừng, phấn khởi', 'Mệt mỏi'],
     correctIndex: 1,
-    explanation: '高兴 (gāoxìng): Tâm trạng phấn khởi, hân hoan. Hán-Việt: "Cao Hứng".'
-  }
+    explanation: '高兴 (gāoxìng): Tâm trạng phấn khởi, hân hoan. Hán-Việt: "Cao Hứng".',
+  },
 ];
 
 // Sino-Vietnamese Bridge Word Dataset
@@ -86,7 +82,7 @@ const SINO_VIETNAMESE_WORDS = [
   { hanzi: '国家', pinyin: 'guójiā', hanViet: 'Quốc Gia', meaning: 'Đất nước, tổ quốc' },
   { hanzi: '准备', pinyin: 'zhǔnbèi', hanViet: 'Chuẩn Bị', meaning: 'Sẵn sàng chu đáo trước' },
   { hanzi: '态度', pinyin: 'tàidu', hanViet: 'Thái Độ', meaning: 'Cách ứng xử, tinh thần đón nhận' },
-  { hanzi: '经济', pinyin: 'jīngjì', hanViet: 'Kinh Tế', meaning: 'Tài chính, thương mại mậu dịch' }
+  { hanzi: '经济', pinyin: 'jīngjì', hanViet: 'Kinh Tế', meaning: 'Tài chính, thương mại mậu dịch' },
 ];
 
 // Showcase Tabs Data
@@ -98,7 +94,7 @@ const SHOWCASE_ITEMS = {
       hanViet: 'Học Tập',
       meaning: 'Học hỏi, tiếp thu tri thức mới',
       tag: 'HSK 1',
-      color: '#E85D3F'
+      color: '#E85D3F',
     },
     {
       hanzi: '你好',
@@ -106,7 +102,7 @@ const SHOWCASE_ITEMS = {
       hanViet: 'Nhĩ Hảo',
       meaning: 'Xin chào, lời chúc tốt lành',
       tag: 'Nhập môn',
-      color: '#F4B942'
+      color: '#F4B942',
     },
     {
       hanzi: '进步',
@@ -114,8 +110,8 @@ const SHOWCASE_ITEMS = {
       hanViet: 'Tiến Bộ',
       meaning: 'Phát triển, vươn lên mỗi ngày',
       tag: 'HSK 2',
-      color: '#45B97C'
-    }
+      color: '#45B97C',
+    },
   ],
   phrases: [
     {
@@ -124,7 +120,7 @@ const SHOWCASE_ITEMS = {
       hanViet: 'Hấn cao hứng nhận thức nhĩ',
       meaning: 'Rất vui được làm quen với bạn',
       tag: 'Giao tiếp',
-      color: '#3B82F6'
+      color: '#3B82F6',
     },
     {
       hanzi: '这个多少钱？',
@@ -132,7 +128,7 @@ const SHOWCASE_ITEMS = {
       hanViet: 'Giá cá đa thiếu tiền?',
       meaning: 'Cái này bao nhiêu tiền vậy?',
       tag: 'Mua sắm',
-      color: '#E85D3F'
+      color: '#E85D3F',
     },
     {
       hanzi: '明天见！',
@@ -140,8 +136,8 @@ const SHOWCASE_ITEMS = {
       hanViet: 'Minh thiên kiến!',
       meaning: 'Ngày mai gặp lại nhé!',
       tag: 'Tạm biệt',
-      color: '#8B5CF6'
-    }
+      color: '#8B5CF6',
+    },
   ],
   radicals: [
     {
@@ -150,7 +146,7 @@ const SHOWCASE_ITEMS = {
       hanViet: 'Hưu (Nghỉ ngơi)',
       meaning: 'Người (亻) tựa vào Cây (木) để dừng chân nghỉ',
       tag: 'Chiết tự',
-      color: '#45B97C'
+      color: '#45B97C',
     },
     {
       hanzi: '明',
@@ -158,7 +154,7 @@ const SHOWCASE_ITEMS = {
       hanViet: 'Minh (Sáng tỏ)',
       meaning: 'Mặt trời (日) kết hợp Mặt trăng (月) tỏa sáng',
       tag: 'Chiết tự',
-      color: '#F4B942'
+      color: '#F4B942',
     },
     {
       hanzi: '好',
@@ -166,54 +162,116 @@ const SHOWCASE_ITEMS = {
       hanViet: 'Hảo (Tốt đẹp)',
       meaning: 'Người phụ nữ (女) bồng người con (子) là trọn vẹn',
       tag: 'Chiết tự',
-      color: '#E85D3F'
-    }
-  ]
+      color: '#E85D3F',
+    },
+  ],
 };
 
 // FAQ List
 const FAQS = [
   {
     q: 'Người chưa biết gì về tiếng Trung có học được trên HanziGo không?',
-    a: 'Hoàn toàn học được! HanziGo thiết kế lộ trình Nhập môn dành riêng cho người mới bắt đầu từ con số 0: từ cách đặt khẩu hình phát âm chuẩn Pinyin, quy tắc 4 thanh điệu, đến 8 nét viết cơ bản và mẹo ghép vần cực dễ hiểu.'
+    a: 'Hoàn toàn học được! HanziGo thiết kế lộ trình Nhập môn dành riêng cho người mới bắt đầu từ con số 0: từ cách đặt khẩu hình phát âm chuẩn Pinyin, quy tắc 4 thanh điệu, đến 8 nét viết cơ bản và mẹo ghép vần cực dễ hiểu.',
   },
   {
     q: 'Tại sao phương pháp Hán-Việt lại giúp người Việt học tiếng Trung hiệu quả hơn?',
-    a: 'Rất nhiều từ vựng tiếng Việt bắt nguồn từ gốc Hán (từ Hán-Việt). Nhờ sự tương đồng về âm và nghĩa này, người Việt khi học tiếng Trung có thể nắm quy luật chuyển âm để liên tưởng và ghi nhớ từ vựng tự nhiên hơn.'
+    a: 'Rất nhiều từ vựng tiếng Việt bắt nguồn từ gốc Hán (từ Hán-Việt). Nhờ sự tương đồng về âm và nghĩa này, người Việt khi học tiếng Trung có thể nắm quy luật chuyển âm để liên tưởng và ghi nhớ từ vựng tự nhiên hơn.',
   },
   {
     q: 'Tôi có thể luyện phát âm và viết chữ Hán trên máy tính hoặc điện thoại không?',
-    a: 'Có! HanziGo trang bị công nghệ nhận diện giọng nói AI Web Speech để chẩn đoán ngữ điệu, đồng thời cung cấp bảng vẽ Mễ Tự Cách (米字格) tương tác trực tiếp bằng ngón tay hoặc chuột cảm ứng.'
+    a: 'Có! HanziGo trang bị công nghệ nhận diện giọng nói AI Web Speech để chẩn đoán ngữ điệu, đồng thời cung cấp bảng vẽ Mễ Tự Cách (米字格) tương tác trực tiếp bằng ngón tay hoặc chuột cảm ứng.',
   },
   {
     q: 'Các bài học và tài liệu in ấn trên trang web có miễn phí không?',
-    a: 'Tất cả các bài học cơ bản, flashcard từ vựng, hệ thống tra cứu chiết tự, phòng luyện viết chữ Hán và kho tài liệu PDF A4 (Mẫu ô mễ tự, bảng 214 bộ thủ, đề thi HSK) đều được cung cấp hoàn toàn miễn phí.'
+    a: 'Tất cả các bài học cơ bản, flashcard từ vựng, hệ thống tra cứu chiết tự, phòng luyện viết chữ Hán và kho tài liệu PDF A4 (Mẫu ô mễ tự, bảng 214 bộ thủ, đề thi HSK) đều được cung cấp hoàn toàn miễn phí.',
   },
   {
     q: 'Lộ trình học tại HanziGo bám sát chuẩn HSK nào?',
-    a: 'Nội dung bài học, ngân hàng đề thi thử và hệ thống từ vựng trên HanziGo được đối sánh trực tiếp với khung chuẩn HSK 3.0 mới nhất của CTI Trung Quốc, đảm bảo học sát thực tế và thi đạt kết quả cao.'
-  }
+    a: 'Nội dung bài học, ngân hàng đề thi thử và hệ thống từ vựng trên HanziGo được đối sánh trực tiếp với khung chuẩn HSK 3.0 (180 bài HSK 1–9 & 11.092 từ vựng), đảm bảo học sát thực tế và thi đạt kết quả cao.',
+  },
 ];
 
-export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openAuthModal, onSelectLesson }) {
-  // AI Personalization hook
+const HERO_HIGHLIGHTS = [
+  { value: '180 bài', label: 'Lộ trình HSK 1–9' },
+  { value: '11.092 từ', label: 'Flashcard SRS SM-2' },
+  { value: 'CBT Chuẩn', label: 'Thi thử HSK 3.0' },
+  { value: 'Miễn phí', label: 'Học thử không cần thẻ' },
+];
+
+const CORE_ECOSYSTEM_SHORTCUTS = [
+  {
+    id: 'roadmap',
+    label: 'Lộ trình 180 bài',
+    sub: 'HSK 1–9 chuẩn CTI',
+    icon: Compass,
+    iconBg: 'bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F]',
+  },
+  {
+    id: 'vocabulary',
+    label: 'Flashcard & SRS',
+    sub: '11.092 từ SM-2',
+    icon: Layers,
+    iconBg: 'bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706]',
+  },
+  {
+    id: 'pronunciation',
+    label: 'AI Phát âm',
+    sub: 'Chấm 4 thanh điệu',
+    icon: Mic,
+    iconBg: 'bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C]',
+  },
+  {
+    id: 'writing',
+    label: 'Tập viết Mễ tự',
+    sub: 'Thứ tự nét & in A4',
+    icon: PenTool,
+    iconBg: 'bg-blue-50 dark:bg-blue-950/40 text-[#3B82F6]',
+  },
+  {
+    id: 'hsk',
+    label: 'Phòng thi CBT',
+    sub: 'Mô phỏng thi thật',
+    icon: GraduationCap,
+    iconBg: 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400',
+  },
+  {
+    id: 'materials',
+    label: 'Học liệu & Lớp học',
+    sub: 'PDF, MP3 & Lớp trực tuyến',
+    icon: FolderDown,
+    iconBg: 'bg-orange-50 dark:bg-orange-950/40 text-[#EA580C]',
+  },
+];
+
+export default function HomePage({
+  user,
+  streak = 0,
+  xp = 0,
+  setActiveTab,
+  openAuthModal,
+  onSelectLesson,
+}) {
   const { studyPlan, learnerContext } = useAiPersonalization(user);
 
-  // Showcase Tab State
+  // Tier 1 Showcase tab
   const [showcaseTab, setShowcaseTab] = useState('vocab');
+  // Tier 2 Interactive sandbox tab ('quiz' | 'hanviet')
+  const [tryTab, setTryTab] = useState('quiz');
+  // Tier 3 Progressive disclosure tab ('lessons' | 'faq' | 'explore')
+  const [exploreTab, setExploreTab] = useState('lessons');
 
   // Mini Practice Interactive State
   const [practiceIndex, setPracticeIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [practiceScore, setPracticeScore] = useState(0);
 
+  // Selected Sino-Vietnamese word
+  const [activeSinoWord, setActiveSinoWord] = useState(SINO_VIETNAMESE_WORDS[0]);
+
   // FAQ Expand State
   const [expandedFaqIndex, setExpandedFaqIndex] = useState(0);
 
-  // Selected Sino-Vietnamese word for live preview
-  const [activeSinoWord, setActiveSinoWord] = useState(SINO_VIETNAMESE_WORDS[0]);
-
-  // Handle Quick Practice Answer
+  const starterLessons = useMemo(() => getLessonsByChapter('ch-1') || [], []);
   const currentPractice = QUICK_PRACTICE[practiceIndex];
 
   const handleSelectPracticeOption = (optIndex) => {
@@ -221,7 +279,7 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
     setSelectedAnswer(optIndex);
     if (optIndex === currentPractice.correctIndex) {
       playSuccessSound();
-      setPracticeScore(prev => prev + 10);
+      setPracticeScore((prev) => prev + 10);
     } else {
       playErrorSound();
     }
@@ -243,377 +301,614 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
   };
 
   return (
-    <div className="space-y-16 sm:space-y-24 pb-20 animate-in fade-in duration-300">
-      
-      {/* 1. HERO SECTION */}
-      <section className="relative overflow-hidden pt-6 pb-12 sm:pt-14 sm:pb-20">
-        {/* Ambient background glows */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[720px] bg-gradient-to-tr from-[#E85D3F]/15 via-[#F4B942]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -top-20 -right-20 w-96 h-96 bg-[#45B97C]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-10 w-80 h-80 bg-[#3B82F6]/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-            
-            {/* Left Content */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              
-              {/* User Greeting Bar if logged in, or Badge if guest */}
-              {user ? (
-                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
-                  <span className="flex h-3 w-3 rounded-full bg-[#45B97C] animate-pulse" />
-                  <span className="text-xs font-bold text-[#243447] dark:text-white">
-                    Chào mừng trở lại, <span className="text-[#E85D3F]">{user.name || 'Học viên'}</span>!
-                  </span>
-                  <span className="text-xs font-semibold text-[#D97706] flex items-center gap-1">
-                    <Flame size={14} className="fill-[#F4B942] text-[#F4B942]" />
-                    {streak || user.streak || 0} ngày streak
-                  </span>
-                  <span className="text-xs text-[#748092] dark:text-[#94A3B8]">•</span>
-                  <span className="text-xs font-semibold text-[#E85D3F] flex items-center gap-1">
-                    <Sparkles size={14} />
-                    {xp || user.xp || 0} XP
-                  </span>
-                </div>
-              ) : (
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border border-[#E85D3F]/30 text-[#E85D3F] text-xs font-bold shadow-sm">
-                  <span className="flex h-2 w-2 rounded-full bg-[#E85D3F] animate-ping" />
-                  <span>🏮 Nền tảng học tiếng Trung trực tuyến tối ưu cho người Việt</span>
-                </div>
-              )}
-
-              {/* Main Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#243447] dark:text-white leading-[1.15]">
-                Chinh phục tiếng Trung <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E85D3F] via-[#F4B942] to-[#E85D3F]">
-                  dễ hơn, nhớ lâu hơn
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-8 sm:space-y-10 pb-16 animate-in fade-in duration-300">
+      {/* =====================================================================
+          TẦNG 1: HERO HÀNH ĐỘNG NGAY (ABOVE THE FOLD — 7:5 DESKTOP, 1 COL MOBILE)
+      ===================================================================== */}
+      <section
+        aria-label="Giới thiệu HanziGo và trải nghiệm nghe phát âm"
+        className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white via-[#FFF9F2] to-white dark:from-[#1E293B] dark:via-[#131B24] dark:to-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] p-3.5 sm:p-8 shadow-sm"
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-center relative z-10">
+          {/* Left 7 cols: Value Prop + Action-First CTA + 4 Compact Highlights */}
+          <div className="lg:col-span-7 space-y-3 sm:space-y-5 text-center lg:text-left">
+            {user ? (
+              <div className="inline-flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xs text-xs">
+                <span className="flex h-2.5 w-2.5 rounded-full bg-[#45B97C] animate-pulse" />
+                <span className="font-bold text-[#243447] dark:text-white">
+                  Chào mừng trở lại, <span className="text-[#E85D3F]">{user.name || 'Học viên'}</span>!
                 </span>
-              </h1>
-
-              {/* Subtitle */}
-              <p className="text-base sm:text-lg text-[#748092] dark:text-[#94A3B8] font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Phương pháp liên tưởng <strong className="text-[#243447] dark:text-white">gốc Hán-Việt</strong>, hiểu sâu bản chất chiết tự, luyện phát âm cùng AI và ôn tập ngắt quãng chống quên.
-                <span className="block mt-1 font-semibold text-[#E85D3F]">
-                  “Chỉ 15 phút mỗi ngày – Từng bước xây dựng phản xạ và làm chủ ngữ âm tiếng Trung.”
+                <span className="font-semibold text-[#D97706] flex items-center gap-1">
+                  <Flame size={13} className="fill-[#F4B942] text-[#F4B942]" />
+                  {streak || user.streak || 0} ngày
                 </span>
-              </p>
-
-              {/* CTA Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
-                {user ? (
-                  <>
-                    <button
-                      onClick={() => {
-                        playClickSound();
-                        setActiveTab('dashboard');
-                      }}
-                      className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-base shadow-lg shadow-[#E85D3F]/30 hover:shadow-xl hover:shadow-[#E85D3F]/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group cursor-pointer"
-                    >
-                      <Trophy size={18} />
-                      <span>Xem Bảng điều khiển</span>
-                      <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                    </button>
-                    <button
-                      onClick={handleStartLearning}
-                      className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold text-base hover:bg-[#FFF9F2] dark:hover:bg-[#131B24] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-                    >
-                      <BookOpen size={18} className="text-[#F4B942]" />
-                      <span>Tiếp tục học lộ trình</span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={handleStartLearning}
-                      className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-base shadow-lg shadow-[#E85D3F]/30 hover:shadow-xl hover:shadow-[#E85D3F]/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group cursor-pointer"
-                    >
-                      <Sparkles size={18} />
-                      <span>Bắt đầu học miễn phí</span>
-                      <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                    </button>
-                    <button
-                      onClick={() => openAuthModal && openAuthModal('login')}
-                      className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold text-base hover:bg-[#FFF9F2] dark:hover:bg-[#131B24] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-                    >
-                      <span>Đăng nhập tài khoản</span>
-                    </button>
-                  </>
-                )}
+                <span className="font-semibold text-[#E85D3F] flex items-center gap-1">
+                  <Sparkles size={13} />
+                  {xp || user.xp || 0} XP
+                </span>
               </div>
+            ) : (
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] border border-[#E85D3F]/30 text-[#E85D3F] text-[11px] sm:text-xs font-bold">
+                <span className="flex h-2 w-2 rounded-full bg-[#E85D3F] animate-ping" />
+                <span>🏮 Học tiếng Trung HSK 1–9 chuẩn HSK 3.0 cho người Việt</span>
+              </div>
+            )}
 
-              {/* Trust proof */}
-              <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-5 text-xs text-[#748092] dark:text-[#94A3B8]">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-[#45B97C]" />
-                  <span>Bám sát khung chuẩn HSK</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-[#45B97C]" />
-                  <span>Ngữ âm chuẩn phổ thông</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-[#45B97C]" />
-                  <span>Thuật toán SM-2 chống quên</span>
-                </div>
-                <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#243447] dark:text-white leading-[1.15]">
+              Chinh phục tiếng Trung{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E85D3F] via-[#F4B942] to-[#E85D3F]">
+                dễ hơn, nhớ lâu hơn
+              </span>
+            </h1>
+
+            <p className="text-xs sm:text-base text-[#748092] dark:text-[#94A3B8] font-medium leading-relaxed max-w-xl mx-auto lg:mx-0 line-clamp-2 sm:line-clamp-none">
+              Liên tưởng <strong className="text-[#243447] dark:text-white">gốc Hán-Việt</strong>, chiết tự trực quan, luyện phát âm AI và ôn tập SRS SM-2 — chỉ 15 phút mỗi ngày.
+            </p>
+
+            {/* Primary & Secondary CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-2 sm:gap-3">
+              {user ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setActiveTab('dashboard');
+                    }}
+                    className="min-h-[46px] px-6 py-3 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-sm shadow-lg shadow-[#E85D3F]/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <Trophy size={17} />
+                    <span>Vào Bảng điều khiển</span>
+                    <ArrowRight size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setActiveTab('roadmap');
+                    }}
+                    className="min-h-[46px] px-5 py-3 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold text-sm hover:border-[#E85D3F] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <BookOpen size={16} className="text-[#E85D3F]" />
+                    <span>Tiếp tục Lộ trình</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleStartLearning}
+                    className="min-h-[46px] px-6 py-3 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-sm shadow-lg shadow-[#E85D3F]/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <Sparkles size={17} />
+                    <span>Bắt đầu học miễn phí</span>
+                    <ArrowRight size={16} />
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
                       playClickSound();
                       setActiveTab('hsk');
                     }}
-                    className="inline-flex items-center gap-1.5 text-xs font-black text-[#E85D3F] hover:underline cursor-pointer"
+                    className="min-h-[46px] px-5 py-3 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold text-sm hover:border-[#E85D3F] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
-                    <span>🏆 Thi thử HSK miễn phí (Không cần tài khoản) &rarr;</span>
+                    <GraduationCap size={16} className="text-[#E85D3F]" />
+                    <span>Thi thử HSK miễn phí</span>
                   </button>
-                </div>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => openAuthModal && openAuthModal('login')}
+                    className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold text-[#748092] dark:text-[#94A3B8] hover:text-[#E85D3F] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <LogIn size={14} />
+                    <span>Đăng nhập</span>
+                  </button>
+                </>
+              )}
             </div>
 
-            {/* Right Interactive Visual Showcase */}
-            <div className="lg:col-span-5 relative pt-4 pb-2">
-              <div className="relative mx-auto max-w-md lg:max-w-none">
-                
-                {/* Floating Achievement badge */}
-                <div className="absolute -top-4 -left-3 sm:-left-5 z-20 bg-white/95 dark:bg-[#1E293B]/95 backdrop-blur-md py-2 px-3.5 rounded-2xl shadow-xl border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#FEF7E9] to-[#FDE8BF] dark:from-[#2D2619] dark:to-[#382E19] flex items-center justify-center text-base shadow-xs">
-                    ⚡
-                  </div>
-                  <div>
-                    <p className="text-xs font-black text-[#243447] dark:text-white leading-tight">Lộ trình HSK 1 – HSK 4</p>
-                    <p className="text-[10px] text-[#45B97C] font-bold">60 bài học có kiểm chứng</p>
-                  </div>
+            {/* 4 Compact Value Highlights (2x2 on mobile, 4 cols on sm+) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 pt-0.5 sm:pt-1">
+              {HERO_HIGHLIGHTS.map((stat) => (
+                <div
+                  key={stat.value}
+                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-[#0F172A]/70 border border-[#F1E5D8] dark:border-[#2B3A4F] text-left"
+                >
+                  <p className="text-sm sm:text-base font-black text-[#E85D3F] leading-tight">
+                    {stat.value}
+                  </p>
+                  <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8] mt-0.5 truncate">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right 5 cols: Interactive Audio & Decomposition Showcase Card */}
+          <div className="lg:col-span-5">
+            <div className="rounded-3xl p-4 sm:p-5 bg-white dark:bg-[#1B2636] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-md space-y-3.5">
+              {/* Showcase Tabs */}
+              <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#F1E5D8] dark:border-[#2B3A4F]">
+                <div className="flex items-center gap-1 p-1 bg-[#FFF9F2] dark:bg-[#131B24] rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] overflow-x-auto scrollbar-none">
+                  {[
+                    { id: 'vocab', label: 'Từ vựng' },
+                    { id: 'phrases', label: 'Mẫu câu' },
+                    { id: 'radicals', label: 'Chiết tự' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setShowcaseTab(tab.id);
+                      }}
+                      className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                        showcaseTab === tab.id
+                          ? 'bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-xs'
+                          : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Decorative card wrapper */}
-                <div className="rounded-3xl p-6 sm:p-7 bg-white/95 dark:bg-[#1B2636]/95 backdrop-blur-sm border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl relative transition-all">
-                  
-                  {/* Category Filter Tabs */}
-                  <div className="flex items-center justify-between pb-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F] mb-4.5 pt-2">
-                    <div className="flex items-center gap-1.5 p-1 bg-[#FFF9F2] dark:bg-[#131B24] rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                      <button
-                        onClick={() => {
-                          playClickSound();
-                          setShowcaseTab('vocab');
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          showcaseTab === 'vocab'
-                            ? 'bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-sm'
-                            : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
-                        }`}
-                      >
-                        Từ vựng
-                      </button>
-                      <button
-                        onClick={() => {
-                          playClickSound();
-                          setShowcaseTab('phrases');
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          showcaseTab === 'phrases'
-                            ? 'bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-sm'
-                            : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
-                        }`}
-                      >
-                        Mẫu câu
-                      </button>
-                      <button
-                        onClick={() => {
-                          playClickSound();
-                          setShowcaseTab('radicals');
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          showcaseTab === 'radicals'
-                            ? 'bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-sm'
-                            : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
-                        }`}
-                      >
-                        Chiết tự
-                      </button>
-                    </div>
+                <span className="hidden sm:inline-flex text-[11px] font-bold text-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] px-2.5 py-1 rounded-full items-center gap-1 shrink-0">
+                  <Sparkles size={11} />
+                  <span>Nghe chuẩn</span>
+                </span>
+              </div>
 
-                    <span className="text-[11px] font-bold text-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-[#45B97C]/20 shadow-xs">
-                      <Sparkles size={12} />
-                      <span>Trực quan</span>
-                    </span>
-                  </div>
-
-                  {/* Dynamic Showcase Items */}
-                  <div className="space-y-3">
-                    {SHOWCASE_ITEMS[showcaseTab].map((item, idx) => (
-                      <div 
-                        key={idx}
-                        className="p-3 sm:p-3.5 rounded-2xl bg-[#FFFDF9] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between group hover:border-[#E85D3F]/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+              {/* Showcase Items */}
+              <div className="space-y-2.5">
+                {SHOWCASE_ITEMS[showcaseTab].map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 rounded-2xl bg-[#FFFDF9] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2 hover:border-[#E85D3F]/60 transition-all"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div
+                        className="w-11 h-11 rounded-xl bg-white dark:bg-[#1E293B] shadow-2xs flex items-center justify-center font-['Noto_Serif_SC'] text-base sm:text-lg font-black border border-[#F1E5D8] dark:border-[#2B3A4F] shrink-0"
+                        style={{ color: item.color }}
                       >
-                        {showcaseTab === 'phrases' ? (
-                          <div className="flex items-center gap-3 sm:gap-3.5 flex-1 min-w-0 pr-2">
-                            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-[#FEF7E9] to-[#FDE8BF] dark:from-[#2D2619] dark:to-[#382E19] flex items-center justify-center text-lg shrink-0 border border-[#F4B942]/30 shadow-xs">
-                              💬
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span 
-                                  className="font-['Noto_Serif_SC'] text-base sm:text-lg font-black tracking-wide"
-                                  style={{ color: item.color }}
-                                >
-                                  {item.hanzi}
-                                </span>
-                                {item.tag && (
-                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#FFF5F2] dark:bg-[#2C1D1A] text-[#E85D3F] font-bold border border-[#E85D3F]/20">
-                                    {item.tag}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                                <span className="text-xs font-bold text-[#243447] dark:text-[#E2E8F0]">{item.pinyin}</span>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] font-semibold">
-                                  {item.hanViet}
-                                </span>
-                              </div>
-                              <p className="text-[11px] sm:text-xs text-[#748092] dark:text-[#94A3B8] font-medium truncate mt-0.5">
-                                {item.meaning}
-                              </p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3 sm:gap-3.5 flex-1 min-w-0 pr-2">
-                            <div 
-                              className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-white dark:bg-[#1E293B] shadow-sm flex items-center justify-center font-['Noto_Serif_SC'] text-lg sm:text-xl font-black border border-[#F1E5D8] dark:border-[#2B3A4F] shrink-0 group-hover:scale-105 transition-transform"
+                        {showcaseTab === 'phrases' ? '💬' : item.hanzi}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {showcaseTab === 'phrases' && (
+                            <span
+                              className="font-['Noto_Serif_SC'] text-sm font-black"
                               style={{ color: item.color }}
                             >
                               {item.hanzi}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs sm:text-sm font-black text-[#243447] dark:text-white tracking-wide">{item.pinyin}</span>
-                                <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] font-bold border border-[#F4B942]/30">
-                                  {item.hanViet}
-                                </span>
-                                {item.tag && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] font-medium border border-[#F1E5D8]/80 dark:border-[#2B3A4F]">
-                                    {item.tag}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[11px] sm:text-xs text-[#748092] dark:text-[#94A3B8] font-medium truncate mt-1">
-                                {item.meaning}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="shrink-0 pl-1">
-                          <AudioButton text={item.hanzi} size="md" />
+                            </span>
+                          )}
+                          <span className="text-xs font-black text-[#243447] dark:text-white">
+                            {item.pinyin}
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] font-bold">
+                            {item.hanViet}
+                          </span>
                         </div>
+                        <p className="text-[11px] text-[#748092] dark:text-[#94A3B8] truncate mt-0.5">
+                          {item.meaning}
+                        </p>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Interactive Button at Bottom */}
-                  <div className="mt-5 pt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="relative flex h-2.5 w-2.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#45B97C] opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#45B97C]"></span>
-                      </span>
-                      <span className="text-xs text-[#748092] dark:text-[#94A3B8] font-medium">
-                        Bấm loa để nghe phát âm chuẩn
-                      </span>
                     </div>
-                    <button
-                      onClick={() => {
-                        playClickSound();
-                        setActiveTab(showcaseTab === 'vocab' ? 'vocabulary' : showcaseTab === 'phrases' ? 'conversation' : 'writing');
-                      }}
-                      className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white text-xs font-bold transition-all shadow-md shadow-[#E85D3F]/25 hover:shadow-lg hover:shadow-[#E85D3F]/35 flex items-center gap-1.5 group cursor-pointer"
-                    >
-                      <span>Luyện tập ngay</span>
-                      <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-                    </button>
+
+                    <AudioButton text={item.hanzi} size="sm" />
                   </div>
+                ))}
+              </div>
 
-                </div>
-
+              <div className="pt-2.5 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2">
+                <span className="text-[11px] text-[#748092] dark:text-[#94A3B8] font-medium">
+                  Bấm loa để nghe phát âm chuẩn
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound();
+                    setActiveTab(
+                      showcaseTab === 'vocab'
+                        ? 'vocabulary'
+                        : showcaseTab === 'phrases'
+                        ? 'conversation'
+                        : 'writing'
+                    );
+                  }}
+                  className="min-h-[44px] sm:min-h-[36px] px-3.5 py-1.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                >
+                  <span>Thử ngay</span>
+                  <ArrowRight size={13} />
+                </button>
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* 2. PERSONALIZED RECOMMENDATION SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-white via-orange-50/30 to-amber-50/20 dark:from-[#1E293B] dark:via-[#1A232E] dark:to-[#131B24] border border-orange-200/80 dark:border-gray-800 shadow-xl relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-orange-100 dark:border-gray-800">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#E85D3F]/10 flex items-center justify-center text-[#E85D3F]">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white">
-                    Gợi ý Học tập Cá nhân hóa Hôm nay
-                  </h3>
-                  <AiContextBadge type={studyPlan?.isOffline ? 'offline_rule' : 'ai_pedagogy'} size="xs" />
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {learnerContext.hasSparseData 
-                    ? 'Chế độ khởi đầu thông minh cho người học mới' 
-                    : `Tối ưu cho mục tiêu: ${learnerContext.learningGoal === 'hsk_exam' ? 'Luyện thi HSK' : learnerContext.learningGoal === 'daily_communication' ? 'Giao tiếp hàng ngày' : 'Nền tảng HSK 3.0'} (${learnerContext.hskLevel})`}
-                </p>
-              </div>
+      {/* =====================================================================
+          TẦNG 2: TRẢI NGHIỆM 1 PHÚT & 6 CÔNG CỤ CỐT LÕI (7:5 DESKTOP)
+      ===================================================================== */}
+      <section
+        aria-label="Trải nghiệm tương tác nhanh và 6 công cụ cốt lõi"
+        className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start"
+      >
+        {/* Left 7 cols: Unified 1-Minute Interactive Sandbox (Quiz + Han-Viet) */}
+        <div className="lg:col-span-7 p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#F1E5D8] dark:border-[#2B3A4F]">
+            <div>
+              <h2 className="text-base sm:text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
+                <Zap size={17} className="text-[#E85D3F]" />
+                <span>Trải nghiệm ngay trong 1 phút</span>
+              </h2>
+              <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
+                Thử phản xạ chữ Hán hoặc khám phá quy luật chuyển âm Hán-Việt không cần đăng ký.
+              </p>
             </div>
-            {studyPlan?.durationMinutes && (
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/50 text-[#E85D3F] shrink-0 self-start sm:self-auto">
-                Mục tiêu: {studyPlan.durationMinutes} phút/ngày
-              </span>
-            )}
+
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setTryTab('quiz');
+                }}
+                className={`min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  tryTab === 'quiz'
+                    ? 'bg-[#E85D3F] text-white shadow-xs'
+                    : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
+                }`}
+              >
+                Phản xạ nhanh
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setTryTab('hanviet');
+                }}
+                className={`min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  tryTab === 'hanviet'
+                    ? 'bg-[#E85D3F] text-white shadow-xs'
+                    : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
+                }`}
+              >
+                Gốc Hán-Việt
+              </button>
+            </div>
           </div>
 
-          {/* Body: Cold-start onboarding OR Personalized Tasks */}
-          {learnerContext.hasSparseData ? (
-            <div className="mt-5 p-5 rounded-2xl bg-white/80 dark:bg-gray-800/80 border border-orange-100 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-5">
-              <div className="space-y-1.5 text-center sm:text-left">
-                <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Khởi đầu cá nhân hóa</span>
-                <h4 className="text-base font-bold text-gray-900 dark:text-gray-100">
-                  Xác định trình độ hoặc bắt đầu bài 1
-                </h4>
-                <p className="text-xs text-gray-600 dark:text-gray-300 max-w-xl">
-                  Để AI Lão Sư đề xuất bài học chính xác nhất, bạn có thể làm bài kiểm tra nhanh 5 phút hoặc bắt đầu ngay từ Bài 1 (Phát âm Pinyin & 4 thanh điệu).
-                </p>
+          {tryTab === 'quiz' ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="text-[#E85D3F] bg-[#FDEEEB] dark:bg-[#2D1E1B] px-2.5 py-1 rounded-lg">
+                  Điểm thử: {practiceScore} XP
+                </span>
+                <span className="text-[#748092] dark:text-[#94A3B8]">
+                  Câu {practiceIndex + 1}/{QUICK_PRACTICE.length}
+                </span>
               </div>
-              <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto">
+
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                <div className="sm:col-span-5 text-center p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-col items-center justify-center">
+                  <h3 className="font-['Noto_Serif_SC'] text-4xl sm:text-5xl font-black text-[#E85D3F] my-1">
+                    {currentPractice.hanzi}
+                  </h3>
+                  <p className="text-xs font-bold text-[#243447] dark:text-white mb-2">
+                    {currentPractice.pinyin}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => speakChinese(currentPractice.hanzi)}
+                    className="min-h-[44px] sm:min-h-[36px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#E85D3F] text-xs font-bold hover:border-[#E85D3F] transition-colors cursor-pointer"
+                  >
+                    <Volume2 size={14} />
+                    <span>Nghe phát âm</span>
+                  </button>
+                </div>
+
+                <div className="sm:col-span-7 space-y-2.5">
+                  {currentPractice.options.map((opt, oIdx) => {
+                    const isSelected = selectedAnswer === oIdx;
+                    const isCorrect = oIdx === currentPractice.correctIndex;
+                    let btnStyle =
+                      'bg-white dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white hover:border-[#E85D3F]';
+
+                    if (selectedAnswer !== null) {
+                      if (isCorrect) {
+                        btnStyle =
+                          'bg-[#EBF8F2] dark:bg-[#162B21] border-[#45B97C] text-[#45B97C] font-bold';
+                      } else if (isSelected) {
+                        btnStyle =
+                          'bg-[#FDEEEB] dark:bg-[#2D1E1B] border-[#E85D3F] text-[#E85D3F] font-bold';
+                      } else {
+                        btnStyle =
+                          'opacity-50 border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092]';
+                      }
+                    }
+
+                    return (
+                      <button
+                        key={oIdx}
+                        type="button"
+                        disabled={selectedAnswer !== null}
+                        onClick={() => handleSelectPracticeOption(oIdx)}
+                        className={`min-h-[44px] w-full px-3.5 py-2.5 rounded-xl border text-left text-xs sm:text-sm font-semibold transition-all flex items-center justify-between cursor-pointer ${btnStyle}`}
+                      >
+                        <span>{opt}</span>
+                        {selectedAnswer !== null && isCorrect && (
+                          <Check size={16} className="text-[#45B97C]" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {selectedAnswer !== null && (
+                <div className="p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <p className="text-xs text-[#243447] dark:text-[#CBD5E1] leading-relaxed">
+                    💡 <strong>Giải nghĩa:</strong> {currentPractice.explanation}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleNextPractice}
+                    className="min-h-[44px] sm:min-h-[36px] self-end sm:self-auto px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  >
+                    <span>Câu tiếp</span>
+                    <ArrowRight size={13} />
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {SINO_VIETNAMESE_WORDS.map((w) => {
+                  const isActive = activeSinoWord.hanzi === w.hanzi;
+                  return (
+                    <button
+                      key={w.hanzi}
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setActiveSinoWord(w);
+                        speakChinese(w.hanzi);
+                      }}
+                      className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-[#FFF9F2] dark:bg-[#2D1E1B] border-[#E85D3F] shadow-xs'
+                          : 'bg-[#FFFDF9] dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]/50'
+                      }`}
+                    >
+                      <span className="font-['Noto_Serif_SC'] text-xl sm:text-2xl font-black text-[#E85D3F] block">
+                        {w.hanzi}
+                      </span>
+                      <p className="text-[11px] font-bold text-[#243447] dark:text-white mt-0.5 truncate">
+                        {w.hanViet}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F4B942]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-['Noto_Serif_SC'] text-lg font-black text-[#E85D3F]">
+                      {activeSinoWord.hanzi}
+                    </span>
+                    <span className="text-xs font-bold text-[#243447] dark:text-white">
+                      ({activeSinoWord.pinyin})
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-[#E85D3F]/10 text-[#E85D3F] text-[11px] font-bold">
+                      Hán-Việt: {activeSinoWord.hanViet}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1">
+                    Nghĩa: <strong className="text-[#243447] dark:text-white">{activeSinoWord.meaning}</strong>
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <AudioButton text={activeSinoWord.hanzi} size="sm" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setActiveTab('vocabulary');
+                    }}
+                    className="min-h-[44px] sm:min-h-[36px] px-3.5 py-1.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Mở Flashcard</span>
+                    <ArrowRight size={13} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right 5 cols: 6 Core Ecosystem Tools (grid-cols-2 gap-2.5) */}
+        <div className="lg:col-span-5 p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-black text-[#243447] dark:text-white">
+                Hệ sinh thái 6 kỹ năng cốt lõi
+              </h2>
+              <p className="text-[11px] text-[#748092] dark:text-[#94A3B8]">
+                Chọn bất kỳ công cụ nào để trải nghiệm ngay
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            {CORE_ECOSYSTEM_SHORTCUTS.map((item) => {
+              const Icon = item.icon;
+              return (
                 <button
+                  key={item.id}
+                  type="button"
                   onClick={() => {
                     playClickSound();
-                    if (onSelectLesson) onSelectLesson('l-101');
-                    else setActiveTab('roadmap');
+                    setActiveTab(item.id);
                   }}
-                  className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#D44D31] text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="min-h-[84px] p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F] text-left flex flex-col justify-between gap-2 transition-all active:scale-95 cursor-pointer group"
                 >
-                  <BookOpen className="w-4 h-4" />
-                  <span>Học Bài 1</span>
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${item.iconBg}`}
+                  >
+                    <Icon size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-[#243447] dark:text-white truncate group-hover:text-[#E85D3F] transition-colors">
+                      {item.label}
+                    </p>
+                    <p className="text-[10px] text-[#748092] dark:text-[#94A3B8] truncate">
+                      {item.sub}
+                    </p>
+                  </div>
                 </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          TẦNG 3: KHÁM PHÁ SÂU (PROGRESSIVE DISCLOSURE TABS) + CTA CUỐI TRANG
+      ===================================================================== */}
+      <section aria-label="Khám phá bài học, hỏi đáp và học liệu" className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base sm:text-lg font-black text-[#243447] dark:text-white">
+              Khám phá lộ trình & giải đáp
+            </h2>
+            <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
+              Xem trước bài học nhập môn, câu hỏi thường gặp hoặc các công cụ AI nâng cao.
+            </p>
+          </div>
+
+          <div
+            role="tablist"
+            aria-label="Tab khám phá cho khách"
+            className="flex items-center gap-1.5 p-1 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] overflow-x-auto max-w-full scrollbar-none shadow-xs"
+          >
+            {[
+              { id: 'lessons', label: 'Bài học khởi đầu', icon: BookOpen },
+              { id: 'faq', label: 'Hỏi đáp (FAQ)', icon: HelpCircle },
+              { id: 'explore', label: 'AI & Học liệu', icon: Sparkles },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = exploreTab === tab.id;
+              return (
                 <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => {
+                    playClickSound();
+                    setExploreTab(tab.id);
+                  }}
+                  className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-[#E85D3F] text-white shadow-sm'
+                      : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white hover:bg-[#FFF9F2] dark:hover:bg-[#131B24]'
+                  }`}
+                >
+                  <Icon size={14} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* TAB 1: BÀI HỌC KHỞI ĐẦU & GỢI Ý CÁ NHÂN HÓA */}
+        {exploreTab === 'lessons' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {starterLessons.slice(0, 3).map((lesson) => (
+                <button
+                  key={lesson.id}
+                  type="button"
+                  onClick={() => {
+                    playClickSound();
+                    if (onSelectLesson) {
+                      onSelectLesson(lesson.id);
+                    } else {
+                      setActiveTab('roadmap');
+                    }
+                  }}
+                  className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs hover:border-[#E85D3F] transition-all text-left flex flex-col justify-between gap-4 cursor-pointer group"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="px-2.5 py-0.5 rounded-lg bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] text-xs font-bold">
+                        Bài {lesson.lessonNumber || 1} • HSK 1
+                      </span>
+                      <span className="text-xs text-[#748092] dark:text-[#94A3B8] font-medium flex items-center gap-1">
+                        <Clock size={12} />
+                        <span>{lesson.durationMinutes || 15}p</span>
+                      </span>
+                    </div>
+                    <h3 className="text-sm sm:text-base font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
+                      {lesson.title}
+                    </h3>
+                    <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1.5 line-clamp-2">
+                      {lesson.subtitle}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-xs font-bold">
+                    <span className="text-[#45B97C]">+{lesson.xpReward || 50} XP</span>
+                    <span className="text-[#E85D3F] inline-flex items-center gap-1">
+                      <span>Học thử ngay</span>
+                      <ArrowRight size={13} />
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Compact Placement / Personalized Strip */}
+            <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-black text-[#243447] dark:text-white">
+                    Chưa biết bắt đầu từ cấp HSK nào?
+                  </span>
+                  <AiContextBadge
+                    type={studyPlan?.isOffline ? 'offline_rule' : 'ai_pedagogy'}
+                    size="xs"
+                  />
+                </div>
+                <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
+                  Làm nhanh bài xếp lớp Placement Test hoặc xem đầy đủ lộ trình 180 bài HSK 1–9.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
                   onClick={() => {
                     playClickSound();
                     setActiveTab('roadmap');
                   }}
-                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-white dark:bg-gray-700 border border-orange-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold hover:bg-orange-50 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="min-h-[44px] px-4 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F] text-xs font-bold text-[#243447] dark:text-white flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Compass className="w-4 h-4 text-amber-500" />
-                  <span>Xếp lớp (Placement)</span>
+                  <Compass size={14} className="text-[#E85D3F]" />
+                  <span>Xem đủ 180 bài</span>
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="mt-5 space-y-3.5">
-              {studyPlan?.summary && (
-                <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 italic leading-relaxed bg-white/70 dark:bg-gray-800/60 p-3.5 rounded-2xl border border-orange-100/60 dark:border-gray-700">
-                  &ldquo;{studyPlan.summary}&rdquo;
-                </p>
-              )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+
+            {!learnerContext.hasSparseData && (studyPlan?.dailyPlan || []).length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {(studyPlan?.dailyPlan || []).slice(0, 2).map((item) => (
                   <PersonalizedRecommendationCard
                     key={item.id}
@@ -629,517 +924,139 @@ export default function HomePage({ user, streak = 0, xp = 0, setActiveTab, openA
                   />
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* 3. SINO-VIETNAMESE BRIDGING COGNATES (LỢI THẾ HÁN-VIỆT) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-6">
-            <div>
-              <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Bí quyết ghi nhớ</span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
-                Lợi Thế Hán - Việt: Liên Tưởng Nhanh Hơn
-              </h2>
-              <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-1 max-w-xl">
-                Nhiều từ vựng tiếng Việt có gốc Hán. Khi nắm vững quy tắc chuyển thanh mẫu và vận mẫu, bạn có thể liên tưởng nghĩa và ghi nhớ từ vựng tự nhiên hơn.
-              </p>
-            </div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] text-xs font-bold shrink-0">
-              <Zap size={14} />
-              <span>Ghi nhớ qua gốc Hán-Việt</span>
-            </div>
+            )}
           </div>
+        )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-            {SINO_VIETNAMESE_WORDS.map((w) => {
-              const isActive = activeSinoWord.hanzi === w.hanzi;
+        {/* TAB 2: FAQ ACCORDION */}
+        {exploreTab === 'faq' && (
+          <div className="space-y-2.5 animate-in fade-in duration-200">
+            {FAQS.map((faq, fIdx) => {
+              const isExpanded = expandedFaqIndex === fIdx;
               return (
                 <div
-                  key={w.hanzi}
-                  onClick={() => {
-                    playClickSound();
-                    setActiveSinoWord(w);
-                    speakChinese(w.hanzi);
-                  }}
-                  className={`p-4 rounded-2xl border text-center transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-gradient-to-b from-[#FFF9F2] to-white dark:from-[#2D1E1B] dark:to-[#1E293B] border-[#E85D3F] shadow-md -translate-y-1'
-                      : 'bg-[#FFFDF9] dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]/50'
-                  }`}
+                  key={fIdx}
+                  className="rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] overflow-hidden shadow-2xs"
                 >
-                  <span className="font-['Noto_Serif_SC'] text-2xl sm:text-3xl font-black text-[#E85D3F] block mb-1">
-                    {w.hanzi}
-                  </span>
-                  <p className="text-xs font-bold text-[#243447] dark:text-white">{w.pinyin}</p>
-                  <p className="text-[11px] font-black text-[#D97706] mt-0.5">{w.hanViet}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setExpandedFaqIndex(isExpanded ? -1 : fIdx);
+                    }}
+                    className="min-h-[48px] w-full px-5 py-3.5 text-left flex items-center justify-between gap-4 font-bold text-xs sm:text-sm text-[#243447] dark:text-white hover:text-[#E85D3F] transition-colors cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <HelpCircle size={16} className="text-[#E85D3F] shrink-0" />
+                      <span>{faq.q}</span>
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      className={`text-[#748092] shrink-0 transition-transform duration-200 ${
+                        isExpanded ? 'rotate-180 text-[#E85D3F]' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {isExpanded && (
+                    <div className="px-5 pb-4 pt-1 border-t border-[#F1E5D8]/50 dark:border-[#2B3A4F]/50 text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] leading-relaxed">
+                      {faq.a}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
+        )}
 
-          {/* Active Word Detail Box */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F4B942]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#E85D3F] text-white font-['Noto_Serif_SC'] text-2xl font-black flex items-center justify-center shrink-0 shadow-sm">
-                {activeSinoWord.hanzi}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="text-base font-black text-[#243447] dark:text-white">
-                    {activeSinoWord.hanzi} ({activeSinoWord.pinyin})
-                  </h4>
-                  <span className="px-2 py-0.5 rounded-md bg-[#E85D3F]/10 text-[#E85D3F] text-xs font-bold">
-                    Hán-Việt: {activeSinoWord.hanViet}
-                  </span>
-                </div>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-0.5">
-                  Ý nghĩa thực tế: <strong>{activeSinoWord.meaning}</strong>
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 self-end sm:self-center">
-              <AudioButton text={activeSinoWord.hanzi} size="md" />
-              <button
-                onClick={() => {
-                  playClickSound();
-                  setActiveTab('vocabulary');
-                }}
-                className="px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-              >
-                <span>Học từ này trong Flashcard</span>
-                <ArrowRight size={13} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. MINI PRACTICE (KHỞI ĐỘNG PHẢN XẠ 1 PHÚT) */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#FFF9F2] via-white to-[#FEF7E9] dark:from-[#1E293B] dark:via-[#1B2636] dark:to-[#131B24] border-2 border-[#F4B942]/40 shadow-xl relative overflow-hidden">
-          
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F]">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] flex items-center justify-center text-2xl shadow-sm">
-                ⚡
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-black text-[#243447] dark:text-white">
-                    Khởi động phản xạ 1 phút
-                  </h3>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E85D3F] text-white">
-                    Thử sức nhanh
-                  </span>
-                </div>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-                  Thử khả năng phán đoán nghĩa của chữ Hán qua chuyển âm Hán-Việt!
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 text-xs font-bold">
-              <span className="text-[#E85D3F] bg-[#FDEEEB] dark:bg-[#2D1E1B] px-3 py-1.5 rounded-xl border border-[#E85D3F]/20">
-                Điểm: {practiceScore} XP
-              </span>
-              <span className="text-[#748092] dark:text-[#94A3B8]">
-                Câu {practiceIndex + 1}/{QUICK_PRACTICE.length}
-              </span>
-            </div>
-          </div>
-
-          {/* Practice Question Card */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-            
-            {/* Left Big Character */}
-            <div className="md:col-span-4 text-center p-6 rounded-2xl bg-white dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col items-center justify-center">
-              <span className="text-xs text-[#748092] dark:text-[#94A3B8] font-semibold mb-1">
-                Từ vựng:
-              </span>
-              <h2 className="font-['Noto_Serif_SC'] text-5xl sm:text-6xl font-black text-[#E85D3F] my-2">
-                {currentPractice.hanzi}
-              </h2>
-              <p className="text-sm font-bold text-[#243447] dark:text-white mb-2">
-                {currentPractice.pinyin}
-              </p>
-              <button
-                onClick={() => speakChinese(currentPractice.hanzi)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FFF9F2] dark:bg-[#1E293B] text-[#E85D3F] text-xs font-bold hover:bg-[#FDEEEB] transition-colors cursor-pointer"
-              >
-                <Volume2 size={14} />
-                <span>Nghe phát âm</span>
-              </button>
-            </div>
-
-            {/* Right Options */}
-            <div className="md:col-span-8 space-y-3">
-              <p className="text-xs sm:text-sm font-bold text-[#243447] dark:text-white">
-                Chọn nghĩa tiếng Việt chính xác nhất:
-              </p>
-              
-              <div className="grid grid-cols-1 gap-2.5">
-                {currentPractice.options.map((opt, oIdx) => {
-                  const isSelected = selectedAnswer === oIdx;
-                  const isCorrect = oIdx === currentPractice.correctIndex;
-                  let btnStyle = 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white hover:border-[#E85D3F]';
-                  
-                  if (selectedAnswer !== null) {
-                    if (isCorrect) {
-                      btnStyle = 'bg-[#EBF8F2] dark:bg-[#162B21] border-[#45B97C] text-[#45B97C] font-bold shadow-sm';
-                    } else if (isSelected) {
-                      btnStyle = 'bg-[#FDEEEB] dark:bg-[#2D1E1B] border-[#E85D3F] text-[#E85D3F] font-bold';
-                    } else {
-                      btnStyle = 'opacity-50 border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092]';
-                    }
-                  }
-
-                  return (
-                    <button
-                      key={oIdx}
-                      disabled={selectedAnswer !== null}
-                      onClick={() => handleSelectPracticeOption(oIdx)}
-                      className={`p-3.5 rounded-xl border text-left text-sm font-semibold transition-all flex items-center justify-between cursor-pointer ${btnStyle}`}
-                    >
-                      <span>{opt}</span>
-                      {selectedAnswer !== null && isCorrect && (
-                        <Check size={18} className="text-[#45B97C]" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Feedback and Next */}
-              {selectedAnswer !== null && (
-                <div className="p-3.5 rounded-xl bg-white dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3 animate-fade-in">
-                  <p className="text-xs text-[#243447] dark:text-[#CBD5E1] leading-relaxed">
-                    💡 <strong>Giải nghĩa:</strong> {currentPractice.explanation}
-                  </p>
-                  <button
-                    onClick={handleNextPractice}
-                    className="self-end sm:self-auto px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                  >
-                    <span>Câu tiếp</span>
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-              )}
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* 5. ALL CORE FEATURES GRID (HỆ SINH THÁI TOÀN DIỆN 6 TRONG 1) */}
-      <section className="bg-gradient-to-b from-[#FFF9F2] via-white to-[#FFF9F2] dark:from-[#131B24] dark:via-[#1E293B] dark:to-[#131B24] py-16 border-y border-[#F1E5D8] dark:border-[#2B3A4F]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Hệ sinh thái toàn diện</span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
-              Bộ Công Cụ Học Tiếng Trung Đa Năng Cho Người Việt
-            </h2>
-            <p className="text-sm text-[#748092] dark:text-[#94A3B8] mt-2">
-              Tích hợp đầy đủ kỹ năng Nghe - Nói - Đọc - Viết - Ngữ Pháp và Ôn tập ngắt quãng trong cùng một nền tảng duy nhất.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            
-            {/* Feature 1: Roadmap */}
-            <div 
-              onClick={() => {
-                playClickSound();
-                setActiveTab('roadmap');
-              }}
-              className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Compass size={24} />
-              </div>
-              <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                Lộ trình 60 bài HSK 1 - HSK 4
-              </h3>
-              <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Từng bước chinh phục từ phát âm Pinyin đến đàm thoại chuyên sâu. Mở khóa bài học theo cơ chế tuần tự khoa học và kiểm tra đầu vào Placement Test.
-              </p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#E85D3F]">
-                <span>Mở bản đồ lộ trình</span>
-                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-
-            {/* Feature 2: Flashcards & SRS */}
-            <div 
-              onClick={() => {
-                playClickSound();
-                setActiveTab('vocabulary');
-              }}
-              className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Layers size={24} />
-              </div>
-              <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                Flashcard 3D & Ôn tập SRS SM-2
-              </h3>
-              <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Lật thẻ mượt mà, tự động chuyển từ đã học vào chu kỳ lặp lại ngắt quãng SM-2 để đánh bại đường cong quên lãng não bộ.
-              </p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#D97706]">
-                <span>Trải nghiệm Flashcard</span>
-                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-
-            {/* Feature 3: Pronunciation */}
-            <div 
-              onClick={() => {
-                playClickSound();
-                setActiveTab('pronunciation');
-              }}
-              className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Mic size={24} />
-              </div>
-              <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                AI Speaking Lab Chấm Điểm Giọng Nói
-              </h3>
-              <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Nhận diện giọng nói Web Speech tức thì, chỉ điểm lỗi ngọng thanh 3, thanh 4 và biến điệu ngữ âm tiếng Trung bản ngữ.
-              </p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#45B97C]">
-                <span>Luyện phát âm ngay</span>
-                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-
-            {/* Feature 4: Writing */}
-            <div 
-              onClick={() => {
-                playClickSound();
-                setActiveTab('writing');
-              }}
-              className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-[#EFF6FF] dark:bg-[#1E293B] text-[#3B82F6] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <PenTool size={24} />
-              </div>
-              <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                Tập viết Ô Mễ Tự (米字格) Chuẩn A4
-              </h3>
-              <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Mô phỏng nét bút lông mực mài, xem chi tiết hoạt họa thứ tự thuận bút và xuất file in A4 kẻ ô mễ tự 8 hướng.
-              </p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#3B82F6]">
-                <span>Mở bàn tập viết</span>
-                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-
-            {/* Feature 5: Classroom */}
-            <div 
-              onClick={() => {
-                playClickSound();
-                setActiveTab('classroom');
-              }}
-              className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-[#F5F3FF] dark:bg-[#201B2E] text-[#8B5CF6] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <GraduationCap size={24} />
-              </div>
-              <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                Lớp Học Trực Tuyến & Bài Tập Về Nhà
-              </h3>
-              <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Tham gia lớp bằng mã HZG-XXXXX, nhận bài tập từ giáo viên, nộp bài thu âm, nhận lời phê và điểm số trực tiếp.
-              </p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#8B5CF6]">
-                <span>Vào không gian lớp học</span>
-                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-
-            {/* Feature 6: Materials & HSK Exam */}
-            <div 
-              onClick={() => {
-                playClickSound();
-                setActiveTab('materials');
-              }}
-              className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-[#FFF7ED] dark:bg-[#2A1D15] text-[#EA580C] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <FolderDown size={24} />
-              </div>
-              <h3 className="text-lg font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                Thư Viện Giáo Trình Chuẩn CTI & Đề Thi HSK
-              </h3>
-              <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                20+ bộ tài liệu học thuật thẩm định sẵn: đề thi HSK có file nghe MP3, bách khoa ngữ pháp Wiki và cẩm nang 214 bộ thủ.
-              </p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#EA580C]">
-                <span>Khám phá kho học liệu</span>
-                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* 6. FEATURED LESSONS SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Bài học nổi bật</span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
-            Khởi Đầu Ngay Với Các Bài Học Nền Tảng
-          </h2>
-          <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-2">
-            Mỗi bài học được cấu trúc 7 bước chuẩn sư phạm: Nghe đối thoại, Từ vựng, Chữ Hán, Ngữ pháp và Trắc nghiệm.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {getLessonsByChapter('ch-1').map((lesson) => (
-            <div 
-              key={lesson.id}
-              onClick={() => {
-                playClickSound();
-                if (onSelectLesson) {
-                  onSelectLesson(lesson.id);
-                } else {
-                  setActiveTab('roadmap');
-                }
-              }}
-              className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm hover:shadow-md hover:border-[#E85D3F] transition-all cursor-pointer group flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="px-2.5 py-1 rounded-lg bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] text-xs font-bold">
-                    Bài {lesson.lessonNumber || 1} • HSK 1
-                  </span>
-                  <span className="text-xs text-[#748092] dark:text-[#94A3B8] font-medium flex items-center gap-1">
-                    <Clock size={12} />
-                    <span>{lesson.durationMinutes || 15} phút</span>
-                  </span>
-                </div>
-
-                <h3 className="text-base font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                  {lesson.title}
-                </h3>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-2 line-clamp-2">
-                  {lesson.subtitle}
-                </p>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
-                <span className="text-xs font-bold text-[#45B97C]">
-                  +{lesson.xpReward || 50} XP thưởng
-                </span>
-                <span className="text-xs font-bold text-[#E85D3F] group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-                  <span>Vào bài học ngay</span>
-                  <ArrowRight size={14} />
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 7. FAQ ACCORDION SECTION */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="text-center max-w-xl mx-auto mb-10">
-          <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">Hỏi đáp thường gặp</span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#243447] dark:text-white mt-1">
-            Bạn Có Thắc Mắc Về Phương Pháp Học?
-          </h2>
-        </div>
-
-        <div className="space-y-3.5">
-          {FAQS.map((faq, fIdx) => {
-            const isExpanded = expandedFaqIndex === fIdx;
-            return (
-              <div 
-                key={fIdx}
-                className="rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] overflow-hidden transition-all shadow-sm"
-              >
+        {/* TAB 3: AI & HỌC LIỆU */}
+        {exploreTab === 'explore' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in duration-200">
+            {[
+              {
+                tab: 'conversation',
+                icon: MessageCircle,
+                color: 'text-[#3B82F6] bg-blue-50 dark:bg-blue-950/40',
+                title: 'Hội thoại AI ngữ cảnh',
+                desc: 'Đóng vai giao tiếp thực tế (mua sắm, du lịch, phỏng vấn) có chấm điểm phản xạ.',
+              },
+              {
+                tab: 'reader',
+                icon: BookOpen,
+                color: 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40',
+                title: 'Đọc hiểu & Tách từ NLP',
+                desc: 'Bấm trực tiếp vào từng chữ Hán trong bài đọc để tra Pinyin, Hán-Việt và lưu SRS.',
+              },
+              {
+                tab: 'materials',
+                icon: FolderDown,
+                color: 'text-[#EA580C] bg-orange-50 dark:bg-orange-950/40',
+                title: 'Thư viện PDF & File nghe',
+                desc: 'Tải miễn phí giấy luyện viết ô mễ tự A4, 214 bộ thủ và đề thi HSK có MP3.',
+              },
+            ].map((card) => {
+              const Icon = card.icon;
+              return (
                 <button
+                  key={card.tab}
+                  type="button"
                   onClick={() => {
                     playClickSound();
-                    setExpandedFaqIndex(isExpanded ? -1 : fIdx);
+                    setActiveTab(card.tab);
                   }}
-                  className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-[#243447] dark:text-white hover:text-[#E85D3F] transition-colors cursor-pointer"
+                  className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F] text-left space-y-3 transition-all cursor-pointer group"
                 >
-                  <span className="flex items-center gap-3">
-                    <HelpCircle size={18} className="text-[#E85D3F] shrink-0" />
-                    <span>{faq.q}</span>
-                  </span>
-                  <ChevronDown 
-                    size={18} 
-                    className={`text-[#748092] shrink-0 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-[#E85D3F]' : ''}`} 
-                  />
-                </button>
-
-                {isExpanded && (
-                  <div className="px-5 pb-5 pt-1 border-t border-[#F1E5D8]/50 dark:border-[#2B3A4F]/50 text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] leading-relaxed">
-                    {faq.a}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${card.color}`}>
+                    <Icon size={20} />
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  <h3 className="text-sm font-bold text-[#243447] dark:text-white group-hover:text-[#E85D3F]">
+                    {card.title}
+                  </h3>
+                  <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
+                    {card.desc}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* 8. CALL TO ACTION SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="p-8 sm:p-14 rounded-3xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#992E17] text-white text-center shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 font-['Noto_Serif_SC'] text-8xl sm:text-9xl font-black text-white/5 select-none pointer-events-none">
-            加油
-          </div>
-          <div className="absolute bottom-0 left-0 font-['Noto_Serif_SC'] text-8xl sm:text-9xl font-black text-white/5 select-none pointer-events-none">
-            汉语
-          </div>
-
-          <div className="max-w-2xl mx-auto space-y-6 relative z-10">
-            <span className="px-3.5 py-1.5 rounded-full bg-white/20 text-xs font-bold backdrop-blur-xs">
-              Đồng hành cùng cộng đồng người học tiếng Trung tại Việt Nam
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black">
-              Sẵn sàng bắt đầu hành trình học tiếng Trung ngay hôm nay?
+      {/* =====================================================================
+          COMPACT FINAL CTA BANNER
+      ===================================================================== */}
+      <section className="p-4 sm:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#E85D3F] via-[#CB4529] to-[#992E17] text-white shadow-lg relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-5 relative z-10">
+          <div className="space-y-1 sm:space-y-1.5 max-w-xl">
+            <h2 className="text-lg sm:text-2xl font-black">
+              Sẵn sàng bắt đầu 15 phút học tiếng Trung mỗi ngày?
             </h2>
-            <p className="text-sm sm:text-base text-white/90 leading-relaxed">
-              Không cần học vẹt hàng ngàn chữ Hán một cách thụ động. Chỉ 15 phút mỗi ngày với phương pháp Hán-Việt khoa học, bạn sẽ nắm vững quy luật ngữ âm và tích lũy vốn từ vựng vững chắc!
+            <p className="text-xs sm:text-sm text-white/90 line-clamp-2 sm:line-clamp-none">
+              Tạo tài khoản miễn phí để đồng bộ tiến độ 180 bài HSK 1–9, chuỗi ngày học và kho SRS trên mọi thiết bị.
             </p>
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button
-                onClick={handleStartLearning}
-                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-[#E85D3F] hover:bg-[#FFF9F2] font-black text-base shadow-xl hover:scale-105 active:scale-100 transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {!user ? (
-                  <>
-                    <UserPlus size={20} />
-                    <span>Đăng ký tài khoản miễn phí ngay</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Tiếp tục học lộ trình ngay</span>
-                    <ArrowRight size={18} />
-                  </>
-                )}
-              </button>
-            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleStartLearning}
+              className="min-h-[46px] px-6 py-3 rounded-xl bg-white text-[#E85D3F] hover:bg-[#FFF9F2] font-black text-sm shadow-md transition-all inline-flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              {!user ? (
+                <>
+                  <UserPlus size={18} />
+                  <span>Đăng ký miễn phí</span>
+                </>
+              ) : (
+                <>
+                  <span>Vào học ngay</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
           </div>
         </div>
       </section>
-
     </div>
   );
 }

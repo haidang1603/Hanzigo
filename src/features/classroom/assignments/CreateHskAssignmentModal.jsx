@@ -111,7 +111,7 @@ export default function CreateHskAssignmentModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] rounded-3xl shadow-2xl overflow-hidden">
+      <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] rounded-3xl shadow-2xl">
         <div className="px-6 py-4 bg-gradient-to-r from-[#E85D3F] to-amber-500 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles size={18} />
@@ -120,7 +120,8 @@ export default function CreateHskAssignmentModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-white/20 cursor-pointer"
+            aria-label="Đóng hộp thoại giao bài tập"
+            className="min-w-11 min-h-11 flex items-center justify-center p-1.5 rounded-full hover:bg-white/20 cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -141,7 +142,7 @@ export default function CreateHskAssignmentModal({
             <select
               value={classroomId || classrooms[0]?.id || ''}
               onChange={(e) => setClassroomId(e.target.value)}
-              className="w-full rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFFDF9] dark:bg-[#0F172A] px-3 py-2 text-sm text-[#243447] dark:text-white"
+              className="w-full rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFFDF9] dark:bg-[#0F172A] px-3 py-2 text-base sm:text-sm text-[#243447] dark:text-white"
             >
               {classrooms.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -192,7 +193,7 @@ export default function CreateHskAssignmentModal({
               <select
                 value={targetResourceId}
                 onChange={(e) => handleResourceChange(e.target.value)}
-                className="w-full rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFFDF9] dark:bg-[#0F172A] px-3 py-2 text-xs text-[#243447] dark:text-white"
+                className="w-full rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFFDF9] dark:bg-[#0F172A] px-3 py-2 text-base sm:text-sm text-[#243447] dark:text-white"
               >
                 {activeCatalog.map((res) => (
                   <option key={res.id} value={res.id}>
@@ -210,7 +211,7 @@ export default function CreateHskAssignmentModal({
                 type="datetime-local"
                 value={dueAt}
                 onChange={(e) => setDueAt(e.target.value)}
-                className="w-full rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFFDF9] dark:bg-[#0F172A] px-3 py-2 text-xs text-[#243447] dark:text-white"
+                className="w-full rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFFDF9] dark:bg-[#0F172A] px-3 py-2 text-base sm:text-sm text-[#243447] dark:text-white"
               />
             </div>
           </div>
@@ -224,7 +225,7 @@ export default function CreateHskAssignmentModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFFDF9] dark:bg-[#0F172A] px-3 py-2 text-sm text-[#243447] dark:text-white"
+              className="w-full rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFFDF9] dark:bg-[#0F172A] px-3 py-2 text-base sm:text-sm text-[#243447] dark:text-white"
               required
             />
           </div>
@@ -237,7 +238,7 @@ export default function CreateHskAssignmentModal({
               rows={2}
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
-              className="w-full rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFFDF9] dark:bg-[#0F172A] px-3 py-2 text-xs text-[#243447] dark:text-white"
+              className="w-full rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFFDF9] dark:bg-[#0F172A] px-3 py-2 text-base sm:text-sm text-[#243447] dark:text-white"
             />
           </div>
 

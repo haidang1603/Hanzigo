@@ -6,7 +6,7 @@
  */
 
 import { AccessToken, TrackSource } from 'livekit-server-sdk';
-import { verifyRequestAuth, getSupabaseAdminClient, memoryParticipants } from '../_utils/supabaseServer.js';
+import { verifyRequestAuth, getSupabaseAdminClient, memoryParticipants, sendSafeServerError } from '../_utils/supabaseServer.js';
 
 function isValidUuid(id) {
   return typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -278,8 +278,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('Lỗi tạo LiveKit token:', err);
-    return res.status(500).json({
-      error: 'Không thể khởi tạo phiên kết nối WebRTC LiveKit: ' + err.message
-    });
+    return sendSafeServerError(res, 'Không thể khởi tạo phiên kết nối WebRTC LiveKit.', err);
   }
 }

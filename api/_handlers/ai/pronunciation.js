@@ -12,6 +12,7 @@
 
 import { getGeminiApiKeys, markGeminiKeyRateLimited } from '../../_utils/aiProviderAdapter.js';
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
+import { sendSafeServerError } from '../../_utils/supabaseServer.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 30;
@@ -234,9 +235,7 @@ Hãy phân tích và trả về đúng JSON format sau:
 
   } catch (err) {
     console.error('[Pronunciation API Exception]', err);
-    return res.status(500).json({
-      error: 'Lỗi máy chủ khi xử lý thẩm âm: ' + err.message
-    });
+    return sendSafeServerError(res, 'Lỗi máy chủ khi xử lý thẩm âm.', err);
   }
 }
 

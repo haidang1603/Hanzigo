@@ -109,40 +109,40 @@ export default function LearningIntelligenceHub({
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF9F2] dark:bg-[#131B24] py-6 sm:py-8 transition-colors duration-200">
+    <div className="min-h-dvh bg-[#FFF9F2] dark:bg-[#131B24] py-6 sm:py-8 transition-colors duration-200">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Command Center Header */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] text-white shadow-xl border border-white/10 space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E85D3F]/20 text-amber-300 text-[11px] font-bold uppercase tracking-wider">
+        <div className="p-3.5 sm:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] text-white shadow-xl border border-white/10 space-y-3 sm:space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+            <div className="space-y-1 sm:space-y-1.5">
+              <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E85D3F]/20 text-amber-300 text-[11px] font-bold uppercase tracking-wider">
                 <Sparkles size={13} />
                 <span>Learning Intelligence Hub · Closed-Loop Ecosystem</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+              <h1 className="text-lg sm:text-3xl font-black tracking-tight">
                 Trung tâm Học tập Thông minh (AI & Telemetry)
               </h1>
-              <p className="text-xs sm:text-sm text-slate-300">
+              <p className="text-xs sm:text-sm text-slate-300 line-clamp-2 sm:line-clamp-none">
                 Đồng bộ khép kín giữa Telemetry & Lỗi sai, Radar Năng lực, Đường cong Trí nhớ SRS, Lộ trình Thích ứng, Chấm Viết HSK 4–6 và Chuẩn HSK 7–9.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-              <div className="px-3.5 py-2 rounded-2xl bg-white/10 border border-white/10 text-xs">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
+              <div className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl bg-white/10 border border-white/10 text-xs">
                 <span className="text-slate-300 block text-[10px] uppercase">Readiness</span>
-                <strong className="text-base text-emerald-300">
+                <strong className="text-sm sm:text-base text-emerald-300">
                   {summary.analytics.kpis.hskReadinessScore}%
                 </strong>
               </div>
-              <div className="px-3.5 py-2 rounded-2xl bg-white/10 border border-white/10 text-xs">
+              <div className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl bg-white/10 border border-white/10 text-xs">
                 <span className="text-slate-300 block text-[10px] uppercase">Active Mistakes</span>
-                <strong className="text-base text-rose-300">
+                <strong className="text-sm sm:text-base text-rose-300">
                   {summary.analytics.kpis.activeMistakesCount}
                 </strong>
               </div>
-              <div className="px-3.5 py-2 rounded-2xl bg-white/10 border border-white/10 text-xs">
+              <div className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl bg-white/10 border border-white/10 text-xs">
                 <span className="text-slate-300 block text-[10px] uppercase">SRS Leeches</span>
-                <strong className="text-base text-amber-300">
+                <strong className="text-sm sm:text-base text-amber-300">
                   {summary.srs.leechCount}
                 </strong>
               </div>
@@ -150,7 +150,7 @@ export default function LearningIntelligenceHub({
           </div>
 
           {/* AI Diagnostic Briefing & 4 Daily Prescription Tasks */}
-          <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3">
+          <div className="rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 p-3 sm:p-4 space-y-2 sm:space-y-3">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="space-y-1">
                 <div className="text-xs font-extrabold text-amber-300">

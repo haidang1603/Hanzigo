@@ -934,7 +934,7 @@ export default function LiveClassroomPage({
   // =========================================================================
   if (authChecking) {
     return (
-      <div className="min-h-screen bg-[#070B14] flex flex-col items-center justify-center text-white p-4">
+      <div className="min-h-dvh bg-[#070B14] flex flex-col items-center justify-center text-white p-4">
         <div className="w-16 h-16 rounded-3xl bg-[#E85D3F]/20 border border-[#E85D3F]/40 flex items-center justify-center animate-pulse mb-6">
           <Activity size={32} className="text-[#E85D3F]" />
         </div>
@@ -946,7 +946,7 @@ export default function LiveClassroomPage({
 
   if (accessDeniedReason) {
     return (
-      <div className="min-h-screen bg-[#070B14] flex flex-col items-center justify-center text-white p-4">
+      <div className="min-h-dvh bg-[#070B14] flex flex-col items-center justify-center text-white p-4">
         <div className="w-16 h-16 rounded-3xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center mb-6">
           <AlertTriangle size={32} className="text-rose-400" />
         </div>
@@ -1614,7 +1614,7 @@ export default function LiveClassroomPage({
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         placeholder="Nhập tin nhắn..."
-                        className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E85D3F]"
+                        className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-base sm:text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#E85D3F]"
                       />
                       <button
                         type="submit"

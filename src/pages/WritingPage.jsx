@@ -259,7 +259,7 @@ export default function WritingPage({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm chữ Hán (học, 你, nihao, hao3, nước, con người, bộ thủ...)"
-                  className="w-full pl-10 pr-24 py-2.5 sm:py-3 text-xs sm:text-sm text-[#243447] dark:text-[#F3F4F6] bg-transparent focus:outline-hidden"
+                  className="w-full pl-10 pr-24 py-2.5 sm:py-3 text-base sm:text-sm text-[#243447] dark:text-[#F3F4F6] bg-transparent focus:outline-hidden"
                 />
                 {searchQuery && (
                   <button

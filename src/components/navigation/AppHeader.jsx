@@ -88,7 +88,7 @@ export default function AppHeader({
               if (onToggleMobileMenu) onToggleMobileMenu();
             }}
             aria-label="Mở menu điều hướng di động"
-            className="lg:hidden p-2 rounded-xl text-[#243447] dark:text-white hover:bg-white dark:hover:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] transition-colors cursor-pointer shrink-0"
+            className="lg:hidden min-w-11 min-h-11 flex items-center justify-center p-2 rounded-xl text-[#243447] dark:text-white hover:bg-white dark:hover:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] transition-colors cursor-pointer shrink-0"
           >
             <Menu size={18} />
           </button>

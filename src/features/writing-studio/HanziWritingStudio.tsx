@@ -126,7 +126,7 @@ export default function HanziWritingStudio({
             value={queueInput}
             onChange={(e) => setQueueInput(e.target.value)}
             placeholder="Nhập chữ Hán, từ ghép (图书馆) hoặc cả câu để luyện viết nối tiếp..."
-            className="flex-1 px-4 py-2.5 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-sm font-medium text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-base sm:text-sm font-medium text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
           />
           <button
             type="submit"

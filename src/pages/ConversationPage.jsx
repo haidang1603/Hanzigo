@@ -830,7 +830,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
               <select
                 value={targetHskLevel}
                 onChange={(e) => setTargetHskLevel(e.target.value)}
-                className="font-bold text-[#E85D3F] bg-transparent outline-none cursor-pointer text-xs"
+                className="font-bold text-[#E85D3F] bg-transparent outline-none cursor-pointer text-base sm:text-sm"
               >
                 {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map(lvl => (
                   <option key={lvl} value={lvl} className="text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800">
@@ -1083,7 +1083,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
             placeholder={isListening ? "Đang nghe bạn nói tiếng Trung..." : "Nhập câu trả lời bằng tiếng Trung hoặc pinyin..."}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
           />
 
           <button

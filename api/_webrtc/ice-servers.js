@@ -6,7 +6,7 @@
  */
 
 import crypto from 'node:crypto';
-import { verifyRequestAuth } from '../_utils/supabaseServer.js';
+import { verifyRequestAuth, sendSafeServerError } from '../_utils/supabaseServer.js';
 
 export const DEFAULT_STUN_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -73,6 +73,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('[WebRTC ICE Servers Error]:', err);
-    return res.status(500).json({ error: 'Lỗi máy chủ nội bộ khi cấp phát ICE servers.', message: err?.message });
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ khi cấp phát ICE servers.', err);
   }
 }

@@ -3,7 +3,7 @@
  * POST /api/hsk/import
  */
 import { importHskExamWithValidation } from '../../../src/services/hskImportService.js';
-import { verifyRequestAuth } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, sendSafeServerError } from '../../_utils/supabaseServer.js';
 
 export default async function importHandler(req, res) {
   if (req.method !== 'POST') {
@@ -35,6 +35,6 @@ export default async function importHandler(req, res) {
     return res.status(200).json(result);
   } catch (err) {
     console.error('[HSK Import Error]:', err);
-    return res.status(500).json({ error: 'Lỗi máy chủ nội bộ khi nhập đề thi HSK.', message: err?.message });
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ khi nhập đề thi HSK.', err);
   }
 }

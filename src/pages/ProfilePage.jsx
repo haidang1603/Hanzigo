@@ -794,7 +794,7 @@ export default function ProfilePage({
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     placeholder="Ví dụ: Nguyễn Văn An"
-                    className="w-full px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-bold text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                     required
                   />
                 </div>
@@ -806,7 +806,7 @@ export default function ProfilePage({
                   <select 
                     value={editLevel}
                     onChange={(e) => setEditLevel(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-bold text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   >
                     {HSK_LEVEL_OPTIONS.map((lvl) => (
                       <option key={lvl} value={lvl}>{lvl}</option>
@@ -823,7 +823,7 @@ export default function ProfilePage({
                     onChange={(e) => setEditBio(e.target.value)}
                     placeholder="Ví dụ: Mục tiêu đạt HSK 3 trong 3 tháng tới! Mỗi ngày học 15 phút."
                     rows={2}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-medium text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] resize-none"
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-medium text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] resize-none"
                   />
                 </div>
 
@@ -836,7 +836,7 @@ export default function ProfilePage({
                     type="email" 
                     value={user?.email || 'Chưa đăng nhập'}
                     disabled
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800 text-xs font-medium text-[#748092] cursor-not-allowed"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800 text-base sm:text-sm font-medium text-[#748092] cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -1156,7 +1156,7 @@ export default function ProfilePage({
                 type="time" 
                 value={reminderTime} 
                 onChange={(e) => setReminderTime(e.target.value)}
-                className="px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none"
+                className="px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-bold text-[#243447] dark:text-white focus:outline-none"
               />
               <span className="text-xs text-[#748092]">Hệ thống gửi thông báo nhắc vào giờ này</span>
             </div>

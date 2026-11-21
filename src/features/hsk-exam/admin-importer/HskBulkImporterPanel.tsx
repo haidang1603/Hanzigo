@@ -61,7 +61,7 @@ export const HskBulkImporterPanel: React.FC = () => {
         value={bulkJson}
         onChange={(e) => setBulkJson(e.target.value)}
         rows={10}
-        className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 p-3 font-mono text-xs text-slate-800 dark:text-slate-100"
+        className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 p-3 font-mono text-base sm:text-sm text-slate-800 dark:text-slate-100"
         placeholder="Dán mảng JSON [HskPaperImportPayload, ...]..."
       />
 

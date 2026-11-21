@@ -187,7 +187,7 @@ export default function SrsRetentionDashboard({
               const val = e.target.value;
               setHskFilter(val === 'all' ? 'all' : Number(val));
             }}
-            className="px-3 py-2 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-white cursor-pointer"
+            className="px-3 py-2 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-base sm:text-sm font-bold text-[#243447] dark:text-white cursor-pointer"
           >
             <option value="all">Tất cả HSK 1–9</option>
             {[1, 2, 3, 4, 5, 6].map((lvl) => (
@@ -551,7 +551,7 @@ export default function SrsRetentionDashboard({
                           }))
                         }
                         placeholder="Nhập mẹo ghi nhớ (mnemonic) riêng..."
-                        className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#E5D8C8] dark:border-[#2B3A4F] text-xs text-[#243447] dark:text-white"
+                        className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#E5D8C8] dark:border-[#2B3A4F] text-base sm:text-sm text-[#243447] dark:text-white"
                       />
                       <div className="flex flex-wrap gap-2">
                         <button

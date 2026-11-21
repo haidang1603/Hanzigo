@@ -129,7 +129,7 @@ export default function Breadcrumbs({
   return (
     <nav 
       aria-label="Breadcrumb" 
-      className={`flex items-center text-xs font-semibold text-[#748092] dark:text-[#94A3B8] overflow-x-auto whitespace-nowrap py-1 ${className}`}
+      className={`flex items-center text-xs font-semibold text-[#748092] dark:text-[#94A3B8] overflow-x-auto scrollbar-none whitespace-nowrap py-1 ${className}`}
     >
       <ol className="flex items-center gap-1 sm:gap-1.5 list-none m-0 p-0">
         {items.map((item, idx) => {

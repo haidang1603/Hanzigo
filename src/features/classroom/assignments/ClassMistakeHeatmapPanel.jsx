@@ -123,7 +123,7 @@ export default function ClassMistakeHeatmapPanel({
             <select
               value={selectedAssignmentId}
               onChange={(e) => setSelectedAssignmentId(e.target.value)}
-              className="rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFFDF9] dark:bg-[#0F172A] px-3 py-2 text-xs font-bold text-[#243447] dark:text-white"
+              className="rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFFDF9] dark:bg-[#0F172A] px-3 py-2 text-base sm:text-sm font-bold text-[#243447] dark:text-white"
             >
               {assignments.map((a) => (
                 <option key={a.id} value={a.id}>

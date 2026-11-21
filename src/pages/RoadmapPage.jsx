@@ -131,7 +131,7 @@ function readInitialCompletedIds() {
   } catch {
     // Ignore parse error
   }
-  return [1, 2, 3];
+  return [];
 }
 
 export default function RoadmapPage({
@@ -154,7 +154,7 @@ export default function RoadmapPage({
   const [completedLessonIds, setCompletedLessonIds] = useState(readInitialCompletedIds);
 
   const [bestCbtScores, setBestCbtScores] = useState({
-    1: 175,
+    1: 0,
     2: 0,
     3: 0,
     4: 0,
@@ -548,7 +548,7 @@ export default function RoadmapPage({
   // Trình phát bài học mở rộng 9 bước (nếu có) — giữ nguyên trong layout chuẩn không che Sidebar
   if (activeLessonToPlay) {
     return (
-      <div className="min-h-[80vh] bg-[#FFF9F2] dark:bg-[#131B24] animate-in fade-in duration-200">
+      <div className="min-h-[80dvh] bg-[#FFF9F2] dark:bg-[#131B24] animate-in fade-in duration-200">
         <InteractiveLessonPlayer
           lesson={activeLessonToPlay}
           user={user}
@@ -574,7 +574,7 @@ export default function RoadmapPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] py-6 sm:py-8 transition-colors duration-200">
+    <div className="min-h-dvh bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] py-6 sm:py-8 transition-colors duration-200">
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-200">
@@ -587,24 +587,24 @@ export default function RoadmapPage({
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* 1. HERO BANNER: ASIAN-MODERN PORTAL */}
-        <section className="relative overflow-hidden p-5 sm:p-7 rounded-3xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] text-white shadow-lg border border-white/5">
+        <section className="relative overflow-hidden p-3.5 sm:p-7 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] text-white shadow-lg border border-white/5">
           {/* Warm Ambient Glows */}
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-[#E85D3F]/20 blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-1/3 -mb-16 w-56 h-56 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 space-y-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div className="space-y-2.5 max-w-2xl">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white text-[11px] font-bold backdrop-blur-md border border-white/15">
+          <div className="relative z-10 space-y-3.5 sm:space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5 sm:gap-6">
+              <div className="space-y-1.5 sm:space-y-2.5 max-w-2xl">
+                <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white text-[11px] font-bold backdrop-blur-md border border-white/15">
                   <Sparkles size={12} className="text-amber-400" />
                   <span>Khung Chuẩn HSK 2.0 & 3.0 • 180 Bài Học (HSK 1 – HSK 9)</span>
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-snug text-white">
+                <h1 className="text-xl sm:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-snug text-white">
                   Lộ Trình Chinh Phục Hán Ngữ 9 Cấp Độ
                 </h1>
 
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium line-clamp-2 sm:line-clamp-none">
                   Từ nền tảng <strong className="text-white">HSK 1–6 (120 bài • 5.000 từ)</strong>{' '}
                   đến đỉnh cao học thuật{' '}
                   <strong className="text-amber-300">HSK 7–9 (60 bài • 11.092 từ)</strong> kèm{' '}
@@ -642,7 +642,7 @@ export default function RoadmapPage({
               </div>
 
               {globalStats.nextRecommendedLesson && (
-                <div className="w-full lg:w-96 p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-xl flex flex-col justify-between gap-3">
+                <div className="w-full lg:w-96 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-xl flex flex-col justify-between gap-2 sm:gap-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="inline-flex items-center gap-1.5 text-amber-300 font-bold uppercase tracking-wider text-[11px]">
                       <Flame className="w-3.5 h-3.5 text-amber-400" />
@@ -712,7 +712,7 @@ export default function RoadmapPage({
                 <div className="h-1.5 w-full rounded-full bg-black/30 mt-2 overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-[#45B97C] via-amber-400 to-[#E85D3F] transition-all duration-500"
-                    style={{ width: `${Math.max(4, globalStats.totalPct)}%` }}
+                    style={{ width: `${globalStats.totalPct > 0 ? Math.max(4, globalStats.totalPct) : 0}%` }}
                   />
                 </div>
               </div>
@@ -1130,14 +1130,14 @@ export default function RoadmapPage({
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Tìm chữ Hán, thành ngữ, ngữ pháp..."
-                      className="w-full pl-8 pr-3 py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-medium text-[#243447] dark:text-white placeholder:text-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                      className="w-full pl-8 pr-3 py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-base sm:text-sm font-medium text-[#243447] dark:text-white placeholder:text-[#748092] focus:outline-none focus:border-[#E85D3F]"
                     />
                   </div>
 
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-semibold text-[#243447] dark:text-slate-200 focus:outline-none focus:border-[#E85D3F]"
+                    className="px-3 py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-base sm:text-sm font-semibold text-[#243447] dark:text-slate-200 focus:outline-none focus:border-[#E85D3F]"
                   >
                     <option value="all">Tất cả trạng thái</option>
                     <option value="remaining">Chưa hoàn thành</option>
@@ -1366,7 +1366,7 @@ export default function RoadmapPage({
                 </button>
               </div>
 
-              <div className="p-6 rounded-3xl bg-gradient-to-br from-[#243447] to-[#131B24] text-white shadow-sm space-y-4 text-center border border-white/5">
+              <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#243447] to-[#131B24] text-white shadow-sm space-y-2.5 sm:space-y-4 text-center border border-white/5">
                 <div className="w-14 h-14 rounded-2xl bg-white/10 text-amber-400 flex items-center justify-center mx-auto text-2xl">
                   🧭
                 </div>
@@ -1408,7 +1408,7 @@ export default function RoadmapPage({
                   value={supplementarySearch}
                   onChange={(e) => setSupplementarySearch(e.target.value)}
                   placeholder="Tìm tiêu đề, chuyên đề bài học mở rộng..."
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 
@@ -1416,7 +1416,7 @@ export default function RoadmapPage({
                 <select
                   value={supplementaryLevelFilter}
                   onChange={(e) => setSupplementaryLevelFilter(e.target.value)}
-                  className="px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
+                  className="px-3 py-2.5 rounded-2xl text-base sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
                 >
                   <option value="all">Mọi cấp độ HSK</option>
                   <option value="Nhập môn">Nhập môn</option>

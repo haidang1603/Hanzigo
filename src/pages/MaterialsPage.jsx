@@ -1106,9 +1106,9 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 -mb-16 w-56 h-56 rounded-full bg-rose-400/20 blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-white text-[11px] font-bold backdrop-blur-md border border-white/20">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-4">
+          <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-white text-[11px] font-bold backdrop-blur-md border border-white/20">
               <FolderDown size={13} className="text-amber-300" />
               <span>Kho học liệu & Giáo trình số HanziGo</span>
               {isAdmin && (
@@ -1118,11 +1118,11 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
               )}
             </div>
             
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
+            <h1 className="text-lg sm:text-2xl lg:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
               Thư Viện Tài Liệu Tiếng Trung
             </h1>
             
-            <p className="text-xs text-white/90 leading-relaxed font-medium line-clamp-2">
+            <p className="text-xs text-white/90 leading-relaxed font-medium line-clamp-1 sm:line-clamp-2">
               Tuyển tập giáo trình chuẩn CTI & BLCU, kho OER, bách khoa ngữ pháp Wiki, đề thi HSK có đáp án và Audio bản ngữ minh bạch bản quyền.
             </p>
             
@@ -1468,7 +1468,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
             placeholder="Tìm theo tên sách, nhà xuất bản (BLCU, CTI), kỹ năng, bài học lộ trình, từ khóa..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-10 py-3 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs sm:text-sm font-semibold text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F] transition-colors"
+            className="w-full pl-11 pr-10 py-3 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F] transition-colors"
           />
           {searchTerm && (
             <button
@@ -1523,7 +1523,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
               >
                 <option value="downloads">Lượt quan tâm nhiều nhất</option>
                 <option value="recently_verified">Mới thẩm định gần nhất</option>
@@ -1593,7 +1593,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
               <select
                 value={selectedLevel}
                 onChange={(e) => setSelectedLevel(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
               >
                 {MATERIAL_LEVELS.map((lvl) => (
                   <option key={lvl} value={lvl}>{lvl}</option>
@@ -1607,7 +1607,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
               <select
                 value={selectedExamVersion}
                 onChange={(e) => setSelectedExamVersion(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
               >
                 <option value="all">Mọi phiên bản</option>
                 <option value="2.0">HSK 2.0 (1-6 cấp)</option>
@@ -1621,7 +1621,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
               <select
                 value={selectedLanguage}
                 onChange={(e) => setSelectedLanguage(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
               >
                 <option value="all">Tất cả ngôn ngữ</option>
                 <option value="bilingual">Song ngữ Trung - Việt</option>
@@ -1636,7 +1636,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
               <select
                 value={selectedHostType}
                 onChange={(e) => setSelectedHostType(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
               >
                 <option value="all">Mọi nguồn lưu trữ</option>
                 <option value="hanzigo_original">⚡ HanziGo biên soạn</option>
@@ -1653,7 +1653,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
               <select
                 value={selectedVerification}
                 onChange={(e) => setSelectedVerification(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                className="px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-bold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
               >
                 <option value="all">Tất cả nguồn</option>
                 <option value="verified_official">🛡️ Chính thức CTI / Bộ GD</option>
@@ -2090,7 +2090,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-3xl w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
+            <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-3xl w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90dvh] pb-[max(0.75rem,env(safe-area-inset-bottom))] overflow-y-auto">
               
               {/* Modal Top Bar */}
               <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
@@ -2608,7 +2608,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
       {/* 10. MODAL: QUICK MIZIGE SHEET GENERATOR & PRINT STUDIO */}
       {showMizigeGenModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-2xl w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-2xl w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90dvh] pb-[max(0.75rem,env(safe-area-inset-bottom))] overflow-y-auto">
             
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <div>
@@ -2719,7 +2719,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
       {/* 11. MODAL: ADD CUSTOM MATERIAL (ADMIN ONLY) */}
       {showAddModal && isAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-2xl w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-2xl w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90dvh] pb-[max(0.75rem,env(safe-area-inset-bottom))] overflow-y-auto">
             
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <div>
@@ -2770,7 +2770,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Ví dụ: Giáo trình Chuẩn HSK 3 kèm Audio..."
-                  className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm font-semibold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 
@@ -2782,7 +2782,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
                   >
                     {MATERIAL_CATEGORIES.filter(c => c !== 'Tất cả').map((cat) => (
                       <option key={cat} value={cat}>{cat}</option>
@@ -2797,7 +2797,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   <select
                     value={newLevel}
                     onChange={(e) => setNewLevel(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
                   >
                     {MATERIAL_LEVELS.filter(l => l !== 'Tất cả').map((lvl) => (
                       <option key={lvl} value={lvl}>{lvl}</option>
@@ -2816,7 +2816,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                     value={newSkills}
                     onChange={(e) => setNewSkills(e.target.value)}
                     placeholder="Nghe hiểu, Đọc hiểu, Ngữ pháp..."
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
                   />
                 </div>
 
@@ -2829,7 +2829,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                     value={newPublisher}
                     onChange={(e) => setNewPublisher(e.target.value)}
                     placeholder="BLCU Press, CTI, Khổng Tử Học Viện..."
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -2842,7 +2842,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   <select
                     value={newFormat}
                     onChange={(e) => setNewFormat(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
                   >
                     {MATERIAL_FORMATS.map((fmt) => (
                       <option key={fmt} value={fmt}>{fmt}</option>
@@ -2859,7 +2859,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                     value={newLicense}
                     onChange={(e) => setNewLicense(e.target.value)}
                     placeholder="OER, CC-BY, Trích dẫn học thuật..."
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
                   />
                 </div>
 
@@ -2870,7 +2870,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   <select
                     value={newVerificationStatus}
                     onChange={(e) => setNewVerificationStatus(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
                   >
                     <option value="verified_official">🛡️ Chính thức CTI / Hanban</option>
                     <option value="verified_oer">✅ Giáo dục Mở OER / CC</option>
@@ -2890,7 +2890,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                     value={newRelatedLessonId}
                     onChange={(e) => setNewRelatedLessonId(e.target.value)}
                     placeholder="Ví dụ: Module 1.1 (Bài 101-105)"
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
                   />
                 </div>
 
@@ -2903,7 +2903,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                     value={newLanguage}
                     onChange={(e) => setNewLanguage(e.target.value)}
                     placeholder="Song ngữ Trung - Việt, Tiếng Trung Giản thể..."
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -2919,7 +2919,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                     value={newSourceUrl}
                     onChange={(e) => setNewSourceUrl(e.target.value)}
                     placeholder="https://chinesetest.cn... hoặc link nguồn gốc"
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                 </div>
 
@@ -2932,7 +2932,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                     value={newDownloadUrl}
                     onChange={(e) => setNewDownloadUrl(e.target.value)}
                     placeholder="https://drive.google.com/... hoặc link tải"
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                 </div>
               </div>
@@ -2946,7 +2946,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
                   placeholder="Giới thiệu nội dung, cấu trúc sách, đối tượng phù hợp và cách học hiệu quả..."
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-3 py-2 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 
@@ -2959,7 +2959,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   value={newVerificationNotes}
                   onChange={(e) => setNewVerificationNotes(e.target.value)}
                   placeholder="Đã xác thực qua website chính thức CTI, cấp phép theo điều khoản giáo dục..."
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
                 />
               </div>
 
@@ -2972,7 +2972,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   value={newTags}
                   onChange={(e) => setNewTags(e.target.value)}
                   placeholder="HSK 1, Ngữ pháp, Audio, Đề thi, CTI..."
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none"
                 />
               </div>
 
@@ -3033,7 +3033,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   value={reqTitle}
                   onChange={(e) => setReqTitle(e.target.value)}
                   placeholder="Ví dụ: Giáo trình Hán ngữ Boya Sơ cấp tập 2, Đề thi HSK 5 có audio..."
-                  className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm font-semibold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 
@@ -3045,7 +3045,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   <select
                     value={reqCategory}
                     onChange={(e) => setReqCategory(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
                   >
                     {MATERIAL_CATEGORIES.filter(c => c !== 'Tất cả').map((cat) => (
                       <option key={cat} value={cat}>{cat}</option>
@@ -3060,7 +3060,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   <select
                     value={reqLevel}
                     onChange={(e) => setReqLevel(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
                   >
                     {MATERIAL_LEVELS.filter(l => l !== 'Tất cả').map((lvl) => (
                       <option key={lvl} value={lvl}>{lvl}</option>
@@ -3076,7 +3076,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                 <select
                   value={reqFormat}
                   onChange={(e) => setReqFormat(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                  className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none cursor-pointer"
                 >
                   <option value="PDF + MP3">📄+🎧 PDF kèm Audio MP3</option>
                   <option value="PDF">📄 Sách / Giáo trình PDF</option>
@@ -3095,7 +3095,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
                   value={reqNote}
                   onChange={(e) => setReqNote(e.target.value)}
                   placeholder="Mô tả cụ thể phiên bản bạn cần (Ví dụ: Cần file nghe MP3 bài 5-10, sách tái bản mới...)"
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-3 py-2 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 

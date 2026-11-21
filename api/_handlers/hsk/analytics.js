@@ -8,6 +8,7 @@ import {
   generateStudyAnalytics,
   generateStudyRecommendations
 } from '../../../src/services/hskService.js';
+import { sendSafeServerError } from '../../_utils/supabaseServer.js';
 
 export default async function analyticsHandler(req, res) {
   if (req.method !== 'GET') {
@@ -28,6 +29,6 @@ export default async function analyticsHandler(req, res) {
     });
   } catch (err) {
     console.error('[HSK Analytics Error]:', err);
-    return res.status(500).json({ error: 'Lỗi máy chủ nội bộ khi tải phân tích HSK.', message: err?.message });
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ khi tải phân tích HSK.', err);
   }
 }

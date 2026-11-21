@@ -11,28 +11,11 @@
  */
 
 import { getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
 
-// Memory rate-limiting fallback (5 submissions / 15 minutes per IP)
-const rateLimitMap = new Map();
-
-function isRateLimited(ip) {
-  const now = Date.now();
-  const windowMs = 15 * 60 * 1000;
-  const maxAttempts = 5;
-
-  const record = rateLimitMap.get(ip);
-  if (!record || now - record.firstAttempt > windowMs) {
-    rateLimitMap.set(ip, { count: 1, firstAttempt: now });
-    return false;
-  }
-
-  if (record.count >= maxAttempts) {
-    return true;
-  }
-
-  record.count += 1;
-  return false;
-}
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX_REQUESTS = 5;           // 5 submissions / 15 minutes per IP
+const DAILY_QUOTA_MAX_REQUESTS = 20;         // 20 submissions / 24 hours per IP
 
 // Curated daily lesson seed
 const DAILY_LESSONS = [
@@ -106,10 +89,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
-    if (isRateLimited(clientIp)) {
-      return res.status(429).json({
-        error: 'Bạn đã thao tác quá nhiều lần. Vui lòng thử lại sau 15 phút.'
+    const rawForwarded = req.headers?.['x-forwarded-for'];
+    const clientIp = rawForwarded
+      ? String(rawForwarded).split(',')[0].trim()
+      : (req.headers?.['x-real-ip'] || req.socket?.remoteAddress || '127.0.0.1');
+    const rateCheck = await checkRateLimitAndQuota({
+      clientKey: `ip:${clientIp}`,
+      windowMs: RATE_LIMIT_WINDOW_MS,
+      maxRequests: RATE_LIMIT_MAX_REQUESTS,
+      dailyQuotaMax: DAILY_QUOTA_MAX_REQUESTS,
+      prefix: 'newsletter',
+    });
+    if (!rateCheck.allowed) {
+      return res.status(rateCheck.statusCode || 429).json({
+        error: rateCheck.reason || 'Bạn đã thao tác quá nhiều lần. Vui lòng thử lại sau 15 phút.'
       });
     }
 

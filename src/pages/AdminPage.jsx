@@ -1031,11 +1031,11 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       )}
 
       {/* 1. Compact Header Banner */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E293B] text-white p-4 sm:p-6 border border-white/10 shadow-lg">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E293B] text-white p-3.5 sm:p-6 border border-white/10 shadow-lg">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-4">
           
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
+            <div className="hidden sm:flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wide uppercase bg-[#E85D3F]/20 text-[#E85D3F] border border-[#E85D3F]/30">
                 <ShieldCheck size={12} />
                 Bảng Điều Khiển Quản Trị Hệ Thống
@@ -1047,10 +1047,10 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight">
+            <h1 className="text-lg sm:text-2xl lg:text-3xl font-black tracking-tight">
               Trung Tâm Quản Trị HanziGo
             </h1>
-            <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed line-clamp-2 sm:line-clamp-none">
               Theo dõi toàn diện học viên, quản lý kho tài liệu, chỉnh sửa ngân hàng từ vựng, điều chỉnh bài học và giám sát tải AI theo thời gian thực.
             </p>
           </div>
@@ -1073,7 +1073,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     placeholder="Nhập họ và tên..."
                     autoFocus
                     maxLength={40}
-                    className="px-3 py-1.5 rounded-xl bg-black/60 border border-white/20 text-white text-xs font-bold focus:outline-none focus:border-emerald-400 w-36 sm:w-44"
+                    className="px-3 py-1.5 rounded-xl bg-black/60 border border-white/20 text-white text-base sm:text-sm font-bold focus:outline-none focus:border-emerald-400 w-36 sm:w-44"
                   />
                   <button
                     type="submit"
@@ -1352,7 +1352,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   placeholder="Tìm học viên theo tên, email, trình độ HSK..."
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 
@@ -1446,7 +1446,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
 
           {/* Users Table */}
           <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-w-full">
               <table className="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead>
                   <tr className="bg-[#FFF9F2] dark:bg-[#131B24] border-b border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] dark:text-[#94A3B8] font-bold">
@@ -1532,7 +1532,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                               value={u.role || 'student'}
                               disabled={isSelf}
                               onChange={(e) => handleChangeUserRole(u, e.target.value)}
-                              className="px-2.5 py-1 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-[#243447] dark:text-white cursor-pointer disabled:opacity-60"
+                              className="px-2.5 py-1 rounded-xl text-base sm:text-sm font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-[#243447] dark:text-white cursor-pointer disabled:opacity-60"
                             >
                               <option value="student">Học viên</option>
                               <option value="teacher">Giáo viên</option>
@@ -1679,7 +1679,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   value={matSearch}
                   onChange={(e) => setMatSearch(e.target.value)}
                   placeholder="Tìm tài liệu theo tiêu đề, tác giả, thẻ tag..."
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 
@@ -1853,7 +1853,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 value={vocabSearch}
                 onChange={(e) => setVocabSearch(e.target.value)}
                 placeholder="Tìm chữ Hán, Pinyin, Hán-Việt, ý nghĩa..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
               />
             </div>
 
@@ -1861,7 +1861,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               <select
                 value={vocabHskFilter}
                 onChange={(e) => setVocabHskFilter(e.target.value)}
-                className="px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
+                className="px-3 py-2.5 rounded-2xl text-base sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
               >
                 <option value="all">Mọi cấp độ HSK</option>
                 <option value="hsk1">HSK 1</option>
@@ -1996,7 +1996,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 value={lessonSearch}
                 onChange={(e) => setLessonSearch(e.target.value)}
                 placeholder="Tìm tiêu đề, mô tả bài học bổ sung..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
               />
             </div>
 
@@ -2004,7 +2004,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               <select
                 value={lessonLevelFilter}
                 onChange={(e) => setLessonLevelFilter(e.target.value)}
-                className="px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
+                className="px-3 py-2.5 rounded-2xl text-base sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
               >
                 <option value="all">Mọi cấp độ</option>
                 <option value="Nhập môn">Nhập môn</option>
@@ -2221,7 +2221,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   onChange={(e) => setNewUserForm({ ...newUserForm, name: e.target.value })}
                   placeholder="Ví dụ: Hoàng Đức Anh"
                   disabled={isCreatingUser}
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-60"
+                  className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-60"
                 />
               </div>
 
@@ -2236,7 +2236,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
                   placeholder="ducanh@gmail.com"
                   disabled={isCreatingUser}
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-60"
+                  className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-60"
                 />
               </div>
 
@@ -2264,7 +2264,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
                     placeholder="Nhập ít nhất 8 ký tự..."
                     disabled={isCreatingUser}
-                    className="w-full pl-4 pr-10 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-60 font-mono"
+                    className="w-full pl-4 pr-10 py-2.5 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-60 font-mono"
                   />
                   <button
                     type="button"
@@ -2285,7 +2285,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     value={newUserForm.role}
                     onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
                     disabled={isCreatingUser}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold disabled:opacity-60"
+                    className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold disabled:opacity-60"
                   >
                     <option value="student">Học viên (Student)</option>
                     <option value="teacher">Giáo viên (Teacher)</option>
@@ -2300,7 +2300,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     value={newUserForm.level}
                     onChange={(e) => setNewUserForm({ ...newUserForm, level: e.target.value })}
                     disabled={isCreatingUser}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold disabled:opacity-60"
+                    className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold disabled:opacity-60"
                   >
                     <option value="HSK 1 - Sơ cấp">HSK 1 - Sơ cấp</option>
                     <option value="HSK 2 - Cơ bản">HSK 2 - Cơ bản</option>
@@ -2372,7 +2372,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   required
                   value={editingUser.name}
                   onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                 />
               </div>
 
@@ -2384,7 +2384,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   <select
                     value={editingUser.level}
                     onChange={(e) => setEditingUser({ ...editingUser, level: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   >
                     <option value="HSK 1 - Sơ cấp">HSK 1 - Sơ cấp</option>
                     <option value="HSK 2 - Cơ bản">HSK 2 - Cơ bản</option>
@@ -2402,7 +2402,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     value={editingUser.status}
                     disabled={isEditingSelf}
                     onChange={(e) => setEditingUser({ ...editingUser, status: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold disabled:opacity-60"
+                    className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold disabled:opacity-60"
                   >
                     <option value="active">Hoạt động</option>
                     <option value="blocked">Khóa</option>
@@ -2419,7 +2419,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     type="number"
                     value={editingUser.xp || 0}
                     onChange={(e) => setEditingUser({ ...editingUser, xp: Number(e.target.value) })}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   />
                 </div>
                 <div>
@@ -2430,7 +2430,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     type="number"
                     value={editingUser.streak || 0}
                     onChange={(e) => setEditingUser({ ...editingUser, streak: Number(e.target.value) })}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   />
                 </div>
               </div>
@@ -2461,7 +2461,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       {/* ============================================================== */}
       {isMatFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-xl w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-xl w-full border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90dvh] pb-[max(0.75rem,env(safe-area-inset-bottom))] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
               <h3 className="text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
                 <FileText size={20} className="text-[#E85D3F]" />
@@ -2481,7 +2481,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   value={matForm.title}
                   onChange={(e) => setMatForm({ ...matForm, title: e.target.value })}
                   placeholder="Ví dụ: Giáo trình Chuẩn HSK 1"
-                  className="w-full px-4 py-2 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  className="w-full px-4 py-2 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                 />
               </div>
 
@@ -2491,7 +2491,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   <select
                     value={matForm.category}
                     onChange={(e) => setMatForm({ ...matForm, category: e.target.value })}
-                    className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                    className="w-full px-4 py-2 rounded-xl text-base sm:text-sm font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   >
                     {MATERIAL_CATEGORIES.filter(c => c !== 'Tất cả').map(c => (
                       <option key={c} value={c}>{c}</option>
@@ -2503,7 +2503,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   <select
                     value={matForm.level}
                     onChange={(e) => setMatForm({ ...matForm, level: e.target.value })}
-                    className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                    className="w-full px-4 py-2 rounded-xl text-base sm:text-sm font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   >
                     {MATERIAL_LEVELS.filter(l => l !== 'Tất cả').map(l => (
                       <option key={l} value={l}>{l}</option>
@@ -2519,7 +2519,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   value={matForm.description}
                   onChange={(e) => setMatForm({ ...matForm, description: e.target.value })}
                   placeholder="Nội dung, phương pháp và đối tượng học..."
-                  className="w-full px-4 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  className="w-full px-4 py-2 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                 />
               </div>
 
@@ -2531,7 +2531,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     value={matForm.downloadUrl || ''}
                     onChange={(e) => setMatForm({ ...matForm, downloadUrl: e.target.value })}
                     placeholder="https://..."
-                    className="w-full px-4 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                    className="w-full px-4 py-2 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   />
                 </div>
                 <div>
@@ -2541,7 +2541,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     value={matForm.fileSize || '10 MB'}
                     onChange={(e) => setMatForm({ ...matForm, fileSize: e.target.value })}
                     placeholder="10 MB"
-                    className="w-full px-4 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                    className="w-full px-4 py-2 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   />
                 </div>
               </div>
@@ -2629,7 +2629,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     value={vocabForm.pinyin}
                     onChange={(e) => setVocabForm({ ...vocabForm, pinyin: e.target.value })}
                     placeholder="nǐ hǎo"
-                    className="w-full px-4 py-2 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                    className="w-full px-4 py-2 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                   />
                 </div>
               </div>
@@ -2642,7 +2642,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     value={vocabForm.hanviet}
                     onChange={(e) => setVocabForm({ ...vocabForm, hanviet: e.target.value })}
                     placeholder="Nhĩ Hảo"
-                    className="w-full px-4 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                    className="w-full px-4 py-2 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   />
                 </div>
                 <div>
@@ -2650,7 +2650,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   <select
                     value={vocabForm.hsk}
                     onChange={(e) => setVocabForm({ ...vocabForm, hsk: e.target.value })}
-                    className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                    className="w-full px-4 py-2 rounded-xl text-base sm:text-sm font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   >
                     <option value="hsk1">HSK 1</option>
                     <option value="hsk2">HSK 2</option>
@@ -2670,7 +2670,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   value={vocabForm.meaning}
                   onChange={(e) => setVocabForm({ ...vocabForm, meaning: e.target.value })}
                   placeholder="Xin chào"
-                  className="w-full px-4 py-2 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                  className="w-full px-4 py-2 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                 />
               </div>
 
@@ -2681,7 +2681,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   value={vocabForm.example}
                   onChange={(e) => setVocabForm({ ...vocabForm, example: e.target.value })}
                   placeholder="你好！很高兴认识你。"
-                  className="w-full px-4 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  className="w-full px-4 py-2 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                 />
               </div>
 
@@ -2741,7 +2741,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   value={lessonForm.title}
                   onChange={(e) => setLessonForm({ ...lessonForm, title: e.target.value })}
                   placeholder="Bài 5: Đi lại & Đặt vé tàu cao tốc"
-                  className="w-full px-4 py-2 rounded-xl text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
+                  className="w-full px-4 py-2 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-bold"
                 />
               </div>
 
@@ -2751,7 +2751,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   <select
                     value={lessonForm.level}
                     onChange={(e) => setLessonForm({ ...lessonForm, level: e.target.value })}
-                    className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                    className="w-full px-4 py-2 rounded-xl text-base sm:text-sm font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   >
                     <option value="Nhập môn">Nhập môn</option>
                     <option value="HSK 1">HSK 1</option>
@@ -2768,7 +2768,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     type="number" 
                     value={lessonForm.duration}
                     onChange={(e) => setLessonForm({ ...lessonForm, duration: e.target.value })}
-                    className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                    className="w-full px-4 py-2 rounded-xl text-base sm:text-sm font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                   />
                 </div>
               </div>
@@ -2780,7 +2780,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                   value={lessonForm.description}
                   onChange={(e) => setLessonForm({ ...lessonForm, description: e.target.value })}
                   placeholder="Mô tả nội dung bài học..."
-                  className="w-full px-4 py-2 rounded-xl text-xs border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
+                  className="w-full px-4 py-2 rounded-xl text-base sm:text-sm border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white"
                 />
               </div>
 

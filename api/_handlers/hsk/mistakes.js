@@ -10,7 +10,7 @@ import {
   removeMistakeItem,
   getMistakePracticeExam
 } from '../../../src/services/hskService.js';
-import { verifyRequestAuth } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, sendSafeServerError } from '../../_utils/supabaseServer.js';
 
 export default async function mistakesHandler(req, res) {
   try {
@@ -68,6 +68,6 @@ export default async function mistakesHandler(req, res) {
     return res.status(405).json({ error: 'Phương thức không được hỗ trợ.' });
   } catch (err) {
     console.error('[HSK Mistakes Error]:', err);
-    return res.status(500).json({ error: 'Lỗi máy chủ nội bộ khi xử lý sổ tay lỗi sai.', message: err?.message });
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ khi xử lý sổ tay lỗi sai.', err);
   }
 }

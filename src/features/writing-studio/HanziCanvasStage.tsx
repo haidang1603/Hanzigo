@@ -284,7 +284,7 @@ export default function HanziCanvasStage({
       {/* Main Responsive Canvas Stage (320px - 420px) */}
       <div className="flex flex-col items-center gap-4">
         <div
-          className="relative w-[320px] h-[320px] sm:w-[360px] sm:h-[360px] lg:w-[400px] lg:h-[400px] rounded-2xl bg-[#FFFDF9] dark:bg-[#0F172A] shadow-inner flex items-center justify-center overflow-hidden touch-none overscroll-contain select-none"
+          className="relative w-full max-w-[320px] aspect-square sm:w-[360px] sm:max-w-[360px] sm:h-[360px] lg:w-[400px] lg:max-w-[400px] lg:h-[400px] rounded-2xl bg-[#FFFDF9] dark:bg-[#0F172A] shadow-inner flex items-center justify-center overflow-hidden touch-none overscroll-contain select-none"
           style={{ touchAction: 'none' }}
         >
           <GridOverlaySvg gridType={gridType} />
@@ -393,7 +393,7 @@ export default function HanziCanvasStage({
             aria-label="Độ khắt khe chấm nét"
             value={String(leniency)}
             onChange={(e) => onLeniencyChange(Number(e.target.value))}
-            className="px-2.5 py-1.5 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-xs font-bold cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-base sm:text-sm font-bold cursor-pointer"
           >
             <option value="1">Chấm dễ (1.0)</option>
             <option value="0.75">Chấm chặt (0.75)</option>
@@ -404,7 +404,7 @@ export default function HanziCanvasStage({
             aria-label="Tốc độ nét mẫu"
             value={String(strokeAnimationSpeed)}
             onChange={(e) => onSpeedChange(Number(e.target.value))}
-            className="px-2.5 py-1.5 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-xs font-bold cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-base sm:text-sm font-bold cursor-pointer"
           >
             <option value="0.7">0.7x</option>
             <option value="1">1.0x</option>

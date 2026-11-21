@@ -1,7 +1,7 @@
 /**
  * HANZI GO - CLASSROOM CREATE HANDLER
  */
-import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, getSupabaseAdminClient, sendSafeServerError } from '../../_utils/supabaseServer.js';
 
 export default async function createHandler(req, res) {
   if (req.method !== 'POST') {
@@ -73,7 +73,7 @@ export default async function createHandler(req, res) {
           return res.status(409).json({ error: 'Mã lớp học này đã tồn tại trong hệ thống. Vui lòng tạo mã khác.' });
         }
         if (isProd) {
-          return res.status(500).json({ error: 'Không thể tạo lớp học: ' + (error.message || 'Lỗi cơ sở dữ liệu') });
+          return sendSafeServerError(res, 'Không thể tạo lớp học.', error);
         }
         console.warn('[/api/classroom/create] DB error:', error.message);
       }

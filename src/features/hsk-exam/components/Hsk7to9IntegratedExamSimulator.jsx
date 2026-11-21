@@ -438,7 +438,7 @@ export default function Hsk7to9IntegratedExamSimulator({
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] pb-24 transition-colors duration-200">
+    <div className="min-h-dvh bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] pb-24 transition-colors duration-200">
       {toastMsg && (
         <div className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl bg-[#243447] text-white text-xs sm:text-sm font-bold shadow-2xl flex items-center gap-2 border border-white/10">
           <CheckCircle2 className="w-4 h-4 text-[#45B97C] shrink-0" />

@@ -3,6 +3,7 @@
  * GET /api/hsk/resources
  */
 import { getPublicHskResources } from '../../../src/services/hskReviewService.js';
+import { sendSafeServerError } from '../../_utils/supabaseServer.js';
 
 export default async function resourcesHandler(req, res) {
   if (req.method !== 'GET') {
@@ -20,6 +21,6 @@ export default async function resourcesHandler(req, res) {
     });
   } catch (err) {
     console.error('[HSK Resources Error]:', err);
-    return res.status(500).json({ error: 'Lỗi máy chủ nội bộ khi tải tài liệu HSK.', message: err?.message });
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ khi tải tài liệu HSK.', err);
   }
 }

@@ -621,14 +621,14 @@ export default function LiveHanziWhiteboardStage({
                   value={wordInput}
                   onChange={(e) => setWordInput(e.target.value)}
                   placeholder="Nhập từ/câu chữ Hán (VD: 整理汉字)"
-                  className="flex-1 bg-black/40 border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="flex-1 bg-black/40 border border-white/15 rounded-xl px-2.5 py-1.5 text-base sm:text-sm text-white focus:outline-none focus:border-[#E85D3F]"
                 />
                 <input
                   type="text"
                   value={meaningInput}
                   onChange={(e) => setMeaningInput(e.target.value)}
                   placeholder="Nghĩa ngắn"
-                  className="w-24 bg-black/40 border border-white/15 rounded-xl px-2 py-1.5 text-xs text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-24 bg-black/40 border border-white/15 rounded-xl px-2.5 py-1.5 text-base sm:text-sm text-white focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 

@@ -385,7 +385,7 @@ export default function AppSidebar({
     <aside
       aria-label="Sidebar điều hướng"
       data-sections={navSections.length}
-      className={`hidden lg:flex flex-col border-r border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] transition-all duration-200 select-none z-40 sticky top-0 h-screen ${
+      className={`hidden lg:flex flex-col border-r border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] transition-all duration-200 select-none z-40 sticky top-0 h-dvh ${
         isCollapsed ? 'w-20' : 'w-64'
       }`}
     >

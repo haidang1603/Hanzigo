@@ -1276,22 +1276,22 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
       )}
 
       {/* 1. HERO HEADER BANNER (ASIAN-MODERN PALETTE) */}
-      <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#991B1B] text-white shadow-lg">
+      <div className="relative overflow-hidden p-3.5 sm:p-5 rounded-2xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#991B1B] text-white shadow-lg">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 -mb-16 w-56 h-56 rounded-full bg-rose-400/20 blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-white text-[11px] font-bold backdrop-blur-md border border-white/20">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-4">
+          <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-white text-[11px] font-bold backdrop-blur-md border border-white/20">
               <Users size={13} className="text-amber-300" />
               <span>Không gian Học tập & Giao lưu HanziGo</span>
             </div>
             
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
+            <h1 className="text-lg sm:text-2xl lg:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
               Cộng Đồng Người Học HanziGo
             </h1>
             
-            <p className="text-xs text-white/90 leading-relaxed font-medium line-clamp-2">
+            <p className="text-xs text-white/90 leading-relaxed font-medium line-clamp-1 sm:line-clamp-2">
               Hỏi đáp ngữ pháp, thảo luận kinh nghiệm thi HSK, ghép đôi luyện nói 1-1 và vinh danh bảng vàng cao thủ chữ Hán.
             </p>
             
@@ -1486,7 +1486,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   placeholder="Tìm bạn theo tên, mục tiêu, kỹ năng luyện tập..."
                   value={partnerSearchTerm}
                   onChange={(e) => setPartnerSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
+                  className="w-full pl-9 pr-8 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
                 />
                 {partnerSearchTerm && (
                   <button
@@ -1505,7 +1505,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   <select
                     value={partnerFilterLevel}
                     onChange={(e) => setPartnerFilterLevel(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
                   >
                     <option value="all">Mọi cấp độ</option>
                     <option value="HSK 1">HSK 1</option>
@@ -1523,7 +1523,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   <select
                     value={partnerFilterMethod}
                     onChange={(e) => setPartnerFilterMethod(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
                   >
                     <option value="all">Mọi kênh liên hệ</option>
                     <option value="Zalo">Zalo</option>
@@ -1539,7 +1539,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   <select
                     value={partnerFilterStatus}
                     onChange={(e) => setPartnerFilterStatus(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
                   >
                     <option value="all">Tất cả</option>
                     <option value="active">Đang tìm bạn</option>
@@ -1812,7 +1812,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
           <div className="lg:col-span-8 space-y-6">
             
             {/* 1. DAILY TOPIC STICKY CARD */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#FEF7E9] via-white to-[#FFF9F2] dark:from-[#1E293B] dark:via-[#1B2636] dark:to-[#131B24] border-2 border-[#F4B942]/60 shadow-md space-y-3">
+            <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#FEF7E9] via-white to-[#FFF9F2] dark:from-[#1E293B] dark:via-[#1B2636] dark:to-[#131B24] border-2 border-[#F4B942]/60 shadow-md space-y-2 sm:space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-black uppercase tracking-wider text-[#D97706] bg-[#FEF7E9] dark:bg-[#2D2619] px-2.5 py-0.5 rounded-full border border-[#F4B942]/40 flex items-center gap-1">
                   <span>🏮</span>
@@ -1903,7 +1903,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   placeholder="Bạn đang vướng mắc điểm ngữ pháp nào, hoặc muốn tìm bạn cùng học? Hãy viết câu hỏi tại đây..."
                   value={newPostContent}
                   onChange={(e) => setNewPostContent(e.target.value)}
-                  className="w-full p-4 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] resize-none"
+                  className="w-full p-4 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] resize-none"
                 />
 
                 {/* Contact info strip */}
@@ -1915,7 +1915,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                     <select
                       value={postContactMethod}
                       onChange={(e) => setPostContactMethod(e.target.value)}
-                      className="text-xs px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-medium focus:outline-none focus:border-[#E85D3F] shrink-0 cursor-pointer"
+                      className="text-base sm:text-sm px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-medium focus:outline-none focus:border-[#E85D3F] shrink-0 cursor-pointer"
                     >
                       <option value="Zalo">Zalo</option>
                       <option value="SĐT">SĐT</option>
@@ -1928,7 +1928,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                       placeholder="SĐT / Zalo / ID để bạn bè liên hệ trực tiếp..."
                       value={postContactInfo}
                       onChange={(e) => setPostContactInfo(e.target.value)}
-                      className="w-full text-xs px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                      className="w-full text-base sm:text-sm px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
                     />
                   </div>
                 </div>
@@ -1961,7 +1961,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                       <select
                         value={newPostTag}
                         onChange={(e) => setNewPostTag(e.target.value)}
-                        className="text-xs px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-medium focus:outline-none focus:border-[#E85D3F] cursor-pointer"
+                        className="text-base sm:text-sm px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-medium focus:outline-none focus:border-[#E85D3F] cursor-pointer"
                       >
                         <option value="#HoiDapNguPhap">#HỏiĐápNgữPháp</option>
                         <option value="#ChuDeHomNay">#ChủĐềHômNay</option>
@@ -2018,7 +2018,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   placeholder="Tìm kiếm bài viết, tác giả hoặc chủ đề..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-xs font-medium text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-base sm:text-sm font-medium text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
                 />
                 {searchTerm && (
                   <button
@@ -2345,7 +2345,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                                 }
                               }}
                               disabled={submittingCommentMap[post.id]}
-                              className="flex-1 px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-50"
+                              className="flex-1 px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-50"
                             />
                             <button
                               onClick={() => handleAddComment(post.id)}
@@ -2448,7 +2448,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
             </div>
 
             {/* 2. Mini XP Leaderboard Teaser Widget */}
-            <div className="p-6 rounded-3xl bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E1B4B] text-white border border-white/10 shadow-sm space-y-3.5">
+            <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E1B4B] text-white border border-white/10 shadow-sm space-y-2.5 sm:space-y-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5 uppercase">
                   <Trophy size={14} className="text-amber-400" />
@@ -2526,7 +2526,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
       {/* Modal: Đăng tin / Chỉnh sửa hồ sơ bạn học */}
       {isPartnerModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-6 w-full max-w-md border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-6 w-full max-w-md border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4 max-h-[90dvh] pb-[max(0.75rem,env(safe-area-inset-bottom))] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-3">
               <h3 className="text-base font-bold text-[#243447] dark:text-white flex items-center gap-2">
                 {editingPartnerId ? <Edit3 size={18} className="text-[#45B97C]" /> : <Users size={18} className="text-[#45B97C]" />}
@@ -2551,7 +2551,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   placeholder="Ví dụ: Hoàng Nam"
                   value={partnerForm.name}
                   onChange={(e) => setPartnerForm({ ...partnerForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
+                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
                 />
               </div>
 
@@ -2563,7 +2563,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   <select
                     value={partnerForm.level}
                     onChange={(e) => setPartnerForm({ ...partnerForm, level: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none cursor-pointer"
                   >
                     <option value="HSK 1">HSK 1</option>
                     <option value="HSK 2">HSK 2</option>
@@ -2582,7 +2582,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   <select
                     value={partnerForm.contactMethod}
                     onChange={(e) => setPartnerForm({ ...partnerForm, contactMethod: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none cursor-pointer"
                   >
                     <option value="Zalo">Zalo</option>
                     <option value="Google Meet">Google Meet</option>
@@ -2603,7 +2603,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   placeholder="Ví dụ: 0912.xxx.xxx hoặc @nam_chinese"
                   value={partnerForm.contactInfo}
                   onChange={(e) => setPartnerForm({ ...partnerForm, contactInfo: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
+                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
                 />
               </div>
 
@@ -2617,7 +2617,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                     placeholder="Ví dụ: Tối 20h - 21h"
                     value={partnerForm.dailyTime}
                     onChange={(e) => setPartnerForm({ ...partnerForm, dailyTime: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
+                    className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
                   />
                 </div>
 
@@ -2630,7 +2630,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                     placeholder="Ví dụ: Luyện khẩu ngữ HSK"
                     value={partnerForm.skills}
                     onChange={(e) => setPartnerForm({ ...partnerForm, skills: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
+                    className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
                   />
                 </div>
               </div>
@@ -2644,7 +2644,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   placeholder="Ví dụ: Luyện nói 30p mỗi tối, sửa thanh điệu cho nhau"
                   value={partnerForm.goal}
                   onChange={(e) => setPartnerForm({ ...partnerForm, goal: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
+                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
                 />
               </div>
 
@@ -2900,7 +2900,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
               <img 
                 src={typeof zoomImageModal === 'object' ? zoomImageModal.url : zoomImageModal} 
                 alt="Ảnh phóng to" 
-                className="max-h-[70vh] w-auto max-w-full object-contain rounded-xl bg-white p-2 shadow-xs"
+                className="max-h-[70dvh] w-auto max-w-full object-contain rounded-xl bg-white p-2 shadow-xs"
               />
             </div>
 

@@ -234,6 +234,15 @@ export const UniversalSlideOverDrawer: React.FC = () => {
     recognition.start();
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeDrawer();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, closeDrawer]);
+
   if (!isOpen) return null;
 
   const TABS: Array<{ id: UnifiedToolTab; label: string; icon: React.ReactNode }> = [
@@ -254,7 +263,12 @@ export const UniversalSlideOverDrawer: React.FC = () => {
       : 0);
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-end bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="unified-drawer-title"
+      className="fixed inset-0 z-[100] flex justify-end bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+    >
       <div className="flex-1" onClick={closeDrawer} />
 
       <aside className="relative w-full max-w-xl h-[100dvh] bg-[#0a0a1f] border-l border-[#00D4FF]/30 text-slate-100 shadow-[0_0_60px_rgba(0,212,255,0.18)] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
@@ -262,7 +276,7 @@ export const UniversalSlideOverDrawer: React.FC = () => {
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="text-3xl font-bold tracking-wide text-white">
+                <h2 id="unified-drawer-title" className="text-3xl font-bold tracking-wide text-white">
                   {activeDictionaryEntry?.simplified || selectedText}
                 </h2>
                 {activeDictionaryEntry?.traditional &&
@@ -276,6 +290,7 @@ export const UniversalSlideOverDrawer: React.FC = () => {
                   onClick={() =>
                     speakChineseText(activeDictionaryEntry?.simplified || selectedText, 0.9)
                   }
+                  aria-label="Nghe phát âm chuẩn"
                   className="p-2 rounded-xl bg-[#00D4FF]/15 text-[#00D4FF] hover:bg-[#00D4FF]/25 transition"
                   title="Nghe phát âm chuẩn"
                 >

@@ -91,56 +91,63 @@ const STORAGE_REMEMBERED = 'hanzigo_vocab_remembered';
 const STORAGE_REVIEW = 'hanzigo_vocab_review';
 const STORAGE_SRS_STATE = 'hanzigo_vocab_srs_state';
 
-// Định mức từ vựng chuẩn theo từng cấp độ HSK (HSK 1 -> HSK 7-9)
+// Định mức từ vựng chuẩn HSK 3.0 theo từng cấp độ (HSK 1 -> HSK 7-9, tổng 11.000 từ)
 const HSK_LEVEL_TARGETS = [
   {
     id: 'HSK 1',
     label: 'HSK 1',
-    target: 150,
+    target: 300,
+    cumulative: 300,
     color: 'from-emerald-400 to-teal-500',
-    badge: 'Sơ cấp 1',
+    badge: 'Sơ cấp',
   },
   {
     id: 'HSK 2',
     label: 'HSK 2',
-    target: 150,
+    target: 200,
+    cumulative: 500,
     color: 'from-teal-400 to-cyan-500',
-    badge: 'Sơ cấp 2',
+    badge: 'Sơ cấp',
   },
   {
     id: 'HSK 3',
     label: 'HSK 3',
-    target: 300,
+    target: 500,
+    cumulative: 1000,
     color: 'from-sky-400 to-blue-500',
-    badge: 'Trung cấp 1',
+    badge: 'Sơ cấp',
   },
   {
     id: 'HSK 4',
     label: 'HSK 4',
-    target: 600,
+    target: 1000,
+    cumulative: 2000,
     color: 'from-indigo-400 to-purple-500',
-    badge: 'Trung cấp 2',
+    badge: 'Trung cấp',
   },
   {
     id: 'HSK 5',
     label: 'HSK 5',
-    target: 1300,
+    target: 1600,
+    cumulative: 3600,
     color: 'from-purple-400 to-fuchsia-500',
-    badge: 'Cao cấp 1',
+    badge: 'Trung cấp',
   },
   {
     id: 'HSK 6',
     label: 'HSK 6',
-    target: 2500,
+    target: 1800,
+    cumulative: 5400,
     color: 'from-rose-400 to-orange-500',
-    badge: 'Cao cấp 2',
+    badge: 'Trung cấp',
   },
   {
     id: 'HSK 7-9',
     label: 'HSK 7–9',
-    target: 5636,
+    target: 5600,
+    cumulative: 11000,
     color: 'from-amber-400 to-red-500',
-    badge: 'HSK 3.0 Tinh hoa',
+    badge: 'Cao cấp',
   },
 ];
 
@@ -318,6 +325,8 @@ export default function VocabularyPage({
   const [hideMastered, setHideMastered] = useState(true); // Ẩn các từ đã thuộc vững khỏi danh sách học mặc định
   const [lengthFilter, setLengthFilter] = useState('all'); // 'all', 'single', 'compound'
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [gridPage, setGridPage] = useState(1);
+  const GRID_PAGE_SIZE = 48;
   const cardTouchMovedRef = useRef(false);
   const [viewMode, setViewMode] = useState(() =>
     VALID_VOCAB_VIEWS.includes(initialView) ? initialView : 'flashcard'
@@ -328,6 +337,10 @@ export default function VocabularyPage({
       setViewMode(initialView);
     }
   }, [initialView]);
+
+  useEffect(() => {
+    setGridPage(1);
+  }, [selectedHsk, selectedTopic, searchTerm, statusFilter, lengthFilter, corpusPage]);
 
   // Kho 11.092 từ vựng chuẩn HSK 3.0 cho Flashcards (bật mặc định, tải theo lô 50 từ)
   const [corpusMode, setCorpusMode] = useState(true);
@@ -808,26 +821,29 @@ export default function VocabularyPage({
     [statusFilter]
   );
 
-  // Filtered vocabularies (Tự động hợp nhất allVocabList + corpusCards khi lọc trạng thái cá nhân)
+  // Filtered vocabularies (Tự động hợp nhất allVocabList + corpusCards khi lọc trạng thái cá nhân hoặc lọc chủ đề)
   const filteredVocab = useMemo(() => {
-    const sourcePool =
-      corpusMode && !isPersonalStatusFilter
+    const isTopicFiltering = selectedTopic !== 'Tất cả';
+    const rawPool =
+      corpusMode && !isPersonalStatusFilter && !isTopicFiltering
         ? corpusCards
-        : Array.from(
-            new Map(
-              [...allVocabList, ...corpusCards]
-                .filter((v) => v && v.hanzi)
-                .map((v) => [v.hanzi, v])
-            ).values()
-          );
+        : [...allVocabList, ...corpusCards];
+
+    const sourcePool = Array.from(
+      new Map(
+        rawPool
+          .filter((v) => v && v.hanzi)
+          .map((v) => [v.hanzi, v])
+      ).values()
+    );
 
     const q = searchTerm.trim().toLowerCase();
 
-    return sourcePool.filter((item) => {
+    const matched = sourcePool.filter((item) => {
       if (!item || !item.hanzi) return false;
 
       const matchesSearch =
-        corpusMode && !isPersonalStatusFilter && !q
+        corpusMode && !isPersonalStatusFilter && !isTopicFiltering && !q
           ? true
           : !q ||
             item.hanzi.toLowerCase().includes(q) ||
@@ -836,12 +852,10 @@ export default function VocabularyPage({
             item.hanviet.toLowerCase().includes(q);
 
       const matchesTopic =
-        (corpusMode && !isPersonalStatusFilter) ||
-        selectedTopic === 'Tất cả' ||
-        item.topic === selectedTopic;
+        selectedTopic === 'Tất cả' || item.topic === selectedTopic;
 
       const matchesHsk =
-        (corpusMode && !isPersonalStatusFilter) || selectedHsk === 'all'
+        (corpusMode && !isPersonalStatusFilter && !isTopicFiltering) || selectedHsk === 'all'
           ? true
           : selectedHsk === 'HSK 5-6'
           ? item.level === 'HSK 5-6' || item.level === 'HSK 5' || item.level === 'HSK 6'
@@ -883,6 +897,16 @@ export default function VocabularyPage({
         matchesSearch && matchesTopic && matchesHsk && matchesStatus && matchesLength
       );
     });
+
+    // Ưu tiên đẩy thẻ SRS đến hạn lên đầu hàng đợi ôn tập (giữ ổn định thứ tự các thẻ còn lại)
+    if (statusFilter === 'srs_priority' || statusFilter === 'due' || statusFilter === 'all') {
+      return [...matched].sort((a, b) => {
+        const aDue = srsMap[a.hanzi] && isCardDueForReview(srsMap[a.hanzi]) ? 1 : 0;
+        const bDue = srsMap[b.hanzi] && isCardDueForReview(srsMap[b.hanzi]) ? 1 : 0;
+        return bDue - aDue;
+      });
+    }
+    return matched;
   }, [
     corpusMode,
     isPersonalStatusFilter,
@@ -1688,6 +1712,9 @@ export default function VocabularyPage({
           <div className="relative lg:col-span-6">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
             <input
+              id="vocab-search-input"
+              name="vocabSearch"
+              aria-label="Tìm kiếm từ vựng theo chữ Hán, Pinyin, nghĩa hoặc Hán-Việt"
               type="text"
               placeholder="Tìm theo chữ Hán, Pinyin, nghĩa tiếng Việt hoặc âm Hán-Việt..."
               value={searchTerm}
@@ -1716,6 +1743,9 @@ export default function VocabularyPage({
 
           <div className="lg:col-span-3">
             <select
+              id="vocab-topic-filter"
+              name="vocabTopic"
+              aria-label="Lọc từ vựng theo chủ đề"
               value={selectedTopic}
               onChange={(e) => {
                 setSelectedTopic(e.target.value);
@@ -2055,7 +2085,7 @@ export default function VocabularyPage({
                     setDictQuery(e.target.value);
                     setDictPage(1);
                   }}
-                  className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                 />
                 {dictQuery && (
                   <button
@@ -2396,6 +2426,15 @@ export default function VocabularyPage({
 
           {/* Interactive Flip Card */}
           <div
+            role="button"
+            tabIndex={0}
+            aria-label={isFlipped ? 'Lật lại mặt trước thẻ từ vựng' : 'Lật xem mặt sau thẻ từ vựng'}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleFlip();
+              }
+            }}
             onTouchStart={() => {
               cardTouchMovedRef.current = false;
             }}
@@ -2794,9 +2833,18 @@ export default function VocabularyPage({
           </div>
         </div>
       ) : viewMode === 'grid' ? (
-        /* 2. GRID VIEW OF VOCABULARY */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredVocab.map((item) => {
+        /* 2. GRID VIEW OF VOCABULARY (Paginated 48/page for fast INP) */
+        (() => {
+          const gridTotalPages = Math.max(1, Math.ceil(filteredVocab.length / GRID_PAGE_SIZE));
+          const safeGridPage = Math.min(gridPage, gridTotalPages);
+          const paginatedGridVocab = filteredVocab.slice(
+            (safeGridPage - 1) * GRID_PAGE_SIZE,
+            safeGridPage * GRID_PAGE_SIZE
+          );
+          return (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedGridVocab.map((item) => {
             const isRemembered =
               rememberedIds.includes(item.id) || srsMap[item.hanzi]?.stage === 2;
             const isReview =
@@ -2932,7 +2980,33 @@ export default function VocabularyPage({
               </div>
             );
           })}
-        </div>
+              </div>
+              {gridTotalPages > 1 && (
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    disabled={safeGridPage <= 1}
+                    onClick={() => setGridPage((p) => Math.max(1, p - 1))}
+                    className="min-h-11 px-4 py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-white disabled:opacity-40 cursor-pointer"
+                  >
+                    Trang trước
+                  </button>
+                  <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">
+                    Trang {safeGridPage} / {gridTotalPages} ({filteredVocab.length} từ)
+                  </span>
+                  <button
+                    type="button"
+                    disabled={safeGridPage >= gridTotalPages}
+                    onClick={() => setGridPage((p) => Math.min(gridTotalPages, p + 1))}
+                    className="min-h-11 px-4 py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-white disabled:opacity-40 cursor-pointer"
+                  >
+                    Trang sau
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })()
       ) : (
         /* 3. QUICK QUIZ REFLEX MODE */
         <div className="max-w-xl mx-auto p-8 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl text-center space-y-6">
@@ -3288,7 +3362,7 @@ export default function VocabularyPage({
                     value={newPinyin}
                     onChange={(e) => setNewPinyin(e.target.value)}
                     placeholder="Ví dụ: māo"
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                 </div>
 
@@ -3301,7 +3375,7 @@ export default function VocabularyPage({
                     value={newHanviet}
                     onChange={(e) => setNewHanviet(e.target.value)}
                     placeholder="Ví dụ: Miêu"
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                 </div>
 
@@ -3315,7 +3389,7 @@ export default function VocabularyPage({
                     value={newMeaning}
                     onChange={(e) => setNewMeaning(e.target.value)}
                     placeholder="Ví dụ: Con mèo"
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                 </div>
               </div>
@@ -3328,7 +3402,7 @@ export default function VocabularyPage({
                   <select
                     value={newLevel}
                     onChange={(e) => setNewLevel(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   >
                     <option value="HSK 1">HSK 1</option>
                     <option value="HSK 2">HSK 2</option>
@@ -3348,7 +3422,7 @@ export default function VocabularyPage({
                   <select
                     value={newTopic}
                     onChange={(e) => setNewTopic(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   >
                     <option value="Đời sống">Đời sống</option>
                     <option value="Ăn uống">Ăn uống</option>
@@ -3377,7 +3451,7 @@ export default function VocabularyPage({
                     value={newRadical}
                     onChange={(e) => setNewRadical(e.target.value)}
                     placeholder="Ví dụ: 犭(Khuyển)"
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                 </div>
 
@@ -3390,7 +3464,7 @@ export default function VocabularyPage({
                     value={newStrokes}
                     onChange={(e) => setNewStrokes(e.target.value)}
                     placeholder="Ví dụ: 11"
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                 </div>
               </div>
@@ -3405,7 +3479,7 @@ export default function VocabularyPage({
                   value={newMnemonic}
                   onChange={(e) => setNewMnemonic(e.target.value)}
                   placeholder="Ví dụ: Loài thú (犭) kêu meo meo trên đồng ruộng (苗)..."
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-3 py-2 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 
@@ -3420,7 +3494,7 @@ export default function VocabularyPage({
                   value={newExampleHanzi}
                   onChange={(e) => setNewExampleHanzi(e.target.value)}
                   placeholder="Chữ Hán: 我家有一只可爱的小猫。"
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-3 py-2 rounded-xl text-base sm:text-sm bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                 />
 
                 <input
@@ -3428,7 +3502,7 @@ export default function VocabularyPage({
                   value={newExamplePinyin}
                   onChange={(e) => setNewExamplePinyin(e.target.value)}
                   placeholder="Pinyin: Wǒ jiā yǒu yì zhī kě’ài de xiǎomāo."
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-3 py-2 rounded-xl text-base sm:text-sm bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                 />
 
                 <input
@@ -3436,7 +3510,7 @@ export default function VocabularyPage({
                   value={newExampleMeaning}
                   onChange={(e) => setNewExampleMeaning(e.target.value)}
                   placeholder="Nghĩa: Nhà tôi có một chú mèo con rất đáng yêu."
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-3 py-2 rounded-xl text-base sm:text-sm bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 

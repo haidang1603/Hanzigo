@@ -1,64 +1,65 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  Flame, 
-  Trophy, 
-  ArrowRight, 
-  Sparkles, 
-  Play, 
-  RotateCcw,
-  TrendingUp,
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import {
+  Flame,
+  ArrowRight,
+  Sparkles,
+  Play,
   Target,
   BookOpen,
-  Mic,
   PenTool,
   MessageCircle,
-  FolderDown,
   Compass,
-  Check,
-  Zap,
-  Crown,
   GraduationCap,
   Clock,
-  AlertTriangle,
-  CheckCircle2
+  Award,
+  Brain,
 } from 'lucide-react';
-import AudioButton from '../components/AudioButton';
 import { playClickSound, playSuccessSound } from '../utils/audio';
 import { VOCABULARY_LIST } from '../data/chineseData';
 import { getStoredCustomVocab } from '../utils/materialsStorage';
 import { triggerCloudSync } from '../supabase/services';
-import { getXpHonorificTitle } from '../services/leaderboardService';
-import { 
-  getClassroomsForStudent, 
-  getAssignmentsForClassroom, 
-  getStudentSubmission 
+import {
+  getClassroomsForStudent,
+  getAssignmentsForClassroom,
+  getStudentSubmission,
 } from '../services/classroomService';
-import { 
-  calculateTotalXp, 
-  getStreakStatus, 
+import {
+  calculateTotalXp,
+  getStreakStatus,
   checkInDaily,
-  getUserLevelInfo, 
-  awardXp, 
+  awardXp,
   getUserStorageKey,
-  getLocalDateString 
+  getLocalDateString,
 } from '../utils/gamification';
-import { 
-  getUserJourneyProgress, 
+import {
   getLessonById,
-  getRecommendedNextLesson 
+  getRecommendedNextLesson,
 } from '../services/learningPathService';
 import { getRecentReadingProgress } from '../services/readingProgressService';
+import { getUserExamHistory } from '../services/hskService';
+import { STORAGE_SRS_STATE, calculateSrsStats } from '../utils/srsEngine';
 import { DailySmartStudyFlow } from '../features/unified-ecosystem/DailySmartStudyFlow.tsx';
 import { evaluateUserAchievements } from '../services/gamificationService';
 import StreakModal from '../components/learning/StreakModal';
-import AiLearningCoachWidget from '../components/learning/AiLearningCoachWidget';
-import StudentAnalyticsDashboard from '../features/analytics/StudentAnalyticsDashboard.tsx';
-import SrsRetentionDashboard from '../features/srs/SrsRetentionDashboard.tsx';
-import DailyAdaptivePlan from '../features/adaptive/DailyAdaptivePlan.tsx';
+import DashboardDeepAnalyticsTabs from '../components/dashboard/DashboardDeepAnalyticsTabs';
+
+const AiLearningCoachWidget = lazy(() =>
+  import('../components/learning/AiLearningCoachWidget')
+);
+
+const TOTAL_HSK_LESSONS = 180;
+
+function parseTargetHskNumber(levelStr) {
+  const match = String(levelStr || '').match(/(\d+)/);
+  if (!match) return 1;
+  const num = Number(match[1]);
+  return Number.isFinite(num) ? Math.min(9, Math.max(1, num)) : 1;
+}
 
 export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   const userName = user ? (user.name ? user.name.split(' ').pop() : 'Bạn') : 'Bạn';
   const [gamificationTick, setGamificationTick] = useState(0);
+  const [workspaceTab, setWorkspaceTab] = useState('daily_loop'); // 'daily_loop' | 'ai_coach'
 
   const greetingTime = useMemo(() => {
     const hour = new Date().getHours();
@@ -68,7 +69,7 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   }, []);
 
   useEffect(() => {
-    const handleGamificationUpdated = () => setGamificationTick(t => t + 1);
+    const handleGamificationUpdated = () => setGamificationTick((t) => t + 1);
     window.addEventListener('hanzigo_gamification_updated', handleGamificationUpdated);
     window.addEventListener('storage', handleGamificationUpdated);
     return () => {
@@ -90,13 +91,6 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
     const res = checkInDaily(user);
     if (res.success) {
       playSuccessSound();
-      try {
-        confetti({
-          particleCount: 45,
-          spread: 60,
-          origin: { y: 0.6 }
-        });
-      } catch {}
       setCheckInToast({ success: true, message: res.message });
       setTimeout(() => setCheckInToast(null), 4000);
     } else {
@@ -110,50 +104,56 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState(() => {
     try {
       const key = getUserStorageKey('hanzigo_daily_goal', user);
-      const saved = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_daily_goal'));
+      const saved =
+        localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_daily_goal'));
       return saved ? parseInt(saved, 10) : 15;
     } catch {
       return 15;
     }
   });
-
   const [isEditingGoal, setIsEditingGoal] = useState(false);
 
   // Synchronized data from localStorage per user
   const rememberedIds = useMemo(() => {
     try {
       const key = getUserStorageKey('hanzigo_vocab_remembered', user);
-      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_vocab_remembered'));
+      const s =
+        localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_vocab_remembered'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
-  }, [user]);
+  }, [user, gamificationTick]);
 
   const reviewIds = useMemo(() => {
     try {
       const key = getUserStorageKey('hanzigo_vocab_review', user);
-      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_vocab_review'));
+      const s =
+        localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_vocab_review'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
-  }, [user]);
+  }, [user, gamificationTick]);
 
   const completedLessonIds = useMemo(() => {
     try {
       const key = getUserStorageKey('hanzigo_completed_lessons', user);
-      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_completed_lessons'));
+      const s =
+        localStorage.getItem(key) ||
+        (user ? null : localStorage.getItem('hanzigo_completed_lessons'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
-  }, [user]);
+  }, [user, gamificationTick]);
 
   const pronounceHistory = useMemo(() => {
     try {
       const key = getUserStorageKey('hanzigo_pronounce_history', user);
-      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_pronounce_history'));
+      const s =
+        localStorage.getItem(key) ||
+        (user ? null : localStorage.getItem('hanzigo_pronounce_history'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
@@ -163,56 +163,66 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   const customWritingChars = useMemo(() => {
     try {
       const key = getUserStorageKey('hanzigo_custom_writing_chars', user);
-      const s = localStorage.getItem(key) || (user ? null : localStorage.getItem('hanzigo_custom_writing_chars'));
+      const s =
+        localStorage.getItem(key) ||
+        (user ? null : localStorage.getItem('hanzigo_custom_writing_chars'));
       return s ? JSON.parse(s) : [];
     } catch {
       return [];
     }
   }, [user]);
 
-  // Actual words learned count
-  const actualWordsLearned = rememberedIds.length > 0 ? rememberedIds.length : (user?.wordsLearned || 0);
+  // SRS stats (user-scoped STORAGE_SRS_STATE) for Hero Next Best Action & KPI
+  const srsDueCount = useMemo(() => {
+    try {
+      const key = getUserStorageKey(STORAGE_SRS_STATE, user);
+      const raw =
+        localStorage.getItem(key) || (user ? null : localStorage.getItem(STORAGE_SRS_STATE));
+      if (raw) {
+        const map = JSON.parse(raw);
+        if (map && typeof map === 'object') {
+          const stats = calculateSrsStats(Object.values(map));
+          if (stats.dueCount > 0) return stats.dueCount;
+        }
+      }
+    } catch {}
+    return reviewIds.length;
+  }, [user, reviewIds.length, gamificationTick]);
 
-  // Total XP and Level info calculated from centralized gamification engine
+  // Actual words learned count
+  const actualWordsLearned =
+    rememberedIds.length > 0 ? rememberedIds.length : user?.wordsLearned || 0;
+
+  // Total XP calculated from centralized gamification engine
   const calculatedTotalXp = useMemo(() => calculateTotalXp(user), [user, gamificationTick]);
 
-  const levelInfo = useMemo(() => {
-    return getUserLevelInfo(calculatedTotalXp);
-  }, [calculatedTotalXp]);
-
-  // Overall roadmap progress percent
+  // Overall roadmap progress percent across 180 HSK 1-9 lessons
   const overallRoadmapProgress = useMemo(() => {
-    const totalRoadmapLessonsCount = 28; // Standard courses across all levels
-    return Math.min(100, Math.round((completedLessonIds.length / totalRoadmapLessonsCount) * 100));
-  }, [completedLessonIds]);
+    return Math.min(100, Math.round((completedLessonIds.length / TOTAL_HSK_LESSONS) * 100));
+  }, [completedLessonIds.length]);
 
   // Dynamic review words queue from Spaced Repetition
   const [localReviewList, setLocalReviewList] = useState(() => {
     const customVocab = getStoredCustomVocab();
     const all = [...customVocab, ...VOCABULARY_LIST];
-    
-    // First priority: words specifically marked as need review
     if (reviewIds.length > 0) {
-      return all.filter(w => reviewIds.includes(w.id)).slice(0, 4);
+      return all.filter((w) => reviewIds.includes(w.id)).slice(0, 4);
     }
-    // Second priority: initial words if user has started studying
     if (rememberedIds.length > 0) {
-      return all.filter(w => !rememberedIds.includes(w.id)).slice(0, 3);
+      return all.filter((w) => !rememberedIds.includes(w.id)).slice(0, 3);
     }
-    // Default preview items
     return all.slice(0, 3);
   });
 
   const handleMarkReviewDone = (wordId) => {
     playSuccessSound();
-    setLocalReviewList(prev => prev.filter(w => w.id !== wordId));
-    // Award XP and maintain streak
-    awardXp(10);
-    // Remove from localStorage review list
+    setLocalReviewList((prev) => prev.filter((w) => w.id !== wordId));
+    awardXp(10, user);
     try {
-      const updated = reviewIds.filter(id => id !== wordId);
-      localStorage.setItem('hanzigo_vocab_review', JSON.stringify(updated));
-      triggerCloudSync();
+      const updated = reviewIds.filter((id) => id !== wordId);
+      const key = getUserStorageKey('hanzigo_vocab_review', user);
+      localStorage.setItem(key, JSON.stringify(updated));
+      triggerCloudSync(user?.uid || user?.id);
     } catch (e) {
       console.error(e);
     }
@@ -228,21 +238,56 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
     return {};
   });
 
-  // Classroom & Assignments State
+  // Classroom, Recent Reading & CBT Exam History (single-pass fetch, zero duplicate queries)
   const [studentClassrooms, setStudentClassrooms] = useState([]);
   const [studentAssignments, setStudentAssignments] = useState([]);
   const [loadingClassroomData, setLoadingClassroomData] = useState(false);
   const [recentReading, setRecentReading] = useState(null);
+  const [cbtSummary, setCbtSummary] = useState({
+    latestScore: null,
+    latestMaxScore: null,
+    bestScore: null,
+    bestMaxScore: null,
+    bestLevel: null,
+    attemptsCount: 0,
+  });
 
-  // Load Recent Reading Progress from Cloud / Local
   useEffect(() => {
     let isMounted = true;
-    getRecentReadingProgress(1, user).then(list => {
-      if (isMounted && list && list.length > 0) {
-        setRecentReading(list[0]);
-      }
-    }).catch(() => {});
-    return () => { isMounted = false; };
+    getRecentReadingProgress(1, user)
+      .then((list) => {
+        if (isMounted && list && list.length > 0) {
+          setRecentReading(list[0]);
+        }
+      })
+      .catch(() => {});
+
+    getUserExamHistory({ user })
+      .then((attempts) => {
+        if (!isMounted || !Array.isArray(attempts) || attempts.length === 0) return;
+        const latest = attempts[0];
+        let best = attempts[0];
+        for (const a of attempts) {
+          const aPct = a.maxScore > 0 ? a.score / a.maxScore : 0;
+          const bPct = best.maxScore > 0 ? best.score / best.maxScore : 0;
+          if (aPct > bPct || (aPct === bPct && (a.score || 0) > (best.score || 0))) {
+            best = a;
+          }
+        }
+        setCbtSummary({
+          latestScore: Number.isFinite(Number(latest.score)) ? Number(latest.score) : null,
+          latestMaxScore: Number.isFinite(Number(latest.maxScore)) ? Number(latest.maxScore) : 200,
+          bestScore: Number.isFinite(Number(best.score)) ? Number(best.score) : null,
+          bestMaxScore: Number.isFinite(Number(best.maxScore)) ? Number(best.maxScore) : 200,
+          bestLevel: best.examLevel || latest.examLevel || 'HSK',
+          attemptsCount: attempts.length,
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   useEffect(() => {
@@ -265,15 +310,13 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
                 ...a,
                 classroom_name: cls.name,
                 classroom_id: cls.id,
-                submission
+                submission,
               });
             }
           }
-          if (isMounted) {
-            setStudentAssignments(allAssignments);
-          }
-        } else {
-          if (isMounted) setStudentAssignments([]);
+          if (isMounted) setStudentAssignments(allAssignments);
+        } else if (isMounted) {
+          setStudentAssignments([]);
         }
       } catch (err) {
         console.warn('Dashboard loadClassroomAssignments error:', err);
@@ -283,20 +326,22 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
     }
 
     loadClassroomAssignments();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
-  // Real-time active study tracker: increments study time while learner is active on the app
+  // Real-time active study tracker
   useEffect(() => {
     const timer = setInterval(() => {
       const todayStr = getLocalDateString(new Date());
-      setStudyMinutesMap(prev => {
-        const actionsToday = (completedLessonIds.length * 15) + (rememberedIds.length * 2) + (pronounceHistory.length * 3) + (customWritingChars.length * 3);
-        const currentMins = prev[todayStr] !== undefined 
-          ? prev[todayStr] 
-          : actionsToday;
-        
-        // Increment 0.25 min (15 seconds) each interval
+      setStudyMinutesMap((prev) => {
+        const actionsToday =
+          completedLessonIds.length * 15 +
+          rememberedIds.length * 2 +
+          pronounceHistory.length * 3 +
+          customWritingChars.length * 3;
+        const currentMins = prev[todayStr] !== undefined ? prev[todayStr] : actionsToday;
         const nextMins = Math.round((currentMins + 0.25) * 10) / 10;
         const nextMap = { ...prev, [todayStr]: nextMins };
         try {
@@ -310,11 +355,11 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
     return () => clearInterval(timer);
   }, [user, completedLessonIds, rememberedIds, pronounceHistory, customWritingChars, userStreak]);
 
-  // Real-time current week days (Monday to Sunday)
+  // Current week study minutes
   const currentWeekInfo = useMemo(() => {
     const now = new Date();
     const todayStr = getLocalDateString(now);
-    const dayOfWeek = now.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
+    const dayOfWeek = now.getDay();
     const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
 
     const monday = new Date(now);
@@ -322,9 +367,21 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
     monday.setHours(0, 0, 0, 0);
 
     const dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-    const dayFullNames = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+    const dayFullNames = [
+      'Thứ Hai',
+      'Thứ Ba',
+      'Thứ Tư',
+      'Thứ Năm',
+      'Thứ Sáu',
+      'Thứ Bảy',
+      'Chủ Nhật',
+    ];
 
-    const actionsTodayMinutes = (completedLessonIds.length * 15) + (rememberedIds.length * 2) + (pronounceHistory.length * 3) + (customWritingChars.length * 3);
+    const actionsTodayMinutes =
+      completedLessonIds.length * 15 +
+      rememberedIds.length * 2 +
+      pronounceHistory.length * 3 +
+      customWritingChars.length * 3;
 
     const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
@@ -334,7 +391,7 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
       const dateStr = getLocalDateString(d);
-      const isToday = (dateStr === todayStr);
+      const isToday = dateStr === todayStr;
 
       const dayStart = new Date(d);
       dayStart.setHours(0, 0, 0, 0);
@@ -346,15 +403,8 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
       if (isToday) {
         const savedToday = studyMinutesMap[todayStr];
         mins = savedToday !== undefined ? savedToday : actionsTodayMinutes;
-      } else if (isPast) {
-        if (studyMinutesMap[dateStr] !== undefined) {
-          mins = studyMinutesMap[dateStr];
-        } else {
-          mins = 0;
-        }
-      } else {
-        // Future day
-        mins = 0;
+      } else if (isPast && studyMinutesMap[dateStr] !== undefined) {
+        mins = studyMinutesMap[dateStr];
       }
 
       days.push({
@@ -367,16 +417,19 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
         isToday,
         isPast,
         isFuture,
-        reachedGoal: mins >= dailyGoalMinutes
+        reachedGoal: mins >= dailyGoalMinutes,
       });
     }
 
-    return {
-      days,
-      todayStr,
-      todayDayLabel: dayLabels[dayOfWeek === 0 ? 6 : dayOfWeek - 1]
-    };
-  }, [studyMinutesMap, completedLessonIds, rememberedIds, pronounceHistory, customWritingChars, userStreak, dailyGoalMinutes]);
+    return { days, todayStr };
+  }, [
+    studyMinutesMap,
+    completedLessonIds,
+    rememberedIds,
+    pronounceHistory,
+    customWritingChars,
+    dailyGoalMinutes,
+  ]);
 
   const weeklyStudyMinutes = currentWeekInfo.days;
 
@@ -385,24 +438,33 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
     return (totalMins / 60).toFixed(1);
   }, [weeklyStudyMinutes]);
 
-  const daysPassedCount = useMemo(() => {
-    return weeklyStudyMinutes.filter(d => !d.isFuture).length;
-  }, [weeklyStudyMinutes]);
+  const daysPassedCount = useMemo(
+    () => weeklyStudyMinutes.filter((d) => !d.isFuture).length,
+    [weeklyStudyMinutes]
+  );
 
-  const achievedDaysCount = useMemo(() => {
-    return weeklyStudyMinutes.filter(d => !d.isFuture && d.reachedGoal).length;
-  }, [weeklyStudyMinutes]);
+  const achievedDaysCount = useMemo(
+    () => weeklyStudyMinutes.filter((d) => !d.isFuture && d.reachedGoal).length,
+    [weeklyStudyMinutes]
+  );
 
-  const todayData = useMemo(() => {
-    return weeklyStudyMinutes.find(d => d.isToday) || weeklyStudyMinutes[0];
-  }, [weeklyStudyMinutes]);
+  const todayData = useMemo(
+    () => weeklyStudyMinutes.find((d) => d.isToday) || weeklyStudyMinutes[0],
+    [weeklyStudyMinutes]
+  );
 
-  // Dynamic real event-based achievements verified against actual learning history
-  const dynamicAchievements = useMemo(() => {
-    return evaluateUserAchievements(user);
-  }, [user, completedLessonIds.length, rememberedIds.length, pronounceHistory.length, customWritingChars.length, userStreak]);
-
-  const unlockedAchievementsCount = dynamicAchievements.filter(a => a.unlocked).length;
+  const dynamicAchievements = useMemo(
+    () => evaluateUserAchievements(user),
+    [
+      user,
+      completedLessonIds.length,
+      rememberedIds.length,
+      pronounceHistory.length,
+      customWritingChars.length,
+      userStreak,
+    ]
+  );
+  const unlockedAchievementsCount = dynamicAchievements.filter((a) => a.unlocked).length;
 
   // Next recommended lesson calculation powered by personalization engine
   const nextLessonInfo = useMemo(() => {
@@ -412,13 +474,21 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
       id: rec?.lessonId || activeLesson?.id || 'l-101',
       number: rec?.lessonNumber || activeLesson?.lessonNumber || 1,
       title: rec?.title || activeLesson?.title || 'Bài 1: Pinyin & 4 Thanh điệu căn bản',
-      desc: rec?.reason || activeLesson?.subtitle || activeLesson?.step1_learn?.summary || 'Nắm vững kiến thức trọng tâm và mẫu câu thực tế.',
+      desc:
+        rec?.reason ||
+        activeLesson?.subtitle ||
+        activeLesson?.step1_learn?.summary ||
+        'Nắm vững kiến thức trọng tâm và mẫu câu thực tế.',
       duration: activeLesson?.durationMinutes || 15,
       xp: activeLesson?.xpReward || 50,
       level: rec?.levelName || 'HSK 1',
-      reason: rec?.reason
     };
   }, [user, completedLessonIds.length]);
+
+  const targetHskLevel = useMemo(
+    () => parseTargetHskNumber(nextLessonInfo.level || user?.level),
+    [nextLessonInfo.level, user?.level]
+  );
 
   const handleContinueLesson = () => {
     playClickSound();
@@ -434,933 +504,520 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
     setDailyGoalMinutes(mins);
     const key = getUserStorageKey('hanzigo_daily_goal', user);
     localStorage.setItem(key, String(mins));
-    localStorage.setItem('hanzigo_daily_goal', String(mins));
+    if (!user) {
+      localStorage.setItem('hanzigo_daily_goal', String(mins));
+    }
     triggerCloudSync(user?.uid || user?.id);
     setIsEditingGoal(false);
   };
 
+  // 6 Core Skill Shortcuts (all mapped to VALID_TABS in App.jsx)
+  const coreShortcuts = [
+    {
+      id: 'roadmap',
+      label: 'Lộ trình 180 bài',
+      sub: `${completedLessonIds.length}/${TOTAL_HSK_LESSONS} bài`,
+      icon: Compass,
+      iconBg: 'bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C]',
+    },
+    {
+      id: 'vocabulary',
+      label: 'Flashcard & SRS',
+      sub: srsDueCount > 0 ? `${srsDueCount} thẻ đến hạn` : `${actualWordsLearned} từ nhớ`,
+      icon: BookOpen,
+      iconBg: 'bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F]',
+    },
+    {
+      id: 'writing',
+      label: 'Luyện viết Hán tự',
+      sub: 'Mễ tự & nét bút',
+      icon: PenTool,
+      iconBg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400',
+    },
+    {
+      id: 'reader',
+      label: 'Đọc & Nghe',
+      sub: recentReading ? `Đọc tiếp ${recentReading.progressPercent}%` : 'NLP & Audio',
+      icon: BookOpen,
+      iconBg: 'bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400',
+    },
+    {
+      id: 'hsk',
+      label: 'Phòng thi CBT',
+      sub:
+        cbtSummary.attemptsCount > 0
+          ? `${cbtSummary.attemptsCount} đề đã thi`
+          : 'Thi thử HSK 1–9',
+      icon: GraduationCap,
+      iconBg: 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400',
+    },
+    {
+      id: 'conversation',
+      label: 'Gia sư AI',
+      sub: 'Hội thoại ngữ cảnh',
+      icon: MessageCircle,
+      iconBg: 'bg-blue-50 dark:bg-blue-950/40 text-[#3B82F6]',
+    },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
-      
-      {/* Smart Daily Loop (Unified Ecosystem Hub) */}
-      <DailySmartStudyFlow user={user} onNavigateModule={(mod) => setActiveTab(mod === 'vocab' ? 'vocabulary' : mod)} />
-
-      {/* 1. Header Greeting & Quick Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-r from-white via-[#FFF9F2] to-white dark:from-[#1E293B] dark:via-[#131B24] dark:to-[#1E293B] p-6 sm:p-8 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm relative overflow-hidden">
-        
-        <div className="space-y-2 max-w-2xl relative z-10">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C]">
-              Đang học: {user?.level || 'Sơ cấp (HSK 1)'}
-            </span>
-
-            {/* Daily Goal Badge with quick toggle */}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-semibold text-[#748092] dark:text-[#94A3B8]">
-              <Target size={13} className="text-[#E85D3F]" />
-              <span>Mục tiêu: <strong>{dailyGoalMinutes}p/ngày</strong></span>
-              <button
-                onClick={() => setIsEditingGoal(!isEditingGoal)}
-                className="text-[10px] text-[#E85D3F] font-bold hover:underline ml-1"
-              >
-                {isEditingGoal ? 'Đóng' : 'Đổi'}
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Goal Select Dropdown if Editing */}
-          {isEditingGoal && (
-            <div className="flex items-center gap-2 p-2 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm animate-in fade-in text-xs">
-              <span className="font-semibold text-[#243447] dark:text-white ml-1">Chọn mục tiêu:</span>
-              {[10, 15, 25, 30, 45].map(m => (
-                <button
-                  key={m}
-                  onClick={() => handleSaveGoal(m)}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                    dailyGoalMinutes === m 
-                      ? 'bg-[#E85D3F] text-white shadow-sm' 
-                      : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] hover:text-[#243447]'
-                  }`}
-                >
-                  {m} phút
-                </button>
-              ))}
-            </div>
-          )}
-
-          <h1 className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white">
-            {greetingTime}, {userName}! Hôm nay bạn muốn học gì? 👋
-          </h1>
-          <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] leading-relaxed">
-            {actualWordsLearned > 0 || completedLessonIds.length > 0
-              ? `Bạn đang học tập rất tích cực với ${actualWordsLearned} từ vựng đã nhớ và ${completedLessonIds.length} bài học hoàn thành. Hãy tiếp tục duy trì nhé!`
-              : 'Chào mừng bạn đến với HanziGo! Hãy bắt đầu bài học đầu tiên hoặc khám phá các công cụ luyện phát âm & flashcards bên dưới.'}
-          </p>
-        </div>
-
-        {/* Action Button & Recent Reading */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-10 shrink-0">
-          {recentReading && (
-            <button
-              onClick={() => {
-                playClickSound();
-                setActiveTab('reader');
-              }}
-              className="px-4 py-3 rounded-2xl bg-white/90 dark:bg-[#1E293B]/90 hover:bg-white dark:hover:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white font-bold text-xs shadow-sm hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
-              title={`Đọc tiếp: ${recentReading.title || recentReading.materialId}`}
-            >
-              <BookOpen size={15} className="text-[#E85D3F]" />
-              <div className="text-left">
-                <span className="block text-[10px] text-[#748092]">Đọc tiếp ({recentReading.progressPercent}%)</span>
-                <span className="block truncate max-w-[120px] sm:max-w-[150px]">{recentReading.title || recentReading.materialId}</span>
-              </div>
-            </button>
-          )}
-
-          <button
-            onClick={handleContinueLesson}
-            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-sm shadow-lg shadow-[#E85D3F]/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 whitespace-nowrap cursor-pointer group"
-            title={`Vào bài học: ${nextLessonInfo.title}`}
-          >
-            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-              <Play size={15} className="fill-white ml-0.5" />
-            </div>
-            <div className="text-left">
-              <span className="block text-[10px] uppercase font-bold text-amber-200 leading-tight">
-                {completedLessonIds.length > 0 ? `Tiếp tục học (${nextLessonInfo.level})` : 'Bắt đầu bài 1'}
-              </span>
-              <span className="block text-xs font-bold truncate max-w-[180px] sm:max-w-[240px] leading-tight">
-                {nextLessonInfo.title}
-              </span>
-            </div>
-          </button>
-        </div>
-
-        {/* Decorative Watermark */}
-        <div className="absolute right-2 -bottom-6 font-['Noto_Serif_SC'] text-9xl font-black text-[#E85D3F]/5 select-none pointer-events-none">
-          学
-        </div>
-      </div>
-
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6 animate-in fade-in duration-300">
       {/* Check-in Toast Feedback */}
       {checkInToast && (
-        <div className={`p-4 rounded-2xl text-xs font-bold shadow-lg transition-all animate-in fade-in slide-in-from-top-2 flex items-center justify-between gap-3 ${
-          checkInToast.success 
-            ? 'bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200' 
-            : 'bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200'
-        }`}>
+        <div
+          className={`p-3.5 rounded-2xl text-xs font-bold shadow-md flex items-center justify-between gap-3 ${
+            checkInToast.success
+              ? 'bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200'
+              : 'bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200'
+          }`}
+        >
           <span>{checkInToast.message}</span>
-          <button 
-            type="button" 
-            onClick={() => setCheckInToast(null)} 
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          <button
+            type="button"
+            onClick={() => setCheckInToast(null)}
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
+            aria-label="Đóng thông báo"
           >
             ✕
           </button>
         </div>
       )}
 
-      {/* 2. Key Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        
-        {/* Streak */}
-        <div 
-          onClick={() => {
-            playClickSound();
-            setStreakModalOpen(true);
-          }}
-          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between gap-3 hover:border-[#E85D3F] hover:-translate-y-0.5 transition-all cursor-pointer group relative overflow-hidden"
-          title="Nhấn để xem Lịch trình chuỗi & Điểm danh 🔥"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-13 h-13 rounded-2xl bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] flex items-center justify-center text-2xl font-bold p-3 group-hover:scale-105 transition-transform shrink-0">
-              <Flame size={28} className="fill-[#F4B942] text-[#E85D3F]" />
+      {/* =====================================================================
+          TẦNG 1: HERO HÀNH ĐỘNG NGAY (ABOVE THE FOLD — 7:5 DESKTOP, 1 COL MOBILE)
+      ===================================================================== */}
+      <section
+        aria-label="Hành động học tập ưu tiên và chỉ số chính"
+        className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch"
+      >
+        {/* Left 7 cols: Primary Focus Card */}
+        <div className="lg:col-span-7 p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white via-[#FFF9F2] to-white dark:from-[#1E293B] dark:via-[#131B24] dark:to-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm relative overflow-hidden flex flex-col justify-between gap-3 sm:gap-4">
+          <div className="space-y-1.5 sm:space-y-2.5 relative z-10">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C]">
+                {nextLessonInfo.level} • Bài #{nextLessonInfo.number}
+              </span>
+
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-semibold text-[#748092] dark:text-[#94A3B8]">
+                <Target size={13} className="text-[#E85D3F]" />
+                <span>
+                  Mục tiêu: <strong>{dailyGoalMinutes}p/ngày</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingGoal(!isEditingGoal)}
+                  className="text-[11px] text-[#E85D3F] font-bold hover:underline ml-1 cursor-pointer"
+                >
+                  {isEditingGoal ? 'Đóng' : 'Đổi'}
+                </button>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Chuỗi liên tiếp</p>
-              <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">{userStreak} ngày</p>
-              <p className={`text-[10px] font-semibold truncate ${streakStatus.hasStudiedToday ? 'text-[#45B97C]' : 'text-[#E85D3F]'}`}>
-                {streakStatus.hasStudiedToday 
-                  ? 'Đã điểm danh hôm nay ✅' 
-                  : (userStreak > 0 ? 'Chưa điểm danh hôm nay 🔥' : 'Điểm danh để bắt đầu')}
-              </p>
+
+            {isEditingGoal && (
+              <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm text-xs">
+                <span className="font-semibold text-[#243447] dark:text-white ml-1">Mục tiêu:</span>
+                {[10, 15, 25, 30, 45].map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => handleSaveGoal(m)}
+                    className={`min-h-[36px] px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                      dailyGoalMinutes === m
+                        ? 'bg-[#E85D3F] text-white shadow-sm'
+                        : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] hover:text-[#243447]'
+                    }`}
+                  >
+                    {m}p
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#243447] dark:text-white leading-tight">
+              {greetingTime}, {userName}! 👋
+            </h1>
+          </div>
+
+          {/* Next Best Action Card */}
+          <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-[#0F172A]/70 border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2 sm:space-y-3 relative z-10">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#E85D3F] flex items-center gap-1.5">
+                <Sparkles size={13} />
+                <span>Bước tiếp theo ngay lúc này</span>
+              </span>
+              <span className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">
+                {srsDueCount > 0 ? 'Ưu tiên củng cố trí nhớ' : `⏱️ ${nextLessonInfo.duration} phút • +${nextLessonInfo.xp} XP`}
+              </span>
+            </div>
+
+            <p className="text-xs sm:text-sm font-bold text-[#243447] dark:text-white line-clamp-1">
+              {srsDueCount > 0
+                ? `Bạn có ${srsDueCount} thẻ từ vựng SRS đến hạn ôn tập hôm nay.`
+                : nextLessonInfo.title}
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              {srsDueCount > 0 ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setActiveTab('vocabulary');
+                    }}
+                    className="min-h-[44px] flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#E85D3F]/25 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Clock size={16} />
+                    <span>Ôn ngay {srsDueCount} thẻ SRS đến hạn</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleContinueLesson}
+                    className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F] text-[#243447] dark:text-white font-bold text-xs sm:text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Play size={14} className="text-[#E85D3F]" />
+                    <span>Học tiếp Bài #{nextLessonInfo.number}</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleContinueLesson}
+                    className="min-h-[44px] flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:from-[#D44B2E] hover:to-[#B53B22] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#E85D3F]/25 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Play size={15} className="fill-white shrink-0" />
+                    <span className="truncate">Học tiếp Bài #{nextLessonInfo.number}: {nextLessonInfo.title}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setActiveTab('hsk');
+                    }}
+                    className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F] text-[#243447] dark:text-white font-bold text-xs sm:text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                  >
+                    <GraduationCap size={15} className="text-[#E85D3F]" />
+                    <span>Làm đề thi CBT</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
-          {!streakStatus.hasStudiedToday ? (
-            <button
-              type="button"
-              onClick={handleCheckIn}
-              disabled={checkInLoading}
-              className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white font-bold text-[11px] shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95"
-              title="Điểm danh ngay để giữ và tăng chuỗi học (+15 XP)"
-            >
-              <Flame size={13} className="fill-white" />
-              <span>Điểm danh ngay (+15 XP)</span>
-            </button>
-          ) : (
-            <div className="text-[10px] font-bold text-[#45B97C] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg py-1 px-2 text-center">
-              ✓ Chuỗi hôm nay đã an toàn
+          {/* Subtle Decorative Watermark */}
+          <div className="absolute right-2 -bottom-6 font-['Noto_Serif_SC'] text-8xl font-black text-[#E85D3F]/5 select-none pointer-events-none">
+            学
+          </div>
+        </div>
+
+        {/* Right 5 cols: Compact 4-Card KPI Strip (2x2) */}
+        <div className="lg:col-span-5 grid grid-cols-2 gap-3">
+          {/* KPI 1: Streak + Check-in */}
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label={`Chuỗi ngày học: ${userStreak} ngày. Nhấn để mở lịch trình chuỗi`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                playClickSound();
+                setStreakModalOpen(true);
+              }
+            }}
+            onClick={() => {
+              playClickSound();
+              setStreakModalOpen(true);
+            }}
+            className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs flex flex-col justify-between gap-2 hover:border-[#E85D3F] transition-all cursor-pointer"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8]">
+                Chuỗi ngày học
+              </span>
+              <Flame size={18} className="fill-[#F4B942] text-[#E85D3F] shrink-0" />
             </div>
+            <div>
+              <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white leading-tight">
+                {userStreak} ngày
+              </p>
+              {!streakStatus.hasStudiedToday ? (
+                <button
+                  type="button"
+                  onClick={handleCheckIn}
+                  disabled={checkInLoading}
+                  className="mt-1.5 min-h-[32px] w-full px-2 py-1 rounded-lg bg-[#E85D3F] text-white text-[10px] font-bold hover:bg-[#CB4529] transition-colors cursor-pointer"
+                >
+                  Điểm danh (+15 XP)
+                </button>
+              ) : (
+                <p className="text-[11px] font-semibold text-[#45B97C] mt-1 truncate">
+                  ✓ Đã điểm danh hôm nay
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* KPI 2: Từ vựng SRS */}
+          <button
+            type="button"
+            onClick={() => {
+              playClickSound();
+              setActiveTab('vocabulary');
+            }}
+            className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs flex flex-col justify-between gap-2 text-left hover:border-[#E85D3F] transition-all cursor-pointer"
+          >
+            <div className="flex items-center justify-between gap-2 w-full">
+              <span className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8]">
+                Từ vựng SRS
+              </span>
+              <BookOpen size={17} className="text-[#E85D3F] shrink-0" />
+            </div>
+            <div>
+              <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white leading-tight">
+                {actualWordsLearned} từ
+              </p>
+              <p
+                className={`text-[11px] font-semibold mt-1 truncate ${
+                  srsDueCount > 0 ? 'text-[#E85D3F]' : 'text-[#45B97C]'
+                }`}
+              >
+                {srsDueCount > 0 ? `⏰ ${srsDueCount} thẻ cần ôn` : '✓ Không có thẻ tồn'}
+              </p>
+            </div>
+          </button>
+
+          {/* KPI 3: Tiến độ Lộ trình ( / 180 bài HSK 1-9) */}
+          <button
+            type="button"
+            onClick={() => {
+              playClickSound();
+              setActiveTab('roadmap');
+            }}
+            className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs flex flex-col justify-between gap-2 text-left hover:border-[#45B97C] transition-all cursor-pointer"
+          >
+            <div className="flex items-center justify-between gap-2 w-full">
+              <span className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8]">
+                Tiến độ Lộ trình
+              </span>
+              <Compass size={17} className="text-[#45B97C] shrink-0" />
+            </div>
+            <div className="w-full space-y-1.5">
+              <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white leading-tight">
+                {completedLessonIds.length}
+                <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">
+                  /{TOTAL_HSK_LESSONS}
+                </span>
+              </p>
+              <div className="w-full h-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 overflow-hidden">
+                <div
+                  className="h-full bg-[#45B97C] rounded-full transition-all duration-300"
+                  style={{ width: `${Math.max(overallRoadmapProgress > 0 ? 5 : 0, overallRoadmapProgress)}%` }}
+                />
+              </div>
+            </div>
+          </button>
+
+          {/* KPI 4: Điểm CBT gần nhất / Cao nhất (từ hsk_attempts) */}
+          <button
+            type="button"
+            onClick={() => {
+              playClickSound();
+              setActiveTab('hsk');
+            }}
+            className="p-4 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs flex flex-col justify-between gap-2 text-left hover:border-purple-500 transition-all cursor-pointer"
+          >
+            <div className="flex items-center justify-between gap-2 w-full">
+              <span className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8]">
+                Điểm thi CBT
+              </span>
+              <Award size={17} className="text-purple-500 shrink-0" />
+            </div>
+            <div>
+              {cbtSummary.bestScore !== null ? (
+                <>
+                  <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white leading-tight">
+                    {cbtSummary.bestScore}
+                    <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">
+                      /{cbtSummary.bestMaxScore}
+                    </span>
+                  </p>
+                  <p className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 mt-1 truncate">
+                    Cao nhất ({cbtSummary.bestLevel})
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white leading-tight">
+                    Chưa thi
+                  </p>
+                  <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8] mt-1 truncate">
+                    Thử sức HSK 1–9 →
+                  </p>
+                </>
+              )}
+            </div>
+          </button>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          TẦNG 2: VÒNG LẶP HỌC TẬP HÔM NAY & LỐI TẮT NHANH (8:4 DESKTOP)
+      ===================================================================== */}
+      <section
+        aria-label="Vòng lặp học tập hôm nay và lối tắt kỹ năng"
+        className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start"
+      >
+        {/* Main 8 cols: Unified Today's Mission & AI Coach */}
+        <div className="lg:col-span-8 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-base sm:text-lg font-black text-[#243447] dark:text-white flex items-center gap-2">
+              <Sparkles size={18} className="text-[#E85D3F]" />
+              <span>Nhiệm vụ hôm nay & AI Coach</span>
+            </h2>
+
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setWorkspaceTab('daily_loop');
+                }}
+                className={`min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  workspaceTab === 'daily_loop'
+                    ? 'bg-[#E85D3F] text-white shadow-xs'
+                    : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
+                }`}
+              >
+                Vòng lặp hôm nay
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setWorkspaceTab('ai_coach');
+                }}
+                className={`min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  workspaceTab === 'ai_coach'
+                    ? 'bg-[#E85D3F] text-white shadow-xs'
+                    : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
+                }`}
+              >
+                <Brain size={13} />
+                <span>AI Coach</span>
+              </button>
+            </div>
+          </div>
+
+          {workspaceTab === 'daily_loop' ? (
+            <DailySmartStudyFlow
+              user={user}
+              onNavigateModule={(mod) => {
+                if (mod === 'vocab') setActiveTab('vocabulary');
+                else if (mod === 'reading') setActiveTab('reader');
+                else if (mod === 'listening') setActiveTab('listening-studio');
+                else setActiveTab(mod);
+              }}
+            />
+          ) : (
+            <Suspense
+              fallback={
+                <div className="rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] p-8 text-center text-xs font-semibold text-[#748092]">
+                  Đang khởi tạo AI Coach...
+                </div>
+              }
+            >
+              <AiLearningCoachWidget
+                user={user}
+                setActiveTab={setActiveTab}
+                onSelectLesson={onSelectLesson}
+              />
+            </Suspense>
           )}
         </div>
 
-        {/* Words Learned */}
-        <div 
-          onClick={() => setActiveTab('vocabulary')}
-          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between gap-3 hover:border-[#E85D3F] transition-all cursor-pointer group"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-13 h-13 rounded-2xl bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] flex items-center justify-center text-2xl p-3 shrink-0">
-              <BookOpen size={26} className="text-[#E85D3F]" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Từ vựng đã nhớ</p>
-              <p className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors">
-                {actualWordsLearned} từ
-              </p>
-              <p className="text-[10px] text-[#45B97C] font-semibold truncate">
-                Spaced Repetition SRS
-              </p>
-            </div>
-          </div>
-          <div className="w-full bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] rounded-lg px-2 py-1 text-[10px] font-bold text-[#E85D3F] flex items-center justify-between">
-            <span>Mở kho Flashcard</span>
-            <ArrowRight size={11} />
-          </div>
-        </div>
-
-        {/* Study Time / XP with Level Progress */}
-        <div 
-          onClick={() => {
-            playClickSound();
-            setActiveTab('leaderboard');
-          }}
-          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between gap-2.5 hover:border-[#E85D3F] hover:-translate-y-0.5 transition-all cursor-pointer group"
-          title="Nhấn để xem Bảng Vàng vinh danh cao thủ XP ⚡"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-[#EFF6FF] dark:bg-[#131B24] text-[#3B82F6] flex items-center justify-center text-xl p-2.5 group-hover:scale-105 transition-transform shrink-0">
-              <Zap size={22} className="text-[#3B82F6] fill-[#3B82F6]/30" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-1">
-                <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Kinh nghiệm</p>
-                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 shrink-0">
-                  Lv.{levelInfo.level} {levelInfo.badge}
-                </span>
-              </div>
-              <p className="text-lg sm:text-xl font-black text-[#243447] dark:text-white group-hover:text-[#E85D3F] transition-colors leading-tight">
-                {calculatedTotalXp.toLocaleString()} XP
-              </p>
-            </div>
-          </div>
-          
-          {/* XP Progress Bar to next level */}
-          <div className="space-y-1">
-            <div className="w-full bg-blue-100 dark:bg-blue-950/60 h-1.5 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300"
-                style={{ width: `${Math.max(8, levelInfo.currentProgressPercent || 0)}%` }}
-              />
-            </div>
-            <div className="flex justify-between items-center text-[9px] text-[#748092] dark:text-[#94A3B8] font-semibold">
-              <span className="truncate max-w-[90px]">{levelInfo.title}</span>
-              <span>{levelInfo.xpToNextLevel > 0 ? `Còn ${levelInfo.xpToNextLevel} XP lên cấp` : 'Đỉnh phong'}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Roadmap Progress */}
-        <div 
-          onClick={() => setActiveTab('roadmap')}
-          className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col justify-between gap-2.5 hover:border-[#E85D3F] transition-all cursor-pointer group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] flex items-center justify-center text-xl p-2.5 shrink-0">
-              <Compass size={22} className="text-[#45B97C]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold text-[#748092] dark:text-[#94A3B8]">Tiến độ lộ trình</p>
-              <p className="text-lg sm:text-xl font-black text-[#243447] dark:text-white group-hover:text-[#45B97C] transition-colors leading-tight">
-                {overallRoadmapProgress}%
-              </p>
-            </div>
-          </div>
-
-          {/* Roadmap Progress Bar */}
-          <div className="space-y-1">
-            <div className="w-full bg-emerald-100 dark:bg-emerald-950/60 h-1.5 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-[#45B97C] rounded-full transition-all duration-300"
-                style={{ width: `${Math.max(5, overallRoadmapProgress)}%` }}
-              />
-            </div>
-            <div className="flex justify-between items-center text-[9px] text-[#748092] dark:text-[#94A3B8] font-semibold">
-              <span>{completedLessonIds.length} bài học hoàn thành</span>
-              <span className="text-[#45B97C]">Lộ trình HSK</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* 2.5 AI Learning Coach & Personalized Learning Engine */}
-      <AiLearningCoachWidget
-        user={user}
-        setActiveTab={setActiveTab}
-        onSelectLesson={onSelectLesson}
-      />
-
-      {/* 2.55 Daily Adaptive Smart Session (Task 26.04) */}
-      <DailyAdaptivePlan
-        user={user}
-        setActiveTab={setActiveTab}
-      />
-
-      {/* 2.6 Student Analytics Dashboard (Task 26.02) */}
-      <StudentAnalyticsDashboard
-        user={user}
-        streak={user?.streak || 0}
-        setActiveTab={setActiveTab}
-      />
-
-      {/* 2.7 SRS Retention Analytics (Task 26.03) */}
-      <SrsRetentionDashboard
-        user={user}
-        setActiveTab={setActiveTab}
-      />
-
-      {/* 3. Main Dashboard Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Left Column (8 cols): Today's Recommendation & Weekly Activity */}
-        <div className="lg:col-span-8 space-y-8">
-          
-          {/* Card: Daily Recommended Lesson */}
-          <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#E85D3F] flex items-center gap-1.5 uppercase tracking-wider">
-                <Sparkles size={14} />
-                <span>Bài học đề xuất hôm nay</span>
-              </span>
-              <span className="text-xs text-[#748092] dark:text-[#94A3B8] font-semibold">
-                {nextLessonInfo.level} • Bài {nextLessonInfo.number}
-              </span>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
-              <div className="space-y-1">
-                <h3 className="text-lg sm:text-xl font-bold text-[#243447] dark:text-white">
-                  {nextLessonInfo.title}
-                </h3>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
-                  {nextLessonInfo.desc}
-                </p>
-                <div className="flex items-center gap-3 pt-2 text-xs">
-                  <span className="px-2.5 py-0.5 rounded-lg bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] font-semibold">
-                    ⏱️ {nextLessonInfo.duration} phút
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-lg bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] font-semibold">
-                    ⭐ +{nextLessonInfo.xp} XP
-                  </span>
-                  <span className="text-[#748092] dark:text-[#94A3B8]">
-                    Đầy đủ ngữ pháp & trắc nghiệm
-                  </span>
-                </div>
-              </div>
-
-              <button
-                onClick={handleContinueLesson}
-                className="px-5 py-2.5 rounded-xl bg-[#E85D3F] text-white font-bold text-xs hover:bg-[#CB4529] shadow-md transition-all flex items-center justify-center gap-2 whitespace-nowrap self-start sm:self-center active:scale-95"
-              >
-                <span>Học bài này ngay</span>
-                <ArrowRight size={14} />
-              </button>
-            </div>
-          </div>
-
-          {/* Weekly Learning Activity Chart - Real-Time */}
-          <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-[#243447] dark:text-white flex items-center gap-2">
-                    <TrendingUp size={18} className="text-[#E85D3F]" />
-                    <span>Thời gian học tập theo tuần ({totalWeeklyHours} giờ)</span>
-                  </h3>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                    <span>Thời gian thực</span>
-                  </span>
-                </div>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-0.5">
-                  Mục tiêu {dailyGoalMinutes} phút/ngày • Hôm nay ({todayData.fullName}): <strong className="text-[#E85D3F]">{Math.round(todayData.minutes)} phút</strong>
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs font-bold text-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] border border-[#45B97C]/20 px-3 py-1 rounded-full whitespace-nowrap">
-                  {achievedDaysCount}/{daysPassedCount} ngày đạt chỉ tiêu
-                </span>
-              </div>
-            </div>
-
-            {/* Real-time Custom Bar Chart */}
-            <div className="grid grid-cols-7 gap-2 sm:gap-4 items-end h-48 pt-6 pb-2 px-2">
-              {weeklyStudyMinutes.map((d, index) => {
-                const maxBenchmark = Math.max(dailyGoalMinutes, 50);
-                const heightPercent = d.minutes > 0 
-                  ? Math.min(100, Math.max(14, Math.round((d.minutes / maxBenchmark) * 100))) 
-                  : 0;
-
-                return (
-                  <div key={index} className="flex flex-col items-center gap-2 h-full justify-end group select-none">
-                    {/* Minute label on top */}
-                    <div className="h-5 flex items-center justify-center">
-                      {d.isFuture ? (
-                        <span className="text-[10px] font-medium text-[#94A3B8]/50">-</span>
-                      ) : (
-                        <span className={`text-[11px] font-bold transition-opacity flex items-center gap-0.5 ${
-                          d.isToday 
-                            ? 'text-[#E85D3F]' 
-                            : d.reachedGoal 
-                              ? 'text-[#45B97C]' 
-                              : 'text-[#748092] dark:text-[#94A3B8]'
-                        }`}>
-                          {Math.round(d.minutes)}p
-                          {d.reachedGoal && <Check size={11} className="text-[#45B97C]" />}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Bar container */}
-                    <div className={`w-full max-w-[40px] rounded-2xl h-full flex items-end p-1 transition-all ${
-                      d.isToday 
-                        ? 'bg-[#FFF5F2] dark:bg-[#2C1D1A] border-2 border-[#E85D3F]/40 shadow-sm'
-                        : d.isFuture 
-                          ? 'bg-[#FAF8F5]/40 dark:bg-[#131B24]/40 border border-dashed border-[#F1E5D8] dark:border-[#2B3A4F]'
-                          : 'bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]'
-                    }`}>
-                      {d.minutes > 0 ? (
-                        <div 
-                          className={`w-full rounded-xl transition-all duration-500 relative ${
-                            d.isToday 
-                              ? 'bg-gradient-to-t from-[#E85D3F] via-[#F4B942] to-[#F4B942] shadow-md shadow-[#E85D3F]/35' 
-                              : d.reachedGoal
-                                ? 'bg-[#E85D3F]/85 hover:bg-[#E85D3F]'
-                                : 'bg-[#E85D3F]/50 hover:bg-[#E85D3F]/70'
-                          }`}
-                          style={{ height: `${heightPercent}%` }}
-                        >
-                          {d.isToday && (
-                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white shadow-sm animate-pulse" />
-                          )}
-                        </div>
-                      ) : (
-                        <div className="w-full h-1 bg-[#F1E5D8] dark:bg-[#2B3A4F] rounded-full mx-auto opacity-40" />
-                      )}
-                    </div>
-
-                    {/* Day & Date Labels */}
-                    <div className="text-center">
-                      <span className={`block text-xs font-black ${
-                        d.isToday 
-                          ? 'text-[#E85D3F]' 
-                          : d.isFuture 
-                            ? 'text-[#94A3B8]/60 dark:text-[#94A3B8]/40' 
-                            : 'text-[#243447] dark:text-[#CBD5E1]'
-                      }`}>
-                        {d.day}
-                      </span>
-                      <span className={`text-[9px] font-medium block -mt-0.5 ${
-                        d.isToday 
-                          ? 'text-[#E85D3F] font-bold' 
-                          : 'text-[#94A3B8]'
-                      }`}>
-                        {d.displayDate}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Classroom & Assigned Tasks Section */}
-          <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold text-[#243447] dark:text-white flex items-center gap-2">
-                  <GraduationCap size={20} className="text-[#3B82F6]" />
-                  <span>Lớp học & Bài tập được giao</span>
-                </h3>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-0.5">
-                  Theo dõi bài tập về nhà, thời hạn nộp và nhận xét trực tiếp từ giáo viên phụ trách.
-                </p>
-              </div>
-              <button 
-                onClick={() => {
-                  playClickSound();
-                  window.location.hash = '#classroom';
-                  setActiveTab('classroom');
-                }}
-                className="text-xs font-bold text-[#3B82F6] hover:underline flex items-center gap-1"
-              >
-                <span>Vào Lớp học</span>
-                <ArrowRight size={13} />
-              </button>
-            </div>
-
-            {loadingClassroomData ? (
-              <div className="py-6 text-center text-xs text-[#748092] dark:text-[#94A3B8]">
-                Đang cập nhật bài tập lớp học...
-              </div>
-            ) : studentAssignments.length > 0 ? (
-              <div className="divide-y divide-[#F1E5D8] dark:divide-[#2B3A4F]">
-                {studentAssignments.slice(0, 4).map((item) => {
-                  const isSubmitted = Boolean(item.submission);
-                  const isGraded = Boolean(item.submission?.graded);
-                  const isOverdue = item.due_date && !isSubmitted && new Date(item.due_date).getTime() < Date.now();
-
-                  return (
-                    <div key={item.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[10px] font-bold">
-                            {item.classroom_name}
-                          </span>
-                          <h4 className="text-sm font-bold text-[#243447] dark:text-white truncate">
-                            {item.title}
-                          </h4>
-                        </div>
-
-                        <div className="flex items-center gap-3 text-xs text-[#748092] dark:text-[#94A3B8]">
-                          {item.due_date && (
-                            <span className="flex items-center gap-1 text-[11px]">
-                              <Clock size={12} className={isOverdue ? 'text-rose-500' : 'text-[#748092]'} />
-                              <span className={isOverdue ? 'text-rose-500 font-bold' : ''}>
-                                Hạn: {new Date(item.due_date).toLocaleDateString('vi-VN')}
-                              </span>
-                            </span>
-                          )}
-
-                          {isGraded && (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[11px] flex items-center gap-1">
-                              <CheckCircle2 size={12} />
-                              Điểm: {item.submission.score}/100 đ
-                            </span>
-                          )}
-                        </div>
-
-                        {isGraded && item.submission?.feedback && (
-                          <p className="text-[11px] text-[#243447] dark:text-gray-300 bg-amber-50/70 dark:bg-amber-950/30 p-2 rounded-xl border border-amber-200 dark:border-amber-900 mt-1">
-                            💬 <strong>Lời phê:</strong> "{item.submission.feedback}"
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                        {isGraded ? (
-                          <span className="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-xs font-bold">
-                            Đã chấm
-                          </span>
-                        ) : isSubmitted ? (
-                          <span className="px-2.5 py-1 rounded-xl bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 text-xs font-bold">
-                            Đã nộp bài
-                          </span>
-                        ) : isOverdue ? (
-                          <span className="px-2.5 py-1 rounded-xl bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 text-xs font-bold flex items-center gap-1">
-                            <AlertTriangle size={12} />
-                            Quá hạn
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-1 rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-xs font-bold">
-                            Cần làm
-                          </span>
-                        )}
-
-                        <button
-                          onClick={() => {
-                            playClickSound();
-                            window.location.hash = `#classroom/${item.classroom_id}/assignments`;
-                            setActiveTab('classroom');
-                          }}
-                          className="px-3 py-1.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold transition-all shadow-xs"
-                        >
-                          {isSubmitted ? 'Xem bài' : 'Làm bài'}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : studentClassrooms.length > 0 ? (
-              <div className="py-6 text-center text-xs text-[#748092] dark:text-[#94A3B8] space-y-2">
-                <p>🎉 Bạn đã tham gia <strong>{studentClassrooms.length}</strong> lớp học. Hiện tại không có bài tập nào cần nộp gấp.</p>
-                <button
-                  onClick={() => {
-                    playClickSound();
-                    window.location.hash = '#classroom';
-                    setActiveTab('classroom');
-                  }}
-                  className="text-[#3B82F6] font-bold hover:underline"
-                >
-                  Vào không gian lớp học để xem tài liệu & thông báo ➔
-                </button>
-              </div>
-            ) : (
-              <div className="py-6 text-center text-xs text-[#748092] dark:text-[#94A3B8] space-y-2">
-                <p>Bạn chưa tham gia lớp học nào trên HanziGo.</p>
-                <button
-                  onClick={() => {
-                    playClickSound();
-                    window.location.hash = '#classroom/join';
-                    setActiveTab('classroom');
-                  }}
-                  className="px-4 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-[#3B82F6] font-bold hover:bg-blue-100 transition-colors inline-block"
-                >
-                  + Nhập mã tham gia lớp học ngay
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Spaced Repetition Review List */}
-          <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold text-[#243447] dark:text-white flex items-center gap-2">
-                  <RotateCcw size={18} className="text-[#D97706]" />
-                  <span>Hàng đợi ôn tập hôm nay (Spaced Repetition)</span>
-                </h3>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-0.5">
-                  Ôn lại từ vựng định kỳ giúp chuyển kiến thức vào trí nhớ vĩnh viễn.
-                </p>
-              </div>
-              <button 
-                onClick={() => {
-                  playClickSound();
-                  setActiveTab('vocabulary');
-                }}
-                className="text-xs font-bold text-[#E85D3F] hover:underline flex items-center gap-1"
-              >
-                <span>Mở Flashcard đầy đủ</span>
-                <ArrowRight size={13} />
-              </button>
-            </div>
-
-            {localReviewList.length > 0 ? (
-              <div className="divide-y divide-[#F1E5D8] dark:divide-[#2B3A4F]">
-                {localReviewList.map((word) => (
-                  <div key={word.id} className="py-3 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="font-['Noto_Serif_SC'] text-2xl font-black text-[#243447] dark:text-white min-w-[60px]">
-                        {word.hanzi}
-                      </span>
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold text-[#E85D3F]">{word.pinyin}</span>
-                        <p className="text-xs text-[#748092] dark:text-[#94A3B8] truncate">{word.meaning}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 shrink-0">
-                      <AudioButton text={word.hanzi} size="sm" variant="ghost" />
-                      <button
-                        onClick={() => handleMarkReviewDone(word.id)}
-                        className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-colors flex items-center gap-1"
-                        title="Đã ôn xong từ này"
-                      >
-                        <Check size={13} />
-                        <span className="hidden sm:inline">Đã thuộc</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-8 text-center text-xs text-[#748092] dark:text-[#94A3B8] space-y-2">
-                <p>🎉 Tuyệt vời! Bạn không còn từ nào tồn đọng cần ôn hôm nay.</p>
-                <button
-                  onClick={() => setActiveTab('vocabulary')}
-                  className="text-[#E85D3F] font-bold hover:underline"
-                >
-                  + Khám phá thêm từ vựng mới trong kho Flashcards
-                </button>
-              </div>
-            )}
-          </div>
-
-        </div>
-
-        {/* Right Column (4 cols): Achievements & Level Roadmap Progress */}
-        <div className="lg:col-span-4 space-y-8">
-          
-          {/* XP Leaderboard Widget */}
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E1B4B] text-white border border-white/10 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Trophy size={16} className="text-amber-400" />
-                <span>Bảng Xếp Hạng Cao Thủ</span>
-              </h3>
-              <button
-                onClick={() => {
-                  playClickSound();
-                  setActiveTab('leaderboard');
-                }}
-                className="text-xs font-bold text-amber-300 hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
-              >
-                <span>Xem Top 50</span>
-                <ArrowRight size={13} />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white/5 border border-white/10">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-[#E85D3F] flex items-center justify-center font-bold text-white shadow-sm">
-                  <Crown size={20} />
-                </div>
-                <div>
-                  <div className="text-[10px] text-white/60 font-semibold uppercase tracking-wider">Điểm tích lũy của bạn</div>
-                  <div className="font-mono text-base font-black text-amber-300 flex items-center gap-1">
-                    <Zap size={14} className="fill-amber-300" />
-                    <span>{calculatedTotalXp.toLocaleString()} XP</span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  {getXpHonorificTitle(calculatedTotalXp).title}
-                </span>
-              </div>
-            </div>
-
-            <p className="text-xs text-white/70 leading-relaxed">
-              Thi đua cùng cộng đồng học viên HanziGo. Tích lũy điểm qua mỗi bài học để thăng hạng và ghi danh lên bục vinh quang!
-            </p>
-
+        {/* Side 4 cols: 6 Core Skill Shortcuts (grid-cols-2 gap-2.5) */}
+        <div className="lg:col-span-4 p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-3.5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black text-[#243447] dark:text-white">
+              Lối tắt 6 kỹ năng cốt lõi
+            </h2>
             <button
-              onClick={() => {
-                playClickSound();
-                setActiveTab('leaderboard');
-              }}
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#E85D3F] text-white font-bold text-xs shadow-md transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-            >
-              <span>Mở Bảng Xếp Hạng Chi Tiết</span>
-              <ArrowRight size={14} />
-            </button>
-          </div>
-
-          {/* Daily & Weekly Challenge Quick Teaser */}
-          <div className="p-5 rounded-3xl bg-gradient-to-br from-[#FEF7E9] to-[#FFF9F2] dark:from-[#1E293B] dark:to-[#131B24] border border-[#F4B942]/50 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#D97706] flex items-center gap-1.5 uppercase tracking-wide">
-                <Flame size={14} className="fill-[#F4B942]" />
-                <span>Thử thách Hán ngữ hôm nay</span>
-              </span>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300">
-                +50 XP
-              </span>
-            </div>
-            <p className="text-xs text-[#243447] dark:text-white font-semibold">
-              Đặt câu với cặp liên từ Vì... Nên... (因为...所以...)
-            </p>
-            <button
-              onClick={() => {
-                playClickSound();
-                setActiveTab('community');
-              }}
-              className="w-full py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer active:scale-95"
-            >
-              <span>Vào Nộp Bài Thử Thách</span>
-              <ArrowRight size={13} />
-            </button>
-          </div>
-
-          {/* Unlocked Achievements */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-[#243447] dark:text-white flex items-center gap-2">
-                <Trophy size={18} className="text-[#F4B942]" />
-                <span>Huy hiệu thành tích</span>
-              </h3>
-              <span className="text-xs font-bold text-[#45B97C] bg-[#EBF8F2] dark:bg-[#162B21] px-2.5 py-0.5 rounded-full">
-                {unlockedAchievementsCount}/{dynamicAchievements.length} đạt
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {dynamicAchievements.slice(0, 4).map((ach) => (
-                <div 
-                  key={ach.id}
-                  className={`p-3.5 rounded-2xl border text-center transition-all ${
-                    ach.unlocked 
-                      ? 'bg-[#FFF9F2] dark:bg-[#131B24] border-[#F4B942]/60 shadow-sm' 
-                      : 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800 opacity-40'
-                  }`}
-                >
-                  <span className="text-2xl block mb-1">{ach.icon}</span>
-                  <p className="text-xs font-bold text-[#243447] dark:text-white truncate">
-                    {ach.name}
-                  </p>
-                  <p className="text-[10px] text-[#748092] dark:text-[#94A3B8] line-clamp-1 mt-0.5">
-                    {ach.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={() => {
-                playClickSound();
-                setActiveTab('profile');
-              }}
-              className="w-full py-2.5 rounded-xl text-xs font-bold text-[#E85D3F] bg-[#FDEEEB] dark:bg-[#2D1E1B] hover:bg-[#FCD8D2] transition-colors flex items-center justify-center gap-1"
-            >
-              <span>Xem toàn bộ phòng truyền thống</span>
-              <ArrowRight size={13} />
-            </button>
-          </div>
-
-          {/* Quick Shortcuts Hub */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-3">
-            <h3 className="text-xs font-bold text-[#748092] dark:text-[#94A3B8] uppercase tracking-wider mb-2">
-              Lối tắt luyện tập nhanh
-            </h3>
-
-
-            {/* Pronunciation Shortcut */}
-            <button
-              onClick={() => {
-                playClickSound();
-                setActiveTab('pronunciation');
-              }}
-              className="w-full p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:border-[#E85D3F] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-left transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#FEF7E9] text-[#D97706] flex items-center justify-center font-bold text-sm">
-                  <Mic size={17} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[#243447] dark:text-white">AI Thẩm âm & Phát âm</p>
-                  <p className="text-[10px] text-[#748092]">Chấm điểm micro & 4 thanh điệu</p>
-                </div>
-              </div>
-              <ArrowRight size={14} className="text-[#748092] group-hover:text-[#E85D3F] group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            {/* Writing Shortcut */}
-            <button
-              onClick={() => {
-                playClickSound();
-                setActiveTab('writing');
-              }}
-              className="w-full p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:border-[#E85D3F] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-left transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#EBF8F2] text-[#45B97C] flex items-center justify-center font-bold text-sm">
-                  <PenTool size={17} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[#243447] dark:text-white">Tập viết chữ Hán mễ tự</p>
-                  <p className="text-[10px] text-[#748092]">Thứ tự nét bút & tải file ảnh PNG</p>
-                </div>
-              </div>
-              <ArrowRight size={14} className="text-[#748092] group-hover:text-[#E85D3F] group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            {/* Reading & NLP Shortcut */}
-            <button
-              onClick={() => {
-                playClickSound();
-                setActiveTab('reader');
-              }}
-              className="w-full p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:border-[#E85D3F] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-left transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center font-bold text-sm">
-                  <BookOpen size={17} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[#243447] dark:text-white">Đọc hiểu & Phân tích NLP</p>
-                  <p className="text-[10px] text-[#748092]">Tách từ Hán ngữ, ngữ pháp & dịch nghĩa</p>
-                </div>
-              </div>
-              <ArrowRight size={14} className="text-[#748092] group-hover:text-[#E85D3F] group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            {/* AI Conversation Shortcut */}
-            <button
-              onClick={() => {
-                playClickSound();
-                setActiveTab('conversation');
-              }}
-              className="w-full p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:border-[#E85D3F] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-left transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#3B82F6] flex items-center justify-center font-bold text-sm">
-                  <MessageCircle size={17} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[#243447] dark:text-white">Hội thoại AI ngữ cảnh</p>
-                  <p className="text-[10px] text-[#748092]">Trò chuyện theo tình huống thực tế</p>
-                </div>
-              </div>
-              <ArrowRight size={14} className="text-[#748092] group-hover:text-[#E85D3F] group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            {/* Materials Shortcut */}
-            <button
+              type="button"
               onClick={() => {
                 playClickSound();
                 setActiveTab('materials');
               }}
-              className="w-full p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:border-[#E85D3F] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-left transition-all group"
+              className="text-[11px] font-bold text-[#E85D3F] hover:underline flex items-center gap-0.5 cursor-pointer"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#FDEEEB] text-[#E85D3F] flex items-center justify-center font-bold text-sm">
-                  <FolderDown size={17} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[#243447] dark:text-white">Thư viện giáo trình & đề thi</p>
-                  <p className="text-[10px] text-[#748092]">Kho tài liệu PDF & file nghe MP3</p>
-                </div>
-              </div>
-              <ArrowRight size={14} className="text-[#748092] group-hover:text-[#E85D3F] group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            {/* HSK Exam Center Shortcut */}
-            <button
-              onClick={() => {
-                playClickSound();
-                setActiveTab('hsk');
-              }}
-              className="w-full p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] hover:border-[#E85D3F] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between text-left transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-sm">
-                  <GraduationCap size={17} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[#243447] dark:text-white">Thi thử HSK Chuẩn Quốc Tế</p>
-                  <p className="text-[10px] text-[#748092]">Mô phỏng thi máy CBT & tính điểm thật</p>
-                </div>
-              </div>
-              <ArrowRight size={14} className="text-[#748092] group-hover:text-[#E85D3F] group-hover:translate-x-1 transition-transform" />
+              <span>Tài liệu</span>
+              <ArrowRight size={12} />
             </button>
           </div>
 
+          <div className="grid grid-cols-2 gap-2.5">
+            {coreShortcuts.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    playClickSound();
+                    setActiveTab(item.id);
+                  }}
+                  className="min-h-[84px] p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F] text-left flex flex-col justify-between gap-2 transition-all active:scale-95 cursor-pointer group"
+                >
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${item.iconBg}`}
+                  >
+                    <Icon size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-[#243447] dark:text-white truncate group-hover:text-[#E85D3F] transition-colors">
+                      {item.label}
+                    </p>
+                    <p className="text-[10px] text-[#748092] dark:text-[#94A3B8] truncate">
+                      {item.sub}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
+      </section>
 
-      </div>
+      {/* =====================================================================
+          TẦNG 3: PHÂN TÍCH CHUYÊN SÂU & MỞ RỘNG (PROGRESSIVE DISCLOSURE TABS)
+      ===================================================================== */}
+      <DashboardDeepAnalyticsTabs
+        user={user}
+        setActiveTab={setActiveTab}
+        targetHskLevel={targetHskLevel}
+        calculatedTotalXp={calculatedTotalXp}
+        dailyGoalMinutes={dailyGoalMinutes}
+        weeklyStudyMinutes={weeklyStudyMinutes}
+        totalWeeklyHours={totalWeeklyHours}
+        todayData={todayData}
+        achievedDaysCount={achievedDaysCount}
+        daysPassedCount={daysPassedCount}
+        dynamicAchievements={dynamicAchievements}
+        unlockedAchievementsCount={unlockedAchievementsCount}
+        studentClassrooms={studentClassrooms}
+        studentAssignments={studentAssignments}
+        loadingClassroomData={loadingClassroomData}
+        localReviewList={localReviewList}
+        onMarkReviewDone={handleMarkReviewDone}
+      />
 
       {/* Interactive Streak Modal */}
-      <StreakModal 
+      <StreakModal
         user={user}
         isOpen={streakModalOpen}
         onClose={() => setStreakModalOpen(false)}
         onNavigateTab={setActiveTab}
       />
-
     </div>
   );
 }

@@ -159,18 +159,18 @@ export function Hsk7to9ExamCenterSection({
 }) {
   return (
     <section className="space-y-5">
-      <div className="relative overflow-hidden p-5 sm:p-7 rounded-3xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] border border-amber-400/35 shadow-xl space-y-5 text-white">
+      <div className="relative overflow-hidden p-3.5 sm:p-7 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] border border-amber-400/35 shadow-xl space-y-3 sm:space-y-5 text-white">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-[#E85D3F]/20 blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-extrabold uppercase tracking-wider">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+          <div className="space-y-1.5 sm:space-y-2">
+            <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-extrabold uppercase tracking-wider">
               <GraduationCap className="w-4 h-4" />
               <span>Chuẩn Khảo Thí HSK 3.0 Mới • Kỳ Thi Tích Hợp Cấp 7 – 9</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white font-['Noto_Serif_SC']">
+            <h2 className="text-lg sm:text-2xl font-black text-white font-['Noto_Serif_SC']">
               Phòng Thi Tích Hợp HSK 7–9 (Nghe • Đọc Biểu Đồ • Dịch Thuật • Luận Văn 600 Chữ • Khẩu Ngữ)
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed line-clamp-2 sm:line-clamp-none">
               Một bài thi tổng hợp <strong className="text-white">300 điểm / 210 phút</strong> tự động phân loại năng lực
               học thuật theo 3 bậc:{' '}
               <span className="text-cyan-300 font-bold">HSK 7 (≥ 180đ)</span> •{' '}
@@ -355,7 +355,7 @@ export default function HskPracticePage({
     return (
       <Suspense
         fallback={
-          <div className="min-h-screen bg-[#FFF9F2] dark:bg-[#131B24] flex flex-col items-center justify-center gap-3 text-[#5B6B7F] dark:text-slate-300">
+          <div className="min-h-dvh bg-[#FFF9F2] dark:bg-[#131B24] flex flex-col items-center justify-center gap-3 text-[#5B6B7F] dark:text-slate-300">
             <div className="w-9 h-9 border-2 border-[#E85D3F] border-t-transparent rounded-full animate-spin" />
             <p className="text-xs font-bold text-[#E85D3F]">
               Đang khởi tạo Phòng thi Tích hợp HSK 7–9 ({resolvedPaper})...
@@ -377,7 +377,7 @@ export default function HskPracticePage({
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF9F2] dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors pb-16">
+    <div className="min-h-dvh bg-[#FFF9F2] dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors pb-16">
       {/* Sub Navigation Bar for HSK Module (Hidden during exam taking) */}
       {currentView !== 'exam_taking' && (
         <HskSubNavHeader 
@@ -665,7 +665,7 @@ function HskRandomExamModal({ isOpen, onClose, onNavigate }) {
           <select
             value={selectedTopic}
             onChange={e => setSelectedTopic(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium focus:outline-none focus:border-[#E85D3F]"
+            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm font-medium focus:outline-none focus:border-[#E85D3F]"
           >
             <option value="all">Tất cả chủ đề (Ngẫu nhiên tổng hợp)</option>
             {HSK_TOPICS_CATALOG.map(t => (
@@ -792,17 +792,17 @@ function HskHomeView({
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5">
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#E85D3F] via-[#CB4529] to-[#992E17] text-white p-5 sm:p-7 shadow-lg shadow-orange-500/10 mb-7">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#E85D3F] via-[#CB4529] to-[#992E17] text-white p-3.5 sm:p-7 shadow-lg shadow-orange-500/10 mb-5 sm:mb-7">
         <div className="relative z-10 max-w-4xl">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] font-bold uppercase tracking-wider mb-2.5">
+          <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] font-bold uppercase tracking-wider mb-2.5">
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
             Nền tảng Luyện Thi HSK Miễn Phí 100%
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug mb-2">
+          <h1 className="text-lg sm:text-3xl font-black tracking-tight leading-snug mb-1.5 sm:mb-2">
             Thi Thử HSK Trực Tuyến{' '}
             <span className="text-amber-200">Không Cần Đăng Nhập</span>
           </h1>
-          <p className="text-white/90 text-xs sm:text-sm mb-5 leading-relaxed max-w-2xl">
+          <p className="text-white/90 text-xs sm:text-sm mb-3 sm:mb-5 leading-relaxed max-w-2xl line-clamp-2 sm:line-clamp-none">
             Hệ thống đề thi mô phỏng chuẩn quốc tế từ HSK 1 đến HSK 6: Đầy đủ {exams.length} đề thi chuẩn hóa thực chiến (bao gồm đề HSK 6 đủ 101 câu &amp; HSKK 3 cấp), tự động tính điểm và giải thích chi tiết bằng tiếng Việt.
           </p>
           <div className="flex flex-wrap lg:flex-nowrap items-center gap-2">
@@ -1249,7 +1249,7 @@ function HskExamsListView({
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Tìm theo tên đề thi, từ khóa (ví dụ: nghe hiểu, ngữ pháp câu chữ 把...)..."
-            className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:border-[#E85D3F]"
+            className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm focus:outline-none focus:border-[#E85D3F]"
           />
         </div>
 
@@ -3542,7 +3542,7 @@ function AttemptComparisonModal({ comparison, onClose, onReviewAttempt }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-8 my-8 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-8 my-8 max-h-[90dvh] overflow-y-auto pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div>
             <span className="px-2.5 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold">
@@ -3807,7 +3807,7 @@ function HskMistakesView({ user, onNavigate }) {
               placeholder="Tìm kiếm Chữ Hán, Pinyin hoặc nghĩa tiếng Việt..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+              className="w-full pl-9 pr-3 py-2 rounded-xl text-base sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
@@ -3815,7 +3815,7 @@ function HskMistakesView({ user, onNavigate }) {
           <select
             value={levelFilter}
             onChange={(e) => setLevelFilter(e.target.value)}
-            className="w-full sm:w-auto px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+            className="w-full sm:w-auto px-3 py-2 rounded-xl text-base sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
           >
             <option value="all">Tất cả cấp độ</option>
             <option value="HSK 1">HSK 1</option>
@@ -3827,7 +3827,7 @@ function HskMistakesView({ user, onNavigate }) {
           <select
             value={skillFilter}
             onChange={(e) => setSkillFilter(e.target.value)}
-            className="w-full sm:w-auto px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+            className="w-full sm:w-auto px-3 py-2 rounded-xl text-base sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
           >
             <option value="all">Tất cả kỹ năng</option>
             <option value="listening">Nghe hiểu</option>

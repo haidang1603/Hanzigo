@@ -434,18 +434,18 @@ export default function PracticePage({
       {practiceSkill === 'overview' && (
         <div className="space-y-8 animate-in fade-in">
           {/* Hero Banner */}
-          <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-[#E85D3F]/10 via-[#F4B942]/10 to-transparent border border-[#F1E5D8] dark:border-[#2B3A4F]">
-            <div className="relative z-10 max-w-2xl space-y-3">
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#E85D3F] text-white">
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-3.5 sm:p-8 bg-gradient-to-br from-[#E85D3F]/10 via-[#F4B942]/10 to-transparent border border-[#F1E5D8] dark:border-[#2B3A4F]">
+            <div className="relative z-10 max-w-2xl space-y-2 sm:space-y-3">
+              <span className="hidden sm:inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#E85D3F] text-white">
                 Khám phá hệ thống luyện tập thực chiến
               </span>
-              <h2 className="text-xl sm:text-2xl font-black text-[#243447] dark:text-white">
+              <h2 className="text-lg sm:text-2xl font-black text-[#243447] dark:text-white">
                 Luyện tập có chủ đích theo từng cấp độ HSK
               </h2>
-              <p className="text-xs sm:text-sm text-[#748092] dark:text-[#CBD5E1] leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#748092] dark:text-[#CBD5E1] leading-relaxed line-clamp-2 sm:line-clamp-none">
                 HanziGo cung cấp bài tập ghép từ thành câu chuẩn ngữ pháp, thử thách nghe hiểu âm thanh giọng bản xứ và kết nối trực tiếp với toàn bộ hệ sinh thái học tập HSK 1–6.
               </p>
-              <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-1 sm:pt-2">
                 <button
                   id="overview-btn-grammar"
                   onClick={() => handleSwitchSkill('grammar')}

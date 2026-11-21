@@ -1,7 +1,7 @@
 /**
  * HANZI GO - CLASSROOM JOIN HANDLER
  */
-import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, getSupabaseAdminClient, sendSafeServerError } from '../../_utils/supabaseServer.js';
 
 export default async function joinHandler(req, res) {
   if (req.method !== 'POST') {
@@ -87,7 +87,7 @@ export default async function joinHandler(req, res) {
           });
         }
         if (memErr && isProd) {
-          return res.status(500).json({ error: 'Lỗi cơ sở dữ liệu khi tham gia lớp học: ' + memErr.message });
+          return sendSafeServerError(res, 'Lỗi cơ sở dữ liệu khi tham gia lớp học.', memErr);
         }
       } else if (isProd) {
         return res.status(400).json({ error: 'Không tìm thấy lớp học hợp lệ để tham gia.' });

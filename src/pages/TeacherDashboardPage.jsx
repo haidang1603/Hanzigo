@@ -679,7 +679,7 @@ export default function TeacherDashboardPage({
   }, [submissions]);
 
   return (
-    <div className="min-h-screen bg-[#FFF9F2] dark:bg-[#131B24] py-6 sm:py-8 transition-colors duration-200">
+    <div className="min-h-dvh bg-[#FFF9F2] dark:bg-[#131B24] py-6 sm:py-8 transition-colors duration-200">
       
       {/* Toast Notification */}
       {toast && (
@@ -1191,7 +1191,7 @@ export default function TeacherDashboardPage({
               </button>
             </div>
 
-            <div className="overflow-x-auto rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
+            <div className="overflow-x-auto max-w-full rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2]/70 dark:bg-[#243447]/50 text-[11px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
@@ -1276,7 +1276,7 @@ export default function TeacherDashboardPage({
                 <select
                   value={analyticsClassId}
                   onChange={(e) => setAnalyticsClassId(e.target.value)}
-                  className="px-3.5 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-white focus:outline-none"
+                  className="px-3.5 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-base sm:text-sm font-bold text-[#243447] dark:text-white focus:outline-none"
                 >
                   <option value="all">Toàn bộ lớp học ({classrooms.length} lớp)</option>
                   {classrooms.map(c => (
@@ -1419,14 +1419,14 @@ export default function TeacherDashboardPage({
                     placeholder="Tìm tên hoặc email học viên..."
                     value={studentSearch}
                     onChange={e => setStudentSearch(e.target.value)}
-                    className="pl-9 pr-4 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs text-[#243447] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#E85D3F] w-56 sm:w-64"
+                    className="pl-9 pr-4 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#E85D3F] w-56 sm:w-64"
                   />
                 </div>
 
                 <select
                   value={studentFilterClass}
                   onChange={e => setStudentFilterClass(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-white focus:outline-none"
+                  className="px-3 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] border border-[#F1E5D8] dark:border-[#2B3A4F] text-base sm:text-sm font-bold text-[#243447] dark:text-white focus:outline-none"
                 >
                   <option value="all">Tất cả lớp học ({classrooms.length})</option>
                   {classrooms.map(c => (
@@ -1515,7 +1515,7 @@ export default function TeacherDashboardPage({
               }
 
               return (
-                <div className="overflow-x-auto rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
+                <div className="overflow-x-auto max-w-full rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2]/70 dark:bg-[#243447]/50 text-[11px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
@@ -1814,7 +1814,7 @@ export default function TeacherDashboardPage({
                     </button>
                   </div>
                 ) : (
-                <div className="overflow-x-auto rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
+                <div className="overflow-x-auto max-w-full rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2]/70 dark:bg-[#243447]/50 text-[11px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
@@ -2206,7 +2206,7 @@ export default function TeacherDashboardPage({
               Xem danh sách bài nộp của tất cả học viên trong các lớp học bạn phụ trách
             </p>
 
-            <div className="overflow-x-auto rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
+            <div className="overflow-x-auto max-w-full rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2]/70 dark:bg-[#243447]/50 text-[11px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">

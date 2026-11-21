@@ -4,7 +4,7 @@
  * GET /api/hsk/history?compare=true&attemptA=...&attemptB=...
  */
 import { getUserExamHistory, compareExamAttempts, getAttemptResult } from '../../../src/services/hskService.js';
-import { verifyRequestAuth } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, sendSafeServerError } from '../../_utils/supabaseServer.js';
 
 export default async function historyHandler(req, res) {
   if (req.method !== 'GET') {
@@ -48,6 +48,6 @@ export default async function historyHandler(req, res) {
     return res.status(200).json({ success: true, history });
   } catch (err) {
     console.error('[HSK History Error]:', err);
-    return res.status(500).json({ error: 'Lỗi máy chủ nội bộ khi tải lịch sử thi HSK.', message: err?.message });
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ khi tải lịch sử thi HSK.', err);
   }
 }

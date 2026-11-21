@@ -390,6 +390,12 @@ function MainApp() {
 
   return (
     <div className="min-h-[100dvh] flex bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] transition-colors duration-200 overflow-x-clip">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:rounded-xl focus:bg-[#E85D3F] focus:text-white focus:font-bold focus:text-sm focus:shadow-lg"
+      >
+        Bỏ qua đến nội dung chính
+      </a>
       <SeoHeadManager activeTab={activeTab} routeInfo={routeInfo} />
       
       {/* 1. Desktop Smart Adaptive Collapsible Sidebar */}
@@ -428,7 +434,7 @@ function MainApp() {
         />
 
         {/* Main Content Area (pb-20 on mobile for bottom navigation bar) */}
-        <main className="flex-1 pb-20 lg:pb-0 min-h-[70vh] [overflow-anchor:none]">
+        <main id="main-content" tabIndex={-1} className="flex-1 pb-20 lg:pb-0 min-h-[70dvh] [overflow-anchor:none]">
         <GlobalErrorBoundary
           scope="route"
           resetKey={activeTab}

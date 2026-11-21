@@ -575,7 +575,7 @@ export default function ClassroomPage({
   }, [myClasses, classSearchTerm, levelFilter, liveSessionsMap]);
 
   return (
-    <div className="min-h-screen bg-[#FFF9F2] dark:bg-[#131B24] py-6 sm:py-10 transition-colors duration-200">
+    <div className="min-h-dvh bg-[#FFF9F2] dark:bg-[#131B24] py-6 sm:py-10 transition-colors duration-200">
       
       {/* Toast Notification */}
       {toast && (
@@ -590,24 +590,24 @@ export default function ClassroomPage({
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
         {/* 1. HERO HEADER BANNER */}
-        <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#991B1B] text-white shadow-lg">
+        <div className="relative overflow-hidden p-3.5 sm:p-5 rounded-2xl bg-gradient-to-br from-[#E85D3F] via-[#CB4529] to-[#991B1B] text-white shadow-lg">
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-1/3 -mb-16 w-56 h-56 rounded-full bg-rose-400/20 blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="space-y-2 max-w-2xl">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-white text-[11px] font-bold backdrop-blur-md border border-white/20">
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-4">
+            <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
+              <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-white text-[11px] font-bold backdrop-blur-md border border-white/20">
                 <GraduationCap size={13} className="text-amber-300" />
                 <span>Không Gian Lớp Học Trực Tuyến & Giảng Đường Số</span>
               </div>
               
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
+              <h1 className="text-lg sm:text-2xl lg:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
                 {subRoute === 'join' ? 'Tham Gia Lớp Học' :
                  classId && currentClass ? currentClass.name :
                  'Lớp Học Của Tôi'}
               </h1>
               
-              <p className="text-xs text-white/90 leading-relaxed font-medium line-clamp-2">
+              <p className="text-xs text-white/90 leading-relaxed font-medium line-clamp-1 sm:line-clamp-2">
                 {classId && currentClass 
                   ? `Giáo viên phụ trách: ${currentClass.profiles?.name || currentClass.teacher_name || 'Giáo viên HanziGo'} • Cấp độ ${currentClass.hsk_level} • Mã lớp: ${currentClass.class_code}`
                   : `${greeting.text} ${greeting.proverb}`}
@@ -896,7 +896,7 @@ export default function ClassroomPage({
                     placeholder="Tìm theo tên lớp, mã lớp hoặc giáo viên..."
                     value={classSearchTerm}
                     onChange={(e) => setClassSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-xs font-semibold text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-base sm:text-sm font-semibold text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
                   />
                   {classSearchTerm && (
                     <button
@@ -1508,7 +1508,7 @@ export default function ClassroomPage({
       {/* MODAL: ASSIGNMENT SUBMISSION PLAYER */}
       {activeAssignment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="max-w-xl w-full bg-white dark:bg-[#1E293B] rounded-3xl p-6 sm:p-8 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+          <div className="max-w-xl w-full bg-white dark:bg-[#1E293B] rounded-3xl p-6 sm:p-8 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-5 max-h-[90dvh] overflow-y-auto pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-3">
               <div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
@@ -1594,7 +1594,7 @@ export default function ClassroomPage({
                   placeholder="Nhập câu trả lời, chữ Hán, bản dịch hoặc liên kết ghi âm bài nói..."
                   value={writingNotes}
                   onChange={e => setWritingNotes(e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   rows={4}
                 />
               </div>

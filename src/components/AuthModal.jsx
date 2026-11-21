@@ -366,13 +366,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
             {/* Form Body */}
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {error && (
-                <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 text-xs">
+                <div role="alert" aria-live="assertive" className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 text-xs">
                   <p>{error}</p>
                 </div>
               )}
 
               {successMsg && (
-                <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs space-y-2 animate-in fade-in">
+                <div role="status" aria-live="polite" className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs space-y-2 animate-in fade-in">
                   <div className="flex items-center gap-2 font-bold text-sm">
                     <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>Đã gửi hướng dẫn khôi phục</span>
@@ -389,18 +389,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
                   {!successMsg ? (
                     <>
                       <div>
-                        <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
+                        <label htmlFor="auth-forgot-email" className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
                           Địa chỉ Email tài khoản của bạn *
                         </label>
                         <div className="relative">
-                          <Mail size={16} className="absolute left-3.5 top-3 text-[#748092]" />
+                          <Mail size={16} aria-hidden="true" className="absolute left-3.5 top-3 text-[#748092]" />
                           <input
+                            id="auth-forgot-email"
+                            name="forgotEmail"
                             type="email"
                             required
                             placeholder="example@gmail.com"
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                            className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                           />
                         </div>
                         <p className="text-[11px] text-[#748092] mt-1.5 leading-relaxed">
@@ -495,41 +497,45 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
 
                   {mode === 'register' && (
                     <div>
-                      <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
+                      <label htmlFor="auth-name" className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
                         Họ và tên của bạn
                       </label>
                       <div className="relative">
-                        <User size={16} className="absolute left-3.5 top-3 text-[#748092]" />
+                        <User size={16} aria-hidden="true" className="absolute left-3.5 top-3 text-[#748092]" />
                         <input
+                          id="auth-name"
+                          name="fullName"
                           type="text"
                           placeholder="Ví dụ: Nguyễn Văn Minh"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                          className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                         />
                       </div>
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
+                    <label htmlFor="auth-email" className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
                       Địa chỉ Email
                     </label>
                     <div className="relative">
-                      <Mail size={16} className="absolute left-3.5 top-3 text-[#748092]" />
+                      <Mail size={16} aria-hidden="true" className="absolute left-3.5 top-3 text-[#748092]" />
                       <input
+                        id="auth-email"
+                        name="email"
                         type="email"
                         placeholder="example@gmail.com"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                       />
                     </div>
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-bold text-[#243447] dark:text-white">
+                      <label htmlFor="auth-password" className="block text-xs font-bold text-[#243447] dark:text-white">
                         Mật khẩu
                       </label>
                       {mode === 'login' && (
@@ -548,26 +554,30 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLo
                       )}
                     </div>
                     <div className="relative">
-                      <Lock size={16} className="absolute left-3.5 top-3 text-[#748092]" />
+                      <Lock size={16} aria-hidden="true" className="absolute left-3.5 top-3 text-[#748092]" />
                       <input
+                        id="auth-password"
+                        name="password"
                         type="password"
                         placeholder="Tối thiểu 6 ký tự"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                       />
                     </div>
                   </div>
 
                   {mode === 'register' && (
                     <div>
-                      <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
+                      <label htmlFor="auth-level" className="block text-xs font-bold text-[#243447] dark:text-white mb-1.5">
                         Trình độ tiếng Trung hiện tại
                       </label>
                       <select
+                        id="auth-level"
+                        name="level"
                         value={formData.level}
                         onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                       >
                         <option value="Nhập môn - Chưa biết gì">Chưa biết gì (Học từ Pinyin và Nét chữ)</option>
                         <option value="HSK 1 - Sơ cấp">Đã biết chút ít / Học lại từ đầu</option>

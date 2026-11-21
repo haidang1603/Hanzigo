@@ -285,7 +285,7 @@ export default function SmartCommandPalette({
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-2xl bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-150"
+        className="w-full max-w-2xl bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl overflow-hidden flex flex-col max-h-[80dvh] animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         
@@ -293,6 +293,9 @@ export default function SmartCommandPalette({
         <div className="relative p-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center gap-3 bg-white dark:bg-[#1E293B]">
           <Search size={20} className="text-[#E85D3F] shrink-0 ml-1" />
           <input
+            id="global-command-search"
+            name="commandSearch"
+            aria-label="Tìm kiếm nhanh bài học, từ vựng và chức năng"
             ref={inputRef}
             type="text"
             value={query}
@@ -301,7 +304,7 @@ export default function SmartCommandPalette({
               setSelectedIndex(0);
             }}
             placeholder="Tìm kiếm bài học, từ vựng, ngữ pháp, đề thi hoặc chức năng..."
-            className="w-full bg-transparent text-sm sm:text-base font-semibold text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none"
+            className="w-full bg-transparent text-base font-semibold text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none"
           />
           {query && (
             <button

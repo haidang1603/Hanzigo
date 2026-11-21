@@ -3,6 +3,7 @@
  * POST /api/hsk/report
  */
 import { submitContentReport } from '../../../src/services/hskReviewService.js';
+import { sendSafeServerError } from '../../_utils/supabaseServer.js';
 
 export default async function reportHandler(req, res) {
   if (req.method !== 'POST') {
@@ -27,6 +28,6 @@ export default async function reportHandler(req, res) {
     return res.status(200).json(result);
   } catch (err) {
     console.error('[HSK Report Error]:', err);
-    return res.status(500).json({ error: 'Lỗi máy chủ nội bộ khi gửi báo cáo nội dung.', message: err?.message });
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ khi gửi báo cáo nội dung.', err);
   }
 }

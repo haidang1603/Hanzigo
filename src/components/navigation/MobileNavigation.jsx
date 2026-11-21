@@ -79,6 +79,17 @@ export default function MobileNavigation({
     }
   }, [activeTab, isCurrentTabInPractice]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const handleItemClick = (id, hash = null) => {
     playClickSound();
     if (hash && typeof window !== 'undefined') {
@@ -333,12 +344,12 @@ export default function MobileNavigation({
             </div>
 
             {/* Drawer Footer: User Profile / Logout */}
-            <div className="p-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] bg-white/50 dark:bg-[#1E293B]/40">
+            <div className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[#F1E5D8] dark:border-[#2B3A4F] bg-white/50 dark:bg-[#1E293B]/40">
               {user ? (
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <div
                     onClick={() => handleItemClick('profile')}
-                    className="flex items-center gap-2 cursor-pointer min-w-0"
+                    className="flex items-center gap-2 cursor-pointer min-w-0 min-h-11"
                   >
                     <UserAvatar user={user} size="md" />
                     <div className="min-w-0">
@@ -353,10 +364,11 @@ export default function MobileNavigation({
                         onClose();
                         onLogout();
                       }}
-                      className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg cursor-pointer"
+                      aria-label="Đăng xuất"
+                      className="min-w-11 min-h-11 flex items-center justify-center p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl cursor-pointer shrink-0"
                       title="Đăng xuất"
                     >
-                      <LogOut size={16} />
+                      <LogOut size={18} />
                     </button>
                   )}
                 </div>
@@ -367,7 +379,7 @@ export default function MobileNavigation({
                     onClose();
                     if (onOpenAuth) onOpenAuth('login');
                   }}
-                  className="w-full py-2.5 rounded-xl bg-linear-to-r from-[#E85D3F] to-[#CB4529] text-white text-xs font-bold shadow-xs cursor-pointer"
+                  className="min-h-11 w-full py-2.5 rounded-xl bg-linear-to-r from-[#E85D3F] to-[#CB4529] text-white text-xs font-bold shadow-xs cursor-pointer"
                 >
                   Đăng nhập / Đăng ký
                 </button>

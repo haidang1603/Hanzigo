@@ -1,7 +1,7 @@
 /**
  * HANZI GO - CLASSROOM REMOVE HANDLER
  */
-import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, getSupabaseAdminClient, sendSafeServerError } from '../../_utils/supabaseServer.js';
 
 export default async function removeHandler(req, res) {
   if (req.method !== 'POST') {
@@ -46,7 +46,7 @@ export default async function removeHandler(req, res) {
       if (!error) {
         return res.status(200).json({ success: true });
       }
-      return res.status(500).json({ error: 'Không thể xóa học viên: ' + (error.message || 'Lỗi cơ sở dữ liệu') });
+      return sendSafeServerError(res, 'Không thể xóa học viên.', error);
     } catch (err) {
       console.warn('[/api/classroom/remove] Notice:', err.message);
       return res.status(500).json({ error: 'Lỗi máy chủ khi xóa học viên.' });

@@ -841,7 +841,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm chữ Hán, Pinyin hoặc câu ví dụ..."
-                  className="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full pl-9 pr-4 py-2 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 
@@ -1987,7 +1987,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                   value={newPinyin}
                   onChange={(e) => setNewPinyin(e.target.value)}
                   placeholder="Ví dụ: Wǒ xiǎng hē nǎichá"
-                  className="w-full px-4 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 
@@ -2001,7 +2001,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                   value={newMeaning}
                   onChange={(e) => setNewMeaning(e.target.value)}
                   placeholder="Ví dụ: Tôi muốn uống trà sữa"
-                  className="w-full px-4 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  className="w-full px-4 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 
@@ -2014,7 +2014,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   >
                     <option value="Tự thêm">Tự thêm</option>
                     <option value="Câu giao tiếp">Câu giao tiếp</option>
@@ -2033,7 +2033,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                     value={newTip}
                     onChange={(e) => setNewTip(e.target.value)}
                     placeholder="Lưu ý biến điệu hoặc thanh 4..."
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full px-3 py-2.5 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                 </div>
               </div>

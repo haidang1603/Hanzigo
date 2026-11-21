@@ -562,7 +562,7 @@ export default function LessonPage({
   }, [isAdvancedHsk7to9, vocabularyList.length, uniqueCharacters.length, masteryQuizzes.length]);
 
   return (
-    <div className="min-h-screen bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] py-6 sm:py-8 transition-colors duration-200">
+    <div className="min-h-dvh bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] py-6 sm:py-8 transition-colors duration-200">
       {toastMsg && (
         <div className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl bg-[#243447] text-white text-xs sm:text-sm font-bold shadow-2xl flex items-center gap-2 border border-white/10">
           <CheckCircle2 className="w-4 h-4 shrink-0 text-[#45B97C]" />
@@ -572,11 +572,11 @@ export default function LessonPage({
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* 1. HEADER HERO CARD */}
-        <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] text-white shadow-lg border border-white/5 p-5 sm:p-7">
+        <header className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#243447] via-[#1E293B] to-[#131B24] text-white shadow-lg border border-white/5 p-3.5 sm:p-7">
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-[#E85D3F]/20 blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-1/3 -mb-16 w-56 h-56 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 space-y-5">
+          <div className="relative z-10 space-y-3 sm:space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <button
                 type="button"
@@ -587,21 +587,24 @@ export default function LessonPage({
                 <span>Quay lại Bản đồ 180 bài (HSK 1–9)</span>
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
                   disabled={currentLessonId <= 1}
                   onClick={() => goToLesson(currentLessonId - 1)}
-                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-white/10 border border-white/15 disabled:opacity-40 hover:bg-white/20 text-xs font-bold text-white cursor-pointer"
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-white/10 border border-white/15 disabled:opacity-40 hover:bg-white/20 text-xs font-bold text-white cursor-pointer shrink-0"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Bài #{currentLessonId - 1}</span>
                 </button>
 
                 <select
+                  id="lesson-selector"
+                  name="lessonSelector"
+                  aria-label="Chọn bài học HSK 1 đến 9"
                   value={currentLessonId}
                   onChange={(e) => goToLesson(Number(e.target.value))}
-                  className="px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-400 max-w-[230px] sm:max-w-xs truncate cursor-pointer"
+                  className="order-first sm:order-none w-full sm:w-auto min-w-0 sm:max-w-xs px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-base sm:text-sm font-bold text-amber-300 focus:outline-none focus:border-amber-400 truncate cursor-pointer"
                 >
                   {ALL_180_LESSONS.map((item) => (
                     <option
@@ -618,7 +621,7 @@ export default function LessonPage({
                   type="button"
                   disabled={currentLessonId >= 180}
                   onClick={() => goToLesson(currentLessonId + 1)}
-                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-white/10 border border-white/15 disabled:opacity-40 hover:bg-white/20 text-xs font-bold text-white cursor-pointer"
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-white/10 border border-white/15 disabled:opacity-40 hover:bg-white/20 text-xs font-bold text-white cursor-pointer shrink-0 ml-auto sm:ml-0"
                 >
                   <span>Bài #{currentLessonId + 1}</span>
                   <ChevronRight className="w-4 h-4" />
@@ -626,15 +629,15 @@ export default function LessonPage({
               </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 pt-1">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-5 pt-0.5 sm:pt-1">
+              <div className="space-y-1.5 sm:space-y-2">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <span
                     className={`px-2.5 py-0.5 rounded-lg text-xs font-extrabold border ${stageMeta.badgeBg}`}
                   >
                     HSK {lessonMeta.level} • Bài #{String(lessonMeta.id).padStart(2, '0')} / 180
                   </span>
-                  <span className="text-xs text-slate-300 font-medium">
+                  <span className="hidden sm:inline text-xs text-slate-300 font-medium">
                     {lessonMeta.moduleTitle}
                   </span>
                   <span className="px-2.5 py-0.5 rounded-lg bg-purple-500/20 border border-purple-400/40 text-purple-200 text-xs font-semibold">
@@ -642,8 +645,8 @@ export default function LessonPage({
                   </span>
                 </div>
 
-                <div className="flex flex-wrap items-baseline gap-3">
-                  <h1 className="text-2xl sm:text-4xl font-black text-white tracking-wide font-['Noto_Serif_SC']">
+                <div className="flex flex-wrap items-baseline gap-2 sm:gap-3">
+                  <h1 className="text-xl sm:text-4xl font-black text-white tracking-wide font-['Noto_Serif_SC']">
                     {lessonMeta.zh}
                   </h1>
                   <span className="text-base sm:text-xl font-semibold text-amber-300">

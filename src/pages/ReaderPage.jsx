@@ -695,7 +695,7 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
             value={customInput}
             onChange={(e) => setCustomInput(e.target.value)}
             placeholder="Dán hoặc gõ đoạn văn tiếng Trung tại đây... (Ví dụ: 我明天得去银行办业务，今天我觉得很累。)"
-            className="w-full p-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:border-[#E85D3F] focus:ring-1 focus:ring-[#E85D3F] font-['Noto_Serif_SC']"
+            className="w-full p-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-base sm:text-sm focus:outline-none focus:border-[#E85D3F] focus:ring-1 focus:ring-[#E85D3F] font-['Noto_Serif_SC']"
           />
 
           <div className="flex items-center justify-between flex-wrap gap-2 pt-1">

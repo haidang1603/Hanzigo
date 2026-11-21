@@ -162,7 +162,7 @@ export default function ResetPasswordPage({ onNavigateHome, onOpenLogin }) {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center p-4 sm:p-6 bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] transition-colors">
+    <div className="min-h-[80dvh] flex items-center justify-center p-4 sm:p-6 bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-[#F3F4F6] transition-colors">
       <div className="max-w-md w-full bg-white dark:bg-[#1E293B] rounded-3xl shadow-xl border border-[#F1E5D8] dark:border-[#2B3A4F] overflow-hidden">
         {/* Card Header */}
         <div className="bg-gradient-to-r from-[#E85D3F] to-[#CB4529] p-6 text-white text-center relative">
@@ -284,7 +284,7 @@ export default function ResetPasswordPage({ onNavigateHome, onOpenLogin }) {
                     placeholder="Tối thiểu 6 ký tự"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                   <button
                     type="button"
@@ -327,7 +327,7 @@ export default function ResetPasswordPage({ onNavigateHome, onOpenLogin }) {
                     placeholder="Nhập lại chính xác mật khẩu trên"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
                   />
                   <button
                     type="button"

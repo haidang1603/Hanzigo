@@ -387,6 +387,9 @@ export default function Footer({ setActiveTab, user = null }) {
               <form onSubmit={handleSubscribe} className="space-y-2.5">
                 <div className="relative">
                   <input 
+                    id="footer-newsletter-email"
+                    name="newsletterEmail"
+                    aria-label="Địa chỉ email nhận bản tin HanziGo"
                     type="email" 
                     value={emailInput}
                     onChange={(e) => {
@@ -396,7 +399,7 @@ export default function Footer({ setActiveTab, user = null }) {
                     placeholder="Nhập email của bạn..." 
                     required
                     disabled={status === 'loading'}
-                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#131D28] border transition-colors text-white placeholder-slate-500 focus:outline-none ${
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-base sm:text-sm bg-[#131D28] border transition-colors text-white placeholder-slate-500 focus:outline-none ${
                       status === 'error' 
                         ? 'border-rose-500 focus:border-rose-400 ring-1 ring-rose-500/30' 
                         : 'border-[#233346] focus:border-[#DF5334]'

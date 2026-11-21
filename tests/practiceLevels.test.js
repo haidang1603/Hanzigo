@@ -142,7 +142,7 @@ test('HSK Metadata & Enriched Vocabulary: partitioned across HSK levels with ful
   assert.ok(counts['HSK 2'] >= 100, 'Must have 100+ HSK 2 words');
   assert.ok(counts['HSK 3'] >= 100, 'Must have 100+ HSK 3 words');
   assert.ok(counts['HSK 4'] >= 5, 'Must have HSK 4 words');
-  assert.ok(counts['HSK 5-6'] >= 5, 'Must have HSK 5-6 / Idiom words');
+  assert.ok((counts['HSK 5'] || 0) + (counts['HSK 6'] || 0) >= 5, 'Must have HSK 5-6 / Idiom words');
 
   // Verify presence of idioms from consolidated documentation
   const idioms = ['入乡随俗', '马马虎虎', '一心一意', '半途而废'];
