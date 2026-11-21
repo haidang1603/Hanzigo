@@ -985,17 +985,17 @@ export default function LiveClassroomPage({
       )}
 
       {/* HEADER BAR */}
-      <header className="h-16 px-4 sm:px-6 bg-[#0F172A]/95 backdrop-blur-md border-b border-white/10 flex items-center justify-between shrink-0 z-30">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse shrink-0" />
-            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30">
+      <header className="h-12 sm:h-16 px-2.5 sm:px-6 bg-[#0F172A]/95 backdrop-blur-md border-b border-white/10 flex items-center justify-between shrink-0 z-30 gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-rose-500 animate-pulse shrink-0" />
+            <span className="text-[10px] font-black uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30">
               TRỰC TIẾP
             </span>
           </div>
-          <div className="truncate">
-            <h1 className="text-sm sm:text-base font-black text-white truncate flex items-center gap-2">
-              <span>{sessionData?.title || 'Phòng học trực tuyến'}</span>
+          <div className="truncate min-w-0">
+            <h1 className="text-xs sm:text-base font-black text-white truncate flex items-center gap-2">
+              <span className="truncate">{sessionData?.title || 'Phòng học trực tuyến'}</span>
               <span className="text-xs text-white/50 font-normal hidden md:inline">
                 • {sessionData?.classroom_name || 'HanziGo Live'}
               </span>
@@ -1004,16 +1004,16 @@ export default function LiveClassroomPage({
         </div>
 
         {/* Header Right Status & Controls */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Capacity Pill */}
-          <div className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/10 flex items-center gap-1.5 text-xs font-bold text-white/80">
-            <Users size={14} className="text-[#45B97C]" />
+          <div className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-white/10 border border-white/10 flex items-center gap-1 sm:gap-1.5 text-xs font-bold text-white/80">
+            <Users size={13} className="text-[#45B97C]" />
             <span>{activeStudents.length + (teacherParticipant ? 1 : 0)} / {sessionData?.max_capacity || 50}</span>
           </div>
 
           {/* Connection Status Pill */}
           <div 
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border text-xs font-bold transition-all ${
               connectionState.status === 'connected'
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                 : connectionState.status === 'reconnecting'
@@ -1087,15 +1087,15 @@ export default function LiveClassroomPage({
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
 
         {/* MAIN VIDEO STAGE */}
-        <div className="flex-1 flex flex-col bg-[#070B14] p-3 sm:p-4 overflow-y-auto">
+        <div className="flex-1 flex flex-col bg-[#070B14] p-2 sm:p-4 overflow-y-auto min-h-0">
           
-          <div className="flex-1 rounded-3xl bg-[#111827] border border-white/10 overflow-hidden relative flex flex-col shadow-2xl p-3 sm:p-4 gap-4">
+          <div className="flex-1 rounded-2xl sm:rounded-3xl bg-[#111827] border border-white/10 overflow-hidden relative flex flex-col shadow-2xl p-2.5 sm:p-4 gap-2.5 sm:gap-4 min-h-0">
             
             {/* 1. SCREEN SHARE PRESENTATION MODE (IF ACTIVE) */}
             {isScreenSharingActive ? (
-              <div className="flex-1 w-full flex flex-col gap-3 min-h-[360px]">
+              <div className="flex-1 w-full flex flex-col gap-3 min-h-0 sm:min-h-[360px]">
                 {/* Large Screen Share View */}
-                <div className="flex-1 relative rounded-2xl bg-black border border-white/20 overflow-hidden flex items-center justify-center min-h-[280px]">
+                <div className="flex-1 relative rounded-2xl bg-black border border-white/20 overflow-hidden flex items-center justify-center min-h-0 sm:min-h-[280px]">
                   <video
                     ref={screenVideoRef}
                     autoPlay
@@ -1185,7 +1185,7 @@ export default function LiveClassroomPage({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   
                   {/* TEACHER SPOTLIGHT CARD (Spans 2 cols on md) */}
-                  <div className={`md:col-span-2 relative rounded-2xl bg-black/90 border overflow-hidden min-h-[240px] sm:min-h-[300px] flex items-center justify-center shadow-xl transition-all ${
+                  <div className={`md:col-span-2 relative rounded-2xl bg-black/90 border overflow-hidden min-h-44 sm:min-h-[300px] flex items-center justify-center shadow-xl transition-all ${
                     teacherParticipant?.isSpeaking ? 'border-emerald-500 ring-2 ring-emerald-500/40' : 'border-white/15'
                   }`}>
                     {isTeacherCameraOn ? (
@@ -1226,7 +1226,7 @@ export default function LiveClassroomPage({
                   </div>
 
                   {/* SELF PREVIEW CARD */}
-                  <div className="relative rounded-2xl bg-black/90 border border-white/15 overflow-hidden min-h-[200px] flex items-center justify-center shadow-lg">
+                  <div className="relative rounded-2xl bg-black/90 border border-white/15 overflow-hidden min-h-36 sm:min-h-[200px] flex items-center justify-center shadow-lg">
                     {mediaState.isCameraOn ? (
                       <video
                         ref={selfVideoRef}
@@ -1334,7 +1334,7 @@ export default function LiveClassroomPage({
             )}
 
             {/* BOTTOM CONTROLS BAR */}
-            <div className="h-16 rounded-2xl bg-[#0B0F19]/90 backdrop-blur-md border border-white/10 px-4 flex items-center justify-between shrink-0 gap-2">
+            <div className="h-14 sm:h-16 rounded-2xl bg-[#0B0F19]/90 backdrop-blur-md border border-white/10 px-2.5 sm:px-4 flex items-center justify-between shrink-0 gap-1.5 sm:gap-2">
               
               {/* Media Controls */}
               <div className="flex items-center gap-2">

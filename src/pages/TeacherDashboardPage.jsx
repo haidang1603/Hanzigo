@@ -679,7 +679,7 @@ export default function TeacherDashboardPage({
   }, [submissions]);
 
   return (
-    <div className="min-h-dvh bg-[#FFF9F2] dark:bg-[#131B24] py-6 sm:py-8 transition-colors duration-200">
+    <div className="min-h-dvh bg-[#FFF9F2] dark:bg-[#131B24] py-4 sm:py-8 transition-colors duration-200">
       
       {/* Toast Notification */}
       {toast && (
@@ -1069,7 +1069,7 @@ export default function TeacherDashboardPage({
               </div>
 
               {loading ? (
-                <div className="p-8 rounded-3xl bg-white dark:bg-[#1A2433] text-center text-xs text-[#748092]">
+                <div className="p-4 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#1A2433] text-center text-xs text-[#748092]">
                   Đang tải dữ liệu lớp học...
                 </div>
               ) : classrooms.length === 0 ? (
@@ -1191,6 +1191,7 @@ export default function TeacherDashboardPage({
               </button>
             </div>
 
+            <p className="sm:hidden text-xs text-slate-500">Vuốt ngang để xem đầy đủ cột →</p>
             <div className="overflow-x-auto max-w-full rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -1515,12 +1516,14 @@ export default function TeacherDashboardPage({
               }
 
               return (
-                <div className="overflow-x-auto max-w-full rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2]/70 dark:bg-[#243447]/50 text-[11px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
-                        <th className="p-4 pl-6">Học viên</th>
-                        <th className="p-4">Lớp học</th>
+                <>
+                  <p className="sm:hidden text-xs text-slate-500">Vuốt ngang để xem đầy đủ cột →</p>
+                  <div className="overflow-x-auto max-w-full rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2]/70 dark:bg-[#243447]/50 text-[11px] font-black uppercase tracking-wider text-[#748092] dark:text-[#94A3B8]">
+                          <th className="p-4 pl-6">Học viên</th>
+                          <th className="p-4">Lớp học</th>
                         <th className="p-4">Ngày tham gia</th>
                         <th className="p-4">Tiến độ XP & Streak</th>
                         <th className="p-4">Trạng thái sức khỏe</th>
@@ -1611,7 +1614,8 @@ export default function TeacherDashboardPage({
                       })}
                     </tbody>
                   </table>
-                </div>
+                  </div>
+                </>
               );
             })()}
           </div>
@@ -1814,6 +1818,8 @@ export default function TeacherDashboardPage({
                     </button>
                   </div>
                 ) : (
+                <>
+                <p className="sm:hidden text-xs text-slate-500">Vuốt ngang để xem đầy đủ cột →</p>
                 <div className="overflow-x-auto max-w-full rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -1896,6 +1902,7 @@ export default function TeacherDashboardPage({
                     </tbody>
                   </table>
                 </div>
+                </>
                 )}
               </div>
             )}
@@ -2206,6 +2213,7 @@ export default function TeacherDashboardPage({
               Xem danh sách bài nộp của tất cả học viên trong các lớp học bạn phụ trách
             </p>
 
+            <p className="sm:hidden text-xs text-slate-500">Vuốt ngang để xem đầy đủ cột →</p>
             <div className="overflow-x-auto max-w-full rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
               <table className="w-full text-left border-collapse">
                 <thead>

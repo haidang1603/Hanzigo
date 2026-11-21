@@ -84,6 +84,7 @@ function checkIsAdmin(user) {
 export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   // Current active admin sub-tab: 'overview' | 'users' | 'materials' | 'vocab' | 'lessons' | 'ai_metrics' | 'backup'
   const [adminTab, setAdminTab] = useState('overview');
+  const [showMobileKpis, setShowMobileKpis] = useState(false);
 
   // Verify Admin role
   const isAdmin = checkIsAdmin(user);
@@ -1020,7 +1021,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8 animate-in fade-in duration-300">
       
       {/* Toast Notification */}
       {toastMsg && (
@@ -1030,11 +1031,11 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
         </div>
       )}
 
-      {/* 1. Compact Header Banner */}
+      {/* 1. Compact Header Banner (Gọn tối đa trên Mobile) */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E293B] text-white p-3.5 sm:p-6 border border-white/10 shadow-lg">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-4">
           
-          <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
+          <div className="space-y-1 sm:space-y-2 max-w-2xl">
             <div className="hidden sm:flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wide uppercase bg-[#E85D3F]/20 text-[#E85D3F] border border-[#E85D3F]/30">
                 <ShieldCheck size={12} />
@@ -1047,20 +1048,20 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
               </span>
             </div>
 
-            <h1 className="text-lg sm:text-2xl lg:text-3xl font-black tracking-tight">
+            <h1 className="text-base sm:text-2xl lg:text-3xl font-black tracking-tight">
               Trung Tâm Quản Trị HanziGo
             </h1>
-            <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed line-clamp-2 sm:line-clamp-none">
+            <p className="hidden sm:block text-sm text-[#94A3B8] leading-relaxed">
               Theo dõi toàn diện học viên, quản lý kho tài liệu, chỉnh sửa ngân hàng từ vựng, điều chỉnh bài học và giám sát tải AI theo thời gian thực.
             </p>
           </div>
 
           {/* Authenticated Admin Identity Badge & Actions */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 shrink-0">
             {isEditingAdminName ? (
               <form 
                 onSubmit={handleSaveAdminName}
-                className="p-2 px-3.5 rounded-2xl bg-white/15 backdrop-blur-md border border-emerald-400/40 flex items-center gap-2.5 shadow-xl animate-in fade-in duration-200"
+                className="p-2 px-3 rounded-2xl bg-white/15 backdrop-blur-md border border-emerald-400/40 flex items-center gap-2 shadow-xl animate-in fade-in duration-200"
               >
                 <div className="w-8 h-8 rounded-full bg-emerald-500/25 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-400/30">
                   <Crown size={16} />
@@ -1079,7 +1080,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     type="submit"
                     disabled={isSavingAdminName}
                     title="Lưu tên"
-                    className="p-1.5 px-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white transition-all cursor-pointer flex items-center justify-center font-bold text-xs gap-1"
+                    className="min-h-11 p-1.5 px-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white transition-all cursor-pointer flex items-center justify-center font-bold text-xs gap-1"
                   >
                     <Check size={14} />
                     <span>Lưu</span>
@@ -1091,21 +1092,20 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                       setIsEditingAdminName(false);
                     }}
                     title="Hủy"
-                    className="p-1.5 px-2 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 transition-all cursor-pointer flex items-center justify-center text-xs"
+                    className="min-h-11 p-1.5 px-2 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 transition-all cursor-pointer flex items-center justify-center text-xs"
                   >
                     <X size={14} />
                   </button>
                 </div>
               </form>
             ) : (
-              <div className="p-2.5 px-4 rounded-2xl bg-white/10 hover:bg-white/[0.14] backdrop-blur-md border border-white/15 transition-all flex items-center gap-3 group">
-                <div className="w-9 h-9 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shrink-0 border border-emerald-400/30 shadow-inner">
-                  <Crown size={17} />
+              <div className="p-2 px-3 sm:px-4 rounded-2xl bg-white/10 hover:bg-white/[0.14] backdrop-blur-md border border-white/15 transition-all flex items-center gap-2.5 group min-w-0">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shrink-0 border border-emerald-400/30 shadow-inner">
+                  <Crown size={16} />
                 </div>
                 <div className="text-left min-w-0">
-                  <p className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">Quản trị viên:</p>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs sm:text-sm font-black text-white truncate max-w-[160px]">
+                    <p className="text-xs sm:text-sm font-black text-white truncate max-w-[140px] sm:max-w-[160px]">
                       {user?.name || 'Quản trị viên HanziGo'}
                     </p>
                     <button
@@ -1120,7 +1120,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                       <Edit3 size={12} />
                     </button>
                   </div>
-                  <p className="text-[10px] font-medium text-gray-400 truncate max-w-[180px]">
+                  <p className="hidden sm:block text-[10px] font-medium text-gray-400 truncate max-w-[180px]">
                     {user?.email || 'admin@hanzigo.com'}
                   </p>
                 </div>
@@ -1128,47 +1128,57 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
             )}
 
             <button
+              type="button"
+              onClick={() => setShowMobileKpis((prev) => !prev)}
+              className="sm:hidden min-h-11 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <BarChart3 size={14} />
+              <span>{showMobileKpis ? 'Ẩn KPI' : 'KPI'}</span>
+            </button>
+
+            <button
               onClick={handleExportData}
-              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              className="min-h-11 px-3.5 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
             >
               <Download size={15} />
-              <span>Xuất sao lưu</span>
+              <span className="hidden sm:inline">Xuất sao lưu</span>
+              <span className="sm:hidden">Sao lưu</span>
             </button>
           </div>
         </div>
 
-        {/* System Overview KPI Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/10">
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-            <p className="text-xs text-[#94A3B8] font-semibold flex items-center gap-1.5">
-              <Users size={14} className="text-[#E85D3F]" />
+        {/* System Overview KPI Cards (Thu gọn mặc định trên Mobile, luôn hiện trên sm+) */}
+        <div className={`${showMobileKpis ? 'grid' : 'hidden sm:grid'} grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-3 sm:mt-6 pt-3 sm:pt-5 border-t border-white/10`}>
+          <div className="p-2.5 sm:p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+            <p className="text-[11px] sm:text-xs text-[#94A3B8] font-semibold flex items-center gap-1.5">
+              <Users size={13} className="text-[#E85D3F]" />
               <span>Tổng học viên</span>
             </p>
-            <p className="text-2xl font-black text-white mt-1">{userStats.total}</p>
+            <p className="text-lg sm:text-2xl font-black text-white mt-0.5 sm:mt-1">{userStats.total}</p>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-            <p className="text-xs text-[#94A3B8] font-semibold flex items-center gap-1.5">
-              <Crown size={14} className="text-emerald-400" />
-              <span>Quản trị & Giáo viên</span>
+          <div className="p-2.5 sm:p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+            <p className="text-[11px] sm:text-xs text-[#94A3B8] font-semibold flex items-center gap-1.5">
+              <Crown size={13} className="text-emerald-400" />
+              <span>Quản trị & GV</span>
             </p>
-            <p className="text-2xl font-black text-emerald-400 mt-1">{userStats.admins + userStats.teachers}</p>
+            <p className="text-lg sm:text-2xl font-black text-emerald-400 mt-0.5 sm:mt-1">{userStats.admins + userStats.teachers}</p>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-            <p className="text-xs text-[#94A3B8] font-semibold flex items-center gap-1.5">
-              <FileText size={14} className="text-[#F4B942]" />
+          <div className="p-2.5 sm:p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+            <p className="text-[11px] sm:text-xs text-[#94A3B8] font-semibold flex items-center gap-1.5">
+              <FileText size={13} className="text-[#F4B942]" />
               <span>Tài liệu & Bài học</span>
             </p>
-            <p className="text-2xl font-black text-[#F4B942] mt-1">{materials.length + customLessons.length}</p>
+            <p className="text-lg sm:text-2xl font-black text-[#F4B942] mt-0.5 sm:mt-1">{materials.length + customLessons.length}</p>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-            <p className="text-xs text-[#94A3B8] font-semibold flex items-center gap-1.5">
-              <Activity size={14} className="text-sky-400" />
+          <div className="p-2.5 sm:p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+            <p className="text-[11px] sm:text-xs text-[#94A3B8] font-semibold flex items-center gap-1.5">
+              <Activity size={13} className="text-sky-400" />
               <span>Tổng XP tích lũy</span>
             </p>
-            <p className="text-2xl font-black text-sky-400 mt-1">{userStats.totalXp.toLocaleString()} XP</p>
+            <p className="text-lg sm:text-2xl font-black text-sky-400 mt-0.5 sm:mt-1">{userStats.totalXp.toLocaleString()} XP</p>
           </div>
         </div>
       </div>
@@ -1185,7 +1195,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 playClickSound();
                 setAdminTab(t.id);
               }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`min-h-11 flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 isActive
                   ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
                   : 'text-[#748092] dark:text-[#94A3B8] hover:bg-black/5 dark:hover:bg-white/5'
@@ -1446,17 +1456,18 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
 
           {/* Users Table */}
           <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm overflow-hidden">
+            <p className="sm:hidden text-xs text-slate-500 px-4 pt-3 pb-1">Vuốt ngang để xem đầy đủ cột →</p>
             <div className="overflow-x-auto max-w-full">
               <table className="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead>
                   <tr className="bg-[#FFF9F2] dark:bg-[#131B24] border-b border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] dark:text-[#94A3B8] font-bold">
-                    <th className="p-4 pl-6">Người dùng</th>
-                    <th className="p-4">Phân quyền</th>
-                    <th className="p-4">Cấp độ học</th>
-                    <th className="p-4 text-center">Chuỗi ngày</th>
-                    <th className="p-4 text-right">Điểm XP</th>
-                    <th className="p-4 text-center">Trạng thái</th>
-                    <th className="p-4 pr-6 text-right">Thao tác</th>
+                    <th className="p-3 sm:p-4 pl-4 sm:pl-6">Người dùng</th>
+                    <th className="p-3 sm:p-4">Phân quyền</th>
+                    <th className="hidden md:table-cell p-4">Cấp độ học</th>
+                    <th className="hidden sm:table-cell p-4 text-center">Chuỗi ngày</th>
+                    <th className="hidden lg:table-cell p-4 text-right">Điểm XP</th>
+                    <th className="hidden sm:table-cell p-4 text-center">Trạng thái</th>
+                    <th className="p-3 sm:p-4 pr-4 sm:pr-6 text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F1E5D8] dark:divide-[#2B3A4F]">
@@ -1504,9 +1515,9 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                       const isSelf = user && (user.id === u.id || user.email === u.email || user.uid === u.id);
                       return (
                         <tr key={u.id} className="hover:bg-[#FFFDF9] dark:hover:bg-white/5 transition-colors">
-                          <td className="p-4 pl-6">
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-[#E85D3F]/10 text-[#E85D3F] font-black flex items-center justify-center shrink-0 border border-[#E85D3F]/20">
+                          <td className="p-3 sm:p-4 pl-4 sm:pl-6">
+                            <div className="flex items-center gap-2.5 sm:gap-3">
+                              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#E85D3F]/10 text-[#E85D3F] font-black flex items-center justify-center shrink-0 border border-[#E85D3F]/20">
                                 {u.avatar ? (
                                   <img src={u.avatar} alt={u.name} className="w-full h-full rounded-full object-cover" />
                                 ) : (
@@ -1515,24 +1526,24 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                               </div>
                               <div className="min-w-0">
                                 <p className="font-bold text-[#243447] dark:text-white truncate flex items-center gap-1.5">
-                                  <span>{u.name || 'Người dùng'}</span>
+                                  <span className="truncate">{u.name || 'Người dùng'}</span>
                                   {isSelf && (
-                                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 font-bold">
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 font-bold shrink-0">
                                       Bạn
                                     </span>
                                   )}
                                 </p>
-                                <p className="text-[11px] text-[#748092] dark:text-[#94A3B8] truncate">{u.email}</p>
+                                <p className="hidden sm:block text-[11px] text-[#748092] dark:text-[#94A3B8] truncate">{u.email}</p>
                               </div>
                             </div>
                           </td>
 
-                          <td className="p-4">
+                          <td className="p-3 sm:p-4">
                             <select
                               value={u.role || 'student'}
                               disabled={isSelf}
                               onChange={(e) => handleChangeUserRole(u, e.target.value)}
-                              className="px-2.5 py-1 rounded-xl text-base sm:text-sm font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-[#243447] dark:text-white cursor-pointer disabled:opacity-60"
+                              className="px-2 sm:px-2.5 py-1 rounded-xl text-base sm:text-sm font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#131B24] text-[#243447] dark:text-white cursor-pointer disabled:opacity-60"
                             >
                               <option value="student">Học viên</option>
                               <option value="teacher">Giáo viên</option>
@@ -1540,19 +1551,19 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                             </select>
                           </td>
 
-                          <td className="p-4 font-semibold text-[#243447] dark:text-[#CBD5E1]">
+                          <td className="hidden md:table-cell p-4 font-semibold text-[#243447] dark:text-[#CBD5E1]">
                             {u.level || 'HSK 1 - Sơ cấp'}
                           </td>
 
-                          <td className="p-4 text-center font-bold text-[#D97706]">
+                          <td className="hidden sm:table-cell p-4 text-center font-bold text-[#D97706]">
                             🔥 {u.streak || 0}
                           </td>
 
-                          <td className="p-4 text-right font-black text-[#E85D3F]">
+                          <td className="hidden lg:table-cell p-4 text-right font-black text-[#E85D3F]">
                             {(u.xp || 0).toLocaleString()} XP
                           </td>
 
-                          <td className="p-4 text-center">
+                          <td className="hidden sm:table-cell p-4 text-center">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
                               u.status === 'blocked'
                                 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
@@ -1562,7 +1573,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                             </span>
                           </td>
 
-                          <td className="p-4 pr-6 text-right">
+                          <td className="p-3 sm:p-4 pr-4 sm:pr-6 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <button
                                 type="button"

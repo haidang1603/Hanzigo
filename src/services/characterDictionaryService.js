@@ -14,7 +14,56 @@ import { CHARACTER_DECOMPOSITION_DICT, CONFUSING_CHARACTER_PAIRS, STRUCTURE_TYPE
 import { EXTENDED_COMMON_CHARS } from '../data/commonCharactersDict.js';
 import { stripPinyinTones, generatePinyinVariants, convertNumberedPinyinToAccented, normalizeUnicodeNfc } from '../../scripts/knowledge/normalizer.js';
 import { getUserStorageKey } from '../utils/gamification.js';
+import { getStoredCustomVocab } from '../utils/materialsStorage.js';
 import { saveUserVocabSrsCard } from './vocabularyService.js';
+
+const normalizeCharHskLevel = (rawLevel) => {
+  const lvl = String(rawLevel || '').trim();
+  if (!lvl) return 'HSK 1';
+  if (/^HSK\s*[789]/i.test(lvl) || lvl === 'HSK 7-9' || lvl === 'HSK 7–9') return 'HSK 7-9';
+  if (lvl === 'HSK 5-6') return 'HSK 6';
+  const m = lvl.match(/^HSK\s*([1-6])$/i);
+  if (m) return `HSK ${m[1]}`;
+  return lvl;
+};
+
+/**
+ * Chuyển đổi danh sách từ vựng Flashcard (11.000 từ HSK 3.0) thành danh sách chữ Hán đơn lẻ để luyện viết nét thuận
+ */
+export function mapFlashcardBatchToCharacters(vocabList = []) {
+  const canonicalMap = new Map(getAllCanonicalCharacters().map((c) => [c.char, c]));
+  const charMap = new Map();
+
+  (Array.isArray(vocabList) ? vocabList : []).forEach((vocab) => {
+    if (!vocab?.hanzi) return;
+    const hanChars = Array.from(String(vocab.hanzi)).filter((c) => /[\u4e00-\u9fa5]/.test(c));
+    const pinyinTokens = String(vocab.pinyin || '').trim().split(/\s+/);
+    const hskLevel = normalizeCharHskLevel(vocab.level || vocab.hskLevel);
+
+    hanChars.forEach((c, idx) => {
+      if (charMap.has(c)) return;
+      const canonical = canonicalMap.get(c);
+      if (canonical) {
+        charMap.set(c, { ...canonical, hskLevel: canonical.hskLevel || hskLevel, primaryWord: canonical.primaryWord || vocab.hanzi });
+        return;
+      }
+      const decomp = CHARACTER_DECOMPOSITION_DICT[c];
+      charMap.set(c, {
+        char: c,
+        pinyin: pinyinTokens[idx] || (decomp ? decomp.pinyin : vocab.pinyin) || '',
+        hanviet: (decomp && decomp.hanviet) || (idx === 0 ? vocab.hanviet : '') || '',
+        meaning: vocab.meaning || '',
+        radical: vocab.radical || (decomp && decomp.components && decomp.components[0]?.name) || 'Bộ thủ',
+        strokesCount: Number(vocab.strokes) || 6,
+        hskLevel,
+        primaryWord: vocab.hanzi,
+        sourceType: 'flashcard',
+      });
+    });
+  });
+
+  return Array.from(charMap.values());
+}
 
 const STORAGE_WRITING_PROGRESS = 'hanzigo_writing_progress_map';
 const STORAGE_WRITING_HISTORY = 'hanzigo_writing_history_log';
@@ -108,7 +157,7 @@ export function getAllCanonicalCharacters() {
           meaning: vocab.meaning,
           radical: vocab.radical || (decomp && decomp.components && decomp.components[0]?.name) || 'Bộ thủ',
           strokesCount: Number(vocab.strokes) || 6,
-          hskLevel: vocab.level || 'HSK 1',
+          hskLevel: normalizeCharHskLevel(vocab.level),
           primaryWord: vocab.hanzi,
           sourceType: 'vocabulary'
         });
@@ -116,6 +165,31 @@ export function getAllCanonicalCharacters() {
         // Cập nhật cấp HSK tối thiểu nếu xuất hiện ở cấp sớm hơn
         if (!existing.primaryWord) existing.primaryWord = vocab.hanzi;
       }
+    });
+  });
+
+  // 2b. Đồng bộ Flashcard tùy chỉnh của học viên (HSK 7-9 được tải qua fetchHsk30FlashcardBatch ở WritingPage)
+  const extraFlashcards = typeof localStorage !== 'undefined' && typeof getStoredCustomVocab === 'function'
+    ? getStoredCustomVocab()
+    : [];
+  extraFlashcards.forEach((vocab) => {
+    const hanChars = Array.from(String(vocab?.hanzi || '')).filter((c) => /[\u4e00-\u9fa5]/.test(c));
+    const pinyinTokens = String(vocab?.pinyin || '').trim().split(/\s+/);
+    const hskLevel = normalizeCharHskLevel(vocab?.level || vocab?.hskLevel);
+    hanChars.forEach((c, idx) => {
+      if (charMap.has(c)) return;
+      const decomp = CHARACTER_DECOMPOSITION_DICT[c];
+      charMap.set(c, {
+        char: c,
+        pinyin: pinyinTokens[idx] || (decomp ? decomp.pinyin : vocab.pinyin) || '',
+        hanviet: (decomp && decomp.hanviet) || (idx === 0 ? vocab.hanviet : '') || '',
+        meaning: vocab.meaning || '',
+        radical: vocab.radical || (decomp && decomp.components && decomp.components[0]?.name) || 'Bộ thủ',
+        strokesCount: Number(vocab.strokes) || 6,
+        hskLevel,
+        primaryWord: vocab.hanzi,
+        sourceType: 'flashcard',
+      });
     });
   });
 
@@ -322,7 +396,13 @@ export function searchCharacters({
     if (charsFromMatchingVocab.has(item.char)) return true;
     // 1. Lọc theo HSK
     if (hskFilter && hskFilter !== 'all') {
-      if (item.hskLevel !== hskFilter) return false;
+      const normalizedFilter = normalizeCharHskLevel(hskFilter);
+      const normalizedItem = normalizeCharHskLevel(item.hskLevel);
+      if (hskFilter === 'HSK 5-6') {
+        if (normalizedItem !== 'HSK 5' && normalizedItem !== 'HSK 6') return false;
+      } else if (normalizedItem !== normalizedFilter) {
+        return false;
+      }
     }
 
     // 2. Lọc theo Bộ thủ
@@ -439,7 +519,7 @@ function getStorageItem(key) {
     if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function') {
       return localStorage.getItem(key);
     }
-  } catch {}
+  } catch { }
   return memoryStore.get(key) || null;
 }
 
@@ -449,7 +529,7 @@ function setStorageItem(key, val) {
       localStorage.setItem(key, val);
       return;
     }
-  } catch {}
+  } catch { }
   memoryStore.set(key, val);
 }
 
@@ -488,7 +568,7 @@ export async function setUserWritingStatus(char, status, user = null, meta = {})
   const key = getUserStorageKey(STORAGE_WRITING_PROGRESS, user);
   try {
     setStorageItem(key, JSON.stringify(progressMap));
-  } catch {}
+  } catch { }
 
   // Ghi nhật ký luyện viết
   recordWritingHistory(single, status, meta.score || 0, user);
@@ -539,7 +619,7 @@ function recordWritingHistory(char, status, score, user) {
     });
     // Giữ tối đa 100 lượt gần nhất
     setStorageItem(key, JSON.stringify(list.slice(0, 100)));
-  } catch {}
+  } catch { }
 }
 
 /**

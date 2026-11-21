@@ -26,9 +26,17 @@ import {
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { PINYIN_DATA, VOCABULARY_LIST } from '../data/chineseData';
-import { triggerCloudSync, getPronunciationItemsFromDb, addPronunciationItemToDb } from '../supabase/services';
+import { triggerCloudSync, getPronunciationItemsFromDb, addPronunciationItemToDb, getVocabularyFromDb } from '../supabase/services';
 import { awardXp, getUserStorageKey, getLocalDateString } from '../utils/gamification';
 import { updateDailyMissionProgress } from '../services';
+import { getStoredCustomVocab } from '../utils/materialsStorage';
+import {
+  getLocalHsk79Flashcards,
+  fetchHsk30FlashcardBatch,
+  HSK_30_BANDS,
+  HSK_30_TOTAL_VOCAB_COUNT,
+} from '../services/hsk30FlashcardDeckService';
+import { getUserVocabSrsProgress } from '../services/vocabularyService';
 import { recordAdaptiveMistake, markAdaptiveItemMastered } from '../services/adaptiveLearningService';
 import { evaluateRealPronunciation } from '../utils/pronunciationEvaluator';
 import { scorePronunciationWithAi } from '../services/aiPronunciationService';
@@ -39,20 +47,64 @@ import { ChinesePronunciationLab } from '../features/pronunciation-lab/ChinesePr
 const STORAGE_CUSTOM_PRONOUNCE = 'hanzigo_custom_pronounce_list';
 const STORAGE_PRONOUNCE_HISTORY = 'hanzigo_pronounce_history';
 
-// Synchronized master pronunciation list covering 455 HSK vocabulary items + 32 conversational sentences
+const normalizeHskBand = (rawLevel) => {
+  const lvl = String(rawLevel || '').trim();
+  if (!lvl) return 'HSK 1';
+  if (/^HSK\s*[789]/i.test(lvl) || lvl === 'HSK 7-9' || lvl === 'HSK 7–9') return 'HSK 7-9';
+  if (lvl === 'HSK 5-6') return 'HSK 6';
+  const m = lvl.match(/^HSK\s*([1-6])$/i);
+  if (m) return `HSK ${m[1]}`;
+  return lvl;
+};
+
+const hskBandToNumericLevel = (hskBand) => {
+  if (hskBand === 'HSK 7-9') return 7;
+  const m = String(hskBand || '').match(/HSK\s*([1-6])/i);
+  return m ? Number(m[1]) : 1;
+};
+
+const mapFlashcardToPronunciationItem = (v, extraFlags = {}) => {
+  if (!v || !v.hanzi) return null;
+  const exHanzi = typeof v.example === 'object' ? v.example?.hanzi : (v.example || '');
+  const exPinyin = typeof v.example === 'object' ? v.example?.pinyin : (v.pinyinSentence || '');
+  const exMeaning = typeof v.example === 'object' ? v.example?.meaning : (v.exampleMeaning || '');
+  const hskLevel = normalizeHskBand(v.hskLevel || v.level);
+  const numericLevel = hskBandToNumericLevel(hskLevel);
+
+  return {
+    id: `vocab-${v.id || v.hanzi}`,
+    hanzi: v.hanzi,
+    pinyin: v.pinyin || '...',
+    meaning: v.meaning || 'Từ vựng Flashcard',
+    hanviet: v.hanviet || '',
+    hskLevel,
+    level: numericLevel,
+    difficulty: numericLevel === 1 ? 'easy' : numericLevel === 2 ? 'medium' : numericLevel <= 4 ? 'hard' : 'expert',
+    category: `${hskLevel} • ${v.topic || 'Flashcard'}`,
+    example: exHanzi,
+    pinyinSentence: exPinyin,
+    exampleMeaning: exMeaning,
+    tip: v.mnemonic || `Luyện phát âm chuẩn: ${v.hanzi} (${v.pinyin || ''}) - ${v.meaning || ''}.`,
+    parentVocab: v,
+    ...extraFlags,
+  };
+};
+
+// Synchronized master pronunciation list synced with Flashcard (HSK 1-9 + Custom/SRS) + 32 conversational sentences
 const buildSynchronizedPronunciationItems = () => {
   const map = new Map();
 
   // 1. Initial curated conversational sentences by level
   PRONUNCIATION_ITEMS_BY_LEVEL.forEach(item => {
+    const hskLevel = item.level === 1 ? 'HSK 1' : item.level === 2 ? 'HSK 2' : item.level === 3 ? 'HSK 3' : 'HSK 4';
     map.set(item.hanzi, {
       ...item,
-      hskLevel: item.level === 1 ? 'HSK 1' : item.level === 2 ? 'HSK 2' : item.level === 3 ? 'HSK 3' : 'HSK 4',
+      hskLevel,
       isDialogue: true
     });
   });
 
-  // 2. Synchronize all 455 words from VOCABULARY_LIST with contextual sentences
+  // 2. Synchronize all HSK 1-6 words from Flashcard VOCABULARY_LIST
   VOCABULARY_LIST.forEach(v => {
     const existing = map.get(v.hanzi);
     const exHanzi = typeof v.example === 'object' ? v.example?.hanzi : (v.example || '');
@@ -64,26 +116,30 @@ const buildSynchronizedPronunciationItems = () => {
       existing.pinyinSentence = existing.pinyinSentence || exPinyin;
       existing.exampleMeaning = existing.exampleMeaning || exMeaning;
       existing.parentVocab = v;
-      existing.hskLevel = v.level || existing.hskLevel;
+      existing.hskLevel = normalizeHskBand(v.level || existing.hskLevel);
     } else {
-      map.set(v.hanzi, {
-        id: `vocab-${v.id || v.hanzi}`,
-        hanzi: v.hanzi,
-        pinyin: v.pinyin,
-        meaning: v.meaning,
-        hanviet: v.hanviet || '',
-        hskLevel: v.level || 'HSK 1',
-        level: v.level === 'HSK 1' ? 1 : v.level === 'HSK 2' ? 2 : v.level === 'HSK 3' ? 3 : 4,
-        difficulty: v.level === 'HSK 1' ? 'easy' : v.level === 'HSK 2' ? 'medium' : v.level === 'HSK 3' ? 'hard' : 'expert',
-        category: `${v.level || 'HSK'} • ${v.topic || 'Từ vựng'}`,
-        example: exHanzi,
-        pinyinSentence: exPinyin,
-        exampleMeaning: exMeaning,
-        tip: v.mnemonic || `Luyện phát âm chuẩn: ${v.hanzi} (${v.pinyin}) - ${v.meaning}.`,
-        parentVocab: v
-      });
+      const mapped = mapFlashcardToPronunciationItem(v);
+      if (mapped) map.set(v.hanzi, mapped);
     }
   });
+
+  // 3. Synchronize HSK 7-9 Flashcard deck
+  try {
+    getLocalHsk79Flashcards().forEach(v => {
+      if (!v?.hanzi || map.has(v.hanzi)) return;
+      const mapped = mapFlashcardToPronunciationItem(v);
+      if (mapped) map.set(v.hanzi, mapped);
+    });
+  } catch { /* ignore */ }
+
+  // 4. Synchronize user's saved/custom Flashcards
+  try {
+    getStoredCustomVocab().forEach(v => {
+      if (!v?.hanzi || map.has(v.hanzi)) return;
+      const mapped = mapFlashcardToPronunciationItem(v, { isCustom: true, isFlashcardSynced: true });
+      if (mapped) map.set(v.hanzi, mapped);
+    });
+  } catch { /* ignore */ }
 
   return Array.from(map.values());
 };
@@ -116,19 +172,31 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
 
   // Custom Items & Practice Items State initialized lazily
   const [practiceList, setPracticeList] = useState(() => {
+    const baseMap = new Map(DEFAULT_PRONUNCIATION_ITEMS.map(item => [item.hanzi, item]));
     try {
+      const uid = user?.id || user?.uid || 'guest';
+      const srsRaw = localStorage.getItem(`hanzigo_srs_map_${uid}`);
+      if (srsRaw) {
+        const srsMap = JSON.parse(srsRaw);
+        Object.values(srsMap || {}).forEach((card) => {
+          if (card?.hanzi && !baseMap.has(card.hanzi)) {
+            const mapped = mapFlashcardToPronunciationItem(card, { isCustom: true, isFlashcardSynced: true });
+            if (mapped) baseMap.set(card.hanzi, mapped);
+          }
+        });
+      }
       const stored = localStorage.getItem(STORAGE_CUSTOM_PRONOUNCE);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const customOnly = parsed.filter(p => p.isCustom);
-          return [...customOnly, ...DEFAULT_PRONUNCIATION_ITEMS];
+          const customOnly = parsed.filter(p => p.isCustom && p.hanzi && !baseMap.has(p.hanzi));
+          return [...customOnly, ...Array.from(baseMap.values())];
         }
       }
     } catch (e) {
       console.error('Error loading custom pronunciation list', e);
     }
-    return DEFAULT_PRONUNCIATION_ITEMS;
+    return Array.from(baseMap.values());
   });
 
   const [selectedItem, setSelectedItem] = useState(() => {
@@ -185,8 +253,45 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
 
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all'); // 'all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5-6', 'dialogue', 'custom'
-  const [levelFilter, setLevelFilter] = useState('all'); // 'all', '1', '2', '3', '4'
+  const [categoryFilter, setCategoryFilter] = useState('all'); // 'all', 'HSK 1'..'HSK 6', 'HSK 7-9', 'dialogue', 'custom'
+  const [corpusPage, setCorpusPage] = useState(1);
+  const [corpusCards, setCorpusCards] = useState([]);
+  const [corpusTotalCount, setCorpusTotalCount] = useState(HSK_30_TOTAL_VOCAB_COUNT);
+  const [corpusTotalPages, setCorpusTotalPages] = useState(1);
+  const [corpusLoading, setCorpusLoading] = useState(false);
+
+  const isHskCorpusFilter = categoryFilter === 'all' || Boolean(HSK_30_BANDS[categoryFilter]);
+
+  // Tải lô từ vựng HSK 3.0 (11.000 từ) đồng bộ cùng kho Flashcard theo cấp độ & trang
+  useEffect(() => {
+    if (!isHskCorpusFilter) return;
+    let cancelled = false;
+    setCorpusLoading(true);
+    const bandKey = HSK_30_BANDS[categoryFilter] ? categoryFilter : 'all';
+
+    fetchHsk30FlashcardBatch({
+      hskBand: bandKey,
+      page: corpusPage,
+      pageSize: 50,
+      searchQuery,
+    })
+      .then((res) => {
+        if (cancelled || !res) return;
+        const mapped = (Array.isArray(res.entries) ? res.entries : [])
+          .map((item) => mapFlashcardToPronunciationItem(item, { isFlashcardSynced: true }))
+          .filter(Boolean);
+        setCorpusCards(mapped);
+        setCorpusTotalCount(res.totalCount || mapped.length);
+        setCorpusTotalPages(res.totalPages || 1);
+      })
+      .finally(() => {
+        if (!cancelled) setCorpusLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isHskCorpusFilter, categoryFilter, corpusPage, searchQuery]);
 
   const activeTargetHanzi = (pronounceTargetMode === 'sentence' && selectedItem?.example) 
     ? selectedItem.example 
@@ -209,24 +314,36 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
     }
   });
 
-  // Fetch items from Supabase on mount
+  // Fetch pronunciation & flashcard vocabulary from Supabase on mount
   useEffect(() => {
     let isMounted = true;
-    getPronunciationItemsFromDb().then(dbItems => {
-      if (!isMounted || !dbItems || dbItems.length === 0) return;
+    const uid = user?.id || user?.uid;
+    Promise.all([
+      getPronunciationItemsFromDb().catch(() => []),
+      getVocabularyFromDb().catch(() => []),
+      uid ? getUserVocabSrsProgress(uid).catch(() => []) : Promise.resolve([])
+    ]).then(([dbPronounce, dbVocab, dbSrs]) => {
+      if (!isMounted) return;
+      const incoming = [
+        ...(Array.isArray(dbPronounce) ? dbPronounce : []),
+        ...(Array.isArray(dbVocab) ? dbVocab.map(v => mapFlashcardToPronunciationItem(v, { isFlashcardSynced: true })).filter(Boolean) : []),
+        ...(Array.isArray(dbSrs) ? dbSrs.map(c => mapFlashcardToPronunciationItem(c, { isCustom: true, isFlashcardSynced: true })).filter(Boolean) : [])
+      ];
+      if (incoming.length === 0) return;
       setPracticeList(prev => {
-        const customItems = prev.filter(p => p.isCustom);
-        const merged = [...customItems];
-        dbItems.forEach(dbItem => {
-          if (!merged.some(m => m.hanzi === dbItem.hanzi)) {
-            merged.push(dbItem);
+        const seen = new Set(prev.map(m => m.hanzi));
+        const additions = [];
+        incoming.forEach(item => {
+          if (item?.hanzi && !seen.has(item.hanzi)) {
+            seen.add(item.hanzi);
+            additions.push(item);
           }
         });
-        return merged;
+        return additions.length > 0 ? [...prev, ...additions] : prev;
       });
     });
     return () => { isMounted = false; };
-  }, []);
+  }, [user]);
 
   // Recording, MediaRecorder & Audio Visualizer State
   const [isRecording, setIsRecording] = useState(false);
@@ -722,6 +839,29 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
     }
   };
 
+  // Phân bố số lượng từ vựng theo cấp độ HSK giống Flashcard
+  const hskCounts = useMemo(() => {
+    const counts = {
+      all: practiceList.length,
+      'HSK 1': 0,
+      'HSK 2': 0,
+      'HSK 3': 0,
+      'HSK 4': 0,
+      'HSK 5': 0,
+      'HSK 6': 0,
+      'HSK 7-9': 0,
+      dialogue: 0,
+      custom: 0,
+    };
+    practiceList.forEach((item) => {
+      const band = normalizeHskBand(item.hskLevel);
+      if (counts[band] !== undefined) counts[band] += 1;
+      if (item.isDialogue) counts.dialogue += 1;
+      if (item.isCustom) counts.custom += 1;
+    });
+    return counts;
+  }, [practiceList]);
+
   // Filtered practice items
   const filteredList = practiceList.filter(item => {
     if (item.isTargetVocab) return true;
@@ -735,65 +875,35 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
 
     if (!matchesSearch) return false;
 
-    // Level filter
-    if (levelFilter !== 'all') {
-      if (String(item.level) !== String(levelFilter)) return false;
-    }
-
     if (categoryFilter === 'all') return true;
-    if (categoryFilter === 'custom') return item.isCustom;
-    if (categoryFilter === 'dialogue') return item.isDialogue;
-    if (categoryFilter === 'HSK 1') return item.hskLevel === 'HSK 1';
-    if (categoryFilter === 'HSK 2') return item.hskLevel === 'HSK 2';
-    if (categoryFilter === 'HSK 3') return item.hskLevel === 'HSK 3';
-    if (categoryFilter === 'HSK 4') return item.hskLevel === 'HSK 4';
-    if (categoryFilter === 'HSK 5-6') return item.hskLevel === 'HSK 5-6';
+    if (categoryFilter === 'custom') return Boolean(item.isCustom);
+    if (categoryFilter === 'dialogue') return Boolean(item.isDialogue);
+    const band = normalizeHskBand(item.hskLevel);
+    if (['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7-9'].includes(categoryFilter)) {
+      return band === categoryFilter;
+    }
     if (categoryFilter === 'hsk') return Boolean(item.hskLevel || (item.category || '').includes('HSK'));
     if (categoryFilter === 'communication') return (item.category || '').includes('giao tiếp') || (item.category || '').includes('Câu') || item.isDialogue;
     return true;
   });
 
+  const displayedList = isHskCorpusFilter && corpusCards.length > 0 ? corpusCards : filteredList;
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8">
       
       {/* Top Header */}
-      <div className="text-center max-w-3xl mx-auto space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] text-xs font-bold uppercase tracking-wider">
+      <div className="text-center max-w-3xl mx-auto space-y-1.5 sm:space-y-2">
+        <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] text-xs font-bold uppercase tracking-wider">
           <Sparkles size={14} />
           Chuẩn Hóa Ngữ Âm Bắc Kinh & AI Thẩm Âm
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white">
+        <h1 className="text-xl sm:text-3xl font-black text-[#243447] dark:text-white">
           Luyện Phát Âm Tiếng Trung Thông Minh
         </h1>
-        <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8]">
+        <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] line-clamp-2 sm:line-clamp-none">
           Học 4 thanh điệu, thanh mẫu, vận mẫu chuẩn xác và tự do thêm bất kỳ chữ hoặc câu nào bạn muốn luyện nói với AI chấm điểm tức thì.
         </p>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="flex flex-wrap items-center justify-center gap-2 bg-white dark:bg-[#1E293B] p-2 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm max-w-3xl mx-auto">
-        {[
-          { id: 'record', label: '🎙️ AI Chấm Phát Âm' },
-          { id: 'lab', label: '🔬 Pronunciation Lab (Cao độ & Sandhi)' },
-          { id: 'tones', label: '4 Thanh Điệu' },
-          { id: 'initials', label: 'Thanh Mẫu (21 âm)' },
-          { id: 'finals', label: 'Vận Mẫu (15 âm)' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              playClickSound();
-              setActiveTab(tab.id);
-            }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === tab.id
-                ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/30 scale-[1.02]'
-                : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
       </div>
 
       {/* TAB: PRONUNCIATION LAB */}
@@ -803,7 +913,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
 
       {/* TAB: AI PRONUNCIATION RECORDER & CUSTOM SENTENCES */}
       {activeTab === 'record' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
           
           {/* Left Column: Practice Library & Custom Words/Sentences (5 cols) */}
           <div className="lg:col-span-5 space-y-4">
@@ -814,10 +924,10 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                   <h3 className="text-sm font-bold text-[#243447] dark:text-white flex items-center gap-2">
                     <span>Thư Viện Luyện Âm</span>
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F]">
-                      {practiceList.length}
+                      {(isHskCorpusFilter ? corpusTotalCount : filteredList.length).toLocaleString('vi-VN')}
                     </span>
                   </h3>
-                  <p className="text-[11px] text-[#748092]">Đồng bộ từ vựng & câu ngữ cảnh HSK 1-6</p>
+                  <p className="text-[11px] text-[#748092]">Đồng bộ kho {HSK_30_TOTAL_VOCAB_COUNT.toLocaleString('vi-VN')} từ Flashcard HSK 1–9</p>
                 </div>
 
                 {/* Primary Add Word/Sentence Button */}
@@ -839,60 +949,40 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCorpusPage(1);
+                  }}
                   placeholder="Tìm chữ Hán, Pinyin hoặc câu ví dụ..."
                   className="w-full pl-9 pr-4 py-2 rounded-xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
                 />
               </div>
 
-              {/* Level Filter Chips */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
-                {[
-                  { id: 'all', label: 'Tất cả mức độ' },
-                  { id: '1', label: '🟢 Mức 1: HSK 1' },
-                  { id: '2', label: '🟡 Mức 2: HSK 2' },
-                  { id: '3', label: '🟠 Mức 3: HSK 3' },
-                  { id: '4', label: '🔴 Mức 4: HSK 4-6' }
-                ].map(l => (
-                  <button
-                    key={l.id}
-                    onClick={() => {
-                      playClickSound();
-                      setLevelFilter(l.id);
-                    }}
-                    className={`px-2.5 py-1 rounded-lg font-bold whitespace-nowrap transition-all cursor-pointer ${
-                      levelFilter === l.id
-                        ? 'bg-[#E85D3F] text-white shadow-xs'
-                        : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] hover:text-[#243447]'
-                    }`}
-                  >
-                    {l.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Category & HSK Filter Chips */}
+              {/* Phân bố & lọc từ vựng theo cấp độ HSK giống Flashcard */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
                 <Filter size={12} className="text-[#748092] shrink-0" />
                 {[
-                  { id: 'all', label: 'Tất cả' },
-                  { id: 'HSK 1', label: 'HSK 1' },
-                  { id: 'HSK 2', label: 'HSK 2' },
-                  { id: 'HSK 3', label: 'HSK 3' },
-                  { id: 'HSK 4', label: 'HSK 4' },
-                  { id: 'HSK 5-6', label: 'HSK 5-6' },
-                  { id: 'dialogue', label: '💬 Đàm thoại' },
-                  { id: 'custom', label: '🌟 Tự thêm' }
+                  { id: 'all', label: `Tất cả (${HSK_30_BANDS.all.limit.toLocaleString('vi-VN')})` },
+                  { id: 'HSK 1', label: `HSK 1 (${HSK_30_BANDS['HSK 1'].limit.toLocaleString('vi-VN')})` },
+                  { id: 'HSK 2', label: `HSK 2 (${HSK_30_BANDS['HSK 2'].limit.toLocaleString('vi-VN')})` },
+                  { id: 'HSK 3', label: `HSK 3 (${HSK_30_BANDS['HSK 3'].limit.toLocaleString('vi-VN')})` },
+                  { id: 'HSK 4', label: `HSK 4 (${HSK_30_BANDS['HSK 4'].limit.toLocaleString('vi-VN')})` },
+                  { id: 'HSK 5', label: `HSK 5 (${HSK_30_BANDS['HSK 5'].limit.toLocaleString('vi-VN')})` },
+                  { id: 'HSK 6', label: `HSK 6 (${HSK_30_BANDS['HSK 6'].limit.toLocaleString('vi-VN')})` },
+                  { id: 'HSK 7-9', label: `HSK 7–9 (${HSK_30_BANDS['HSK 7-9'].limit.toLocaleString('vi-VN')})` },
+                  { id: 'dialogue', label: `💬 Đàm thoại (${hskCounts.dialogue})` },
+                  { id: 'custom', label: `🌟 Flashcard / Tự thêm (${hskCounts.custom})` }
                 ].map(f => (
                   <button
                     key={f.id}
                     onClick={() => {
                       playClickSound();
                       setCategoryFilter(f.id);
+                      setCorpusPage(1);
                     }}
-                    className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition-all cursor-pointer ${
+                    className={`min-h-11 px-2.5 py-1 rounded-lg font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                       categoryFilter === f.id
-                        ? 'bg-[#243447] text-white dark:bg-white dark:text-[#131B24]'
+                        ? 'bg-[#E85D3F] text-white shadow-xs'
                         : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] hover:text-[#243447]'
                     }`}
                   >
@@ -903,7 +993,12 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
 
               {/* Practice Item List */}
               <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
-                {filteredList.map((item) => {
+                {corpusLoading && (
+                  <div className="text-center py-3 text-[11px] font-semibold text-[#748092]">
+                    Đang tải lô từ vựng Flashcard HSK...
+                  </div>
+                )}
+                {displayedList.map((item) => {
                   const isSelected = selectedItem.id === item.id;
                   const itemBestScore = savedScores[item.hanzi];
                   return (
@@ -927,14 +1022,14 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                           <span className="font-['Noto_Serif_SC'] text-base font-bold text-[#243447] dark:text-white truncate">
                             {item.hanzi}
                           </span>
-                          {item.level && (
+                          {(item.hskLevel || item.level) && (
                             <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold shrink-0 ${
-                              item.level === 1 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' :
-                              item.level === 2 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' :
-                              item.level === 3 ? 'bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300' :
+                              item.level <= 2 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' :
+                              item.level <= 4 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' :
+                              item.level <= 6 ? 'bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300' :
                               'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300'
                             }`}>
-                              Mức {item.level}
+                              {normalizeHskBand(item.hskLevel)}
                             </span>
                           )}
                           {itemBestScore !== undefined && (
@@ -982,7 +1077,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                   );
                 })}
 
-                {filteredList.length === 0 && (
+                {!corpusLoading && displayedList.length === 0 && (
                   <div className="text-center py-8 text-xs text-[#748092] space-y-2">
                     <p>Không tìm thấy từ hoặc câu phù hợp.</p>
                     <button
@@ -994,6 +1089,36 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                   </div>
                 )}
               </div>
+
+              {isHskCorpusFilter && corpusTotalPages > 1 && (
+                <div className="flex items-center justify-between pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F] text-xs">
+                  <button
+                    type="button"
+                    disabled={corpusPage <= 1 || corpusLoading}
+                    onClick={() => {
+                      playClickSound();
+                      setCorpusPage((p) => Math.max(1, p - 1));
+                    }}
+                    className="min-h-11 px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] font-bold text-[#243447] dark:text-white disabled:opacity-40 cursor-pointer"
+                  >
+                    ← Trang trước
+                  </button>
+                  <span className="font-bold text-[#748092]">
+                    Trang {corpusPage} / {corpusTotalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={corpusPage >= corpusTotalPages || corpusLoading}
+                    onClick={() => {
+                      playClickSound();
+                      setCorpusPage((p) => Math.min(corpusTotalPages, p + 1));
+                    }}
+                    className="min-h-11 px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] font-bold text-[#243447] dark:text-white disabled:opacity-40 cursor-pointer"
+                  >
+                    Trang sau →
+                  </button>
+                </div>
+              )}
 
               {/* History Button Toggle */}
               <div className="pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between">
@@ -1049,10 +1174,10 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
             </div>
           </div>
 
-          {/* Right Column: Interactive Pronunciation Stage (7 cols) */}
-          <div className="lg:col-span-7 space-y-6">
+          {/* Right Column: Interactive Pronunciation Stage (7 cols — shown first Above the Fold on mobile) */}
+          <div className="lg:col-span-7 space-y-4 sm:space-y-6 order-first lg:order-none">
             
-            <div className="p-8 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl text-center space-y-6 relative overflow-hidden">
+            <div className="p-4 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl text-center space-y-4 sm:space-y-6 relative overflow-hidden">
               
               {/* Hidden audio player for user voice playback */}
               {userAudioUrl && (

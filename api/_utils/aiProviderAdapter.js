@@ -476,3 +476,261 @@ export async function callUnifiedAiProvider({
     latencyMs: 0
   };
 }
+
+function normalizeGeminiContents(contents) {
+  if (!Array.isArray(contents)) return [];
+  return contents.map((item) => {
+    if (item && Array.isArray(item.parts)) {
+      return {
+        role: item.role === 'assistant' ? 'model' : (item.role || 'user'),
+        parts: item.parts,
+      };
+    }
+    return {
+      role: item?.role === 'assistant' ? 'model' : (item?.role || 'user'),
+      parts: [{ text: String(item?.content || item?.text || '') }],
+    };
+  });
+}
+
+async function executeGeminiAgentHttpCall({
+  apiKey,
+  model,
+  systemInstruction,
+  contents,
+  tools,
+  temperature,
+  maxOutputTokens,
+  timeoutMs,
+}) {
+  const cleanModel = String(model || GEMINI_DEFAULT_MODEL).replace(/^models\//, '');
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:generateContent?key=${apiKey}`;
+
+  const body = {
+    contents: normalizeGeminiContents(contents),
+    generationConfig: {
+      temperature,
+      maxOutputTokens,
+    },
+  };
+
+  if (systemInstruction && String(systemInstruction).trim()) {
+    body.systemInstruction = {
+      parts: [{ text: String(systemInstruction).trim() }],
+    };
+  }
+
+  if (Array.isArray(tools) && tools.length > 0) {
+    body.tools = tools;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const startTime = Date.now();
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    const latencyMs = Date.now() - startTime;
+    if (!response.ok) {
+      let errorBody = null;
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = { message: await response.text().catch(() => '') };
+      }
+      return {
+        success: false,
+        status: response.status,
+        code: response.status === 429 ? 'rate_limit_exceeded' : response.status === 400 ? 'bad_request' : 'gemini_error',
+        error: errorBody?.error?.message || errorBody?.message || `Gemini HTTP ${response.status}`,
+        model: cleanModel,
+        latencyMs,
+      };
+    }
+
+    const data = await response.json();
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    const toolCalls = [];
+    const textChunks = [];
+
+    for (const part of parts) {
+      if (part?.functionCall?.name) {
+        toolCalls.push({
+          name: String(part.functionCall.name),
+          args: part.functionCall.args && typeof part.functionCall.args === 'object' ? part.functionCall.args : {},
+        });
+      } else if (typeof part?.text === 'string' && part.text.trim()) {
+        textChunks.push(part.text);
+      }
+    }
+
+    const text = textChunks.join('\n').trim();
+    if (toolCalls.length === 0 && !text) {
+      return {
+        success: false,
+        status: 502,
+        code: 'empty_response',
+        error: 'Gemini trả về phản hồi rỗng.',
+        model: cleanModel,
+        latencyMs,
+      };
+    }
+
+    let parsedJson = null;
+    if (toolCalls.length === 0 && text) {
+      try {
+        parsedJson = extractStructuredJson(text);
+      } catch {
+        parsedJson = null;
+      }
+    }
+
+    const usageMeta = data?.usageMetadata || {};
+    const promptTokens = Number(usageMeta.promptTokenCount) || 0;
+    const completionTokens = Number(usageMeta.candidatesTokenCount) || Math.ceil(text.length / 4);
+    const totalTokens = Number(usageMeta.totalTokenCount) || promptTokens + completionTokens;
+    const costBreakdown = calculateGeminiTokenCost({ model: cleanModel, promptTokens, completionTokens });
+
+    return {
+      success: true,
+      type: toolCalls.length > 0 ? 'tool_calls' : 'final_text',
+      toolCalls,
+      text,
+      parsedJson,
+      usage: { promptTokens, completionTokens, totalTokens },
+      costUsd: costBreakdown.costUsd,
+      costBreakdown,
+      model: cleanModel,
+      latencyMs,
+    };
+  } catch (err) {
+    const isTimeout = err.name === 'AbortError';
+    return {
+      success: false,
+      status: isTimeout ? 504 : 500,
+      code: isTimeout ? 'timeout' : 'network_error',
+      error: isTimeout ? `Gemini timeout sau ${timeoutMs}ms` : err.message,
+      model: cleanModel,
+      latencyMs: Date.now() - startTime,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Execute one Agent model turn with Gemini Function Calling support,
+ * bounded retries, multi-key rotation, and fallbackModel degradation.
+ */
+export async function callAgentModelTurn({
+  systemInstruction = '',
+  contents = [],
+  tools = [],
+  routingDecision = {},
+  timeoutMs = null,
+  maxRetries = 1,
+} = {}) {
+  const geminiKeys = getGeminiApiKeys();
+  const tier = routingDecision?.tier || 'standard';
+  const primaryModel = routingDecision?.model || process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
+  const fallbackModel = routingDecision?.fallbackModel || primaryModel;
+  const effectiveTimeout = Math.min(25000, Math.max(1000, Number(timeoutMs || routingDecision?.timeoutMs || DEFAULT_TIMEOUT_MS)));
+  const maxOutputTokens = Number(routingDecision?.maxOutputTokens || 1000);
+  const temperature = typeof routingDecision?.temperature === 'number' ? routingDecision.temperature : 0.5;
+  const boundedRetries = Math.min(2, Math.max(0, Number(maxRetries) || 0));
+
+  if (geminiKeys.length === 0) {
+    return {
+      success: false,
+      status: 503,
+      code: 'NO_ACTIVE_AI_PROVIDER',
+      error: 'Chưa cấu hình GEMINI_API_KEY.',
+      type: 'final_text',
+      toolCalls: [],
+      text: '',
+      parsedJson: null,
+      model: primaryModel,
+      tier,
+      fallbackUsed: false,
+      latencyMs: 0,
+    };
+  }
+
+  const runWithModel = async (targetModel, attemptLimit) => {
+    let lastFailure = null;
+    const keysToTry = geminiKeys.slice(0, Math.max(1, attemptLimit + 1));
+
+    for (let idx = 0; idx < keysToTry.length; idx += 1) {
+      const apiKey = keysToTry[idx];
+      const res = await executeGeminiAgentHttpCall({
+        apiKey,
+        model: targetModel,
+        systemInstruction,
+        contents,
+        tools,
+        temperature,
+        maxOutputTokens,
+        timeoutMs: effectiveTimeout,
+      });
+
+      if (res.success) {
+        return res;
+      }
+
+      lastFailure = res;
+      if (res.status === 400) break;
+      if (res.status === 429 || res.status === 403) {
+        markGeminiKeyRateLimited(apiKey);
+      }
+    }
+
+    return lastFailure;
+  };
+
+  const primaryRes = await runWithModel(primaryModel, boundedRetries);
+  if (primaryRes?.success) {
+    return { ...primaryRes, tier, fallbackUsed: false };
+  }
+
+  if (primaryRes?.status !== 400 && fallbackModel && fallbackModel !== primaryModel) {
+    const fallbackRes = await runWithModel(fallbackModel, 0);
+    if (fallbackRes?.success) {
+      return { ...fallbackRes, tier, fallbackUsed: true };
+    }
+    return {
+      success: false,
+      status: fallbackRes?.status || 503,
+      code: fallbackRes?.code || 'provider_error',
+      error: fallbackRes?.error || 'Fallback model failed.',
+      type: 'final_text',
+      toolCalls: [],
+      text: '',
+      parsedJson: null,
+      model: fallbackModel,
+      tier,
+      fallbackUsed: true,
+      latencyMs: (primaryRes?.latencyMs || 0) + (fallbackRes?.latencyMs || 0),
+    };
+  }
+
+  return {
+    success: false,
+    status: primaryRes?.status || 503,
+    code: primaryRes?.code || 'provider_error',
+    error: primaryRes?.error || 'Model call failed.',
+    type: 'final_text',
+    toolCalls: [],
+    text: '',
+    parsedJson: null,
+    model: primaryModel,
+    tier,
+    fallbackUsed: false,
+    latencyMs: primaryRes?.latencyMs || 0,
+  };
+}

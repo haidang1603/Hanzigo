@@ -454,6 +454,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
   const [formatFilter, setFormatFilter] = useState('all');
   const [activeTabFilter, setActiveTabFilter] = useState('all'); // 'all', 'bookmarked', 'custom'
   const [sortBy, setSortBy] = useState('downloads'); // 'downloads', 'newest', 'recently_verified', 'name', 'level_asc'
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   
   // Detail Modal & Broken Link Report States
   const [activeDetailResource, setActiveDetailResource] = useState(null);
@@ -1461,23 +1462,57 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
       <div className="space-y-4 bg-white dark:bg-[#1E293B] p-5 sm:p-6 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm">
         
         {/* Search Input */}
-        <div className="relative">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#748092]" />
-          <input
-            type="text"
-            placeholder="Tìm theo tên sách, nhà xuất bản (BLCU, CTI), kỹ năng, bài học lộ trình, từ khóa..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-10 py-3 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F] transition-colors"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-[#748092] hover:text-[#243447] cursor-pointer"
-            >
-              <X size={15} />
-            </button>
-          )}
+        {/* Search & Mobile Filter Toggle */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#748092]" />
+            <input
+              type="text"
+              placeholder="Tìm tên sách, NXB, kỹ năng, từ khóa..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full min-h-11 pl-11 pr-10 py-2.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F] transition-colors"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-[#748092] hover:text-[#243447] cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsFilterOpen((prev) => !prev)}
+            className="sm:hidden min-h-11 px-3 py-2 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-xs font-bold text-[#243447] dark:text-white flex items-center gap-1.5 shrink-0 cursor-pointer"
+          >
+            <Filter size={14} className="text-[#E85D3F]" />
+            <span>Bộ lọc</span>
+            {[
+              selectedCategory !== 'Tất cả',
+              selectedLevel !== 'Tất cả',
+              selectedSkill !== 'Tất cả kỹ năng',
+              selectedVerification !== 'all',
+              selectedExamVersion !== 'all',
+              selectedLanguage !== 'all',
+              selectedHostType !== 'all',
+              formatFilter !== 'all',
+            ].filter(Boolean).length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-[#E85D3F] text-white text-[10px] font-black">
+                {[
+                  selectedCategory !== 'Tất cả',
+                  selectedLevel !== 'Tất cả',
+                  selectedSkill !== 'Tất cả kỹ năng',
+                  selectedVerification !== 'all',
+                  selectedExamVersion !== 'all',
+                  selectedLanguage !== 'all',
+                  selectedHostType !== 'all',
+                  formatFilter !== 'all',
+                ].filter(Boolean).length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Quick Filter Tabs & Sorting */}
@@ -1535,6 +1570,8 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
           </div>
         </div>
 
+        {/* Collapsible Advanced Filters on mobile, always open on sm+ */}
+        <div className={`${isFilterOpen ? 'block' : 'hidden'} sm:block space-y-3`}>
         {/* SKILLS FILTER ROW */}
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-xs font-bold text-[#748092] dark:text-[#94A3B8]">
@@ -1697,6 +1734,7 @@ export default function MaterialsPage({ setActiveTab, user: propUser, isAdmin: p
           <div className="text-xs text-[#748092] font-semibold shrink-0">
             Hiển thị <strong className="text-[#243447] dark:text-white">{filteredMaterials.length}</strong> / {materials.length} tài liệu
           </div>
+        </div>
         </div>
 
       </div>

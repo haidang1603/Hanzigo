@@ -1198,6 +1198,11 @@ function HskExamsListView({
   const [typeFilter, setTypeFilter] = useState('all');
   const [topicFilter, setTopicFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  const activeExamFilterCount = [levelFilter, skillFilter, typeFilter, topicFilter].filter(
+    (v) => v !== 'all'
+  ).length;
 
   useEffect(() => {
     setLoading(true);
@@ -1240,21 +1245,37 @@ function HskExamsListView({
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8 space-y-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Tìm theo tên đề thi, từ khóa (ví dụ: nghe hiểu, ngữ pháp câu chữ 把...)..."
-            className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm focus:outline-none focus:border-[#E85D3F]"
-          />
+      <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm mb-5 sm:mb-8 space-y-3 sm:space-y-4">
+        {/* Search & Mobile Filter Toggle */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Tìm tên đề thi, từ khóa..."
+              className="w-full min-h-11 pl-11 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm focus:outline-none focus:border-[#E85D3F]"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowMobileFilters((prev) => !prev)}
+            className="sm:hidden min-h-11 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 shrink-0 cursor-pointer"
+          >
+            <Filter className="w-4 h-4 text-[#E85D3F]" />
+            <span>Bộ lọc đề thi</span>
+            {activeExamFilterCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-[#E85D3F] text-white text-[10px] font-black">
+                {activeExamFilterCount}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 items-center justify-between text-xs font-semibold">
+        {/* Filters (Collapsible on mobile, always visible on sm+) */}
+        <div className={`${showMobileFilters ? 'block' : 'hidden'} sm:block space-y-3 sm:space-y-4`}>
+        <div className="flex flex-wrap gap-3 sm:gap-4 items-center justify-between text-xs font-semibold">
           {/* Level Filter */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-slate-400">Cấp độ:</span>
@@ -1351,6 +1372,7 @@ function HskExamsListView({
               <span>{t.label}</span>
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -1947,13 +1969,13 @@ function HskExamTakingView({ examId, user, onNavigate }) {
       )}
 
       {/* Top Header & Sticky Timer */}
-      <div className="sticky top-0 z-30 bg-[#FFF9F2]/95 dark:bg-slate-950/95 backdrop-blur-md py-2 sm:py-3 border-b border-slate-200 dark:border-slate-800 mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-[#E85D3F] uppercase tracking-wider">
+      <div className="sticky top-0 z-30 bg-[#FFF9F2]/95 dark:bg-slate-950/95 backdrop-blur-md py-1.5 sm:py-3 border-b border-slate-200 dark:border-slate-800 mb-3 sm:mb-6 flex items-center justify-between gap-2 sm:gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-black text-[#E85D3F] uppercase tracking-wider truncate">
               {exam.level} • {exam.title}
             </span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+            <span className={`hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 ${
               examMode === 'simulation'
                 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
                 : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
@@ -1961,13 +1983,13 @@ function HskExamTakingView({ examId, user, onNavigate }) {
               {examMode === 'simulation' ? '⏱️ Thi thử nghiêm ngặt' : '📚 Luyện tập tự do'}
             </span>
           </div>
-          <div className="text-xs text-slate-500 mt-0.5">
+          <div className="text-[11px] sm:text-xs text-slate-500 mt-0.5 truncate">
             Đã làm: <strong className="text-slate-900 dark:text-white">{answeredCount}</strong> / {totalQuestions} câu
             {flaggedIds.length > 0 && <span className="ml-2 text-amber-600 font-bold">• Đánh dấu xem lại: {flaggedIds.length} câu</span>}
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Mode Switch Toggle */}
           <div className="hidden sm:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-[11px] font-bold">
             <button

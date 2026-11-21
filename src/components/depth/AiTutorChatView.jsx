@@ -30,9 +30,26 @@ import {
   saveLearnerPreferences,
   buildComprehensiveLearnerContext,
   clearLearnerPersonalizationData,
-  isPersonalizationEnabled
+  isPersonalizationEnabled,
+  getLearnerMemoryPreferences,
+  setLearnerMemoryEnabled,
+  clearControlledLearnerMemory
 } from '../../services/learnerContextService';
+import { saveUserVocabSrsCard } from '../../services/vocabularyService';
 import { speakChinese, playClickSound, playSuccessSound, playErrorSound } from '../../utils/audio';
+
+const TOOL_LABELS = {
+  lookup_dictionary_entry: 'Từ điển',
+  lookup_hanzi_decomposition: 'Chiết tự',
+  lookup_grammar_pattern: 'Ngữ pháp',
+  lookup_chengyu_idiom: 'Thành ngữ',
+  get_curriculum_lesson_context: 'Bài học HSK',
+  search_curated_knowledge: 'Tài liệu HSK',
+  get_learner_adaptive_profile: 'Hồ sơ học tập',
+  inspect_hsk_exam_question: 'Đề thi HSK',
+  generate_study_prescription: 'Kê đơn ôn tập',
+  suggest_save_vocab_to_srs: 'Đề xuất SRS',
+};
 
 const STORAGE_PREFIX = 'hanzigo_ai_tutor_history';
 const MAX_QUESTION_LEN = 500;
@@ -129,6 +146,10 @@ export default function AiTutorChatView({ user, openAuthModal }) {
   const [showClearModal, setShowClearModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [memoryEnabled, setMemoryEnabled] = useState(() => getLearnerMemoryPreferences(user).memoryEnabled);
+  const [confirmationStates, setConfirmationStates] = useState({});
+  const [showControls, setShowControls] = useState(false);
+  const [showQuickPrompts, setShowQuickPrompts] = useState(false);
 
   // Feature Flag & Emergency Kill Switch phía Frontend
   const isFeatureEnabled = typeof import.meta !== 'undefined' && import.meta.env?.VITE_ENABLE_AI_TUTOR !== 'false';
@@ -257,6 +278,10 @@ export default function AiTutorChatView({ user, openAuthModal }) {
         evidence_status: res.evidence_status || 'grounded',
         context_type: res.context_type,
         learner_level: res.learner_level,
+        tools_used: res.tools_used || [],
+        ui_actions: res.ui_actions || [],
+        pending_confirmations: res.pending_confirmations || [],
+        agent_metadata: res.agent_metadata || null,
         feedback: null
       };
 
@@ -322,7 +347,7 @@ export default function AiTutorChatView({ user, openAuthModal }) {
   };
 
   return (
-    <div className="flex flex-col h-[750px] max-w-5xl mx-auto bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-10.5rem)] min-h-[540px] max-w-5xl mx-auto bg-white dark:bg-[#1E293B] rounded-2xl sm:rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm overflow-hidden">
       
       {/* Toast Thông báo */}
       {toastMessage && (
@@ -332,46 +357,74 @@ export default function AiTutorChatView({ user, openAuthModal }) {
         </div>
       )}
 
-      {/* HEADER: Thông tin Lão Sư & Quota */}
-      <div className="px-5 py-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FAF8F5] dark:bg-[#1A2433] flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#E85D3F] to-[#D94827] flex items-center justify-center text-white font-black shadow-md shadow-[#E85D3F]/20">
-            <Bot size={22} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-extrabold text-[#243447] dark:text-white">
-                Lão Sư HanziGo
-              </h2>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-extrabold text-[10px] flex items-center gap-1">
-                <ShieldCheck size={11} />
-                RAG Kiểm Duyệt
-              </span>
+      {/* HEADER: 2-tier Mobile-first (Thanh chính gọn + Thanh tùy chỉnh thu gọn) */}
+      <div className="px-3.5 sm:px-5 py-3 border-b border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FAF8F5] dark:bg-[#1A2433] space-y-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#E85D3F] to-[#D94827] flex items-center justify-center text-white font-black shadow-md shadow-[#E85D3F]/20 shrink-0">
+              <Bot size={20} />
             </div>
-            <p className="text-[11px] text-[#748092] dark:text-[#94A3B8]">
-              Gia sư tiếng Trung bản ngữ • Đối chiếu giáo trình chuẩn HSK
-            </p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h2 className="text-sm sm:text-base font-extrabold text-[#243447] dark:text-white truncate">
+                  Lão Sư HanziGo
+                </h2>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-extrabold text-[10px] inline-flex items-center gap-1 shrink-0">
+                  <ShieldCheck size={11} />
+                  RAG
+                </span>
+              </div>
+              <p className="text-[11px] text-[#748092] dark:text-[#94A3B8] truncate">
+                {selectedHskLevel} • Hạn mức {dailyRemaining}/150 • {memoryEnabled ? 'Đang ghi nhớ' : 'Tắt ghi nhớ'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound();
+                setLearnerContext(buildComprehensiveLearnerContext(user));
+                setShowGoalModal(true);
+              }}
+              className="min-h-11 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200 dark:border-orange-800 text-[#E85D3F] hover:border-[#E85D3F] transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Xem và điều chỉnh mục tiêu học tập cá nhân hóa"
+            >
+              <Target size={14} />
+              <span>{learnerPrefs.targetHskLevel || selectedHskLevel}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound();
+                setShowControls((prev) => !prev);
+              }}
+              aria-expanded={showControls}
+              className={`min-h-11 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer sm:hidden ${
+                showControls
+                  ? 'bg-[#E85D3F] border-[#E85D3F] text-white'
+                  : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white'
+              }`}
+              title="Tùy chỉnh cấp độ, ngữ cảnh và bộ nhớ AI"
+            >
+              <Sliders size={15} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowClearModal(true)}
+              className="min-h-11 min-w-11 p-2 rounded-xl text-[#748092] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors flex items-center justify-center cursor-pointer"
+              title="Xóa lịch sử hội thoại"
+            >
+              <Trash2 size={16} />
+            </button>
           </div>
         </div>
 
-        {/* Level Selector, Quota & Xóa lịch sử */}
-        <div className="flex items-center gap-2">
-          {/* Nút Xem & Chỉnh sửa Mục tiêu Học tập cá nhân */}
-          <button
-            onClick={() => {
-              playClickSound();
-              setLearnerContext(buildComprehensiveLearnerContext(user));
-              setShowGoalModal(true);
-            }}
-            className="px-2.5 py-1.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200 dark:border-orange-800 text-[#E85D3F] hover:border-[#E85D3F] transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-            title="Xem và điều chỉnh mục tiêu học tập cá nhân hóa"
-          >
-            <Target size={13} />
-            <span className="hidden sm:inline">Mục tiêu:</span>
-            <span>{learnerPrefs.targetHskLevel || selectedHskLevel}</span>
-          </button>
-
-          {/* Chọn cấp độ HSK */}
+        {/* Tier 2: Thanh điều khiển Sư phạm & Bộ nhớ (Luôn mở trên desktop sm+, thu gọn 1 chạm trên mobile) */}
+        <div className={`${showControls ? 'flex' : 'hidden sm:flex'} flex-wrap items-center gap-2 pt-2 border-t border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70`}>
           <select
             value={selectedHskLevel}
             onChange={(e) => {
@@ -379,7 +432,7 @@ export default function AiTutorChatView({ user, openAuthModal }) {
               saveLearnerPreferences({ targetHskLevel: e.target.value }, user);
               setLearnerPrefs(prev => ({ ...prev, targetHskLevel: e.target.value }));
             }}
-            className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-hidden focus:border-[#E85D3F]"
+            className="min-h-11 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-hidden focus:border-[#E85D3F]"
             title="Chọn cấp độ HSK của bạn để AI điều chỉnh độ khó"
           >
             {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map(lvl => (
@@ -387,32 +440,51 @@ export default function AiTutorChatView({ user, openAuthModal }) {
             ))}
           </select>
 
-          {/* Chọn Ngữ cảnh */}
           <select
             value={selectedContextType}
             onChange={(e) => setSelectedContextType(e.target.value)}
-            className="hidden sm:block px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-hidden focus:border-[#E85D3F]"
+            className="min-h-11 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white focus:outline-hidden focus:border-[#E85D3F]"
             title="Ngữ cảnh tra cứu"
           >
-            <option value="general">Toàn bộ</option>
-            <option value="grammar">Ngữ pháp</option>
-            <option value="vocabulary">Từ vựng</option>
-            <option value="hanzi">Chữ Hán</option>
-            <option value="conversation">Hội thoại</option>
+            <option value="general">Chủ đề: Toàn bộ</option>
+            <option value="grammar">Chủ đề: Ngữ pháp</option>
+            <option value="vocabulary">Chủ đề: Từ vựng</option>
+            <option value="hanzi">Chủ đề: Chữ Hán</option>
+            <option value="conversation">Chủ đề: Hội thoại</option>
           </select>
 
-          {/* Thẻ Quota trong ngày */}
-          <span className="hidden md:inline-flex px-2.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-extrabold text-[11px]">
-            Hạn mức: {dailyRemaining}/150
-          </span>
-
-          {/* Nút Xóa lịch sử */}
           <button
-            onClick={() => setShowClearModal(true)}
-            className="p-2 rounded-xl text-[#748092] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-            title="Xóa lịch sử hội thoại"
+            type="button"
+            onClick={() => {
+              playClickSound();
+              const nextVal = !memoryEnabled;
+              setLearnerMemoryEnabled(user, nextVal);
+              setMemoryEnabled(nextVal);
+              showToast(nextVal ? 'Đã bật ghi nhớ tiến độ học.' : 'Đã tắt ghi nhớ tiến độ học.');
+            }}
+            className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer ${
+              memoryEnabled
+                ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 text-emerald-700 dark:text-emerald-300'
+                : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
+            }`}
+            title="Bật hoặc tắt bộ nhớ học tập cá nhân hóa của Lão Sư"
           >
-            <Trash2 size={16} />
+            <ShieldCheck size={14} />
+            <span>Ghi nhớ: {memoryEnabled ? 'Bật' : 'Tắt'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              playClickSound();
+              clearControlledLearnerMemory(user);
+              showToast('Đã xóa sạch ký ức học tập AI của tài khoản này.');
+            }}
+            className="min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] text-[#748092] hover:text-rose-600 transition-colors flex items-center gap-1.5 cursor-pointer"
+            title="Xóa ký ức AI"
+          >
+            <RotateCcw size={14} />
+            <span>Xóa ký ức AI</span>
           </button>
         </div>
       </div>
@@ -489,27 +561,27 @@ export default function AiTutorChatView({ user, openAuthModal }) {
                 {/* 1. Thẻ Chữ Hán & Pinyin Trọng Tâm (Nếu có) */}
                 {(data.hanzi || data.pinyin) && (
                   <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/80 dark:border-amber-800/40 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       {data.hanzi && (
-                        <span className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white tracking-wider">
+                        <span className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white tracking-wider break-words">
                           {data.hanzi}
                         </span>
                       )}
-                      <div>
+                      <div className="min-w-0">
                         {data.pinyin && (
-                          <div className="text-sm font-extrabold text-[#E85D3F]">
+                          <div className="text-sm font-extrabold text-[#E85D3F] break-words">
                             {data.pinyin}
                           </div>
                         )}
                         {data.vietnamese_translation && (
-                          <div className="text-xs font-semibold text-[#748092] dark:text-[#94A3B8]">
+                          <div className="text-xs font-semibold text-[#748092] dark:text-[#94A3B8] break-words">
                             {data.vietnamese_translation}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       {data.hsk_level && (
                         <span className="px-2 py-0.5 rounded-md bg-white dark:bg-[#1E293B] border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-[11px] font-extrabold">
                           {data.hsk_level}
@@ -517,11 +589,12 @@ export default function AiTutorChatView({ user, openAuthModal }) {
                       )}
                       {data.hanzi && (
                         <button
+                          type="button"
                           onClick={() => {
                             playClickSound();
                             speakChinese(data.hanzi);
                           }}
-                          className="p-1.5 rounded-lg bg-white dark:bg-[#1E293B] text-[#E85D3F] hover:bg-[#FDEEEB] transition-colors"
+                          className="min-h-11 min-w-11 p-2 rounded-xl bg-white dark:bg-[#1E293B] border border-amber-200/80 dark:border-amber-800/40 text-[#E85D3F] hover:bg-[#FDEEEB] transition-colors flex items-center justify-center cursor-pointer"
                           title="Nghe phát âm chuẩn"
                         >
                           <Volume2 size={16} />
@@ -532,35 +605,38 @@ export default function AiTutorChatView({ user, openAuthModal }) {
                 )}
 
                 {/* 2. Lời giải thích tự nhiên bằng tiếng Việt */}
-                <div className="text-sm text-[#243447] dark:text-[#E2E8F0] leading-relaxed whitespace-pre-wrap font-medium">
+                <div className="text-sm text-[#243447] dark:text-[#E2E8F0] leading-relaxed whitespace-pre-wrap font-medium break-words">
                   {data.answer}
                 </div>
 
-                {/* 3. Sự thật được kiểm duyệt (Grounded Facts) */}
-                {Array.isArray(data.grounded_facts) && data.grounded_facts.length > 0 && (
-                  <div className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 space-y-1.5 text-xs text-emerald-950 dark:text-emerald-200">
-                    <div className="font-extrabold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                      <CheckCircle2 size={14} className="text-emerald-600" />
-                      <span>Chứng cứ đối chiếu từ giáo trình kiểm duyệt</span>
-                    </div>
-                    <ul className="list-disc list-inside space-y-1 font-medium pl-1 text-[12px]">
-                      {data.grounded_facts.map((fact, idx) => (
-                        <li key={idx}>{fact}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {/* 3 & 4. Lưới Sư phạm: Chứng cứ kiểm duyệt + Mẹo mở rộng */}
+                {((Array.isArray(data.grounded_facts) && data.grounded_facts.length > 0) || data.supplementary_explanation) && (
+                  <div className={`grid grid-cols-1 ${Array.isArray(data.grounded_facts) && data.grounded_facts.length > 0 && data.supplementary_explanation ? 'md:grid-cols-2' : ''} gap-2.5`}>
+                    {Array.isArray(data.grounded_facts) && data.grounded_facts.length > 0 && (
+                      <div className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 space-y-1.5 text-xs text-emerald-950 dark:text-emerald-200">
+                        <div className="font-extrabold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                          <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                          <span>Chứng cứ giáo trình</span>
+                        </div>
+                        <ul className="list-disc list-inside space-y-1 font-medium pl-1 text-[12px] break-words">
+                          {data.grounded_facts.map((fact, idx) => (
+                            <li key={idx}>{fact}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
-                {/* 4. Giải thích bổ sung / Mẹo ghi nhớ */}
-                {data.supplementary_explanation && (
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 text-xs text-[#243447] dark:text-slate-300 space-y-1">
-                    <div className="font-extrabold text-[#748092] dark:text-slate-400 flex items-center gap-1.5">
-                      <Lightbulb size={14} className="text-amber-500" />
-                      <span>Giải thích mở rộng & Mẹo sư phạm</span>
-                    </div>
-                    <p className="text-[12px] leading-relaxed pl-1">
-                      {data.supplementary_explanation}
-                    </p>
+                    {data.supplementary_explanation && (
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 text-xs text-[#243447] dark:text-slate-300 space-y-1">
+                        <div className="font-extrabold text-[#748092] dark:text-slate-400 flex items-center gap-1.5">
+                          <Lightbulb size={14} className="text-amber-500 shrink-0" />
+                          <span>Mẹo sư phạm & mở rộng</span>
+                        </div>
+                        <p className="text-[12px] leading-relaxed pl-1 break-words">
+                          {data.supplementary_explanation}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -689,6 +765,131 @@ export default function AiTutorChatView({ user, openAuthModal }) {
                   </div>
                 )}
 
+                {/* 6b. TRANSPARENCY CHIPS (Tools Used & Agent Status) */}
+                {((Array.isArray(msg.tools_used) && msg.tools_used.length > 0) || msg.agent_metadata?.cache_hit || msg.agent_metadata?.fallbackUsed) && (
+                  <div className="flex flex-wrap gap-1.5 pt-2">
+                    {(msg.tools_used || []).map((t, tIdx) => (
+                      <span
+                        key={tIdx}
+                        className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                      >
+                        {TOOL_LABELS[t.toolName] || t.toolName}
+                      </span>
+                    ))}
+                    {msg.agent_metadata?.cache_hit && (
+                      <span className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
+                        Cache tức thì
+                      </span>
+                    )}
+                    {msg.agent_metadata?.fallbackUsed && (
+                      <span className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300">
+                        Tra cứu ngoại tuyến
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* 6c. HUMAN-IN-THE-LOOP CONFIRMATION CARDS (pending_confirmations) */}
+                {Array.isArray(msg.pending_confirmations) && msg.pending_confirmations.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    {msg.pending_confirmations.map((conf, cIdx) => {
+                      const confKey = `${msg.id}_${cIdx}`;
+                      const confStatus = confirmationStates[confKey];
+                      const p = conf?.payload || {};
+                      if (confStatus === 'dismissed') return null;
+
+                      return (
+                        <div
+                          key={confKey}
+                          className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-orange-200 dark:border-orange-800/50 space-y-2 text-xs"
+                        >
+                          <div className="font-bold text-[#243447] dark:text-white break-words">
+                            {conf.label || `Lưu "${p.hanzi || ''}" vào sổ SRS`}
+                          </div>
+                          {(p.hanzi || p.meaning) && (
+                            <div className="text-slate-600 dark:text-slate-300 break-words">
+                              <span className="font-bold text-[#E85D3F]">{p.hanzi}</span>
+                              {p.pinyin ? ` (${p.pinyin})` : ''}
+                              {p.meaning ? ` — ${p.meaning}` : ''}
+                            </div>
+                          )}
+                          <div className="flex flex-wrap gap-2">
+                            {confStatus === 'saved' ? (
+                              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 font-bold">
+                                <CheckCircle2 size={14} /> Đã lưu vào sổ SRS
+                              </span>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={confStatus === 'saving'}
+                                  onClick={async () => {
+                                    playClickSound();
+                                    setConfirmationStates((prev) => ({ ...prev, [confKey]: 'saving' }));
+                                    try {
+                                      await saveUserVocabSrsCard(user?.id || user?.uid || 'guest', {
+                                        wordId: `agent_${p.hanzi || Date.now()}`,
+                                        hanzi: p.hanzi,
+                                        pinyin: p.pinyin || '',
+                                        meaning: p.meaning || '',
+                                        level: p.hskLevel || selectedHskLevel,
+                                        interval: 1,
+                                        repetitions: 1,
+                                        easeFactor: 2.5,
+                                      });
+                                      setConfirmationStates((prev) => ({ ...prev, [confKey]: 'saved' }));
+                                      playSuccessSound();
+                                      showToast(`Đã lưu "${p.hanzi}" vào sổ SRS!`);
+                                    } catch {
+                                      setConfirmationStates((prev) => ({ ...prev, [confKey]: undefined }));
+                                      showToast('Không thể lưu lúc này, vui lòng thử lại.');
+                                    }
+                                  }}
+                                  className="min-h-11 px-3 py-1.5 rounded-xl bg-[#E85D3F] text-white font-bold text-xs cursor-pointer"
+                                >
+                                  Lưu vào sổ SRS
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    playClickSound();
+                                    setConfirmationStates((prev) => ({ ...prev, [confKey]: 'dismissed' }));
+                                  }}
+                                  className="min-h-11 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs cursor-pointer"
+                                >
+                                  Bỏ qua
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 6d. SMART ACTION BUTTONS (ui_actions) */}
+                {Array.isArray(msg.ui_actions) && msg.ui_actions.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-2">
+                    {msg.ui_actions.map((act, aIdx) => (
+                      <button
+                        key={aIdx}
+                        type="button"
+                        onClick={() => {
+                          playClickSound();
+                          if (act.route && typeof window !== 'undefined') {
+                            window.location.hash = act.route;
+                          }
+                        }}
+                        className="min-h-11 px-3 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 text-[#E85D3F] text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>{act.label}</span>
+                        <ExternalLink size={12} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {/* 7. FOOTER: Feedback Hữu Ích / Chưa Rõ */}
                 <div className="flex items-center justify-between pt-2 text-[11px] text-[#748092] dark:text-slate-400">
                   <span>{msg.timestamp}</span>
@@ -772,54 +973,108 @@ export default function AiTutorChatView({ user, openAuthModal }) {
           </div>
         )}
 
+        {/* Gợi ý khởi đầu có cấu trúc khi mới vào phiên học */}
+        {messages.length <= 1 && !isLoading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+            {SUGGESTED_PROMPTS.map((group) => (
+              <div
+                key={group.category}
+                className="p-3 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2 shadow-xs"
+              >
+                <div className="text-xs font-extrabold text-[#243447] dark:text-white">
+                  {group.category}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {group.items.map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        handleSendQuestion(item);
+                      }}
+                      className="min-h-11 px-3 py-2 rounded-xl text-left text-xs font-semibold bg-[#FAF8F5] dark:bg-[#16202E] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-slate-200 hover:border-[#E85D3F] hover:text-[#E85D3F] transition-colors cursor-pointer break-words"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div ref={chatBottomRef} />
       </div>
 
-      {/* CÂU HỎI GỢI Ý (SUGGESTED PROMPTS) */}
-      <div className="px-4 py-2.5 bg-white dark:bg-[#1E293B] border-t border-[#F1E5D8] dark:border-[#2B3A4F] overflow-x-auto">
-        <div className="flex items-center gap-2 min-w-max pb-1">
-          <span className="text-[11px] font-extrabold text-[#748092] dark:text-slate-400 flex items-center gap-1 shrink-0">
-            <Sparkles size={12} className="text-amber-500" /> Gợi ý nhanh:
+      {/* CÂU HỎI GỢI Ý THU GỌN + INPUT BAR MOBILE-FIRST */}
+      <div className="bg-white dark:bg-[#1E293B] border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
+        <div className="px-3.5 sm:px-4 pt-2 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              playClickSound();
+              setShowQuickPrompts((prev) => !prev);
+            }}
+            aria-expanded={showQuickPrompts}
+            className="min-h-11 px-2.5 py-1 rounded-xl text-xs font-extrabold text-[#748092] dark:text-slate-300 hover:text-[#E85D3F] flex items-center gap-1.5 cursor-pointer"
+          >
+            <Sparkles size={13} className="text-amber-500" />
+            <span>Gợi ý câu hỏi nhanh</span>
+            {showQuickPrompts ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          </button>
+          <span className="text-[11px] text-[#748092] dark:text-slate-400 font-mono">
+            {inputQuestion.length}/{MAX_QUESTION_LEN}
           </span>
-          {SUGGESTED_PROMPTS.flatMap(cat => cat.items).map((item, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                playClickSound();
-                handleSendQuestion(item);
-              }}
-              disabled={isLoading}
-              className="px-3 py-1 rounded-xl text-xs font-semibold bg-[#FAF8F5] dark:bg-[#16202E] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-slate-300 hover:border-[#E85D3F] hover:text-[#E85D3F] transition-colors cursor-pointer shrink-0 disabled:opacity-50"
-            >
-              {item}
-            </button>
-          ))}
         </div>
-      </div>
 
-      {/* INPUT BAR: Khung nhập câu hỏi responsive & Multi-line */}
-      <div className="p-3 sm:p-4 bg-white dark:bg-[#1E293B] border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
-        <div className="flex items-end gap-2 bg-[#FAF8F5] dark:bg-[#16202E] p-2 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] focus-within:border-[#E85D3F] transition-colors">
-          <textarea
-            ref={textareaRef}
-            rows={2}
-            value={inputQuestion}
-            onChange={(e) => setInputQuestion(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={isFeatureEnabled ? "Hỏi Lão Sư về ngữ pháp, chữ Hán, Pinyin, đặt câu ví dụ... (Enter để gửi, Shift+Enter xuống dòng)" : "Hệ thống Gia sư AI đang tạm bảo trì..."}
-            disabled={isLoading || !isFeatureEnabled}
-            className="flex-1 bg-transparent border-0 focus:outline-hidden text-xs sm:text-sm text-[#243447] dark:text-white placeholder-[#748092] resize-none px-2 py-1 max-h-24 disabled:opacity-50"
-          />
+        {showQuickPrompts && (
+          <div className="px-3.5 sm:px-4 pb-2.5 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto animate-fade-in">
+            {SUGGESTED_PROMPTS.map((group) => (
+              <div key={group.category} className="p-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#16202E] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-1.5">
+                <div className="text-[11px] font-extrabold text-[#243447] dark:text-white">
+                  {group.category}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {group.items.map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setShowQuickPrompts(false);
+                        handleSendQuestion(item);
+                      }}
+                      disabled={isLoading}
+                      className="min-h-11 px-2.5 py-1.5 rounded-lg text-left text-xs font-semibold bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-slate-200 hover:border-[#E85D3F] hover:text-[#E85D3F] transition-colors cursor-pointer disabled:opacity-50 break-words"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-          <div className="flex flex-col sm:flex-row items-center gap-2 shrink-0">
-            <span className="text-[10px] text-[#748092] dark:text-slate-500 font-mono hidden sm:inline">
-              {inputQuestion.length}/{MAX_QUESTION_LEN}
-            </span>
+        <div className="p-3 sm:p-4 pt-1">
+          <div className="flex items-end gap-2 bg-[#FAF8F5] dark:bg-[#16202E] p-2 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] focus-within:border-[#E85D3F] transition-colors">
+            <textarea
+              ref={textareaRef}
+              rows={2}
+              value={inputQuestion}
+              onChange={(e) => setInputQuestion(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isFeatureEnabled ? "Hỏi Lão Sư về ngữ pháp, chữ Hán, Pinyin, đặt câu..." : "Hệ thống Gia sư AI đang tạm bảo trì..."}
+              disabled={isLoading || !isFeatureEnabled}
+              className="flex-1 bg-transparent border-0 focus:outline-hidden text-base sm:text-sm text-[#243447] dark:text-white placeholder-[#748092] resize-none px-2 py-1 max-h-24 disabled:opacity-50"
+            />
 
             <button
+              type="button"
               onClick={() => handleSendQuestion()}
               disabled={isLoading || !isFeatureEnabled || !inputQuestion.trim()}
-              className="w-10 h-10 rounded-xl bg-[#E85D3F] text-white flex items-center justify-center hover:bg-[#D94827] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-[#E85D3F]/20 cursor-pointer"
+              className="min-h-11 min-w-11 w-11 h-11 rounded-xl bg-[#E85D3F] text-white flex items-center justify-center hover:bg-[#D94827] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-[#E85D3F]/20 shrink-0 cursor-pointer"
               title="Gửi câu hỏi"
             >
               <Send size={18} />

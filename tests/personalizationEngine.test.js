@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { getLocalDateString } from '../src/utils/gamification.js';
 
 import {
   buildStudentLearningProfile,
@@ -280,7 +281,7 @@ test('10. PRIVACY SANITIZATION: Critical secrets and passwords are stripped from
   assert.ok(result.success);
 
   // Check stored cache
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   const cacheRaw = localStorage.getItem(`hanzigo_ai_coach_cache_${sensitiveUser.uid}_${today}`);
   assert.ok(cacheRaw, 'Must have cached recommendation');
 

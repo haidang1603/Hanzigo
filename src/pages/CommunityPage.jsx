@@ -569,6 +569,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
   const [partnerFilterMethod, setPartnerFilterMethod] = useState('all');
   const [partnerFilterStatus, setPartnerFilterStatus] = useState('all');
   const [partnerSearchTerm, setPartnerSearchTerm] = useState('');
+  const [showPartnerFilters, setShowPartnerFilters] = useState(false);
   const [isLoadingPartners, setIsLoadingPartners] = useState(false);
 
   // Comments toggled per post
@@ -1264,8 +1265,13 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     });
   }, [studyPartners, partnerFilterLevel, partnerFilterMethod, partnerFilterStatus, partnerSearchTerm, user]);
 
+  const activePartnerFilterCount =
+    (partnerFilterLevel !== 'all' ? 1 : 0) +
+    (partnerFilterMethod !== 'all' ? 1 : 0) +
+    (partnerFilterStatus !== 'all' ? 1 : 0);
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10 animate-in fade-in duration-300">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-10 animate-in fade-in duration-300">
       
       {/* Toast Notification */}
       {toastMessage && (
@@ -1478,72 +1484,94 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
 
             {/* Partner Search & Filters */}
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-              {/* Ô tìm kiếm từ khóa */}
-              <div className="relative flex-1">
-                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
-                <input
-                  type="text"
-                  placeholder="Tìm bạn theo tên, mục tiêu, kỹ năng luyện tập..."
-                  value={partnerSearchTerm}
-                  onChange={(e) => setPartnerSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
-                />
-                {partnerSearchTerm && (
-                  <button
-                    onClick={() => setPartnerSearchTerm('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#748092] hover:text-[#243447] dark:hover:text-white"
-                  >
-                    <X size={13} />
-                  </button>
-                )}
+              {/* Ô tìm kiếm từ khóa + nút toggle bộ lọc mobile */}
+              <div className="flex items-center gap-2 flex-1">
+                <div className="relative flex-1">
+                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
+                  <input
+                    type="text"
+                    placeholder="Tìm bạn theo tên, mục tiêu, kỹ năng luyện tập..."
+                    value={partnerSearchTerm}
+                    onChange={(e) => setPartnerSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
+                  />
+                  {partnerSearchTerm && (
+                    <button
+                      onClick={() => setPartnerSearchTerm('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#748092] hover:text-[#243447] dark:hover:text-white"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPartnerFilters((prev) => !prev)}
+                  className={`sm:hidden min-h-11 px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                    showPartnerFilters || activePartnerFilterCount > 0
+                      ? 'bg-[#45B97C]/15 border-[#45B97C]/40 text-[#45B97C]'
+                      : 'bg-[#FFF9F2] dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white'
+                  }`}
+                >
+                  <Filter size={14} />
+                  <span>Bộ lọc</span>
+                  {activePartnerFilterCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-[#45B97C] text-white text-[10px] font-black">
+                      {activePartnerFilterCount}
+                    </span>
+                  )}
+                </button>
               </div>
 
               {/* Bộ lọc dropdown */}
-              <div className="flex flex-wrap items-center gap-2.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-[#748092]">Cấp độ:</span>
-                  <select
-                    value={partnerFilterLevel}
-                    onChange={(e) => setPartnerFilterLevel(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
-                  >
-                    <option value="all">Mọi cấp độ</option>
-                    <option value="HSK 1">HSK 1</option>
-                    <option value="HSK 2">HSK 2</option>
-                    <option value="HSK 3">HSK 3</option>
-                    <option value="HSK 4">HSK 4</option>
-                    <option value="HSK 5">HSK 5</option>
-                    <option value="HSK 6">HSK 6</option>
-                    <option value="Giao tiếp tự do">Giao tiếp tự do</option>
-                  </select>
-                </div>
+              <div className={`${showPartnerFilters ? 'block' : 'hidden'} sm:block`}>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-[#748092]">Cấp độ:</span>
+                    <select
+                      value={partnerFilterLevel}
+                      onChange={(e) => setPartnerFilterLevel(e.target.value)}
+                      className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    >
+                      <option value="all">Mọi cấp độ</option>
+                      <option value="HSK 1">HSK 1</option>
+                      <option value="HSK 2">HSK 2</option>
+                      <option value="HSK 3">HSK 3</option>
+                      <option value="HSK 4">HSK 4</option>
+                      <option value="HSK 5">HSK 5</option>
+                      <option value="HSK 6">HSK 6</option>
+                      <option value="Giao tiếp tự do">Giao tiếp tự do</option>
+                    </select>
+                  </div>
 
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-[#748092]">Kênh:</span>
-                  <select
-                    value={partnerFilterMethod}
-                    onChange={(e) => setPartnerFilterMethod(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
-                  >
-                    <option value="all">Mọi kênh liên hệ</option>
-                    <option value="Zalo">Zalo</option>
-                    <option value="Google Meet">Google Meet</option>
-                    <option value="WeChat">WeChat</option>
-                    <option value="Zoom">Zoom</option>
-                    <option value="Telegram">Telegram</option>
-                  </select>
-                </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-[#748092]">Kênh:</span>
+                    <select
+                      value={partnerFilterMethod}
+                      onChange={(e) => setPartnerFilterMethod(e.target.value)}
+                      className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    >
+                      <option value="all">Mọi kênh liên hệ</option>
+                      <option value="Zalo">Zalo</option>
+                      <option value="Google Meet">Google Meet</option>
+                      <option value="WeChat">WeChat</option>
+                      <option value="Zoom">Zoom</option>
+                      <option value="Telegram">Telegram</option>
+                    </select>
+                  </div>
 
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-[#748092]">Trạng thái:</span>
-                  <select
-                    value={partnerFilterStatus}
-                    onChange={(e) => setPartnerFilterStatus(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
-                  >
-                    <option value="all">Tất cả</option>
-                    <option value="active">Đang tìm bạn</option>
-                  </select>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-[#748092]">Trạng thái:</span>
+                    <select
+                      value={partnerFilterStatus}
+                      onChange={(e) => setPartnerFilterStatus(e.target.value)}
+                      className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
+                    >
+                      <option value="all">Tất cả</option>
+                      <option value="active">Đang tìm bạn</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>

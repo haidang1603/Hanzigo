@@ -852,7 +852,7 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
           </div>
 
           {/* Interactive Text Display Canvas */}
-          <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-gray-700 shadow-sm space-y-6">
+          <div className="p-4 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-gray-700 shadow-sm space-y-5 sm:space-y-6">
             {activeMode === 'graded' && currentGradedReader && (
               <div className="pb-4 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-2 mb-1">
@@ -1105,10 +1105,10 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
         </div>
 
         {/* Right Column (4 Cols): Word Inspector Popover & Learning Actions */}
-        <div className="lg:col-span-4 space-y-6 sticky top-6">
+        <div className="lg:col-span-4 space-y-4 sm:space-y-6 lg:sticky lg:top-6">
           
           {/* Word Inspector Card */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-gray-700 shadow-md space-y-5">
+          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-gray-700 shadow-md space-y-4 sm:space-y-5">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#E85D3F]">
                 <Aperture size={15} />

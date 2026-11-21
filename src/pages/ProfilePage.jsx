@@ -528,7 +528,7 @@ export default function ProfilePage({
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8 animate-in fade-in duration-300">
       
       {/* Toast Notification */}
       {profileToast && (
@@ -539,7 +539,7 @@ export default function ProfilePage({
       )}
 
       {/* Profile Header Card */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+      <div className="p-4 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 relative overflow-hidden">
         
         {/* Subtle background ambient */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-[#E85D3F]/10 via-[#F4B942]/5 to-transparent rounded-full blur-3xl pointer-events-none" />

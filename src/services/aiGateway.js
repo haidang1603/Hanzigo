@@ -16,6 +16,9 @@ import {
   buildComprehensiveLearnerContext, 
   sanitizeContextForAi, 
   isPersonalizationEnabled,
+  getLearnerMemoryPreferences,
+  getControlledLearnerMemory,
+  updateControlledLearnerMemory,
   LEARNER_STORAGE_KEYS 
 } from './learnerContextService.js';
 
@@ -323,6 +326,9 @@ export async function askAiTutor({
     } catch {}
   }
 
+  const memPrefs = getLearnerMemoryPreferences(user);
+  const controlledMem = memPrefs.memoryEnabled ? getControlledLearnerMemory(user) : null;
+
   try {
     const response = await fetch('/api/ai/tutor', {
       method: 'POST',
@@ -336,12 +342,37 @@ export async function askAiTutor({
         context_type: contextType,
         learner_level: learnerLevel || safeLearnerContext?.targetHskLevel || null,
         conversation_history: conversationHistory,
-        learner_context: safeLearnerContext
+        learner_context: safeLearnerContext,
+        memory_enabled: memPrefs.memoryEnabled,
+        session_summary: memPrefs.memoryEnabled ? (controlledMem?.sessionSummary || '') : ''
       })
     });
 
     if (response.ok) {
       const resData = await response.json();
+      if (memPrefs.memoryEnabled && resData?.success) {
+        const topicTag = resData?.data?.hanzi || String(question || '').trim().slice(0, 40);
+        if (topicTag) {
+          updateControlledLearnerMemory(user, { recentTopics: [topicTag] });
+        }
+      }
+      if (resData?.success && typeof localStorage !== 'undefined') {
+        try {
+          const prevLogs = JSON.parse(localStorage.getItem('hanzigo_agent_telemetry') || '[]');
+          const nextLogs = [
+            ...(Array.isArray(prevLogs) ? prevLogs.slice(-99) : []),
+            {
+              ts: Date.now(),
+              intent: resData?.agent_metadata?.intent || contextType || 'general',
+              toolsCount: Array.isArray(resData?.tools_used) ? resData.tools_used.length : 0,
+              cacheHit: Boolean(resData?.agent_metadata?.cache_hit),
+              fallbackUsed: Boolean(resData?.agent_metadata?.fallbackUsed),
+              stepsCount: Number(resData?.agent_metadata?.steps_count || 0),
+            }
+          ];
+          localStorage.setItem('hanzigo_agent_telemetry', JSON.stringify(nextLogs));
+        } catch {}
+      }
       if (!bypassCache && (!conversationHistory || conversationHistory.length === 0) && resData?.success) {
         try {
           if (typeof sessionStorage !== 'undefined') {

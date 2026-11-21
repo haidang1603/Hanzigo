@@ -24,8 +24,14 @@ import {
   getCharacterDetail, 
   getUserWritingProgressMap, 
   setUserWritingStatus, 
+  mapFlashcardBatchToCharacters,
   WRITING_STATUS 
 } from '../services/characterDictionaryService';
+import {
+  fetchHsk30FlashcardBatch,
+  HSK_30_BANDS,
+  HSK_30_TOTAL_VOCAB_COUNT,
+} from '../services/hsk30FlashcardDeckService';
 import { playClickSound, playSuccessSound } from '../utils/audio';
 import { awardXp } from '../utils/gamification';
 
@@ -64,6 +70,11 @@ export default function WritingPage({
   const [hskFilter, setHskFilter] = useState('all');
   const [radicalFilter, setRadicalFilter] = useState('all');
   const [strokeFilter, setStrokeFilter] = useState('all');
+  const [corpusPage, setCorpusPage] = useState(1);
+  const [corpusChars, setCorpusChars] = useState([]);
+  const [corpusTotalCount, setCorpusTotalCount] = useState(HSK_30_TOTAL_VOCAB_COUNT);
+  const [corpusTotalPages, setCorpusTotalPages] = useState(1);
+  const [corpusLoading, setCorpusLoading] = useState(false);
 
   // Modals state
   const [radicalModalOpen, setRadicalModalOpen] = useState(false);
@@ -146,6 +157,63 @@ export default function WritingPage({
       limit: 60
     });
   }, [debouncedQuery, hskFilter, radicalFilter, strokeRange]);
+
+  const useFlashcardCorpus = radicalFilter === 'all' && strokeFilter === 'all';
+
+  // Đồng bộ lô từ vựng Flashcard HSK 3.0 (11.000 từ) thành danh sách chữ Hán tra cứu & luyện nét thuận
+  useEffect(() => {
+    if (!useFlashcardCorpus) return;
+    let cancelled = false;
+    setCorpusLoading(true);
+    const bandKey = HSK_30_BANDS[hskFilter] ? hskFilter : 'all';
+
+    fetchHsk30FlashcardBatch({
+      hskBand: bandKey,
+      page: corpusPage,
+      pageSize: 50,
+      searchQuery: debouncedQuery,
+    })
+      .then((res) => {
+        if (cancelled || !res) return;
+        const chars = mapFlashcardBatchToCharacters(res.entries || []);
+        setCorpusChars(chars);
+        setCorpusTotalCount(res.totalCount || chars.length);
+        setCorpusTotalPages(res.totalPages || 1);
+      })
+      .finally(() => {
+        if (!cancelled) setCorpusLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [useFlashcardCorpus, hskFilter, corpusPage, debouncedQuery]);
+
+  const displayedItems = useMemo(() => {
+    if (!useFlashcardCorpus || corpusChars.length === 0) return searchResults.items;
+    // Khi chuyển trang (> 1) hoặc không tìm kiếm, hiển thị thuần chữ của trang hiện tại để không lặp 12 chữ đầu
+    if (!debouncedQuery || corpusPage > 1) {
+      return corpusChars;
+    }
+    const seen = new Set();
+    const merged = [];
+    // Chỉ ưu tiên chữ khớp tìm kiếm nội bộ ở trang 1 khi đang gõ từ khóa
+    searchResults.items.slice(0, 20).forEach((item) => {
+      if (item?.char && !seen.has(item.char)) {
+        seen.add(item.char);
+        merged.push(item);
+      }
+    });
+    corpusChars.forEach((item) => {
+      if (item?.char && !seen.has(item.char)) {
+        seen.add(item.char);
+        merged.push(item);
+      }
+    });
+    return merged;
+  }, [useFlashcardCorpus, corpusChars, searchResults.items, debouncedQuery, corpusPage]);
+
+  const displayedTotal = useFlashcardCorpus && corpusChars.length > 0 ? corpusTotalCount : searchResults.total;
 
   // Fetch full details of the currently selected character
   const characterDetail = useMemo(() => {
@@ -257,14 +325,20 @@ export default function WritingPage({
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCorpusPage(1);
+                  }}
                   placeholder="Tìm chữ Hán (học, 你, nihao, hao3, nước, con người, bộ thủ...)"
                   className="w-full pl-10 pr-24 py-2.5 sm:py-3 text-base sm:text-sm text-[#243447] dark:text-[#F3F4F6] bg-transparent focus:outline-hidden"
                 />
                 {searchQuery && (
                   <button
                     type="button"
-                    onClick={() => setSearchQuery('')}
+                    onClick={() => {
+                      setSearchQuery('');
+                      setCorpusPage(1);
+                    }}
                     className="absolute right-12 text-xs text-gray-400 hover:text-gray-600 px-2 py-1"
                   >
                     Xóa
@@ -272,7 +346,7 @@ export default function WritingPage({
                 )}
                 <div className="absolute right-3">
                   <span className="text-xs font-semibold px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500">
-                    {searchResults.total} kết quả
+                    {displayedTotal.toLocaleString('vi-VN')} kết quả
                   </span>
                 </div>
               </div>
@@ -281,26 +355,30 @@ export default function WritingPage({
 
           {/* Quick Filter Controls */}
           <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
-            {/* HSK Filter */}
-            <div className="flex items-center gap-1 bg-white dark:bg-[#0F172A] p-1 rounded-xl border border-[#F1E5D8] dark:border-[#334155]">
-              <span className="text-gray-400 px-1 font-semibold">HSK:</span>
-              {['all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5-6'].map(lvl => (
-                <button
-                  key={lvl}
-                  type="button"
-                  onClick={() => {
-                    playClickSound();
-                    setHskFilter(lvl);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                    hskFilter === lvl
-                      ? 'bg-[#E85D3F] text-white shadow-xs'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  {lvl === 'all' ? 'Tất cả' : lvl}
-                </button>
-              ))}
+            {/* HSK Filter đồng bộ phân bố Flashcard HSK 1-9 */}
+            <div className="flex items-center gap-1 bg-white dark:bg-[#0F172A] p-1 rounded-xl border border-[#F1E5D8] dark:border-[#334155] overflow-x-auto max-w-full">
+              <span className="text-gray-400 px-1 font-semibold shrink-0">HSK:</span>
+              {['all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7-9'].map(lvl => {
+                const bandCount = HSK_30_BANDS[lvl]?.limit;
+                return (
+                  <button
+                    key={lvl}
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setHskFilter(lvl);
+                      setCorpusPage(1);
+                    }}
+                    className={`min-h-11 px-2.5 py-1 rounded-lg font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                      hskFilter === lvl
+                        ? 'bg-[#E85D3F] text-white shadow-xs'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {lvl === 'all' ? `Tất cả (${bandCount.toLocaleString('vi-VN')})` : `${lvl} (${bandCount.toLocaleString('vi-VN')})`}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Radical Button Trigger */}
@@ -523,26 +601,28 @@ export default function WritingPage({
       </div>
 
       {/* 4. Bottom Characters Grid / Carousel */}
-      <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-6 border border-[#F1E5D8] dark:border-[#334155] shadow-sm space-y-4">
+      <div className="bg-white dark:bg-[#1E293B] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#F1E5D8] dark:border-[#334155] shadow-sm space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-[#E85D3F]" />
             <h3 className="font-bold text-base text-[#243447] dark:text-[#F3F4F6]">
-              Kho chữ Hán tra cứu ({searchResults.total} chữ)
+              {useFlashcardCorpus
+                ? `Kho chữ Hán từ ${displayedTotal.toLocaleString('vi-VN')} từ HSK (Trang ${corpusPage}: ${displayedItems.length} chữ)`
+                : `Kho chữ Hán tra cứu (${displayedTotal.toLocaleString('vi-VN')} chữ)`}
             </h3>
           </div>
           <span className="text-xs text-[#64748B] dark:text-[#94A3B8]">
-            Bấm vào chữ để xem chi tiết & hoạt ảnh bút thuận
+            {corpusLoading ? 'Đang tải kho HSK 3.0...' : 'Bấm vào chữ để xem chi tiết & hoạt ảnh bút thuận'}
           </span>
         </div>
 
-        {searchResults.items.length === 0 ? (
+        {displayedItems.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-sm">
             Không tìm thấy chữ Hán nào phù hợp với bộ lọc hiện tại. Hãy thử tìm từ khóa khác.
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2.5 max-h-[360px] overflow-y-auto pr-1">
-            {searchResults.items.map((item) => {
+            {displayedItems.map((item) => {
               const isSelected = selectedChar === item.char;
               const status = progressMap[item.char]?.status;
 
@@ -588,6 +668,36 @@ export default function WritingPage({
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {useFlashcardCorpus && corpusTotalPages > 1 && (
+          <div className="flex items-center justify-between pt-2 border-t border-[#F1E5D8] dark:border-[#334155] text-xs">
+            <button
+              type="button"
+              disabled={corpusPage <= 1 || corpusLoading}
+              onClick={() => {
+                playClickSound();
+                setCorpusPage((p) => Math.max(1, p - 1));
+              }}
+              className="min-h-11 px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#334155] font-bold text-[#243447] dark:text-white disabled:opacity-40 cursor-pointer"
+            >
+              ← Trang trước
+            </button>
+            <span className="font-bold text-[#64748B] dark:text-[#94A3B8]">
+              Trang {corpusPage} / {corpusTotalPages}
+            </span>
+            <button
+              type="button"
+              disabled={corpusPage >= corpusTotalPages || corpusLoading}
+              onClick={() => {
+                playClickSound();
+                setCorpusPage((p) => Math.min(corpusTotalPages, p + 1));
+              }}
+              className="min-h-11 px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#334155] font-bold text-[#243447] dark:text-white disabled:opacity-40 cursor-pointer"
+            >
+              Trang sau →
+            </button>
           </div>
         )}
       </div>

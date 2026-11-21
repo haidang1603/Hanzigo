@@ -16,8 +16,10 @@ export async function checkRateLimitAndQuota({
   dailyQuotaMax = 150,
   dailyQuotaWindowMs = 24 * 60 * 60 * 1000,
   prefix = 'ratelimit',
-  timeoutMs = REDIS_TIMEOUT_MS
+  timeoutMs = REDIS_TIMEOUT_MS,
+  costWeight = 1
 }) {
+  const safeWeight = Math.max(1, Math.min(10, Math.floor(Number(costWeight) || 1)));
   const isIsolatedTestEnv =
     Boolean(process.env.NODE_TEST_CONTEXT) && process.env.HANZIGO_TEST_UPSTASH !== 'true';
   const upstashUrl = isIsolatedTestEnv ? '' : process.env.UPSTASH_REDIS_REST_URL;
@@ -43,9 +45,9 @@ export async function checkRateLimitAndQuota({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify([
-          ['INCR', rateKey],
+          ['INCRBY', rateKey, safeWeight],
           ['EXPIRE', rateKey, windowSec, 'NX'],
-          ['INCR', quotaKey],
+          ['INCRBY', quotaKey, safeWeight],
           ['EXPIRE', quotaKey, quotaSec, 'NX']
         ]),
         signal: controller.signal
@@ -142,7 +144,7 @@ export async function checkRateLimitAndQuota({
   }
 
   // Check minute window limit
-  if (record.requestCount >= maxRequests) {
+  if (record.requestCount + safeWeight > maxRequests) {
     return {
       allowed: false,
       statusCode: 429,
@@ -152,7 +154,7 @@ export async function checkRateLimitAndQuota({
   }
 
   // Check daily quota limit
-  if (record.dailyCount >= dailyQuotaMax) {
+  if (record.dailyCount + safeWeight > dailyQuotaMax) {
     return {
       allowed: false,
       statusCode: 429,
@@ -162,8 +164,8 @@ export async function checkRateLimitAndQuota({
   }
 
   // Increment counters
-  record.requestCount += 1;
-  record.dailyCount += 1;
+  record.requestCount += safeWeight;
+  record.dailyCount += safeWeight;
 
   return {
     allowed: true,
@@ -175,4 +177,36 @@ export async function checkRateLimitAndQuota({
 
 export function resetMemoryRateLimits() {
   memoryStore.clear();
+}
+
+/**
+ * Compute and record additional quota weight for multi-step Agent turns.
+ */
+export function computeAgentQuotaWeight(toolCallsCount = 0) {
+  const safeCalls = Math.max(0, Number(toolCallsCount) || 0);
+  return safeCalls >= 2 ? 1 + Math.min(safeCalls, 2) : 1;
+}
+
+export async function recordAgentQuotaWeight({
+  clientKey,
+  toolCallsCount = 0,
+  windowMs = 60 * 1000,
+  maxRequests = 20,
+  dailyQuotaMax = 150,
+  prefix = 'tutor',
+} = {}) {
+  const totalWeight = computeAgentQuotaWeight(toolCallsCount);
+  const extraWeight = totalWeight - 1;
+  if (extraWeight <= 0 || !clientKey) {
+    return { recorded: false, totalWeight };
+  }
+  const check = await checkRateLimitAndQuota({
+    clientKey,
+    windowMs,
+    maxRequests,
+    dailyQuotaMax,
+    prefix,
+    costWeight: extraWeight,
+  });
+  return { recorded: true, totalWeight, extraWeight, allowed: check.allowed };
 }

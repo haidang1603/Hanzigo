@@ -41,6 +41,12 @@ export default function AiMonitoringDashboard() {
     primaryModel: 'gemini-3.5-flash-lite',
     paidFallbackAllowed: false
   });
+  const [agentStats, setAgentStats] = useState({
+    totalRuns: 0,
+    cacheHitRate: '0.0%',
+    fallbackRate: '0.0%',
+    avgToolsPerRun: '0.0',
+  });
 
   const checkProviderConnectivity = () => {
     setProviderHealth({
@@ -63,6 +69,26 @@ export default function AiMonitoringDashboard() {
             totalRequestsToday: Math.max(prev.totalRequestsToday, reqCount),
             totalTokensEstimated: Math.max(prev.totalTokensEstimated, tokens)
           }));
+        }
+        const agentLogs = JSON.parse(localStorage.getItem('hanzigo_agent_telemetry') || '[]');
+        if (Array.isArray(agentLogs) && agentLogs.length > 0) {
+          const totalRuns = agentLogs.length;
+          const cacheHits = agentLogs.filter((l) => l.cacheHit).length;
+          const fallbacks = agentLogs.filter((l) => l.fallbackUsed).length;
+          const totalTools = agentLogs.reduce((acc, l) => acc + (Number(l.toolsCount) || 0), 0);
+          setAgentStats({
+            totalRuns,
+            cacheHitRate: `${((cacheHits / totalRuns) * 100).toFixed(1)}%`,
+            fallbackRate: `${((fallbacks / totalRuns) * 100).toFixed(1)}%`,
+            avgToolsPerRun: (totalTools / totalRuns).toFixed(1),
+          });
+        } else {
+          setAgentStats({
+            totalRuns: 0,
+            cacheHitRate: '0.0%',
+            fallbackRate: '0.0%',
+            avgToolsPerRun: '0.0',
+          });
         }
       } catch {}
       setLoading(false);
@@ -181,6 +207,38 @@ export default function AiMonitoringDashboard() {
         </div>
       </div>
 
+      {/* Lão Sư AI Agent Telemetry Card */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#E85D3F]" />
+            Theo dõi Lão Sư AI Agent (/api/ai/tutor)
+          </h3>
+          <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-extrabold text-[11px]">
+            10 Real Tools • Tối đa 3 bước • Budget Guard 6.000 tokens
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+            <div className="text-[11px] font-bold text-slate-500">Lượt gọi Agent (phiên cục bộ)</div>
+            <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">{agentStats.totalRuns}</div>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+            <div className="text-[11px] font-bold text-slate-500">Tỷ lệ Public Cache Hit</div>
+            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{agentStats.cacheHitRate}</div>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+            <div className="text-[11px] font-bold text-slate-500">Tỷ lệ Fallback xác định</div>
+            <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">{agentStats.fallbackRate}</div>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+            <div className="text-[11px] font-bold text-slate-500">Số tool trung bình / lượt</div>
+            <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">{agentStats.avgToolsPerRun}</div>
+          </div>
+        </div>
+      </div>
+
       {/* Gateway Endpoints & Architecture Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
@@ -193,6 +251,13 @@ export default function AiMonitoringDashboard() {
 
           <div className="space-y-3">
             {[
+              {
+                endpoint: '/api/ai/tutor',
+                actions: 'Lão Sư AI Agent (10 Real Tools HSK 1–9, HITL SRS, Controlled Memory)',
+                provider: 'Google Gemini (gemini-3.5-flash-lite)',
+                rateLimit: '20 req/min • Quota trọng số Agent',
+                status: 'Stateless Orchestrator + Guardrails'
+              },
               {
                 endpoint: '/api/ai/personalize',
                 actions: 'coach_plan, explain_grammar, generate_exercise, diagnose_hsk_mistakes, recommend_resources',

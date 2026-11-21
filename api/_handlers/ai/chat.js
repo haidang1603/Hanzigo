@@ -14,8 +14,11 @@
  */
 
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
-import { verifyRequestAuth } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, sendSafeServerError } from '../../_utils/supabaseServer.js';
 import { callUnifiedAiProvider } from '../../_utils/aiProviderAdapter.js';
+import { validateAgentInput, redactSensitiveData } from '../../_agent/guardrails.js';
+import { selectModelTier } from '../../_agent/modelRouter.js';
+import { AGENT_INTENTS } from '../../_agent/contracts.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 20;     // 20 requests per minute
@@ -112,15 +115,21 @@ export default async function handler(req, res) {
     });
   }
 
-  // Abuse & Prompt Injection Protection
-  if (detectAbuseOrInjection(cleanUserText)) {
+  // Abuse & Prompt Injection Protection (Shared Task 02 Guardrails)
+  const inputCheck = validateAgentInput({ text: cleanUserText, maxLength: MAX_USER_TEXT_LENGTH });
+  if (!inputCheck.allowed || detectAbuseOrInjection(cleanUserText)) {
     return res.status(400).json({
-      error: 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.'
+      error: inputCheck.reason || 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.'
     });
   }
 
   // Validate HSK Level
   const safeHskLevel = ALLOWED_HSK_LEVELS.includes(hskLevel) ? hskLevel : 'HSK 1';
+  const routingDecision = selectModelTier({
+    intent: AGENT_INTENTS.GENERAL_TUTOR,
+    hskLevel: safeHskLevel,
+    hasTools: false,
+  });
 
   // Sanitize Conversation History
   const safeHistory = Array.isArray(conversationHistory) 
@@ -148,7 +157,7 @@ export default async function handler(req, res) {
     const aiResult = await callUnifiedAiProvider({
       action: 'conversation_chat',
       messages,
-      temperature: 0.7,
+      temperature: routingDecision.temperature || 0.7,
       maxTokens: 1000
     });
 
@@ -158,18 +167,17 @@ export default async function handler(req, res) {
       });
     }
 
-    const parsed = aiResult.data || {};
+    const parsed = redactSensitiveData(aiResult.data || {});
     parsed._metadata = {
       provider: aiResult.provider,
       model: aiResult.model,
+      tier: routingDecision.tier,
       usage: aiResult.usage,
       costUsd: aiResult.costUsd || 0,
       latencyMs: aiResult.latencyMs
     };
     return res.status(200).json(parsed);
   } catch (err) {
-    // Sanitized internal error logging
-    console.error('AI Tutor Internal Error:', err.message);
-    return res.status(500).json({ error: 'Đã xảy ra lỗi nội bộ khi xử lý hội thoại AI.' });
+    return sendSafeServerError(res, 'Đã xảy ra lỗi nội bộ khi xử lý hội thoại AI.', err);
   }
 }

@@ -444,3 +444,149 @@ export function exportLearnerPersonalizationData(user = null) {
     learningContext: context
   };
 }
+
+// =========================================================================
+// TASK 08: CONTROLLED LEARNER MEMORY (PER-USER ISOLATED)
+// =========================================================================
+const CONTROLLED_MEMORY_KEY_PREFIX = 'hanzigo_ai_memory_v1_';
+const CONTROLLED_MEMORY_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function resolveMemoryUserId(userOrId = null) {
+  if (!userOrId) return 'guest';
+  if (typeof userOrId === 'string') return userOrId.trim() || 'guest';
+  return String(userOrId.id || userOrId.uid || 'guest').trim() || 'guest';
+}
+
+export function getControlledMemoryStorageKey(userOrId = null) {
+  return `${CONTROLLED_MEMORY_KEY_PREFIX}${resolveMemoryUserId(userOrId)}`;
+}
+
+function createEmptyControlledMemory(memoryEnabled = true) {
+  return {
+    version: 1,
+    memoryEnabled: Boolean(memoryEnabled),
+    recentTopics: [],
+    confirmedMistakes: [],
+    sessionSummary: '',
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function readRawControlledMemory(userOrId = null) {
+  try {
+    const key = getControlledMemoryStorageKey(userOrId);
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getLearnerMemoryPreferences(userOrId = null) {
+  const uid = resolveMemoryUserId(userOrId);
+  const raw = readRawControlledMemory(uid);
+  const defaultEnabled = uid !== 'guest';
+  return {
+    version: 1,
+    userId: uid,
+    memoryEnabled: raw && typeof raw.memoryEnabled === 'boolean' ? raw.memoryEnabled : defaultEnabled,
+    updatedAt: raw?.updatedAt || null,
+  };
+}
+
+export function setLearnerMemoryEnabled(userOrId = null, enabled = true) {
+  const uid = resolveMemoryUserId(userOrId);
+  const key = getControlledMemoryStorageKey(uid);
+  const existing = readRawControlledMemory(uid) || createEmptyControlledMemory(Boolean(enabled));
+  const next = {
+    ...existing,
+    version: 1,
+    memoryEnabled: Boolean(enabled),
+    updatedAt: new Date().toISOString(),
+  };
+  try {
+    localStorage.setItem(key, JSON.stringify(next));
+  } catch {}
+  return getLearnerMemoryPreferences(uid);
+}
+
+export function getControlledLearnerMemory(userOrId = null) {
+  const uid = resolveMemoryUserId(userOrId);
+  const prefs = getLearnerMemoryPreferences(uid);
+  const raw = readRawControlledMemory(uid);
+  if (!raw || !prefs.memoryEnabled) {
+    return createEmptyControlledMemory(prefs.memoryEnabled);
+  }
+
+  const now = Date.now();
+  const updatedMs = raw.updatedAt ? Date.parse(raw.updatedAt) : now;
+  if (Number.isFinite(updatedMs) && now - updatedMs > CONTROLLED_MEMORY_TTL_MS) {
+    return createEmptyControlledMemory(prefs.memoryEnabled);
+  }
+
+  return {
+    version: 1,
+    memoryEnabled: true,
+    recentTopics: Array.isArray(raw.recentTopics) ? raw.recentTopics.slice(0, 10) : [],
+    confirmedMistakes: Array.isArray(raw.confirmedMistakes) ? raw.confirmedMistakes.slice(0, 10) : [],
+    sessionSummary: typeof raw.sessionSummary === 'string' ? raw.sessionSummary.slice(0, 600) : '',
+    updatedAt: raw.updatedAt || new Date().toISOString(),
+  };
+}
+
+export function updateControlledLearnerMemory(userOrId = null, patch = {}) {
+  const uid = resolveMemoryUserId(userOrId);
+  const prefs = getLearnerMemoryPreferences(uid);
+  if (!prefs.memoryEnabled) {
+    return { updated: false, reason: 'memory_disabled', memory: createEmptyControlledMemory(false) };
+  }
+
+  const current = getControlledLearnerMemory(uid);
+  const sanitizeStr = (val, maxLen = 120) =>
+    String(val || '')
+      .replace(/Bearer\s+[A-Za-z0-9._~+/-]+=*/gi, '[REDACTED]')
+      .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, '[REDACTED_EMAIL]')
+      .trim()
+      .slice(0, maxLen);
+
+  const nextTopics = Array.isArray(patch.recentTopics)
+    ? Array.from(new Set([...patch.recentTopics.map((t) => sanitizeStr(t, 60)), ...current.recentTopics].filter(Boolean))).slice(0, 10)
+    : current.recentTopics;
+
+  const nextMistakes = Array.isArray(patch.confirmedMistakes)
+    ? Array.from(new Set([...patch.confirmedMistakes.map((m) => sanitizeStr(m, 100)), ...current.confirmedMistakes].filter(Boolean))).slice(0, 10)
+    : current.confirmedMistakes;
+
+  const nextSummary =
+    typeof patch.sessionSummary === 'string'
+      ? sanitizeStr(patch.sessionSummary, 600)
+      : current.sessionSummary;
+
+  const nextMemory = {
+    version: 1,
+    memoryEnabled: true,
+    recentTopics: nextTopics,
+    confirmedMistakes: nextMistakes,
+    sessionSummary: nextSummary,
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    localStorage.setItem(getControlledMemoryStorageKey(uid), JSON.stringify(nextMemory));
+    return { updated: true, memory: nextMemory };
+  } catch (err) {
+    return { updated: false, reason: err.message, memory: current };
+  }
+}
+
+export function clearControlledLearnerMemory(userOrId = null) {
+  const uid = resolveMemoryUserId(userOrId);
+  try {
+    localStorage.removeItem(getControlledMemoryStorageKey(uid));
+    return { success: true, userId: uid };
+  } catch (err) {
+    return { success: false, userId: uid, error: err.message };
+  }
+}

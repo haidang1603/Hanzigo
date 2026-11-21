@@ -51,7 +51,8 @@ export default function Footer({ setActiveTab, user = null }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [todayLesson, setTodayLesson] = useState(DEFAULT_WELCOME_LESSON);
   const [showLessonModal, setShowLessonModal] = useState(false);
-  const [currentQuote, setCurrentQuote] = useState(DEFAULT_QUOTE);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [currentQuote, setCurrentQuote] = useState(() => getDailyQuote() || DEFAULT_QUOTE);
   const [quotesPool, setQuotesPool] = useState(null);
 
   useEffect(() => {
@@ -59,10 +60,45 @@ export default function Footer({ setActiveTab, user = null }) {
     fetchDailyQuotes().then(quotes => {
       if (isMounted && quotes && quotes.length > 0) {
         setQuotesPool(quotes);
+        setCurrentQuote(calculateQuoteOfTheDay(quotes));
       }
     }).catch(() => {});
     return () => { isMounted = false; };
   }, []);
+
+  // Tự động đổi câu châm ngôn mới khi sang ngày mới (lúc 00:00 hoặc khi quay lại tab)
+  useEffect(() => {
+    const syncQuoteForToday = () => {
+      setCurrentQuote(calculateQuoteOfTheDay(quotesPool || undefined));
+    };
+
+    const scheduleMidnightRefresh = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
+      const msUntilMidnight = Math.max(1000, nextMidnight.getTime() - now.getTime());
+      return setTimeout(() => {
+        syncQuoteForToday();
+        timerId = scheduleMidnightRefresh();
+      }, msUntilMidnight);
+    };
+
+    let timerId = scheduleMidnightRefresh();
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        syncQuoteForToday();
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibility);
+    }
+
+    return () => {
+      clearTimeout(timerId);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibility);
+      }
+    };
+  }, [quotesPool]);
 
   const handleNextQuote = () => {
     playClickSound();
@@ -449,6 +485,87 @@ export default function Footer({ setActiveTab, user = null }) {
             )}
           </div>
         </div>
+
+        {/* Non-commercial & Donate Coffee/Pho Section */}
+        <div className="mt-8 mb-6 p-5 sm:p-6 rounded-2xl bg-white/[0.04] border border-white/10 flex flex-col sm:flex-row items-center gap-5 sm:gap-7 relative z-10">
+          <div className="flex-1 space-y-2.5 text-center sm:text-left">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-[11px] font-bold">
+              <ShieldCheck size={13} />
+              <span>Phi thương mại • Miễn phí • Không quảng cáo</span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed break-words">
+              Mình tạo ra trang web này với mục đích phi thương mại và free cho mọi người, sẽ không có quảng cáo để mọi người có thể trải nghiệm tốt nhất. Bạn nào muốn góp ý gì thì liên hệ mình ở phía trên nha.
+            </p>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed break-words">
+              Còn bạn nào có lòng hảo tâm thì cho mình ly cà phê hoặc bát phở để mình có động lực phát triển trang web thêm. Cảm ơn mọi người đã ủng hộ! ☕🍜
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              playClickSound();
+              setShowQrModal(true);
+            }}
+            className="relative shrink-0 p-1 rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition-transform cursor-pointer"
+            title="Nhấn để phóng to mã QR"
+          >
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 scale-150 animate-spin"
+              style={{
+                background: 'conic-gradient(from 0deg, #E85D3F, #F4B942, #45B97C, #38BDF8, #A855F7, #E85D3F)',
+                animationDuration: '4s',
+              }}
+            />
+            <div className="relative z-10 p-2.5 rounded-xl bg-white flex flex-col items-center">
+              <span className="absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t-2 border-l-2 border-[#E85D3F] rounded-tl-sm" />
+              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t-2 border-r-2 border-[#E85D3F] rounded-tr-sm" />
+              <span className="absolute bottom-1.5 left-1.5 w-2.5 h-2.5 border-b-2 border-l-2 border-[#45B97C] rounded-bl-sm" />
+              <span className="absolute bottom-1.5 right-1.5 w-2.5 h-2.5 border-b-2 border-r-2 border-[#45B97C] rounded-br-sm" />
+              <img
+                src="/images/donate-vietqr.jpg"
+                alt="Mã VietQR ủng hộ tác giả HanziGo"
+                loading="lazy"
+                className="w-24 sm:w-28 h-auto rounded-lg object-contain"
+              />
+            </div>
+          </button>
+        </div>
+
+        {/* Lightbox phóng to mã QR ủng hộ */}
+        {showQrModal && (
+          <div
+            onClick={() => setShowQrModal(false)}
+            className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-[#1E293B] rounded-3xl p-5 max-w-xs w-full text-center space-y-3 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold text-[#243447] dark:text-white">
+                  Mời tác giả ly cà phê / bát phở ☕🍜
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowQrModal(false)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <img
+                src="/images/donate-vietqr.jpg"
+                alt="VietQR MB Bank 0395095780 LE HAI DANG"
+                className="w-full h-auto rounded-2xl object-contain"
+              />
+              <p className="text-xs font-bold text-[#748092] dark:text-slate-300">
+                MB Bank · 0395095780 · LE HAI DANG
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-[#94A3B8] gap-4 relative z-10">

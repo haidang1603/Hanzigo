@@ -299,6 +299,63 @@ const tests = [
       assert.match(adminSrc, /overflow-x-auto max-w-full/, 'AdminPage user table must wrap with overflow-x-auto max-w-full');
     },
   },
+  {
+    name: '13. [Task 39.09] PronunciationPage prioritizes mic column first on mobile and keeps Lab tab route',
+    fn: () => {
+      const src = readRel('src/pages/PronunciationPage.jsx');
+      assert.match(src, /order-first\s+lg:order-none/, 'PronunciationPage mic column must appear first on mobile');
+      assert.match(src, /ChinesePronunciationLab/, 'PronunciationPage must keep Pronunciation Lab');
+    },
+  },
+  {
+    name: '14. [Task 39.09] ConversationPage uses responsive dvh chat height and safe-area input bar',
+    fn: () => {
+      const src = readRel('src/pages/ConversationPage.jsx');
+      assert.match(src, /max-h-\[70dvh\]/, 'ConversationPage chat box must use max-h-[70dvh] on mobile');
+      assert.match(src, /pb-\[max\(0\.75rem,env\(safe-area-inset-bottom\)\)\]/, 'ConversationPage input bar must include safe-area-inset-bottom');
+    },
+  },
+  {
+    name: '15. [Task 39.09] HskPracticePage, MaterialsPage & CommunityPage use collapsible mobile filters (min-h-11 sm:hidden)',
+    fn: () => {
+      for (const rel of [
+        'src/pages/HskPracticePage.jsx',
+        'src/pages/MaterialsPage.jsx',
+        'src/pages/CommunityPage.jsx',
+      ]) {
+        const src = readRel(rel);
+        assert.match(src, /sm:hidden[^"']*min-h-11|min-h-11[^"']*sm:hidden/, `${rel} must include a min-h-11 sm:hidden mobile filter toggle`);
+      }
+    },
+  },
+  {
+    name: '16. [Task 39.09] LiveClassroomPage uses compact mobile header (h-12 sm:h-16) and flexible min-h-0 stage',
+    fn: () => {
+      const src = readRel('src/pages/LiveClassroomPage.jsx');
+      assert.match(src, /h-12\s+sm:h-16/, 'LiveClassroomPage header must use h-12 sm:h-16');
+      assert.match(src, /min-h-0/, 'LiveClassroomPage stage must use min-h-0 for small/landscape viewports');
+    },
+  },
+  {
+    name: '17. [Task 39.09] ReaderPage scopes sticky Word Inspector to lg:sticky lg:top-6',
+    fn: () => {
+      const src = readRel('src/pages/ReaderPage.jsx');
+      assert.match(src, /lg:sticky\s+lg:top-6/, 'ReaderPage Word Inspector must use lg:sticky lg:top-6');
+    },
+  },
+  {
+    name: '18. [Task 39.09] TeacherDashboardPage & AdminPage pair overflow-x-auto max-w-full tables with sm:hidden scroll hints',
+    fn: () => {
+      for (const rel of [
+        'src/pages/TeacherDashboardPage.jsx',
+        'src/pages/AdminPage.jsx',
+      ]) {
+        const src = readRel(rel);
+        assert.match(src, /overflow-x-auto max-w-full/, `${rel} must keep overflow-x-auto max-w-full`);
+        assert.match(src, /sm:hidden[^>]*>Vuốt ngang để xem đầy đủ cột/, `${rel} must render sm:hidden horizontal scroll hint`);
+      }
+    },
+  },
 ];
 
 let passed = 0;

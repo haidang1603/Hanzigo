@@ -26,9 +26,11 @@
  * =========================================================================
  */
 
-import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
-import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
-import { callUnifiedAiProvider } from '../../_utils/aiProviderAdapter.js';
+import { checkRateLimitAndQuota, recordAgentQuotaWeight } from '../../_utils/distributedRateLimiter.js';
+import { verifyRequestAuth, getSupabaseAdminClient, sendSafeServerError } from '../../_utils/supabaseServer.js';
+import { runAgentOrchestrator } from '../../_agent/orchestrator.js';
+import { validateAgentInput } from '../../_agent/guardrails.js';
+import { AGENT_INTENTS } from '../../_agent/contracts.js';
 import {
   retrieveRagKnowledge,
   formatKnowledgeForPrompt,
@@ -363,10 +365,11 @@ export default async function handler(req, res) {
     });
   }
 
-  // Phát hiện Prompt Injection & Ký tự độc hại
-  if (detectAbuseOrInjection(cleanQuestion)) {
+  // Phát hiện Prompt Injection & Ký tự độc hại (dùng chung Guardrails Task 02)
+  const inputGuard = validateAgentInput({ text: cleanQuestion, maxLength: MAX_QUESTION_LENGTH });
+  if (!inputGuard.allowed || detectAbuseOrInjection(cleanQuestion)) {
     return res.status(400).json({
-      error: 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.'
+      error: inputGuard.reason || 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.'
     });
   }
 
@@ -574,56 +577,112 @@ export default async function handler(req, res) {
     { role: 'user', content: cleanQuestion }
   ];
 
-  // 7. GỌI GOOGLE GEMINI AI GATEWAY
+  // 7. GỌI STATELESS AGENT ORCHESTRATOR (Task 06-07)
   try {
-    const aiResult = await callUnifiedAiProvider({
-      action: 'tutor_qa',
-      messages,
-      temperature: 0.6,
-      maxTokens: MAX_OUTPUT_TOKENS,
-      timeoutMs: 45000
+    const mappedIntent =
+      activeMode === 'explain_hsk_mistake'
+        ? AGENT_INTENTS.HSK_EXAM_COACH
+        : activeMode === 'sentence_doctor'
+          ? AGENT_INTENTS.GRAMMAR_TUTOR
+          : null;
+
+    const agentResult = await runAgentOrchestrator({
+      message: cleanQuestion,
+      history: safeHistory,
+      hskLevel: effectiveHskLevel,
+      explicitIntent: mappedIntent,
+      executionContext: {
+        user: auth.user,
+        role: auth.user?.role || 'student',
+        supabaseClient: adminClientForTutor,
+        isActiveExamSession: Boolean(req.body?.isActiveExamSession),
+        memoryEnabled:
+          typeof req.body?.memory_enabled === 'boolean'
+            ? req.body.memory_enabled
+            : typeof req.body?.memoryEnabled === 'boolean'
+              ? req.body.memoryEnabled
+              : true,
+        sessionSummary:
+          typeof req.body?.session_summary === 'string'
+            ? req.body.session_summary
+            : typeof req.body?.sessionSummary === 'string'
+              ? req.body.sessionSummary
+              : '',
+        learnerProfile: sanitizedLearner
+          ? {
+              learningGoal: sanitizedLearner.learningGoal,
+              completedLessonsCount: sanitizedLearner.completedLessonsCount,
+            }
+          : null,
+        learningMemory: sanitizedLearner
+          ? {
+              confirmedMistakes: sanitizedLearner.confirmedMistakes,
+              dueVocabWords: (adaptiveProfile?.targetVocabList || []).slice(0, 5).map((v) => v.simplified),
+            }
+          : null,
+        learnerContextSummary: extraModePrompt,
+      },
     });
 
+    if (agentResult.blocked) {
+      return res.status(400).json({
+        error: agentResult.answer || 'Yêu cầu chứa cú pháp không hợp lệ.',
+        code: agentResult.metadata?.blockCode || 'blocked_by_guardrail',
+      });
+    }
+
     let tutorData = null;
-    let providerInfo = {
-      provider: aiResult.provider || 'offline_deterministic',
-      model: aiResult.model || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
-      usage: aiResult.usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-      costUsd: aiResult.costUsd || 0,
-      latencyMs: aiResult.latencyMs || 0
+    const providerInfo = {
+      provider: agentResult.metadata?.fallbackUsed ? 'deterministic_pedagogical_engine' : 'gemini_agent',
+      model: agentResult.metadata?.model || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+      usage: agentResult.metadata?.usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      costUsd: agentResult.metadata?.costUsd || 0,
+      latencyMs: agentResult.metadata?.latencyMs || 0,
     };
 
-    if (aiResult.success && aiResult.data) {
-      tutorData = aiResult.data;
-
-      // Bảo đảm next_learning_step luôn hiện diện trong dữ liệu trả về
-      if (!tutorData.next_learning_step) {
-        tutorData.next_learning_step = {
-          action: sanitizedLearner?.hasSparseData ? 'start_lesson' : 'review_vocab',
-          target_topic: tutorData.hanzi || 'Bài học lộ trình',
-          recommended_lesson_id: sanitizedLearner?.activeLessonId || 'l-101',
-          reason: 'Tiếp tục rèn luyện theo lộ trình chuẩn HSK'
-        };
-      }
+    if (agentResult.structured && typeof agentResult.structured === 'object' && agentResult.structured.answer) {
+      tutorData = { ...agentResult.structured };
+    } else if (!agentResult.metadata?.fallbackUsed && agentResult.answer) {
+      tutorData = {
+        answer: agentResult.answer,
+        hanzi: null,
+        pinyin: null,
+        vietnamese_translation: null,
+        grounded_facts: (agentResult.citations || []).map((c) => c.title || c.source_id).filter(Boolean),
+        supplementary_explanation: null,
+        examples: [],
+        hsk_level: effectiveHskLevel,
+        confirmed_mistake_note: null,
+      };
     } else {
-      // Khi AI Gateway không thành công (do 429 quota, 504 timeout, 404 model, hoặc cờ bảo vệ chi phí paidFallbackBlocked):
-      // Tuyệt đối không để ứng dụng crash hoặc gián đoạn học tập!
-      // Kích hoạt ngay bộ máy Sư phạm Ngoại tuyến (Deterministic Pedagogical Engine).
       tutorData = buildDeterministicTutorResponse({
         question: cleanQuestion,
         learnerLevel: effectiveHskLevel,
         contextType: safeContextType,
         ragChunks: ragResult?.chunks || [],
         queryMeta: ragResult?.queryMetadata || normalizeQueryForRetrieval(cleanQuestion),
-        learnerProfile: sanitizedLearner
+        learnerProfile: sanitizedLearner,
       });
+      if (agentResult.answer && (!tutorData.answer || agentResult.citations?.length > 0)) {
+        tutorData.answer = tutorData.answer || agentResult.answer;
+      }
       providerInfo.provider = 'deterministic_pedagogical_engine';
     }
 
-    // 8. ĐÓNG GÓI PHẢN HỒI AN TOÀN (RESPONSE ENVELOPE)
+    if (!tutorData.next_learning_step) {
+      tutorData.next_learning_step = {
+        action: sanitizedLearner?.hasSparseData ? 'start_lesson' : 'review_vocab',
+        target_topic: tutorData.hanzi || 'Bài học lộ trình',
+        recommended_lesson_id: sanitizedLearner?.activeLessonId || 'l-101',
+        reason: 'Tiếp tục rèn luyện theo lộ trình chuẩn HSK',
+      };
+    }
+
+    // 8. ĐÓNG GÓI PHẢN HỒI AN TOÀN (BACKWARD-COMPATIBLE + ADDITIVE AGENT FIELDS)
     const answerMarkdown =
       tutorData?.explanation ||
       tutorData?.grammar_rule ||
+      tutorData?.answer ||
       (contextualKnowledge?.contextBlocks?.length
         ? contextualKnowledge.contextBlocks.map((b) => `**${b.title}**\n${b.body}`).join('\n\n')
         : cleanQuestion);
@@ -652,8 +711,31 @@ export default async function handler(req, res) {
         .slice(0, 3)
         .map((v) => v.simplified),
       groundedSourcesCount:
-        (ragResult?.chunks?.length || 0) + (contextualKnowledge?.contextBlocks?.length || 0),
+        (ragResult?.chunks?.length || 0) +
+        (contextualKnowledge?.contextBlocks?.length || 0) +
+        (agentResult.citations?.length || 0),
     };
+
+    const isGrounded =
+      hasGroundedKnowledge ||
+      (contextualKnowledge?.contextBlocks?.length || 0) > 0 ||
+      agentResult.evidenceStatus === 'grounded';
+
+    const mergedCitations = isGrounded
+      ? activeMode
+        ? interactiveCitations
+        : citations.length > 0
+          ? citations
+          : (agentResult.citations || []).map((c, idx) => ({
+              index: idx + 1,
+              source_title: c.title || c.source_id,
+              source_url: 'https://hanzigo-xi.vercel.app',
+              section: c.type || 'curriculum',
+              license_identifier: 'CC-BY-SA-4.0',
+              attribution: 'HanziGo Curated Knowledge',
+              confidence: 1,
+            }))
+      : [];
 
     const responsePayload = {
       success: true,
@@ -661,15 +743,17 @@ export default async function handler(req, res) {
       data: tutorData,
       answerMarkdown,
       structuredBreakdown,
-      citations: activeMode ? interactiveCitations : citations,
+      citations: mergedCitations,
       interactive_citations: interactiveCitations,
-      evidence_status:
-        hasGroundedKnowledge || (contextualKnowledge?.contextBlocks?.length || 0) > 0
-          ? 'grounded'
-          : 'insufficient_evidence',
+      evidence_status: isGrounded ? 'grounded' : 'insufficient_evidence',
       context_type: safeContextType,
       learner_level: effectiveHskLevel,
       conversation_id: conversation_id || null,
+      // Additive Lão Sư AI Agent fields
+      tools_used: agentResult.toolsUsed || [],
+      ui_actions: agentResult.uiActions || [],
+      pending_confirmations: agentResult.pendingConfirmations || [],
+      agent_metadata: agentResult.metadata || {},
       _metadata: {
         provider: providerInfo.provider,
         model: providerInfo.model,
@@ -679,16 +763,23 @@ export default async function handler(req, res) {
         rag_latency_ms: ragLatencyMs,
         rag_mode: ragResult?.retrievalMode || 'none',
         personalized: Boolean(sanitizedLearner),
-        sanitized: true
-      }
+        sanitized: true,
+      },
     };
+
+    if ((agentResult.metadata?.toolCallsCount || 0) >= 2) {
+      await recordAgentQuotaWeight({
+        clientKey,
+        toolCallsCount: agentResult.metadata.toolCallsCount,
+        windowMs: RATE_LIMIT_WINDOW_MS,
+        maxRequests: RATE_LIMIT_MAX_REQUESTS,
+        dailyQuotaMax: DAILY_QUOTA_MAX_REQUESTS,
+        prefix: 'tutor',
+      }).catch(() => null);
+    }
 
     return res.status(200).json(responsePayload);
   } catch (err) {
-    // Không rò rỉ secret hoặc stack trace ra bên ngoài
-    console.error('Tutor API server error:', err.message);
-    return res.status(500).json({
-      error: 'Đã xảy ra lỗi nội bộ khi xử lý phản hồi từ Gia sư AI.'
-    });
+    return sendSafeServerError(res, 'Đã xảy ra lỗi nội bộ khi xử lý phản hồi từ Gia sư AI.', err);
   }
 }

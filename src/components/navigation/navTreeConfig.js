@@ -13,7 +13,6 @@ import {
   Users,
   Trophy,
   ShieldCheck,
-  Target,
   Brain,
   Video,
   Languages,
@@ -84,7 +83,7 @@ export function filterTreeNodes(nodes, normalizedFilter) {
 
 export const CORE_TREE_ITEMS = [
   { key: 'home', id: 'home', label: 'Trang chủ', icon: Home },
-  { key: 'intelligence', id: 'intelligence', label: 'Trung tâm AI Học tập', icon: Brain },
+  { key: 'intelligence', id: 'intelligence', label: 'Trung tâm AI Học tập', icon: BarChart3 },
   { key: 'roadmap', id: 'roadmap', label: 'Lộ trình HSK', icon: Compass },
   {
     key: 'hsk',
@@ -361,28 +360,12 @@ export const SKILLS_TREE_ITEMS = [
             badge: 'AI',
             match: (tab, sub) => tab === 'conversation' && sub === 'tutor',
           },
-          {
-            key: 'conversation:listening',
-            id: 'conversation',
-            hash: '#conversation/listening',
-            label: 'Luyện Nghe Phản Xạ',
-            icon: Headphones,
-            match: (tab, sub) => tab === 'conversation' && sub === 'listening',
-          },
-          {
-            key: 'conversation:grammar',
-            id: 'conversation',
-            hash: '#conversation/grammar',
-            label: 'Ngữ Pháp Hội Thoại',
-            icon: Sparkles,
-            match: (tab, sub) => tab === 'conversation' && sub === 'grammar',
-          },
         ],
       },
       { key: 'hsk30-translation', id: 'hsk30-translation', label: 'Xưởng Dịch & HSK 7–9', icon: Languages },
     ],
   },
-  { key: 'practice', id: 'practice', label: 'Trung tâm tổng hợp', icon: Target },
+  { key: 'practice', id: 'practice', label: 'Trung tâm tổng hợp', icon: LayoutGrid },
 ];
 
 export const EXPLORE_TREE_ITEMS = [

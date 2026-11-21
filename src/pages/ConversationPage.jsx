@@ -32,20 +32,18 @@ import { useUnifiedTools } from '../core/ecosystem/UnifiedToolsContext.tsx';
 import { triggerCloudSync } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
 import { sendTutorMessage } from '../services/aiTutorService';
-import ListeningPracticeView from '../components/depth/ListeningPracticeView';
-import GrammarEngineView from '../components/depth/GrammarEngineView';
 import AiTutorChatView from '../components/depth/AiTutorChatView';
 import RoleplayStudioModal from '../components/learning/RoleplayStudioModal';
 import { SPECIAL_ROLEPLAY_SCENARIOS } from '../utils/roleplayScenarioBuilder';
 
 const STORAGE_KEY = 'hanzigo_ai_chat_history';
 
-const CONVERSATION_VALID_MODES = ['roleplay', 'conversation', 'tutor', 'listening', 'grammar'];
+const CONVERSATION_VALID_MODES = ['roleplay', 'conversation', 'tutor'];
 
 export default function ConversationPage({ user, openAuthModal, initialMode = 'roleplay' }) {
   const [activeDepthTab, setActiveDepthTab] = useState(() => (
     CONVERSATION_VALID_MODES.includes(initialMode) ? initialMode : 'roleplay'
-  )); // 'roleplay' | 'tutor' | 'listening' | 'grammar'
+  )); // 'roleplay' | 'tutor'
 
   useEffect(() => {
     if (initialMode && CONVERSATION_VALID_MODES.includes(initialMode)) {
@@ -458,93 +456,67 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">
-            Luyện phản xạ giao tiếp thực tế
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white">
-            Hội Thoại AI Tiểu Hàm (小涵)
-          </h1>
-          <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-0.5">
-            Nhập vai tình huống thực tế, đối thoại trực tiếp và tự động lưu lại toàn bộ lịch sử học tập.
-          </p>
-        </div>
-
-        {/* Global toggles, Privacy badge & History Button */}
-        <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
-          <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-            <ShieldCheck size={14} className="text-emerald-600 dark:text-emerald-400" />
-            <span>Zero Audio Retention</span>
+      {/* Header (Chỉ hiển thị ở chế độ Hội thoại AI Tiểu Hàm, ẩn khi vào AI Lão Sư) */}
+      {activeDepthTab !== 'tutor' && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span className="text-xs font-bold text-[#E85D3F] uppercase tracking-wider">
+              Luyện phản xạ giao tiếp thực tế
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black text-[#243447] dark:text-white">
+              Hội Thoại AI Tiểu Hàm (小涵)
+            </h1>
+            <p className="text-xs sm:text-sm text-[#748092] dark:text-[#94A3B8] mt-0.5">
+              Nhập vai tình huống thực tế, đối thoại trực tiếp và tự động lưu lại toàn bộ lịch sử học tập.
+            </p>
           </div>
 
-          <button
-            onClick={() => setIsHistoryModalOpen(true)}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-[#243447] dark:text-white hover:border-[#E85D3F] transition-colors flex items-center gap-1.5 shadow-xs"
-            title="Xem danh sách lịch sử hội thoại đã lưu"
-          >
-            <History size={14} className="text-[#E85D3F]" />
-            <span>Lịch sử trò chuyện</span>
-          </button>
+          {/* Global toggles, Privacy badge & History Button */}
+          <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+              <ShieldCheck size={14} className="text-emerald-600 dark:text-emerald-400" />
+              <span>Zero Audio Retention</span>
+            </div>
 
-          <button
-            onClick={() => {
-              playClickSound();
-              setShowPinyin(!showPinyin);
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${
-              showPinyin 
-                ? 'bg-[#FDEEEB] dark:bg-[#2D1E1B] border-[#E85D3F] text-[#E85D3F]' 
-                : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092]'
-            }`}
-          >
-            <span>{showPinyin ? 'Ẩn Pinyin' : 'Hiện Pinyin'}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              playClickSound();
-              setShowTranslation(!showTranslation);
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${
-              showTranslation 
-                ? 'bg-[#EBF8F2] dark:bg-[#162B21] border-[#45B97C] text-[#45B97C]' 
-                : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092]'
-            }`}
-          >
-            <span>{showTranslation ? 'Ẩn Dịch VN' : 'Hiện Dịch VN'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Segmented Mode Switcher - 4 Clean, Non-overlapping Pillars */}
-      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 bg-white dark:bg-[#1E293B] p-1.5 sm:p-2 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm max-w-2xl mx-auto">
-        {[
-          { id: 'roleplay', label: '🎭 Hội Thoại Nhập Vai' },
-          { id: 'tutor', label: '🎓 Gia Sư AI Lão Sư' },
-          { id: 'listening', label: '🎧 Luyện Nghe' },
-          { id: 'grammar', label: '🧱 Ngữ Pháp' }
-        ].map((tab) => {
-          const isSelected = activeDepthTab === tab.id || (tab.id === 'roleplay' && activeDepthTab === 'conversation');
-          return (
             <button
-              key={tab.id}
+              onClick={() => setIsHistoryModalOpen(true)}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-[#243447] dark:text-white hover:border-[#E85D3F] transition-colors flex items-center gap-1.5 shadow-xs"
+              title="Xem danh sách lịch sử hội thoại đã lưu"
+            >
+              <History size={14} className="text-[#E85D3F]" />
+              <span>Lịch sử trò chuyện</span>
+            </button>
+
+            <button
               onClick={() => {
                 playClickSound();
-                setActiveDepthTab(tab.id);
+                setShowPinyin(!showPinyin);
               }}
-              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
-                isSelected
-                  ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/30 scale-[1.02]'
-                  : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${
+                showPinyin 
+                  ? 'bg-[#FDEEEB] dark:bg-[#2D1E1B] border-[#E85D3F] text-[#E85D3F]' 
+                  : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092]'
               }`}
             >
-              {tab.label}
+              <span>{showPinyin ? 'Ẩn Pinyin' : 'Hiện Pinyin'}</span>
             </button>
-          );
-        })}
-      </div>
+
+            <button
+              onClick={() => {
+                playClickSound();
+                setShowTranslation(!showTranslation);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${
+                showTranslation 
+                  ? 'bg-[#EBF8F2] dark:bg-[#162B21] border-[#45B97C] text-[#45B97C]' 
+                  : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092]'
+              }`}
+            >
+              <span>{showTranslation ? 'Ẩn Dịch VN' : 'Hiện Dịch VN'}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* MODE: AI TUTOR RAG (LÃO SƯ HANZIGO) */}
       {activeDepthTab === 'tutor' && (
@@ -794,30 +766,30 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
           </div>
 
           {/* Main Dialogue Box */}
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl overflow-hidden flex flex-col h-[650px]">
+          <div className="bg-white dark:bg-[#1E293B] rounded-2xl sm:rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl overflow-hidden flex flex-col min-h-96 max-h-[70dvh] sm:max-h-none sm:h-[650px]">
         
         {/* Scenario Header Bar with Adjustable Proficiency & Privacy Controls */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-[#FFF9F2] to-white dark:from-[#131B24] dark:to-[#1E293B] border-b border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="p-3 sm:p-5 bg-gradient-to-r from-[#FFF9F2] to-white dark:from-[#131B24] dark:to-[#1E293B] border-b border-[#F1E5D8] dark:border-[#2B3A4F] flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <img 
               src={conversation.avatar} 
               alt={conversation.aiName} 
-              className="w-10 h-10 rounded-full object-cover border-2 border-[#E85D3F]"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-[#E85D3F] shrink-0"
             />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-[#243447] dark:text-white">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-bold text-[#243447] dark:text-white truncate">
                   {conversation.aiName}
                 </span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] font-semibold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#45B97C] animate-pulse" />
                   <span>Trực tuyến</span>
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FFF9F2] dark:bg-[#131B24] text-[#E85D3F] border border-[#E85D3F]/30 font-medium">
+                <span className="hidden sm:inline-flex text-[10px] px-2 py-0.5 rounded-full bg-[#FFF9F2] dark:bg-[#131B24] text-[#E85D3F] border border-[#E85D3F]/30 font-medium">
                   Đã tự động lưu ({chatHistory.length} tin)
                 </span>
               </div>
-              <p className="text-[11px] text-[#748092] dark:text-[#94A3B8]">
+              <p className="text-[11px] text-[#748092] dark:text-[#94A3B8] truncate">
                 {conversation.scenario}
               </p>
             </div>
@@ -880,30 +852,30 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
         </div>
 
         {/* Chat Messages Body */}
-        <div ref={chatContainerRef} className="flex-1 p-6 overflow-y-auto space-y-4">
+        <div ref={chatContainerRef} className="flex-1 min-h-0 p-3 sm:p-6 overflow-y-auto space-y-3 sm:space-y-4">
           {chatHistory.map((msg, idx) => {
             const isAI = msg.speaker === 'ai';
             return (
               <div 
                 key={idx}
-                className={`flex items-start gap-3 ${isAI ? 'justify-start' : 'justify-end'}`}
+                className={`flex items-start gap-2 sm:gap-3 ${isAI ? 'justify-start' : 'justify-end'}`}
               >
                 {isAI && (
                   <img 
                     src={conversation.avatar} 
                     alt="AI" 
-                    className="w-8 h-8 rounded-full object-cover shrink-0 mt-1 border border-[#E85D3F]"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shrink-0 mt-1 border border-[#E85D3F]"
                   />
                 )}
 
-                <div className={`max-w-md sm:max-w-lg rounded-2xl p-4 shadow-sm space-y-1.5 ${
+                <div className={`max-w-md sm:max-w-lg rounded-2xl p-3 sm:p-4 shadow-sm space-y-1.5 min-w-0 break-words ${
                   isAI 
                     ? 'bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white rounded-tl-sm' 
                     : 'bg-[#E85D3F] text-white rounded-tr-sm'
                 }`}>
                   {/* Chinese Text */}
-                  <div className="flex items-center justify-between gap-3">
-                    <p className={`font-['Noto_Serif_SC'] text-base sm:text-lg font-bold leading-relaxed ${
+                  <div className="flex items-center justify-between gap-2 sm:gap-3">
+                    <p className={`font-['Noto_Serif_SC'] text-base sm:text-lg font-bold leading-relaxed break-words ${
                       isAI ? 'text-[#243447] dark:text-white' : 'text-white'
                     }`}>
                       {msg.hanzi}
@@ -1064,12 +1036,12 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
         )}
 
         {/* Input Bar */}
-        <form onSubmit={handleCustomSend} className="p-4 bg-white dark:bg-[#1E293B] border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center gap-2">
+        <form onSubmit={handleCustomSend} className="p-2.5 sm:p-4 bg-white dark:bg-[#1E293B] border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center gap-1.5 sm:gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={handleToggleMic}
             title={isListening ? "Đang ghi âm (Bấm để dừng)" : "Luyện nói qua Microphone"}
-            className={`p-2.5 rounded-xl border transition-all ${
+            className={`min-w-11 min-h-11 flex items-center justify-center rounded-xl border transition-all shrink-0 cursor-pointer ${
               isListening
                 ? 'bg-red-500 text-white border-red-600 animate-pulse shadow-md'
                 : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#E85D3F] hover:bg-[#FDEEEB] border-[#F1E5D8] dark:border-[#2B3A4F]'
@@ -1080,16 +1052,16 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
 
           <input
             type="text"
-            placeholder={isListening ? "Đang nghe bạn nói tiếng Trung..." : "Nhập câu trả lời bằng tiếng Trung hoặc pinyin..."}
+            placeholder={isListening ? "Đang nghe bạn nói tiếng Trung..." : "Nhập câu trả lời..."}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+            className="flex-1 min-w-0 min-h-11 px-3 sm:px-4 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
           />
 
           <button
             type="submit"
             disabled={!inputText.trim()}
-            className="px-5 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] disabled:opacity-40 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+            className="min-h-11 px-3.5 sm:px-5 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] disabled:opacity-40 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
           >
             <span>Gửi</span>
             <Send size={14} />
@@ -1100,16 +1072,6 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
             </div>
           )}
         </div>
-      )}
-
-      {/* MODE: LISTENING PRACTICE */}
-      {activeDepthTab === 'listening' && (
-        <ListeningPracticeView />
-      )}
-
-      {/* MODE: GRAMMAR ENGINE */}
-      {activeDepthTab === 'grammar' && (
-        <GrammarEngineView />
       )}
 
       {/* History Manager Modal */}

@@ -272,10 +272,10 @@ export default function LeaderboardView({ user, onNavigateTab }) {
               </div>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight">
               Bảng Vàng Danh Dự & Đấu Trường XP
             </h1>
-            <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
+            <p className="hidden sm:block text-xs sm:text-sm text-white/70 leading-relaxed">
               Thi đua xếp hạng, thăng hạng 5 giải đấu danh giá và nhận vinh danh tuần. Tích lũy XP qua từng bài học, phát âm và tập viết chữ Hán!
             </p>
           </div>
@@ -778,7 +778,7 @@ export default function LeaderboardView({ user, onNavigateTab }) {
         ) : (
           <div>
             {/* Zone Legend */}
-            <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5 bg-gray-50/70 dark:bg-gray-800/40 border-b border-[#F1E5D8] dark:border-[#2B3A4F] text-[10px] text-[#748092] dark:text-[#94A3B8]">
+            <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 px-5 py-2.5 bg-gray-50/70 dark:bg-gray-800/40 border-b border-[#F1E5D8] dark:border-[#2B3A4F] text-[10px] text-[#748092] dark:text-[#94A3B8]">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400">
                   <ArrowUp size={12} />
@@ -803,7 +803,10 @@ export default function LeaderboardView({ user, onNavigateTab }) {
               <div className="col-span-2 sm:col-span-1 text-center">Hạng</div>
               <div className="col-span-6 sm:col-span-5">Học viên</div>
               <div className="hidden sm:block sm:col-span-3 text-center">Giải đấu & Danh hiệu</div>
-              <div className="col-span-4 sm:col-span-3 text-right">Điểm kinh nghiệm</div>
+              <div className="col-span-4 sm:col-span-3 text-right">
+                <span className="sm:hidden">XP</span>
+                <span className="hidden sm:inline">Điểm kinh nghiệm</span>
+              </div>
             </div>
 
             {/* Rows */}
@@ -915,17 +918,17 @@ export default function LeaderboardView({ user, onNavigateTab }) {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] text-[#748092] dark:text-[#94A3B8] mt-0.5">
-                          <span className="px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 font-semibold">
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] text-[#748092] dark:text-[#94A3B8] mt-0.5">
+                          <span className="px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 font-semibold truncate">
                             {item.level}
                           </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-0.5">
+                          <span className="hidden sm:inline">•</span>
+                          <span className="hidden sm:flex items-center gap-0.5">
                             <span>{itemLeague.icon}</span>
                             <span className="font-semibold">{itemLeague.name}</span>
                           </span>
-                          <span>•</span>
-                          <span>🔥 {item.streak} ngày</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="shrink-0">🔥 {item.streak}<span className="hidden sm:inline"> ngày</span></span>
                         </div>
                       </div>
                     </div>
@@ -947,7 +950,7 @@ export default function LeaderboardView({ user, onNavigateTab }) {
                         <span>{(item.xp ?? 0).toLocaleString()}</span>
                         <span className="text-[10px] font-sans font-bold text-[#748092]">XP</span>
                       </div>
-                      <div className="text-[10px] text-[#748092] dark:text-[#94A3B8] sm:hidden truncate">
+                      <div className="hidden text-[10px] text-[#748092] dark:text-[#94A3B8] truncate">
                         {itemLeague.name} • {item.honorific}
                       </div>
                     </div>
