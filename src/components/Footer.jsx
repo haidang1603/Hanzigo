@@ -513,13 +513,6 @@ export default function Footer({ setActiveTab, user = null }) {
             >
               Tùy chọn lưu trữ
             </a>
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent('hanzigo_open_consent_modal'))}
-              className="text-[#94A3B8] hover:text-white transition-colors cursor-pointer text-xs"
-            >
-              Tùy chọn lưu trữ
-            </button>
           </div>
         </div>
       </div>
