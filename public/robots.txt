@@ -37,5 +37,5 @@ Disallow: /api/
 Disallow: /reset-password
 Disallow: /teacher
 
-Sitemap: https://hanzigo-xi.vercel.app/sitemap.xml
+Sitemap: https://www.hanzigo.io.vn/sitemap.xml
 

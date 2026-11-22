@@ -20,10 +20,10 @@ function readRel(relPath) {
 
 test('Task 39.06 (1): index.html includes canonical, OG, Twitter Card, manifest, theme-color & apple-touch-icon', () => {
   const html = readRel('index.html');
-  assert.match(html, /<link rel="canonical" href="https:\/\/hanzigo-xi\.vercel\.app\/"\s*\/>/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/www\.hanzigo\.io\.vn\/"\s*\/>/);
   assert.match(html, /<meta property="og:title"/);
   assert.match(html, /<meta property="og:description"/);
-  assert.match(html, /<meta property="og:image" content="https:\/\/hanzigo-xi\.vercel\.app\/og-image\.png"/);
+  assert.match(html, /<meta property="og:image" content="https:\/\/www\.hanzigo\.io\.vn\/og-image\.png"/);
   assert.match(html, /<meta name="twitter:card" content="summary_large_image"/);
   assert.match(html, /<link rel="manifest" href="\/manifest\.webmanifest"\s*\/>/);
   assert.match(html, /<meta name="theme-color" content="#E85D3F"\s*\/>/);
@@ -48,7 +48,7 @@ test('Task 39.06 (2): Dynamic route SEO & JSON-LD reflect HSK 1-9 product realit
 
 test('Task 39.06 (3): robots.txt & sitemap.xml are valid and protect private routes', () => {
   const robots = readRel('public/robots.txt');
-  assert.match(robots, /Sitemap:\s*https:\/\/hanzigo-xi\.vercel\.app\/sitemap\.xml/);
+  assert.match(robots, /Sitemap:\s*https:\/\/www\.hanzigo\.io\.vn\/sitemap\.xml/);
   assert.match(robots, /Disallow:\s*\/api\//);
   assert.match(robots, /Disallow:\s*\/admin/);
   assert.match(robots, /Disallow:\s*\/teacher/);

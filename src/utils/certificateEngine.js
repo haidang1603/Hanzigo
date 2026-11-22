@@ -239,7 +239,7 @@ export async function issueHskCertificate({
     completedLessonsCount: eligibility.completedLessons,
     isRevoked: false,
     disclaimer: HANZIGO_CERTIFICATE_DISCLAIMER,
-    verificationUrl: `https://hanzigo-xi.vercel.app/verify?code=${certificateId}`,
+    verificationUrl: `https://www.hanzigo.io.vn/verify?code=${certificateId}`,
     createdAt: new Date().toISOString()
   };
 
@@ -329,7 +329,7 @@ export async function getUserIssuedCertificates(user) {
           revokedAt: row.revoked_at,
           revocationReason: row.revocation_reason,
           disclaimer: HANZIGO_CERTIFICATE_DISCLAIMER,
-          verificationUrl: `https://hanzigo-xi.vercel.app/verify?code=${row.certificate_code}`
+          verificationUrl: `https://www.hanzigo.io.vn/verify?code=${row.certificate_code}`
         };
         mergedMap.set(row.certificate_code, certObj);
       });

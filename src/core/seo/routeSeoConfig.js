@@ -1,4 +1,4 @@
-export const SITE_ORIGIN = 'https://hanzigo-xi.vercel.app';
+export const SITE_ORIGIN = 'https://www.hanzigo.io.vn';
 export const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-image.png`;
 export const SITE_NAME = 'HanziGo';
 

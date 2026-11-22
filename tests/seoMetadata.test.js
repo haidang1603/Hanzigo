@@ -61,15 +61,15 @@ describe('robots.txt & sitemap.xml', () => {
     assert.match(robots, /Disallow:\s*\/admin/);
     assert.match(robots, /Disallow:\s*\/api\//);
     assert.match(robots, /Disallow:\s*\/reset-password/);
-    assert.match(robots, /Sitemap:\s*https:\/\/hanzigo-xi\.vercel\.app\/sitemap\.xml/);
+    assert.match(robots, /Sitemap:\s*https:\/\/www\.hanzigo\.io\.vn\/sitemap\.xml/);
   });
 
   it('configures sitemap.xml with public URLs and lastmod 2026-11-13', () => {
     const sitemap = fs.readFileSync(path.resolve('public/sitemap.xml'), 'utf8');
     assert.match(sitemap, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
-    assert.match(sitemap, /<loc>https:\/\/hanzigo-xi\.vercel\.app\/<\/loc>/);
-    assert.match(sitemap, /<loc>https:\/\/hanzigo-xi\.vercel\.app\/hsk-practice<\/loc>/);
-    assert.match(sitemap, /<loc>https:\/\/hanzigo-xi\.vercel\.app\/privacy-policy<\/loc>/);
+    assert.match(sitemap, /<loc>https:\/\/www\.hanzigo\.io\.vn\/<\/loc>/);
+    assert.match(sitemap, /<loc>https:\/\/www\.hanzigo\.io\.vn\/hsk-practice<\/loc>/);
+    assert.match(sitemap, /<loc>https:\/\/www\.hanzigo\.io\.vn\/privacy-policy<\/loc>/);
     assert.match(sitemap, /<lastmod>2026-11-13<\/lastmod>/);
   });
 });
