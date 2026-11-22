@@ -13,28 +13,19 @@
  *    3. generate_lesson_plan: Topic & Duration -> 7-phase pedagogical lesson plan
  */
 
+import crypto from 'node:crypto';
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
-import { verifyRequestAuth } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, sendSafeServerError } from '../../_utils/supabaseServer.js';
 import { callUnifiedAiProvider } from '../../_utils/aiProviderAdapter.js';
+import { AGENT_INTENTS } from '../../_agent/contracts.js';
+import { validateAgentInput, redactSensitiveData } from '../../_agent/guardrails.js';
+import { selectModelTier } from '../../_agent/modelRouter.js';
+import { buildAgentTraceRecord, emitAgentTrace } from '../../_agent/costAndObservability.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
 const DAILY_QUOTA_MAX_REQUESTS = 150;
-
-// Prompt injection & abuse detection patterns
-const INJECTION_PATTERNS = [
-  /ignore\s+(all\s+)?(previous|prior)\s+(instructions|prompts)/i,
-  /system\s+prompt\s+override/i,
-  /you\s+are\s+now\s+(an\s+unrestricted|DAN|jailbreak)/i,
-  /reveal\s+(your\s+)?(api[_\s]?key|secret|system\s+prompt)/i,
-  /drop\s+table\s+/i,
-  /<script\b[^>]*>/i
-];
-
-function detectAbuseOrInjection(text) {
-  if (!text || typeof text !== 'string') return false;
-  return INJECTION_PATTERNS.some(pattern => pattern.test(text));
-}
+const MAX_TEACHER_PAYLOAD_LEN = 15000;
 
 const SYSTEM_PROMPT_ANALYZE_CLASS = `
 Bạn là Cố vấn Sư phạm AI Cao cấp chuyên sâu về giảng dạy tiếng Trung Quốc cho học sinh Việt Nam theo khung HSK 3.0.
@@ -226,18 +217,39 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing or invalid action or payload in request body.' });
   }
 
-  // Anti-abuse & Prompt injection protection
-  if (payload.topic && detectAbuseOrInjection(String(payload.topic))) {
+  // Anti-abuse & Prompt injection protection via shared api/_agent guardrails
+  const payloadStr = JSON.stringify(payload);
+  const payloadGuard = validateAgentInput({ text: payloadStr, maxLength: MAX_TEACHER_PAYLOAD_LEN });
+  if (!payloadGuard.allowed) {
     return res.status(400).json({
-      error: 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.'
+      error: 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.',
     });
   }
 
-  if (payload.targetOutcomes && detectAbuseOrInjection(String(payload.targetOutcomes))) {
-    return res.status(400).json({
-      error: 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.'
-    });
+  if (payload.topic) {
+    const topicGuard = validateAgentInput({ text: String(payload.topic), maxLength: 1000 });
+    if (!topicGuard.allowed) {
+      return res.status(400).json({
+        error: 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.',
+      });
+    }
   }
+
+  if (payload.targetOutcomes) {
+    const outcomesGuard = validateAgentInput({ text: String(payload.targetOutcomes), maxLength: 1000 });
+    if (!outcomesGuard.allowed) {
+      return res.status(400).json({
+        error: 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.',
+      });
+    }
+  }
+
+  const traceId = crypto.randomUUID();
+  const startedAt = Date.now();
+  const route = selectModelTier({
+    intent: action === 'analyze_class' ? AGENT_INTENTS.PROGRESS_COACH : AGENT_INTENTS.WRITING_COACH,
+    hskLevel: payload.hskLevel || 'HSK 1',
+  });
 
   let systemPrompt = '';
   let userPrompt = '';
@@ -287,13 +299,26 @@ Mỗi câu có 4 đáp án (A, B, C, D), ghi rõ đáp án đúng và giải th�
     const aiResult = await callUnifiedAiProvider({
       action,
       systemPrompt,
-      userPrompt,
-      temperature: 0.6,
-      maxTokens: requestedTokens,
-      timeoutMs: requestedTimeout
+      userPrompt: redactSensitiveData(userPrompt),
+      temperature: route.temperature,
+      maxTokens: Math.max(requestedTokens, route.maxOutputTokens),
+      timeoutMs: Math.max(requestedTimeout, route.timeoutMs)
     });
 
     if (!aiResult.success) {
+      emitAgentTrace(
+        buildAgentTraceRecord({
+          traceId,
+          userId: auth.user.id,
+          intent: action === 'analyze_class' ? AGENT_INTENTS.PROGRESS_COACH : AGENT_INTENTS.WRITING_COACH,
+          tier: route.tier,
+          model: route.model,
+          latencyMs: Date.now() - startedAt,
+          status: 'provider_error',
+          fallbackUsed: true,
+          fallbackReason: aiResult.error || 'provider_unavailable',
+        })
+      );
       return res.status(aiResult.status || 502).json({
         error: aiResult.error || 'Dịch vụ AI phản hồi không thành công. Vui lòng thử lại sau.'
       });
@@ -311,14 +336,43 @@ Mỗi câu có 4 đáp án (A, B, C, D), ghi rõ đáp án đúng và giải th�
     parsed._metadata = {
       action,
       provider: aiResult.provider,
-      model: aiResult.model,
+      model: aiResult.model || route.model,
+      model_tier: route.tier,
+      route_reason: route.reason,
+      trace_id: traceId,
       usage: aiResult.usage,
       costUsd: aiResult.costUsd || 0,
       latencyMs: aiResult.latencyMs
     };
+
+    emitAgentTrace(
+      buildAgentTraceRecord({
+        traceId,
+        userId: auth.user.id,
+        intent: action === 'analyze_class' ? AGENT_INTENTS.PROGRESS_COACH : AGENT_INTENTS.WRITING_COACH,
+        tier: route.tier,
+        model: aiResult.model || route.model,
+        totalTokens: aiResult.usage?.totalTokens || 0,
+        costUsd: aiResult.costUsd || 0,
+        latencyMs: aiResult.latencyMs || Date.now() - startedAt,
+        status: 'ok',
+      })
+    );
     return res.status(200).json(parsed);
   } catch (err) {
-    console.error('Serverless Teacher AI error:', err.message);
-    return res.status(500).json({ error: 'Đã xảy ra lỗi nội bộ khi xử lý yêu cầu AI Giáo viên.' });
+    console.error('Serverless Teacher AI error:', redactSensitiveData(err?.message || ''));
+    emitAgentTrace(
+      buildAgentTraceRecord({
+        traceId,
+        userId: auth.user.id,
+        intent: action === 'analyze_class' ? AGENT_INTENTS.PROGRESS_COACH : AGENT_INTENTS.WRITING_COACH,
+        tier: route.tier,
+        model: route.model,
+        latencyMs: Date.now() - startedAt,
+        status: 'error',
+        errorCode: 'teacher_internal_error',
+      })
+    );
+    return sendSafeServerError(res, 'Đã xảy ra lỗi nội bộ khi xử lý yêu cầu AI Giáo viên.', err, 500);
   }
 }

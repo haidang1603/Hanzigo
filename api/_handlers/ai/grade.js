@@ -7,8 +7,14 @@
  * =========================================================================
  */
 
+import crypto from 'node:crypto';
 import { getGeminiApiKeys, markGeminiKeyRateLimited } from '../../_utils/aiProviderAdapter.js';
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
+import { sendSafeServerError } from '../../_utils/supabaseServer.js';
+import { AGENT_INTENTS } from '../../_agent/contracts.js';
+import { validateAgentInput, redactSensitiveData } from '../../_agent/guardrails.js';
+import { selectModelTier } from '../../_agent/modelRouter.js';
+import { buildAgentTraceRecord, emitAgentTrace } from '../../_agent/costAndObservability.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 30;
@@ -24,7 +30,7 @@ function getClientKey(req) {
   return `ip:${req.headers?.['x-real-ip'] || req.socket?.remoteAddress || 'anon-client'}`;
 }
 
-async function callGeminiJson({ systemInstruction, parts }) {
+async function callGeminiJson({ systemInstruction, parts, model = null }) {
   const apiKeys = getGeminiApiKeys();
   if (apiKeys.length === 0 && process.env.VITE_GEMINI_API_KEY) {
     apiKeys.push(process.env.VITE_GEMINI_API_KEY);
@@ -33,7 +39,7 @@ async function callGeminiJson({ systemInstruction, parts }) {
     throw new Error('NO_GEMINI_KEY');
   }
 
-  const geminiModel = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').replace(/^models\//, '');
+  const geminiModel = String(model || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').replace(/^models\//, '');
   const payload = {
     systemInstruction: { parts: [{ text: systemInstruction }] },
     contents: [{ role: 'user', parts }],
@@ -97,6 +103,13 @@ export default async function handler(req, res) {
 
     const body = req.body || {};
     const { type } = body;
+    const traceId = crypto.randomUUID();
+    const startedAt = Date.now();
+    const hskLevel = body?.task?.hskLevel || body?.level || 'HSK 5';
+    const route = selectModelTier({
+      intent: AGENT_INTENTS.WRITING_COACH,
+      hskLevel,
+    });
 
     if (type === 'hskk') {
       const {
@@ -118,6 +131,13 @@ export default async function handler(req, res) {
         return res.status(400).json({
           error: `Dữ liệu đầu vào vượt quá giới hạn cho phép (tối đa ${MAX_TEXT_LEN} ký tự).`,
         });
+      }
+
+      if (String(transcript || '').trim()) {
+        const guard = validateAgentInput({ text: String(transcript), maxLength: MAX_TEXT_LEN });
+        if (!guard.allowed) {
+          return res.status(400).json({ error: guard.reason });
+        }
       }
 
       const systemInstruction = `Bạn là giám khảo khảo thí HSKK (汉语水平口语考试) chuẩn quốc tế.
@@ -151,18 +171,35 @@ Trả về JSON:
 }`,
       });
 
-      const result = await callGeminiJson({ systemInstruction, parts });
-      return res.status(200).json({ success: true, result });
+      const result = await callGeminiJson({ systemInstruction, parts, model: route.model });
+      emitAgentTrace(
+        buildAgentTraceRecord({
+          traceId,
+          intent: AGENT_INTENTS.WRITING_COACH,
+          tier: route.tier,
+          model: route.model,
+          latencyMs: Date.now() - startedAt,
+          status: 'ok',
+        })
+      );
+      return res.status(200).json({
+        success: true,
+        result,
+        _metadata: { trace_id: traceId, model_tier: route.tier, model: route.model, route_reason: route.reason },
+      });
     }
 
     if (type === 'writing') {
       const { task = {}, responseText = '' } = body;
-      if (!String(responseText).trim()) {
-        return res.status(400).json({ error: 'Thiếu nội dung bài viết (responseText)' });
-      }
-      if (String(responseText).length > MAX_TEXT_LEN) {
+      const guard = validateAgentInput({ text: responseText, maxLength: MAX_TEXT_LEN });
+      if (!guard.allowed) {
         return res.status(400).json({
-          error: `Nội dung bài viết vượt quá giới hạn ${MAX_TEXT_LEN} ký tự.`,
+          error:
+            guard.code === 'empty_input'
+              ? 'Thiếu nội dung bài viết (responseText)'
+              : guard.code === 'input_too_long'
+                ? `Nội dung bài viết vượt quá giới hạn ${MAX_TEXT_LEN} ký tự.`
+                : guard.reason,
         });
       }
 
@@ -206,8 +243,23 @@ Trả về đúng JSON:
       const result = await callGeminiJson({
         systemInstruction,
         parts: [{ text: userText }],
+        model: route.model,
       });
-      return res.status(200).json({ success: true, result });
+      emitAgentTrace(
+        buildAgentTraceRecord({
+          traceId,
+          intent: AGENT_INTENTS.WRITING_COACH,
+          tier: route.tier,
+          model: route.model,
+          latencyMs: Date.now() - startedAt,
+          status: 'ok',
+        })
+      );
+      return res.status(200).json({
+        success: true,
+        result,
+        _metadata: { trace_id: traceId, model_tier: route.tier, model: route.model, route_reason: route.reason },
+      });
     }
 
     if (type === 'translation') {
@@ -219,13 +271,18 @@ Trả về đúng JSON:
         userOutput = '',
       } = body;
 
-      if (!String(userOutput).trim()) {
-        return res.status(400).json({ error: 'Thiếu bản dịch (userOutput)' });
+      const outputGuard = validateAgentInput({ text: userOutput, maxLength: MAX_TEXT_LEN });
+      if (!outputGuard.allowed) {
+        return res.status(400).json({
+          error:
+            outputGuard.code === 'empty_input'
+              ? 'Thiếu bản dịch (userOutput)'
+              : outputGuard.code === 'input_too_long'
+                ? `Độ dài bản dịch vượt quá giới hạn ${MAX_TEXT_LEN} ký tự.`
+                : outputGuard.reason,
+        });
       }
-      if (
-        String(userOutput).length > MAX_TEXT_LEN ||
-        String(sourceText).length > MAX_TEXT_LEN
-      ) {
+      if (String(sourceText).length > MAX_TEXT_LEN) {
         return res.status(400).json({
           error: `Độ dài bản dịch vượt quá giới hạn ${MAX_TEXT_LEN} ký tự.`,
         });
@@ -255,20 +312,40 @@ Trả về đúng JSON:
       const result = await callGeminiJson({
         systemInstruction,
         parts: [{ text: userText }],
+        model: route.model,
       });
-      return res.status(200).json({ success: true, result });
+      emitAgentTrace(
+        buildAgentTraceRecord({
+          traceId,
+          intent: AGENT_INTENTS.WRITING_COACH,
+          tier: route.tier,
+          model: route.model,
+          latencyMs: Date.now() - startedAt,
+          status: 'ok',
+        })
+      );
+      return res.status(200).json({
+        success: true,
+        result,
+        _metadata: { trace_id: traceId, model_tier: route.tier, model: route.model, route_reason: route.reason },
+      });
     }
 
     if (type === 'dictionary') {
       const { query = '', contextSentence = '' } = body;
       const cleanQuery = String(query).trim();
-      if (!cleanQuery) {
-        return res.status(400).json({ error: 'Thiếu từ hoặc câu cần tra (query)' });
+      const queryGuard = validateAgentInput({ text: cleanQuery, maxLength: MAX_TEXT_LEN });
+      if (!queryGuard.allowed) {
+        return res.status(400).json({
+          error:
+            queryGuard.code === 'empty_input'
+              ? 'Thiếu từ hoặc câu cần tra (query)'
+              : queryGuard.code === 'input_too_long'
+                ? `Nội dung tra cứu vượt quá giới hạn ${MAX_TEXT_LEN} ký tự.`
+                : queryGuard.reason,
+        });
       }
-      if (
-        cleanQuery.length > MAX_TEXT_LEN ||
-        String(contextSentence || '').length > MAX_TEXT_LEN
-      ) {
+      if (String(contextSentence || '').length > MAX_TEXT_LEN) {
         return res.status(400).json({
           error: `Nội dung tra cứu vượt quá giới hạn ${MAX_TEXT_LEN} ký tự.`,
         });
@@ -312,13 +389,33 @@ Trả về đúng JSON:
       const result = await callGeminiJson({
         systemInstruction,
         parts: [{ text: userText }],
+        model: route.model,
       });
-      return res.status(200).json({ success: true, result });
+      emitAgentTrace(
+        buildAgentTraceRecord({
+          traceId,
+          intent: AGENT_INTENTS.WRITING_COACH,
+          tier: route.tier,
+          model: route.model,
+          latencyMs: Date.now() - startedAt,
+          status: 'ok',
+        })
+      );
+      return res.status(200).json({
+        success: true,
+        result,
+        _metadata: { trace_id: traceId, model_tier: route.tier, model: route.model, route_reason: route.reason },
+      });
     }
 
     return res.status(400).json({ error: `Loại chấm điểm không hợp lệ: ${type}` });
   } catch (err) {
+    console.error('[AI Grade Error]', redactSensitiveData(err?.message || ''));
     const status = err?.message === 'NO_GEMINI_KEY' ? 503 : 500;
-    return res.status(status).json({ error: err?.message || 'Lỗi AI grading' });
+    const publicMsg =
+      status === 503
+        ? 'Dịch vụ chấm điểm AI tạm thời chưa khả dụng.'
+        : 'Lỗi máy chủ khi xử lý chấm điểm AI.';
+    return sendSafeServerError(res, publicMsg, err, status);
   }
 }

@@ -1856,23 +1856,23 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       {/* ============================================================== */}
       {adminTab === 'vocab' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1E293B] p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="relative flex-1">
+          <div className="bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="relative flex-1 min-w-0">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
               <input 
                 type="text"
                 value={vocabSearch}
                 onChange={(e) => setVocabSearch(e.target.value)}
                 placeholder="Tìm chữ Hán, Pinyin, Hán-Việt, ý nghĩa..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                className="w-full min-h-11 pl-10 pr-4 py-2.5 rounded-2xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <select
                 value={vocabHskFilter}
                 onChange={(e) => setVocabHskFilter(e.target.value)}
-                className="px-3 py-2.5 rounded-2xl text-base sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
+                className="min-h-11 flex-1 sm:flex-none px-3 py-2.5 rounded-2xl text-base sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
               >
                 <option value="all">Mọi cấp độ HSK</option>
                 <option value="hsk1">HSK 1</option>
@@ -1881,12 +1881,13 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 <option value="hsk4">HSK 4</option>
                 <option value="hsk5">HSK 5</option>
                 <option value="hsk6">HSK 6</option>
+                <option value="hsk7-9">HSK 7-9</option>
               </select>
 
               <button
                 onClick={handleRefreshVocab}
                 disabled={isLoadingVocab}
-                className="p-2.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#E85D3F] hover:bg-orange-50 dark:hover:bg-[#131B24] transition-all cursor-pointer shrink-0"
+                className="min-h-11 min-w-11 p-2.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#E85D3F] hover:bg-orange-50 dark:hover:bg-[#131B24] transition-all cursor-pointer shrink-0 flex items-center justify-center"
                 title="Làm mới từ cơ sở dữ liệu"
               >
                 <RefreshCw size={16} className={isLoadingVocab ? 'animate-spin text-[#E85D3F]' : ''} />
@@ -1894,7 +1895,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
 
               <button
                 onClick={handleOpenCreateVocab}
-                className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                className="min-h-11 px-4 sm:px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
               >
                 <Plus size={16} />
                 <span>Thêm từ vựng</span>
@@ -1999,23 +2000,23 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
       {/* ============================================================== */}
       {adminTab === 'lessons' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1E293B] p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="relative flex-1">
+          <div className="bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="relative flex-1 min-w-0">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
               <input 
                 type="text"
                 value={lessonSearch}
                 onChange={(e) => setLessonSearch(e.target.value)}
                 placeholder="Tìm tiêu đề, mô tả bài học bổ sung..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
+                className="w-full min-h-11 pl-10 pr-4 py-2.5 rounded-2xl text-base sm:text-sm bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <select
                 value={lessonLevelFilter}
                 onChange={(e) => setLessonLevelFilter(e.target.value)}
-                className="px-3 py-2.5 rounded-2xl text-base sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
+                className="min-h-11 flex-1 sm:flex-none px-3 py-2.5 rounded-2xl text-base sm:text-sm font-bold bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white"
               >
                 <option value="all">Mọi cấp độ</option>
                 <option value="Nhập môn">Nhập môn</option>
@@ -2025,12 +2026,13 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                 <option value="HSK 4">HSK 4</option>
                 <option value="HSK 5">HSK 5</option>
                 <option value="HSK 6">HSK 6</option>
+                <option value="HSK 7-9">HSK 7-9</option>
               </select>
 
               <button
                 onClick={handleRefreshLessons}
                 disabled={isLoadingLessons}
-                className="p-2.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#E85D3F] hover:bg-orange-50 dark:hover:bg-[#131B24] transition-all cursor-pointer shrink-0"
+                className="min-h-11 min-w-11 p-2.5 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#E85D3F] hover:bg-orange-50 dark:hover:bg-[#131B24] transition-all cursor-pointer shrink-0 flex items-center justify-center"
                 title="Làm mới từ cơ sở dữ liệu"
               >
                 <RefreshCw size={16} className={isLoadingLessons ? 'animate-spin text-[#E85D3F]' : ''} />
@@ -2038,7 +2040,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
 
               <button
                 onClick={handleOpenCreateLesson}
-                className="px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center gap-2 shrink-0 cursor-pointer"
+                className="min-h-11 px-4 sm:px-5 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center gap-2 shrink-0 cursor-pointer"
               >
                 <Plus size={16} />
                 <span>Tạo bài học mới</span>
@@ -2318,6 +2320,8 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     <option value="HSK 3 - Trung cấp">HSK 3 - Trung cấp</option>
                     <option value="HSK 4 - Độc lập">HSK 4 - Độc lập</option>
                     <option value="HSK 5 - Cao cấp">HSK 5 - Cao cấp</option>
+                    <option value="HSK 6 - Thành thạo">HSK 6 - Thành thạo</option>
+                    <option value="HSK 7-9 - Bậc thầy">HSK 7-9 - Bậc thầy</option>
                   </select>
                 </div>
               </div>
@@ -2402,6 +2406,8 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     <option value="HSK 3 - Trung cấp">HSK 3 - Trung cấp</option>
                     <option value="HSK 4 - Độc lập">HSK 4 - Độc lập</option>
                     <option value="HSK 5 - Cao cấp">HSK 5 - Cao cấp</option>
+                    <option value="HSK 6 - Thành thạo">HSK 6 - Thành thạo</option>
+                    <option value="HSK 7-9 - Bậc thầy">HSK 7-9 - Bậc thầy</option>
                   </select>
                 </div>
 
@@ -2669,6 +2675,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     <option value="hsk4">HSK 4</option>
                     <option value="hsk5">HSK 5</option>
                     <option value="hsk6">HSK 6</option>
+                    <option value="hsk7-9">HSK 7-9</option>
                   </select>
                 </div>
               </div>
@@ -2771,6 +2778,7 @@ export default function AdminPage({ user, onUpdateUser, setActiveTab }) {
                     <option value="HSK 4">HSK 4</option>
                     <option value="HSK 5">HSK 5</option>
                     <option value="HSK 6">HSK 6</option>
+                    <option value="HSK 7-9">HSK 7-9</option>
                   </select>
                 </div>
                 <div>

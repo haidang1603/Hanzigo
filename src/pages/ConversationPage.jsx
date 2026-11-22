@@ -18,20 +18,17 @@ import {
   ShieldCheck,
   Sliders,
   Check,
-  Volume2,
-  Target,
-  Award,
-  BookOpen
+  Volume2
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton';
 import { ALL_CONVERSATION_SCENARIOS, SCENARIO_CATEGORIES } from '../data/conversationScenarios';
 import AiContextBadge from '../components/personalization/AiContextBadge';
 import { speakChinese, playSuccessSound, playClickSound } from '../utils/audio';
 import { playChineseTts } from '../services/ttsAudioService';
-import { useUnifiedTools } from '../core/ecosystem/UnifiedToolsContext.tsx';
 import { triggerCloudSync } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
 import { sendTutorMessage } from '../services/aiTutorService';
+import { saveUserVocabSrsCard } from '../services/vocabularyService';
 import AiTutorChatView from '../components/depth/AiTutorChatView';
 import RoleplayStudioModal from '../components/learning/RoleplayStudioModal';
 import { SPECIAL_ROLEPLAY_SCENARIOS } from '../utils/roleplayScenarioBuilder';
@@ -81,19 +78,19 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
   const [showPinyin, setShowPinyin] = useState(true);
   const [showTranslation, setShowTranslation] = useState(true);
 
-  // Active chat dialogue messages
+  // Active chat dialogue messages (khởi tạo trống, không nạp hội thoại mock có sẵn)
   const [chatHistory, setChatHistory] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed[conversation.id] && parsed[conversation.id].length > 0) {
+        if (Array.isArray(parsed[conversation.id]) && parsed[conversation.id].length > 0) {
           return parsed[conversation.id];
         }
       }
-      return conversation.dialogue;
+      return [];
     } catch {
-      return conversation.dialogue;
+      return [];
     }
   });
 
@@ -102,31 +99,9 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState('all');
+  const [savedVocabKeys, setSavedVocabKeys] = useState({});
   const [toastMessage, setToastMessage] = useState(null);
-
-  const { openDrawerForText } = useUnifiedTools();
-
-  const [missionVocab, setMissionVocab] = useState(() => [
-    { simplified: '讨价还价', pinyin: 'tǎo jià huán jià', meaning_vi: 'Mặc cả', used: false },
-    { simplified: '便宜', pinyin: 'piányi', meaning_vi: 'Rẻ, bớt giá', used: false },
-    { simplified: '打折', pinyin: 'dǎ zhé', meaning_vi: 'Giảm giá', used: false },
-    { simplified: '质量', pinyin: 'zhìliàng', meaning_vi: 'Chất lượng', used: false },
-    { simplified: '推荐', pinyin: 'tuījiàn', meaning_vi: 'Gợi ý, tiến cử', used: false },
-  ]);
-
-  const [missionGrammar, setMissionGrammar] = useState(() => [
-    { code: 'HSK3-BA-01', pattern_display: 'S + 把 + O + V + 了', title_vi: 'Câu chữ 把 xử lý tân ngữ', used: false },
-    { code: 'HSK4-BUJIN-01', pattern_display: '不仅...而且...', title_vi: 'Không những... mà còn...', used: false },
-  ]);
-
-  const missionProgressPct = useMemo(() => {
-    const total = missionVocab.length + missionGrammar.length;
-    if (total === 0) return 0;
-    const done =
-      missionVocab.filter((v) => v.used).length +
-      missionGrammar.filter((g) => g.used).length;
-    return Math.round((done / total) * 100);
-  }, [missionVocab, missionGrammar]);
 
   const chatContainerRef = useRef(null);
   const isInitialMount = useRef(true);
@@ -171,7 +146,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
     setSelectedScenarioId(scenId);
     const newConv = ALL_CONVERSATION_SCENARIOS.find(s => s.id === scenId) || ALL_CONVERSATION_SCENARIOS[0];
     const savedForConv = allChatHistory[newConv.id];
-    setChatHistory(savedForConv && savedForConv.length > 0 ? savedForConv : newConv.dialogue);
+    setChatHistory(Array.isArray(savedForConv) && savedForConv.length > 0 ? savedForConv : []);
     setAiFeedback(null);
     if (newConv.level) {
       setTargetHskLevel(newConv.level);
@@ -199,50 +174,12 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
   // Send a message & trigger AI intelligent response
   const handleSendMessage = useCallback(async (userMessageObj) => {
     const cleanText = String(userMessageObj.hanzi || '').trim();
-    const newlyMatchedWords = [];
-    const nextVocab = missionVocab.map((item) => {
-      if (cleanText.includes(item.simplified)) {
-        if (!item.used) newlyMatchedWords.push(item.simplified);
-        return { ...item, used: true };
-      }
-      return item;
-    });
-
-    const newlyMatchedGrammar = [];
-    const nextGrammar = missionGrammar.map((g) => {
-      const hitBa = g.pattern_display.includes('把') && /把.+(了|完|好|过来|出去)/.test(cleanText);
-      const hitBujin = g.pattern_display.includes('不仅') && /不仅.*(而且|还)/.test(cleanText);
-      if (hitBa || hitBujin) {
-        if (!g.used) newlyMatchedGrammar.push(g.code);
-        return { ...g, used: true };
-      }
-      return g;
-    });
-
-    if (newlyMatchedWords.length > 0 || newlyMatchedGrammar.length > 0) {
-      setMissionVocab(nextVocab);
-      setMissionGrammar(nextGrammar);
-      if (newlyMatchedWords.length > 0) {
-        showToast(`🎉 +Điểm Mastery SRS: ${newlyMatchedWords.join(', ')}`);
-      }
-    }
-
-    const remainingTarget = nextVocab.find((v) => !v.used) || nextVocab[0];
     const turnEvaluation = {
       is_grammatically_correct: true,
-      grammar_score: newlyMatchedGrammar.length > 0 ? 96 : newlyMatchedWords.length > 0 ? 94 : 88,
+      grammar_score: 88,
       corrected_user_sentence_zh: cleanText,
-      explanation_vi:
-        newlyMatchedWords.length > 0
-          ? `Đã dùng chuẩn từ SRS mục tiêu: ${newlyMatchedWords.join(', ')}`
-          : 'Câu giao tiếp tự nhiên, đúng ngữ cảnh.',
-      next_hint: remainingTarget
-        ? {
-            target_word_to_use: remainingTarget.simplified,
-            suggested_reply_zh: `请问，这个“${remainingTarget.simplified}”怎么样？`,
-            suggested_reply_pinyin: `Qǐngwèn, zhège “${remainingTarget.pinyin}” zěnmeyàng?`,
-          }
-        : null,
+      explanation_vi: 'Câu giao tiếp tự nhiên, đúng ngữ cảnh.',
+      next_hint: null,
     };
 
     const userMsg = {
@@ -269,7 +206,10 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
       const aiReply = await sendTutorMessage(userMessageObj.hanzi, {
         hskLevel: targetHskLevel || conversation.level || 'HSK 1',
         conversationHistory: updatedWithUser,
-        userId: user?.id
+        userId: user?.id,
+        scenarioTitle: conversation.title,
+        scenarioContext: conversation.scenario,
+        aiRole: conversation.aiName
       });
 
       const aiMsg = {
@@ -280,6 +220,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
         grammarAnalysis: aiReply.grammarAnalysis,
         userCorrection: aiReply.userCorrection,
         vocabSuggestions: aiReply.vocabSuggestions || [],
+        replySuggestions: aiReply.replySuggestions || [],
         provider: aiReply.provider,
         time: 'Vừa xong'
       };
@@ -323,7 +264,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
     } finally {
       setIsAiTyping(false);
     }
-  }, [chatHistory, conversation, missionGrammar, missionVocab, targetHskLevel, trackMistakesConsent, user]);
+  }, [chatHistory, conversation, targetHskLevel, trackMistakesConsent, user]);
 
   // Handle custom input submission
   const handleCustomSend = (e) => {
@@ -395,11 +336,26 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
 
   // Reset current scenario chat
   const handleResetChat = () => {
-    if (window.confirm(`Bạn có chắc muốn đặt lại cuộc trò chuyện "${conversation.title}" về ban đầu?`)) {
+    if (window.confirm(`Bạn có chắc muốn xóa cuộc trò chuyện "${conversation.title}" để bắt đầu lại?`)) {
       playClickSound();
-      saveConversationHistory(conversation.id, conversation.dialogue);
+      setChatHistory([]);
+      setAllChatHistory((prev) => {
+        const updated = { ...prev };
+        delete updated[conversation.id];
+        try {
+          if (Object.keys(updated).length > 0) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+          } else {
+            localStorage.removeItem(STORAGE_KEY);
+          }
+          triggerCloudSync();
+        } catch (err) {
+          console.error('Failed to reset chat history:', err);
+        }
+        return updated;
+      });
       setAiFeedback(null);
-      showToast('Đã đặt lại cuộc trò chuyện về kịch bản ban đầu!');
+      showToast('Đã xóa cuộc trò chuyện hiện tại để bắt đầu mới!');
     }
   };
 
@@ -409,7 +365,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
       playClickSound();
       localStorage.removeItem(STORAGE_KEY);
       setAllChatHistory({});
-      setChatHistory(conversation.dialogue);
+      setChatHistory([]);
       setAiFeedback(null);
       setIsHistoryModalOpen(false);
       showToast('Đã xóa sạch toàn bộ lịch sử trò chuyện!');
@@ -446,7 +402,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 space-y-4 sm:space-y-6">
       
       {/* Toast Notification */}
       {toastMessage && (
@@ -455,6 +411,42 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* Segmented Mode Switcher: Lão Sư AI vs Luyện Hội Thoại (Roleplay) */}
+      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-[#F1E5D8] dark:border-[#2B3A4F] overflow-x-auto flex-nowrap w-full sm:w-fit">
+        <button
+          type="button"
+          onClick={() => {
+            playClickSound();
+            setActiveDepthTab('tutor');
+            if (typeof window !== 'undefined') window.location.hash = '#conversation/tutor';
+          }}
+          className={`min-h-11 px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer ${
+            activeDepthTab === 'tutor'
+              ? 'bg-white dark:bg-[#1E293B] text-[#E85D3F] shadow-xs'
+              : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
+          }`}
+        >
+          <Bot size={15} />
+          <span>Lão Sư AI</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            playClickSound();
+            setActiveDepthTab('roleplay');
+            if (typeof window !== 'undefined') window.location.hash = '#conversation/roleplay';
+          }}
+          className={`min-h-11 px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer ${
+            activeDepthTab !== 'tutor'
+              ? 'bg-white dark:bg-[#1E293B] text-[#E85D3F] shadow-xs'
+              : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white'
+          }`}
+        >
+          <Sparkles size={15} />
+          <span>Luyện Hội Thoại (Roleplay)</span>
+        </button>
+      </div>
 
       {/* Header (Chỉ hiển thị ở chế độ Hội thoại AI Tiểu Hàm, ẩn khi vào AI Lão Sư) */}
       {activeDepthTab !== 'tutor' && (
@@ -630,88 +622,6 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
           {/* Sub-mode 2: Dialogue Scenarios with Xiao Han */}
           {roleplaySubMode === 'dialogues' && (
             <div className="space-y-4">
-              {/* Active SRS & Grammar Mission HUD */}
-              <div className="p-4 rounded-2xl bg-slate-900/95 border border-emerald-500/25 text-white shadow-lg">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-2">
-                    <Target size={16} className="text-emerald-400" />
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-300">
-                      Nhiệm vụ Thực hành SRS & Ngữ pháp
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Award size={14} className="text-amber-400" />
-                    <span className="text-xs font-bold text-emerald-400">
-                      {missionProgressPct}% hoàn thành
-                    </span>
-                  </div>
-                </div>
-
-                {/* Mission Progress Bar */}
-                <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden mb-3">
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-500"
-                    style={{ width: `${missionProgressPct}%` }}
-                  />
-                </div>
-
-                {/* 5 SRS Vocab + 2 Grammar Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-                  {missionVocab.map((v) => (
-                    <button
-                      key={v.simplified}
-                      type="button"
-                      onClick={() =>
-                        openDrawerForText(v.simplified, {
-                          tab: 'dictionary',
-                          sourceApp: 'conversation_mission_hud',
-                        })
-                      }
-                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                        v.used
-                          ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
-                          : 'border-slate-700 bg-slate-800/80 hover:border-cyan-400/60 text-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="font-['Noto_Serif_SC'] text-sm font-bold">{v.simplified}</span>
-                        {v.used ? (
-                          <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                        ) : (
-                          <BookOpen size={12} className="text-slate-400 shrink-0" />
-                        )}
-                      </div>
-                      <p className="text-[10px] text-cyan-300 truncate">{v.pinyin}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{v.meaning_vi}</p>
-                    </button>
-                  ))}
-                  {missionGrammar.map((g) => (
-                    <button
-                      key={g.code}
-                      type="button"
-                      onClick={() =>
-                        openDrawerForText(g.pattern_display, {
-                          tab: 'grammar',
-                          sourceApp: 'conversation_mission_hud',
-                        })
-                      }
-                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                        g.used
-                          ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
-                          : 'border-amber-500/30 bg-amber-500/10 hover:border-amber-400 text-amber-100'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-[10px] font-extrabold text-amber-300">{g.code}</span>
-                        {g.used && <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />}
-                      </div>
-                      <p className="text-[11px] font-bold truncate">{g.pattern_display}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{g.title_vi}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Category Filter Tabs */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
             {SCENARIO_CATEGORIES.map((cat) => (
@@ -804,7 +714,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
                 onChange={(e) => setTargetHskLevel(e.target.value)}
                 className="font-bold text-[#E85D3F] bg-transparent outline-none cursor-pointer text-base sm:text-sm"
               >
-                {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map(lvl => (
+                {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7-9'].map(lvl => (
                   <option key={lvl} value={lvl} className="text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800">
                     {lvl}
                   </option>
@@ -853,6 +763,19 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
 
         {/* Chat Messages Body */}
         <div ref={chatContainerRef} className="flex-1 min-h-0 p-3 sm:p-6 overflow-y-auto space-y-3 sm:space-y-4">
+          {chatHistory.length === 0 && !isAiTyping && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center space-y-2">
+              <div className="text-sm font-bold text-[#243447] dark:text-white">
+                Bắt đầu trò chuyện cùng {conversation.aiName}
+              </div>
+              <p className="text-xs text-[#748092] dark:text-[#94A3B8] max-w-md mx-auto leading-relaxed">
+                {conversation.scenario}
+              </p>
+              <p className="text-[11px] font-semibold text-[#E85D3F]">
+                Hãy nhập câu tiếng Trung, bật micro hoặc chọn gợi ý bên dưới để bắt đầu hội thoại thực tế.
+              </p>
+            </div>
+          )}
           {chatHistory.map((msg, idx) => {
             const isAI = msg.speaker === 'ai';
             return (
@@ -967,10 +890,66 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
                       {msg.vocabSuggestions && msg.vocabSuggestions.length > 0 && (
                         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                           <span className="text-[10px] text-[#748092] dark:text-[#94A3B8] font-bold">Từ mới gợi ý:</span>
-                          {msg.vocabSuggestions.map((v, vIdx) => (
-                            <span key={vIdx} className="px-2 py-0.5 rounded-lg bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[10px] font-medium text-[#243447] dark:text-white">
-                              <strong className="text-[#E85D3F] font-['Noto_Serif_SC']">{v.hanzi}</strong> ({v.pinyin}): {v.meaning}
-                            </span>
+                          {msg.vocabSuggestions.map((v, vIdx) => {
+                            const vKey = v.hanzi;
+                            const isSaved = Boolean(savedVocabKeys[vKey]);
+                            return (
+                              <button
+                                key={vIdx}
+                                type="button"
+                                disabled={isSaved}
+                                onClick={async () => {
+                                  if (!v?.hanzi) return;
+                                  playClickSound();
+                                  try {
+                                    await saveUserVocabSrsCard(user?.id || user?.uid || 'guest', {
+                                      wordId: `chat_${v.hanzi}`,
+                                      hanzi: v.hanzi,
+                                      pinyin: v.pinyin || '',
+                                      meaning: v.meaning || '',
+                                      level: v.level || targetHskLevel || 'HSK 1',
+                                      interval: 1,
+                                      repetitions: 1,
+                                      easeFactor: 2.5,
+                                    });
+                                    setSavedVocabKeys(prev => ({ ...prev, [vKey]: true }));
+                                    playSuccessSound();
+                                    showToast(`Đã lưu "${v.hanzi}" vào sổ SRS!`);
+                                  } catch {
+                                    showToast('Không thể lưu từ này lúc này.');
+                                  }
+                                }}
+                                className={`px-2.5 py-1 rounded-lg border text-[10px] font-medium transition-colors cursor-pointer ${
+                                  isSaved
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 text-emerald-700 dark:text-emerald-300'
+                                    : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white hover:border-[#E85D3F]'
+                                }`}
+                                title="Bấm để lưu vào Flashcard SRS"
+                              >
+                                <strong className="text-[#E85D3F] font-['Noto_Serif_SC']">{v.hanzi}</strong> ({v.pinyin}): {v.meaning}
+                                <span className="ml-1.5 font-bold text-[#E85D3F]">{isSaved ? '✓ Đã lưu' : '+ SRS'}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {Array.isArray(msg.replySuggestions) && msg.replySuggestions.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          <span className="text-[10px] text-[#748092] dark:text-[#94A3B8] font-bold">Gợi ý đáp lại Tiểu Hàm:</span>
+                          {msg.replySuggestions.map((rep, rIdx) => (
+                            <button
+                              key={rIdx}
+                              type="button"
+                              onClick={() => {
+                                playClickSound();
+                                setInputText(rep.hanzi || '');
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-[#FFF9F2] dark:bg-[#131B24] border border-[#E85D3F]/30 text-[10px] font-semibold text-[#243447] dark:text-slate-200 hover:border-[#E85D3F] hover:text-[#E85D3F] transition-colors cursor-pointer"
+                              title={rep.meaning || 'Chạm để điền câu gợi ý'}
+                            >
+                              <span className="font-['Noto_Serif_SC'] font-bold">{rep.hanzi}</span>
+                              {rep.meaning ? ` • ${rep.meaning}` : ''}
+                            </button>
                           ))}
                         </div>
                       )}
@@ -1077,32 +1056,59 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
       {/* History Manager Modal */}
       {isHistoryModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-6 w-full max-w-lg border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-3">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-5 sm:p-6 w-full max-w-lg border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4 max-h-[85dvh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-3 shrink-0">
               <h3 className="text-base font-bold text-[#243447] dark:text-white flex items-center gap-2">
                 <History size={18} className="text-[#E85D3F]" />
-                <span>Quản lý Lịch sử Hội thoại AI đã lưu</span>
+                <span>Lịch sử Hội thoại AI Tiểu Hàm</span>
               </h3>
-              <button 
+              <button
+                type="button"
                 onClick={() => setIsHistoryModalOpen(false)}
-                className="p-1 rounded-lg text-[#748092] hover:text-[#243447] dark:hover:text-white"
+                className="min-h-11 min-w-11 p-2 rounded-xl text-[#748092] hover:text-[#243447] dark:hover:text-white flex items-center justify-center cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-              Tất cả các tin nhắn thoại và đối thoại giữa bạn với AI Tiểu Hàm đều được tự động lưu bền vững trong máy.
-            </p>
+            <div className="flex items-center justify-between gap-2 shrink-0">
+              <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
+                Đã lưu {Object.keys(allChatHistory).length} tình huống đã trò chuyện.
+              </p>
+              <div className="flex items-center gap-1 bg-[#FFF9F2] dark:bg-[#131B24] p-1 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilter('all')}
+                  className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${
+                    historyFilter === 'all' ? 'bg-[#E85D3F] text-white' : 'text-[#748092]'
+                  }`}
+                >
+                  Tất cả ({ALL_CONVERSATION_SCENARIOS.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilter('saved')}
+                  className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${
+                    historyFilter === 'saved' ? 'bg-[#E85D3F] text-white' : 'text-[#748092]'
+                  }`}
+                >
+                  Đã chat ({Object.keys(allChatHistory).length})
+                </button>
+              </div>
+            </div>
 
-            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-              {CONVERSATIONS_DATA.map((conv, idx) => {
-                const thread = allChatHistory[conv.id] || conv.dialogue;
+            <div className="space-y-2.5 overflow-y-auto pr-1 flex-1 min-h-0">
+              {ALL_CONVERSATION_SCENARIOS.filter((conv) =>
+                historyFilter === 'saved' ? Array.isArray(allChatHistory[conv.id]) && allChatHistory[conv.id].length > 0 : true
+              ).map((conv) => {
+                const savedThread = allChatHistory[conv.id];
+                const thread = Array.isArray(savedThread) && savedThread.length > 0 ? savedThread : conv.dialogue;
                 const messageCount = thread.length;
-                const isCurrent = selectedConvIndex === idx;
+                const lastMsg = thread[thread.length - 1];
+                const isCurrent = selectedScenarioId === conv.id;
 
                 return (
-                  <div 
+                  <div
                     key={conv.id}
                     className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-colors ${
                       isCurrent
@@ -1110,30 +1116,60 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
                         : 'bg-[#FFF9F2] dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F]'
                     }`}
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[#243447] dark:text-white">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-[#243447] dark:text-white truncate">
                           {conv.title}
                         </span>
                         {isCurrent && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#E85D3F] text-white">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#E85D3F] text-white shrink-0">
                             Đang mở
                           </span>
                         )}
+                        {Array.isArray(savedThread) && savedThread.length > 0 && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shrink-0">
+                            Đã lưu
+                          </span>
+                        )}
                       </div>
-                      <p className="text-[11px] text-[#748092] dark:text-[#94A3B8] mt-0.5">
-                        {messageCount} lượt trao đổi • {conv.aiName}
+                      <p className="text-[11px] text-[#748092] dark:text-[#94A3B8] mt-0.5 truncate">
+                        {messageCount} lượt • {lastMsg?.hanzi || conv.aiName}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {Array.isArray(savedThread) && savedThread.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClickSound();
+                            setAllChatHistory((prev) => {
+                              const next = { ...prev };
+                              delete next[conv.id];
+                              try {
+                                localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+                              } catch {}
+                              return next;
+                            });
+                            if (isCurrent) {
+                              setChatHistory(conv.dialogue);
+                            }
+                            showToast(`Đã xóa lịch sử chủ đề: ${conv.title}`);
+                          }}
+                          className="min-h-11 min-w-11 p-2 rounded-xl text-[#748092] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center justify-center cursor-pointer"
+                          title="Xóa lịch sử tình huống này"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                       <button
+                        type="button"
                         onClick={() => {
-                          handleSelectConversation(idx);
+                          handleSelectScenario(conv.id);
                           setIsHistoryModalOpen(false);
-                          showToast(`Đã chuyển sang chủ đề: ${conv.title}`);
+                          showToast(`Đã mở hội thoại: ${conv.title}`);
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-white hover:border-[#E85D3F]"
+                        className="min-h-11 px-3 py-1.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-white hover:border-[#E85D3F] cursor-pointer"
                       >
                         Mở xem
                       </button>
@@ -1141,20 +1177,28 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
                   </div>
                 );
               })}
+
+              {historyFilter === 'saved' && Object.keys(allChatHistory).length === 0 && (
+                <div className="text-center py-8 text-xs text-[#748092]">
+                  Chưa có cuộc hội thoại nào được lưu. Hãy nhắn tin với Tiểu Hàm để tự động lưu lịch sử!
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F]">
+            <div className="flex items-center justify-between pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] shrink-0">
               <button
+                type="button"
                 onClick={handleClearAllHistory}
-                className="px-3 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-1.5 transition-colors"
+                className="min-h-11 px-3 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Trash2 size={14} />
                 <span>Xóa sạch lịch sử</span>
               </button>
 
               <button
+                type="button"
                 onClick={() => setIsHistoryModalOpen(false)}
-                className="px-5 py-2 rounded-xl bg-[#243447] dark:bg-[#334155] text-white text-xs font-bold hover:bg-black transition-colors"
+                className="min-h-11 px-5 py-2 rounded-xl bg-[#243447] dark:bg-[#334155] text-white text-xs font-bold hover:bg-black transition-colors cursor-pointer"
               >
                 Đóng
               </button>

@@ -16,21 +16,18 @@
 import crypto from 'crypto';
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
 import { verifyRequestAuth } from '../../_utils/verifyAuth.js';
-import { getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { getSupabaseAdminClient, sendSafeServerError } from '../../_utils/supabaseServer.js';
 import { callUnifiedAiProvider, extractStructuredJson } from '../../_utils/aiProviderAdapter.js';
 import { retrieveLearnerAdaptiveProfile } from '../../_utils/ragRetriever.js';
+import { AGENT_INTENTS } from '../../_agent/contracts.js';
+import { validateAgentInput, redactSensitiveData } from '../../_agent/guardrails.js';
+import { selectModelTier } from '../../_agent/modelRouter.js';
+import { buildAgentTraceRecord, emitAgentTrace } from '../../_agent/costAndObservability.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 25;
 const DAILY_QUOTA_MAX_REQUESTS = 150;
-
-const INJECTION_PATTERNS = [
-  /ignore\s+(all\s+)?(previous|prior)\s+(instructions|prompts)/i,
-  /system\s+prompt\s+override/i,
-  /you\s+are\s+now\s+(an\s+unrestricted|DAN|jailbreak)/i,
-  /reveal\s+(your\s+)?(api[_\s]?key|secret|system\s+prompt)/i,
-  /<script\b[^>]*>/i,
-];
+const MAX_ROLEPLAY_MESSAGE_LEN = 500;
 
 const SCENARIO_PERSONAS = {
   beijing_market_bargain: {
@@ -75,8 +72,9 @@ const GRAMMAR_REGEX_CATALOG = [
 ];
 
 export function detectAbuseOrInjection(text) {
-  if (!text || typeof text !== 'string') return false;
-  return INJECTION_PATTERNS.some((pattern) => pattern.test(text));
+  if (!text || typeof text !== 'string' || !text.trim()) return false;
+  const check = validateAgentInput({ text, maxLength: MAX_ROLEPLAY_MESSAGE_LEN });
+  return !check.allowed && (check.code === 'prompt_injection_detected' || check.code === 'high_risk_action_blocked');
 }
 
 function matchesGrammarPattern(messageZh, grammarPoint) {
@@ -322,7 +320,8 @@ async function handleSendTurn({ user, body, admin, res }) {
   const userMessageZh = String(body.userMessageZh || body.userMessage || '').trim();
   const audioDurationMs = Number(body.audioDurationMs || 0);
 
-  if (!userMessageZh || userMessageZh.length > 500 || detectAbuseOrInjection(userMessageZh)) {
+  const guard = validateAgentInput({ text: userMessageZh, maxLength: MAX_ROLEPLAY_MESSAGE_LEN });
+  if (!guard.allowed) {
     return res.status(400).json({
       error: 'Tin nhắn không hợp lệ hoặc chứa nội dung vi phạm chính sách an toàn.',
     });
@@ -376,22 +375,44 @@ async function handleSendTurn({ user, body, admin, res }) {
     `BẮT BUỘC trả về JSON hợp lệ theo schema: { "ai_reply_zh", "ai_reply_pinyin", "ai_reply_vi", "turn_evaluation": { "is_grammatically_correct", "grammar_score", "corrected_user_sentence_zh", "explanation_vi", "matched_grammar_code" }, "next_turn_hints": [{ "target_word_to_use", "suggested_reply_zh", "suggested_reply_pinyin" }] }.`,
   ].join('\n');
 
+  const traceId = crypto.randomUUID();
+  const startedAt = Date.now();
+  const route = selectModelTier({
+    intent: AGENT_INTENTS.GENERAL_TUTOR,
+    hskLevel: `HSK ${hskLevel}`,
+  });
+
   let aiPayload = null;
   const llmResult = await callUnifiedAiProvider({
     systemPrompt,
-    userPrompt: `Học viên nói: "${userMessageZh}" (thời lượng audio: ${audioDurationMs}ms).`,
-    temperature: 0.4,
-    maxTokens: 700,
+    userPrompt: redactSensitiveData(`Học viên nói: "${guard.sanitizedText}" (thời lượng audio: ${audioDurationMs}ms).`),
+    temperature: route.temperature,
+    maxTokens: Math.max(700, route.maxOutputTokens),
+    timeoutMs: route.timeoutMs,
     feature: 'roleplay',
   });
 
-  if (llmResult?.ok && llmResult.text) {
+  const usedOffline = !(llmResult?.ok && llmResult.text);
+  if (!usedOffline) {
     aiPayload = extractStructuredJson(llmResult.text);
   }
 
   if (!aiPayload || !aiPayload.ai_reply_zh) {
-    aiPayload = buildStructuredOfflineTurn(userMessageZh, hskLevel, missionResult);
+    aiPayload = buildStructuredOfflineTurn(guard.sanitizedText, hskLevel, missionResult);
   }
+
+  emitAgentTrace(
+    buildAgentTraceRecord({
+      traceId,
+      userId: user.id,
+      intent: AGENT_INTENTS.GENERAL_TUTOR,
+      tier: route.tier,
+      model: route.model,
+      fallbackUsed: usedOffline,
+      latencyMs: Date.now() - startedAt,
+      status: 'ok',
+    })
+  );
 
   // Award SRS mastery if turn is grammatically valid and new target words were used
   const isGrammaticallyCorrect =
@@ -451,6 +472,12 @@ async function handleSendTurn({ user, body, admin, res }) {
     newly_used_vocab: missionResult.newlyUsedVocab,
     newly_matched_grammar: missionResult.newlyMatchedGrammar,
     mission_completion_pct: missionResult.missionCompletionPct,
+    _metadata: {
+      trace_id: traceId,
+      model_tier: route.tier,
+      model: route.model,
+      route_reason: route.reason,
+    },
   });
 }
 
@@ -504,7 +531,8 @@ export default async function handler(req, res) {
 
     // 3. Legacy Stateless Roleplay Mode (backward compatibility)
     const userMessage = String(body.userMessage || '').trim();
-    if (!userMessage || userMessage.length > 500 || detectAbuseOrInjection(userMessage)) {
+    const guard = validateAgentInput({ text: userMessage, maxLength: MAX_ROLEPLAY_MESSAGE_LEN });
+    if (!guard.allowed) {
       return res.status(400).json({
         error: 'Tin nhắn không hợp lệ hoặc chứa nội dung vi phạm chính sách an toàn.',
       });
@@ -513,26 +541,62 @@ export default async function handler(req, res) {
     const scenario = body.scenario || {};
     const targetVocab = Array.isArray(body.targetVocab) ? body.targetVocab : [];
     const hskLevel = Number(body.hskLevel || scenario.hskLevel || 3);
+    const traceId = crypto.randomUUID();
+    const startedAt = Date.now();
+    const route = selectModelTier({
+      intent: AGENT_INTENTS.GENERAL_TUTOR,
+      hskLevel: `HSK ${hskLevel}`,
+    });
 
     const llmRes = await callUnifiedAiProvider({
       systemPrompt: `Bạn là nhân vật bản ngữ Trung Quốc trong kịch bản "${scenario.title || 'Giao tiếp'}". Trình độ HSK ${hskLevel}. Trả về JSON gồm replyHanzi, replyPinyin, replyVietnamese, grammarFeedback, correctedHanzi, usedTargetItems, completedObjectives, suggestedReplies.`,
-      userPrompt: userMessage,
-      temperature: 0.4,
-      maxTokens: 600,
+      userPrompt: redactSensitiveData(guard.sanitizedText),
+      temperature: route.temperature,
+      maxTokens: Math.max(600, route.maxOutputTokens),
+      timeoutMs: route.timeoutMs,
       feature: 'roleplay',
     });
 
     if (llmRes?.ok && llmRes.text) {
       const parsed = extractStructuredJson(llmRes.text);
       if (parsed?.replyHanzi) {
-        return res.status(200).json(parsed);
+        emitAgentTrace(
+          buildAgentTraceRecord({
+            traceId,
+            userId: auth.user.id,
+            intent: AGENT_INTENTS.GENERAL_TUTOR,
+            tier: route.tier,
+            model: route.model,
+            latencyMs: Date.now() - startedAt,
+            status: 'ok',
+          })
+        );
+        return res.status(200).json({
+          ...parsed,
+          _metadata: { trace_id: traceId, model_tier: route.tier, model: route.model, route_reason: route.reason },
+        });
       }
     }
 
-    return res.status(200).json(generateOfflinePedagogicalReply(userMessage, scenario, targetVocab));
-  } catch {
-    return res.status(200).json(
-      generateOfflinePedagogicalReply(req.body?.userMessage || req.body?.userMessageZh || '', req.body?.scenario, [])
+    emitAgentTrace(
+      buildAgentTraceRecord({
+        traceId,
+        userId: auth.user.id,
+        intent: AGENT_INTENTS.GENERAL_TUTOR,
+        tier: route.tier,
+        model: route.model,
+        fallbackUsed: true,
+        latencyMs: Date.now() - startedAt,
+        status: 'ok',
+      })
     );
+    const offlineReply = generateOfflinePedagogicalReply(guard.sanitizedText, scenario, targetVocab);
+    return res.status(200).json({
+      ...offlineReply,
+      _metadata: { trace_id: traceId, model_tier: route.tier, model: route.model, route_reason: route.reason },
+    });
+  } catch (err) {
+    console.error('[Roleplay API Exception]', redactSensitiveData(err?.message || ''));
+    return sendSafeServerError(res, 'Lỗi máy chủ khi xử lý AI Roleplay.', err, 500);
   }
 }

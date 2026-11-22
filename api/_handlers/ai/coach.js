@@ -9,28 +9,20 @@
  * - Sanitized response (no API keys, database internals, or stack traces leaked)
  */
 
+import crypto from 'node:crypto';
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
-import { verifyRequestAuth } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, sendSafeServerError } from '../../_utils/supabaseServer.js';
 import { callUnifiedAiProvider } from '../../_utils/aiProviderAdapter.js';
+import { AGENT_INTENTS } from '../../_agent/contracts.js';
+import { validateAgentInput, redactSensitiveData } from '../../_agent/guardrails.js';
+import { selectModelTier } from '../../_agent/modelRouter.js';
+import { buildSafeLearnerMemoryContext } from '../../_agent/memoryManager.js';
+import { buildAgentTraceRecord, emitAgentTrace } from '../../_agent/costAndObservability.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 15;
 const DAILY_QUOTA_MAX_REQUESTS = 80;
-
-const INJECTION_PATTERNS = [
-  /ignore\s+(all\s+)?(previous|prior)\s+instructions/i,
-  /system\s+prompt\s+override/i,
-  /dan\s+mode/i,
-  /jailbreak/i,
-  /reveal\s+(system\s+prompt|instructions|api\s+key|token)/i,
-  /bypass\s+security/i,
-  /drop\s+table/i
-];
-
-function detectAbuseOrInjection(input) {
-  if (typeof input !== 'string') return false;
-  return INJECTION_PATTERNS.some(regex => regex.test(input));
-}
+const MAX_COACH_PAYLOAD_LEN = 5000;
 
 const SYSTEM_PROMPT_COACH = `Bạn là "Lão Sư HanziGo" — Cố vấn Học tập AI Sư phạm (Pedagogical Learning Coach) chuyên biệt cho người Việt học tiếng Trung theo chuẩn HSK 3.0.
 Nhiệm vụ của bạn là phân tích dữ liệu học tập thực tế của học viên, chỉ ra điểm mạnh, điểm yếu, đề xuất bài học tiếp theo, bài cần ôn lại, tài liệu phù hợp từ Materials và lập Kế hoạch học tập Hôm nay (Today's Learning Plan) cá nhân hóa, khả thi và truyền cảm hứng.
@@ -138,17 +130,25 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Payload must not contain credentials or security tokens.' });
   }
 
-  // Anti-abuse & Prompt injection protection
+  // Anti-abuse & Prompt injection protection via shared api/_agent guardrails
   const payloadString = JSON.stringify(payload);
-  if (payloadString.length > 5000) {
-    return res.status(400).json({ error: 'Dữ liệu phân tích vượt quá giới hạn cho phép.' });
-  }
-
-  if (detectAbuseOrInjection(payloadString)) {
+  const inputGuard = validateAgentInput({ text: payloadString, maxLength: MAX_COACH_PAYLOAD_LEN });
+  if (!inputGuard.allowed) {
     return res.status(400).json({
-      error: 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.'
+      error:
+        inputGuard.code === 'input_too_long'
+          ? 'Dữ liệu phân tích vượt quá giới hạn cho phép.'
+          : inputGuard.reason || 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.',
     });
   }
+
+  const traceId = crypto.randomUUID();
+  const startedAt = Date.now();
+  const route = selectModelTier({
+    intent: AGENT_INTENTS.PROGRESS_COACH,
+    hskLevel: payload.hskLevel || 'HSK 1',
+  });
+  const memoryEnabled = body.memory_enabled !== false && payload.memory_enabled !== false;
 
   // 3.5 Telemetry Briefing Action (with instant deterministic fallback)
   if (action === 'generate_telemetry_briefing') {
@@ -215,59 +215,94 @@ export default async function handler(req, res) {
     return res.status(200).json(deterministicBriefing);
   }
 
-  // 4. Construct Prompts
-  const { 
-    hskLevel = 'HSK 1', 
+  // 4. Construct Prompts (respecting memory_enabled opt-out)
+  const {
+    hskLevel = 'HSK 1',
     learningGoal = 'general_foundation',
-    streak = 0, 
-    daysInactive = 0, 
-    studyMinutes = 0, 
-    completedLessonsCount = 0, 
-    activeLessonId = 'l-101', 
+    streak = 0,
+    daysInactive = 0,
+    studyMinutes = 0,
+    completedLessonsCount = 0,
+    activeLessonId = 'l-101',
     nextLesson = null,
     reviewLessonsCount = 0,
-    srsDueCount = 0, 
+    srsDueCount = 0,
     hasSparseData = false,
-    skills = {}, 
+    skills = {},
     weaknesses = [],
     weakVocabHanzi = [],
-    durationMinutes = 15 
+    durationMinutes = 15,
+    session_summary = '',
   } = payload;
 
-  const userPrompt = `Dữ liệu hồ sơ học viên:
+  const memoryContext = buildSafeLearnerMemoryContext({
+    hskLevel,
+    memoryEnabled,
+    learnerProfile: memoryEnabled ? { learningGoal, completedLessonsCount } : null,
+    learningMemory: memoryEnabled
+      ? {
+          confirmedMistakes: Array.isArray(weaknesses) ? weaknesses.map((w) => w?.label || w).filter(Boolean) : [],
+          dueVocabWords: Array.isArray(weakVocabHanzi) ? weakVocabHanzi : [],
+        }
+      : null,
+    sessionSummary: memoryEnabled ? session_summary : '',
+  });
+
+  const safeWeaknesses = memoryEnabled ? weaknesses : [];
+  const safeWeakVocab = memoryEnabled ? weakVocabHanzi : [];
+
+  const userPrompt = redactSensitiveData(`Dữ liệu hồ sơ học viên:
+<learner_context>
+${memoryContext.contextText}
+</learner_context>
 - Trình độ hiện tại: ${hskLevel}
 - Mục tiêu học tập ưu tiên: ${learningGoal}
-- Chuỗi ngày học liên tục (Streak): ${streak} ngày
-- Số ngày tạm dừng học: ${daysInactive} ngày
-- Tổng thời gian đã học: ${studyMinutes} phút
-- Số bài học đã hoàn thành: ${completedLessonsCount}/60 bài (Bài học tiếp theo: ${nextLesson?.title || activeLessonId})
-- Số bài cần ôn tập (Điểm < 90% hoặc đã lâu): ${reviewLessonsCount} bài
-- Số từ vựng đến hạn cần ôn (SRS Due): ${srsDueCount} từ
-- Trạng thái dữ liệu học tập: ${hasSparseData ? 'Học viên mới, chưa có đủ dữ liệu lịch sử' : 'Đã có dữ liệu học tập thực tế'}
-- Từ vựng hay quên/cần củng cố: ${weakVocabHanzi.length > 0 ? weakVocabHanzi.join(', ') : 'Chưa có từ nào bị đánh dấu yếu'}
+- Chuỗi ngày học liên tục (Streak): ${memoryEnabled ? streak : 0} ngày
+- Số ngày tạm dừng học: ${memoryEnabled ? daysInactive : 0} ngày
+- Tổng thời gian đã học: ${memoryEnabled ? studyMinutes : 0} phút
+- Số bài học đã hoàn thành: ${memoryEnabled ? completedLessonsCount : 0}/60 bài (Bài học tiếp theo: ${nextLesson?.title || activeLessonId})
+- Số bài cần ôn tập (Điểm < 90% hoặc đã lâu): ${memoryEnabled ? reviewLessonsCount : 0} bài
+- Số từ vựng đến hạn cần ôn (SRS Due): ${memoryEnabled ? srsDueCount : 0} từ
+- Trạng thái dữ liệu học tập: ${!memoryEnabled || hasSparseData ? 'Học viên mới hoặc đã tắt bộ nhớ dài hạn' : 'Đã có dữ liệu học tập thực tế'}
+- Từ vựng hay quên/cần củng cố: ${safeWeakVocab.length > 0 ? safeWeakVocab.join(', ') : 'Không áp dụng'}
 - Đánh giá 7 kỹ năng (Thực tế, không điểm ảo):
-  + Từ vựng: ${skills.vocabulary || 'Chưa đủ dữ liệu'}
-  + Ngữ pháp: ${skills.grammar || 'Chưa đủ dữ liệu'}
-  + Nghe hiểu: ${skills.listening || 'Chưa đủ dữ liệu'}
-  + Nói phản xạ: ${skills.speaking || 'Chưa đủ dữ liệu'}
-  + Đọc hiểu: ${skills.reading || 'Chưa đủ dữ liệu'}
-  + Chữ Hán/Viết: ${skills.writing || 'Chưa đủ dữ liệu'}
-  + Phát âm: ${skills.pronunciation || 'Chưa đủ dữ liệu'}
-- Các điểm yếu đã phát hiện: ${weaknesses.length > 0 ? weaknesses.map(w => `${w.label} (${w.severity})`).join('; ') : 'Chưa có điểm yếu nghiêm trọng'}
+  + Từ vựng: ${memoryEnabled ? (skills.vocabulary || 'Chưa đủ dữ liệu') : 'Chế độ riêng tư'}
+  + Ngữ pháp: ${memoryEnabled ? (skills.grammar || 'Chưa đủ dữ liệu') : 'Chế độ riêng tư'}
+  + Nghe hiểu: ${memoryEnabled ? (skills.listening || 'Chưa đủ dữ liệu') : 'Chế độ riêng tư'}
+  + Nói phản xạ: ${memoryEnabled ? (skills.speaking || 'Chưa đủ dữ liệu') : 'Chế độ riêng tư'}
+  + Đọc hiểu: ${memoryEnabled ? (skills.reading || 'Chưa đủ dữ liệu') : 'Chế độ riêng tư'}
+  + Chữ Hán/Viết: ${memoryEnabled ? (skills.writing || 'Chưa đủ dữ liệu') : 'Chế độ riêng tư'}
+  + Phát âm: ${memoryEnabled ? (skills.pronunciation || 'Chưa đủ dữ liệu') : 'Chế độ riêng tư'}
+- Các điểm yếu đã phát hiện: ${safeWeaknesses.length > 0 ? safeWeaknesses.map(w => `${w.label} (${w.severity})`).join('; ') : 'Không áp dụng'}
 - Thời lượng học mục tiêu hôm nay: ${durationMinutes} phút.
 
-Hãy đóng vai Lão Sư HanziGo, đưa ra phân tích, điểm yếu, đề xuất bài học tiếp theo, bài cần ôn lại, tài liệu từ Materials và tạo kế hoạch học tập chi tiết ${durationMinutes} phút hôm nay theo đúng cấu trúc JSON quy định.`;
+Hãy đóng vai Lão Sư HanziGo, đưa ra phân tích, điểm yếu, đề xuất bài học tiếp theo, bài cần ôn lại, tài liệu từ Materials và tạo kế hoạch học tập chi tiết ${durationMinutes} phút hôm nay theo đúng cấu trúc JSON quy định.`);
 
   try {
     const aiResult = await callUnifiedAiProvider({
       action: 'coach_plan',
       systemPrompt: SYSTEM_PROMPT_COACH,
       userPrompt,
-      temperature: 0.6,
-      maxTokens: 1200
+      temperature: route.temperature,
+      maxTokens: Math.max(1200, route.maxOutputTokens),
+      timeoutMs: route.timeoutMs,
     });
 
     if (!aiResult.success) {
+      emitAgentTrace(
+        buildAgentTraceRecord({
+          traceId,
+          userId: auth.user.id,
+          intent: AGENT_INTENTS.PROGRESS_COACH,
+          tier: route.tier,
+          model: route.model,
+          memoryApplied: memoryContext.memoryApplied,
+          latencyMs: Date.now() - startedAt,
+          status: 'provider_error',
+          fallbackUsed: true,
+          fallbackReason: aiResult.error || 'provider_unavailable',
+        })
+      );
       return res.status(aiResult.status || 502).json({
         error: aiResult.error || 'Dịch vụ AI phản hồi không thành công. Hệ thống sẽ tự động chuyển sang chế độ ngoại tuyến.'
       });
@@ -276,17 +311,47 @@ Hãy đóng vai Lão Sư HanziGo, đưa ra phân tích, điểm yếu, đề xu�
     const parsedResult = aiResult.data || {};
     parsedResult._metadata = {
       provider: aiResult.provider,
-      model: aiResult.model,
+      model: aiResult.model || route.model,
+      model_tier: route.tier,
+      route_reason: route.reason,
+      trace_id: traceId,
+      memory_applied: memoryContext.memoryApplied,
       usage: aiResult.usage,
       costUsd: aiResult.costUsd || 0,
       latencyMs: aiResult.latencyMs
     };
 
+    emitAgentTrace(
+      buildAgentTraceRecord({
+        traceId,
+        userId: auth.user.id,
+        intent: AGENT_INTENTS.PROGRESS_COACH,
+        tier: route.tier,
+        model: aiResult.model || route.model,
+        memoryApplied: memoryContext.memoryApplied,
+        totalTokens: aiResult.usage?.totalTokens || 0,
+        costUsd: aiResult.costUsd || 0,
+        latencyMs: aiResult.latencyMs || Date.now() - startedAt,
+        status: 'ok',
+      })
+    );
+
     return res.status(200).json(parsedResult);
   } catch (err) {
-    console.error('Coach API internal error:', err.message);
-    return res.status(500).json({
-      error: 'Lỗi máy chủ nội bộ khi xử lý phân tích AI Learning Coach.'
-    });
+    console.error('Coach API internal error:', redactSensitiveData(err?.message || ''));
+    emitAgentTrace(
+      buildAgentTraceRecord({
+        traceId,
+        userId: auth.user.id,
+        intent: AGENT_INTENTS.PROGRESS_COACH,
+        tier: route.tier,
+        model: route.model,
+        memoryApplied: memoryContext.memoryApplied,
+        latencyMs: Date.now() - startedAt,
+        status: 'error',
+        errorCode: 'coach_internal_error',
+      })
+    );
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ khi xử lý phân tích AI Learning Coach.', err, 500);
   }
 }

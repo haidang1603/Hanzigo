@@ -14,8 +14,99 @@
 
 export const GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash-lite';
 export const DEFAULT_TIMEOUT_MS = 25000;
+export const FALLBACK_TIMEOUT_MS = 12000;
+export const MAX_FALLBACK_KEYS_PER_PROVIDER = 2;
 const KEY_COOLDOWN_MS = 60_000;
 const rateLimitedKeysUntil = new Map();
+
+export const GROQ_DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
+export const GROQ_DEFAULT_MODEL_LITE = 'llama-3.1-8b-instant';
+export const GROQ_DEFAULT_MODEL_STANDARD = 'llama-3.3-70b-versatile';
+
+export const OPENROUTER_DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
+export const OPENROUTER_DEFAULT_MODEL_LITE = 'openrouter/free';
+export const OPENROUTER_DEFAULT_MODEL_STANDARD = 'qwen/qwen-2.5-72b-instruct:free';
+
+const PROVIDER_LIVE_PREFIXES = {
+  gemini: ['AIza', 'AQ.'],
+  groq: ['gsk_'],
+  openrouter: ['sk-or-'],
+};
+
+function redactSecret(text, secret = '') {
+  let out = String(text || '');
+  if (secret && String(secret).length >= 6) {
+    out = out.split(String(secret)).join('[REDACTED_KEY]');
+  }
+  return out
+    .replace(/Bearer\s+[A-Za-z0-9._~+/-]+=*/gi, 'Bearer [REDACTED]')
+    .replace(/\b(AIza[0-9A-Za-z_-]{12,}|gsk_[0-9A-Za-z_-]{12,}|sk-or-[0-9A-Za-z_-]{12,}|sk-[0-9A-Za-z_-]{12,})\b/g, '[REDACTED_KEY]');
+}
+
+/**
+ * Shared multi-key pool loader supporting:
+ * <PREFIX>_API_KEY, <PREFIX>_API_KEYS (comma/newline separated), and <PREFIX>_API_KEY_1..10.
+ * Sorts healthy keys before cooled-down keys using `${provider}:${key}` entries.
+ */
+export function getProviderApiKeys(prefix = 'GEMINI', now = Date.now()) {
+  const upper = String(prefix || 'GEMINI').trim().toUpperCase();
+  const provider = upper.toLowerCase();
+  const placeholder = `your_${provider}_api_key_here`;
+  const livePrefixes = PROVIDER_LIVE_PREFIXES[provider] || [];
+
+  const candidates = [];
+  if (process.env[`${upper}_API_KEY`]) {
+    candidates.push(process.env[`${upper}_API_KEY`]);
+  }
+  if (process.env[`${upper}_API_KEYS`]) {
+    for (const part of String(process.env[`${upper}_API_KEYS`]).split(/[,\r\n]+/)) {
+      candidates.push(part);
+    }
+  }
+  for (let i = 1; i <= 10; i += 1) {
+    const numbered = process.env[`${upper}_API_KEY_${i}`];
+    if (numbered) candidates.push(numbered);
+  }
+
+  const isIsolatedTestEnv =
+    Boolean(process.env.NODE_TEST_CONTEXT) && process.env.HANZIGO_LIVE_AI_TEST !== 'true';
+  const deduped = [];
+  const seen = new Set();
+  for (const raw of candidates) {
+    const key = String(raw || '').trim();
+    if (!key || key === placeholder || seen.has(key)) continue;
+    if (isIsolatedTestEnv && livePrefixes.some((p) => key.startsWith(p))) continue;
+    seen.add(key);
+    deduped.push(key);
+  }
+
+  const healthy = [];
+  const cooledDown = [];
+  for (const key of deduped) {
+    const cooldownKey = `${provider}:${key}`;
+    const until = rateLimitedKeysUntil.get(cooldownKey) || 0;
+    if (until > now) {
+      cooledDown.push(key);
+    } else {
+      if (until > 0) rateLimitedKeysUntil.delete(cooldownKey);
+      healthy.push(key);
+    }
+  }
+  return [...healthy, ...cooledDown];
+}
+
+export function markProviderKeyRateLimited(provider, apiKey, cooldownMs = KEY_COOLDOWN_MS, now = Date.now()) {
+  if (!provider || !apiKey) return;
+  rateLimitedKeysUntil.set(`${String(provider).toLowerCase()}:${apiKey}`, now + cooldownMs);
+}
+
+export function getGroqApiKeys(now = Date.now()) {
+  return getProviderApiKeys('GROQ', now);
+}
+
+export function getOpenRouterApiKeys(now = Date.now()) {
+  return getProviderApiKeys('OPENROUTER', now);
+}
 
 const GEMINI_PRICING_PER_1M_USD = {
   'flash-lite': { input: 0.10, output: 0.40 },
@@ -60,50 +151,11 @@ export function calculateGeminiTokenCost({
  * Places non-cooled-down keys first so rate-limited keys are skipped automatically.
  */
 export function getGeminiApiKeys(now = Date.now()) {
-  const candidates = [];
-  if (process.env.GEMINI_API_KEY) {
-    candidates.push(process.env.GEMINI_API_KEY);
-  }
-  if (process.env.GEMINI_API_KEYS) {
-    for (const part of process.env.GEMINI_API_KEYS.split(',')) {
-      candidates.push(part);
-    }
-  }
-  for (let i = 1; i <= 10; i += 1) {
-    const numbered = process.env[`GEMINI_API_KEY_${i}`];
-    if (numbered) candidates.push(numbered);
-  }
-
-  const isIsolatedTestEnv =
-    Boolean(process.env.NODE_TEST_CONTEXT) && process.env.HANZIGO_LIVE_AI_TEST !== 'true';
-
-  const deduped = [];
-  const seen = new Set();
-  for (const raw of candidates) {
-    const key = String(raw || '').trim();
-    if (!key || key === 'your_gemini_api_key_here' || seen.has(key)) continue;
-    if (isIsolatedTestEnv && (key.startsWith('AIza') || key.startsWith('AQ.'))) continue;
-    seen.add(key);
-    deduped.push(key);
-  }
-
-  const healthy = [];
-  const cooledDown = [];
-  for (const key of deduped) {
-    const until = rateLimitedKeysUntil.get(key) || 0;
-    if (until > now) {
-      cooledDown.push(key);
-    } else {
-      if (until > 0) rateLimitedKeysUntil.delete(key);
-      healthy.push(key);
-    }
-  }
-  return [...healthy, ...cooledDown];
+  return getProviderApiKeys('GEMINI', now);
 }
 
 export function markGeminiKeyRateLimited(apiKey, cooldownMs = KEY_COOLDOWN_MS, now = Date.now()) {
-  if (!apiKey) return;
-  rateLimitedKeysUntil.set(apiKey, now + cooldownMs);
+  markProviderKeyRateLimited('gemini', apiKey, cooldownMs, now);
 }
 
 export function __resetGeminiKeyPoolForTests() {
@@ -381,9 +433,349 @@ export function evaluateFallbackPolicy({
   };
 }
 
+function convertGeminiContentsToOpenAiMessages({ systemInstruction = '', contents = [], messages = null } = {}) {
+  const out = [];
+  if (systemInstruction && String(systemInstruction).trim()) {
+    out.push({ role: 'system', content: String(systemInstruction).trim() });
+  }
+
+  if (Array.isArray(messages) && messages.length > 0) {
+    for (const m of messages) {
+      if (!m) continue;
+      const role = m.role === 'model' ? 'assistant' : (m.role || 'user');
+      if (role === 'system' && out.some((x) => x.role === 'system')) continue;
+      out.push({ role, content: String(m.content || m.text || '') });
+    }
+    return out;
+  }
+
+  if (!Array.isArray(contents)) return out;
+
+  const pendingCallIdsByName = new Map();
+  let callCounter = 0;
+
+  for (const item of contents) {
+    if (!item) continue;
+    if (!Array.isArray(item.parts)) {
+      const role = item.role === 'model' ? 'assistant' : (item.role || 'user');
+      out.push({ role, content: String(item.content || item.text || '') });
+      continue;
+    }
+
+    const textParts = [];
+    const toolCalls = [];
+    const toolResponses = [];
+
+    for (const part of item.parts) {
+      if (!part) continue;
+      if (part.functionCall?.name) {
+        callCounter += 1;
+        const callId = `call_${callCounter}_${part.functionCall.name}`;
+        pendingCallIdsByName.set(part.functionCall.name, callId);
+        toolCalls.push({
+          id: callId,
+          type: 'function',
+          function: {
+            name: String(part.functionCall.name),
+            arguments: JSON.stringify(part.functionCall.args || {}),
+          },
+        });
+      } else if (part.functionResponse?.name) {
+        const fnName = String(part.functionResponse.name);
+        const callId = pendingCallIdsByName.get(fnName) || `call_${fnName}`;
+        toolResponses.push({
+          role: 'tool',
+          tool_call_id: callId,
+          name: fnName,
+          content: JSON.stringify(part.functionResponse.response ?? {}),
+        });
+      } else if (typeof part.text === 'string' && part.text.trim()) {
+        textParts.push(part.text);
+      }
+    }
+
+    if (toolResponses.length > 0) {
+      for (const tr of toolResponses) out.push(tr);
+    } else if (toolCalls.length > 0) {
+      out.push({
+        role: 'assistant',
+        content: textParts.length > 0 ? textParts.join('\n') : null,
+        tool_calls: toolCalls,
+      });
+    } else if (textParts.length > 0) {
+      const role = item.role === 'model' ? 'assistant' : (item.role || 'user');
+      out.push({ role, content: textParts.join('\n') });
+    }
+  }
+
+  return out;
+}
+
+function convertGeminiToolsToOpenAiTools(tools = []) {
+  if (!Array.isArray(tools) || tools.length === 0) return [];
+  const declarations = [];
+  for (const entry of tools) {
+    if (Array.isArray(entry?.functionDeclarations)) {
+      declarations.push(...entry.functionDeclarations);
+    } else if (entry?.name) {
+      declarations.push(entry);
+    }
+  }
+  return declarations
+    .filter((fn) => fn?.name)
+    .map((fn) => ({
+      type: 'function',
+      function: {
+        name: String(fn.name),
+        description: String(fn.description || ''),
+        parameters: fn.parameters && typeof fn.parameters === 'object'
+          ? fn.parameters
+          : { type: 'object', properties: {} },
+      },
+    }));
+}
+
+/**
+ * Shared OpenAI-compatible Chat Completions adapter (Groq, OpenRouter, etc.).
+ */
+export async function callOpenAiCompatibleProvider({
+  providerName = 'openai_compatible',
+  baseUrl,
+  apiKey,
+  model,
+  systemInstruction = '',
+  messages = null,
+  contents = [],
+  tools = [],
+  jsonMode = false,
+  maxOutputTokens = 1000,
+  temperature = 0.5,
+  timeoutMs = FALLBACK_TIMEOUT_MS,
+} = {}) {
+  if (!baseUrl || !apiKey || !model) {
+    return {
+      success: false,
+      status: 503,
+      provider: providerName,
+      model: model || '',
+      code: 'NO_ACTIVE_AI_PROVIDER',
+      error: 'Thiếu cấu hình provider OpenAI-compatible.',
+      latencyMs: 0,
+    };
+  }
+
+  const effectiveTimeout = Math.min(FALLBACK_TIMEOUT_MS, Math.max(1000, Number(timeoutMs) || FALLBACK_TIMEOUT_MS));
+  const openAiMessages = convertGeminiContentsToOpenAiMessages({ systemInstruction, contents, messages });
+  const openAiTools = convertGeminiToolsToOpenAiTools(tools);
+
+  const requestBody = {
+    model,
+    messages: openAiMessages,
+    temperature,
+    max_tokens: maxOutputTokens,
+  };
+
+  if (openAiTools.length > 0) {
+    requestBody.tools = openAiTools;
+    requestBody.tool_choice = 'auto';
+  } else if (jsonMode) {
+    requestBody.response_format = { type: 'json_object' };
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${apiKey}`,
+  };
+  if (providerName === 'openrouter' || String(baseUrl).includes('openrouter.ai')) {
+    headers['HTTP-Referer'] = process.env.PUBLIC_SITE_URL || 'https://www.hanzigo.io.vn';
+    headers['X-Title'] = 'HanziGo';
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), effectiveTimeout);
+  const startTime = Date.now();
+
+  try {
+    const response = await fetch(baseUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+    const latencyMs = Date.now() - startTime;
+
+    if (!response.ok) {
+      let errText = '';
+      try {
+        const errJson = await response.json();
+        errText = errJson?.error?.message || errJson?.message || JSON.stringify(errJson);
+      } catch {
+        errText = await response.text().catch(() => '');
+      }
+      const safeError = redactSecret(errText || `${providerName} HTTP ${response.status}`, apiKey);
+      return {
+        success: false,
+        status: response.status,
+        provider: providerName,
+        model,
+        code: response.status === 429 ? 'rate_limit_exceeded' : response.status === 400 ? 'bad_request' : 'provider_error',
+        error: safeError,
+        latencyMs,
+      };
+    }
+
+    const data = await response.json();
+    const choiceMsg = data?.choices?.[0]?.message || {};
+    const rawToolCalls = Array.isArray(choiceMsg.tool_calls) ? choiceMsg.tool_calls : [];
+
+    const toolCalls = rawToolCalls
+      .filter((tc) => tc?.function?.name)
+      .map((tc) => {
+        let parsedArgs = {};
+        try {
+          parsedArgs = typeof tc.function.arguments === 'string'
+            ? JSON.parse(tc.function.arguments || '{}')
+            : (tc.function.arguments || {});
+        } catch {
+          parsedArgs = {};
+        }
+        return {
+          name: String(tc.function.name),
+          args: parsedArgs && typeof parsedArgs === 'object' ? parsedArgs : {},
+        };
+      });
+
+    const text = typeof choiceMsg.content === 'string' ? choiceMsg.content.trim() : '';
+    if (toolCalls.length === 0 && !text) {
+      return {
+        success: false,
+        status: 502,
+        provider: providerName,
+        model,
+        code: 'empty_response',
+        error: `${providerName} trả về phản hồi rỗng.`,
+        latencyMs,
+      };
+    }
+
+    let parsedJson = null;
+    if (toolCalls.length === 0 && text) {
+      try {
+        parsedJson = extractStructuredJson(text);
+      } catch {
+        parsedJson = null;
+      }
+    }
+
+    const usageRaw = data?.usage || {};
+    const promptTokens = Number(usageRaw.prompt_tokens) || 0;
+    const completionTokens = Number(usageRaw.completion_tokens) || Math.ceil(text.length / 4);
+    const totalTokens = Number(usageRaw.total_tokens) || promptTokens + completionTokens;
+    const isFreeModel = String(model).includes(':free') || model === 'openrouter/free' || providerName === 'groq';
+    const costUsd = isFreeModel ? 0 : Number((((promptTokens + completionTokens) / 1_000_000) * 0.25).toFixed(8));
+
+    return {
+      success: true,
+      provider: providerName,
+      model,
+      type: toolCalls.length > 0 ? 'tool_calls' : 'final_text',
+      toolCalls,
+      text,
+      rawText: text,
+      parsedJson,
+      data: parsedJson,
+      usage: { promptTokens, completionTokens, totalTokens },
+      costUsd,
+      fallbackUsed: true,
+      latencyMs,
+    };
+  } catch (err) {
+    const isTimeout = err?.name === 'AbortError';
+    return {
+      success: false,
+      status: isTimeout ? 504 : 500,
+      provider: providerName,
+      model,
+      code: isTimeout ? 'timeout' : 'network_error',
+      error: isTimeout
+        ? `${providerName} timeout sau ${effectiveTimeout}ms`
+        : redactSecret(err?.message || 'Network error', apiKey),
+      latencyMs: Date.now() - startTime,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function runOpenAiFallbackChain({
+  tier = 'standard',
+  systemInstruction = '',
+  messages = null,
+  contents = [],
+  tools = [],
+  jsonMode = false,
+  maxOutputTokens = 1000,
+  temperature = 0.5,
+  timeoutMs = FALLBACK_TIMEOUT_MS,
+} = {}) {
+  const isLite = tier === 'lite';
+  const providers = [
+    {
+      name: 'groq',
+      keys: getGroqApiKeys().slice(0, MAX_FALLBACK_KEYS_PER_PROVIDER),
+      baseUrl: (process.env.GROQ_BASE_URL || GROQ_DEFAULT_BASE_URL).trim(),
+      model: (
+        isLite
+          ? (process.env.GROQ_MODEL_LITE || GROQ_DEFAULT_MODEL_LITE)
+          : (process.env.GROQ_MODEL_STANDARD || GROQ_DEFAULT_MODEL_STANDARD)
+      ).trim(),
+    },
+    {
+      name: 'openrouter',
+      keys: getOpenRouterApiKeys().slice(0, MAX_FALLBACK_KEYS_PER_PROVIDER),
+      baseUrl: (process.env.OPENROUTER_BASE_URL || OPENROUTER_DEFAULT_BASE_URL).trim(),
+      model: (
+        isLite
+          ? (process.env.OPENROUTER_MODEL_LITE || OPENROUTER_DEFAULT_MODEL_LITE)
+          : (process.env.OPENROUTER_MODEL_STANDARD || OPENROUTER_DEFAULT_MODEL_STANDARD)
+      ).trim(),
+    },
+  ];
+
+  for (const provider of providers) {
+    for (let idx = 0; idx < provider.keys.length; idx += 1) {
+      const apiKey = provider.keys[idx];
+      const res = await callOpenAiCompatibleProvider({
+        providerName: provider.name,
+        baseUrl: provider.baseUrl,
+        apiKey,
+        model: provider.model,
+        systemInstruction,
+        messages,
+        contents,
+        tools,
+        jsonMode,
+        maxOutputTokens,
+        temperature,
+        timeoutMs,
+      });
+      if (res.success) return res;
+      console.warn(
+        `[AI Gateway] ${provider.name} fallback failed on key #${idx + 1}/${provider.keys.length} (Status: ${res.status}, Error: ${redactSecret(res.error, apiKey)})`
+      );
+      if (res.status === 400) break;
+      if (res.status === 429 || res.status === 403) {
+        markProviderKeyRateLimited(provider.name, apiKey);
+      }
+    }
+  }
+
+  return null;
+}
+
 /**
  * UNIFIED AI SERVICE DISPATCHER
- * Uses Google Gemini (GEMINI_API_KEY) with deterministic offline fallback.
+ * Uses Google Gemini (GEMINI_API_KEY) with Groq -> OpenRouter -> deterministic offline fallback.
  */
 export async function callUnifiedAiProvider({
   systemPrompt = '',
@@ -393,9 +785,11 @@ export async function callUnifiedAiProvider({
   maxTokens = 1200,
   timeoutMs = DEFAULT_TIMEOUT_MS,
   action = 'personalize',
+  tier = null,
 }) {
   const geminiKeys = getGeminiApiKeys();
   const geminiModel = process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
+  const resolvedTier = tier || (maxTokens <= 700 ? 'lite' : 'standard');
 
   const resolvedUserPrompt =
     userPrompt ||
@@ -414,9 +808,9 @@ export async function callUnifiedAiProvider({
           .join('\n')
       : '');
 
-  if (geminiKeys.length > 0) {
-    let lastFailure = null;
+  let lastFailure = null;
 
+  if (geminiKeys.length > 0) {
     for (let idx = 0; idx < geminiKeys.length; idx += 1) {
       const apiKey = geminiKeys[idx];
       const geminiRes = await callGemini({
@@ -440,19 +834,52 @@ export async function callUnifiedAiProvider({
 
       lastFailure = geminiRes;
       console.warn(
-        `[AI Gateway] Gemini call failed on key #${idx + 1}/${geminiKeys.length} (Status: ${geminiRes.status}, Error: ${geminiRes.error})`
+        `[AI Gateway] Gemini call failed on key #${idx + 1}/${geminiKeys.length} (Status: ${geminiRes.status}, Error: ${redactSecret(geminiRes.error, apiKey)})`
       );
 
       // Do not rotate on 400 Bad Request (prompt/schema issue)
       if (geminiRes.status === 400) {
-        break;
+        return {
+          success: false,
+          status: lastFailure?.status || 400,
+          provider: 'gemini',
+          model: geminiModel,
+          error: lastFailure?.error || 'Bad request.',
+          code: lastFailure?.code || 'bad_request',
+          latencyMs: lastFailure?.latencyMs || 0
+        };
       }
 
       if (geminiRes.status === 429 || geminiRes.status === 403) {
         markGeminiKeyRateLimited(apiKey);
       }
     }
+  }
 
+  // =========================================================================
+  // TIER-2 FALLBACK: GROQ -> OPENROUTER (OPENAI-COMPATIBLE)
+  // =========================================================================
+  const fallbackRes = await runOpenAiFallbackChain({
+    tier: resolvedTier,
+    systemInstruction: resolvedSystemPrompt,
+    contents: resolvedUserPrompt ? [{ role: 'user', parts: [{ text: resolvedUserPrompt }] }] : [],
+    messages: !resolvedUserPrompt && Array.isArray(messages) ? messages : null,
+    jsonMode: true,
+    maxOutputTokens: maxTokens,
+    temperature,
+    timeoutMs: Math.min(FALLBACK_TIMEOUT_MS, timeoutMs),
+  });
+
+  if (fallbackRes?.success && (fallbackRes.data || fallbackRes.text)) {
+    return {
+      ...fallbackRes,
+      action,
+      fallbackUsed: true,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  if (lastFailure) {
     return {
       success: false,
       status: lastFailure?.status || 503,
@@ -646,6 +1073,20 @@ export async function callAgentModelTurn({
   const boundedRetries = Math.min(2, Math.max(0, Number(maxRetries) || 0));
 
   if (geminiKeys.length === 0) {
+    const fallbackRes = await runOpenAiFallbackChain({
+      tier,
+      systemInstruction,
+      contents,
+      tools,
+      jsonMode: false,
+      maxOutputTokens,
+      temperature,
+      timeoutMs: Math.min(FALLBACK_TIMEOUT_MS, effectiveTimeout),
+    });
+    if (fallbackRes?.success) {
+      return { ...fallbackRes, tier, fallbackUsed: true };
+    }
+
     return {
       success: false,
       status: 503,
@@ -680,7 +1121,7 @@ export async function callAgentModelTurn({
       });
 
       if (res.success) {
-        return res;
+        return { ...res, provider: 'gemini' };
       }
 
       lastFailure = res;
@@ -698,39 +1139,51 @@ export async function callAgentModelTurn({
     return { ...primaryRes, tier, fallbackUsed: false };
   }
 
+  let totalLatencyMs = primaryRes?.latencyMs || 0;
+  let lastFailedRes = primaryRes;
+
   if (primaryRes?.status !== 400 && fallbackModel && fallbackModel !== primaryModel) {
     const fallbackRes = await runWithModel(fallbackModel, 0);
+    totalLatencyMs += fallbackRes?.latencyMs || 0;
     if (fallbackRes?.success) {
       return { ...fallbackRes, tier, fallbackUsed: true };
     }
-    return {
-      success: false,
-      status: fallbackRes?.status || 503,
-      code: fallbackRes?.code || 'provider_error',
-      error: fallbackRes?.error || 'Fallback model failed.',
-      type: 'final_text',
-      toolCalls: [],
-      text: '',
-      parsedJson: null,
-      model: fallbackModel,
+    lastFailedRes = fallbackRes || primaryRes;
+  }
+
+  if (primaryRes?.status !== 400) {
+    const openAiFallback = await runOpenAiFallbackChain({
       tier,
-      fallbackUsed: true,
-      latencyMs: (primaryRes?.latencyMs || 0) + (fallbackRes?.latencyMs || 0),
-    };
+      systemInstruction,
+      contents,
+      tools,
+      jsonMode: false,
+      maxOutputTokens,
+      temperature,
+      timeoutMs: Math.min(FALLBACK_TIMEOUT_MS, effectiveTimeout),
+    });
+    if (openAiFallback?.success) {
+      return {
+        ...openAiFallback,
+        tier,
+        fallbackUsed: true,
+        latencyMs: totalLatencyMs + (openAiFallback.latencyMs || 0),
+      };
+    }
   }
 
   return {
     success: false,
-    status: primaryRes?.status || 503,
-    code: primaryRes?.code || 'provider_error',
-    error: primaryRes?.error || 'Model call failed.',
+    status: lastFailedRes?.status || 503,
+    code: lastFailedRes?.code || 'provider_error',
+    error: lastFailedRes?.error || 'Model call failed.',
     type: 'final_text',
     toolCalls: [],
     text: '',
     parsedJson: null,
-    model: primaryModel,
+    model: lastFailedRes?.model || primaryModel,
     tier,
-    fallbackUsed: false,
-    latencyMs: primaryRes?.latencyMs || 0,
+    fallbackUsed: lastFailedRes !== primaryRes,
+    latencyMs: totalLatencyMs,
   };
 }

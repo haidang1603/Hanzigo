@@ -11,7 +11,7 @@
  *    5. interview (Phỏng vấn xin việc tiếng Trung)
  *    6. business (Thương mại & Đàm phán hợp đồng)
  *    7. free (Trò chuyện tự do cùng Tiểu Hàm AI)
- * - Tùy chỉnh linh hoạt cấp độ HSK 1 đến HSK 6
+ * - Tùy chỉnh linh hoạt cấp độ HSK 1 đến HSK 7-9
  * - Minh bạch âm thanh & quyền riêng tư (Zero audio retention)
  * =========================================================================
  */
@@ -195,6 +195,75 @@ export const ADDITIONAL_SCENARIOS = [
         hanzi: '希望我们双方能够长期友好合作，互利共赢。',
         pinyin: 'Xīwàng wǒmen shuāngfāng nénggòu chángqī yǒuhǎo hézuò, hùlì gòngyíng.',
         meaning: 'Hy vọng hai bên chúng ta sẽ hợp tác hữu nghị lâu dài, đôi bên cùng có lợi.'
+      }
+    ]
+  },
+  {
+    id: 'conv-hsk5-media',
+    category: 'daily',
+    level: 'HSK 5',
+    title: 'Thảo luận Văn hóa & Truyền thông số (数字媒体与文化)',
+    scenario: 'Bạn trao đổi quan điểm chuyên sâu về tác động của video ngắn và mạng xã hội đối với thói quen đọc sách hiện nay.',
+    aiName: 'Biên tập viên Lâm (林编辑)',
+    aiRole: 'Biên tập viên chuyên mục văn hóa',
+    avatar: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%236366F1"/><text x="50%" y="54%" font-family="sans-serif" font-weight="bold" font-size="44" fill="%23ffffff" dominant-baseline="middle" text-anchor="middle">林</text></svg>',
+    dialogue: [],
+    suggestedReplies: [
+      {
+        hanzi: '我认为短视频虽然信息获取快，但容易让人失去深度思考的耐心。',
+        pinyin: 'Wǒ rènwéi duǎn shìpín suīrán xìnxī huòqǔ kuài, dàn róngyì ràng rén shīqù shēndù sīkǎo de nàixīn.',
+        meaning: 'Tôi cho rằng video ngắn tuy tiếp nhận thông tin nhanh nhưng dễ khiến con người mất kiên nhẫn suy nghĩ sâu.'
+      },
+      {
+        hanzi: '纸质书带来的沉浸感是电子屏幕很难完全替代的。',
+        pinyin: 'Zhǐzhìshū dàilái de chénjìngǎn shì diànzǐ píngmù hěn nán wánquán tìdài de.',
+        meaning: 'Cảm giác đắm chìm mà sách giấy mang lại là điều màn hình điện tử rất khó thay thế hoàn toàn.'
+      }
+    ]
+  },
+  {
+    id: 'conv-hsk6-debate',
+    category: 'business',
+    level: 'HSK 6',
+    title: 'Phân tích Kinh tế & Chuyển đổi Xanh (绿色经济转型)',
+    scenario: 'Bạn tham gia tọa đàm doanh nghiệp thảo luận về cân bằng giữa tăng trưởng sản xuất và bảo vệ môi trường.',
+    aiName: 'Chuyên gia Tôn (孙顾问)',
+    aiRole: 'Cố vấn chiến lược ESG',
+    avatar: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%230F766E"/><text x="50%" y="54%" font-family="sans-serif" font-weight="bold" font-size="44" fill="%23ffffff" dominant-baseline="middle" text-anchor="middle">孙</text></svg>',
+    dialogue: [],
+    suggestedReplies: [
+      {
+        hanzi: '从长远来看，低碳转型不仅是社会责任，更是企业提升核心竞争力的关键。',
+        pinyin: 'Cóng chángyuǎn lái kàn, dītàn zhuǎnxíng bùjǐn shì shèhuì zérèn, gèng shì qǐyè tíshēng héxīn jìngzhēnglì de guānjiàn.',
+        meaning: 'Xét về dài hạn, chuyển đổi carbon thấp không chỉ là trách nhiệm xã hội mà còn là chìa khóa nâng cao năng lực cạnh tranh cốt lõi.'
+      },
+      {
+        hanzi: '初期投入成本确实较高，因此需要循序渐进地优化供应链。',
+        pinyin: 'Chūqī tóurù chéngběn quèshí jiào gāo, yīncǐ xūyào xúnxù jiànjìn de yōuhuà gōngyìngliàn.',
+        meaning: 'Chi phí đầu tư ban đầu quả thực khá cao, do đó cần tối ưu hóa chuỗi cung ứng từng bước một.'
+      }
+    ]
+  },
+  {
+    id: 'conv-hsk79-academic',
+    category: 'school',
+    level: 'HSK 7-9',
+    title: 'Biện luận Học thuật & Trí tuệ Nhân tạo (AI与跨学科研究)',
+    scenario: 'Bạn bảo vệ luận điểm nghiên cứu cấp cao HSK 7–9 về đạo đức dữ liệu, dịch thuật liên văn hóa và vai trò của AI trong giáo dục.',
+    aiName: 'Giáo sư Cố (顾教授)',
+    aiRole: 'Giáo sư hướng dẫn nghiên cứu sinh',
+    avatar: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%239333EA"/><text x="50%" y="54%" font-family="sans-serif" font-weight="bold" font-size="44" fill="%23ffffff" dominant-baseline="middle" text-anchor="middle">顾</text></svg>',
+    dialogue: [],
+    suggestedReplies: [
+      {
+        hanzi: '人工智能在跨文化语境下的语义微调，仍须依托人类学者对历史脉络的深刻洞察。',
+        pinyin: 'Réngōng zhìnéng zài kuà wénhuà yǔjìng xià de yǔyì wēitiáo, réng xū yītuō rénlèi xuézhě duì lìshǐ màiluò de shēnkè dòngchá.',
+        meaning: 'Việc tinh chỉnh ngữ nghĩa của AI trong ngữ cảnh liên văn hóa vẫn phải dựa vào sự thấu hiểu sâu sắc của học giả đối với mạch lịch sử.'
+      },
+      {
+        hanzi: '本研究旨在探讨算法透明度与教育公平性之间的内在张力。',
+        pinyin: 'Běn yánjiū zhǐzài tàntǎo suànfǎ tòumíngdù yǔ jiàoyù gōngpíngxìng zhījiān de nèizài zhānglì.',
+        meaning: 'Nghiên cứu này nhằm phân tích mối tương quan và căng thẳng nội tại giữa tính minh bạch thuật toán và công bằng giáo dục.'
       }
     ]
   }

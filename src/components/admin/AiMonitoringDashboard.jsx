@@ -103,50 +103,50 @@ export default function AiMonitoringDashboard() {
     <div className="space-y-6 animate-in fade-in duration-200">
       
       {/* Top Header & Security Banner */}
-      <div className="bg-white dark:bg-[#1E293B] p-6 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xl font-extrabold text-[#243447] dark:text-white flex items-center gap-2">
-              <Cpu className="w-6 h-6 text-amber-500" />
-              Giám Sát AI Personalization Engine (Google Gemini)
+      <div className="bg-white dark:bg-[#1E293B] p-4 sm:p-6 rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <h2 className="text-lg sm:text-xl font-extrabold text-[#243447] dark:text-white flex items-center gap-2 break-words">
+              <Cpu className="w-6 h-6 text-amber-500 shrink-0" />
+              <span>Giám Sát Unified AI Core & Chi Phí</span>
             </h2>
             <AiContextBadge type="verified_official" label="Admin Telemetry" />
           </div>
-          <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-            Định tuyến qua Google Gemini Gateway phía server, kiểm soát hạn mức và bảo hiểm Zero-downtime với Engine sư phạm xác định.
+          <p className="text-xs text-[#748092] dark:text-[#94A3B8] break-words">
+            Điều phối tập trung qua lõi <code>api/_agent/</code>: định tuyến Model Router (<code>lite</code> / <code>standard</code> / <code>reasoning</code>), chống injection đa ngữ và fallback 3 tầng Zero-downtime.
           </p>
         </div>
 
         <button
           onClick={refreshMetrics}
           disabled={loading}
-          className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1.5 self-start md:self-auto transition-colors cursor-pointer disabled:opacity-50"
+          className="min-h-11 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1.5 self-start md:self-auto transition-colors cursor-pointer disabled:opacity-50 shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Làm mới chỉ số</span>
         </button>
       </div>
 
-      {/* Free-First Status Alert */}
-      <div className="p-4 rounded-2xl bg-linear-to-r from-emerald-500/10 via-teal-500/10 to-amber-500/10 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2.5">
+      {/* Free-First & 3-Tier Fallback Status Alert */}
+      <div className="p-4 rounded-2xl bg-linear-to-r from-emerald-500/10 via-teal-500/10 to-amber-500/10 border border-emerald-500/20 flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
+        <div className="flex items-start sm:items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black shrink-0">
             <Gift className="w-4 h-4" />
           </div>
-          <div>
-            <div className="font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-              Chính Sách Ưu Tiên Miễn Phí (Free-First AI Policy) Đang Hoạt Động
+          <div className="min-w-0">
+            <div className="font-extrabold text-slate-800 dark:text-white flex flex-wrap items-center gap-2">
+              <span>Chuỗi Fallback 3 Tầng (Free-First AI Policy) Đang Hoạt Động</span>
               <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 font-bold text-[10px]">
                 Chi phí $0.00
               </span>
             </div>
-            <div className="text-slate-500 dark:text-slate-400 text-[11px]">
-              Nhà cung cấp chính: <strong>Google Gemini</strong> • Mô hình: <code>{stats.primaryModel}</code>
+            <div className="text-slate-500 dark:text-slate-400 text-[11px] break-words mt-0.5">
+              1. <strong>Gemini Pool</strong> (<code>{stats.primaryModel}</code>) → 2. <strong>Groq</strong> (<code>llama-3.1-8b-instant</code> / <code>llama-3.3-70b-versatile</code>) → 3. <strong>OpenRouter</strong> (<code>openrouter/free</code> / <code>qwen-2.5-72b:free</code>) → 4. <strong>Deterministic</strong>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600 dark:text-slate-300">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600 dark:text-slate-300 shrink-0">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
           <span>{providerHealth.message || 'Hệ thống AI Gateway hoạt động bình thường'}</span>
         </div>
       </div>
@@ -243,57 +243,82 @@ export default function AiMonitoringDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Endpoints Breakdown */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs space-y-4">
-          <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
-            <BarChart2 className="w-5 h-5 text-amber-500" />
-            Ma Trận Gateway Endpoints
-          </h3>
+        <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+              <BarChart2 className="w-5 h-5 text-amber-500" />
+              <span>Ma Trận 8 Endpoints Đồng Bộ Lõi Agent</span>
+            </h3>
+            <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 font-extrabold text-[10px]">
+              8 / 8 Unified
+            </span>
+          </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {[
               {
                 endpoint: '/api/ai/tutor',
                 actions: 'Lão Sư AI Agent (10 Real Tools HSK 1–9, HITL SRS, Controlled Memory)',
-                provider: 'Google Gemini (gemini-3.5-flash-lite)',
+                tier: 'lite / standard (3-step Orchestrator)',
                 rateLimit: '20 req/min • Quota trọng số Agent',
-                status: 'Stateless Orchestrator + Guardrails'
-              },
-              {
-                endpoint: '/api/ai/personalize',
-                actions: 'coach_plan, explain_grammar, generate_exercise, diagnose_hsk_mistakes, recommend_resources',
-                provider: 'Google Gemini (gemini-3.5-flash-lite)',
-                rateLimit: '20 req/min • 150/ngày',
-                status: 'Bảo vệ JWT + In-Memory/Redis Limiter'
               },
               {
                 endpoint: '/api/ai/chat',
                 actions: 'Tiểu Hàm AI Tutor Chat (Hội thoại đa lượt, sửa lỗi)',
-                provider: 'Google Gemini (gemini-3.5-flash-lite)',
+                tier: 'lite (HSK 1–3) / standard (HSK 4–9)',
                 rateLimit: '20 req/min • 150/ngày',
-                status: 'Bảo vệ JWT + Anti-Injection regex'
+              },
+              {
+                endpoint: '/api/ai/coach',
+                actions: 'AI Learning Coach & Telemetry Briefing (tôn trọng memory_enabled)',
+                tier: 'standard (progress_coach)',
+                rateLimit: '15 req/min • 80/ngày',
+              },
+              {
+                endpoint: '/api/ai/personalize',
+                actions: 'coach_plan, explain_grammar, generate_exercise, diagnose_hsk_mistakes, recommend_resources',
+                tier: 'standard (progress_coach + memory_enabled)',
+                rateLimit: '20 req/min • 150/ngày',
+              },
+              {
+                endpoint: '/api/ai/grade',
+                actions: 'Chấm thi HSKK, Bài viết HSK, Dịch thuật HSK 7–9 & Từ điển ngữ cảnh',
+                tier: 'standard (writing_coach)',
+                rateLimit: '30 req/min • 300/ngày',
+              },
+              {
+                endpoint: '/api/ai/roleplay',
+                actions: 'Roleplay Studio (start_session, send_turn, legacy stateless)',
+                tier: 'lite (HSK 1–3) / standard (HSK 4–9)',
+                rateLimit: '25 req/min • 150/ngày',
+              },
+              {
+                endpoint: '/api/ai/pronunciation',
+                actions: 'AI Speaking Lab (Thẩm âm đa phương thức audio/ASR, thanh điệu)',
+                tier: 'lite / standard (pronunciation_coach)',
+                rateLimit: '30 req/min • 300/ngày',
               },
               {
                 endpoint: '/api/ai/teacher',
-                actions: 'analyze_class, generate_assignment, generate_lesson_plan',
-                provider: 'Google Gemini (gemini-3.5-flash-lite)',
+                actions: 'analyze_class, generate_assignment, generate_lesson_plan (DRAFT review)',
+                tier: 'standard (RBAC Giáo viên / Admin)',
                 rateLimit: '20 req/min • 150/ngày',
-                status: 'Chỉ Giáo viên / Admin (RBAC Strict)'
               }
             ].map((ep, idx) => (
-              <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 text-xs space-y-1">
-                <div className="flex items-center justify-between">
-                  <code className="font-mono font-bold text-amber-600 dark:text-amber-400">
+              <div key={idx} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 text-xs space-y-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <code className="font-mono font-bold text-amber-600 dark:text-amber-400 break-all">
                     {ep.endpoint}
                   </code>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-extrabold text-[10px]">
-                    Hoạt động
+                    Unified Core
                   </span>
                 </div>
-                <div className="text-slate-600 dark:text-slate-300 text-[11px]">
-                  <strong>Hành vi:</strong> {ep.actions}
+                <div className="text-slate-600 dark:text-slate-300 text-[11px] break-words">
+                  <strong>Chức năng:</strong> {ep.actions}
                 </div>
-                <div className="text-slate-500 dark:text-slate-400 text-[10px]">
-                  Provider: <strong>{ep.provider}</strong> • Hạn mức: {ep.rateLimit}
+                <div className="text-slate-500 dark:text-slate-400 text-[10px] break-words">
+                  Router: <strong>{ep.tier}</strong> • Hạn mức: {ep.rateLimit}
                 </div>
               </div>
             ))}
@@ -301,7 +326,7 @@ export default function AiMonitoringDashboard() {
         </div>
 
         {/* Security, Privacy & Compliance Card */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs space-y-4">
+        <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs space-y-4">
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
             <Lock className="w-5 h-5 text-emerald-500" />
             Kiểm Soát Quyền Riêng Tư & An Toàn Chi Phí
@@ -311,28 +336,28 @@ export default function AiMonitoringDashboard() {
             <div className="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 flex items-start gap-2 text-emerald-900 dark:text-emerald-200">
               <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
               <div>
-                <strong>Chặn Phát Sinh Chi Phí Ngầm (Zero Silent Charges):</strong> Nếu Google Gemini hết hạn mức (HTTP 429) hoặc gián đoạn, hệ thống tự động chuyển sang Engine Sư phạm Ngoại tuyến.
+                <strong>Chặn Phát Sinh Chi Phí Ngầm (Zero Silent Charges):</strong> Khi Gemini hết hạn mức (HTTP 429), hệ thống tự hạ cấp sang <strong>Groq</strong> rồi <strong>OpenRouter</strong> miễn phí trước khi dùng Engine Sư phạm Ngoại tuyến; tầng <code>reasoning</code> bị khóa mặc định trừ khi bật <code>AI_ALLOW_PREMIUM_TIER=true</code>.
               </div>
             </div>
 
             <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-start gap-2 text-slate-700 dark:text-slate-300">
               <Database className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
               <div>
-                <strong>Bộ máy Sư phạm Xác định (Deterministic Engine):</strong> Bảo đảm 100% các tính năng lập kế hoạch ngày, gợi ý lộ trình, bộ lọc từ vựng SRS và chẩn đoán đề HSK hoạt động chuẩn xác ngay cả khi ngoại tuyến hoặc không có API Key.
+                <strong>Guardrails & PII Redaction Dùng Chung:</strong> Toàn bộ 8 endpoint dùng chung <code>validateAgentInput()</code> (chặn prompt injection đa ngữ Việt–Trung–Anh) và <code>redactSensitiveData()</code> (che email, SĐT, JWT, API key) trước khi gọi LLM hay phát <code>emitAgentTrace()</code>.
               </div>
             </div>
 
             <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-start gap-2 text-slate-700 dark:text-slate-300">
               <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
               <div>
-                <strong>Bảo Mật API Secret Server-Side:</strong> Các khóa API nhà cung cấp AI được bảo vệ tuyệt đối trên Vercel Serverless / Node.js Runtime. Không có bất kỳ tiền tố <code>VITE_</code> nào làm rò rỉ khóa vào trình duyệt.
+                <strong>Bảo Mật API Secret Server-Side:</strong> Các khóa <code>GEMINI_API_KEY</code>, <code>GROQ_API_KEY</code>, <code>OPENROUTER_API_KEY</code> chỉ nằm trên Server Runtime và dùng <code>sendSafeServerError()</code> che toàn bộ stack/lỗi nội bộ ở Production.
               </div>
             </div>
 
             <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-start gap-2 text-slate-700 dark:text-slate-300">
               <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-indigo-500" />
               <div>
-                <strong>Tuân thủ Nghị định 13/2023 & GDPR:</strong> Học viên có toàn quyền bật/tắt cá nhân hóa AI, xuất dữ liệu JSON và yêu cầu xóa toàn bộ lịch sử học tập cá nhân hóa bất cứ lúc nào trong trang Hồ sơ cá nhân.
+                <strong>Tuân thủ Nghị định 13/2023 & GDPR:</strong> Học viên có toàn quyền bật/tắt <code>memory_enabled</code>, xóa ký ức AI, xuất dữ liệu JSON và yêu cầu xóa lịch sử học tập bất cứ lúc nào.
               </div>
             </div>
           </div>

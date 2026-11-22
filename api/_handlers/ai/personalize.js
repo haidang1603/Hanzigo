@@ -18,9 +18,15 @@
  * =========================================================================
  */
 
+import crypto from 'node:crypto';
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
-import { verifyRequestAuth } from '../../_utils/supabaseServer.js';
+import { verifyRequestAuth, sendSafeServerError } from '../../_utils/supabaseServer.js';
 import { callUnifiedAiProvider } from '../../_utils/aiProviderAdapter.js';
+import { AGENT_INTENTS } from '../../_agent/contracts.js';
+import { validateAgentInput, redactSensitiveData } from '../../_agent/guardrails.js';
+import { selectModelTier } from '../../_agent/modelRouter.js';
+import { buildSafeLearnerMemoryContext } from '../../_agent/memoryManager.js';
+import { buildAgentTraceRecord, emitAgentTrace } from '../../_agent/costAndObservability.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
@@ -29,21 +35,12 @@ const DAILY_QUOTA_MAX_REQUESTS = 150;
 // Maximum bounds
 const MAX_PAYLOAD_LENGTH = 15000;
 
-// Prompt injection & abuse detection patterns
-const INJECTION_PATTERNS = [
-  /ignore\s+(all\s+)?(previous|prior)\s+(instructions|prompts)/i,
-  /system\s+prompt\s+override/i,
-  /you\s+are\s+now\s+(an\s+unrestricted|DAN|jailbreak)/i,
-  /reveal\s+(your\s+)?(api[_\s]?key|secret|system\s+prompt)/i,
-  /drop\s+table\s+/i,
-  /<script\b[^>]*>/i,
-  /bypass\s+security/i
-];
-
 export function detectAbuseOrInjection(text) {
   if (!text) return false;
   const str = typeof text === 'string' ? text : JSON.stringify(text);
-  return INJECTION_PATTERNS.some(pattern => pattern.test(str));
+  if (!str.trim()) return false;
+  const check = validateAgentInput({ text: str, maxLength: MAX_PAYLOAD_LENGTH });
+  return !check.allowed && (check.code === 'prompt_injection_detected' || check.code === 'high_risk_action_blocked');
 }
 
 // System prompts for polymorphic personalization actions
@@ -259,35 +256,86 @@ export default async function handler(req, res) {
   }
   payload.userId = auth.user.id;
 
-  // Length check
+  // Length & Prompt injection detection via shared api/_agent guardrails
   const payloadStr = JSON.stringify(payload);
-  if (payloadStr.length > MAX_PAYLOAD_LENGTH) {
+  const inputGuard = validateAgentInput({ text: payloadStr, maxLength: MAX_PAYLOAD_LENGTH });
+  if (!inputGuard.allowed) {
     return res.status(400).json({
-      error: `Dữ liệu phân tích vượt quá giới hạn cho phép (tối đa ${MAX_PAYLOAD_LENGTH} ký tự).`
+      error:
+        inputGuard.code === 'input_too_long'
+          ? `Dữ liệu phân tích vượt quá giới hạn cho phép (tối đa ${MAX_PAYLOAD_LENGTH} ký tự).`
+          : inputGuard.reason || 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.',
     });
   }
 
-  // Prompt injection & abuse detection
-  if (detectAbuseOrInjection(payloadStr)) {
-    return res.status(400).json({
-      error: 'Yêu cầu chứa cú pháp không hợp lệ hoặc có dấu hiệu can thiệp hệ thống.'
-    });
-  }
+  const traceId = crypto.randomUUID();
+  const startedAt = Date.now();
+  const hskLevel = payload.hskLevel || 'HSK 1';
+  const route = selectModelTier({
+    intent: AGENT_INTENTS.PROGRESS_COACH,
+    hskLevel,
+  });
+  const memoryEnabled = body.memory_enabled !== false && payload.memory_enabled !== false;
+  const memoryContext = buildSafeLearnerMemoryContext({
+    hskLevel,
+    memoryEnabled,
+    learnerProfile: memoryEnabled
+      ? payload.learnerProfile || {
+          learningGoal: payload.learningGoal,
+          completedLessonsCount: payload.completedLessonsCount,
+        }
+      : null,
+    learningMemory: memoryEnabled
+      ? payload.learningMemory || {
+          confirmedMistakes: payload.mistakes || payload.weaknesses,
+          dueVocabWords: payload.weakVocabHanzi,
+        }
+      : null,
+    sessionSummary: memoryEnabled ? payload.session_summary || '' : '',
+  });
+
+  const safePayload = memoryEnabled
+    ? redactSensitiveData(payload)
+    : redactSensitiveData({
+        ...payload,
+        learningMemory: undefined,
+        weakVocabHanzi: undefined,
+        weaknesses: undefined,
+        mistakes: undefined,
+        session_summary: undefined,
+        recentTopics: undefined,
+        history: undefined,
+      });
 
   // 5. Construct prompt based on action
   const systemPrompt = SYSTEM_PROMPTS[action];
-  const userPrompt = `Dữ liệu đầu vào cho yêu cầu cá nhân hóa (${action}):\n${JSON.stringify(payload, null, 2)}`;
+  const userPrompt = `<learner_context>\n${memoryContext.contextText}\n</learner_context>\nDữ liệu đầu vào cho yêu cầu cá nhân hóa (${action}):\n${JSON.stringify(safePayload, null, 2)}`;
 
   try {
     const aiResult = await callUnifiedAiProvider({
       action,
       systemPrompt,
       userPrompt,
-      temperature: 0.6,
-      maxTokens: 1200
+      temperature: route.temperature,
+      maxTokens: Math.max(1200, route.maxOutputTokens),
+      timeoutMs: route.timeoutMs,
     });
 
     if (!aiResult.success) {
+      emitAgentTrace(
+        buildAgentTraceRecord({
+          traceId,
+          userId: auth.user.id,
+          intent: AGENT_INTENTS.PROGRESS_COACH,
+          tier: route.tier,
+          model: route.model,
+          memoryApplied: memoryContext.memoryApplied,
+          latencyMs: Date.now() - startedAt,
+          status: 'provider_error',
+          fallbackUsed: true,
+          fallbackReason: aiResult.error || 'provider_unavailable',
+        })
+      );
       return res.status(aiResult.status || 502).json({
         error: aiResult.error || 'Dịch vụ AI không phản hồi. Chuyển sang bộ tối ưu cá nhân hóa ngoại tuyến.'
       });
@@ -299,18 +347,48 @@ export default async function handler(req, res) {
     parsedResult._metadata = {
       action,
       provider: aiResult.provider,
-      model: aiResult.model,
+      model: aiResult.model || route.model,
+      model_tier: route.tier,
+      route_reason: route.reason,
+      trace_id: traceId,
+      memory_applied: memoryContext.memoryApplied,
       usage: aiResult.usage,
       costUsd: aiResult.costUsd || 0,
       latencyMs: aiResult.latencyMs,
       timestamp: aiResult.timestamp || new Date().toISOString()
     };
 
+    emitAgentTrace(
+      buildAgentTraceRecord({
+        traceId,
+        userId: auth.user.id,
+        intent: AGENT_INTENTS.PROGRESS_COACH,
+        tier: route.tier,
+        model: aiResult.model || route.model,
+        memoryApplied: memoryContext.memoryApplied,
+        totalTokens: aiResult.usage?.totalTokens || 0,
+        costUsd: aiResult.costUsd || 0,
+        latencyMs: aiResult.latencyMs || Date.now() - startedAt,
+        status: 'ok',
+      })
+    );
+
     return res.status(200).json(parsedResult);
   } catch (err) {
-    console.error('Unified AI Personalization Server Error:', err.message);
-    return res.status(500).json({
-      error: 'Đã xảy ra lỗi nội bộ khi xử lý cá nhân hóa AI.'
-    });
+    console.error('Unified AI Personalization Server Error:', redactSensitiveData(err?.message || ''));
+    emitAgentTrace(
+      buildAgentTraceRecord({
+        traceId,
+        userId: auth.user.id,
+        intent: AGENT_INTENTS.PROGRESS_COACH,
+        tier: route.tier,
+        model: route.model,
+        memoryApplied: memoryContext.memoryApplied,
+        latencyMs: Date.now() - startedAt,
+        status: 'error',
+        errorCode: 'personalize_internal_error',
+      })
+    );
+    return sendSafeServerError(res, 'Đã xảy ra lỗi nội bộ khi xử lý cá nhân hóa AI.', err, 500);
   }
 }

@@ -107,5 +107,13 @@ describe('Task 10: Lão Sư Learning Workspace UI & Client Gateway', () => {
 
     // Mobile responsive safety (break-words, no forbidden new arbitrary CSS)
     assert.match(src, /break-words/);
+
+    // Workspace UI Redesign checks: Slim Header, Zero-State Launchpad, Collapsible Process Pill & Docked Composer
+    assert.match(src, /Cài đặt AI/);
+    assert.match(src, /Tra từ & Chiết tự/);
+    assert.match(src, /Ôn tập theo hồ sơ/);
+    assert.match(src, /Đã tra cứu:/);
+    assert.match(src, /border-l-4/);
+    assert.match(src, /Lão Sư HanziGo là trợ lý AI/);
   });
 });

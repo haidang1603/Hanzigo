@@ -485,7 +485,8 @@ export const MATERIAL_LEVELS = [
   'HSK 3',
   'HSK 4',
   'HSK 5',
-  'HSK 6'
+  'HSK 6',
+  'HSK 7-9'
 ];
 
 export const MATERIAL_SKILLS = [

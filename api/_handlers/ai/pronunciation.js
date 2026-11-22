@@ -10,9 +10,14 @@
  * =========================================================================
  */
 
+import crypto from 'node:crypto';
 import { getGeminiApiKeys, markGeminiKeyRateLimited } from '../../_utils/aiProviderAdapter.js';
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
 import { sendSafeServerError } from '../../_utils/supabaseServer.js';
+import { AGENT_INTENTS } from '../../_agent/contracts.js';
+import { validateAgentInput, redactSensitiveData } from '../../_agent/guardrails.js';
+import { selectModelTier } from '../../_agent/modelRouter.js';
+import { buildAgentTraceRecord, emitAgentTrace } from '../../_agent/costAndObservability.js';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 30;
@@ -63,32 +68,50 @@ export default async function handler(req, res) {
       spokenTranscript = '',
       audioDurationMs = 0,
       audioBase64 = null,
-      mimeType = 'audio/webm'
+      mimeType = 'audio/webm',
+      hskLevel = 'HSK 1',
     } = req.body || {};
 
-    if (!String(targetHanzi).trim()) {
-      return res.status(400).json({ error: 'Thiếu chữ Hán mục tiêu (targetHanzi)' });
+    const targetGuard = validateAgentInput({ text: String(targetHanzi), maxLength: MAX_TARGET_HANZI_LEN });
+    if (!targetGuard.allowed) {
+      return res.status(400).json({
+        error:
+          targetGuard.code === 'empty_input'
+            ? 'Thiếu chữ Hán mục tiêu (targetHanzi)'
+            : targetGuard.code === 'input_too_long'
+              ? `Dữ liệu phát âm vượt quá giới hạn cho phép (targetHanzi <= ${MAX_TARGET_HANZI_LEN}, transcript <= ${MAX_TRANSCRIPT_LEN} ký tự).`
+              : targetGuard.reason,
+      });
     }
 
-    const cleanTarget = String(targetHanzi).trim();
+    const cleanTarget = targetGuard.sanitizedText;
     const cleanSpoken = String(spokenTranscript || '').trim();
+    if (cleanSpoken) {
+      const spokenGuard = validateAgentInput({ text: cleanSpoken, maxLength: MAX_TRANSCRIPT_LEN });
+      if (!spokenGuard.allowed) {
+        return res.status(400).json({ error: spokenGuard.reason });
+      }
+    }
 
-    if (
-      cleanTarget.length > MAX_TARGET_HANZI_LEN ||
-      cleanSpoken.length > MAX_TRANSCRIPT_LEN ||
-      (audioBase64 && String(audioBase64).length > MAX_AUDIO_BASE64_LEN)
-    ) {
+    if (audioBase64 && String(audioBase64).length > MAX_AUDIO_BASE64_LEN) {
       return res.status(400).json({
         error: `Dữ liệu phát âm vượt quá giới hạn cho phép (targetHanzi <= ${MAX_TARGET_HANZI_LEN}, transcript <= ${MAX_TRANSCRIPT_LEN} ký tự).`,
       });
     }
+
+    const traceId = crypto.randomUUID();
+    const startedAt = Date.now();
+    const route = selectModelTier({
+      intent: AGENT_INTENTS.PRONUNCIATION_COACH,
+      hskLevel,
+    });
 
     const apiKeys = getGeminiApiKeys();
     if (apiKeys.length === 0 && process.env.VITE_GEMINI_API_KEY) {
       apiKeys.push(process.env.VITE_GEMINI_API_KEY);
     }
     if (apiKeys.length === 0) {
-      return res.status(500).json({ error: 'Chưa cấu hình GEMINI_API_KEY trên server' });
+      return sendSafeServerError(res, 'Chưa cấu hình GEMINI_API_KEY trên server', null, 500);
     }
 
     // Prompt chuyên sâu cho chuyên gia ngữ âm tiếng Trung
@@ -140,8 +163,8 @@ Hãy phân tích và trả về đúng JSON format sau:
 }
 `;
 
-    // Gọi Gemini API (mặc định gemini-3.5-flash-lite hoặc theo GEMINI_MODEL), tự động xoay vòng key khi hết limit
-    const geminiModel = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').replace(/^models\//, '');
+    // Gọi Gemini API theo định tuyến modelRouter, tự động xoay vòng key khi hết limit
+    const geminiModel = String(route.model || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').replace(/^models\//, '');
 
     const parts = [];
 
@@ -199,11 +222,8 @@ Hãy phân tích và trả về đúng JSON format sau:
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
-      console.error('[Gemini Pronunciation Error]', response.status, errorText);
-      return res.status(response.status).json({
-        error: `Gemini API trả về lỗi (${response.status})`,
-        details: errorText
-      });
+      console.error('[Gemini Pronunciation Error]', response.status, redactSensitiveData(errorText));
+      return sendSafeServerError(res, `Gemini API trả về lỗi (${response.status})`, new Error(errorText), response.status);
     }
 
     const data = await response.json();
@@ -228,13 +248,30 @@ Hãy phân tích và trả về đúng JSON format sau:
     parsedResult.targetPinyin = targetPinyin;
     parsedResult.isAiScored = true;
 
+    emitAgentTrace(
+      buildAgentTraceRecord({
+        traceId,
+        intent: AGENT_INTENTS.PRONUNCIATION_COACH,
+        tier: route.tier,
+        model: geminiModel,
+        latencyMs: Date.now() - startedAt,
+        status: 'ok',
+      })
+    );
+
     return res.status(200).json({
       success: true,
-      result: parsedResult
+      result: parsedResult,
+      _metadata: {
+        trace_id: traceId,
+        model_tier: route.tier,
+        model: geminiModel,
+        route_reason: route.reason,
+      },
     });
 
   } catch (err) {
-    console.error('[Pronunciation API Exception]', err);
+    console.error('[Pronunciation API Exception]', redactSensitiveData(err?.message || ''));
     return sendSafeServerError(res, 'Lỗi máy chủ khi xử lý thẩm âm.', err);
   }
 }

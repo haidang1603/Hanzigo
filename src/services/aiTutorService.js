@@ -18,7 +18,7 @@ import { isValidUuid } from './authService.js';
  * Gọi Backend Serverless Function (/api/ai/chat)
  * GEMINI_API_KEY được bảo mật 100% trên server-side, không bao giờ lộ ra Client Bundle.
  */
-async function callBackendAiTutor(userText, hskLevel = 'HSK 1', conversationHistory = []) {
+async function callBackendAiTutor(userText, hskLevel = 'HSK 1', conversationHistory = [], scenarioMeta = {}) {
   let authToken = '';
   let authUid = '';
   try {
@@ -64,7 +64,10 @@ async function callBackendAiTutor(userText, hskLevel = 'HSK 1', conversationHist
       body: JSON.stringify({
         userText,
         hskLevel,
-        conversationHistory
+        conversationHistory,
+        ...(scenarioMeta?.scenarioTitle ? { scenarioTitle: scenarioMeta.scenarioTitle } : {}),
+        ...(scenarioMeta?.scenarioContext ? { scenarioContext: scenarioMeta.scenarioContext } : {}),
+        ...(scenarioMeta?.aiRole ? { aiRole: scenarioMeta.aiRole } : {})
       })
     });
   } finally {
@@ -151,7 +154,10 @@ export async function sendTutorMessage(userText, options = {}) {
   const {
     hskLevel = 'HSK 1',
     conversationHistory = [],
-    userId = null
+    userId = null,
+    scenarioTitle = '',
+    scenarioContext = '',
+    aiRole = ''
   } = options;
 
   let tutorResponse;
@@ -159,7 +165,11 @@ export async function sendTutorMessage(userText, options = {}) {
 
   try {
     // Gọi Serverless Function /api/ai/chat (bảo mật GEMINI_API_KEY ở server)
-    tutorResponse = await callBackendAiTutor(userText, hskLevel, conversationHistory);
+    tutorResponse = await callBackendAiTutor(userText, hskLevel, conversationHistory, {
+      scenarioTitle,
+      scenarioContext,
+      aiRole
+    });
     provider = 'gemini';
   } catch (err) {
     // Khi chưa cấu hình serverless function hoặc ngoại tuyến: kích hoạt AI offline tutor
@@ -167,6 +177,11 @@ export async function sendTutorMessage(userText, options = {}) {
     tutorResponse = getOfflineAiTutorResponse(userText, hskLevel);
     provider = 'offline';
   }
+
+  const fallbackReplySuggestions = [
+    { hanzi: '明白了，谢谢你！', pinyin: 'Míngbai le, xièxie nǐ!', meaning: 'Tôi hiểu rồi, cảm ơn bạn!' },
+    { hanzi: '请问，可以再说一遍吗？', pinyin: 'Qǐngwèn, kěyǐ zài shuō yí biàn ma?', meaning: 'Xin hỏi, có thể nói lại một lần nữa không?' }
+  ];
 
   // Save to DB if logged in
   if (userId && isSupabaseConfigured && supabase && isValidUuid(userId)) {
@@ -185,6 +200,9 @@ export async function sendTutorMessage(userText, options = {}) {
 
   return {
     ...tutorResponse,
+    replySuggestions: Array.isArray(tutorResponse?.replySuggestions) && tutorResponse.replySuggestions.length > 0
+      ? tutorResponse.replySuggestions
+      : fallbackReplySuggestions,
     provider
   };
 }

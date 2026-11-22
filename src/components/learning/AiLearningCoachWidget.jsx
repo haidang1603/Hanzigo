@@ -173,10 +173,10 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
   }
 
   return (
-    <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-white via-[#FFF9F2] to-white dark:from-[#1E293B] dark:via-[#16202C] dark:to-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-md space-y-6">
+    <div className="p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-white via-[#FFF9F2] to-white dark:from-[#1E293B] dark:via-[#16202C] dark:to-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4 sm:space-y-6">
       
       {/* 1. Header Bar: Coach Identity & Quick Controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#E85D3F] to-[#CB4529] text-white flex items-center justify-center text-xl shadow-md shadow-[#E85D3F]/20">
@@ -243,9 +243,26 @@ export default function AiLearningCoachWidget({ user, setActiveTab, onSelectLess
             onClick={() => loadCoachRecommendation(true)}
             disabled={refreshing}
             title="Làm mới khuyến nghị"
-            className="p-2 rounded-xl bg-white dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#E85D3F] transition-all cursor-pointer shadow-xs disabled:opacity-50"
+            className="min-h-11 min-w-11 p-2 rounded-xl bg-white dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] hover:text-[#E85D3F] transition-all flex items-center justify-center cursor-pointer shadow-xs disabled:opacity-50"
           >
             <RefreshCw size={15} className={refreshing ? 'animate-spin text-[#E85D3F]' : ''} />
+          </button>
+
+          {/* CTA đi thẳng vào Lão Sư AI Workspace */}
+          <button
+            type="button"
+            onClick={() => {
+              playClickSound();
+              if (typeof window !== 'undefined') {
+                window.location.hash = '#conversation/tutor';
+              }
+              if (setActiveTab) setActiveTab('conversation');
+            }}
+            className="min-h-11 px-3.5 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#D94827] text-white text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+          >
+            <Sparkles size={14} />
+            <span>Hỏi Lão Sư AI</span>
+            <ArrowRight size={13} />
           </button>
         </div>
       </div>

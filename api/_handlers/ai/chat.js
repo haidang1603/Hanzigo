@@ -65,6 +65,9 @@ Yêu cầu trả về BẮT BUỘC theo định dạng JSON với cấu trúc sa
   "userCorrection": "Nếu câu của người học có lỗi sai (ngữ pháp, trật tự từ, từ vựng), hãy chỉ ra lỗi và đưa ra cách diễn đạt tự nhiên hơn bằng tiếng Việt. Nếu người học đã nói rất tốt, hãy khen ngợi.",
   "vocabSuggestions": [
     { "hanzi": "从", "pinyin": "cóng", "meaning": "Từ (nơi chốn, thời gian)", "level": "HSK 1" }
+  ],
+  "replySuggestions": [
+    { "hanzi": "好的，谢谢你！", "pinyin": "Hǎo de, xièxie nǐ!", "meaning": "Vâng, cảm ơn bạn!" }
   ]
 }
 Chỉ trả về chuỗi JSON thuần túy, không bọc trong markdown code block.
@@ -100,7 +103,14 @@ export default async function handler(req, res) {
   }
 
   // 4. Input Validation & Sanitization
-  const { userText, hskLevel = 'HSK 1', conversationHistory = [] } = req.body || {};
+  const {
+    userText,
+    hskLevel = 'HSK 1',
+    conversationHistory = [],
+    scenarioTitle = '',
+    scenarioContext = '',
+    aiRole = ''
+  } = req.body || {};
 
   if (!userText || typeof userText !== 'string' || !userText.trim()) {
     return res.status(400).json({ error: 'Nội dung tin nhắn không được để trống.' });
@@ -147,8 +157,16 @@ export default async function handler(req, res) {
       })
     : [];
 
+  const safeScenarioTitle = typeof scenarioTitle === 'string' ? scenarioTitle.trim().slice(0, 120) : '';
+  const safeScenarioContext = typeof scenarioContext === 'string' ? scenarioContext.trim().slice(0, 240) : '';
+  const safeAiRole = typeof aiRole === 'string' ? aiRole.trim().slice(0, 80) : 'AI Tiểu Hàm';
+
+  const roleplayInstruction = safeScenarioTitle
+    ? `\nVai diễn của bạn: ${safeAiRole}\nTình huống nhập vai: ${safeScenarioTitle}${safeScenarioContext ? ` (${safeScenarioContext})` : ''}\nHãy trả lời đúng vai diễn và ngữ cảnh tình huống, kèm 2-3 gợi ý câu trả lời tiếp theo (replySuggestions) phù hợp trình độ ${safeHskLevel}.`
+    : `\nHãy kèm 2-3 gợi ý câu trả lời tiếp theo (replySuggestions) phù hợp trình độ ${safeHskLevel}.`;
+
   const messages = [
-    { role: 'system', content: `${SYSTEM_PROMPT}\nTrình độ hiện tại của học viên: ${safeHskLevel}` },
+    { role: 'system', content: `${SYSTEM_PROMPT}\nTrình độ hiện tại của học viên: ${safeHskLevel}${roleplayInstruction}` },
     ...safeHistory,
     { role: 'user', content: `Câu người học vừa nói: "${cleanUserText}"` }
   ];
