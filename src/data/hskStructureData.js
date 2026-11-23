@@ -20,24 +20,24 @@
 export const HSK_OFFICIAL_VERSIONS = [
   {
     id: '2015-Standard',
-    name: 'HSK 2.0 (Khảo thí Hiện hành Toàn cầu)',
-    shortName: 'HSK Hiện hành',
+    name: 'HSK 2.0 (6 cấp — Khảo thí Hiện hành)',
+    shortName: 'HSK 2.0 (Hiện hành)',
     status: 'active_official',
     statusLabel: 'Đang áp dụng thực tế tại điểm thi',
     badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300',
-    description: 'Hệ thống đề thi 6 cấp độ truyền thống được CTI / chinesetest.cn sử dụng để cấp chứng chỉ du học và việc làm hiện nay.',
-    verifiedDate: '2026-10-12',
+    description: 'Hệ thống đề thi 6 cấp độ truyền thống (HSK 1–6) đang được CTI / chinesetest.cn sử dụng.',
+    verifiedDate: '2026-11-24',
     officialPortal: 'http://www.chinesetest.cn/'
   },
   {
     id: 'HSK 3.0-2021',
-    name: 'HSK 3.0 (Tiêu chuẩn Khảo thí Mới GF0025-2021)',
-    shortName: 'HSK 3.0 Mới',
+    name: 'HSK 3.0 (9 cấp — Chuẩn CTI 13/12/2026)',
+    shortName: 'HSK 3.0 (Mới)',
     status: 'partially_implemented',
-    statusLabel: 'HSK 7-9 đã áp dụng • HSK 1-6 đang chuyển tiếp',
+    statusLabel: 'HSK 7–9 đang thi • HSK 1–6 áp dụng từ 13/12/2026',
     badgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300',
-    description: 'Khung năng lực ngôn ngữ quốc gia 3 giai đoạn 9 cấp. Cấp độ 7-9 đã chính thức thi từ tháng 11/2022; cấp độ 1-6 đang hoàn thiện ngân hàng đề.',
-    verifiedDate: '2026-10-12',
+    description: 'Hệ thống 3 giai đoạn 9 cấp của CTI: HSK 1–6 thi riêng từng cấp (kèm Nói từ cấp 3) và HSK 7–9 thi chung 1 bài trên máy tính.',
+    verifiedDate: '2026-11-24',
     officialPortal: 'http://www.chinesetest.cn/'
   }
 ];
@@ -162,20 +162,53 @@ export const HSK_STRUCTURE_DEFINITIONS = {
       'HSK 3.0-2021': {
         isOfficial: false,
         verificationStatus: 'unverified_transition',
-        verifiedDate: '2026-10-12',
-        sourceReference: 'Tiêu chuẩn GF0025-2021 (Định hướng cấp độ mới — Đề thi thực tế chưa triển khai đồng bộ)',
-        sourceUrl: 'http://www.moe.gov.cn/jyb_sjzl/ziliao/A19/202103/t20210331_523671.html',
-        totalDurationMinutes: 40, // Chưa xác minh chính thức
-        fillingInfoMinutes: 5,
-        totalQuestions: 40, // Chưa xác minh định dạng đề mới
+        verifiedDate: '2026-11-24',
+        sourceReference: 'Đề cương HSK 3.0 CTI (Áp dụng toàn cầu từ 13/12/2026) & GF0025-2021',
+        sourceUrl: 'http://www.chinesetest.cn/',
+        totalDurationMinutes: 40,
+        fillingInfoMinutes: 8,
+        totalQuestions: 40,
         maxScore: 200,
         passingScore: 120,
-        passingNote: 'Chưa xác minh: CTI chưa chính thức ban hành đề thi HSK 1 theo form 3.0 độc lập tại các điểm thi thông thường.',
+        passingNote: 'Chưa xác minh đồng loạt trước 13/12/2026: Điểm chuẩn đạt ≥ 120/200 (Nghe 100đ + Đọc 100đ).',
         hasPinyin: true,
-        vocabularyRequirement: 500, // Chuẩn mới yêu cầu 500 từ
+        audioPlayCount: 2,
+        vocabularyRequirement: 500,
         characterRequirement: 300,
-        unverifiedFields: ['Cấu trúc phần thi chi tiết', 'Số lượng câu hỏi chính thức', 'Thời gian làm bài chính xác'],
-        notesVi: 'Tiêu chuẩn HSK 3.0 nâng lượng từ HSK 1 từ 150 lên 500 từ, bổ sung kỹ năng ngữ âm và chữ Hán, tuy nhiên định dạng đề thi thực tế chưa được áp dụng thay thế đề 2015.'
+        unverifiedFields: ['Lộ trình áp dụng đồng bộ từ 13/12/2026'],
+        notesVi: 'Chuẩn HSK 3.0 bậc 1: 40 câu (~40 phút, gồm 5p điền thông tin + 3p tô phiếu đáp án). Bỏ dạng nghe phán đoán Đúng/Sai của bản cũ, chuyển sang chọn tranh và chọn câu đối đáp.',
+        sections: [
+          {
+            sectionId: 'listening',
+            nameCn: '听力',
+            nameVi: 'Nghe hiểu',
+            questionCount: 20,
+            durationMinutes: 12,
+            maxScore: 100,
+            audioRules: 'Mỗi câu phát 2 lần (có Pinyin). Không còn dạng Đúng/Sai.',
+            parts: [
+              { partNumber: 1, questionCount: 5, questionType: 'mcq', formatDescription: 'Nghe câu ngắn chọn bức tranh / tình huống phù hợp', skillsTested: 'Nhận diện từ vựng & tình huống cơ bản' },
+              { partNumber: 2, questionCount: 5, questionType: 'mcq', formatDescription: 'Nghe câu thoại chọn tranh minh họa tương ứng', skillsTested: 'Nghe hiểu hành động, đối tượng' },
+              { partNumber: 3, questionCount: 5, questionType: 'mcq', formatDescription: 'Nghe hội thoại 2 lượt chọn đáp án đúng', skillsTested: 'Nắm thông tin hội thoại ngắn' },
+              { partNumber: 4, questionCount: 5, questionType: 'mcq', formatDescription: 'Nghe hội thoại & câu hỏi chọn câu đối đáp phù hợp', skillsTested: 'Phản xạ giao tiếp sơ cấp' }
+            ]
+          },
+          {
+            sectionId: 'reading',
+            nameCn: '阅读',
+            nameVi: 'Đọc hiểu',
+            questionCount: 20,
+            durationMinutes: 20,
+            maxScore: 100,
+            audioRules: 'Đề thi kèm Pinyin đầy đủ.',
+            parts: [
+              { partNumber: 1, questionCount: 5, questionType: 'true_false', formatDescription: 'Đối chiếu từ vựng / câu với hình ảnh hoặc ngữ nghĩa', skillsTested: 'Nhận diện mặt chữ & Pinyin' },
+              { partNumber: 2, questionCount: 5, questionType: 'mcq', formatDescription: 'Chọn câu mô tả khớp với ngữ cảnh cho sẵn', skillsTested: 'Đọc hiểu câu đơn' },
+              { partNumber: 3, questionCount: 5, questionType: 'mcq', formatDescription: 'Ghép cặp câu hỏi – đáp trong hội thoại ngắn', skillsTested: 'Logic hỏi đáp cơ bản' },
+              { partNumber: 4, questionCount: 5, questionType: 'fill_blank', formatDescription: 'Chọn từ vựng phù hợp điền vào chỗ trống', skillsTested: 'Vận dụng từ loại HSK 1' }
+            ]
+          }
+        ]
       }
     }
   },
@@ -299,18 +332,65 @@ export const HSK_STRUCTURE_DEFINITIONS = {
       'HSK 3.0-2021': {
         isOfficial: false,
         verificationStatus: 'unverified_transition',
-        verifiedDate: '2026-10-12',
-        sourceReference: 'Tiêu chuẩn GF0025-2021',
-        totalDurationMinutes: 55,
-        fillingInfoMinutes: 5,
+        verifiedDate: '2026-11-24',
+        sourceReference: 'Đề cương HSK 3.0 CTI (Áp dụng toàn cầu từ 13/12/2026) & GF0025-2021',
+        totalDurationMinutes: 60,
+        fillingInfoMinutes: 8,
         totalQuestions: 60,
-        maxScore: 200,
-        passingScore: 120,
-        passingNote: 'Chưa xác minh định dạng thi độc lập mới của CTI.',
+        maxScore: 300,
+        passingScore: 180,
+        passingNote: 'Chưa xác minh đồng loạt trước 13/12/2026: Thang 300đ (Nghe + Đọc + Viết), đạt ≥ 180đ.',
         hasPinyin: true,
+        audioPlayCount: 2,
         vocabularyRequirement: 1272,
-        unverifiedFields: ['Cấu trúc bài thi chính thức', 'Số câu hỏi thực tế'],
-        notesVi: 'Chuẩn mới mở rộng 1272 từ vựng, tuy nhiên hiện tại các kỳ thi quốc tế vẫn sử dụng định dạng 2015.'
+        characterRequirement: 600,
+        unverifiedFields: ['Lộ trình áp dụng đồng bộ từ 13/12/2026'],
+        notesVi: 'HSK 2 (3.0) gồm 60 câu (~60 phút, đã gồm 5p điền thông tin + 3p tô phiếu): Nghe 25, Đọc 25 và lần đầu đưa phần Viết vào cấp 2 với 10 câu (gồm viết chữ Hán theo Pinyin).',
+        sections: [
+          {
+            sectionId: 'listening',
+            nameCn: '听力',
+            nameVi: 'Nghe hiểu',
+            questionCount: 25,
+            durationMinutes: 17,
+            maxScore: 100,
+            audioRules: 'Mỗi câu phát 2 lần.',
+            parts: [
+              { partNumber: 1, questionCount: 6, questionType: 'true_false', formatDescription: 'Nghe câu ngắn phán đoán Đúng/Sai', skillsTested: 'Nghe hiểu thông tin trực tiếp' },
+              { partNumber: 2, questionCount: 6, questionType: 'mcq', formatDescription: 'Nghe hội thoại ngắn chọn tình huống phù hợp', skillsTested: 'Xác định bối cảnh giao tiếp' },
+              { partNumber: 3, questionCount: 7, questionType: 'mcq', formatDescription: 'Nghe hội thoại 2–3 lượt chọn đáp án đúng', skillsTested: 'Hiểu ý chính & chi tiết' },
+              { partNumber: 4, questionCount: 6, questionType: 'mcq', formatDescription: 'Nghe hội thoại dài & thông báo ngắn', skillsTested: 'Tổng hợp thông tin thời gian, địa điểm' }
+            ]
+          },
+          {
+            sectionId: 'reading',
+            nameCn: '阅读',
+            nameVi: 'Đọc hiểu',
+            questionCount: 25,
+            durationMinutes: 25,
+            maxScore: 100,
+            audioRules: 'Đọc câu & đoạn ngắn giao tiếp hàng ngày.',
+            parts: [
+              { partNumber: 1, questionCount: 6, questionType: 'mcq', formatDescription: 'Chọn câu phù hợp với tình huống', skillsTested: 'Đọc hiểu ngữ cảnh' },
+              { partNumber: 2, questionCount: 6, questionType: 'fill_blank', formatDescription: 'Điền từ vựng thích hợp vào chỗ trống', skillsTested: 'Từ vựng & ngữ pháp HSK 2' },
+              { partNumber: 3, questionCount: 7, questionType: 'mcq', formatDescription: 'Ghép cặp hội thoại hỏi – đáp', skillsTested: 'Mạch liên kết hội thoại' },
+              { partNumber: 4, questionCount: 6, questionType: 'true_false', formatDescription: 'Đọc đoạn ngắn phán đoán Đúng/Sai', skillsTested: 'Đối chiếu chi tiết văn bản' }
+            ]
+          },
+          {
+            sectionId: 'writing',
+            nameCn: '书写',
+            nameVi: 'Viết (Mới ở HSK 2)',
+            questionCount: 10,
+            durationMinutes: 10,
+            maxScore: 100,
+            audioRules: 'Lần đầu đưa kỹ năng Viết vào cấp độ 2.',
+            parts: [
+              { partNumber: 1, questionCount: 5, questionType: 'reorder', formatDescription: 'Sắp xếp các từ gợi ý thành câu hoàn chỉnh', skillsTested: 'Trật tự từ tiếng Trung' },
+              { partNumber: 2, questionCount: 5, questionType: 'fill_blank', formatDescription: 'Nhìn Pinyin viết chữ Hán đúng theo ngữ cảnh', skillsTested: 'Viết đúng chữ Hán thông dụng' }
+            ]
+          }
+        ]
       }
     }
   },
@@ -443,18 +523,77 @@ export const HSK_STRUCTURE_DEFINITIONS = {
       'HSK 3.0-2021': {
         isOfficial: false,
         verificationStatus: 'unverified_transition',
-        verifiedDate: '2026-10-12',
-        sourceReference: 'Tiêu chuẩn GF0025-2021',
-        totalDurationMinutes: 90,
-        fillingInfoMinutes: 5,
-        totalQuestions: 80,
+        verifiedDate: '2026-11-24',
+        sourceReference: 'Đề cương HSK 3.0 CTI (Áp dụng toàn cầu từ 13/12/2026) & GF0025-2021',
+        totalDurationMinutes: 83,
+        fillingInfoMinutes: 10,
+        totalQuestions: 70,
         maxScore: 300,
         passingScore: 180,
-        passingNote: 'Chưa xác minh định dạng thi độc lập mới của CTI.',
+        passingNote: 'Chưa xác minh đồng loạt trước 13/12/2026: Bài viết 70 câu (~83p) + thi kèm 15 câu Nói (~15p).',
         hasPinyin: false,
+        audioPlayCount: 1,
         vocabularyRequirement: 2245,
-        unverifiedFields: ['Cấu trúc đề chi tiết', 'Tỷ lệ tự luận và trắc nghiệm'],
-        notesVi: 'Chuẩn 3.0 quy định 2245 từ vựng cho cấp độ 3.'
+        characterRequirement: 900,
+        unverifiedFields: ['Lộ trình áp dụng đồng bộ từ 13/12/2026'],
+        notesVi: 'HSK 3 (3.0) bỏ hẳn Pinyin trên đề thi; gồm 70 câu viết (~83 phút, gồm 5p điền thông tin + 5p tô phiếu) và bắt buộc thi kèm bài Nói cấp 3 (15 câu · ~15 phút).',
+        sections: [
+          {
+            sectionId: 'listening',
+            nameCn: '听力',
+            nameVi: 'Nghe hiểu',
+            questionCount: 30,
+            durationMinutes: 25,
+            maxScore: 100,
+            audioRules: 'Chỉ phát đúng 1 lần (chuẩn HSK 3.0).',
+            parts: [
+              { partNumber: 1, questionCount: 10, questionType: 'true_false', formatDescription: 'Nghe câu / đoạn ngắn phán đoán Đúng/Sai', skillsTested: 'Nghe hiểu thông tin trực tiếp' },
+              { partNumber: 2, questionCount: 10, questionType: 'mcq', formatDescription: 'Nghe hội thoại ngắn chọn đáp án đúng', skillsTested: 'Nắm bắt ý chính & suy luận nhẹ' },
+              { partNumber: 3, questionCount: 10, questionType: 'mcq', formatDescription: 'Nghe hội thoại dài & đoạn văn chọn đáp án', skillsTested: 'Nghe hiểu mạch truyện' }
+            ]
+          },
+          {
+            sectionId: 'reading',
+            nameCn: '阅读',
+            nameVi: 'Đọc hiểu',
+            questionCount: 30,
+            durationMinutes: 33,
+            maxScore: 100,
+            audioRules: 'Đề thi không in Pinyin.',
+            parts: [
+              { partNumber: 1, questionCount: 10, questionType: 'mcq', formatDescription: 'Nối câu / đoạn ngữ cảnh tương ứng', skillsTested: 'Đọc lướt tìm câu khớp' },
+              { partNumber: 2, questionCount: 10, questionType: 'fill_blank', formatDescription: 'Điền từ vựng thích hợp vào chỗ trống', skillsTested: 'Từ vựng & kết hợp từ HSK 3' },
+              { partNumber: 3, questionCount: 10, questionType: 'mcq', formatDescription: 'Đọc hiểu đoạn văn ngắn trả lời câu hỏi', skillsTested: 'Hiểu ý chính & chi tiết' }
+            ]
+          },
+          {
+            sectionId: 'writing',
+            nameCn: '书写',
+            nameVi: 'Viết',
+            questionCount: 10,
+            durationMinutes: 15,
+            maxScore: 100,
+            audioRules: 'Không còn Pinyin gợi ý ở phần sắp xếp câu.',
+            parts: [
+              { partNumber: 1, questionCount: 5, questionType: 'reorder', formatDescription: 'Sắp xếp từ thành câu (câu chữ 把/被, bổ ngữ)', skillsTested: 'Cấu trúc ngữ pháp HSK 3' },
+              { partNumber: 2, questionCount: 5, questionType: 'fill_blank', formatDescription: 'Hoàn thành câu chữ Hán theo ngữ cảnh', skillsTested: 'Viết đúng chữ Hán' }
+            ]
+          },
+          {
+            sectionId: 'speaking',
+            nameCn: '口语 (必考)',
+            nameVi: 'Nói (Thi kèm riêng · 15 câu)',
+            questionCount: 15,
+            durationMinutes: 15,
+            maxScore: 100,
+            audioRules: 'Thi riêng cùng đợt (~15 phút gồm thời gian chuẩn bị).',
+            parts: [
+              { partNumber: 1, questionCount: 5, questionType: 'speaking', formatDescription: 'Nghe và nhắc lại câu chuẩn thanh điệu', skillsTested: 'Phát âm & trí nhớ ngắn hạn' },
+              { partNumber: 2, questionCount: 5, questionType: 'speaking', formatDescription: 'Trả lời câu hỏi nhanh bằng 3–5 câu', skillsTested: 'Phản xạ giao tiếp' },
+              { partNumber: 3, questionCount: 5, questionType: 'speaking', formatDescription: 'Trình bày ngắn chủ đề quen thuộc (1–2 phút)', skillsTested: 'Diễn đạt mạch lạc' }
+            ]
+          }
+        ]
       }
     }
   },
@@ -580,18 +719,77 @@ export const HSK_STRUCTURE_DEFINITIONS = {
       'HSK 3.0-2021': {
         isOfficial: false,
         verificationStatus: 'unverified_transition',
-        verifiedDate: '2026-10-12',
-        sourceReference: 'Tiêu chuẩn GF0025-2021',
-        totalDurationMinutes: 105,
-        fillingInfoMinutes: 5,
-        totalQuestions: 100,
+        verifiedDate: '2026-11-24',
+        sourceReference: 'Đề cương HSK 3.0 CTI (Áp dụng toàn cầu từ 13/12/2026) & GF0025-2021',
+        totalDurationMinutes: 85,
+        fillingInfoMinutes: 10,
+        totalQuestions: 70,
         maxScore: 300,
         passingScore: 180,
-        passingNote: 'Chưa xác minh định dạng đề thi mới.',
+        passingNote: 'Chưa xác minh đồng loạt trước 13/12/2026: Bài viết 70 câu (~85p) + thi kèm 5 câu Nói (~20p).',
         hasPinyin: false,
+        audioPlayCount: 1,
         vocabularyRequirement: 3245,
-        unverifiedFields: ['Định dạng đề thi mới', 'Thời gian làm bài chính xác'],
-        notesVi: 'Chuẩn mới mở rộng 3245 từ vựng tích lũy.'
+        characterRequirement: 1200,
+        unverifiedFields: ['Lộ trình áp dụng đồng bộ từ 13/12/2026'],
+        notesVi: 'HSK 4 (3.0) gồm 70 câu viết (~85 phút): Nghe 32, Đọc 32, Viết 6 (5 câu đặt câu theo tranh + 1 đoạn văn ngắn) và thi kèm 5 câu Nói (~20 phút).',
+        sections: [
+          {
+            sectionId: 'listening',
+            nameCn: '听力',
+            nameVi: 'Nghe hiểu',
+            questionCount: 32,
+            durationMinutes: 20,
+            maxScore: 100,
+            audioRules: 'Chỉ phát đúng 1 lần.',
+            parts: [
+              { partNumber: 1, questionCount: 10, questionType: 'true_false', formatDescription: 'Nghe đoạn ngắn phán đoán Đúng/Sai', skillsTested: 'Nghe hiểu thông tin chi tiết' },
+              { partNumber: 2, questionCount: 12, questionType: 'mcq', formatDescription: 'Nghe hội thoại 2 lượt chọn đáp án', skillsTested: 'Suy luận thái độ, ngữ cảnh' },
+              { partNumber: 3, questionCount: 10, questionType: 'mcq', formatDescription: 'Nghe hội thoại dài & đoạn tự sự', skillsTested: 'Tổng hợp nội dung chính' }
+            ]
+          },
+          {
+            sectionId: 'reading',
+            nameCn: '阅读',
+            nameVi: 'Đọc hiểu',
+            questionCount: 32,
+            durationMinutes: 30,
+            maxScore: 100,
+            audioRules: 'Không có Pinyin.',
+            parts: [
+              { partNumber: 1, questionCount: 10, questionType: 'fill_blank', formatDescription: 'Chọn từ điền vào câu / đoạn văn ngắn', skillsTested: 'Từ vựng & collocation HSK 4' },
+              { partNumber: 2, questionCount: 10, questionType: 'reorder', formatDescription: 'Sắp xếp thứ tự câu A-B-C thành đoạn logic', skillsTested: 'Tư duy liên kết văn bản' },
+              { partNumber: 3, questionCount: 12, questionType: 'mcq', formatDescription: 'Đọc hiểu văn bản trả lời câu hỏi', skillsTested: 'Đọc hiểu phân tích' }
+            ]
+          },
+          {
+            sectionId: 'writing',
+            nameCn: '书写',
+            nameVi: 'Viết',
+            questionCount: 6,
+            durationMinutes: 25,
+            maxScore: 100,
+            audioRules: 'Bỏ dạng sắp xếp từ thành câu, chuyển sang đặt câu theo tranh & viết đoạn ngắn.',
+            parts: [
+              { partNumber: 1, questionCount: 5, questionType: 'essay', formatDescription: 'Đặt câu hoàn chỉnh theo tranh & từ gợi ý', skillsTested: 'Vận dụng ngữ pháp tạo câu' },
+              { partNumber: 2, questionCount: 1, questionType: 'essay', formatDescription: 'Viết đoạn văn ngắn theo tình huống cho sẵn', skillsTested: 'Diễn đạt đoạn văn mạch lạc' }
+            ]
+          },
+          {
+            sectionId: 'speaking',
+            nameCn: '口语 (必考)',
+            nameVi: 'Nói (Thi kèm riêng · 5 câu)',
+            questionCount: 5,
+            durationMinutes: 20,
+            maxScore: 100,
+            audioRules: 'Thi riêng (~20 phút gồm thời gian chuẩn bị).',
+            parts: [
+              { partNumber: 1, questionCount: 2, questionType: 'speaking', formatDescription: 'Nghe và tóm tắt lại nội dung câu/đoạn', skillsTested: 'Tóm lược thông tin nghe' },
+              { partNumber: 2, questionCount: 1, questionType: 'speaking', formatDescription: 'Trả lời câu hỏi tình huống / phỏng vấn', skillsTested: 'Phản xạ xử lý vấn đề' },
+              { partNumber: 3, questionCount: 2, questionType: 'speaking', formatDescription: 'Trình bày quan điểm cá nhân (2 phút)', skillsTested: 'Lập luận trung cấp' }
+            ]
+          }
+        ]
       }
     }
   },
@@ -710,18 +908,76 @@ export const HSK_STRUCTURE_DEFINITIONS = {
       'HSK 3.0-2021': {
         isOfficial: false,
         verificationStatus: 'unverified_transition',
-        verifiedDate: '2026-10-12',
-        sourceReference: 'Tiêu chuẩn GF0025-2021',
-        totalDurationMinutes: 125,
-        fillingInfoMinutes: 5,
-        totalQuestions: 100,
+        verifiedDate: '2026-11-24',
+        sourceReference: 'Đề cương HSK 3.0 CTI (Áp dụng toàn cầu từ 13/12/2026) & GF0025-2021',
+        totalDurationMinutes: 110,
+        fillingInfoMinutes: 10,
+        totalQuestions: 72,
         maxScore: 300,
         passingScore: 180,
-        passingNote: 'Chưa xác minh định dạng đề thi mới.',
+        passingNote: 'Chưa xác minh đồng loạt trước 13/12/2026: Bài viết 72 câu (~110p) + thi kèm 5 câu Nói (~23p).',
         hasPinyin: false,
+        audioPlayCount: 1,
         vocabularyRequirement: 4316,
-        unverifiedFields: ['Định dạng đề mới', 'Cách thức chấm thi'],
-        notesVi: 'Chuẩn mới mở rộng 4316 từ vựng.'
+        characterRequirement: 1500,
+        unverifiedFields: ['Lộ trình áp dụng đồng bộ từ 13/12/2026'],
+        notesVi: 'HSK 5 (3.0) gồm 72 câu viết (~110 phút): Nghe 35, Đọc 35 (thêm dạng sắp xếp đoạn văn), Viết 2 bài (4 tranh ≥100 chữ & chủ đề ≥200 chữ) + 5 câu Nói (~23 phút).',
+        sections: [
+          {
+            sectionId: 'listening',
+            nameCn: '听力',
+            nameVi: 'Nghe hiểu',
+            questionCount: 35,
+            durationMinutes: 25,
+            maxScore: 100,
+            audioRules: 'Chỉ phát đúng 1 lần.',
+            parts: [
+              { partNumber: 1, questionCount: 15, questionType: 'mcq', formatDescription: 'Nghe hội thoại ngắn chọn đáp án đúng', skillsTested: 'Nắm hàm ý & thái độ người nói' },
+              { partNumber: 2, questionCount: 20, questionType: 'mcq', formatDescription: 'Nghe phỏng vấn, bản tin & tự sự dài', skillsTested: 'Nghe hiểu thông tin chuyên đề' }
+            ]
+          },
+          {
+            sectionId: 'reading',
+            nameCn: '阅读',
+            nameVi: 'Đọc hiểu',
+            questionCount: 35,
+            durationMinutes: 35,
+            maxScore: 100,
+            audioRules: 'Bổ sung dạng sắp xếp đoạn văn ở Phần 2.',
+            parts: [
+              { partNumber: 1, questionCount: 15, questionType: 'fill_blank', formatDescription: 'Điền từ vào đoạn văn (Cloze)', skillsTested: 'Phân biệt từ gần nghĩa & ngữ cảnh' },
+              { partNumber: 2, questionCount: 10, questionType: 'mcq', formatDescription: 'Sắp xếp đoạn văn & đọc nhanh nắm ý chính', skillsTested: 'Mạch logic đoạn văn dài' },
+              { partNumber: 3, questionCount: 10, questionType: 'mcq', formatDescription: 'Đọc sâu bài báo / nghị luận ngắn', skillsTested: 'Suy luận & tổng hợp ý' }
+            ]
+          },
+          {
+            sectionId: 'writing',
+            nameCn: '书写',
+            nameVi: 'Viết',
+            questionCount: 2,
+            durationMinutes: 40,
+            maxScore: 100,
+            audioRules: 'Rút xuống 2 bài tự luận (40 phút).',
+            parts: [
+              { partNumber: 1, questionCount: 1, questionType: 'essay', formatDescription: 'Nhìn 4 bức tranh liên hoàn viết truyện (≥ 100 chữ Hán)', skillsTested: 'Kể chuyện mạch lạc theo chuỗi ảnh' },
+              { partNumber: 2, questionCount: 1, questionType: 'essay', formatDescription: 'Viết bài văn nghị luận / tự sự theo chủ đề (≥ 200 chữ Hán)', skillsTested: 'Triển khai luận điểm & từ vựng HSK 5' }
+            ]
+          },
+          {
+            sectionId: 'speaking',
+            nameCn: '口语 (必考)',
+            nameVi: 'Nói (Thi kèm riêng · 5 câu)',
+            questionCount: 5,
+            durationMinutes: 23,
+            maxScore: 100,
+            audioRules: 'Thi riêng (~23 phút gồm thời gian chuẩn bị).',
+            parts: [
+              { partNumber: 1, questionCount: 2, questionType: 'speaking', formatDescription: 'Nghe và phức thuật lại đoạn văn', skillsTested: 'Diễn đạt lại thông tin chính xác' },
+              { partNumber: 2, questionCount: 1, questionType: 'speaking', formatDescription: 'Trả lời câu hỏi vấn đề xã hội / công việc', skillsTested: 'Lập luận đa chiều' },
+              { partNumber: 3, questionCount: 2, questionType: 'speaking', formatDescription: 'Diễn thuyết chuyên đề (~2.5 phút)', skillsTested: 'Thuyết trình mạch lạc' }
+            ]
+          }
+        ]
       }
     }
   },
@@ -847,18 +1103,78 @@ export const HSK_STRUCTURE_DEFINITIONS = {
       'HSK 3.0-2021': {
         isOfficial: false,
         verificationStatus: 'unverified_transition',
-        verifiedDate: '2026-10-12',
-        sourceReference: 'Tiêu chuẩn GF0025-2021',
-        totalDurationMinutes: 140,
-        fillingInfoMinutes: 5,
-        totalQuestions: 101,
+        verifiedDate: '2026-11-24',
+        sourceReference: 'Đề cương HSK 3.0 CTI (Áp dụng toàn cầu từ 13/12/2026) & GF0025-2021',
+        totalDurationMinutes: 125,
+        fillingInfoMinutes: 10,
+        totalQuestions: 82,
         maxScore: 300,
         passingScore: 180,
-        passingNote: 'Chưa xác minh định dạng đề mới.',
+        passingNote: 'Chưa xác minh đồng loạt trước 13/12/2026: Bài viết 82 câu (~125p) + thi kèm 5 câu Nói (~23p).',
         hasPinyin: false,
+        audioPlayCount: 1,
         vocabularyRequirement: 5456,
-        unverifiedFields: ['Định dạng đề mới', 'Thời điểm chuyển giao chính thức'],
-        notesVi: 'Chuẩn mới mở rộng 5456 từ vựng.'
+        characterRequirement: 1800,
+        unverifiedFields: ['Lộ trình áp dụng đồng bộ từ 13/12/2026'],
+        notesVi: 'HSK 6 (3.0) gồm 82 câu viết (~125 phút): Nghe 40, Đọc 40 (bỏ câu bệnh 语病), Viết 2 bài (Văn bản ứng dụng 应用文 ≥150 chữ & Nghị luận 议论文 ≥300 chữ) + 5 câu Nói (~23 phút).',
+        sections: [
+          {
+            sectionId: 'listening',
+            nameCn: '听力',
+            nameVi: 'Nghe hiểu',
+            questionCount: 40,
+            durationMinutes: 30,
+            maxScore: 100,
+            audioRules: 'Chỉ phát đúng 1 lần tốc độ tự nhiên.',
+            parts: [
+              { partNumber: 1, questionCount: 15, questionType: 'mcq', formatDescription: 'Nghe độc thoại & bản tin thời sự', skillsTested: 'Nắm thông tin học thuật / xã hội' },
+              { partNumber: 2, questionCount: 15, questionType: 'mcq', formatDescription: 'Nghe tọa đàm & phỏng vấn chuyên đề', skillsTested: 'Phân biệt quan điểm đa chiều' },
+              { partNumber: 3, questionCount: 10, questionType: 'mcq', formatDescription: 'Nghe diễn thuyết & báo cáo học thuật', skillsTested: 'Tổng hợp luận điểm dài' }
+            ]
+          },
+          {
+            sectionId: 'reading',
+            nameCn: '阅读',
+            nameVi: 'Đọc hiểu',
+            questionCount: 40,
+            durationMinutes: 40,
+            maxScore: 100,
+            audioRules: 'Bỏ hoàn toàn dạng bắt lỗi câu bệnh (语病).',
+            parts: [
+              { partNumber: 1, questionCount: 10, questionType: 'mcq', formatDescription: 'Đọc hiểu ngữ cảnh & cụm từ học thuật (bỏ câu bệnh)', skillsTested: 'Hiểu sắc thái ngữ dụng học thuật' },
+              { partNumber: 2, questionCount: 10, questionType: 'fill_blank', formatDescription: 'Điền từ vựng & thành ngữ vào đoạn văn', skillsTested: 'Thành ngữ & kết hợp từ nâng cao' },
+              { partNumber: 3, questionCount: 10, questionType: 'mcq', formatDescription: 'Điền câu thích hợp vào đoạn văn', skillsTested: 'Liên kết mạch văn bản' },
+              { partNumber: 4, questionCount: 10, questionType: 'mcq', formatDescription: 'Đọc hiểu văn bản dài chuyên sâu', skillsTested: 'Đọc phản biện & suy luận' }
+            ]
+          },
+          {
+            sectionId: 'writing',
+            nameCn: '书写',
+            nameVi: 'Viết',
+            questionCount: 2,
+            durationMinutes: 45,
+            maxScore: 100,
+            audioRules: 'Bỏ bài tóm tắt 1000 chữ (缩写), chuyển sang Văn bản ứng dụng & Nghị luận.',
+            parts: [
+              { partNumber: 1, questionCount: 1, questionType: 'essay', formatDescription: 'Viết văn bản ứng dụng thực tế (应用文 · ≥ 150 chữ Hán)', skillsTested: 'Soạn thảo thông báo, thư đề xuất chuẩn mực' },
+              { partNumber: 2, questionCount: 1, questionType: 'essay', formatDescription: 'Viết bài nghị luận nêu quan điểm cá nhân (议论文 · ≥ 300 chữ Hán)', skillsTested: 'Lập luận sắc bén, văn phong học thuật' }
+            ]
+          },
+          {
+            sectionId: 'speaking',
+            nameCn: '口语 (必考)',
+            nameVi: 'Nói (Thi kèm riêng · 5 câu)',
+            questionCount: 5,
+            durationMinutes: 23,
+            maxScore: 100,
+            audioRules: 'Thi riêng (~23 phút gồm thời gian chuẩn bị).',
+            parts: [
+              { partNumber: 1, questionCount: 1, questionType: 'speaking', formatDescription: 'Tóm lược phát biểu chuyên đề', skillsTested: 'Diễn đạt lại luận điểm trang trọng' },
+              { partNumber: 2, questionCount: 2, questionType: 'speaking', formatDescription: 'Trả lời phỏng vấn chiều sâu', skillsTested: 'Phản biện linh hoạt' },
+              { partNumber: 3, questionCount: 2, questionType: 'speaking', formatDescription: 'Diễn thuyết phản biện chuyên đề (~3 phút)', skillsTested: 'Hùng biện cao cấp' }
+            ]
+          }
+        ]
       }
     }
   },
@@ -877,15 +1193,16 @@ export const HSK_STRUCTURE_DEFINITIONS = {
       'HSK 3.0-2021': {
         isOfficial: true,
         verificationStatus: 'verified',
-        verifiedDate: '2026-10-12',
-        sourceReference: 'CTI chinesetest.cn — HSK (七-九级) 考试实施办法 (Áp dụng chính thức từ 26/11/2022)',
+        verifiedDate: '2026-11-24',
+        sourceReference: 'CTI chinesetest.cn — Đề mẫu HSK 7–9 cập nhật 2026 (bản 2022: 98 câu / ~210p)',
         sourceUrl: 'http://www.chinesetest.cn/',
-        totalDurationMinutes: 210,
+        totalDurationMinutes: 200,
         fillingInfoMinutes: 10,
-        totalQuestions: 98, // 67 câu khách quan + 31 câu chủ quan
+        totalQuestions: 91,
         maxScore: 'Quy đổi phân cấp',
         passingScore: 'Đạt cấp 7 / 8 / 9 theo phổ điểm',
-        passingNote: 'Một đề thi duy nhất đánh giá 5 kỹ năng: Nghe, Đọc, Viết, Dịch, Nói. Điểm tổng quy định việc xếp cấp bậc tương ứng.',
+        passingNote: 'Một đề thi duy nhất trên máy tính đánh giá 5 kỹ năng: Nghe (40), Đọc (40), Viết (2), Dịch (4), Nói (5) để xếp bậc 7, 8 hoặc 9.',
+        notesVi: 'Đề mẫu HSK 3.0 cập nhật năm 2026 của CTI gồm 91 câu (~200 phút) với 40 câu Đọc; bản công bố giai đoạn đầu cuối 2022 trên một số trang cũ vẫn ghi 98 câu (~210 phút) với 47 câu Đọc.',
         hasPinyin: false,
         audioPlayCount: 1,
         sections: [
@@ -902,22 +1219,29 @@ export const HSK_STRUCTURE_DEFINITIONS = {
                 partNumber: 1,
                 questionCount: 10,
                 questionType: 'multiple_choice',
-                formatDescription: 'Nghe bản tin, thông báo chuyên nghiệp và chọn đáp án đúng.',
+                formatDescription: 'Nghe hội thoại & phát biểu ngắn, chọn đáp án đúng.',
                 skillsTested: 'Nghe hiểu thông tin sự kiện thời sự'
               },
               {
                 partNumber: 2,
-                questionCount: 12,
+                questionCount: 9,
                 questionType: 'multiple_choice',
-                formatDescription: 'Nghe đàm phán thương mại, tranh biện học thuật.',
+                formatDescription: 'Nghe phỏng vấn chuyên sâu & đàm phán.',
                 skillsTested: 'Phân tích lập luận và lập trường'
               },
               {
                 partNumber: 3,
-                questionCount: 18,
+                questionCount: 15,
                 questionType: 'multiple_choice',
-                formatDescription: 'Nghe bài giảng học thuật, phim tài liệu, hội thảo chuyên ngành.',
+                formatDescription: 'Nghe bài giảng học thuật, hội thảo chuyên ngành.',
                 skillsTested: 'Tổng hợp và đối chiếu luận điểm phức tạp'
+              },
+              {
+                partNumber: 4,
+                questionCount: 6,
+                questionType: 'multiple_choice',
+                formatDescription: 'Nghe bản tin tổng hợp & tranh biện học thuật.',
+                skillsTested: 'Đánh giá sắc thái & suy luận cao cấp'
               }
             ]
           },
@@ -925,30 +1249,30 @@ export const HSK_STRUCTURE_DEFINITIONS = {
             sectionId: 'reading',
             nameCn: '阅读',
             nameVi: 'Đọc hiểu',
-            questionCount: 47,
-            durationMinutes: 60,
+            questionCount: 40,
+            durationMinutes: 50,
             maxScore: 'Thành phần',
             audioRules: 'Không có âm thanh.',
             parts: [
               {
                 partNumber: 1,
-                questionCount: 28,
+                questionCount: 21,
                 questionType: 'multiple_choice',
-                formatDescription: 'Đọc bài báo, báo cáo điều tra và trả lời câu hỏi trắc nghiệm.',
+                formatDescription: 'Đọc bài báo học thuật, báo cáo chuyên ngành và trả lời câu hỏi.',
                 skillsTested: 'Đọc hiểu văn bản thể loại hành chính, khoa học'
               },
               {
                 partNumber: 2,
                 questionCount: 5,
-                questionType: 'paragraph_cloze',
-                formatDescription: 'Điền các đoạn văn thích hợp vào bài luận văn hóa.',
-                skillsTested: 'Cấu trúc bài luận dài'
+                questionType: 'multiple_choice',
+                formatDescription: 'Đọc biểu đồ & dữ liệu đa phương thức.',
+                skillsTested: 'Phân tích số liệu & cấu trúc bài luận dài'
               },
               {
                 partNumber: 3,
                 questionCount: 14,
-                questionType: 'deep_comprehension',
-                formatDescription: 'Đọc văn kiện, tài liệu lịch sử, xã luận và trả lời câu hỏi chuyên sâu.',
+                questionType: 'fill_blank',
+                formatDescription: 'Tổng hợp & điền khuyết văn bản học thuật.',
                 skillsTested: 'Tư duy phản biện và phân tích văn bản học thuật'
               }
             ]
@@ -1067,18 +1391,38 @@ export function getHskStructure(levelKey = 'hsk-1', version = '2015-Standard') {
   };
 }
 
+export const HSK30_SUMMARY_TABLE = [
+  { level: 'HSK 1', band: 'Sơ cấp', listening: '20 (~12p)', reading: '20 (20p)', writing: '—', translation: '—', speaking: 'Không', total: '40', duration: '~40 phút', note: 'Bỏ dạng Đúng/Sai ở phần Nghe, chuyển sang chọn tranh và đối đáp.' },
+  { level: 'HSK 2', band: 'Sơ cấp', listening: '25 (~17p)', reading: '25 (25p)', writing: '10 (10p)', translation: '—', speaking: 'Không', total: '60', duration: '~60 phút', note: 'Lần đầu đưa phần Viết vào HSK 2, gồm viết chữ Hán theo Pinyin.' },
+  { level: 'HSK 3', band: 'Sơ cấp', listening: '30 (25p)', reading: '30 (33p)', writing: '10 (15p)', translation: '—', speaking: '15 câu (~15p)', total: '70 (+15 nói)', duration: '~83 phút (+15p nói)', note: 'Không còn Pinyin trong đề; thi kèm bài Nói cấp 3 cùng đợt.' },
+  { level: 'HSK 4', band: 'Trung cấp', listening: '32 (~20p)', reading: '32 (30p)', writing: '6 (25p)', translation: '—', speaking: '5 câu (~20p)', total: '70 (+5 nói)', duration: '~85 phút (+20p nói)', note: 'Viết bỏ sắp xếp từ, chuyển sang 5 câu đặt theo tranh + 1 đoạn văn ngắn.' },
+  { level: 'HSK 5', band: 'Trung cấp', listening: '35 (~25p)', reading: '35 (35p)', writing: '2 (40p)', translation: '—', speaking: '5 câu (~23p)', total: '72 (+5 nói)', duration: '~110 phút (+23p nói)', note: 'Đọc thêm dạng sắp xếp đoạn văn; Viết: 1 bài 4 tranh (≥100 chữ) + 1 chủ đề (≥200 chữ).' },
+  { level: 'HSK 6', band: 'Trung cấp', listening: '40 (~30p)', reading: '40 (40p)', writing: '2 (45p)', translation: '—', speaking: '5 câu (~23p)', total: '82 (+5 nói)', duration: '~125 phút (+23p nói)', note: 'Đọc bỏ lỗi câu bệnh (语病); Viết bỏ tóm tắt 1000 chữ, đổi sang 应用文 (≥150) & 议论文 (≥300).' },
+  { level: 'HSK 7–9', band: 'Cao cấp', listening: '40 (~30p)', reading: '40* (50p)', writing: '2 (55p)', translation: '4 (41p)', speaking: '5 (tích hợp · 24p)', total: '91*', duration: '~200 phút*', note: 'Thi chung trên máy tính xếp bậc 7/8/9; bản CTI 2026: 91 câu (40 Đọc), bản 2022 cũ: 98 câu (47 Đọc, ~210p).' },
+];
+
+export const HSK20_VS_HSK30_COMPARISON = [
+  { group: '1. Sơ cấp (HSK 1–3)', detail: 'HSK 1 (40 câu) bỏ phán đoán Đúng/Sai chuyển sang chọn tranh & đối đáp; HSK 2 (60 câu) lần đầu có 10 câu Viết chữ Hán theo Pinyin; HSK 3 (70 câu) bỏ hẳn Pinyin và thi kèm 15 câu Nói (~15 phút).' },
+  { group: '2. Trung cấp (HSK 4–6)', detail: 'HSK 4 Viết bỏ sắp xếp từ (chuyển 5 câu theo tranh + 1 đoạn ngắn); HSK 5 Đọc bổ sung sắp xếp đoạn văn, Viết 4 tranh (≥100 chữ) + chủ đề (≥200 chữ); HSK 6 bỏ câu bệnh 语病 & tóm tắt 缩写, chuyển sang Văn bản ứng dụng (≥150 chữ) + Nghị luận (≥300 chữ). Tất cả HSK 4–6 kèm 5 câu Nói.' },
+  { group: '3. Cao cấp (HSK 7–9)', detail: 'Một bài thi chung duy nhất trên máy tính tích hợp đủ 5 kỹ năng (Nghe 40, Đọc 40*, Viết 2, Dịch 4, Nói 5 = 91* câu · ~200 phút) để phân bậc HSK 7, 8 hoặc 9 dựa trên điểm đạt được.' },
+];
+
 /**
  * Lấy danh sách toàn bộ các cấp độ hỗ trợ
  */
-export function getAllHskLevels() {
+export function getAllHskLevels(version = '2015-Standard') {
   return Object.keys(HSK_STRUCTURE_DEFINITIONS).map(key => {
     const item = HSK_STRUCTURE_DEFINITIONS[key];
+    const ver = item.versions[version] || item.versions['2015-Standard'] || Object.values(item.versions)[0];
     return {
       key,
       level: item.level,
       nameVi: item.levelNameVi,
       tagline: item.tagline,
-      vocabCount: item.vocabularyRequirement,
+      vocabCount: ver?.vocabularyRequirement || item.vocabularyRequirement,
+      questionCount: ver?.totalQuestions,
+      durationMinutes: ver?.totalDurationMinutes,
+      isSupportedInVersion: Boolean(item.versions[version]),
       availableVersions: Object.keys(item.versions)
     };
   });

@@ -15,23 +15,31 @@ import { RotateCcw, Check, Sparkles, HelpCircle } from 'lucide-react';
  */
 export default function SentenceReorderQuestion({
   question,
+  scrambledWords,
+  currentAnswer,
   userAnswer,
+  options,
   onAnswerChange,
-  isReviewMode = false
+  disabled = false,
+  isReviewMode = false,
+  isLearningMode = false
 }) {
+  const effectiveAnswer = userAnswer !== undefined ? userAnswer : currentAnswer;
+  const effectiveDisabled = Boolean(isReviewMode || disabled);
+  const effectiveOptions = question?.options || options || [];
+
   const words = useMemo(() => {
-    return question.words || question.scrambledWords || [];
-  }, [question]);
+    return question?.words || question?.scrambledWords || scrambledWords || [];
+  }, [question, scrambledWords]);
 
   // Chuẩn hóa mảng từ đã đặt
   const placedWords = useMemo(() => {
-    if (Array.isArray(userAnswer)) return userAnswer;
-    if (typeof userAnswer === 'string') {
-      // Nếu đáp án là chuỗi khớp với 1 option, hoặc là chuỗi ghép
+    if (Array.isArray(effectiveAnswer)) return effectiveAnswer;
+    if (typeof effectiveAnswer === 'string') {
       return [];
     }
     return [];
-  }, [userAnswer]);
+  }, [effectiveAnswer]);
 
   // Tính toán các từ còn lại trong khay (Word Bank)
   const availableBank = useMemo(() => {
@@ -61,14 +69,14 @@ export default function SentenceReorderQuestion({
 
   // Xử lý khi nhấn từ trong câu để gỡ bỏ
   const handleRemoveWord = (indexToRemove) => {
-    if (isReviewMode) return;
+    if (effectiveDisabled) return;
     const nextPlaced = placedWords.filter((_, idx) => idx !== indexToRemove);
     onAnswerChange(nextPlaced);
   };
 
   // Làm lại từ đầu
   const handleReset = () => {
-    if (isReviewMode) return;
+    if (effectiveDisabled) return;
     onAnswerChange([]);
   };
 
@@ -77,15 +85,15 @@ export default function SentenceReorderQuestion({
       {/* 1. Khung hiển thị câu đang xếp (Sentence Assembly Dropzone) */}
       <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-dashed border-[#E85D3F]/40 dark:border-slate-700 min-h-[90px] flex flex-col justify-between transition-all">
         <div className="flex items-center justify-between text-xs text-slate-400 mb-2 font-bold">
-          <span>Câu bạn đang sắp xếp:</span>
-          {placedWords.length > 0 && !isReviewMode && (
+          <span>{isLearningMode ? 'Câu bạn đang sắp xếp:' : '组句区：'}</span>
+          {placedWords.length > 0 && !effectiveDisabled && (
             <button
               type="button"
               onClick={handleReset}
               className="text-[#E85D3F] hover:text-[#D44D30] flex items-center gap-1 cursor-pointer transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Xếp lại</span>
+              <span>{isLearningMode ? 'Xếp lại' : '重置'}</span>
             </button>
           )}
         </div>
@@ -93,7 +101,7 @@ export default function SentenceReorderQuestion({
         <div className="flex flex-wrap items-center gap-2 min-h-[44px]">
           {placedWords.length === 0 ? (
             <span className="text-xs text-slate-400 italic">
-              Bấm vào các thẻ từ bên dưới theo đúng thứ tự để tạo câu hoàn chỉnh...
+              {isLearningMode ? 'Bấm vào các thẻ từ bên dưới theo đúng thứ tự để tạo câu hoàn chỉnh...' : '请按正确语序点击下方词语：'}
             </span>
           ) : (
             placedWords.map((word, idx) => (
@@ -101,12 +109,12 @@ export default function SentenceReorderQuestion({
                 key={idx}
                 type="button"
                 onClick={() => handleRemoveWord(idx)}
-                disabled={isReviewMode}
+                disabled={effectiveDisabled}
                 className="px-3.5 py-1.5 rounded-xl bg-[#E85D3F] text-white font-bold text-sm shadow-xs hover:bg-[#D44D30] active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer group"
-                title="Bấm để gỡ từ này"
+                title={isLearningMode ? 'Bấm để gỡ từ này' : '点击移除'}
               >
                 <span>{word}</span>
-                {!isReviewMode && <span className="text-xs opacity-70 group-hover:opacity-100">✕</span>}
+                {!effectiveDisabled && <span className="text-xs opacity-70 group-hover:opacity-100">✕</span>}
               </button>
             ))
           )}
@@ -119,14 +127,14 @@ export default function SentenceReorderQuestion({
       {/* 2. Khay các thẻ từ cần sắp xếp (Scrambled Word Bank) */}
       <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
         <div className="text-xs font-bold text-slate-500 mb-2.5">
-          Khay từ ngữ (Bấm chọn theo thứ tự):
+          {isLearningMode ? 'Khay từ ngữ (Bấm chọn theo thứ tự):' : '候选词语（按语序点击）：'}
         </div>
 
         <div className="flex flex-wrap gap-2.5">
           {availableBank.length === 0 ? (
             <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 py-1">
               <Check className="w-4 h-4" />
-              <span>Đã xếp toàn bộ các từ vào câu.</span>
+              <span>{isLearningMode ? 'Đã xếp toàn bộ các từ vào câu.' : '已全部选完。'}</span>
             </div>
           ) : (
             availableBank.map((item, idx) => (
@@ -134,7 +142,7 @@ export default function SentenceReorderQuestion({
                 key={idx}
                 type="button"
                 onClick={() => handleSelectWord(item.word)}
-                disabled={isReviewMode}
+                disabled={effectiveDisabled}
                 className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-bold text-sm shadow-xs hover:border-[#E85D3F] hover:bg-[#FFF5F2] dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
               >
                 {item.word}
@@ -145,20 +153,20 @@ export default function SentenceReorderQuestion({
       </div>
 
       {/* 3. Lựa chọn dạng trắc nghiệm bổ trợ (Option choices alternative) */}
-      {question.options && question.options.length > 0 && (
+      {effectiveOptions.length > 0 && (
         <div className="pt-2">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-            Hoặc chọn đáp án nhanh:
+            {isLearningMode ? 'Hoặc chọn đáp án nhanh:' : '或直接选择正确选项：'}
           </div>
           <div className="space-y-2">
-            {question.options.map((opt, optIdx) => {
-              const isSelected = userAnswer === optIdx;
+            {effectiveOptions.map((opt, optIdx) => {
+              const isSelected = effectiveAnswer === optIdx;
               return (
                 <button
                   key={optIdx}
                   type="button"
                   onClick={() => onAnswerChange(optIdx)}
-                  disabled={isReviewMode}
+                  disabled={effectiveDisabled}
                   className={`w-full p-3 rounded-xl border text-left text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
                     isSelected
                       ? 'border-[#E85D3F] bg-[#FFF5F2] dark:bg-orange-950/20 text-[#E85D3F] font-bold'
@@ -171,7 +179,7 @@ export default function SentenceReorderQuestion({
                     </span>
                     <span>{opt.text}</span>
                   </div>
-                  {opt.translation && (
+                  {isLearningMode && opt.translation && (
                     <span className="text-[11px] text-slate-400">{opt.translation}</span>
                   )}
                 </button>

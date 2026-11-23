@@ -22,8 +22,8 @@ export const HSK_7_TO_9_EXAM_PAPER = {
       maxScore: 60,
       recommendedMinutes: 35,
       stimulus: {
-        topic: 'Kinh tế số, Mô hình ngôn ngữ lớn (LLM) và Chuyển đổi công nghiệp',
-        speakerRole: 'GS. Trần (Viện Nghiên cứu Kinh tế Số Bắc Kinh)',
+        topic: '数字经济、大语言模型与传统制造业转型',
+        speakerRole: '陈教授（北京数字经济研究院）',
         audioScriptZh:
           '各位学者，今天我们探讨的核心议题是“生成式人工智能如何为传统制造业赋能”。诚然，过去十年间互联网经济的崛起极大地改变了消费端，然而在工业制造领域，生产效率的瓶颈依然突出。与其说当前的人工智能浪潮是一场单纯的软件升级，毋宁说它是对产业底层逻辑的彻底重塑。鉴于高并发算力基础设施的日益完善，越来越多的企业得以利用实时数据流优化供应链韧性，从而达到降本增效、防患于未然的目标。',
         audioScriptPinyin:
@@ -183,24 +183,24 @@ export const HSK_7_TO_9_EXAM_PAPER = {
         {
           id: 'T1',
           direction: 'vi_to_zh',
-          title: 'Bài dịch 1 (Việt ➔ Trung — 30 điểm): Ngôn ngữ Chính luận & Công nghệ',
+          title: '第一题（越译汉 — 30分）：政论与科技文献',
           sourceText:
             'Xét thấy thị trường quốc tế biến đổi nhanh chóng, việc tự chủ nghiên cứu công nghệ lõi và bồi dưỡng nhân tài chất lượng cao có mối quan hệ bổ trợ lẫn nhau; doanh nghiệp cần chuẩn bị từ trước để tiến bước vững chắc.',
           requiredKeywords: ['鉴于', '瞬息万变', '相辅相成', '未雨绸缪', '行稳致远'],
           literaryMarkers: ['实乃', '之', '唯有', '方能', '亦', '从而'],
           threeTierReference: {
             literalTrap:
-              '❌ 因为国际市场变化很快，自己研究核心技术和培养好人才有互相帮助的关系，企业要先准备好才能走得远。（Bẫy dịch khẩu ngữ HSK 4, thiếu thành ngữ tứ tự và văn phong công văn）',
+              '❌ 因为国际市场变化很快，自己研究核心技术和培养好人才有互相帮助的关系，企业要先准备好才能走得远。',
             hsk7Standard:
-              '✅ 鉴于国际市场瞬息万变，自主研发核心技术与培养高素质人才是相辅相成的；企业必须未雨绸缪，才能在竞争中行稳致远。（Đạt chuẩn HSK 7–8）',
+              '✅ 鉴于国际市场瞬息万变，自主研发核心技术与培养高素质人才是相辅相成的；企业必须未雨绸缪，才能在竞争中行稳致远。',
             hsk9Master:
-              '🏆 鉴于国际市场瞬息万变，核心技术之自主研发与高层次人才培养实乃相辅相成之举；唯有未雨绸缪、精益求精，企业方能行稳致远。（Chuẩn Đại sư HSK 9: Kết hợp 鉴于, 之, 实乃...之举, 唯有...方能 và 4 thành ngữ tứ tự）',
+              '🏆 鉴于国际市场瞬息万变，核心技术之自主研发与高层次人才培养实乃相辅相成之举；唯有未雨绸缪、精益求精，企业方能行稳致远。',
           },
         },
         {
           id: 'T2',
           direction: 'zh_to_vi',
-          title: 'Bài dịch 2 (Trung ➔ Việt — 30 điểm): Đảo cụm Định ngữ dài & Hư từ cổ văn',
+          title: '第二题（汉译越 — 30分）：长定语与文言虚词',
           sourceText:
             '人工智能与其说是对传统人工岗位的简单取代，毋宁说是一场促使人类从繁琐重复的体力劳动中解放出来、进而专注于高价值创造性思维的深刻变革。',
           requiredKeywords: [
@@ -233,7 +233,7 @@ export const HSK_7_TO_9_EXAM_PAPER = {
       recommendedMinutes: 60,
       partA_ChartEssay: {
         title:
-          'Câu 4A (20 điểm): Viết bài phân tích số liệu biểu đồ (图表作文 — Mục tiêu: 250–300 chữ)',
+          '写作第一部分（20分）：图表数据分析（250—300字）',
         promptZh:
           '请根据第二部分阅读材料中的《2022—2026年亚太地区企业研发投入与绿色能源转型占比趋势图》，撰写一篇250—300字的图表分析短文。要求包含：（1）概述核心数据变化态势；（2）剖析背后的经济与技术成因；（3）总结未来发展启示。',
         targetChars: 250,
@@ -243,7 +243,7 @@ export const HSK_7_TO_9_EXAM_PAPER = {
       },
       partB_ArgumentativeEssay: {
         title:
-          'Câu 4B (40 điểm): Viết luận văn nghị luận học thuật (深度议论文 — Mục tiêu: 600 chữ)',
+          '写作第二部分（40分）：深度议论文（不少于600字）',
         promptZh:
           '古人云：“审时度势，未雨绸缪。”在人工智能与全球化瞬息万变的今天，个人与组织应当如何平衡“坚守核心传统价值”与“顺应时代技术变革”？请自拟居中标题，写一篇不少于600字的议论文，要求立意深远、论证严密、善用四字成语与书面语衔接词。',
         targetChars: 600,

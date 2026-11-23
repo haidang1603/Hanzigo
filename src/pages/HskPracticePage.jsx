@@ -4,11 +4,6 @@ import HskAiDiagnosticPanel from '../components/personalization/HskAiDiagnosticP
 import { HSK_7_TO_9_PAPER_CATALOG } from '@/features/hsk-exam/data/hsk7to9SampleExamPaper';
 import React, { useState, useEffect, useMemo, useRef, Suspense, lazy } from 'react';
 
-const Hsk6SimulatorWorkspace = lazy(() =>
-  import('../features/hsk-exam/renderers/hsk6/Hsk6SimulatorWorkspace.tsx').then((m) => ({
-    default: m.Hsk6SimulatorWorkspace,
-  }))
-);
 const Hsk6TwoPhaseSummarySimulator = lazy(() =>
   import('../features/hsk-exam/renderers/hsk6/Hsk6TwoPhaseSummarySimulator.tsx').then((m) => ({
     default: m.Hsk6TwoPhaseSummarySimulator,
@@ -74,6 +69,9 @@ import {
 const Hsk7to9IntegratedExamSimulator = lazy(() =>
   import('@/features/hsk-exam/components/Hsk7to9IntegratedExamSimulator')
 );
+const Hsk7to9FullMockSimulator = lazy(() =>
+  import('@/features/hsk-exam/components/Hsk7to9FullMockSimulator')
+);
 import { 
   getHskExams, 
   getHskExamDetails, 
@@ -103,6 +101,23 @@ import {
 import { speakChinese } from '../utils/audio';
 import SentenceReorderQuestion from '../components/hsk/SentenceReorderQuestion.jsx';
 import { saveCustomVocab } from '../utils/materialsStorage.js';
+import {
+  EXAM_SYSTEMS,
+  EXAM_MODES,
+  PRACTICE_MODES,
+  SKILL_LABELS_VI,
+  getBlueprint,
+  assembleDualSystemExam,
+  analyzeDualExamAttempt,
+  saveDualExamHistoryRecord,
+  buildAskAiTutorPromptForQuestion,
+  gradeSubjectiveSubmission,
+  getDefaultShowPinyinForLevel,
+  resolveQuestionPinyin,
+  getVietnameseInstructionForQuestion,
+  evaluateLearningQuestionFeedback
+} from '../data/hskExamBlueprints.js';
+import { ensureAllFullStandardExamsLoaded } from '../data/hsk30/index.js';
 
 const HSK_7_TO_9_CODES = new Set(['H79001', 'H79002', 'H79003']);
 
@@ -300,8 +315,6 @@ export default function HskPracticePage({
         window.location.hash = '#hsk/exams';
       } else if (view === 'structure') {
         window.location.hash = '#hsk/structure';
-      } else if (view === 'hsk6_simulator') {
-        window.location.hash = '#hsk/hsk6_simulator';
       } else if (view === 'hsk7_9_simulator') {
         window.location.hash = '#hsk/hsk7_9_simulator';
       } else if (view === 'hskk_simulator') {
@@ -336,7 +349,6 @@ export default function HskPracticePage({
     }
     if (subRoute === 'exams') return 'exams';
     if (subRoute === 'structure') return 'structure';
-    if (subRoute === 'hsk6_simulator') return 'hsk6_simulator';
     if (subRoute === 'hskk_simulator') return 'hskk_simulator';
     if (subRoute === 'resources') return 'resources';
     if (subRoute === 'history') return 'history';
@@ -402,14 +414,6 @@ export default function HskPracticePage({
         <HskStructureView 
           onNavigate={navigateTo} 
         />
-      )}
-
-      {currentView === 'hsk6_simulator' && (
-        <Suspense fallback={<div className="p-8 text-center text-sm text-slate-500">Đang tải trình mô phỏng HSK 6...</div>}>
-          <Hsk6SimulatorWorkspace
-            onBack={() => navigateTo('home')}
-          />
-        </Suspense>
       )}
 
       {currentView === 'hskk_simulator' && (
@@ -701,6 +705,292 @@ function HskRandomExamModal({ isOpen, onClose, onNavigate }) {
 }
 
 // =========================================================================
+// 0. DUAL-SYSTEM EXAM BUILDER (HSK 2.0 & HSK 3.0 — 3 CHẾ ĐỘ THI)
+// =========================================================================
+function DualSystemExamBuilderPanel({ onNavigate, onLaunchHsk7to9Paper }) {
+  const [examSystem, setExamSystem] = useState(EXAM_SYSTEMS.HSK_3_0);
+  const [level, setLevel] = useState('HSK 1');
+  const [examMode, setExamMode] = useState(EXAM_MODES.FULL_EXAM);
+  const [selectedSkill, setSelectedSkill] = useState('listening');
+  const [selectedPart, setSelectedPart] = useState(1);
+  const [selectedPracticeMode, setSelectedPracticeMode] = useState(PRACTICE_MODES.EXAM);
+  const [hsk30BankVersion, setHsk30BankVersion] = useState(0);
+
+  const availableLevels = useMemo(
+    () =>
+      examSystem === EXAM_SYSTEMS.HSK_2_0
+        ? ['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6']
+        : ['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7-9'],
+    [examSystem]
+  );
+
+  const resolvedLevel = availableLevels.includes(level) ? level : availableLevels[0];
+
+  useEffect(() => {
+    let active = true;
+    ensureAllFullStandardExamsLoaded()
+      .then(() => {
+        if (active) setHsk30BankVersion((v) => v + 1);
+      })
+      .catch(() => {
+        // Fallback to local registered questions if dynamic chunk load fails
+      });
+    return () => {
+      active = false;
+    };
+  }, [examSystem, resolvedLevel]);
+
+  const blueprint = useMemo(
+    () => getBlueprint(examSystem, resolvedLevel),
+    [examSystem, resolvedLevel]
+  );
+
+  const availableSkills = useMemo(
+    () =>
+      Object.entries(blueprint.skills || {})
+        .filter(([, cfg]) => cfg && cfg.count > 0)
+        .map(([key]) => key),
+    [blueprint]
+  );
+
+  const resolvedSkill = availableSkills.includes(selectedSkill)
+    ? selectedSkill
+    : (availableSkills[0] || 'listening');
+
+  const availableParts = useMemo(
+    () => blueprint.skills?.[resolvedSkill]?.parts || [],
+    [blueprint, resolvedSkill]
+  );
+
+  const resolvedPart = availableParts.some((p) => Number(p.part) === Number(selectedPart))
+    ? Number(selectedPart)
+    : Number(availableParts[0]?.part || 1);
+
+  const previewExam = useMemo(
+    () =>
+      assembleDualSystemExam({
+        examSystem,
+        level: resolvedLevel,
+        mode: examMode,
+        skill: resolvedSkill,
+        part: resolvedPart,
+        _bankVersion: hsk30BankVersion,
+      }),
+    [examSystem, resolvedLevel, examMode, resolvedSkill, resolvedPart, hsk30BankVersion]
+  );
+
+  const isHsk79 = resolvedLevel === 'HSK 7-9';
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm mb-6 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[#E85D3F] shrink-0" />
+            <span>Trung Tâm Thi Thử Song Song (HSK 2.0 &amp; HSK 3.0)</span>
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            {examSystem === EXAM_SYSTEMS.HSK_3_0
+              ? 'Chuẩn HSK 3.0 (9 cấp)'
+              : 'Chuẩn HSK 2.0 (6 cấp hiện hành — Giữ nguyên 100% thang điểm 200/300)'}
+          </p>
+        </div>
+
+        {/* System Segmented Switcher */}
+        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto flex-nowrap shrink-0">
+          <button
+            type="button"
+            onClick={() => setExamSystem(EXAM_SYSTEMS.HSK_2_0)}
+            className={`min-h-11 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+              examSystem === EXAM_SYSTEMS.HSK_2_0
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-slate-300'
+            }`}
+          >
+            HSK 2.0 (6 cấp)
+          </button>
+          <button
+            type="button"
+            onClick={() => setExamSystem(EXAM_SYSTEMS.HSK_3_0)}
+            className={`min-h-11 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+              examSystem === EXAM_SYSTEMS.HSK_3_0
+                ? 'bg-[#E85D3F] text-white shadow-xs'
+                : 'text-slate-500 dark:text-slate-300'
+            }`}
+          >
+            HSK 3.0 (9 cấp)
+          </button>
+        </div>
+      </div>
+
+      {/* Level Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto flex-nowrap pb-1">
+        {availableLevels.map((lvl) => (
+          <button
+            key={lvl}
+            type="button"
+            onClick={() => setLevel(lvl)}
+            className={`min-h-11 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+              resolvedLevel === lvl
+                ? 'bg-[#E85D3F] text-white'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+            }`}
+          >
+            {lvl}
+          </button>
+        ))}
+      </div>
+
+      {/* 3 Exam Modes Switcher */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {[
+          { id: EXAM_MODES.FULL_EXAM, label: '1. Thi thử toàn bộ đề' },
+          { id: EXAM_MODES.BY_SKILL, label: '2. Luyện theo từng kỹ năng' },
+          { id: EXAM_MODES.BY_PART, label: '3. Luyện theo từng dạng bài' },
+        ].map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setExamMode(m.id)}
+            className={`min-h-11 px-3 py-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer text-left ${
+              examMode === m.id
+                ? 'border-[#E85D3F] bg-orange-50 dark:bg-orange-950/30 text-[#E85D3F]'
+                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Skill & Part Selectors for Mode 2 & 3 */}
+      {(examMode === EXAM_MODES.BY_SKILL || examMode === EXAM_MODES.BY_PART) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 mb-1">Chọn kỹ năng:</label>
+            <div className="flex flex-wrap gap-1.5">
+              {availableSkills.map((sk) => (
+                <button
+                  key={sk}
+                  type="button"
+                  onClick={() => setSelectedSkill(sk)}
+                  className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${
+                    resolvedSkill === sk
+                      ? 'bg-[#E85D3F] text-white'
+                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {SKILL_LABELS_VI[sk] || sk}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {examMode === EXAM_MODES.BY_PART && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 mb-1">Chọn phần thi (Part):</label>
+              <select
+                value={resolvedPart}
+                onChange={(e) => setSelectedPart(Number(e.target.value))}
+                className="w-full min-h-11 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-base sm:text-xs font-bold text-slate-800 dark:text-white"
+              >
+                {availableParts.map((p) => (
+                  <option key={p.part} value={p.part}>
+                    {p.titleVi || `Phần ${p.part}`} ({p.count} câu chuẩn)
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Practice Mode Selector (Thi thật CBT vs Luyện tập Learning) */}
+      <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+          Chế độ phòng thi:
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedPracticeMode(PRACTICE_MODES.EXAM)}
+            className={`min-h-11 px-3 py-2 rounded-xl border text-left transition-all cursor-pointer ${
+              selectedPracticeMode === PRACTICE_MODES.EXAM
+                ? 'border-[#E85D3F] bg-orange-50/70 dark:bg-orange-950/30 text-slate-900 dark:text-white'
+                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            <div className="text-xs font-black">⏱️ Thi thật (CBT)</div>
+            <div className="text-[11px] text-slate-500">Áp lực thời gian, không hiện đáp án trước khi nộp</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedPracticeMode(PRACTICE_MODES.LEARNING)}
+            className={`min-h-11 px-3 py-2 rounded-xl border text-left transition-all cursor-pointer ${
+              selectedPracticeMode === PRACTICE_MODES.LEARNING
+                ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30 text-slate-900 dark:text-white'
+                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            <div className="text-xs font-black">📚 Luyện tập (Learning)</div>
+            <div className="text-[11px] text-slate-500">Có hướng dẫn tiếng Việt, bật/tắt Pinyin, xem giải thích ngay</div>
+          </button>
+        </div>
+      </div>
+
+      {/* Blueprint Summary & Action Footer */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs">
+        <div className="space-y-1">
+          <div className="font-bold text-slate-800 dark:text-slate-200">
+            Cấu hình chuẩn: <span className="text-[#E85D3F]">{blueprint.totalQuestions} câu</span> •{' '}
+            <span>{blueprint.durationMinutes} phút</span>
+            {isHsk79 && ' (Nghe 30p · Đọc 50p · Viết 55p · Dịch 41p · Nói 24p)'}
+          </div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+            Ngân hàng lắp ráp: <strong>{previewExam.bankCoverage?.coverageLabelVi}</strong>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {blueprint.speakingMode === 'separate' && (
+            <button
+              type="button"
+              onClick={() => onNavigate('hskk_simulator')}
+              className="min-h-11 px-3.5 py-2 rounded-xl border border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold text-xs cursor-pointer"
+            >
+              Thi Nói Riêng ({blueprint.separateSpeakingQuestions ? `${blueprint.separateSpeakingQuestions} câu · ` : ''}~{blueprint.separateSpeakingMinutes}p)
+            </button>
+          )}
+          {isHsk79 && onLaunchHsk7to9Paper && (
+            <button
+              type="button"
+              onClick={() => onLaunchHsk7to9Paper('H79001', 7)}
+              className="min-h-11 px-3.5 py-2 rounded-xl border border-amber-500 text-amber-700 dark:text-amber-300 font-bold text-xs cursor-pointer"
+            >
+              Phòng thi tích hợp 5 kỹ năng
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={!previewExam.questions || previewExam.questions.length === 0}
+            onClick={() => {
+              try {
+                sessionStorage.setItem('hanzigo_pending_exam_mode', selectedPracticeMode);
+              } catch {}
+              onNavigate('take', previewExam.id);
+            }}
+            className="min-h-11 px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] disabled:opacity-40 text-white font-bold text-xs shadow-sm cursor-pointer flex items-center gap-1.5"
+          >
+            <Play className="w-3.5 h-3.5" />
+            <span>Bắt đầu làm bài ({previewExam.questions?.length || 0} câu)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
 // 1. HOME VIEW: Tổng quan & Chọn cấp độ HSK 1 - 6
 // =========================================================================
 function HskHomeView({
@@ -803,7 +1093,7 @@ function HskHomeView({
             <span className="text-amber-200">Không Cần Đăng Nhập</span>
           </h1>
           <p className="text-white/90 text-xs sm:text-sm mb-3 sm:mb-5 leading-relaxed max-w-2xl line-clamp-2 sm:line-clamp-none">
-            Hệ thống đề thi mô phỏng chuẩn quốc tế từ HSK 1 đến HSK 6: Đầy đủ {exams.length} đề thi chuẩn hóa thực chiến (bao gồm đề HSK 6 đủ 101 câu &amp; HSKK 3 cấp), tự động tính điểm và giải thích chi tiết bằng tiếng Việt.
+            Hệ thống đề thi mô phỏng chuẩn quốc tế từ HSK 1 đến HSK 9: Đầy đủ {exams.length} đề thi chuẩn hóa thực chiến (HSK 2.0, HSK 3.0 &amp; HSKK 3 cấp), tự động tính điểm và giải thích chi tiết.
           </p>
           <div className="flex flex-wrap lg:flex-nowrap items-center gap-2">
             <button
@@ -828,13 +1118,6 @@ function HskHomeView({
               Cấu trúc Đề HSK
             </button>
             <button
-              onClick={() => onNavigate('hsk6_simulator')}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/70 hover:bg-slate-900 text-white font-bold text-xs whitespace-nowrap shadow-xs transition-all cursor-pointer border border-white/20 shrink-0"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-              Mô phỏng HSK 6
-            </button>
-            <button
               onClick={() => onNavigate('hsk7_9_simulator')}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#243447] hover:bg-slate-900 text-amber-300 font-extrabold text-xs whitespace-nowrap shadow-xs transition-all cursor-pointer border border-amber-300/40 shrink-0"
             >
@@ -851,6 +1134,12 @@ function HskHomeView({
           </div>
         </div>
       </div>
+
+      {/* Dual-System CBT Exam Builder (HSK 2.0 & HSK 3.0) */}
+      <DualSystemExamBuilderPanel
+        onNavigate={onNavigate}
+        onLaunchHsk7to9Paper={onLaunchHsk7to9Paper}
+      />
 
       {/* 5 CHẾ ĐỘ THI & LUYỆN TẬP TOÀN DIỆN (PHASE 18) */}
       <div className="mb-12">
@@ -963,7 +1252,7 @@ function HskHomeView({
                 <span className="text-[10px] bg-red-500 text-white font-black px-1.5 py-0.5 rounded">Mới</span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
-                Tự động sinh đề thi mới không trùng lặp từ 417 câu hỏi thật. Tùy biến số lượng câu và kỹ năng.
+                Tự động sinh đề thi mới không trùng lặp từ kho hơn 1.140 câu hỏi chuẩn HSK 2.0 &amp; HSK 3.0. Tùy biến số lượng câu và kỹ năng.
               </p>
             </div>
             <button
@@ -1232,7 +1521,7 @@ function HskExamsListView({
             Thư Viện Đề Thi Thử HSK
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            26 đề thi chuẩn hóa & 417 câu hỏi thực chiến, phân loại theo cấp độ, kỹ năng và chủ đề
+            {exams.length} đề thi chuẩn hóa &amp; hơn 1.140 câu hỏi thực chiến đủ 100% số câu (HSK 2.0 &amp; HSK 3.0)
           </p>
         </div>
         <button
@@ -1661,7 +1950,21 @@ function HskExamTakingView({ examId, user, onNavigate }) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [flaggedIds, setFlaggedIds] = useState([]);
-  const [examMode, setExamMode] = useState('simulation'); // 'simulation' (Thi thử) | 'practice' (Luyện tập)
+  const [examMode, setExamMode] = useState(() => {
+    try {
+      const pending = sessionStorage.getItem('hanzigo_pending_exam_mode');
+      if (pending) {
+        sessionStorage.removeItem('hanzigo_pending_exam_mode');
+        return pending === PRACTICE_MODES.LEARNING || pending === 'practice' ? 'practice' : 'simulation';
+      }
+    } catch {}
+    return 'simulation';
+  }); // 'simulation' (Thi thử) | 'practice' (Luyện tập)
+  const [showPinyin, setShowPinyin] = useState(true);
+  const [learningFeedbackMap, setLearningFeedbackMap] = useState({});
+  const [subjectiveGradingMap, setSubjectiveGradingMap] = useState({});
+  const [subjectiveTestingId, setSubjectiveTestingId] = useState(null);
+  const [savedSrsIds, setSavedSrsIds] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [timeSpentSeconds, setTimeSpentSeconds] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1728,6 +2031,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
     getExamForTaking(examId).then(data => {
       if (!mounted) return;
       setExam(data);
+      setShowPinyin(getDefaultShowPinyinForLevel(data.level));
 
       const defaultDurationSeconds = (data.duration_minutes || 40) * 60;
       let resolvedTimeLeft = defaultDurationSeconds;
@@ -1735,6 +2039,9 @@ function HskExamTakingView({ examId, user, onNavigate }) {
 
       // Phục hồi bản nháp từ localStorage nếu có
       const session = getTemporaryExamSession(examId);
+      if (!session) {
+        clearTemporaryAnswers(examId);
+      }
       if (session) {
         if (session.answers && Object.keys(session.answers).length > 0) {
           setAnswers(session.answers);
@@ -1879,6 +2186,22 @@ function HskExamTakingView({ examId, user, onNavigate }) {
         user,
         examMode: latestMode
       });
+      if (exam?.examSystem) {
+        const analytics = analyzeDualExamAttempt({
+          exam,
+          questions: exam.questions || [],
+          userAnswers: answersRef.current,
+          subjectiveGrades: subjectiveGradingMap,
+          timeSpentSeconds: calculatedTimeSpent,
+        });
+        saveDualExamHistoryRecord({
+          user,
+          analytics: {
+            ...analytics,
+            practiceMode: latestMode === 'practice' ? 'learning' : 'exam',
+          },
+        });
+      }
       clearTemporaryAnswers(examId);
       onNavigate('result', attempt.id);
     } catch (err) {
@@ -1951,7 +2274,80 @@ function HskExamTakingView({ examId, user, onNavigate }) {
 
   const currentSecKey = currentQ ? (currentQ.part_type || currentQ.section || 'reading') : 'reading';
   const examLevelNum = parseInt((exam?.level || 'HSK 1').replace(/\D/g, '') || '1');
-  const showPinyinInTaking = examMode === 'practice' || examLevelNum <= 2;
+  const isLearningMode = examMode === 'practice';
+  const isActiveExamSession = !isLearningMode;
+  const showPinyinInTaking = isLearningMode && showPinyin;
+
+  const triggerInstantLearningCheck = (questionObj, answerVal) => {
+    if (!isLearningMode || !questionObj) return;
+    const fb = evaluateLearningQuestionFeedback({
+      examId: exam?.id,
+      questionId: questionObj.id,
+      userAnswer: answerVal,
+      practiceMode: PRACTICE_MODES.LEARNING,
+    });
+    if (fb && !fb.blocked) {
+      setLearningFeedbackMap((prev) => ({ ...prev, [questionObj.id]: fb }));
+    }
+  };
+
+  const handleGradeSubjectiveInLearning = async (questionObj) => {
+    if (!isLearningMode || !questionObj) return;
+    const userText = answersRef.current[questionObj.id] || '';
+    setSubjectiveTestingId(questionObj.id);
+    try {
+      const [subRes, fb] = await Promise.all([
+        gradeSubjectiveSubmission({
+          question: questionObj,
+          userAnswer: userText,
+          level: exam?.level || 'HSK 4',
+        }),
+        Promise.resolve(
+          evaluateLearningQuestionFeedback({
+            examId: exam?.id,
+            questionId: questionObj.id,
+            userAnswer: userText,
+            practiceMode: PRACTICE_MODES.LEARNING,
+          })
+        ),
+      ]);
+      setSubjectiveGradingMap((prev) => ({ ...prev, [questionObj.id]: subRes }));
+      if (fb && !fb.blocked) {
+        setLearningFeedbackMap((prev) => ({ ...prev, [questionObj.id]: fb }));
+      }
+    } finally {
+      setSubjectiveTestingId(null);
+    }
+  };
+
+  const isHsk79FullMockCbt =
+    !isLearningMode &&
+    exam &&
+    (exam.level === 'HSK 7-9' ||
+      String(exam.level || '').includes('7-9') ||
+      String(exam.id || '').includes('hsk7-9'));
+
+  if (isHsk79FullMockCbt) {
+    return (
+      <Suspense
+        fallback={
+          <div className="p-10 text-center text-sm font-bold text-slate-500">
+            正在加载 HSK 7–9 全真模拟考场...
+          </div>
+        }
+      >
+        <Hsk7to9FullMockSimulator
+          exam={exam}
+          answers={answers}
+          onAnswerChange={recordAnswerChange}
+          timeLeft={timeLeft}
+          isSubmitting={isSubmitting}
+          onSubmit={() => executeSubmission(false)}
+          onExit={() => onNavigate('exams')}
+        />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
@@ -1980,12 +2376,16 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
                 : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
             }`}>
-              {examMode === 'simulation' ? '⏱️ Thi thử nghiêm ngặt' : '📚 Luyện tập tự do'}
+              {examMode === 'simulation' ? '⏱️ 正式模考 (CBT)' : '📚 Luyện tập tự do'}
             </span>
           </div>
           <div className="text-[11px] sm:text-xs text-slate-500 mt-0.5 truncate">
-            Đã làm: <strong className="text-slate-900 dark:text-white">{answeredCount}</strong> / {totalQuestions} câu
-            {flaggedIds.length > 0 && <span className="ml-2 text-amber-600 font-bold">• Đánh dấu xem lại: {flaggedIds.length} câu</span>}
+            {isLearningMode ? 'Đã làm:' : '已完成：'} <strong className="text-slate-900 dark:text-white">{answeredCount}</strong> / {totalQuestions} {isLearningMode ? 'câu' : '题'}
+            {flaggedIds.length > 0 && (
+              <span className="ml-2 text-amber-600 font-bold">
+                • {isLearningMode ? 'Đánh dấu xem lại:' : '已标记：'} {flaggedIds.length} {isLearningMode ? 'câu' : '题'}
+              </span>
+            )}
           </div>
         </div>
 
@@ -2001,7 +2401,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                   : 'text-slate-500'
               }`}
             >
-              Thi thử
+              {isLearningMode ? 'Thi thử' : '正式考试'}
             </button>
             <button
               type="button"
@@ -2012,9 +2412,24 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                   : 'text-slate-500'
               }`}
             >
-              Luyện tập
+              {isLearningMode ? 'Luyện tập' : '练习模式'}
             </button>
           </div>
+
+          {/* Pinyin Toggle (Chỉ hiện ở Learning Mode, ẩn hoàn toàn ở Exam Mode) */}
+          {isLearningMode && (
+            <button
+              type="button"
+              onClick={() => setShowPinyin((prev) => !prev)}
+              className={`min-h-11 px-3 py-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${
+                showPinyin
+                  ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300'
+                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500'
+              }`}
+            >
+              Pinyin: {showPinyin ? 'Bật' : 'Tắt'}
+            </button>
+          )}
 
           {/* Clock */}
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-sm font-black ${
@@ -2032,7 +2447,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
             disabled={isSubmitting}
             className="px-4 py-2 rounded-xl bg-[#E85D3F] text-white font-bold text-xs shadow-sm hover:bg-[#CB4529] disabled:opacity-50 transition-colors cursor-pointer"
           >
-            {isSubmitting ? 'Đang nộp...' : 'Nộp bài'}
+            {isSubmitting ? (isLearningMode ? 'Đang nộp...' : '正在交卷...') : (isLearningMode ? 'Nộp bài' : '交卷')}
           </button>
         </div>
       </div>
@@ -2072,10 +2487,28 @@ function HskExamTakingView({ examId, user, onNavigate }) {
           <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs">
-                Câu {currentQ.question_number} / {totalQuestions}
+                {isLearningMode ? `Câu ${currentQ.question_number} / ${totalQuestions}` : `第 ${currentQ.question_number} / ${totalQuestions} 题`}
               </span>
               <span className="text-xs font-semibold text-[#E85D3F]">
-                {currentQ.part_type === 'listening' ? '🎧 Phần Nghe' : currentQ.part_type === 'writing' ? '✍️ Phần Viết' : '📖 Phần Đọc'}
+                {isLearningMode
+                  ? (currentQ.part_type === 'listening'
+                      ? '🎧 Phần Nghe'
+                      : currentQ.part_type === 'writing'
+                      ? '✍️ Phần Viết'
+                      : currentQ.part_type === 'translation'
+                      ? '🌐 Phần Dịch'
+                      : currentQ.part_type === 'speaking'
+                      ? '🎙️ Phần Nói'
+                      : '📖 Phần Đọc')
+                  : (currentQ.part_type === 'listening'
+                      ? '🎧 听力'
+                      : currentQ.part_type === 'writing'
+                      ? '✍️ 书写'
+                      : currentQ.part_type === 'translation'
+                      ? '🌐 翻译'
+                      : currentQ.part_type === 'speaking'
+                      ? '🎙️ 口语'
+                      : '📖 阅读')}
               </span>
             </div>
 
@@ -2089,14 +2522,14 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                     ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
                     : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:text-amber-600'
                 }`}
-                title="Đánh dấu câu hỏi này để xem lại trước khi nộp"
+                title={isLearningMode ? 'Đánh dấu câu hỏi này để xem lại trước khi nộp' : '标记此题'}
               >
                 <Bookmark className={`w-3.5 h-3.5 ${isFlagged ? 'fill-amber-500 text-amber-500' : ''}`} />
-                <span className="text-[11px]">{isFlagged ? 'Đã đánh dấu' : 'Đánh dấu'}</span>
+                <span className="text-[11px]">{isLearningMode ? (isFlagged ? 'Đã đánh dấu' : 'Đánh dấu') : (isFlagged ? '已标记' : '标记')}</span>
               </button>
 
               <span className="text-xs text-slate-400 font-medium">
-                {currentQ.points} điểm
+                {currentQ.points} {isLearningMode ? 'điểm' : '分'}
               </span>
             </div>
           </div>
@@ -2121,14 +2554,16 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                 </button>
                 <div>
                   <div className="font-bold text-sm text-slate-900 dark:text-white">
-                    {audioPlaying 
-                      ? 'Đang phát âm thanh...' 
+                    {audioPlaying
+                      ? (isLearningMode ? 'Đang phát âm thanh...' : '正在播放录音...')
                       : !canPlayAudio && examMode === 'simulation'
-                      ? 'Đã hết lượt nghe câu này'
-                      : 'Bấm để nghe đoạn ghi âm'}
+                      ? '本小题听力已播放完毕'
+                      : (isLearningMode ? 'Bấm để nghe đoạn ghi âm' : '点击播放听力录音')}
                   </div>
                   <div className="text-xs text-slate-500">
-                    Phát âm giọng phổ thông chuẩn Bắc Kinh • {examMode === 'simulation' ? `Đã nghe ${currentPlays}/${audioLimit} lượt` : 'Luyện tập không giới hạn'}
+                    {examMode === 'simulation'
+                      ? `标准普通话录音 • 已播放 ${currentPlays}/${audioLimit} 次`
+                      : 'Phát âm giọng phổ thông chuẩn Bắc Kinh • Luyện tập không giới hạn'}
                   </div>
                 </div>
               </div>
@@ -2139,7 +2574,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                   <span className={`px-2.5 py-1 rounded-full text-[11px] ${
                     canPlayAudio ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-500'
                   }`}>
-                    {canPlayAudio ? `Còn ${audioLimit - currentPlays} lượt nghe` : 'Hết lượt nghe'}
+                    {canPlayAudio ? `剩余 ${audioLimit - currentPlays} 次` : '已达上限'}
                   </span>
                 ) : (
                   <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px]">
@@ -2179,19 +2614,24 @@ function HskExamTakingView({ examId, user, onNavigate }) {
             </div>
           )}
 
-          {/* Question Prompt */}
+          {/* Question Prompt + Vietnamese Instruction & Pinyin */}
           <div className="mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white leading-relaxed mb-2">
-              {currentQ.prompt}
-            </h2>
-            {showPinyinInTaking && currentQ.pinyin && (
-              <div className="text-sm font-medium text-sky-600 dark:text-sky-400 mb-1">
-                {currentQ.pinyin}
+            {isLearningMode && (
+              <div className="mb-2 px-3 py-2 rounded-xl bg-sky-50 dark:bg-slate-800 border-l-4 border-sky-500 text-xs font-semibold text-sky-800 dark:text-sky-300 break-words">
+                Hướng dẫn: {getVietnameseInstructionForQuestion(currentQ)}
               </div>
             )}
-            {examMode === 'practice' && currentQ.translation && (
-              <div className="text-xs text-slate-500 italic">
-                (Dịch nghĩa: {currentQ.translation})
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white leading-relaxed mb-2 break-words">
+              {currentQ.prompt}
+            </h2>
+            {showPinyinInTaking && resolveQuestionPinyin(currentQ) && (
+              <div className="text-sm font-medium text-sky-600 dark:text-sky-400 mb-1 break-words">
+                {resolveQuestionPinyin(currentQ)}
+              </div>
+            )}
+            {isLearningMode && (currentQ.translationVi || currentQ.translation) && (
+              <div className="text-xs text-slate-500 italic break-words">
+                (Dịch nghĩa: {currentQ.translationVi || currentQ.translation})
               </div>
             )}
           </div>
@@ -2199,14 +2639,18 @@ function HskExamTakingView({ examId, user, onNavigate }) {
           {/* =========================================================================
               QUESTION TYPE: WORD REORDERING (Sắp xếp từ thành câu — 书写)
           ========================================================================= */}
-          {(currentQ.question_type === 'writing_reorder' || currentQ.question_type === 'reorder_sentence' || (currentQ.part_type === 'writing' && (currentQ.scrambledWords || currentQ.words))) && (
+          {(currentQ.question_type === 'writing_reorder' || currentQ.question_type === 'reorder_sentence' || (currentQ.part_type === 'writing' && currentQ.question_type !== 'essay' && currentQ.question_type !== 'essay_summary' && currentQ.question_type !== 'free_writing' && currentQ.question_type !== 'translation' && currentQ.question_type !== 'speaking' && ((currentQ.scrambledWords && currentQ.scrambledWords.length > 0) || (currentQ.words && currentQ.words.length > 0)))) && (
             <div className="mb-8">
               <SentenceReorderQuestion
+                question={currentQ}
                 scrambledWords={currentQ.scrambledWords || currentQ.words || []}
+                userAnswer={answers[currentQ.id]}
                 currentAnswer={answers[currentQ.id]}
                 onAnswerChange={(val) => recordAnswerChange(currentQ.id, val)}
                 options={currentQ.options}
                 disabled={isSubmitting}
+                isReviewMode={isSubmitting}
+                isLearningMode={isLearningMode}
               />
             </div>
           )}
@@ -2217,7 +2661,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
           {(currentQ.question_type === 'sentence_order_abc' || currentQ.propositions) && currentQ.propositions && (
             <div className="mb-6 space-y-3">
               <div className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
-                Đọc 3 mệnh đề sau và sắp xếp theo trình tự mạch lạc logic:
+                {isLearningMode ? 'Đọc 3 mệnh đề sau và sắp xếp theo trình tự mạch lạc logic:' : '请阅读以下三句话并按逻辑顺序排列：'}
               </div>
               <div className="grid grid-cols-1 gap-2.5">
                 {['A', 'B', 'C'].map(propKey => (
@@ -2242,42 +2686,54 @@ function HskExamTakingView({ examId, user, onNavigate }) {
           {currentQ.question_type === 'fill_blank' && (
             <div className="mb-6 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
               <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
-                Nhập chữ Hán hoặc từ cần điền vào chỗ trống:
+                {isLearningMode ? 'Nhập chữ Hán hoặc từ cần điền vào chỗ trống:' : '请在空格处填写正确的汉字或词语：'}
               </label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={typeof answers[currentQ.id] === 'string' ? answers[currentQ.id] : ''}
                   onChange={(e) => recordAnswerChange(currentQ.id, e.target.value)}
-                  placeholder="Gõ chữ Hán vào đây (Ví dụ: 友, 关上)..."
+                  placeholder={isLearningMode ? 'Gõ chữ Hán vào đây (Ví dụ: 友, 关上)...' : '请在此输入汉字...'}
                   className="flex-1 p-3.5 rounded-xl border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold text-base text-slate-900 dark:text-white focus:border-[#E85D3F] focus:outline-none"
                 />
               </div>
-              <div className="text-[11px] text-slate-500 mt-2 italic">
-                * Bạn có thể gõ trực tiếp chữ Hán hoặc lựa chọn một trong các phương án trắc nghiệm tương ứng.
-              </div>
+              {isLearningMode && (
+                <div className="text-[11px] text-slate-500 mt-2 italic">
+                  * Bạn có thể gõ trực tiếp chữ Hán hoặc lựa chọn một trong các phương án trắc nghiệm tương ứng.
+                </div>
+              )}
             </div>
           )}
 
           {/* =========================================================================
               QUESTION TYPE: FREE WRITING / ESSAY TASK (Viết tự luận theo tranh)
           ========================================================================= */}
-          {currentQ.question_type === 'free_writing' && (
+          {(currentQ.question_type === 'free_writing' ||
+            currentQ.question_type === 'essay' ||
+            currentQ.question_type === 'translation' ||
+            currentQ.question_type === 'speaking' ||
+            currentQ.questionType === 'essay' ||
+            currentQ.questionType === 'translation' ||
+            currentQ.questionType === 'speaking') && (
             <div className="mb-8 p-5 rounded-3xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-black text-amber-900 dark:text-amber-200 uppercase tracking-wider flex items-center gap-1.5">
                   <FileText className="w-4 h-4 text-amber-600" />
-                  Nhiệm vụ viết câu / đoạn văn tự do
+                  {isLearningMode ? 'Nhiệm vụ viết / dịch / khẩu ngữ tự luận' : '主观题作答区'}
                 </span>
                 <span className="text-xs text-amber-800 dark:text-amber-300 font-bold">
-                  Yêu cầu: {currentQ.min_words || 6} — {currentQ.max_words || 30} chữ Hán
+                  {isLearningMode
+                    ? `Yêu cầu: ${currentQ.min_words || 6} — ${currentQ.max_words || 30} chữ Hán`
+                    : `字数要求：${currentQ.min_words || 6} — ${currentQ.max_words || 30} 字`}
                 </span>
               </div>
 
-              {currentQ.required_words && currentQ.required_words.length > 0 && (
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="text-xs text-slate-500">Từ vựng bắt buộc có trong câu:</span>
-                  {currentQ.required_words.map((rw, rwIdx) => (
+              {(currentQ.required_words || currentQ.writing_criteria) && (currentQ.required_words || currentQ.writing_criteria).length > 0 && (
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-slate-500">
+                    {isLearningMode ? 'Từ khóa trọng tâm:' : '参考关键词：'}
+                  </span>
+                  {(currentQ.required_words || currentQ.writing_criteria).map((rw, rwIdx) => (
                     <span key={rwIdx} className="px-2.5 py-0.5 rounded-lg bg-orange-100 dark:bg-orange-950 text-[#E85D3F] font-black text-xs">
                       {rw}
                     </span>
@@ -2286,18 +2742,24 @@ function HskExamTakingView({ examId, user, onNavigate }) {
               )}
 
               <textarea
-                rows={4}
+                rows={currentQ.question_type === 'essay' || currentQ.questionType === 'essay' ? 8 : 5}
                 value={typeof answers[currentQ.id] === 'string' ? answers[currentQ.id] : ''}
                 onChange={(e) => recordAnswerChange(currentQ.id, e.target.value)}
-                placeholder="Nhập bài viết của bạn bằng chữ Hán tại đây..."
+                placeholder={isLearningMode ? 'Nhập bài làm của bạn bằng chữ Hán tại đây...' : '请在此输入您的作答内容（中文）...'}
                 className="w-full p-3.5 rounded-2xl border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-base sm:text-sm font-medium text-slate-900 dark:text-white focus:border-[#E85D3F] focus:outline-none"
               />
 
               <div className="flex items-center justify-between text-xs text-slate-500 mt-2">
-                <span>Số chữ hiện tại: <strong>{(answers[currentQ.id] || '').length}</strong> ký tự</span>
-                <span className="italic text-[11px] text-amber-700 dark:text-amber-400">
-                  * Bài viết tự luận sẽ được tự đánh giá theo thang tiêu chí & đối chiếu bài mẫu sau khi nộp.
+                <span>
+                  {isLearningMode ? 'Số chữ hiện tại: ' : '当前字数：'}
+                  <strong>{(answers[currentQ.id] || '').length}</strong>
+                  {isLearningMode ? ' ký tự' : ' 字'}
                 </span>
+                {isLearningMode && (
+                  <span className="italic text-[11px] text-amber-700 dark:text-amber-400">
+                    * Bài viết tự luận sẽ được tự đánh giá theo thang tiêu chí & đối chiếu bài mẫu sau khi nộp.
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -2312,8 +2774,15 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                   attemptKey={`${exam.id}_${currentQ.id}`}
                   passageParagraphs={currentQ.summary_passage_paragraphs || undefined}
                   practiceMode={examMode === 'practice'}
+                  onDraftChange={(payload) => {
+                    const hasContent = Boolean((payload.title || '').trim() || (payload.summary || '').trim());
+                    const formatted = hasContent
+                      ? `《${(payload.title || '').trim() || '无题'}》\n${payload.summary || ''}`.trim()
+                      : '';
+                    recordAnswerChange(currentQ.id, formatted);
+                  }}
                   onSubmitSummary={(payload) => {
-                    const formatted = `《${payload.title || '无题'}》\n${payload.summary || ''}`.trim();
+                    const formatted = `《${(payload.title || '').trim() || '无题'}》\n${payload.summary || ''}`.trim();
                     recordAnswerChange(currentQ.id, formatted);
                   }}
                 />
@@ -2327,43 +2796,51 @@ function HskExamTakingView({ examId, user, onNavigate }) {
           )}
 
           {/* Standard Options List (Trắc nghiệm phương án cho các câu không phải dạng Sentence Reorder / Essay Summary) */}
-          {currentQ.question_type !== 'essay_summary' && currentQ.question_type !== 'writing_reorder' && currentQ.question_type !== 'reorder_sentence' && !(currentQ.part_type === 'writing' && (currentQ.scrambledWords || currentQ.words)) && currentQ.options && currentQ.options.length > 0 && (
+          {currentQ.question_type !== 'essay_summary' && currentQ.question_type !== 'writing_reorder' && currentQ.question_type !== 'reorder_sentence' && !(currentQ.part_type === 'writing' && currentQ.question_type !== 'essay' && currentQ.question_type !== 'essay_summary' && currentQ.question_type !== 'free_writing' && currentQ.question_type !== 'translation' && currentQ.question_type !== 'speaking' && ((currentQ.scrambledWords && currentQ.scrambledWords.length > 0) || (currentQ.words && currentQ.words.length > 0))) && currentQ.options && currentQ.options.length > 0 && (
             <div className="space-y-3 mb-8">
               <div className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">
-                Chọn phương án trả lời:
+                {isLearningMode ? 'Chọn phương án trả lời:' : '请选择正确答案：'}
               </div>
               {currentQ.options.map((opt, optIdx) => {
                 const isSelected = answers[currentQ.id] === optIdx;
+                const optPinyin = showPinyinInTaking
+                  ? resolveQuestionPinyin({ prompt: opt.text || '', pinyin: opt.pinyin })
+                  : '';
                 return (
                   <button
                     key={optIdx}
                     type="button"
-                    onClick={() => recordAnswerChange(currentQ.id, optIdx)}
+                    onClick={() => {
+                      recordAnswerChange(currentQ.id, optIdx);
+                      if (isLearningMode) {
+                        triggerInstantLearningCheck(currentQ, optIdx);
+                      }
+                    }}
                     className={`w-full p-4 rounded-2xl border-2 text-left flex items-center justify-between transition-all cursor-pointer ${
                       isSelected
                         ? 'border-[#E85D3F] bg-orange-50/50 dark:bg-orange-950/20 shadow-xs'
                         : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                         isSelected 
                           ? 'bg-[#E85D3F] text-white' 
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                       }`}>
                         {String.fromCharCode(65 + optIdx)}
                       </span>
-                      <div>
-                        <div className="font-bold text-base text-slate-900 dark:text-white">
+                      <div className="min-w-0">
+                        <div className="font-bold text-base text-slate-900 dark:text-white break-words">
                           {opt.text}
                         </div>
-                        {showPinyinInTaking && opt.pinyin && (
-                          <div className="text-xs text-sky-600 dark:text-sky-400 font-medium">
-                            {opt.pinyin}
+                        {optPinyin && (
+                          <div className="text-xs text-sky-600 dark:text-sky-400 font-medium break-words">
+                            {optPinyin}
                           </div>
                         )}
-                        {examMode === 'practice' && opt.translation && (
-                          <div className="text-xs text-slate-500">
+                        {isLearningMode && opt.translation && (
+                          <div className="text-xs text-slate-500 break-words">
                             {opt.translation}
                           </div>
                         )}
@@ -2381,35 +2858,159 @@ function HskExamTakingView({ examId, user, onNavigate }) {
             </div>
           )}
 
-          {/* Practice Mode: Instant Pedagogical Explanation */}
-          {examMode === 'practice' && (
-            <div className="mb-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setShowPracticeExplanation(prev => !prev)}
-                className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1.5 cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4" />
-                {showPracticeExplanation ? 'Ẩn gợi ý giải thích' : '💡 Xem gợi ý & giải thích tức thì'}
-              </button>
-              {showPracticeExplanation && (
-                <div className="mt-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-slate-700 dark:text-slate-200 leading-relaxed animate-in fade-in">
-                  <div className="font-bold text-amber-900 dark:text-amber-200 mb-1">
-                    Gợi ý phương pháp & ngữ pháp:
-                  </div>
-                  <div>{currentQ.explanation || 'Hãy phân tích kỹ các thành phần câu và ngữ cảnh để chọn đáp án tối ưu.'}</div>
-                  {currentQ.relatedVocab && currentQ.relatedVocab.length > 0 && (
-                    <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                      <span className="text-slate-500 font-bold">Từ vựng trọng tâm:</span>
-                      {currentQ.relatedVocab.map((v, vIdx) => (
-                        <span key={vIdx} className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 font-semibold text-[11px]">
-                          {v}
-                        </span>
-                      ))}
+          {/* Learning Mode: Instant Check + 4-Part Learning Feedback Card (Never shown in exam_mode) */}
+          {isLearningMode && !isActiveExamSession && (
+            <div className="mb-6 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {(currentQ.question_type === 'free_writing' ||
+                  currentQ.question_type === 'essay_summary' ||
+                  currentQ.is_subjective ||
+                  currentQ.questionType === 'essay' ||
+                  currentQ.questionType === 'translation' ||
+                  currentQ.questionType === 'speaking') ? (
+                  <button
+                    type="button"
+                    disabled={subjectiveTestingId === currentQ.id}
+                    onClick={() => handleGradeSubjectiveInLearning(currentQ)}
+                    className="min-h-11 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>{subjectiveTestingId === currentQ.id ? 'Đang chấm thử...' : 'Chấm thử câu này'}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => triggerInstantLearningCheck(currentQ, answers[currentQ.id])}
+                    className="min-h-11 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Kiểm tra câu này</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowPracticeExplanation(prev => !prev)}
+                  className="min-h-11 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-800 text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>{showPracticeExplanation ? 'Ẩn gợi ý' : '💡 Gợi ý nhanh'}</span>
+                </button>
+              </div>
+
+              {(() => {
+                const fb = learningFeedbackMap[currentQ.id];
+                const subGrade = subjectiveGradingMap[currentQ.id];
+                if (!fb && !showPracticeExplanation) return null;
+
+                const isCorrect = fb?.isCorrect;
+                const cardClass =
+                  fb && !fb.isSubjective
+                    ? isCorrect
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-slate-800 dark:border-emerald-700 dark:text-emerald-200'
+                      : 'bg-rose-50 border-rose-200 text-rose-900 dark:bg-slate-800 dark:border-rose-700 dark:text-rose-200'
+                    : 'bg-amber-50 border-amber-200 text-slate-800 dark:bg-slate-800 dark:border-amber-700 dark:text-slate-200';
+
+                const vocabTarget =
+                  (fb?.relatedVocab && fb.relatedVocab[0]) ||
+                  (currentQ.relatedVocab && currentQ.relatedVocab[0]) ||
+                  (fb?.correctAnswerText && fb.correctAnswerText.replace(/^[A-D]\.\s*/, '').slice(0, 12)) ||
+                  '';
+
+                return (
+                  <div className={`p-4 rounded-2xl border border-l-4 text-xs leading-relaxed space-y-2.5 break-words ${cardClass}`}>
+                    {fb && !fb.isSubjective && (
+                      <div className="font-bold text-sm">
+                        {isCorrect ? '✅ Chính xác!' : '❌ Chưa chính xác.'}{' '}
+                        {fb.correctAnswerText && (
+                          <span>
+                            Đáp án đúng: <strong>{fb.correctAnswerText}</strong>
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {subGrade && (
+                      <div className="p-3 rounded-xl bg-white/80 dark:bg-slate-900/70 border border-emerald-200 dark:border-emerald-800 space-y-1">
+                        <div className="font-black text-emerald-700 dark:text-emerald-300">
+                          Điểm chấm thử Rubric: {subGrade.overallScore}/100
+                        </div>
+                        <div className="text-slate-700 dark:text-slate-300">{subGrade.feedbackVi}</div>
+                        {fb?.sampleAnswer && (
+                          <div className="pt-1 text-slate-800 dark:text-slate-200">
+                            <strong>Bài mẫu tham khảo:</strong> {fb.sampleAnswer}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {(fb?.translationVi || currentQ.translation) && (
+                      <div>
+                        <strong>Dịch nghĩa tiếng Việt:</strong> {fb?.translationVi || currentQ.translation}
+                      </div>
+                    )}
+
+                    <div>
+                      <strong>Giải thích ngữ pháp & từ vựng:</strong>{' '}
+                      {fb?.explanationVi || currentQ.explanation || 'Hãy phân tích kỹ các thành phần câu và ngữ cảnh để chọn đáp án tối ưu.'}
                     </div>
-                  )}
-                </div>
-              )}
+
+                    {((fb?.relatedVocab?.length > 0) || (currentQ.relatedVocab?.length > 0) || (fb?.grammarCodes?.length > 0)) && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold">Trọng tâm:</span>
+                        {(fb?.relatedVocab || currentQ.relatedVocab || []).map((v, vIdx) => (
+                          <span key={vIdx} className="px-2 py-0.5 rounded-md bg-white/70 dark:bg-slate-900 font-semibold text-[11px]">
+                            {v}
+                          </span>
+                        ))}
+                        {(fb?.grammarCodes || []).map((g, gIdx) => (
+                          <span key={`g-${gIdx}`} className="px-2 py-0.5 rounded-md bg-sky-100 dark:bg-sky-900 text-sky-800 dark:text-sky-200 font-semibold text-[11px]">
+                            {g}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {fb && (
+                      <div className="pt-2 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            try {
+                              sessionStorage.setItem('hanzigo_ai_tutor_prefill', fb.askAiTutorPrompt || '');
+                            } catch {}
+                            window.location.hash = '#conversation/tutor';
+                          }}
+                          className="min-h-11 px-3 py-2 rounded-xl border border-[#E85D3F] bg-white dark:bg-slate-900 text-[#E85D3F] font-bold text-xs cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Hỏi Lão Sư AI về câu này</span>
+                        </button>
+
+                        {vocabTarget && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              try {
+                                saveCustomVocab(user?.id || user?.uid || 'guest', {
+                                  word: vocabTarget,
+                                  pinyin: resolveQuestionPinyin({ prompt: vocabTarget }),
+                                  meaning: fb.translationVi || fb.explanationVi || 'Từ vựng luyện tập HSK',
+                                  level: exam?.level || 'HSK 1',
+                                });
+                                setSavedSrsIds((prev) => ({ ...prev, [currentQ.id]: true }));
+                              } catch {}
+                            }}
+                            className="min-h-11 px-3 py-2 rounded-xl border border-sky-400 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-300 font-bold text-xs cursor-pointer"
+                          >
+                            {savedSrsIds[currentQ.id] ? '✅ Đã lưu vào sổ SRS' : '+ Lưu từ vào sổ SRS'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -2420,7 +3021,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
               disabled={currentIdx === 0}
               className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4" /> Câu trước
+              <ArrowLeft className="w-4 h-4" /> {isLearningMode ? 'Câu trước' : '上一题'}
             </button>
 
             {currentIdx < totalQuestions - 1 ? (
@@ -2428,14 +3029,14 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                 onClick={() => setCurrentIdx(prev => Math.min(totalQuestions - 1, prev + 1))}
                 className="px-6 py-2.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold shadow-sm hover:bg-[#CB4529] transition-colors flex items-center gap-1.5 cursor-pointer"
               >
-                Câu tiếp theo <ArrowRight className="w-4 h-4" />
+                {isLearningMode ? 'Câu tiếp theo' : '下一题'} <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
               <button
                 onClick={() => setShowConfirmModal(true)}
                 className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-sm hover:bg-emerald-700 transition-colors flex items-center gap-1.5 cursor-pointer"
               >
-                Hoàn tất & Nộp bài <CheckCircle2 className="w-4 h-4" />
+                {isLearningMode ? 'Hoàn tất & Nộp bài' : '完成并交卷'} <CheckCircle2 className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -2445,7 +3046,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-              Bảng câu hỏi ({answeredCount}/{totalQuestions})
+              {isLearningMode ? 'Bảng câu hỏi' : '答题卡'} ({answeredCount}/{totalQuestions})
             </h3>
           </div>
 
@@ -2458,7 +3059,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                 paletteFilter === 'all' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500'
               }`}
             >
-              Tất cả ({totalQuestions})
+              {isLearningMode ? 'Tất cả' : '全部'} ({totalQuestions})
             </button>
             <button
               type="button"
@@ -2467,7 +3068,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                 paletteFilter === 'unanswered' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500'
               }`}
             >
-              Chưa làm ({totalQuestions - answeredCount})
+              {isLearningMode ? 'Chưa làm' : '未答'} ({totalQuestions - answeredCount})
             </button>
             <button
               type="button"
@@ -2476,7 +3077,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                 paletteFilter === 'flagged' ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-xs' : 'text-slate-500'
               }`}
             >
-              Đánh dấu ({flaggedIds.length})
+              {isLearningMode ? 'Đánh dấu' : '标记'} ({flaggedIds.length})
             </button>
           </div>
 
@@ -2517,15 +3118,15 @@ function HskExamTakingView({ examId, user, onNavigate }) {
           <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 text-xs space-y-1.5 text-slate-500">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-md bg-emerald-500 inline-block"></span>
-              <span>Đã trả lời ({answeredCount})</span>
+              <span>{isLearningMode ? 'Đã trả lời' : '已作答'} ({answeredCount})</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-md bg-slate-300 dark:bg-slate-700 inline-block"></span>
-              <span>Chưa làm ({totalQuestions - answeredCount})</span>
+              <span>{isLearningMode ? 'Chưa làm' : '未作答'} ({totalQuestions - answeredCount})</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-md border-2 border-amber-400 bg-amber-100 inline-block"></span>
-              <span>Đánh dấu xem lại ({flaggedIds.length})</span>
+              <span>{isLearningMode ? 'Đánh dấu xem lại' : '已标记'} ({flaggedIds.length})</span>
             </div>
           </div>
         </div>
@@ -2540,28 +3141,28 @@ function HskExamTakingView({ examId, user, onNavigate }) {
             </div>
 
             <h3 className="text-xl font-black text-center text-slate-900 dark:text-white mb-2">
-              Xác nhận nộp bài thi?
+              {isLearningMode ? 'Xác nhận nộp bài thi?' : '确认提交试卷？'}
             </h3>
             
             <div className="text-xs text-slate-600 dark:text-slate-400 mb-6 space-y-2">
               <div className="flex justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800">
-                <span>Tổng số câu:</span>
-                <strong>{totalQuestions} câu</strong>
+                <span>{isLearningMode ? 'Tổng số câu:' : '总题数：'}</span>
+                <strong>{totalQuestions} {isLearningMode ? 'câu' : '题'}</strong>
               </div>
               <div className="flex justify-between p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300">
-                <span>Đã làm:</span>
-                <strong>{answeredCount} câu</strong>
+                <span>{isLearningMode ? 'Đã làm:' : '已作答：'}</span>
+                <strong>{answeredCount} {isLearningMode ? 'câu' : '题'}</strong>
               </div>
               {totalQuestions - answeredCount > 0 && (
                 <div className="flex justify-between p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 font-bold">
-                  <span>Chưa trả lời:</span>
-                  <strong>{totalQuestions - answeredCount} câu</strong>
+                  <span>{isLearningMode ? 'Chưa trả lời:' : '未作答：'}</span>
+                  <strong>{totalQuestions - answeredCount} {isLearningMode ? 'câu' : '题'}</strong>
                 </div>
               )}
               {flaggedIds.length > 0 && (
                 <div className="flex justify-between p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300">
-                  <span>Đánh dấu xem lại:</span>
-                  <strong>{flaggedIds.length} câu</strong>
+                  <span>{isLearningMode ? 'Đánh dấu xem lại:' : '已标记：'}</span>
+                  <strong>{flaggedIds.length} {isLearningMode ? 'câu' : '题'}</strong>
                 </div>
               )}
             </div>
@@ -2572,7 +3173,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                 onClick={() => setShowConfirmModal(false)}
                 className="flex-1 py-3 rounded-xl border border-slate-300 dark:border-slate-700 font-bold text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                Tiếp tục làm bài
+                {isLearningMode ? 'Tiếp tục làm bài' : '继续作答'}
               </button>
               <button
                 type="button"
@@ -2583,7 +3184,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                 disabled={isSubmitting}
                 className="flex-1 py-3 rounded-xl bg-[#E85D3F] text-white font-bold text-xs shadow-md hover:bg-[#CB4529] disabled:opacity-50 transition-colors cursor-pointer"
               >
-                {isSubmitting ? 'Đang chấm điểm...' : 'Đồng ý nộp bài'}
+                {isSubmitting ? (isLearningMode ? 'Đang chấm điểm...' : '正在评分...') : (isLearningMode ? 'Đồng ý nộp bài' : '确认交卷')}
               </button>
             </div>
           </div>
@@ -3094,12 +3695,18 @@ function HskExamResultView({ attemptId, user, onNavigate }) {
                       Thang tiêu chí tự đánh giá (Rubric):
                     </span>
                     <div className="space-y-1">
-                      {q.writingCriteria.map((crit, crIdx) => (
-                        <div key={crIdx} className="flex justify-between items-center text-[11px] p-2 rounded-lg bg-white/70 dark:bg-slate-900/70 border border-slate-100 dark:border-slate-800">
-                          <span className="text-slate-700 dark:text-slate-300">• {crit.name}</span>
-                          <span className="font-bold text-amber-600">Trọng số: {crit.weight}%</span>
-                        </div>
-                      ))}
+                      {q.writingCriteria.map((crit, crIdx) => {
+                        const critLabel = typeof crit === 'string' ? crit : (crit?.name || '');
+                        const critWeight = typeof crit === 'object' && crit !== null ? crit.weight : null;
+                        return (
+                          <div key={crIdx} className="flex justify-between items-center gap-3 text-[11px] p-2 rounded-lg bg-white/70 dark:bg-slate-900/70 border border-slate-100 dark:border-slate-800">
+                            <span className="text-slate-700 dark:text-slate-300">• {critLabel}</span>
+                            {critWeight !== null && critWeight !== undefined && (
+                              <span className="font-bold text-amber-600 shrink-0">Trọng số: {critWeight}%</span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -3110,8 +3717,8 @@ function HskExamResultView({ attemptId, user, onNavigate }) {
               </div>
             )}
 
-            {/* Options review */}
-            {q.options && q.options.length > 0 && (
+            {/* Options review (skip subjective writing tasks that only store placeholder options) */}
+            {!q.isSubjective && q.questionType !== 'essay_summary' && q.questionType !== 'free_writing' && q.options && q.options.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
                 {q.options.map((opt, oIdx) => {
                   const isSelectedByUser = q.selectedIndex === oIdx;
@@ -3149,6 +3756,27 @@ function HskExamResultView({ attemptId, user, onNavigate }) {
                 {q.explanation}
               </div>
             )}
+
+            {/* Post-Submission Only: Hỏi Lão Sư AI về câu này (Never visible during active exam taking) */}
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    const aiPrompt = buildAskAiTutorPromptForQuestion(
+                      { prompt: q.prompt, options: q.options },
+                      q.selectedIndex ?? q.userAnswer
+                    );
+                    sessionStorage.setItem('hanzigo_ai_tutor_prefill', aiPrompt);
+                  } catch {}
+                  window.location.hash = '#conversation/tutor';
+                }}
+                className="min-h-11 px-3.5 py-2 rounded-xl border border-[#E85D3F] bg-orange-50 dark:bg-orange-950/30 text-[#E85D3F] hover:bg-[#E85D3F] hover:text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Hỏi Lão Sư AI về câu này</span>
+              </button>
+            </div>
           </div>
           );
         })}

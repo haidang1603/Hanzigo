@@ -71,7 +71,7 @@ export function getHskScoreConfig(hskLevel = 'HSK 1') {
 export function gradeSingleQuestion(question, userAnswer) {
   const isAnswered = userAnswer !== undefined && userAnswer !== null && userAnswer !== '';
   const qType = question.questionType || question.question_type || 'multiple_choice';
-  const isSubjective = !!question.is_subjective || qType === 'free_writing';
+  const isSubjective = !!question.is_subjective || qType === 'free_writing' || qType === 'essay_summary';
 
   if (isSubjective) {
     return {
@@ -284,7 +284,9 @@ export function calculateHskCbtScore(arg1 = {}, arg2 = {}, arg3 = 0) {
 
   config.sections.forEach(sec => {
     const secQList = sectionQuestions[sec.id] || [];
-    const secObjective = secQList.filter(q => !q.is_subjective && q.question_type !== 'free_writing');
+    const secObjective = secQList.filter(
+      q => !q.is_subjective && q.question_type !== 'free_writing' && q.question_type !== 'essay_summary'
+    );
     const secCorrectCount = detailedResults.filter(r => {
       const q = questions.find(item => item.id === r.questionId);
       if (!q) return false;
@@ -301,8 +303,24 @@ export function calculateHskCbtScore(arg1 = {}, arg2 = {}, arg3 = 0) {
     if (totalSecQ > 0) {
       sectionScore = Math.round((secCorrectCount / totalSecQ) * 100);
     } else if (secQList.length > 0) {
-      // Trường hợp chỉ có câu tự luận
-      sectionScore = 100;
+      // Trường hợp chỉ có câu tự luận (ví dụ HSK 6 Câu 101 缩写): chỉ tính điểm khi thí sinh có làm bài
+      const answeredSubj = secQList.filter(q => {
+        const ans = submittedAnswers[q.id];
+        return typeof ans === 'string' && ans.replace(/\s+/g, '').length > 0;
+      });
+      if (answeredSubj.length === 0) {
+        sectionScore = 0;
+      } else {
+        const scores = answeredSubj.map(q => {
+          const cleanLen = String(submittedAnswers[q.id] || '').replace(/\s+/g, '').length;
+          if (q.min_words && q.min_words > 0) {
+            if (cleanLen < 50) return 20;
+            return Math.max(40, Math.min(100, Math.round((cleanLen / q.min_words) * 100)));
+          }
+          return 100;
+        });
+        sectionScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+      }
     }
 
     if (sectionScore < config.eliminationThreshold && totalSecQ > 0) {

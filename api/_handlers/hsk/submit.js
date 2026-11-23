@@ -77,7 +77,7 @@ export default async function submitHandler(req, res) {
     const isAnswered = rawAnswer !== undefined && rawAnswer !== null && rawAnswer !== '';
     let isCorrect = false;
     let selectedIndex = null;
-    const isSubjective = !!q.is_subjective || q.question_type === 'free_writing';
+    const isSubjective = !!q.is_subjective || q.question_type === 'free_writing' || q.question_type === 'essay_summary';
     let earnedPoints = 0;
 
     const skillKey = q.part_type || 'general';

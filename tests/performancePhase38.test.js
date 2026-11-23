@@ -35,7 +35,6 @@ test('Phase 38.05 (2): Heavy HSK exam & HSKK simulators are lazy-loaded in HskPr
 
   const lazyComponents = [
     'Hsk7to9IntegratedExamSimulator',
-    'Hsk6SimulatorWorkspace',
     'Hsk6TwoPhaseSummarySimulator',
     'HskkSpeakingSimulator',
     'PostExamMistakeRemediationPanel',

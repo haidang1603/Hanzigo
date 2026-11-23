@@ -26,7 +26,7 @@ describe('SEO Route Config & JSON-LD', () => {
 
   it('returns exact expected metadata for HSK exam practice and legal pages', () => {
     const hsk = getRouteSeoMeta('hsk');
-    assert.equal(hsk.title, 'Thi Thử HSK 1-6 & HSKK Chuẩn CTI Trực Tuyến | HanziGo');
+    assert.equal(hsk.title, 'Thi Thử HSK 1–9 & HSKK Chuẩn CTI Trực Tuyến | HanziGo');
     assert.equal(hsk.canonicalUrl, `${SITE_ORIGIN}/hsk-practice`);
     assert.equal(hsk.robots, 'index, follow');
 

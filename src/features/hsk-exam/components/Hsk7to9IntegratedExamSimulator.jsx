@@ -473,9 +473,6 @@ export default function Hsk7to9IntegratedExamSimulator({
                     {paper.titleZh}
                   </h1>
                 </div>
-                <p className="text-xs text-[#748092] dark:text-slate-400 mt-0.5">
-                  {paper.titleVi}
-                </p>
               </div>
             </div>
 
@@ -492,7 +489,7 @@ export default function Hsk7to9IntegratedExamSimulator({
                   onClick={handleFillSampleMasterSubmission}
                   className="px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-bold transition cursor-pointer"
                 >
-                  ⚡ Điền thử Bài Mẫu HSK 9
+                  ⚡ 填入参考范文
                 </button>
               )}
 
@@ -502,7 +499,7 @@ export default function Hsk7to9IntegratedExamSimulator({
                   onClick={handleSubmitExam}
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-extrabold text-xs hover:opacity-95 transition shadow-md cursor-pointer"
                 >
-                  Nộp bài & Xét cấp HSK 7–9
+                  交卷并评定等级
                 </button>
               ) : (
                 <button
@@ -511,7 +508,7 @@ export default function Hsk7to9IntegratedExamSimulator({
                   className="flex items-center gap-1 px-3.5 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-slate-200 text-xs font-bold cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Tiếp tục chỉnh sửa</span>
+                  <span>继续修改</span>
                 </button>
               )}
             </div>
@@ -520,11 +517,11 @@ export default function Hsk7to9IntegratedExamSimulator({
           {/* Thanh chuyển đổi 5 Phần thi chuẩn HSK 3.0 */}
           <nav className="flex sm:grid sm:grid-cols-5 gap-2 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none">
             {[
-              { id: 'listening', label: '1. Nghe Học Thuật (60đ)', icon: Headphones },
-              { id: 'reading', label: '2. Đọc Biểu Đồ & Văn Bản (60đ)', icon: BarChart3 },
-              { id: 'translation', label: '3. Dịch Thuật Trung↔Việt (60đ)', icon: Languages },
-              { id: 'writing', label: '4. Viết Biểu Đồ & Luận 600 Chữ (60đ)', icon: FileText },
-              { id: 'speaking', label: '5. Khẩu Ngữ Biện Luận (60đ)', icon: Mic },
+              { id: 'listening', label: '1. 听力 (60分)', icon: Headphones },
+              { id: 'reading', label: '2. 阅读 (60分)', icon: BarChart3 },
+              { id: 'translation', label: '3. 翻译 (60分)', icon: Languages },
+              { id: 'writing', label: '4. 写作 (60分)', icon: FileText },
+              { id: 'speaking', label: '5. 口语 (60分)', icon: Mic },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeSectionId === tab.id;
@@ -618,10 +615,10 @@ export default function Hsk7to9IntegratedExamSimulator({
                     {listeningSec.titleZh}
                   </span>
                   <h2 className="text-lg sm:text-xl font-black text-[#243447] dark:text-white mt-0.5">
-                    Chủ đề: {listeningSec.stimulus.topic}
+                    主题：{listeningSec.stimulus.topic}
                   </h2>
                   <p className="text-xs text-[#748092] dark:text-slate-400">
-                    Diễn giả: {listeningSec.stimulus.speakerRole}
+                    主讲人：{listeningSec.stimulus.speakerRole}
                   </p>
                 </div>
 
@@ -632,7 +629,7 @@ export default function Hsk7to9IntegratedExamSimulator({
                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white text-xs font-extrabold hover:opacity-95 transition shadow-xs cursor-pointer"
                   >
                     <Volume2 className="w-4 h-4" />
-                    <span>Phát Bài Giảng Học Thuật (1.0x)</span>
+                    <span>播放学术讲座录音 (1.0x)</span>
                   </button>
 
                   <button
@@ -640,7 +637,7 @@ export default function Hsk7to9IntegratedExamSimulator({
                     onClick={() => speakChinese(listeningSec.stimulus.audioScriptZh, 0.78)}
                     className="px-3.5 py-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-slate-200 text-xs font-bold hover:border-[#E85D3F] cursor-pointer"
                   >
-                    Nghe chậm (0.8x)
+                    慢速播放 (0.8x)
                   </button>
                 </div>
               </div>
@@ -648,7 +645,7 @@ export default function Hsk7to9IntegratedExamSimulator({
               {isSubmitted && (
                 <div className="p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-1.5 text-xs">
                   <div className="font-bold text-amber-700 dark:text-amber-300">
-                    Transcript bài giảng học thuật (Mở sau khi nộp bài):
+                    听力原文（交卷后查看）：
                   </div>
                   <p className="text-sm text-[#243447] dark:text-white leading-relaxed font-['Noto_Serif_SC']">
                     {listeningSec.stimulus.audioScriptZh}
@@ -667,15 +664,12 @@ export default function Hsk7to9IntegratedExamSimulator({
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-bold text-[#243447] dark:text-white font-['Noto_Serif_SC']">
-                        Câu {q.number}: {q.promptZh}
+                        第 {q.number} 题：{q.promptZh}
                       </span>
                       <span className="text-xs font-semibold text-[#748092] dark:text-slate-400">
-                        {q.points} điểm
+                        {q.points} 分
                       </span>
                     </div>
-                    <p className="text-xs text-[#5B6B7F] dark:text-slate-400">
-                      {q.promptVi}
-                    </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {q.options.map((opt, idx) => {
@@ -710,12 +704,6 @@ export default function Hsk7to9IntegratedExamSimulator({
                         );
                       })}
                     </div>
-
-                    {isSubmitted && (
-                      <div className="p-3 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs text-[#5B6B7F] dark:text-slate-300">
-                        💡 <strong>Giải thích:</strong> {q.explanationVi}
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -733,32 +721,29 @@ export default function Hsk7to9IntegratedExamSimulator({
               {/* Cột Trái: Biểu đồ Trực quan */}
               <div className="lg:col-span-6 p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs space-y-4">
                 <div className="text-xs font-bold uppercase text-[#E85D3F]">
-                  Biểu đồ Thống kê Đa phương thức (图表材料)
+                  图表材料
                 </div>
                 <h3 className="text-sm sm:text-base font-bold text-[#243447] dark:text-white font-['Noto_Serif_SC']">
                   {readingSec.chartData.titleZh}
                 </h3>
-                <p className="text-xs text-[#748092] dark:text-slate-400">
-                  {readingSec.chartData.titleVi}
-                </p>
 
                 <div className="space-y-3 pt-2">
                   {readingSec.chartData.rows.map((row) => (
                     <div key={row.year} className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-bold text-[#243447] dark:text-white">
-                          Năm {row.year}
+                          {row.year} 年
                         </span>
                         <span className="text-[#5B6B7F] dark:text-slate-400">
                           AI:{' '}
                           <strong className="text-[#E85D3F]">
                             {row.aiRAndDPct}%
                           </strong>{' '}
-                          • Xanh:{' '}
+                          • 绿色能源：{' '}
                           <strong className="text-emerald-600 dark:text-emerald-300">
                             {row.greenEnergyPct}%
                           </strong>{' '}
-                          • Truyền thống:{' '}
+                          • 传统模式：{' '}
                           <strong className="text-rose-600 dark:text-rose-300">
                             {row.traditionalPct}%
                           </strong>
@@ -774,12 +759,12 @@ export default function Hsk7to9IntegratedExamSimulator({
                         <div
                           style={{ width: `${row.greenEnergyPct}%` }}
                           className="h-full bg-[#45B97C]"
-                          title={`Năng lượng xanh: ${row.greenEnergyPct}%`}
+                          title={`绿色能源: ${row.greenEnergyPct}%`}
                         />
                         <div
                           style={{ width: `${row.traditionalPct}%` }}
                           className="h-full bg-slate-400 dark:bg-slate-600"
-                          title={`Truyền thống: ${row.traditionalPct}%`}
+                          title={`传统模式: ${row.traditionalPct}%`}
                         />
                       </div>
                     </div>
@@ -790,7 +775,7 @@ export default function Hsk7to9IntegratedExamSimulator({
               {/* Cột Phải: Văn bản Học thuật */}
               <div className="lg:col-span-6 p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs space-y-3">
                 <div className="text-xs font-bold uppercase text-purple-600 dark:text-purple-300">
-                  Văn bản Phân tích Học thuật (Bôi đen chữ Hán bất kỳ để tra cứu nhanh)
+                  学术阅读材料
                 </div>
                 {readingSec.passageParagraphs.map((para, i) => (
                   <p
@@ -813,11 +798,8 @@ export default function Hsk7to9IntegratedExamSimulator({
                     className="p-5 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs space-y-3"
                   >
                     <div className="text-sm font-bold text-[#243447] dark:text-white font-['Noto_Serif_SC']">
-                      Câu {q.number}: {q.promptZh}
+                      第 {q.number} 题：{q.promptZh}
                     </div>
-                    <p className="text-xs text-[#5B6B7F] dark:text-slate-400">
-                      {q.promptVi}
-                    </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {q.options.map((opt, idx) => {
@@ -852,12 +834,6 @@ export default function Hsk7to9IntegratedExamSimulator({
                         );
                       })}
                     </div>
-
-                    {isSubmitted && (
-                      <div className="p-3 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs text-[#5B6B7F] dark:text-slate-300">
-                        💡 <strong>Giải thích:</strong> {q.explanationVi}
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -882,13 +858,13 @@ export default function Hsk7to9IntegratedExamSimulator({
                       {task.title}
                     </h3>
                     <span className="text-xs text-[#748092] dark:text-slate-400 font-semibold">
-                      Tiêu chuẩn chấm: Tín • Đạt • Nhã
+                      评分标准：信 • 达 • 雅
                     </span>
                   </div>
 
                   <div className="p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2">
                     <div className="text-xs text-[#748092] dark:text-slate-400 font-semibold">
-                      Văn bản nguồn cần dịch:
+                      原文内容：
                     </div>
                     <p className="text-base font-bold text-[#243447] dark:text-white leading-relaxed">
                       “{task.sourceText}”
@@ -896,7 +872,7 @@ export default function Hsk7to9IntegratedExamSimulator({
 
                     <div className="flex flex-wrap items-center gap-1.5 pt-2">
                       <span className="text-xs text-[#748092] dark:text-slate-400 font-medium">
-                        Thuật ngữ / Cấu trúc khuyến nghị:
+                        推荐核心词汇：
                       </span>
                       {task.requiredKeywords.map((kw) => {
                         const used = currentText
@@ -930,7 +906,7 @@ export default function Hsk7to9IntegratedExamSimulator({
                         [task.id]: e.target.value,
                       }))
                     }
-                    placeholder="Nhập bản dịch của bạn tại đây..."
+                    placeholder="请在此输入您的译文..."
                     className="w-full p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] focus:border-[#E85D3F] focus:outline-none text-base sm:text-sm text-[#243447] dark:text-white"
                   />
 
@@ -965,8 +941,8 @@ export default function Hsk7to9IntegratedExamSimulator({
                   {writingSec.partA_ChartEssay.title}
                 </h3>
                 <span className="text-xs font-bold text-[#5B6B7F] dark:text-slate-300">
-                  Số chữ hiện tại: {chartEssayText.trim().length} /{' '}
-                  {writingSec.partA_ChartEssay.targetChars} chữ
+                  当前字数：{chartEssayText.trim().length} /{' '}
+                  {writingSec.partA_ChartEssay.targetChars} 字
                 </span>
               </div>
 
@@ -1018,14 +994,14 @@ export default function Hsk7to9IntegratedExamSimulator({
                         : 'text-amber-600 dark:text-amber-300'
                     }`}
                   >
-                    Độ dài: {argumentEssayText.trim().length} / 600 chữ
+                    当前字数：{argumentEssayText.trim().length} / 600 字
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowGenkouGrid((v) => !v)}
                     className="px-3 py-1 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-[#E85D3F]/30 text-xs font-bold text-[#E85D3F] cursor-pointer"
                   >
-                    {showGenkouGrid ? 'Ẩn lưới ô vuông 稿纸' : 'Hiện lưới ô vuông 稿纸'}
+                    {showGenkouGrid ? '隐藏稿纸' : '显示稿纸'}
                   </button>
                 </div>
               </div>
@@ -1037,7 +1013,7 @@ export default function Hsk7to9IntegratedExamSimulator({
               {/* Thanh theo dõi Thành ngữ & Hư từ học thuật đã dùng */}
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-xs text-[#748092] dark:text-slate-400 font-medium">
-                  Thành ngữ & Hư từ HSK 7–9:
+                  核心成语与书面虚词：
                 </span>
                 {writingSec.partB_ArgumentativeEssay.recommendedKeywords.map((kw) => {
                   const used = argumentEssayText.includes(kw);
@@ -1061,7 +1037,7 @@ export default function Hsk7to9IntegratedExamSimulator({
                 type="text"
                 value={essayTitle}
                 onChange={(e) => setEssayTitle(e.target.value)}
-                placeholder="Nhập tiêu đề bài luận văn (Căn giữa, ví dụ: 守正创新，方能行稳致远)"
+                placeholder="请输入论文标题（居中显示，如：守正创新，方能行稳致远）"
                 className="w-full px-4 py-2.5 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center text-base font-extrabold text-[#243447] dark:text-white focus:border-[#E85D3F] focus:outline-none font-['Noto_Serif_SC']"
               />
 
@@ -1080,8 +1056,8 @@ export default function Hsk7to9IntegratedExamSimulator({
               {showGenkouGrid && (
                 <div className="p-4 rounded-2xl bg-[#FFFDF9] dark:bg-[#0E141D] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#748092] dark:text-slate-400 font-medium">
-                    <span>Giấy thi chuẩn 稿纸 (20 chữ / dòng trên desktop • Đánh dấu mốc 600 chữ)</span>
-                    <span>Mỗi đoạn mới thụt đầu dòng 2 ô vuông (  )</span>
+                    <span>标准稿纸（每行20字 • 600字标记）</span>
+                    <span>每段开头空两格 (  )</span>
                   </div>
                   <div
                     className="grid grid-cols-10 sm:grid-cols-15 lg:grid-cols-20 gap-0.5 max-h-64 overflow-y-auto p-1"
@@ -1122,7 +1098,7 @@ export default function Hsk7to9IntegratedExamSimulator({
                   {speakingSec.titleZh}
                 </span>
                 <h2 className="text-lg sm:text-xl font-black text-[#243447] dark:text-white mt-0.5">
-                  Đề bài Phản biện Học thuật (3 phút chuẩn bị & trình bày)
+                  学术辩论题目（准备与作答共3分钟）
                 </h2>
               </div>
 
@@ -1133,7 +1109,7 @@ export default function Hsk7to9IntegratedExamSimulator({
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#E85D3F] text-xs font-bold hover:border-[#E85D3F] cursor-pointer"
                 >
                   <Volume2 className="w-4 h-4" />
-                  <span>Nghe Bài Phản Biện Mẫu HSK 9</span>
+                  <span>收听参考示范</span>
                 </button>
 
                 <button
@@ -1148,12 +1124,12 @@ export default function Hsk7to9IntegratedExamSimulator({
                   {isRecordingSpeech ? (
                     <>
                       <Square className="w-3.5 h-3.5 fill-current" />
-                      <span>Đang thu âm... (Bấm để dừng)</span>
+                      <span>正在录音...（点击停止）</span>
                     </>
                   ) : (
                     <>
                       <Mic className="w-4 h-4" />
-                      <span>Thu âm giọng nói phản biện</span>
+                      <span>开始口语录音</span>
                     </>
                   )}
                 </button>
@@ -1164,14 +1140,11 @@ export default function Hsk7to9IntegratedExamSimulator({
               <p className="text-base font-bold text-[#243447] dark:text-white leading-relaxed font-['Noto_Serif_SC']">
                 {speakingSec.debateTopicZh}
               </p>
-              <p className="text-xs text-[#5B6B7F] dark:text-slate-400">
-                {speakingSec.debateTopicVi}
-              </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-xs text-[#748092] dark:text-slate-400 font-medium">
-                Từ nối phản biện cần có trong bài nói:
+                参考连接词：
               </span>
               {speakingSec.requiredDiscourseMarkers.map((m) => {
                 const used = speakingTranscript.includes(m);
@@ -1197,7 +1170,7 @@ export default function Hsk7to9IntegratedExamSimulator({
               onCompositionEnd={() => setIsComposingIme(false)}
               onKeyDown={handleTextareaKeyDown}
               onChange={(e) => setSpeakingTranscript(e.target.value)}
-              placeholder="Nội dung thu âm giọng nói hoặc dàn ý phản biện bằng tiếng Trung của bạn sẽ hiển thị tại đây..."
+              placeholder="请在此输入您的口语作答内容（中文）..."
               className="w-full p-4 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] focus:border-[#E85D3F] focus:outline-none text-base sm:text-sm text-[#243447] dark:text-white leading-relaxed font-['Noto_Serif_SC']"
             />
           </div>

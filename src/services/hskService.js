@@ -19,6 +19,12 @@ import {
   registerDynamicExam,
   DYNAMIC_EXAMS
 } from '../data/hskExamsData.js';
+import { ensureAllFullStandardExamsLoaded } from '../data/hsk30/index.js';
+import {
+  ensureExamSupplementLoaded,
+  SUPPLEMENTED_EXAM_IDS,
+  SUPPLEMENTED_TARGET_TOTALS,
+} from '../data/examSupplements/index.js';
 import { 
   getHskStructure, 
   getAllHskLevels, 
@@ -83,14 +89,41 @@ export function getOrCreateAnonymousSessionId() {
 }
 
 /**
- * Lấy danh sách đề thi theo bộ lọc
+ * Lấy danh sách đề thi theo bộ lọc (tự động nạp đủ 100% các bộ đề chuẩn HSK 3.0 & HSK 2.0)
  */
+const FULL_PRIMARY_LEGACY_IDS = new Set([
+  'hsk1-mock-01',
+  'hsk2-mock-01',
+  'hsk3-mock-01',
+  'hsk4-mock-01',
+  'hsk5-mock-01',
+  'hsk6-full-101-01',
+]);
+
 export async function getHskExams({ level = 'all', skill = 'all', type = 'all', topic = 'all', query = '' } = {}) {
-  // Ưu tiên đọc từ local dataset chuẩn
-  let exams = [...HSK_EXAMS].filter(e => e.is_published);
+  const { hsk30Exams = [], hsk20FullExams = [] } = await ensureAllFullStandardExamsLoaded();
+
+  const fullStandardCards = [...hsk30Exams, ...hsk20FullExams].map(({ questions: _qs, ...meta }) => meta);
+  const fullIds = new Set(fullStandardCards.map((e) => e.id));
+  const legacyExams = HSK_EXAMS.filter((e) => e.is_published && !fullIds.has(e.id)).map((e) =>
+    SUPPLEMENTED_TARGET_TOTALS[e.id]
+      ? { ...e, examSystem: e.examSystem || 'hsk_2_0', total_questions: SUPPLEMENTED_TARGET_TOTALS[e.id] }
+      : { ...e, examSystem: e.examSystem || 'hsk_2_0' }
+  );
+
+  const completedLegacyCards = legacyExams.filter((e) => FULL_PRIMARY_LEGACY_IDS.has(e.id));
+
+  const includeLegacyCatalog =
+    String(type || '').toLowerCase() === 'official_sample' ||
+    (topic && topic !== 'all');
+
+  let exams = includeLegacyCatalog
+    ? [...fullStandardCards, ...legacyExams]
+    : [...fullStandardCards, ...completedLegacyCards];
 
   if (level && level !== 'all') {
-    exams = exams.filter(e => e.level.toLowerCase() === level.toLowerCase());
+    const targetLevel = String(level).replace(/–/g, '-').trim().toLowerCase();
+    exams = exams.filter((e) => String(e.level || '').replace(/–/g, '-').trim().toLowerCase() === targetLevel);
   }
 
   if (skill && skill !== 'all') {
@@ -120,6 +153,28 @@ export async function getHskExams({ level = 'all', skill = 'all', type = 'all', 
  * Lấy chi tiết thông tin đề thi (kèm cấu trúc các phần)
  */
 export async function getHskExamDetails(examId) {
+  if (String(examId || '').startsWith('dual-') && !DYNAMIC_EXAMS.has(examId)) {
+    await ensureAllFullStandardExamsLoaded();
+  } else if (SUPPLEMENTED_EXAM_IDS.includes(examId) && !DYNAMIC_EXAMS.has(examId)) {
+    await ensureExamSupplementLoaded(examId);
+  }
+
+  const dynExam = DYNAMIC_EXAMS.get(examId);
+  if (dynExam) {
+    const qs = dynExam.questions || [];
+    return {
+      ...dynExam,
+      partsSummary: {
+        listening: qs.filter((q) => (q.skill || q.part_type) === 'listening').length,
+        reading: qs.filter((q) => (q.skill || q.part_type) === 'reading').length,
+        writing: qs.filter((q) => (q.skill || q.part_type) === 'writing').length,
+        translation: qs.filter((q) => (q.skill || q.part_type) === 'translation').length,
+        speaking: qs.filter((q) => (q.skill || q.part_type) === 'speaking').length,
+        total: qs.length,
+      },
+    };
+  }
+
   const exam = HSK_EXAMS.find(e => e.id === examId);
   if (!exam) return null;
 
@@ -143,6 +198,11 @@ export async function getHskExamDetails(examId) {
  * Lấy đề thi để làm bài — BẢO MẬT: Tước bỏ hoàn toàn correct_option_index & explanation
  */
 export async function getExamForTaking(examId, user = null) {
+  if (String(examId || '').startsWith('dual-') && !DYNAMIC_EXAMS.has(examId)) {
+    await ensureAllFullStandardExamsLoaded();
+  } else if (SUPPLEMENTED_EXAM_IDS.includes(examId) && !DYNAMIC_EXAMS.has(examId)) {
+    await ensureExamSupplementLoaded(examId);
+  }
   const sanitized = getSanitizedExamForTaking(examId);
   if (!sanitized) {
     throw new Error(`Đề thi không tồn tại: ${examId}`);
@@ -177,6 +237,10 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
     timeSpentSeconds = maybeTimeSpent || 0;
     user = maybeUser || null;
     examMode = maybeMode || 'simulation';
+  }
+  const hasSupplementAnswers = Object.keys(submittedAnswers || {}).some((k) => String(k).includes('-sup-'));
+  if (hasSupplementAnswers && SUPPLEMENTED_EXAM_IDS.includes(examId) && !DYNAMIC_EXAMS.has(examId)) {
+    await ensureExamSupplementLoaded(examId);
   }
   const fullExam = getFullExamById(examId);
   if (!fullExam) {
@@ -261,7 +325,7 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
     const isAnswered = rawAnswer !== undefined && rawAnswer !== null && rawAnswer !== '';
     let isCorrect = false;
     let selectedIndex = null;
-    const isSubjective = !!q.is_subjective || q.question_type === 'free_writing';
+    const isSubjective = !!q.is_subjective || q.question_type === 'free_writing' || q.question_type === 'essay_summary';
     let needsSelfAssessment = false;
     let earnedPoints = 0;
 
@@ -686,6 +750,17 @@ export function clearTemporaryAnswers(examId, user = null) {
   try {
     if (!examId) return;
     localStorage.removeItem(getDraftStorageKey(examId, user));
+    const summaryPrefix = `hanzigo_hsk6_summary_state_${examId}_`;
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(summaryPrefix)) {
+        keysToRemove.push(k);
+      }
+    }
+    for (const k of keysToRemove) {
+      localStorage.removeItem(k);
+    }
   } catch {}
 }
 

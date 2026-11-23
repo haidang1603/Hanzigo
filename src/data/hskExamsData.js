@@ -567,7 +567,7 @@ const BASE_HSK_QUESTIONS = [
     part_type: 'reading',
     part_number: 2,
     question_number: 19,
-    prompt: '看拼音选汉字：māma (mẹ)',
+    prompt: '看拼音选汉字：māma',
     pinyin: 'Kàn pīnyīn xuǎn hànzì: māma (mẹ)',
     translation: 'Nhìn pinyin chọn chữ Hán đúng: māma (mẹ)',
     audio_url: '',
@@ -806,7 +806,7 @@ const BASE_HSK_QUESTIONS = [
     part_number: 3,
     question_number: 5,
     question_type: 'reorder_sentence',
-    prompt: '书写第一部分：将词语排列成一句通顺的话（Sắp xếp từ thành câu）：',
+    prompt: '书写第一部分：将词语排列成一句通顺的话：',
     pinyin: 'Shūxiě dì-yī bùfen: Jiāng cíyǔ páiliè chéng yí jù tōngshùn de huà:',
     translation: 'Viết Phần 1: Sắp xếp các cụm từ sau thành câu hoàn chỉnh đúng ngữ pháp:',
     audio_url: '',
@@ -830,7 +830,7 @@ const BASE_HSK_QUESTIONS = [
     part_number: 3,
     question_number: 6,
     question_type: 'fill_blank',
-    prompt: '书写第二部分：读拼音，写汉字（Điền chữ Hán vào chỗ trống）：他是我的好朋______ (yǒu)。',
+    prompt: '书写第二部分：读拼音，写汉字：他是我的好朋______ (yǒu)。',
     pinyin: 'Shūxiě dì-èr bùfen: Dú pīnyīn, xiě hànzì: Tā shì wǒ de hǎo péng______ (yǒu).',
     translation: 'Viết Phần 2: Nhìn Pinyin điền chữ Hán: Cậu ấy là người bạn tốt của tôi.',
     audio_url: '',
@@ -967,7 +967,7 @@ const BASE_HSK_QUESTIONS = [
     question_number: 6,
     question_type: 'free_writing',
     is_subjective: true,
-    prompt: '书写第二部分：看图用词造句（Nhìn tranh dùng từ [乒乓球] đặt câu）：',
+    prompt: '书写第二部分：看图用词造句（请用“乒乓球”造句）：',
     pinyin: 'Shūxiě dì-èr bùfen: Kàn tú yòng cí zào jù: [pīngpāngqiú]',
     translation: 'Viết Phần 2: Dùng từ gợi ý "bóng bàn" (乒乓球) viết 1 câu hoàn chỉnh mô tả hành động (tối thiểu 6 chữ).',
     audio_url: '',
@@ -1000,7 +1000,7 @@ const BASE_HSK_QUESTIONS = [
     part_number: 1,
     question_number: 1,
     question_type: 'multiple_choice',
-    prompt: '阅读第一部分：看词语与解释，判断是否正确：[飞机 (fēijī) - Máy bay]',
+    prompt: '阅读第一部分：看词语与解释，判断是否正确：[飞机 (fēijī) - 航空交通工具]',
     pinyin: 'Yuèdú dì-yī bùfen: Kàn cíyǔ yǔ jiěshì, pànduàn shìfǒu zhèngquè: [fēijī - Máy bay]',
     translation: 'Đọc hiểu Phần 1: Đối chiếu từ vựng và nghĩa tiếng Việt [飞机 - Máy bay]:',
     audio_url: '',
@@ -1020,7 +1020,7 @@ const BASE_HSK_QUESTIONS = [
     part_number: 1,
     question_number: 2,
     question_type: 'multiple_choice',
-    prompt: '看图文对照，判断是否吻合：[看书 (kàn shū) - Anh ấy đang ngủ]',
+    prompt: '看图文对照，判断是否吻合：[看书 (kàn shū) - 他正在睡觉]',
     pinyin: 'Kàn túwén duìzhào, pànduàn shìfǒu wènhé: [kàn shū - Anh ấy đang ngủ]',
     translation: 'Đối chiếu từ và giải nghĩa: [看书 - Anh ấy đang ngủ]:',
     audio_url: '',
@@ -1040,7 +1040,7 @@ const BASE_HSK_QUESTIONS = [
     part_number: 1,
     question_number: 3,
     question_type: 'multiple_choice',
-    prompt: '看词语与解释，判断是否正确：[吃苹果 (chī píngguǒ) - Ăn táo]',
+    prompt: '看词语与解释，判断是否正确：[吃苹果 (chī píngguǒ) - 食用苹果]',
     pinyin: 'Kàn cíyǔ yǔ jiěshì, pànduàn shìfǒu zhèngquè: [chī píngguǒ - Ăn táo]',
     translation: 'Đối chiếu từ và giải nghĩa: [吃苹果 - Ăn táo]:',
     audio_url: '',
@@ -1060,7 +1060,7 @@ const BASE_HSK_QUESTIONS = [
     part_number: 1,
     question_number: 4,
     question_type: 'multiple_choice',
-    prompt: '看词语与解释，判断是否正确：[喝水 (hē shuǐ) - Gọi điện thoại]',
+    prompt: '看词语与解释，判断是否正确：[喝水 (hē shuǐ) - 打电话]',
     pinyin: 'Kàn cíyǔ yǔ jiěshì, pànduàn shìfǒu zhèngquè: [hē shuǐ - Gọi điện thoại]',
     translation: 'Đối chiếu từ và giải nghĩa: [喝水 - Gọi điện thoại]:',
     audio_url: '',
@@ -1724,6 +1724,33 @@ export function registerDynamicExam(exam) {
   return exam;
 }
 
+export function inferQuestionDualMetadata(q = {}, exam = null) {
+  const rawType = String(q.question_type || q.questionType || 'multiple_choice').toLowerCase();
+  const normalizedType =
+    rawType.includes('true_false') || rawType === 'tf'
+      ? 'true_false'
+      : rawType.includes('fill') || rawType.includes('blank') || rawType.includes('cloze')
+        ? 'fill_blank'
+        : rawType.includes('reorder')
+          ? 'reorder'
+          : rawType.includes('translation')
+            ? 'translation'
+            : rawType.includes('speak')
+              ? 'speaking'
+              : rawType.includes('essay') || rawType.includes('free_writing') || q.is_subjective
+                ? 'essay'
+                : 'mcq';
+  const skill = q.skill || q.section || q.part_type || 'reading';
+  const part = q.part || q.part_number || 1;
+  const examSystem = q.examSystem || q.exam_system || exam?.examSystem || 'hsk_2_0';
+  return {
+    examSystem,
+    skill,
+    part,
+    questionType: normalizedType,
+  };
+}
+
 export function getFullExamById(examId) {
   if (DYNAMIC_EXAMS.has(examId)) {
     return DYNAMIC_EXAMS.get(examId);
@@ -1731,8 +1758,9 @@ export function getFullExamById(examId) {
   const exam = HSK_EXAMS.find(e => e.id === examId);
   if (!exam) return null;
   const questions = HSK_QUESTIONS.filter(q => q.exam_id === examId)
-    .sort((a, b) => a.question_number - b.question_number);
-  return { ...exam, questions };
+    .sort((a, b) => a.question_number - b.question_number)
+    .map(q => ({ ...q, ...inferQuestionDualMetadata(q, exam) }));
+  return { ...exam, examSystem: exam.examSystem || 'hsk_2_0', questions };
 }
 
 // Helper: BẢO MẬT TUYỆT ĐỐI — Tước bỏ đáp án & lời giải trước khi đưa ra màn hình thi
@@ -1751,35 +1779,43 @@ export function getSanitizedExamForTaking(examId) {
   }
   if (!exam) return null;
 
-  const questions = rawQuestions.map(q => ({
-    id: q.id,
-    exam_id: q.exam_id || exam.id,
-    section: q.section || q.part_type || 'reading',
-    part_type: q.part_type || q.section || 'reading',
-    part_number: q.part_number || 1,
-    question_number: q.question_number || 1,
-    question_type: q.question_type || q.questionType || 'multiple_choice',
-    questionType: q.questionType || q.question_type || 'multiple_choice',
-    prompt: q.prompt,
-    pinyin: q.pinyin,
-    translation: q.translation,
-    audio_url: q.audio_url || q.audioUrl || '',
-    audioUrl: q.audioUrl || q.audio_url || '',
-    audio_script: q.audio_script || q.audioScript || '',
-    audioScript: q.audioScript || q.audio_script || '',
-    options: q.options || [],
-    words: q.words || q.scrambledWords || [],
-    scrambledWords: q.scrambledWords || q.words || [],
-    writing_criteria: q.writing_criteria || [],
-    summary_passage_paragraphs: q.summary_passage_paragraphs || null,
-    min_words: q.min_words || 0,
-    max_words: q.max_words || 0,
-    is_subjective: !!q.is_subjective,
-    points: q.points || 10,
-    relatedVocab: q.relatedVocab || []
-    // BẢO MẬT TUYỆT ĐỐI: Không bao gồm correct_option_index, correct_order, accepted_answers, sample_answer và explanation ở đây!
-  }));
-  return { ...exam, questions };
+  const questions = rawQuestions.map(q => {
+    const dualMeta = inferQuestionDualMetadata(q, exam);
+    return {
+      id: q.id,
+      exam_id: q.exam_id || exam.id,
+      examSystem: dualMeta.examSystem,
+      skill: dualMeta.skill,
+      part: dualMeta.part,
+      section: q.section || q.part_type || 'reading',
+      part_type: q.part_type || q.section || 'reading',
+      part_number: q.part_number || 1,
+      question_number: q.question_number || 1,
+      question_type: q.question_type || q.questionType || 'multiple_choice',
+      questionType: dualMeta.questionType,
+      prompt: q.prompt,
+      pinyin: q.pinyin,
+      translation: q.translation,
+      audio_url: q.audio_url || q.audioUrl || '',
+      audioUrl: q.audioUrl || q.audio_url || '',
+      audio_script: q.audio_script || q.audioScript || q.audioText || '',
+      audioScript: q.audioScript || q.audio_script || q.audioText || '',
+      options: Array.isArray(q.options)
+        ? q.options.map((opt) => (typeof opt === 'string' ? { text: opt } : opt))
+        : [],
+      words: q.words || q.scrambledWords || [],
+      scrambledWords: q.scrambledWords || q.words || [],
+      writing_criteria: q.writing_criteria || q.rubric || [],
+      summary_passage_paragraphs: q.summary_passage_paragraphs || null,
+      min_words: q.min_words || 0,
+      max_words: q.max_words || 0,
+      is_subjective: !!q.is_subjective,
+      points: q.points || 10,
+      relatedVocab: q.relatedVocab || []
+      // BẢO MẬT TUYỆT ĐỐI: Không bao gồm correct_option_index, correctIndex, correct_order, accepted_answers, acceptedAnswers, expectedAnswer, sample_answer, sampleAnswer, rubric và explanation/explanationVi ở đây!
+    };
+  });
+  return { ...exam, examSystem: exam.examSystem || 'hsk_2_0', questions };
 }
 
 

@@ -148,9 +148,9 @@ export const ROUTE_SEO_CONFIG = {
     robots: 'index, follow',
   },
   hsk: {
-    title: 'Thi Thử HSK 1-6 & HSKK Chuẩn CTI Trực Tuyến | HanziGo',
+    title: 'Thi Thử HSK 1–9 & HSKK Chuẩn CTI Trực Tuyến | HanziGo',
     description:
-      'Phòng thi thử HSK 1–6 và HSKK trên máy tính (CBT) mô phỏng chuẩn đề thi thật của CTI, tự động chấm điểm và phân tích lỗi sai chi tiết.',
+      'Phòng thi thử HSK 1–9 và HSKK trên máy tính (CBT) mô phỏng chuẩn đề thi thật của CTI, tự động chấm điểm và phân tích lỗi sai chi tiết.',
     path: '/hsk-practice',
     ogType: 'website',
     robots: 'index, follow',

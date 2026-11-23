@@ -14,7 +14,13 @@ import {
 } from '../services';
 import { clearLegacyUnscopedLearningKeys } from '../utils/gamification';
 
-const AuthContext = createContext(null);
+const AuthContext =
+  (typeof globalThis !== 'undefined' && globalThis.__HANZIGO_AUTH_CONTEXT__) ||
+  createContext(null);
+
+if (typeof globalThis !== 'undefined' && !globalThis.__HANZIGO_AUTH_CONTEXT__) {
+  globalThis.__HANZIGO_AUTH_CONTEXT__ = AuthContext;
+}
 
 export function AuthProvider({ children }) {
   const [sessionVerified, setSessionVerified] = useState(false);

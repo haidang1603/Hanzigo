@@ -1,5 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { calculateHskCbtScore } from '../src/utils/examScoringEngine.js';
+import { clearTemporaryAnswers } from '../src/services/hskService.js';
 
 import {
   HSK6_ERROR_TAXONOMY,
@@ -140,5 +144,52 @@ test('HSKK Full Exams match official counts (27/14/6), cover all 3 parts per lev
   const res = gradeHskkSpeakingResponse(readAloudQ, readAloudQ.promptZh, [3.2, 3.5, 4.1, 2.8, 3.0]);
   assert.equal(res.usedRealPitch, true);
   assert.ok(res.score > 50);
+});
+
+test('HSK 6 Q101 writing scoring & review fixes prevent blank 100-score, locked retakes, and broken rubric', () => {
+  const full = getFullExamById('hsk6-full-101-01');
+  const q101 = full.questions.find((q) => q.question_number === 101);
+  assert.ok(q101);
+
+  // Blank Q101 must score 0 for writing section (never 100)
+  const blankScore = calculateHskCbtScore(full, {});
+  assert.equal(blankScore.sections.writing.score, 0);
+
+  // Substantial Q101 summary (~350+ chars) scores 100 estimated writing score
+  const fullSummary = q101.sample_answer;
+  const filledScore = calculateHskCbtScore(full, { [q101.id]: fullSummary });
+  assert.ok(filledScore.sections.writing.score >= 85 && filledScore.sections.writing.score <= 100);
+
+  // clearTemporaryAnswers cleans up HSK6 summary persisted state in localStorage
+  const store = new Map();
+  const prevLocalStorage = globalThis.localStorage;
+  globalThis.localStorage = {
+    get length() { return store.size; },
+    key(i) { return Array.from(store.keys())[i] ?? null; },
+    getItem(k) { return store.has(k) ? store.get(k) : null; },
+    setItem(k, v) { store.set(k, String(v)); },
+    removeItem(k) { store.delete(k); },
+  };
+  try {
+    const sumKey = `hanzigo_hsk6_summary_state_${full.id}_${q101.id}`;
+    globalThis.localStorage.setItem(sumKey, JSON.stringify({ phase: 'SUBMITTED' }));
+    clearTemporaryAnswers(full.id);
+    assert.equal(globalThis.localStorage.getItem(sumKey), null);
+  } finally {
+    globalThis.localStorage = prevLocalStorage;
+  }
+
+  // Review UI handles string writingCriteria and hides placeholder options for essay_summary
+  const hskPageSrc = fs.readFileSync(path.resolve('src/pages/HskPracticePage.jsx'), 'utf8');
+  assert.match(hskPageSrc, /typeof crit === 'string'/);
+  assert.match(hskPageSrc, /!q\.isSubjective && q\.questionType !== 'essay_summary'/);
+  assert.match(hskPageSrc, /onDraftChange=\{\(payload\) =>/);
+
+  // Simulator must support onDraftChange
+  const simSrc = fs.readFileSync(
+    path.resolve('src/features/hsk-exam/renderers/hsk6/Hsk6TwoPhaseSummarySimulator.tsx'),
+    'utf8'
+  );
+  assert.match(simSrc, /onDraftChange\?: /);
 });
 

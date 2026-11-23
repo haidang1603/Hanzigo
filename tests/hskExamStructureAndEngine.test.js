@@ -140,7 +140,8 @@ test('HSK Levels 1 to 6 & 7-9: verified structures match official CTI guidelines
   const hsk79 = getHskStructure('hsk-7-9', '2015-Standard');
   assert.equal(hsk79.level, 'HSK 7–9');
   assert.equal(hsk79.sections.length, 5, 'HSK 7-9 tests 5 components: listening, reading, writing, translation, speaking');
-  assert.equal(hsk79.totalDurationMinutes, 210);
+  assert.equal(hsk79.totalDurationMinutes, 200);
+  assert.equal(hsk79.totalQuestions, 91);
 });
 
 test('HSK 3.0 status: marks unverified parameters clearly without fake assumptions', () => {

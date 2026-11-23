@@ -330,7 +330,7 @@ export default function Footer({ setActiveTab, user = null }) {
               <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Khóa HSK 1 – 150 từ cơ bản</button></li>
               <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Khóa HSK 2 – Sơ cấp đàm thoại</button></li>
               <li><button onClick={() => handleNav('roadmap')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Khóa HSK 3–4 Giao tiếp công sở</button></li>
-              <li><button onClick={() => handleNav('hsk')} className="hover:text-white hover:translate-x-1 transition-all text-left font-medium cursor-pointer">Thi thử HSK 1–6 &amp; Nói HSKK</button></li>
+              <li><button onClick={() => handleNav('hsk')} className="hover:text-white hover:translate-x-1 transition-all text-left font-medium cursor-pointer">Thi thử HSK 1–9 &amp; Nói HSKK</button></li>
               <li><button onClick={() => handleNav('hsk30-translation')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">HSK 3.0 (Cấp 7–9) &amp; Xưởng Dịch</button></li>
               <li><button onClick={() => handleNav('classroom')} className="hover:text-white hover:translate-x-1 transition-all text-left cursor-pointer">Lớp học trực tuyến (Live)</button></li>
             </ul>

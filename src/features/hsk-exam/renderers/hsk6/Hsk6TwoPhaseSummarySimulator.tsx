@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -29,6 +29,7 @@ interface Hsk6TwoPhaseSummarySimulatorProps {
   attemptKey?: string;
   passageParagraphs?: string[];
   practiceMode?: boolean;
+  onDraftChange?: (payload: { title: string; summary: string; charCount: number }) => void;
   onSubmitSummary?: (payload: { title: string; summary: string; charCount: number }) => void;
 }
 
@@ -51,6 +52,7 @@ export const Hsk6TwoPhaseSummarySimulator: React.FC<Hsk6TwoPhaseSummarySimulator
   attemptKey = SAMPLE_HSK6_SUMMARY_PASSAGE.id,
   passageParagraphs = SAMPLE_HSK6_SUMMARY_PASSAGE.paragraphs,
   practiceMode = true,
+  onDraftChange,
   onSubmitSummary,
 }) => {
   const storageKey = `hanzigo_hsk6_summary_state_${attemptKey}`;
@@ -60,6 +62,30 @@ export const Hsk6TwoPhaseSummarySimulator: React.FC<Hsk6TwoPhaseSummarySimulator
   );
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
   const [showSixElements, setShowSixElements] = useState<boolean>(true);
+
+  const stateRef = useRef(state);
+  const onSubmitSummaryRef = useRef(onSubmitSummary);
+  const onDraftChangeRef = useRef(onDraftChange);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  useEffect(() => {
+    onSubmitSummaryRef.current = onSubmitSummary;
+  }, [onSubmitSummary]);
+
+  useEffect(() => {
+    onDraftChangeRef.current = onDraftChange;
+  }, [onDraftChange]);
+
+  // Reload persisted state if attemptKey changes
+  useEffect(() => {
+    const loaded = loadPersistedSummaryState(storageKey, attemptKey);
+    stateRef.current = loaded;
+    setState(loaded);
+    setNowMs(Date.now());
+  }, [storageKey, attemptKey]);
 
   const sourceCharCount = useMemo(
     () => countChineseSummaryChars(passageParagraphs.join('')),
@@ -72,24 +98,24 @@ export const Hsk6TwoPhaseSummarySimulator: React.FC<Hsk6TwoPhaseSummarySimulator
     const timer = setInterval(() => {
       const currentNow = Date.now();
       setNowMs(currentNow);
-      setState((prev) => {
-        const normalized = normalizeSummaryPhaseState(prev, currentNow);
-        if (normalized.phase !== prev.phase) {
-          savePersistedSummaryState(storageKey, normalized);
-          if (normalized.phase === 'SUBMITTED' && onSubmitSummary) {
-            onSubmitSummary({
-              title: normalized.title,
-              summary: normalized.summary,
-              charCount: countChineseSummaryChars(normalized.summary),
-            });
-          }
+      const prev = stateRef.current;
+      const normalized = normalizeSummaryPhaseState(prev, currentNow);
+      if (normalized.phase !== prev.phase) {
+        savePersistedSummaryState(storageKey, normalized);
+        stateRef.current = normalized;
+        setState(normalized);
+        if (normalized.phase === 'SUBMITTED' && onSubmitSummaryRef.current) {
+          onSubmitSummaryRef.current({
+            title: normalized.title,
+            summary: normalized.summary,
+            charCount: countChineseSummaryChars(normalized.summary),
+          });
         }
-        return normalized;
-      });
+      }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [state.phase, storageKey, onSubmitSummary]);
+  }, [state.phase, storageKey]);
 
   const remainingSeconds = computePhaseRemainingSeconds(state, nowMs);
   const summaryCharCount = useMemo(
@@ -99,46 +125,56 @@ export const Hsk6TwoPhaseSummarySimulator: React.FC<Hsk6TwoPhaseSummarySimulator
   const directQuotes = useMemo(() => detectDirectQuotes(state.summary), [state.summary]);
 
   const updateDraft = (patch: Partial<Pick<Hsk6SummaryPersistedState, 'title' | 'summary'>>) => {
-    if (state.phase !== 'WRITING_ONLY') return;
-    setState((prev) => {
-      const next = { ...prev, ...patch };
-      savePersistedSummaryState(storageKey, next);
-      return next;
-    });
+    const prev = stateRef.current;
+    if (prev.phase !== 'WRITING_ONLY') return;
+    const next = { ...prev, ...patch };
+    savePersistedSummaryState(storageKey, next);
+    stateRef.current = next;
+    setState(next);
+    if (onDraftChangeRef.current) {
+      onDraftChangeRef.current({
+        title: next.title,
+        summary: next.summary,
+        charCount: countChineseSummaryChars(next.summary),
+      });
+    }
   };
 
   const handleAdvanceToWritingEarly = () => {
     const now = Date.now();
     setNowMs(now);
-    setState((prev) => {
-      const next = transitionToWritingPhase(prev, now);
-      savePersistedSummaryState(storageKey, next);
-      return next;
-    });
+    const next = transitionToWritingPhase(stateRef.current, now);
+    savePersistedSummaryState(storageKey, next);
+    stateRef.current = next;
+    setState(next);
   };
 
   const handleSubmit = () => {
     const now = Date.now();
     setNowMs(now);
-    setState((prev) => {
-      const next = transitionToSubmittedPhase(prev, now);
-      savePersistedSummaryState(storageKey, next);
-      if (onSubmitSummary) {
-        onSubmitSummary({
-          title: next.title,
-          summary: next.summary,
-          charCount: countChineseSummaryChars(next.summary),
-        });
-      }
-      return next;
-    });
+    const next = transitionToSubmittedPhase(stateRef.current, now);
+    savePersistedSummaryState(storageKey, next);
+    stateRef.current = next;
+    setState(next);
+    if (onSubmitSummaryRef.current) {
+      onSubmitSummaryRef.current({
+        title: next.title,
+        summary: next.summary,
+        charCount: countChineseSummaryChars(next.summary),
+      });
+    }
   };
 
   const handleResetSimulator = () => {
     clearPersistedSummaryState(storageKey);
     const now = Date.now();
     setNowMs(now);
-    setState(loadPersistedSummaryState(storageKey, attemptKey, now));
+    const fresh = loadPersistedSummaryState(storageKey, attemptKey, now);
+    stateRef.current = fresh;
+    setState(fresh);
+    if (onDraftChangeRef.current) {
+      onDraftChangeRef.current({ title: '', summary: '', charCount: 0 });
+    }
   };
 
   const charStatusColor =

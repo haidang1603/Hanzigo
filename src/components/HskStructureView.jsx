@@ -21,14 +21,17 @@ import {
 import { 
   getHskStructure, 
   getAllHskLevels, 
-  HSK_OFFICIAL_VERSIONS 
+  HSK_OFFICIAL_VERSIONS,
+  HSK30_SUMMARY_TABLE,
+  HSK20_VS_HSK30_COMPARISON
 } from '../data/hskStructureData';
 
 export default function HskStructureView({ onNavigate }) {
-  const allLevels = useMemo(() => getAllHskLevels(), []);
   const [selectedLevelKey, setSelectedLevelKey] = useState('hsk-1');
-  const [selectedVersion, setSelectedVersion] = useState('2015-Standard');
+  const [selectedVersion, setSelectedVersion] = useState('HSK 3.0-2021');
   const [activeSectionTab, setActiveSectionTab] = useState('all');
+
+  const allLevels = useMemo(() => getAllHskLevels(selectedVersion), [selectedVersion]);
 
   const structure = useMemo(() => {
     return getHskStructure(selectedLevelKey, selectedVersion);
@@ -85,12 +88,13 @@ export default function HskStructureView({ onNavigate }) {
             1. Chọn cấp độ HSK cần tìm hiểu
           </span>
           <span className="text-xs text-slate-500">
-            Hỗ trợ 7 cấp bậc chính thức
+            {selectedVersion === '2015-Standard' ? 'HSK 2.0 gồm 6 cấp (HSK 1–6)' : 'HSK 3.0 gồm 7 bậc thi (HSK 1–9)'}
           </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
           {allLevels.map(lvl => {
             const isSelected = lvl.key === selectedLevelKey;
+            const notInCurrentVer = !lvl.isSupportedInVersion;
             return (
               <button
                 key={lvl.key}
@@ -105,14 +109,16 @@ export default function HskStructureView({ onNavigate }) {
                 className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
                   isSelected
                     ? 'border-[#E85D3F] bg-white dark:bg-slate-900 shadow-md ring-2 ring-[#E85D3F]/30 scale-[1.02]'
-                    : 'border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700'
+                    : notInCurrentVer
+                      ? 'border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 opacity-75 hover:opacity-100'
+                      : 'border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 <div className={`text-base font-black ${isSelected ? 'text-[#E85D3F]' : 'text-slate-800 dark:text-slate-200'}`}>
                   {lvl.level}
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                  {lvl.vocabCount} từ vựng
+                  {notInCurrentVer ? 'Chỉ có ở HSK 3.0' : `${lvl.questionCount} câu · ${lvl.vocabCount} từ`}
                 </div>
               </button>
             );
@@ -177,25 +183,21 @@ export default function HskStructureView({ onNavigate }) {
               <span>
                 {structure.verificationStatus === 'verified'
                   ? 'Cấu trúc khảo thí chính thức được xác nhận'
-                  : 'Tiêu chuẩn tham chiếu mới (Đang trong lộ trình chuyển tiếp CTI)'}
+                  : 'Chuẩn đề cương HSK 3.0 CTI (Áp dụng toàn cầu từ 13/12/2026)'}
               </span>
               <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-black ${
                 structure.verificationStatus === 'verified'
                   ? 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300'
                   : 'bg-amber-200 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
               }`}>
-                {structure.verificationStatus === 'verified' ? 'CHÍNH THỨC 100%' : 'CHƯA TRIỂN KHAI ĐỒNG LOẠT'}
+                {structure.verificationStatus === 'verified' ? 'CHÍNH THỨC 100%' : 'CHUẨN CTI 13/12/2026'}
               </span>
             </div>
             <p className="mt-1 leading-relaxed text-xs">
-              {structure.verificationStatus === 'verified' ? (
-                <>
-                  Dữ liệu đối chiếu chuẩn xác với <strong>Đề cương Khảo thí HSK chính thức</strong> do CTI công bố. Đang được áp dụng cho toàn bộ kỳ thi giấy và máy trên toàn cầu.
-                </>
-              ) : (
-                <>
-                  {structure.notesVi || 'Tiêu chuẩn HSK 3.0 đã ban hành định lượng từ vựng, tuy nhiên CTI chưa áp dụng cấu trúc đề mới cho mọi điểm thi. Không tự suy đoán đề thi mới đã thay thế hoàn toàn đề 2015 trong năm 2026.'}
-                </>
+              {structure.notesVi || (
+                structure.verificationStatus === 'verified'
+                  ? 'Dữ liệu đối chiếu chuẩn xác với Đề cương Khảo thí HSK chính thức do CTI công bố.'
+                  : 'Cấu trúc đề thi HSK 3.0 theo đề cương mới của CTI.'
               )}
             </p>
             {structure.unverifiedFields && structure.unverifiedFields.length > 0 && (
@@ -208,57 +210,90 @@ export default function HskStructureView({ onNavigate }) {
         </div>
 
         {/* 6 Key Parameter Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-            <span className="text-[11px] font-bold text-slate-400 block uppercase">Thời lượng thi</span>
-            <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
-              ~{structure.totalDurationMinutes} <span className="text-xs font-normal text-slate-400">phút</span>
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">+5p điền thông tin</div>
-          </div>
+        {(() => {
+          const separateSpeakingSec =
+            selectedVersion === 'HSK 3.0-2021' && selectedLevelKey !== 'hsk-7-9'
+              ? structure.sections?.find(s => s.sectionId === 'speaking' && s.questionCount > 0)
+              : null;
+          const writtenSectionCount = (structure.sections || []).filter(
+            s => s.questionCount > 0 && !(separateSpeakingSec && s.sectionId === 'speaking')
+          ).length;
+          const isHsk79 = selectedLevelKey === 'hsk-7-9';
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-            <span className="text-[11px] font-bold text-slate-400 block uppercase">Tổng số câu</span>
-            <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
-              {structure.totalQuestions} <span className="text-xs font-normal text-slate-400">câu</span>
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">{structure.sections?.length || 0} phần thi</div>
-          </div>
+          return (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <span className="text-[11px] font-bold text-slate-400 block uppercase">Thời lượng thi</span>
+                <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+                  ~{structure.totalDurationMinutes} <span className="text-xs font-normal text-slate-400">phút</span>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {separateSpeakingSec
+                    ? `+${separateSpeakingSec.durationMinutes}p thi Nói riêng`
+                    : isHsk79
+                      ? 'Thi máy tính tích hợp'
+                      : `Gồm ${structure.fillingInfoMinutes || 5}p thông tin & tô phiếu`}
+                </div>
+              </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-            <span className="text-[11px] font-bold text-slate-400 block uppercase">Điểm tối đa</span>
-            <div className="text-xl font-black text-[#E85D3F] mt-1">
-              {structure.maxScore} <span className="text-xs font-normal text-slate-400">điểm</span>
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">100đ / kỹ năng</div>
-          </div>
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <span className="text-[11px] font-bold text-slate-400 block uppercase">Tổng số câu</span>
+                <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+                  {structure.totalQuestions} <span className="text-xs font-normal text-slate-400">câu</span>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {separateSpeakingSec
+                    ? `${writtenSectionCount} phần viết (+${separateSpeakingSec.questionCount} Nói)`
+                    : `${writtenSectionCount} phần thi chính`}
+                </div>
+              </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-            <span className="text-[11px] font-bold text-slate-400 block uppercase">Điểm chuẩn Đạt</span>
-            <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
-              {structure.passingScore}
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">Tổng điểm &gt;= 60%</div>
-          </div>
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <span className="text-[11px] font-bold text-slate-400 block uppercase">Điểm tối đa</span>
+                <div className="text-xl font-black text-[#E85D3F] mt-1">
+                  {typeof structure.maxScore === 'number' ? (
+                    <>
+                      {structure.maxScore} <span className="text-xs font-normal text-slate-400">điểm</span>
+                    </>
+                  ) : (
+                    <span>Phân 3 bậc</span>
+                  )}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {isHsk79 ? 'Xếp bậc HSK 7 / 8 / 9' : '100đ / kỹ năng'}
+                </div>
+              </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-            <span className="text-[11px] font-bold text-slate-400 block uppercase">Yêu cầu từ vựng</span>
-            <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
-              {structure.vocabularyRequirement} <span className="text-xs font-normal text-slate-400">từ</span>
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">{structure.characterRequirement || 'N/A'} chữ Hán</div>
-          </div>
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <span className="text-[11px] font-bold text-slate-400 block uppercase">Điểm chuẩn Đạt</span>
+                <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                  {isHsk79 ? '≥ 180' : structure.passingScore}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {isHsk79 ? '7: 180 · 8: 210 · 9: 240' : 'Tổng điểm >= 60%'}
+                </div>
+              </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-            <span className="text-[11px] font-bold text-slate-400 block uppercase">Quy tắc Audio</span>
-            <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1">
-              {structure.audioPlayCount} <span className="text-xs font-normal text-slate-400">lượt/câu</span>
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <span className="text-[11px] font-bold text-slate-400 block uppercase">Yêu cầu từ vựng</span>
+                <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
+                  {structure.vocabularyRequirement} <span className="text-xs font-normal text-slate-400">từ</span>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">{structure.characterRequirement || 'N/A'} chữ Hán</div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <span className="text-[11px] font-bold text-slate-400 block uppercase">Quy tắc Audio</span>
+                <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1">
+                  {structure.audioPlayCount} <span className="text-xs font-normal text-slate-400">lượt/câu</span>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {structure.audioPlayCount === 1 ? 'Chỉ phát 1 lần' : 'Phát đúng 2 lần'}
+                </div>
+              </div>
             </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
-              {structure.audioPlayCount === 1 ? 'Chỉ phát 1 lần' : 'Phát đúng 2 lần'}
-            </div>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Action Button: Jump directly to matching practice tests */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-orange-50/70 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/40">
@@ -412,6 +447,69 @@ export default function HskStructureView({ onNavigate }) {
                   </p>
                 </div>
               )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* HSK 3.0 CTI 2026 Overview & HSK 1-9 Progression Table */}
+      <div className="mt-12 bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+          <Layers className="w-5 h-5 text-[#E85D3F]" />
+          Bảng tổng hợp số lượng câu hỏi & phân bổ HSK 3.0 (Chuẩn CTI 13/12/2026)
+        </h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+          Hệ thống HSK 1–9 chia làm hai khối: <strong>HSK 1–6</strong> thi riêng từng cấp và <strong>HSK 7–9</strong> thi chung 1 bài trên máy tính để xếp bậc 7, 8 hoặc 9 dựa trên điểm số.
+        </p>
+
+        <div className="overflow-x-auto mb-6">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase text-[10px] font-black tracking-wider">
+                <th className="py-2.5 px-3">Cấp độ</th>
+                <th className="py-2.5 px-3">Nghe</th>
+                <th className="py-2.5 px-3">Đọc</th>
+                <th className="py-2.5 px-3">Viết</th>
+                <th className="py-2.5 px-3">Dịch</th>
+                <th className="py-2.5 px-3">Nói (thi kèm / tích hợp)</th>
+                <th className="py-2.5 px-3">Tổng câu</th>
+                <th className="py-2.5 px-3">Thời lượng ước tính</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+              {HSK30_SUMMARY_TABLE.map(row => (
+                <tr key={row.level} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                  <td className="py-3 px-3 font-black text-slate-900 dark:text-white whitespace-nowrap">
+                    {row.level}
+                    <span className="block text-[10px] font-medium text-slate-400">{row.band}</span>
+                  </td>
+                  <td className="py-3 px-3 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{row.listening}</td>
+                  <td className="py-3 px-3 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{row.reading}</td>
+                  <td className="py-3 px-3 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{row.writing}</td>
+                  <td className="py-3 px-3 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{row.translation}</td>
+                  <td className="py-3 px-3 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{row.speaking}</td>
+                  <td className="py-3 px-3 font-black text-[#E85D3F] whitespace-nowrap">{row.total}</td>
+                  <td className="py-3 px-3 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">{row.duration}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 space-y-2 mb-6 leading-relaxed">
+          <div>
+            <strong>Ghi chú thời lượng:</strong> Thời lượng bài thi chính HSK 1–6 đã bao gồm 5 phút điền thông tin cá nhân và thời gian tô phiếu đáp án sau phần Nghe khi thi giấy (3 phút với HSK 1–2; 5 phút với HSK 3–6). Thời gian bài Nói đã bao gồm thời gian chuẩn bị.
+          </div>
+          <div>
+            <strong>* Lưu ý HSK 7–9:</strong> Đề mẫu HSK 3.0 cập nhật năm 2026 của CTI có <strong>91 câu (~200 phút)</strong> với <strong>40 câu Đọc</strong>; trong khi bản công bố giai đoạn đầu (từ cuối 2022) trên một số trang thông tin cũ vẫn ghi 98 câu (~210 phút) với 47 câu Đọc.
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {HSK20_VS_HSK30_COMPARISON.map(item => (
+            <div key={item.group} className="p-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-xs">
+              <div className="font-black text-amber-900 dark:text-amber-200 mb-1.5">{item.group}</div>
+              <p className="text-amber-800 dark:text-amber-300 leading-relaxed text-[11px]">{item.detail}</p>
             </div>
           ))}
         </div>
