@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { 
   generateClassCode, 
   normalizeClassCode,
@@ -279,6 +281,32 @@ test('Classroom: Teacher student management and demo student creation', async ()
   const foundStudent = allStudents.find(s => s.classroom_id === classId);
   assert.ok(foundStudent, 'Should find student under teacher');
   assert.equal(foundStudent.student_name, 'Học viên A');
+});
+
+test('Classroom UI: Unauthenticated users cannot view classroom list and are prompted to log in', () => {
+  const classroomPageSrc = fs.readFileSync(path.resolve('src/pages/ClassroomPage.jsx'), 'utf8');
+  const dashboardPageSrc = fs.readFileSync(path.resolve('src/pages/DashboardPage.jsx'), 'utf8');
+  const appSrc = fs.readFileSync(path.resolve('src/App.jsx'), 'utf8');
+
+  // ClassroomPage must guard against guest / unauthenticated access and not load user_guest classrooms
+  assert.match(classroomPageSrc, /if \(!isLoggedIn\)/, 'ClassroomPage must gate rendering when not logged in');
+  assert.match(classroomPageSrc, /Đăng nhập để xem Lớp học/, 'ClassroomPage must prompt login when unauthenticated');
+  assert.doesNotMatch(
+    classroomPageSrc,
+    /loadStudentData[\s\S]*?const studentId = user\?\.uid \|\| user\?\.id \|\| 'user_guest'/,
+    'ClassroomPage loadStudentData must not fall back to user_guest'
+  );
+
+  // DashboardPage must skip loading student classrooms for user_guest
+  assert.match(
+    dashboardPageSrc,
+    /if \(!studentId \|\| studentId === 'user_guest'\)/,
+    'DashboardPage must skip classroom loading when not logged in'
+  );
+
+  // App.jsx must pass auth state and modal handler to ClassroomPage & LiveClassroomPage
+  assert.match(appSrc, /isAuthenticated=\{isAuthenticated\}/, 'App.jsx must pass isAuthenticated to ClassroomPage');
+  assert.match(appSrc, /user=\{isAuthenticated \? user : null\}/, 'App.jsx must guard LiveClassroomPage with isAuthenticated');
 });
 
 

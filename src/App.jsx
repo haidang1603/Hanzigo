@@ -74,7 +74,7 @@ const VALID_TABS = [
 ];
 
 function MainApp() {
-  const { user, setUser, isAdmin, isTeacher, logout } = useAuth();
+  const { user, setUser, isAdmin, isTeacher, isAuthenticated, loading: authLoading, logout } = useAuth();
   const { darkMode, setDarkMode, soundEnabled, setSoundEnabled } = useTheme();
 
   // Helper to parse detailed sub-routes for teacher and classroom
@@ -376,14 +376,22 @@ function MainApp() {
         <SeoHeadManager activeTab={activeTab} routeInfo={routeInfo} />
         <Suspense fallback={<RouteSuspenseFallback />}>
           <LiveClassroomPage
-            user={user}
+            user={isAuthenticated ? user : null}
             classId={routeInfo.sub}
             sessionId={routeInfo.extra}
+            openAuthModal={handleOpenAuth}
             onNavigateBack={() => {
               window.location.hash = `#classroom/${routeInfo.sub}`;
             }}
           />
         </Suspense>
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialMode={authModalMode}
+          onLoginSuccess={handleLoginSuccess}
+          setActiveTab={setActiveTab}
+        />
       </>
     );
   }
@@ -660,6 +668,9 @@ function MainApp() {
           {activeTab === 'classroom' && (
             <ClassroomPage 
               user={user}
+              isAuthenticated={isAuthenticated}
+              authLoading={authLoading}
+              openAuthModal={handleOpenAuth}
               setActiveTab={setActiveTab}
               subRoute={
                 routeInfo.sub === 'join' ? 'join' :

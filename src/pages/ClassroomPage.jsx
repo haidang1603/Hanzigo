@@ -42,8 +42,12 @@ import {
   Share2,
   Radio,
   Play,
-  ArrowUpRight
+  ArrowUpRight,
+  Lock,
+  LogIn,
+  UserPlus
 } from 'lucide-react';
+import PageLoader from '../components/PageLoader';
 import { 
   getClassroomsForStudent, 
   getClassroomById, 
@@ -150,8 +154,18 @@ export default function ClassroomPage({
   setActiveTab,
   subRoute = 'list',
   classId = null,
-  onNavigate = null
+  onNavigate = null,
+  isAuthenticated,
+  authLoading = false,
+  openAuthModal = null
 }) {
+  const isLoggedIn = Boolean(
+    user &&
+    (user.uid || user.id) &&
+    user.uid !== 'user_guest' &&
+    user.id !== 'user_guest' &&
+    (isAuthenticated === undefined ? true : isAuthenticated)
+  );
   // Navigation helper
   const navigateTo = useCallback((route, targetId = null) => {
     playClickSound();
@@ -241,9 +255,23 @@ export default function ClassroomPage({
 
   // Load student classrooms
   const loadStudentData = useCallback(async () => {
+    if (!isLoggedIn) {
+      setMyClasses([]);
+      setCurrentClass(null);
+      setAssignments([]);
+      setAnnouncements([]);
+      setMaterials([]);
+      setPeers([]);
+      setSubmissionsMap({});
+      setActiveLiveSession(null);
+      setLiveSessionsMap({});
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const studentId = user?.uid || user?.id || 'user_guest';
+      const studentId = user.uid || user.id;
       const list = await getClassroomsForStudent(studentId);
       setMyClasses(list || []);
 
@@ -289,7 +317,7 @@ export default function ClassroomPage({
     } finally {
       setLoading(false);
     }
-  }, [user, classId]);
+  }, [user, classId, isLoggedIn]);
 
   useEffect(() => {
     loadStudentData();
@@ -297,7 +325,7 @@ export default function ClassroomPage({
 
   // Real-time classroom events
   useEffect(() => {
-    if (!classId) return;
+    if (!classId || !isLoggedIn) return;
 
     getActiveSessionForClass(classId).then(ses => {
       setActiveLiveSession(ses || null);
@@ -343,11 +371,11 @@ export default function ClassroomPage({
       unsubscribe();
       clearInterval(interval);
     };
-  }, [classId]);
+  }, [classId, isLoggedIn]);
 
   // Polling for live sessions across all classes
   useEffect(() => {
-    if (myClasses.length === 0) return;
+    if (!isLoggedIn || myClasses.length === 0) return;
 
     const poll = async () => {
       try {
@@ -367,7 +395,7 @@ export default function ClassroomPage({
 
     const timer = setInterval(poll, 5000);
     return () => clearInterval(timer);
-  }, [myClasses.length, classId, myClasses]);
+  }, [isLoggedIn, myClasses.length, classId, myClasses]);
 
   // Handle open / download material with signed url
   const handleOpenMaterial = async (mat) => {
@@ -442,11 +470,11 @@ export default function ClassroomPage({
   // Handle submit assignment
   const handleSubmitAssignment = async (e) => {
     e.preventDefault();
-    if (!activeAssignment) return;
+    if (!activeAssignment || !isLoggedIn) return;
 
     setSubmitting(true);
     try {
-      const studentId = user?.uid || user?.id || 'user_guest';
+      const studentId = user.uid || user.id;
       const studentName = user?.name || user?.user_metadata?.name || 'Học viên HanziGo';
 
       const payload = {
@@ -493,9 +521,9 @@ export default function ClassroomPage({
 
   // Handle student leaving classroom
   const handleLeaveClass = async () => {
-    if (!currentClass) return;
+    if (!currentClass || !isLoggedIn) return;
     if (!window.confirm(`Bạn có chắc chắn muốn rời khỏi lớp học "${currentClass.name}"?`)) return;
-    const studentId = user?.uid || user?.id || 'user_guest';
+    const studentId = user.uid || user.id;
     const res = await removeStudentFromClass(currentClass.id, studentId);
     if (res.success) {
       showToast(`Đã rời khỏi lớp "${currentClass.name}".`);
@@ -573,6 +601,78 @@ export default function ClassroomPage({
       (c.teacher_name && c.teacher_name.toLowerCase().includes(term))
     );
   }, [myClasses, classSearchTerm, levelFilter, liveSessionsMap]);
+
+  if (authLoading) {
+    return <PageLoader />;
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-[75dvh] bg-[#FFF9F2] dark:bg-[#131B24] flex items-center justify-center p-4 sm:p-6 transition-colors duration-200">
+        <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-[#1A2433] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xl text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-[#FFF5F2] dark:bg-[#2C1D1A] text-[#E85D3F] border border-[#E85D3F]/20 flex items-center justify-center shadow-inner">
+            <Lock size={30} />
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FFF5F2] dark:bg-[#2C1D1A] text-[#E85D3F] text-[11px] font-bold">
+              <GraduationCap size={13} />
+              <span>Không Gian Lớp Học HanziGo</span>
+            </div>
+            <h2 className="text-xl font-black text-[#243447] dark:text-white">
+              Đăng nhập để xem Lớp học
+            </h2>
+            <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
+              Danh sách lớp học, bài tập về nhà, tài liệu và phòng học trực tuyến chỉ hiển thị khi bạn đã đăng nhập tài khoản HanziGo.
+            </p>
+          </div>
+
+          <div className="space-y-2.5 pt-2">
+            {openAuthModal && (
+              <>
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    openAuthModal('login');
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#E85D3F]/30"
+                >
+                  <LogIn size={15} />
+                  <span>Đăng nhập ngay</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    openAuthModal('register');
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#FFF5F2] dark:bg-[#2C1D1A] hover:bg-[#FFE8E0] dark:hover:bg-[#3A2521] text-[#E85D3F] font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#E85D3F]/25"
+                >
+                  <UserPlus size={15} />
+                  <span>Đăng ký tài khoản mới</span>
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={() => {
+                playClickSound();
+                if (setActiveTab) {
+                  setActiveTab('home');
+                } else {
+                  window.location.hash = '#home';
+                }
+              }}
+              className="w-full py-2.5 px-4 rounded-xl bg-[#FFF9F2] dark:bg-[#243447] hover:bg-[#F1E5D8] dark:hover:bg-[#2B3A4F] text-[#243447] dark:text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#F1E5D8] dark:border-[#2B3A4F]"
+            >
+              <ArrowLeft size={15} />
+              <span>Quay lại Trang chủ</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-[#FFF9F2] dark:bg-[#131B24] py-6 sm:py-10 transition-colors duration-200">

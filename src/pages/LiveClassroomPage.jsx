@@ -122,7 +122,8 @@ export default function LiveClassroomPage({
   user,
   classId,
   sessionId,
-  onNavigateBack
+  onNavigateBack,
+  openAuthModal = null
 }) {
   // Access and Auth state
   const [authChecking, setAuthChecking] = useState(true);
@@ -952,16 +953,26 @@ export default function LiveClassroomPage({
         </div>
         <h2 className="text-xl font-bold text-white mb-2">Không thể truy cập phòng học</h2>
         <p className="text-sm text-white/60 text-center max-w-md mb-8">{accessDeniedReason}</p>
-        <button
-          onClick={() => {
-            if (onNavigateBack) onNavigateBack();
-            else window.location.hash = `#classroom/${classId}`;
-          }}
-          className="px-6 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-lg"
-        >
-          <ArrowLeft size={16} />
-          <span>Quay lại lớp học</span>
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {!user && openAuthModal && (
+            <button
+              onClick={() => openAuthModal('login')}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-lg"
+            >
+              <span>Đăng nhập ngay</span>
+            </button>
+          )}
+          <button
+            onClick={() => {
+              if (onNavigateBack) onNavigateBack();
+              else window.location.hash = `#classroom/${classId}`;
+            }}
+            className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-2 cursor-pointer border border-white/15"
+          >
+            <ArrowLeft size={16} />
+            <span>Quay lại lớp học</span>
+          </button>
+        </div>
       </div>
     );
   }

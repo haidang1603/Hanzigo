@@ -293,9 +293,18 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
   useEffect(() => {
     let isMounted = true;
     async function loadClassroomAssignments() {
+      const studentId = user?.uid || user?.id;
+      if (!studentId || studentId === 'user_guest') {
+        if (isMounted) {
+          setStudentClassrooms([]);
+          setStudentAssignments([]);
+          setLoadingClassroomData(false);
+        }
+        return;
+      }
+
       setLoadingClassroomData(true);
       try {
-        const studentId = user?.uid || user?.id || 'user_guest';
         const classrooms = await getClassroomsForStudent(studentId);
         if (!isMounted) return;
         setStudentClassrooms(classrooms || []);
