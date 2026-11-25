@@ -103,6 +103,73 @@ export async function registerWithEmail(email, password, name, level = 'HSK 1 - 
 }
 
 /**
+ * Shared profile lookup & normalization for authenticated Supabase users.
+ */
+async function buildNormalizedProfileUser(user, fallbackEmail = '', fallbackRole = 'student') {
+  const cleanFallbackRole = fallbackRole === 'teacher' ? 'teacher' : 'student';
+  const effectiveEmail = user?.email || fallbackEmail || '';
+
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profile) {
+      if (profile.status === 'blocked') {
+        await supabase.auth.signOut().catch(() => {});
+        throw new Error('Tài khoản đã bị tạm khóa hoặc vô hiệu hóa. Vui lòng liên hệ quản trị viên.');
+      }
+
+      const validRoles = ['student', 'teacher', 'admin', 'moderator'];
+      const finalRole = validRoles.includes(profile.role) ? profile.role : cleanFallbackRole;
+      const safeXp = profile.xp === 9999 ? 50 : (profile.xp ?? 50);
+
+      return {
+        uid: user.id,
+        id: user.id,
+        name:
+          profile.name ||
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.user_metadata?.display_name ||
+          effectiveEmail.split('@')[0],
+        email: profile.email || effectiveEmail,
+        level: profile.level || 'HSK 1 - Sơ cấp',
+        avatar: profile.avatar || user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        role: finalRole,
+        status: profile.status || 'active',
+        streak: profile.streak || 0,
+        xp: safeXp,
+        wordsLearned: profile.words_learned || 0,
+      };
+    }
+  } catch (err) {
+    if (err.message?.includes('tạm khóa')) throw err;
+    console.warn('Supabase profile read notice:', err);
+  }
+
+  return {
+    uid: user.id,
+    id: user.id,
+    name:
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.user_metadata?.display_name ||
+      effectiveEmail.split('@')[0],
+    email: effectiveEmail,
+    level: user.user_metadata?.level || 'HSK 1 - Sơ cấp',
+    avatar: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+    role: cleanFallbackRole,
+    status: 'active',
+    streak: 0,
+    xp: 50,
+    wordsLearned: 0,
+  };
+}
+
+/**
  * Login with Email and Password with designated role (student | teacher)
  * Zero-Trust: Authoritative role and status are read directly from public.profiles.
  * Removed non-existent RPC call set_user_role_on_login (BUG-01).
@@ -119,63 +186,71 @@ export async function loginWithEmail(email, password, targetRole = 'student') {
 
   if (error) throw error;
 
-  const user = data.user;
-  const cleanTargetRole = targetRole === 'teacher' ? 'teacher' : 'student';
+  return buildNormalizedProfileUser(data.user, email, targetRole);
+}
 
-  // Fetch verified profile from `profiles` table
+export function getGoogleOAuthClientId() {
   try {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (profile) {
-      if (profile.status === 'blocked') {
-        await supabase.auth.signOut().catch(() => {});
-        throw new Error('Tài khoản đã bị tạm khóa hoặc vô hiệu hóa. Vui lòng liên hệ quản trị viên.');
-      }
-
-      // Authoritative role from database
-      const validRoles = ['student', 'teacher', 'admin', 'moderator'];
-      const finalRole = validRoles.includes(profile.role) ? profile.role : cleanTargetRole;
-      const safeXp = profile.xp === 9999 ? 50 : (profile.xp ?? 50);
-
-      return {
-        uid: user.id,
-        id: user.id,
-        name: profile.name || user.user_metadata?.display_name || email.split('@')[0],
-        email: profile.email || user.email,
-        level: profile.level || 'HSK 1 - Sơ cấp',
-        avatar: profile.avatar || null,
-        role: finalRole,
-        status: profile.status || 'active',
-        streak: profile.streak || 0,
-        xp: safeXp,
-        wordsLearned: profile.words_learned || 0
-      };
+    if (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_GOOGLE_CLIENT_ID) {
+      return String(import.meta.env.VITE_GOOGLE_CLIENT_ID).trim();
     }
-  } catch (err) {
-    if (err.message?.includes('tạm khóa')) throw err;
-    console.warn('Supabase profile read notice:', err);
-  }
-
-  return {
-    uid: user.id,
-    id: user.id,
-    name: user.user_metadata?.display_name || email.split('@')[0],
-    email: user.email,
-    level: user.user_metadata?.level || 'HSK 1 - Sơ cấp',
-    role: cleanTargetRole,
-    status: 'active',
-    streak: 0,
-    xp: 50,
-    wordsLearned: 0
-  };
+    if (typeof process !== 'undefined' && process?.env?.VITE_GOOGLE_CLIENT_ID) {
+      return String(process.env.VITE_GOOGLE_CLIENT_ID).trim();
+    }
+  } catch {}
+  return '';
 }
 
 /**
- * Login with Google OAuth (Real Supabase OAuth Flow)
+ * Generates a cryptographic rawNonce (sent to Supabase) and SHA-256 hex hashedNonce (sent to Google GIS).
+ */
+export async function generateGoogleOAuthNonce() {
+  let rawNonce = '';
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    rawNonce = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  } else {
+    rawNonce = generateUuid().replace(/-/g, '');
+  }
+
+  let hashedNonce = rawNonce;
+  if (typeof crypto !== 'undefined' && crypto.subtle?.digest && typeof TextEncoder !== 'undefined') {
+    const encoded = new TextEncoder().encode(rawNonce);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+    hashedNonce = Array.from(new Uint8Array(hashBuffer), (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  return { rawNonce, hashedNonce };
+}
+
+/**
+ * Login directly via Google Identity Services ID Token without redirecting to *.supabase.co
+ */
+export async function loginWithGoogleIdToken(credential, nonce = '') {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase chưa được cấu hình. Vui lòng thiết lập VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY.');
+  }
+  if (!credential || typeof credential !== 'string') {
+    throw new Error('Thiếu Google ID token hợp lệ.');
+  }
+
+  const { data, error } = await supabase.auth.signInWithIdToken({
+    provider: 'google',
+    token: credential,
+    ...(nonce ? { nonce } : {}),
+  });
+
+  if (error) throw error;
+  if (!data?.user) {
+    throw new Error('Không thể xác thực tài khoản Google.');
+  }
+
+  return buildNormalizedProfileUser(data.user, data.user.email || '', 'student');
+}
+
+/**
+ * Login with Google OAuth (Real Supabase OAuth Flow fallback)
  */
 export async function loginWithGoogle() {
   if (!isSupabaseConfigured || !supabase) {

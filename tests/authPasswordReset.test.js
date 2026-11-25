@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import { 
   isValidEmailFormat, 
@@ -167,4 +169,33 @@ test('Nhóm D2: Non-existent RPC set_user_role_on_login is never called', async 
   assert.equal(typeof authModule.registerWithEmail, 'function');
   assert.equal(typeof authModule.requestPasswordReset, 'function');
   assert.equal(typeof authModule.updateNewPassword, 'function');
+});
+
+test('Nhóm D3: Google Identity Services (signInWithIdToken) nonce helper & AuthModal integration', async () => {
+  const authModule = await import('../src/services/authService.js');
+  assert.equal(typeof authModule.generateGoogleOAuthNonce, 'function');
+  assert.equal(typeof authModule.loginWithGoogleIdToken, 'function');
+  assert.equal(typeof authModule.getGoogleOAuthClientId, 'function');
+
+  const n1 = await authModule.generateGoogleOAuthNonce();
+  const n2 = await authModule.generateGoogleOAuthNonce();
+  assert.match(n1.rawNonce, /^[a-f0-9]{32}$/);
+  assert.match(n1.hashedNonce, /^[a-f0-9]{64}$/);
+  assert.notEqual(n1.rawNonce, n2.rawNonce);
+
+  await assert.rejects(
+    () => authModule.loginWithGoogleIdToken('fake-token', n1.rawNonce),
+    /Supabase chưa được cấu hình/
+  );
+
+  const modalSrc = fs.readFileSync(path.resolve('src/components/AuthModal.jsx'), 'utf8');
+  assert.match(modalSrc, /accounts\.google\.com\/gsi\/client/);
+  assert.match(modalSrc, /loginWithGoogleIdToken\(/);
+  assert.match(modalSrc, /handleGoogleLogin/);
+
+  const vercelCfg = fs.readFileSync(path.resolve('vercel.json'), 'utf8');
+  assert.match(vercelCfg, /https:\/\/accounts\.google\.com/);
+
+  const envExample = fs.readFileSync(path.resolve('.env.example'), 'utf8');
+  assert.match(envExample, /VITE_GOOGLE_CLIENT_ID=/);
 });

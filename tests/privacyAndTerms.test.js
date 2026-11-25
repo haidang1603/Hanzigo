@@ -101,7 +101,7 @@ test('6. COOKIE & REFUND POLICIES: Components exist and accurately reflect syste
   assert.ok(refundContent.includes('Checklist') || refundContent.includes('thương mại'), 'Should contain commercialization checklist');
 });
 
-test('7. AUTH MODAL: Accessible dialog, pre-collection notice, and consent checkboxes for login and registration', () => {
+test('7. AUTH MODAL: Accessible dialog, streamlined registration fields, and consent checkboxes for login and registration', () => {
   const authModalPath = path.join(projectRoot, 'src', 'components', 'AuthModal.jsx');
   const authContent = fs.readFileSync(authModalPath, 'utf8');
 
@@ -109,7 +109,9 @@ test('7. AUTH MODAL: Accessible dialog, pre-collection notice, and consent check
   assert.ok(authContent.includes('aria-modal="true"'), 'AuthModal should have aria-modal="true"');
   assert.ok(authContent.includes('Escape'), 'AuthModal should support Escape key dismissal');
   assert.ok(authContent.includes('agreeTerms'), 'AuthModal should have agreeTerms state');
-  assert.ok(authContent.includes('Thông báo thu thập:'), 'AuthModal should have pre-collection notice');
+  assert.ok(!authContent.includes('Trình độ tiếng Trung hiện tại'), 'AuthModal should omit Chinese level selector on registration');
+  assert.ok(!authContent.includes('Thông báo thu thập:'), 'AuthModal should omit pre-collection notice box');
+  assert.ok(!authContent.includes('(Tùy chọn)'), 'AuthModal should omit optional marketing checkbox');
   assert.ok(authContent.includes("mode === 'login'"), 'AuthModal should render terms checkbox in login mode');
   assert.ok(authContent.includes("mode === 'register'"), 'AuthModal should render terms checkbox in register mode');
   assert.ok(authContent.includes("if (!agreeTerms)"), 'AuthModal should validate agreeTerms before submit and Google login');
