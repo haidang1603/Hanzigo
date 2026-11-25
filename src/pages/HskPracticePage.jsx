@@ -2392,7 +2392,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
 
       {/* Top Header & Sticky Timer */}
       <div className="sticky top-0 z-30 bg-[#FFF9F2]/95 dark:bg-slate-950/95 backdrop-blur-md py-1.5 sm:py-3 border-b border-slate-200 dark:border-slate-800 mb-3 sm:mb-6 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-        <div className="min-w-0 flex-1">
+        <div className="w-full sm:w-auto sm:flex-1 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xs font-black text-[#E85D3F] uppercase tracking-wider truncate">
               {exam.level} • {exam.title}
@@ -2415,7 +2415,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 shrink-0">
+        <div className="w-full sm:w-auto flex flex-wrap items-center justify-between sm:justify-end gap-1.5 sm:gap-2.5 shrink-0">
           {/* Mode Switch Toggle */}
           <div className="hidden sm:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-[11px] font-bold">
             <button

@@ -76,10 +76,10 @@ export default function AppHeader({
 
   return (
     <header className="sticky top-0 z-30 bg-[#FFF9F2]/95 dark:bg-[#131B24]/95 backdrop-blur-md border-b border-[#F1E5D8] dark:border-[#2B3A4F] transition-colors duration-200">
-      <div className="w-full px-3 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
+      <div className="w-full px-2 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-1.5 sm:gap-3">
         
         {/* Left Side: Mobile Menu Button + Breadcrumbs Trail */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
           {/* Mobile Menu Hamburger */}
           <button
             type="button"
@@ -98,8 +98,8 @@ export default function AppHeader({
             onClick={() => handleNavClick('home')}
             className="lg:hidden flex items-center gap-1.5 cursor-pointer shrink-0"
           >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#E85D3F] to-[#CB4529] flex items-center justify-center text-white font-bold shadow-xs">
-              <span className="font-['Noto_Serif_SC'] text-lg font-black">汉</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-[#E85D3F] to-[#CB4529] flex items-center justify-center text-white font-bold shadow-xs">
+              <span className="font-['Noto_Serif_SC'] text-base sm:text-lg font-black">汉</span>
             </div>
           </div>
 
@@ -114,7 +114,7 @@ export default function AppHeader({
         </div>
 
         {/* Right Side: Smart Suggestions + Command Search + Gamification + Toggles + User */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Smart Contextual Next-Step Pills */}
           {smartPicks.length > 0 && (
             <div className="hidden 2xl:flex items-center gap-1.5 mr-1 px-2 py-1 rounded-2xl bg-white/80 dark:bg-[#1E293B]/80 border border-[#F1E5D8] dark:border-[#2B3A4F]">
@@ -159,7 +159,7 @@ export default function AppHeader({
               if (onOpenCommandPalette) onOpenCommandPalette();
             }}
             aria-label="Mở tìm kiếm nhanh (Ctrl + K)"
-            className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] dark:text-[#94A3B8] hover:text-[#E85D3F] hover:border-[#E85D3F] text-xs font-semibold shadow-2xs transition-all active:scale-95 cursor-pointer"
+            className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] dark:text-[#94A3B8] hover:text-[#E85D3F] hover:border-[#E85D3F] text-xs font-semibold shadow-2xs transition-all active:scale-95 cursor-pointer"
             title="Tìm kiếm nhanh toàn cục (Ctrl + K / Cmd + K)"
           >
             <Search size={15} className="text-[#E85D3F]" />
@@ -207,7 +207,7 @@ export default function AppHeader({
               }}
               aria-label={soundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}
               title={soundEnabled ? 'Âm thanh: Bật' : 'Âm thanh: Tắt'}
-              className="min-h-11 px-2 py-1.5 rounded-lg text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] hover:text-[#E85D3F] transition-colors cursor-pointer flex items-center justify-center"
+              className="min-h-11 px-1.5 sm:px-2 py-1.5 rounded-lg text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] hover:text-[#E85D3F] transition-colors cursor-pointer flex items-center justify-center"
             >
               {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} className="text-red-400" />}
             </button>
@@ -220,7 +220,7 @@ export default function AppHeader({
               }}
               aria-label={darkMode ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
               title={darkMode ? 'Giao diện: Tối' : 'Giao diện: Sáng'}
-              className="min-h-11 px-2 py-1.5 rounded-lg text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] hover:text-[#E85D3F] transition-colors cursor-pointer flex items-center justify-center"
+              className="min-h-11 px-1.5 sm:px-2 py-1.5 rounded-lg text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] hover:text-[#E85D3F] transition-colors cursor-pointer flex items-center justify-center"
             >
               {darkMode ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} />}
             </button>
@@ -350,7 +350,7 @@ export default function AppHeader({
               <button
                 type="button"
                 onClick={() => handleNavClick('roadmap')}
-                className="min-h-11 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-linear-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-md shadow-[#E85D3F]/25 hover:shadow-lg transition-all cursor-pointer whitespace-nowrap"
+                className="min-h-11 px-2.5 sm:px-3.5 py-1.5 text-xs font-bold rounded-xl bg-linear-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-md shadow-[#E85D3F]/25 hover:shadow-lg transition-all cursor-pointer whitespace-nowrap"
               >
                 Bắt đầu học
               </button>
