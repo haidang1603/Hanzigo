@@ -34,6 +34,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'true_false',
     prompt: '请听录音，判断对错：他这个周末打算去游泳。',
+    pinyin: 'Qǐng tīng lùyīn, pànduàn duìcuò: Tā zhège zhōumò dǎsuàn qù yóuyǒng.',
     audioText: '这个周末天气太冷了，我不想去游泳，想在家看电影。',
     options: [
       '对',
@@ -50,6 +51,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'true_false',
     prompt: '请听录音，判断对错：那只白色的小狗跑得很快。',
+    pinyin: 'Qǐng tīng lùyīn, pànduàn duìcuò: Nà zhī báisè de xiǎogǒu pǎo de hěn kuài.',
     audioText: '你看，前面那只白颜色的小狗跑得真快！',
     options: [
       '对',
@@ -66,6 +68,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'true_false',
     prompt: '请听录音，判断对错：张先生的新房子离公司很远。',
+    pinyin: 'Qǐng tīng lùyīn, pànduàn duìcuò: Zhāng xiānsheng de xīn fángzi lí gōngsī hěn yuǎn.',
     audioText: '张先生的新房子离公司很近，他每天走路去上班。',
     options: [
       '对',
@@ -82,6 +85,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'true_false',
     prompt: '请听录音，判断对错：昨天晚上她很早就休息了。',
+    pinyin: 'Qǐng tīng lùyīn, pànduàn duìcuò: Zuótiān wǎnshang tā hěn zǎo jiù xiūxi le.',
     audioText: '昨天晚上她十点半就休息了，今天早上六点起床。',
     options: [
       '对',
@@ -98,6 +102,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'true_false',
     prompt: '请听录音，判断对错：今天的电影票比昨天贵。',
+    pinyin: 'Qǐng tīng lùyīn, pànduàn duìcuò: Jīntiān de diànyǐngpiào bǐ zuótiān guì.',
     audioText: '今天是星期二，电影票比昨天便宜多了，只要三十块钱。',
     options: [
       '对',
@@ -114,6 +119,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'true_false',
     prompt: '请听录音，判断对错：同学帮她找到了钥匙。',
+    pinyin: 'Qǐng tīng lùyīn, pànduàn duìcuò: Tóngxué bāng tā zhǎodào le yàoshi.',
     audioText: '早上我的钥匙找不到了，后来同学在教室里帮我找到了。',
     options: [
       '对',
@@ -134,6 +140,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'mcq',
     prompt: '请听对话，选择正确的情景：',
+    pinyin: 'Qǐng tīng duìhuà, xuǎnzé zhèngquè de qíngjǐng:',
     audioText: '男：服务员，请问洗手间在哪里？女：您往左走，就在电梯旁边。',
     options: [
       'A. 在饭店或宾馆问洗手间在哪里',
@@ -151,6 +158,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'mcq',
     prompt: '请听对话，选择正确的描述：',
+    pinyin: 'Qǐng tīng duìhuà, xuǎnzé zhèngquè de miáoshù:',
     audioText: '男：这件红色的裙子真漂亮，给女儿买吧。女：好啊，不知道她穿多大号的。',
     options: [
       'A. 夫妻俩在给女儿选红裙子',
@@ -168,6 +176,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'mcq',
     prompt: '请听录音，王明最喜欢什么运动？',
+    pinyin: 'Qǐng tīng lùyīn, Wáng Míng zuì xǐhuan shénme yùndòng?',
     audioText: '王明每个星期天都跟朋友一起去打篮球，他觉得打篮球很有意思。',
     options: [
       'A. 踢足球',
@@ -185,6 +194,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'mcq',
     prompt: '请听对话，男的为什么不去喝咖啡？',
+    pinyin: 'Qǐng tīng duìhuà, nán de wèishénme bú qù hē kāfēi?',
     audioText: '女：我们一起去喝咖啡吧。男：不行，我还要去机场接姐姐。',
     options: [
       'A. 他头疼需要休息',
@@ -202,6 +212,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'mcq',
     prompt: '请听对话，女的想买什么？',
+    pinyin: 'Qǐng tīng duìhuà, nǚ de xiǎng mǎi shénme?',
     audioText: '女：请问，那支黑色的铅笔怎么卖？男：两块钱一支。',
     options: [
       'A. 黑色的铅笔',
@@ -219,6 +230,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'mcq',
     prompt: '请听录音，李老师怎么了？',
+    pinyin: 'Qǐng tīng lùyīn, Lǐ lǎoshī zěnme le?',
     audioText: '李老师感冒了，医生让他多喝水，好好儿休息两天。',
     options: [
       'A. 李老师腿疼',
@@ -240,6 +252,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '请听对话，男的来中国多长时间了？',
+    pinyin: 'Qǐng tīng duìhuà, nán de lái Zhōngguó duō cháng shíjiān le?',
     audioText: '女：你的汉语说得真好！你来中国几年了？男：我前年来的，已经两年多了。问：男的来中国多长时间了？',
     options: [
       'A. 刚来六个月',
@@ -257,6 +270,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '请听对话，女的昨晚为什么很晚才睡？',
+    pinyin: 'Qǐng tīng duìhuà, nǚ de zuówǎn wèishénme hěn wǎn cái shuì?',
     audioText: '男：你看起来很累，昨晚没睡好吗？女：是啊，为了准备今天的考试，我复习到十一点。问：女的昨晚为什么很晚才睡？',
     options: [
       'A. 在电视上看足球比赛',
@@ -274,6 +288,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '请听对话，书店几点关门？',
+    pinyin: 'Qǐng tīng duìhuà, shūdiàn jǐ diǎn guānmén?',
     audioText: '女：现在已经晚上八点半了，书店还开着吗？男：开着呢，那家书店晚上九点才关门，我们快走吧。问：书店几点关门？',
     options: [
       'A. 晚上八点半',
@@ -291,6 +306,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '请听对话，男的现在更喜欢什么运动？',
+    pinyin: 'Qǐng tīng duìhuà, nán de xiànzài gèng xǐhuan shénme yùndòng?',
     audioText: '女：你喜欢跑步还是游泳？男：以前我经常跑步，不过现在我觉得游泳更有意思。问：男的现在更喜欢什么运动？',
     options: [
       'A. 跑步',
@@ -308,6 +324,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '请听对话，他们明天几点见面？',
+    pinyin: 'Qǐng tīng duìhuà, tāmen míngtiān jǐ diǎn jiànmiàn?',
     audioText: '男：明天早上八点我在地铁站等你，好吗？女：八点太早了，我们八点半见面吧，然后一起坐车去。问：他们明天几点见面？',
     options: [
       'A. 8点00',
@@ -325,6 +342,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '请听对话，这本小说是谁的？',
+    pinyin: 'Qǐng tīng duìhuà, zhè běn xiǎoshuō shì shéi de?',
     audioText: '女：桌上的这本小说是你的吗？男：不是我的，是我向小刘借的，下周要还给他。问：这本小说是谁的？',
     options: [
       'A. 男的的',
@@ -342,6 +360,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '请听对话，她打算穿什么颜色的外套？',
+    pinyin: 'Qǐng tīng duìhuà, tā dǎsuàn chuān shénme yánsè de wàitào?',
     audioText: '男：外面风很大，你穿一件外套再出去吧。女：好，我就穿那件黄色的吧，又暖和又好看。问：她打算穿什么颜色的外套？',
     options: [
       'A. 蓝色的',
@@ -363,6 +382,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 4,
     questionType: 'mcq',
     prompt: '请听录音，小王今天早上吃什么了？',
+    pinyin: 'Qǐng tīng lùyīn, Xiǎo Wáng jīntiān zǎoshang chī shénme le?',
     audioText: '小王今天早上七点半才起床，因为时间不够了，所以他没在家吃早饭，买了一个面包在路上吃。问：小王今天早上吃什么了？',
     options: [
       'A. 一碗热面条',
@@ -380,6 +400,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 4,
     questionType: 'mcq',
     prompt: '请听录音，生日会在哪里举行？',
+    pinyin: 'Qǐng tīng lùyīn, shēngrìhuì zài nǎlǐ jǔxíng?',
     audioText: '明天下午四点是我们班张老师的生日会，大家都在学校旁边的茶馆等她，千万别告诉她，我们要给她一个惊喜。问：生日会在哪里举行？',
     options: [
       'A. 学校旁边的茶馆',
@@ -397,6 +418,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 4,
     questionType: 'mcq',
     prompt: '请听录音，这里哪个季节最舒服？',
+    pinyin: 'Qǐng tīng lùyīn, zhèlǐ nǎge jìjié zuì shūfu?',
     audioText: '这里冬天很冷，夏天又很热，只有秋天最舒服，树叶变成黄色，非常漂亮。问：这里哪个季节最舒服？',
     options: [
       'A. 冬天',
@@ -414,6 +436,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 4,
     questionType: 'mcq',
     prompt: '请听对话，女的觉得这双鞋怎么样？',
+    pinyin: 'Qǐng tīng duìhuà, nǚ de juéde zhè shuāng xié zěnmeyàng?',
     audioText: '女：我想试一下那双白色的运动鞋，37号的。男：给您。女：嗯，穿着很舒服，一点儿也不小。就买这双吧。问：女的觉得这双鞋怎么样？',
     options: [
       'A. 穿着有点儿小',
@@ -431,6 +454,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 4,
     questionType: 'mcq',
     prompt: '请听录音，爸爸怎么去学校？',
+    pinyin: 'Qǐng tīng lùyīn, bàba zěnme qù xuéxiào?',
     audioText: '我爸爸是一位数学老师。他每天早上骑自行车去学校上课，从家里到学校只要十五分钟。问：爸爸怎么去学校？',
     options: [
       'A. 骑自行车',
@@ -448,6 +472,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 4,
     questionType: 'mcq',
     prompt: '请听对话，高铁几点开？',
+    pinyin: 'Qǐng tīng duìhuà, gāotiě jǐ diǎn kāi?',
     audioText: '女：请问，开往上海的高铁是不是十点十分开车？男：不是，今天晚点二十分钟，十点半才开。问：高铁几点开？',
     options: [
       'A. 十点十分',
@@ -469,6 +494,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'mcq',
     prompt: '朋友要坐飞机去远方旅游，你应该怎么祝他？',
+    pinyin: 'Péngyou yào zuò fēijī qù yuǎnfāng lǚyóu, nǐ yīnggāi zěnme zhù tā?',
     options: [
       'A. 祝你一路平安！',
       'B. 祝你生日快乐！',
@@ -485,6 +511,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'mcq',
     prompt: '选出表示“哥哥比弟弟高很多”的句子：',
+    pinyin: 'Xuǎnchū biǎoshì “gēge bǐ dìdi gāo hěn duō” de jùzi:',
     options: [
       'A. 哥哥没有弟弟高。',
       'B. 哥哥比弟弟高得多。',
@@ -501,6 +528,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'mcq',
     prompt: '在医院或药店，医生最可能对病人说哪句话？',
+    pinyin: 'Zài yīyuàn huò yàodiàn, yīshēng zuì kěnéng duì bìngrén shuō nǎ jù huà?',
     options: [
       'A. 这个药一天吃三次，饭后吃。',
       'B. 请把这件衬衫洗干净。',
@@ -517,6 +545,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'mcq',
     prompt: '哪句话表示动作“很快就要发生了”？',
+    pinyin: 'Nǎ jù huà biǎoshì dòngzuò “hěn kuài jiù yào fāshēng le”?',
     options: [
       'A. 我吃过北京烤鸭。',
       'B. 快要下雨了，我们快回家吧。',
@@ -533,6 +562,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'mcq',
     prompt: '想礼貌地请别人帮忙关一下窗户，应该说哪句话？',
+    pinyin: 'Xiǎng lǐmào de qǐng biérén bāngmáng guān yíxià chuānghu, yīnggāi shuō nǎ jù huà?',
     options: [
       'A. 请帮我把窗户关上，好吗？',
       'B. 你快去开门！',
@@ -549,6 +579,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'mcq',
     prompt: '选出表示曾经去过北京的句子：',
+    pinyin: 'Xuǎnchū biǎoshì céngjīng qùguo Běijīng de jùzi:',
     options: [
       'A. 我正在去北京的路上。',
       'B. 我去过一次北京。',
@@ -569,6 +600,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'fill_blank',
     prompt: '选择正确的关联词填空（因为 / 所以）：____下雨了，所以我们不去爬山了。',
+    pinyin: 'Xuǎnzé zhèngquè de guānliáncí tiánkòng (yīnwèi / suǒyǐ): ____ xiàyǔ le, suǒyǐ wǒmen bú qù páshān le.',
     expectedAnswer: '因为',
     acceptedAnswers: ['因为'],
     explanationVi: 'Cặp liên từ nhân quả "因为……所以……" (Vì trời mưa rồi nên chúng tôi không đi leo núi nữa).',
@@ -581,6 +613,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'fill_blank',
     prompt: '请填写正确的比较词：今天的作业____昨天少一点儿。',
+    pinyin: 'Qǐng tiánxiě zhèngquè de bǐjiàocí: Jīntiān de zuòyè ____ zuótiān shǎo yìdiǎnr.',
     expectedAnswer: '比',
     acceptedAnswers: ['比'],
     explanationVi: 'Câu so sánh hơn dùng giới từ "比" (bǐ): 今天的作业比昨天少一点儿 (Bài tập hôm nay ít hơn hôm qua một chút).',
@@ -593,6 +626,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'fill_blank',
     prompt: '请填写正确的结构助词：妹妹唱____非常好听！',
+    pinyin: 'Qǐng tiánxiě zhèngquè de jiégòu zhùcí: Mèimei chàng ____ fēicháng hǎotīng!',
     expectedAnswer: '得',
     acceptedAnswers: ['得'],
     explanationVi: 'Sau động từ "唱" (hát) nối với tính từ đánh giá mức độ "非常好听" bắt buộc dùng trợ từ kết cấu "得" (de).',
@@ -605,6 +639,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'fill_blank',
     prompt: '请填写正确的量词：请给我两____白纸，我想写字。',
+    pinyin: 'Qǐng tiánxiě zhèngquè de liàngcí: Qǐng gěi wǒ liǎng ____ báizhǐ, wǒ xiǎng xiězì.',
     expectedAnswer: '张',
     acceptedAnswers: ['张'],
     explanationVi: 'Lượng từ cho vật có bề mặt phẳng mỏng như giấy (纸), vé, bàn, ảnh là "张" (zhāng).',
@@ -617,6 +652,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'fill_blank',
     prompt: '选择正确的副词填空（已经 / 正在）：飞机____起飞了，你别着急。',
+    pinyin: 'Xuǎnzé zhèngquè de fùcí tiánkòng (yǐjīng / zhèngzài): Fēijī ____ qǐfēi le, nǐ bié zháojí.',
     expectedAnswer: '已经',
     acceptedAnswers: ['已经'],
     explanationVi: 'Kết hợp với "了" cuối câu để chỉ hành động đã hoàn thành hoặc xảy ra rồi: "已经……了" (Máy bay đã cất cánh rồi).',
@@ -629,6 +665,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'fill_blank',
     prompt: '选择正确的副词填空（再 / 又）：这道菜太好吃了，我下星期____来吃。',
+    pinyin: 'Xuǎnzé zhèngquè de fùcí tiánkòng (zài / yòu): Zhè dào cài tài hǎochī le, wǒ xià xīngqī ____ lái chī.',
     expectedAnswer: '再',
     acceptedAnswers: ['再'],
     explanationVi: '"再" dùng cho hành động lặp lại chưa xảy ra trong tương lai (Tuần sau tôi lại đến ăn). "又" dùng cho việc đã lặp lại trong quá khứ/hiện tại.',
@@ -645,6 +682,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '选择最合适的回答：A：“你每天坐公共汽车去公司，累不累？”',
+    pinyin: 'Xuǎnzé zuì héshì de huídá: A: “Nǐ měitiān zuò gōnggòng qìchē qù gōngsī, lèi bu lèi?”',
     options: [
       'A. 不累，我常常在车上听歌看报。',
       'B. 公司旁边有一个很大的饭店。',
@@ -661,6 +699,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '选择最合适的回答：A：“请问，从这儿到银行要走多长时间？”',
+    pinyin: 'Xuǎnzé zuì héshì de huídá: A: “Qǐngwèn, cóng zhèr dào yínháng yào zǒu duō cháng shíjiān?”',
     options: [
       'A. 大约十分钟就到了。',
       'B. 我哥哥在银行工作。',
@@ -677,6 +716,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '选择最合适的回答：A：“王方今天怎么没来上班？”',
+    pinyin: 'Xuǎnzé zuì héshì de huídá: A: “Wáng Fāng jīntiān zěnme méi lái shàngbān?”',
     options: [
       'A. 她生病了，去医院看病了。',
       'B. 她每天都很早来公司。',
@@ -693,6 +733,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '选择最合适的回答：A：“你觉得这双皮鞋怎么样？”',
+    pinyin: 'Xuǎnzé zuì héshì de huídá: A: “Nǐ juéde zhè shuāng píxié zěnmeyàng?”',
     options: [
       'A. 样子挺好看的，就是稍微有点儿贵。',
       'B. 我想买一件白色的衬衫。',
@@ -709,6 +750,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '选择最合适的回答：A：“别看电视了，快去准备明天的考试吧！”',
+    pinyin: 'Xuǎnzé zuì héshì de huídá: A: “Bié kàn diànshì le, kuài qù zhǔnbèi míngtiān de kǎoshì ba!”',
     options: [
       'A. 妈妈，我已经复习好了！',
       'B. 电视节目从八点开始。',
@@ -725,6 +767,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '选择最合适的回答：A：“你的汉语是在哪儿学的？这么流利！”',
+    pinyin: 'Xuǎnzé zuì héshì de huídá: A: “Nǐ de Hànyǔ shì zài nǎr xué de? Zhème liúlì!”',
     options: [
       'A. 我在河内学了两年，然后去北京进修了一年。',
       'B. 我每天都写五十个汉字。',
@@ -741,6 +784,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 3,
     questionType: 'mcq',
     prompt: '选择最合适的回答：A：“您喝点儿什么？茶还是咖啡？”',
+    pinyin: 'Xuǎnzé zuì héshì de huídá: A: “Nín hē diǎnr shénme? Chá háishi kāfēi?”',
     options: [
       'A. 请给我一杯绿茶，谢谢。',
       'B. 这里的菜味道不错。',
@@ -761,6 +805,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 4,
     questionType: 'true_false',
     prompt: '请阅读句子并判断对错：“我虽然学汉语的时间不长，但是我已经能看懂简单的中文报纸了。” —— 他完全看不懂中文报纸。',
+    pinyin: 'Qǐng yuèdú jùzi bìng pànduàn duìcuò: “Wǒ suīrán xué Hànyǔ de shíjiān bù cháng, dànshì wǒ yǐjīng néng kàndǒng jiǎndān de Zhōngwén bàozhǐ le.” —— Tā wánquán kànbudǒng Zhōngwén bàozhǐ.',
     options: [
       '对',
       '错',
@@ -776,6 +821,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 4,
     questionType: 'true_false',
     prompt: '请阅读句子并判断对错：“离学校不远有一家新开的面馆，那里的牛肉面既便宜又好吃。” —— 新开的面馆又便宜又好吃。',
+    pinyin: 'Qǐng yuèdú jùzi bìng pànduàn duìcuò: “Lí xuéxiào bù yuǎn yǒu yì jiā xīn kāi de miànguǎn, nàlǐ de niúròumiàn jì piányi yòu hǎochī.” —— Xīn kāi de miànguǎn yòu piányi yòu hǎochī.',
     options: [
       '对',
       '错',
@@ -791,6 +837,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 4,
     questionType: 'true_false',
     prompt: '请阅读句子并判断对错：“今天晚上爸爸要加班，不能回来吃晚饭了，让我们先吃，不用等他。” —— 全家人要等爸爸回来一起吃晚饭。',
+    pinyin: 'Qǐng yuèdú jùzi bìng pànduàn duìcuò: “Jīntiān wǎnshang bàba yào jiābān, bù néng huílái chī wǎnfàn le, ràng wǒmen xiān chī, búyòng děng tā.” —— Quánjiārén yào děng bàba huílái yìqǐ chī wǎnfàn.',
     options: [
       '对',
       '错',
@@ -806,6 +853,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 4,
     questionType: 'true_false',
     prompt: '请阅读句子并判断对错：“妹妹刚到上海的时候很不习惯，一个月以后就慢慢习惯了。” —— 一个月以后妹妹慢慢习惯了上海的生活。',
+    pinyin: 'Qǐng yuèdú jùzi bìng pànduàn duìcuò: “Mèimei gāng dào Shànghǎi de shíhou hěn bù xíguàn, yí gè yuè yǐhòu jiù mànmàn xíguàn le.” —— Yí gè yuè yǐhòu mèimei mànmàn xíguàn le Shànghǎi de shēnghuó.',
     options: [
       '对',
       '错',
@@ -821,6 +869,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 4,
     questionType: 'true_false',
     prompt: '请阅读句子并判断对错：“为了健康，李爷爷每天早上七点都去公园打太极拳。” —— 李爷爷每天晚上七点打太极拳。',
+    pinyin: 'Qǐng yuèdú jùzi bìng pànduàn duìcuò: “Wèile jiànkāng, Lǐ yéye měitiān zǎoshang qī diǎn dōu qù gōngyuán dǎ tàijíquán.” —— Lǐ yéye měitiān wǎnshang qī diǎn dǎ tàijíquán.',
     options: [
       '对',
       '错',
@@ -836,6 +885,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 4,
     questionType: 'true_false',
     prompt: '请阅读句子并判断对错：“这次去旅游，我们除了去了西安，还顺便参观了洛阳。” —— 这次旅游他们去了西安和洛阳。',
+    pinyin: 'Qǐng yuèdú jùzi bìng pànduàn duìcuò: “Zhè cì qù lǚyóu, wǒmen chúle qù le Xī’ān, hái shùnbiàn cānguān le Luòyáng.” —— Zhè cì lǚyóu tāmen qù le Xī’ān hé Luòyáng.',
     options: [
       '对',
       '错',
@@ -855,6 +905,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'reorder',
     prompt: '请把下面的词语连成一句话：我 / 书 / 看完 / 把 / 了 / 这本',
+    pinyin: 'Qǐng bǎ xiàmiàn de cíyǔ lián chéng yí jù huà: wǒ / shū / kànwán / bǎ / le / zhè běn',
     words: ['我', '把', '这本', '书', '看完', '了'],
     expectedAnswer: '我把这本书看完了',
     acceptedAnswers: ['我把这本书看完了', '我把这本书看完了。'],
@@ -868,6 +919,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'reorder',
     prompt: '请把下面的词语连成一句话：比 / 今天 / 昨天 / 冷得多 / 的天气',
+    pinyin: 'Qǐng bǎ xiàmiàn de cíyǔ lián chéng yí jù huà: bǐ / jīntiān / zuótiān / lěng de duō / de tiānqì',
     words: ['今天', '的天气', '比', '昨天', '冷得多'],
     expectedAnswer: '今天的天气比昨天冷得多',
     acceptedAnswers: ['今天的天气比昨天冷得多', '今天的天气比昨天冷得多。'],
@@ -881,6 +933,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'reorder',
     prompt: '请把下面的词语连成一句话：在 / 我们 / 图书馆 / 一起 / 学习',
+    pinyin: 'Qǐng bǎ xiàmiàn de cíyǔ lián chéng yí jù huà: zài / wǒmen / túshūguǎn / yìqǐ / xuéxí',
     words: ['我们', '在', '图书馆', '一起', '学习'],
     expectedAnswer: '我们在图书馆一起学习',
     acceptedAnswers: ['我们在图书馆一起学习', '我们在图书馆一起学习。'],
@@ -894,6 +947,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'reorder',
     prompt: '请把下面的词语连成一句话：已经 / 火车 / 十点了 / 走 / 了',
+    pinyin: 'Qǐng bǎ xiàmiàn de cíyǔ lián chéng yí jù huà: yǐjīng / huǒchē / shí diǎn le / zǒu / le',
     words: ['已经', '十点了', '火车', '走', '了'],
     expectedAnswer: '已经十点了火车走了',
     acceptedAnswers: ['已经十点了，火车走了', '已经十点了火车走了', '火车已经走了，十点了', '已经十点了，火车走了。'],
@@ -907,6 +961,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 1,
     questionType: 'reorder',
     prompt: '请把下面的词语连成一句话：游泳 / 弟弟 / 我 / 教 / 会',
+    pinyin: 'Qǐng bǎ xiàmiàn de cíyǔ lián chéng yí jù huà: yóuyǒng / dìdi / wǒ / jiāo / huì',
     words: ['我', '教', '弟弟', '会', '游泳'],
     expectedAnswer: '我教弟弟学游泳',
     acceptedAnswers: ['我教弟弟会游泳', '我教会弟弟游泳', '我教弟弟游泳'],
@@ -924,6 +979,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'fill_blank',
     prompt: '看拼音写汉字：我每天早上七点去学____。（xiào）',
+    pinyin: 'Kàn pīnyīn xiě Hànzì: Wǒ měitiān zǎoshang qī diǎn qù xué ____. (xiào)',
     expectedAnswer: '校',
     acceptedAnswers: ['校', '学校'],
     explanationVi: '"学校" (xuéxiào) là trường học. Chữ cần điền là "校".',
@@ -936,6 +992,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'fill_blank',
     prompt: '看拼音写汉字：哥哥喜欢看足球比____。（sài）',
+    pinyin: 'Kàn pīnyīn xiě Hànzì: Gēge xǐhuan kàn zúqiú bǐ ____. (sài)',
     expectedAnswer: '赛',
     acceptedAnswers: ['赛', '比赛'],
     explanationVi: '"比赛" (bǐsài) nghĩa là trận đấu / thi đấu. Chữ cần điền là "赛".',
@@ -948,6 +1005,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'fill_blank',
     prompt: '看拼音写汉字：这个问题太____了，我不懂。（nán）',
+    pinyin: 'Kàn pīnyīn xiě Hànzì: Zhège wèntí tài ____ le, wǒ bù dǒng. (nán)',
     expectedAnswer: '难',
     acceptedAnswers: ['难'],
     explanationVi: '"难" (nán) là tính từ nghĩa là khó (câu hỏi này khó quá).',
@@ -960,6 +1018,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'fill_blank',
     prompt: '看拼音写汉字：妈妈经常在超市买____果。（shuǐ）',
+    pinyin: 'Kàn pīnyīn xiě Hànzì: Māma jīngcháng zài chāoshì mǎi ____ guǒ. (shuǐ)',
     expectedAnswer: '水',
     acceptedAnswers: ['水', '水果'],
     explanationVi: '"水果" (shuǐguǒ) là hoa quả, trái cây. Chữ cần điền là "水".',
@@ -972,6 +1031,7 @@ export const HSK30_LEVEL2_QUESTIONS = [
     part: 2,
     questionType: 'fill_blank',
     prompt: '看拼音写汉字：请给我一杯____茶。（hóng）',
+    pinyin: 'Kàn pīnyīn xiě Hànzì: Qǐng gěi wǒ yì bēi ____ chá. (hóng)',
     expectedAnswer: '红',
     acceptedAnswers: ['红', '红茶'],
     explanationVi: '"红茶" (hóngchá) là hồng trà (trà đen). Chữ điền chuẩn với gợi ý "hóng" là "红".',

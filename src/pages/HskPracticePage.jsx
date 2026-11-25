@@ -99,6 +99,7 @@ import {
   HSK_TOPICS_CATALOG
 } from '../services/hskService';
 import { speakChinese } from '../utils/audio';
+import { unlockMobileAudio, prefetchTtsItems } from '../services/ttsAudioService.js';
 import SentenceReorderQuestion from '../components/hsk/SentenceReorderQuestion.jsx';
 import { saveCustomVocab } from '../utils/materialsStorage.js';
 import {
@@ -1025,7 +1026,7 @@ function HskHomeView({
     {
       level: 'HSK 2',
       title: 'HSK 2 — Sinh Hoạt Thực Chiến',
-      desc: '300 từ vựng, giao tiếp mua sắm, hỏi đường, đặt xe, câu so sánh chữ 比. 35 câu toàn diện.',
+      desc: '300 từ vựng, giao tiếp mua sắm, hỏi đường, đặt xe, câu so sánh chữ 比. 60 câu chuẩn thi (HSK 2.0 & 3.0).',
       badge: '🟡 Sơ cấp (Vừa)',
       color: 'border-amber-500 hover:border-amber-600',
       tagColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300',
@@ -1034,7 +1035,7 @@ function HskHomeView({
     {
       level: 'HSK 3',
       title: 'HSK 3 — Độc Lập Giao Tiếp',
-      desc: '600 từ vựng, câu chữ 把, chữ 被, các cặp liên từ phức & viết sắp xếp câu. 30 câu chuẩn thi.',
+      desc: '600 từ vựng, câu chữ 把, chữ 被, các cặp liên từ phức & viết sắp xếp câu. 70–80 câu chuẩn thi (HSK 3.0 / 2.0).',
       badge: '🔴 Trung cấp (Khá)',
       color: 'border-rose-500 hover:border-rose-600',
       tagColor: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300',
@@ -1043,7 +1044,7 @@ function HskHomeView({
     {
       level: 'HSK 4',
       title: 'HSK 4 — Lưu Loát & Công Sở',
-      desc: '1200 từ vựng thương mại, đàm phán, nghe 1 lần, sắp xếp đoạn ABC & viết câu. 30 câu chuyên sâu.',
+      desc: '1200 từ vựng thương mại, đàm phán, nghe 1 lần, sắp xếp đoạn ABC & viết câu. 70–100 câu chuẩn thi (HSK 3.0 / 2.0).',
       badge: '🔵 Cao cấp',
       color: 'border-blue-500 hover:border-blue-600',
       tagColor: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300',
@@ -1171,7 +1172,7 @@ function HskHomeView({
             </div>
             <button
               onClick={() => onNavigate('exams')}
-              className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-[#E85D3F] hover:text-white transition-colors cursor-pointer"
+              className="w-full min-h-11 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-[#E85D3F] hover:text-white transition-colors cursor-pointer"
             >
               Chọn đề thi ngay
             </button>
@@ -1192,7 +1193,7 @@ function HskHomeView({
             </div>
             <button
               onClick={() => onNavigate('exams')}
-              className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-[#E85D3F] hover:text-white transition-colors cursor-pointer"
+              className="w-full min-h-11 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-[#E85D3F] hover:text-white transition-colors cursor-pointer"
             >
               Luyện theo kỹ năng
             </button>
@@ -1213,7 +1214,7 @@ function HskHomeView({
             </div>
             <button
               onClick={() => onNavigate('exams')}
-              className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-[#E85D3F] hover:text-white transition-colors cursor-pointer"
+              className="w-full min-h-11 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-[#E85D3F] hover:text-white transition-colors cursor-pointer"
             >
               Lọc theo chủ đề
             </button>
@@ -1234,7 +1235,7 @@ function HskHomeView({
             </div>
             <button
               onClick={() => onNavigate('mistakes')}
-              className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-[#E85D3F] hover:text-white transition-colors cursor-pointer"
+              className="w-full min-h-11 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-[#E85D3F] hover:text-white transition-colors cursor-pointer"
             >
               Mở sổ câu sai
             </button>
@@ -1252,12 +1253,12 @@ function HskHomeView({
                 <span className="text-[10px] bg-red-500 text-white font-black px-1.5 py-0.5 rounded">Mới</span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
-                Tự động sinh đề thi mới không trùng lặp từ kho hơn 1.140 câu hỏi chuẩn HSK 2.0 &amp; HSK 3.0. Tùy biến số lượng câu và kỹ năng.
+                Tự động sinh đề thi mới không trùng lặp từ kho 1.726 câu hỏi chuẩn HSK 2.0 &amp; HSK 3.0. Tùy biến số lượng câu và kỹ năng.
               </p>
             </div>
             <button
               onClick={onOpenRandomModal}
-              className="w-full py-2 rounded-xl bg-[#E85D3F] text-white text-xs font-bold hover:bg-[#CB4529] shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
+              className="w-full min-h-11 py-2 rounded-xl bg-[#E85D3F] text-white text-xs font-bold hover:bg-[#CB4529] shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
             >
               <Dices className="w-3.5 h-3.5" />
               Tạo đề ngay
@@ -1381,13 +1382,13 @@ function HskHomeView({
                   <div className="flex gap-2">
                     <button
                       onClick={() => onNavigate('exam', exam.id)}
-                      className="flex-1 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                      className="flex-1 min-h-11 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                     >
                       Chi tiết
                     </button>
                     <button
                       onClick={() => onNavigate('take', exam.id)}
-                      className="flex-1 py-2.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold shadow-sm hover:bg-[#CB4529] transition-colors"
+                      className="flex-1 min-h-11 py-2.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold shadow-sm hover:bg-[#CB4529] transition-colors cursor-pointer"
                     >
                       Làm bài ngay
                     </button>
@@ -1521,7 +1522,7 @@ function HskExamsListView({
             Thư Viện Đề Thi Thử HSK
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {exams.length} đề thi chuẩn hóa &amp; hơn 1.140 câu hỏi thực chiến đủ 100% số câu (HSK 2.0 &amp; HSK 3.0)
+            {exams.length} đề thi chuẩn hóa &amp; 1.726 câu hỏi thực chiến đủ 100% số câu (HSK 2.0 &amp; HSK 3.0)
           </p>
         </div>
         <button
@@ -2211,8 +2212,25 @@ function HskExamTakingView({ examId, user, onNavigate }) {
     }
   };
 
-  // Phát âm thanh câu hỏi nghe có kiểm soát quy chế
+  // Phát âm thanh câu hỏi nghe có kiểm soát quy chế (dùng Web Audio / singleton audio + prefetch)
+  const sharedExamAudioRef = useRef(null);
+
+  useEffect(() => {
+    const qs = exam?.questions;
+    if (!Array.isArray(qs) || qs.length === 0) return;
+    const upcomingTexts = [qs[currentIdx], qs[currentIdx + 1], qs[currentIdx + 2]]
+      .filter((item) => item && item.part_type === 'listening' && !(item.audio_url && item.audio_url.trim().length > 5))
+      .map((item) => item.audio_script || item.prompt)
+      .filter(Boolean);
+    if (upcomingTexts.length > 0) {
+      void prefetchTtsItems(upcomingTexts, { concurrency: 2 });
+    }
+  }, [exam, currentIdx]);
+
   const handlePlayAudio = (q) => {
+    // Mở khóa AudioContext đồng bộ ngay trong gesture chạm trên iOS Safari
+    unlockMobileAudio();
+
     const maxPlays = getAudioPlayLimit(exam?.level, examMode);
     const currentPlays = audioPlayCounts[q.id] || 0;
 
@@ -2228,26 +2246,34 @@ function HskExamTakingView({ examId, user, onNavigate }) {
       [q.id]: (prev[q.id] || 0) + 1
     }));
 
+    const fallbackText = q.audio_script || q.prompt;
+    const playFallbackSpeech = () => {
+      speakChinese(fallbackText, {
+        onEnd: () => setAudioPlaying(false),
+        onError: () => setAudioPlaying(false),
+      });
+    };
+
     if (q.audio_url && q.audio_url.trim().length > 5) {
       try {
-        const audio = new Audio(q.audio_url);
-        audio.play().catch(() => {
-          // Fallback to Web Speech API TTS
-          speakChinese(q.audio_script || q.prompt);
-        });
+        if (!sharedExamAudioRef.current) {
+          sharedExamAudioRef.current = new Audio();
+        }
+        const audio = sharedExamAudioRef.current;
+        audio.pause();
+        audio.src = q.audio_url;
+        audio.currentTime = 0;
         audio.onended = () => setAudioPlaying(false);
-        audio.onerror = () => {
-          speakChinese(q.audio_script || q.prompt);
-          setAudioPlaying(false);
-        };
+        audio.onerror = playFallbackSpeech;
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch(playFallbackSpeech);
+        }
       } catch {
-        speakChinese(q.audio_script || q.prompt);
-        setTimeout(() => setAudioPlaying(false), 2500);
+        playFallbackSpeech();
       }
     } else {
-      // Speech synthesis fallback
-      speakChinese(q.audio_script || q.prompt);
-      setTimeout(() => setAudioPlaying(false), 3000);
+      playFallbackSpeech();
     }
   };
 
@@ -2365,7 +2391,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
       )}
 
       {/* Top Header & Sticky Timer */}
-      <div className="sticky top-0 z-30 bg-[#FFF9F2]/95 dark:bg-slate-950/95 backdrop-blur-md py-1.5 sm:py-3 border-b border-slate-200 dark:border-slate-800 mb-3 sm:mb-6 flex items-center justify-between gap-2 sm:gap-3">
+      <div className="sticky top-0 z-30 bg-[#FFF9F2]/95 dark:bg-slate-950/95 backdrop-blur-md py-1.5 sm:py-3 border-b border-slate-200 dark:border-slate-800 mb-3 sm:mb-6 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xs font-black text-[#E85D3F] uppercase tracking-wider truncate">
@@ -2389,13 +2415,13 @@ function HskExamTakingView({ examId, user, onNavigate }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Mode Switch Toggle */}
           <div className="hidden sm:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-[11px] font-bold">
             <button
               type="button"
               onClick={() => setExamMode('simulation')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              className={`min-h-11 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                 examMode === 'simulation'
                   ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-500'
@@ -2406,7 +2432,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
             <button
               type="button"
               onClick={() => setExamMode('practice')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              className={`min-h-11 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                 examMode === 'practice'
                   ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-500'
@@ -2432,7 +2458,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
           )}
 
           {/* Clock */}
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-sm font-black ${
+          <div className={`min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-sm font-black ${
             examMode === 'simulation' && timeLeft < 300 
               ? 'bg-rose-100 text-rose-700 animate-pulse' 
               : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700'
@@ -2445,7 +2471,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
           <button
             onClick={() => setShowConfirmModal(true)}
             disabled={isSubmitting}
-            className="px-4 py-2 rounded-xl bg-[#E85D3F] text-white font-bold text-xs shadow-sm hover:bg-[#CB4529] disabled:opacity-50 transition-colors cursor-pointer"
+            className="min-h-11 px-4 py-2 rounded-xl bg-[#E85D3F] text-white font-bold text-xs shadow-sm hover:bg-[#CB4529] disabled:opacity-50 transition-colors cursor-pointer"
           >
             {isSubmitting ? (isLearningMode ? 'Đang nộp...' : '正在交卷...') : (isLearningMode ? 'Nộp bài' : '交卷')}
           </button>
@@ -2462,7 +2488,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                 key={sec.key}
                 type="button"
                 onClick={() => setCurrentIdx(sec.firstIdx)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                className={`min-h-11 flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   isActive
                     ? 'bg-[#E85D3F] text-white shadow-md shadow-orange-500/20 scale-[1.02]'
                     : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-orange-300'
@@ -2591,7 +2617,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
               <button
                 type="button"
                 onClick={() => setShowPracticeScript(prev => !prev)}
-                className="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1.5 cursor-pointer"
+                className="min-h-11 px-3 py-2 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50/70 dark:bg-sky-950/30 text-xs font-bold text-sky-700 dark:text-sky-300 hover:bg-sky-100 flex items-center gap-1.5 cursor-pointer"
               >
                 <Eye className="w-3.5 h-3.5" />
                 {showPracticeScript ? 'Ẩn kịch bản nghe' : '👁️ Xem kịch bản nghe (AudioScript)'}
@@ -3015,11 +3041,11 @@ function HskExamTakingView({ examId, user, onNavigate }) {
           )}
 
           {/* Nav Buttons */}
-          <div className="flex items-center justify-between pt-6 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between gap-2 pt-6 border-t border-slate-100 dark:border-slate-800">
             <button
               onClick={() => setCurrentIdx(prev => Math.max(0, prev - 1))}
               disabled={currentIdx === 0}
-              className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="min-h-11 px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" /> {isLearningMode ? 'Câu trước' : '上一题'}
             </button>
@@ -3027,14 +3053,14 @@ function HskExamTakingView({ examId, user, onNavigate }) {
             {currentIdx < totalQuestions - 1 ? (
               <button
                 onClick={() => setCurrentIdx(prev => Math.min(totalQuestions - 1, prev + 1))}
-                className="px-6 py-2.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold shadow-sm hover:bg-[#CB4529] transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="min-h-11 px-6 py-2.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold shadow-sm hover:bg-[#CB4529] transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 {isLearningMode ? 'Câu tiếp theo' : '下一题'} <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
               <button
                 onClick={() => setShowConfirmModal(true)}
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-sm hover:bg-emerald-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="min-h-11 px-6 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-sm hover:bg-emerald-700 transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 {isLearningMode ? 'Hoàn tất & Nộp bài' : '完成并交卷'} <CheckCircle2 className="w-4 h-4" />
               </button>
@@ -3171,7 +3197,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
               <button
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
-                className="flex-1 py-3 rounded-xl border border-slate-300 dark:border-slate-700 font-bold text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="flex-1 min-h-11 py-3 rounded-xl border border-slate-300 dark:border-slate-700 font-bold text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 {isLearningMode ? 'Tiếp tục làm bài' : '继续作答'}
               </button>
@@ -3182,7 +3208,7 @@ function HskExamTakingView({ examId, user, onNavigate }) {
                   executeSubmission();
                 }}
                 disabled={isSubmitting}
-                className="flex-1 py-3 rounded-xl bg-[#E85D3F] text-white font-bold text-xs shadow-md hover:bg-[#CB4529] disabled:opacity-50 transition-colors cursor-pointer"
+                className="flex-1 min-h-11 py-3 rounded-xl bg-[#E85D3F] text-white font-bold text-xs shadow-md hover:bg-[#CB4529] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {isSubmitting ? (isLearningMode ? 'Đang chấm điểm...' : '正在评分...') : (isLearningMode ? 'Đồng ý nộp bài' : '确认交卷')}
               </button>

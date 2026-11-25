@@ -15,6 +15,7 @@
 
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
 import { verifyRequestAuth, sendSafeServerError } from '../../_utils/supabaseServer.js';
+import { enforceAiKillSwitch } from '../../_utils/corsAndIp.js';
 import { callUnifiedAiProvider } from '../../_utils/aiProviderAdapter.js';
 import { validateAgentInput, redactSensitiveData } from '../../_agent/guardrails.js';
 import { selectModelTier } from '../../_agent/modelRouter.js';
@@ -77,6 +78,11 @@ export default async function handler(req, res) {
   // 1. Method Enforce
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Phương thức không hợp lệ. Chỉ chấp nhận POST.' });
+  }
+
+  // 1b. Global AI Emergency Kill Switch
+  if (enforceAiKillSwitch(res)) {
+    return;
   }
 
   // 2. Client Authentication & JWT Validation

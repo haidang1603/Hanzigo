@@ -13,7 +13,11 @@
  * =========================================================================
  */
 
-import { getSupabaseAdminClient, verifyRequestAuth } from '../../_utils/supabaseServer.js';
+import {
+  getSupabaseAdminClient,
+  verifyRequestAuth,
+  sendSafeServerError,
+} from '../../_utils/supabaseServer.js';
 import { HSK_LEVEL_LESSON_RANGES, generateCertificateId } from '../../../src/utils/certificateEngine.js';
 
 // DISCLAIMER BẮT BUỘC THEO QUY CHUẨN PHÁP LÝ & SƯ PHẠM
@@ -104,11 +108,7 @@ export async function handleVerifyCertificate(req, res) {
       }
     });
   } catch (err) {
-    return res.status(500).json({
-      isValid: false,
-      status: 'server_error',
-      message: 'Lỗi máy chủ khi thực hiện tra cứu xác thực.'
-    });
+    return sendSafeServerError(res, 'Lỗi máy chủ khi thực hiện tra cứu xác thực.', err, 500);
   }
 }
 
@@ -119,6 +119,15 @@ export async function handleIssueCertificate(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
   }
+
+  try {
+    return await issueCertificateInner(req, res);
+  } catch (err) {
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ khi cấp phát chứng nhận.', err, 500);
+  }
+}
+
+async function issueCertificateInner(req, res) {
 
   // 1. Xác thực danh tính bắt buộc
   const auth = await verifyRequestAuth(req);

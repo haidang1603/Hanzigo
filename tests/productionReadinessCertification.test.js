@@ -192,7 +192,10 @@ test('Pillar 3: AppSec checks — zero dangerouslySetInnerHTML in src/, API rate
   await gradeHandler(
     {
       method: 'POST',
-      headers: { 'x-forwarded-for': '127.0.0.10' },
+      headers: {
+        authorization: 'Bearer valid_student_token',
+        'x-real-ip': '127.0.0.10',
+      },
       body: { type: 'writing', responseText: '汉'.repeat(3500) },
     },
     oversizedRes
@@ -204,7 +207,10 @@ test('Pillar 3: AppSec checks — zero dangerouslySetInnerHTML in src/, API rate
   await pronunciationHandler(
     {
       method: 'POST',
-      headers: { 'x-forwarded-for': '127.0.0.11' },
+      headers: {
+        authorization: 'Bearer valid_student_token',
+        'x-real-ip': '127.0.0.11',
+      },
       body: { targetHanzi: '汉'.repeat(250), spokenTranscript: 'test' },
     },
     oversizedPronRes

@@ -18,6 +18,7 @@ import {
   type NormalizedLearningEvent,
   type UserMistakeRecord,
 } from './learningDataService.ts';
+import { getClientAuthHeaders } from '../supabase/config.js';
 
 export type HskWritingTaskType =
   | 'hsk4_reorder'
@@ -593,9 +594,10 @@ export async function evaluateHskWriting(
     const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     const timeoutId = controller ? setTimeout(() => controller.abort(), 9000) : null;
     try {
+      const authHeaders = await getClientAuthHeaders();
       const res = await fetch('/api/ai/grade', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         ...(controller ? { signal: controller.signal } : {}),
         body: JSON.stringify({
           type: 'writing',

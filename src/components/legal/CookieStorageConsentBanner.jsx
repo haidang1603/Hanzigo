@@ -94,7 +94,7 @@ export default function CookieStorageConsentBanner({ setActiveTab }) {
             <button
               type="button"
               onClick={handleEssentialOnly}
-              className="px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold transition cursor-pointer"
+              className="min-h-11 px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold transition cursor-pointer"
             >
               Chỉ dùng thiết yếu
             </button>
@@ -105,7 +105,7 @@ export default function CookieStorageConsentBanner({ setActiveTab }) {
                 setDraftPrefs(getStoragePreferences());
                 setShowQuickModal(true);
               }}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-[#00D4FF]/40 text-[#00D4FF] text-xs font-semibold transition cursor-pointer"
+              className="min-h-11 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-[#00D4FF]/40 text-[#00D4FF] text-xs font-semibold transition cursor-pointer"
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Tùy chỉnh lưu trữ</span>
@@ -114,7 +114,7 @@ export default function CookieStorageConsentBanner({ setActiveTab }) {
             <button
               type="button"
               onClick={handleAcceptAll}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00D4FF] hover:brightness-110 text-[#0a0a1f] text-xs font-bold shadow-md transition cursor-pointer"
+              className="min-h-11 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00D4FF] hover:brightness-110 text-[#0a0a1f] text-xs font-bold shadow-md transition cursor-pointer"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Chấp nhận tất cả</span>

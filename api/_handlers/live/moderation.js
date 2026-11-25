@@ -2,12 +2,26 @@
  * HANZI GO - LIVE MODERATION HANDLER
  */
 import { RoomServiceClient, TrackSource } from 'livekit-server-sdk';
-import { verifyRequestAuth, getSupabaseAdminClient, memoryParticipants } from '../../_utils/supabaseServer.js';
+import {
+  verifyRequestAuth,
+  getSupabaseAdminClient,
+  memoryParticipants,
+  sendSafeServerError,
+} from '../../_utils/supabaseServer.js';
 
 export default async function moderationHandler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
   }
+
+  try {
+    return await handleModerationPost(req, res);
+  } catch (err) {
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ khi điều khiển phòng học.', err, 500);
+  }
+}
+
+async function handleModerationPost(req, res) {
 
   const auth = await verifyRequestAuth(req);
   if (!auth.authenticated) {

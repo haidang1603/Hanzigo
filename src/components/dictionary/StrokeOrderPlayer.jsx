@@ -281,7 +281,7 @@ export default function StrokeOrderPlayer({
         </div>
 
         {/* Display Controls Toolbar */}
-        <div className="flex items-center justify-center gap-1.5 mt-4 w-full">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 mt-4 w-full">
           {/* Outline toggle */}
           <button
             type="button"
@@ -289,7 +289,7 @@ export default function StrokeOrderPlayer({
               playClickSound();
               setShowOutline(!showOutline);
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors border ${
+            className={`min-h-11 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors border ${
               showOutline 
                 ? 'bg-[#E85D3F]/10 border-[#E85D3F]/30 text-[#E85D3F]' 
                 : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'
@@ -307,7 +307,7 @@ export default function StrokeOrderPlayer({
               playClickSound();
               setGridStyle(prev => prev === 'mizige' ? 'tianzige' : prev === 'tianzige' ? 'none' : 'mizige');
             }}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 flex items-center gap-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="min-h-11 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 flex items-center gap-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             title="Đổi kiểu ô kẻ Mễ tự cách / Điền tự cách"
           >
             <Grid className="w-3.5 h-3.5 text-[#E85D3F]" />
@@ -341,7 +341,7 @@ export default function StrokeOrderPlayer({
             type="button"
             onClick={handlePrevStroke}
             disabled={loadError || isLoading}
-            className="p-2 rounded-xl bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#334155] text-gray-700 dark:text-gray-200 hover:bg-[#FCEEE2] active:scale-95 transition-all disabled:opacity-40"
+            className="min-h-11 min-w-11 flex items-center justify-center p-2 rounded-xl bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#334155] text-gray-700 dark:text-gray-200 hover:bg-[#FCEEE2] active:scale-95 transition-all disabled:opacity-40"
             title="Nét trước"
           >
             <SkipBack className="w-4 h-4" />
@@ -352,7 +352,7 @@ export default function StrokeOrderPlayer({
               type="button"
               onClick={handlePlay}
               disabled={loadError || isLoading}
-              className="flex-1 py-2 px-4 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-sm shadow-sm shadow-[#E85D3F]/25 flex items-center justify-center gap-2 hover:brightness-105 active:scale-98 transition-all disabled:opacity-40"
+              className="flex-1 min-h-11 py-2 px-4 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-sm shadow-sm shadow-[#E85D3F]/25 flex items-center justify-center gap-2 hover:brightness-105 active:scale-98 transition-all disabled:opacity-40"
             >
               <Play className="w-4 h-4 fill-white" />
               <span>Phát bút thuận</span>
@@ -361,7 +361,7 @@ export default function StrokeOrderPlayer({
             <button
               type="button"
               onClick={handlePause}
-              className="flex-1 py-2 px-4 rounded-xl bg-amber-500 text-white font-bold text-sm shadow-sm flex items-center justify-center gap-2 hover:bg-amber-600 active:scale-98 transition-all"
+              className="flex-1 min-h-11 py-2 px-4 rounded-xl bg-amber-500 text-white font-bold text-sm shadow-sm flex items-center justify-center gap-2 hover:bg-amber-600 active:scale-98 transition-all"
             >
               <Pause className="w-4 h-4 fill-white" />
               <span>Tạm dừng</span>
@@ -372,7 +372,7 @@ export default function StrokeOrderPlayer({
             type="button"
             onClick={handleNextStroke}
             disabled={loadError || isLoading}
-            className="p-2 rounded-xl bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#334155] text-gray-700 dark:text-gray-200 hover:bg-[#FCEEE2] active:scale-95 transition-all disabled:opacity-40"
+            className="min-h-11 min-w-11 flex items-center justify-center p-2 rounded-xl bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#334155] text-gray-700 dark:text-gray-200 hover:bg-[#FCEEE2] active:scale-95 transition-all disabled:opacity-40"
             title="Nét tiếp theo"
           >
             <SkipForward className="w-4 h-4" />
@@ -382,7 +382,7 @@ export default function StrokeOrderPlayer({
             type="button"
             onClick={handleReplay}
             disabled={loadError || isLoading}
-            className="p-2 rounded-xl bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#334155] text-gray-700 dark:text-gray-200 hover:bg-[#FCEEE2] active:scale-95 transition-all disabled:opacity-40"
+            className="min-h-11 min-w-11 flex items-center justify-center p-2 rounded-xl bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#334155] text-gray-700 dark:text-gray-200 hover:bg-[#FCEEE2] active:scale-95 transition-all disabled:opacity-40"
             title="Phát lại từ đầu"
           >
             <RotateCcw className="w-4 h-4" />

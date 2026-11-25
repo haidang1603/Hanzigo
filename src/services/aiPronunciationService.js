@@ -8,6 +8,7 @@
  */
 
 import { evaluateRealPronunciation } from '../utils/pronunciationEvaluator.js';
+import { getClientAuthHeaders } from '../supabase/config.js';
 
 /**
  * Chuyển Blob âm thanh sang base64 string
@@ -50,10 +51,12 @@ export async function scorePronunciationWithAi({
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timeoutId = controller ? setTimeout(() => controller.abort(), 9000) : null;
   try {
+    const authHeaders = await getClientAuthHeaders();
     const res = await fetch('/api/ai/pronunciation', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...authHeaders,
       },
       ...(controller ? { signal: controller.signal } : {}),
       body: JSON.stringify({

@@ -43,3 +43,43 @@ if (isSupabaseConfigured) {
 } else {
   console.warn('⚠️ Supabase credentials missing. Running in local simulation mode.');
 }
+
+/**
+ * Lấy Bearer Token và User ID của người dùng hiện tại cho các lời gọi API backend.
+ */
+export async function getClientAuthHeaders(user = null) {
+  let authToken = user?.token || user?.access_token || '';
+  let authUid = user?.uid || user?.id || '';
+
+  if (isSupabaseConfigured && supabase?.auth) {
+    try {
+      const { data: { session } = {} } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        authToken = session.access_token;
+      }
+      if (session?.user?.id) {
+        authUid = session.user.id;
+      }
+    } catch {}
+  }
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const rawUser = localStorage.getItem('hanzigo_user');
+      if (rawUser) {
+        const u = JSON.parse(rawUser);
+        if (!authUid) authUid = u.uid || u.id || '';
+        if (!authToken) authToken = u.token || u.access_token || '';
+      }
+    }
+  } catch {}
+
+  if (!authUid && typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+    authUid = 'dev_student_user';
+  }
+
+  return {
+    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    ...(authUid ? { 'x-user-id': authUid } : {}),
+  };
+}

@@ -10,6 +10,7 @@ import {
   type UserVocabItem,
 } from '../../services/vocabWorkspaceService.ts';
 import { speakChinese } from '../../utils/audio.js';
+import { prefetchTtsItems } from '../../services/ttsAudioService.js';
 
 interface SmartFlashcardSessionProps {
   cards: MultiModalReviewCard[];
@@ -71,6 +72,17 @@ export const SmartFlashcardSession: React.FC<SmartFlashcardSessionProps> = ({
 
   const currentCard = cards[index];
   const isFinished = index >= cards.length;
+
+  // Non-blocking background prefetch for current + next 2 flashcards
+  useEffect(() => {
+    if (!Array.isArray(cards) || cards.length === 0 || index >= cards.length) return;
+    const upcoming = [cards[index], cards[index + 1], cards[index + 2]]
+      .map((card) => card?.item?.simplified)
+      .filter((t): t is string => Boolean(t && t.trim()));
+    if (upcoming.length > 0) {
+      void prefetchTtsItems(upcoming, { concurrency: 2, rate: 0.85 });
+    }
+  }, [index, cards]);
 
   const advanceCard = useCallback(
     (nextIdx: number) => {

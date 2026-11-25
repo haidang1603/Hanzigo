@@ -755,7 +755,7 @@ export default function DashboardPage({ user, setActiveTab, onSelectLesson }) {
                   type="button"
                   onClick={handleCheckIn}
                   disabled={checkInLoading}
-                  className="mt-1.5 min-h-[32px] w-full px-2 py-1 rounded-lg bg-[#E85D3F] text-white text-[10px] font-bold hover:bg-[#CB4529] transition-colors cursor-pointer"
+                  className="mt-1.5 min-h-11 w-full px-2 py-1 rounded-lg bg-[#E85D3F] text-white text-[10px] font-bold hover:bg-[#CB4529] transition-colors cursor-pointer"
                 >
                   Điểm danh (+15 XP)
                 </button>

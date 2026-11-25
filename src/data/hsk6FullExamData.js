@@ -17,7 +17,7 @@ export const HSK6_FULL_101_EXAM = {
   max_score: 300,
   description:
     'Bộ đề thi thử HSK 6 đầy đủ 101 câu chuẩn cấu trúc CTI: 50 câu Nghe hiểu (Phần 1–3), 50 câu Đọc hiểu (Tìm câu sai 51–60, Điền từ 61–70, Điền câu 71–80, Đọc sâu 81–100) và Câu 101 Viết tóm tắt 2 pha (10 phút đọc ~1.000 chữ, 35 phút viết ~400 chữ).',
-  source_url: 'https://hanzigo.com/hsk/mock/hsk6-full-101',
+  source_url: 'https://www.hanzigo.io.vn/hsk/mock/hsk6-full-101',
   source_author: 'Ban Học Thuật & Khảo Thí HanziGo',
   license: 'CC BY-NC-SA 4.0 (Creative Commons Ghi công - Phi thương mại)',
   permission_status: 'original_content',

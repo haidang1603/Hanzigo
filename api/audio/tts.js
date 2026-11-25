@@ -10,7 +10,12 @@
  */
 
 import crypto from 'crypto';
-import { verifyRequestAuth, getSupabaseAdminClient } from '../_utils/supabaseServer.js';
+import {
+  verifyRequestAuth,
+  getSupabaseAdminClient,
+  sendSafeServerError,
+} from '../_utils/supabaseServer.js';
+import { applyCorsAllowlist, getTrustedClientIp } from '../_utils/corsAndIp.js';
 import { checkRateLimitAndQuota } from '../_utils/distributedRateLimiter.js';
 import {
   ALLOWED_VOICES,
@@ -81,21 +86,16 @@ export function buildTtsStoragePath(voice, rate, cacheKey) {
   return `${resolvedVoice}/${normalizedRate.toFixed(2)}/${cacheKey.slice(0, 2)}/${cacheKey}.mp3`;
 }
 
-function getClientIp(req) {
-  const forwarded = req.headers?.['x-forwarded-for'];
-  if (forwarded) {
-    return String(forwarded).split(',')[0].trim();
-  }
-  return req.headers?.['x-real-ip'] || req.socket?.remoteAddress || 'unknown-ip';
-}
-
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-User-Id, Accept');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+  if (
+    applyCorsAllowlist(
+      req,
+      res,
+      'GET, POST, OPTIONS',
+      'Authorization, Content-Type, X-User-Id, Accept'
+    )
+  ) {
+    return;
   }
 
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -112,7 +112,7 @@ export default async function handler(req, res) {
     }
 
     // 2. Distributed Rate Limiting (60 requests/min/user or IP)
-    const clientKey = auth.user.id || getClientIp(req);
+    const clientKey = auth.user.id || getTrustedClientIp(req);
     const rateCheck = await checkRateLimitAndQuota({
       clientKey,
       windowMs: 60 * 1000,
@@ -258,6 +258,7 @@ export default async function handler(req, res) {
 
     // Fallback delivery if Supabase Storage is unavailable in local dev
     res.setHeader('X-TTS-Cache', 'BYPASS');
+    res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
     return res.status(200).json({
       status: 'miss_synthesized',
       cached: false,
@@ -270,11 +271,12 @@ export default async function handler(req, res) {
       voice: resolvedVoice,
       rate: normalizedRate,
     });
-  } catch {
-    return res.status(200).json({
-      status: 'client_fallback_required',
-      fallbackToWebSpeech: true,
-      reason: 'tts_internal_fallback',
-    });
+  } catch (err) {
+    return sendSafeServerError(
+      res,
+      'Dịch vụ tổng hợp giọng nói gặp sự cố nội bộ.',
+      err,
+      500
+    );
   }
 }

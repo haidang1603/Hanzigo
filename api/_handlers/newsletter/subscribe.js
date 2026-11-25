@@ -10,7 +10,8 @@
  * =========================================================================
  */
 
-import { getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import { getSupabaseAdminClient, sendSafeServerError } from '../../_utils/supabaseServer.js';
+import { applyCorsAllowlist, getTrustedClientIp } from '../../_utils/corsAndIp.js';
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
 
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -65,12 +66,10 @@ const DAILY_LESSONS = [
 
 export default async function handler(req, res) {
   // CORS setup
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (
+    applyCorsAllowlist(req, res, 'POST, GET, OPTIONS', 'Content-Type, Authorization')
+  ) {
+    return;
   }
 
   // GET: Fetch today's featured lesson
@@ -89,10 +88,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const rawForwarded = req.headers?.['x-forwarded-for'];
-    const clientIp = rawForwarded
-      ? String(rawForwarded).split(',')[0].trim()
-      : (req.headers?.['x-real-ip'] || req.socket?.remoteAddress || '127.0.0.1');
+    const clientIp = getTrustedClientIp(req);
     const rateCheck = await checkRateLimitAndQuota({
       clientKey: `ip:${clientIp}`,
       windowMs: RATE_LIMIT_WINDOW_MS,
@@ -173,10 +169,13 @@ export default async function handler(req, res) {
       lesson: todayLesson
     });
   } catch (error) {
-    console.error('[Newsletter API Error]:', error);
-    return res.status(500).json({
-      error: 'Không thể hoàn tất đăng ký lúc này. Vui lòng thử lại sau.'
-    });
+    console.error('[Newsletter API Error]:', error?.message || error);
+    return sendSafeServerError(
+      res,
+      'Không thể hoàn tất đăng ký lúc này. Vui lòng thử lại sau.',
+      error,
+      500
+    );
   }
 }
 

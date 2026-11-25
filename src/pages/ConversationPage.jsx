@@ -472,7 +472,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
 
             <button
               onClick={() => setIsHistoryModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-[#243447] dark:text-white hover:border-[#E85D3F] transition-colors flex items-center gap-1.5 shadow-xs"
+              className="min-h-11 px-3.5 py-1.5 rounded-xl text-xs font-bold border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-[#243447] dark:text-white hover:border-[#E85D3F] transition-colors flex items-center gap-1.5 shadow-xs"
               title="Xem danh sách lịch sử hội thoại đã lưu"
             >
               <History size={14} className="text-[#E85D3F]" />
@@ -484,7 +484,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
                 playClickSound();
                 setShowPinyin(!showPinyin);
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${
+              className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${
                 showPinyin 
                   ? 'bg-[#FDEEEB] dark:bg-[#2D1E1B] border-[#E85D3F] text-[#E85D3F]' 
                   : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092]'
@@ -498,7 +498,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
                 playClickSound();
                 setShowTranslation(!showTranslation);
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${
+              className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${
                 showTranslation 
                   ? 'bg-[#EBF8F2] dark:bg-[#162B21] border-[#45B97C] text-[#45B97C]' 
                   : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092]'
@@ -538,7 +538,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
                 <button
                   type="button"
                   onClick={() => { playClickSound(); setRoleplaySubMode('studio'); }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     roleplaySubMode === 'studio'
                       ? 'bg-[#E85D3F] text-white shadow-xs'
                       : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
@@ -549,7 +549,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
                 <button
                   type="button"
                   onClick={() => { playClickSound(); setRoleplaySubMode('dialogues'); }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     roleplaySubMode === 'dialogues'
                       ? 'bg-[#E85D3F] text-white shadow-xs'
                       : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
@@ -609,7 +609,7 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
                       setSelectedRoleplayScenario(scen);
                       setIsRoleplayModalOpen(true);
                     }}
-                    className="w-full py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md shadow-[#E85D3F]/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                    className="w-full min-h-11 py-2.5 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-md shadow-[#E85D3F]/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                   >
                     <span>Bắt đầu Nhập vai</span>
                     <Sparkles size={14} />

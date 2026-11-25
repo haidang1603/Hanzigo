@@ -179,7 +179,7 @@ export default function HskReadinessRadarCard({
       <button
         type="button"
         onClick={() => onLaunchExam?.()}
-        className="w-full py-2.5 px-4 rounded-2xl bg-[#E85D3F] hover:bg-[#d44d30] text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+        className="w-full min-h-11 py-2.5 px-4 rounded-2xl bg-[#E85D3F] hover:bg-[#d44d30] text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
       >
         <Award size={15} />
         <span>Thi thử HSK {targetHskLevel} CBT ngay</span>

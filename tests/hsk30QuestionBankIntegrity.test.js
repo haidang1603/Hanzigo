@@ -1,5 +1,9 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { ensureAllExamSupplementsLoaded } from '../src/data/examSupplements/index.js';
+import { HSK30_LEVEL2_QUESTIONS } from '../src/data/hsk30/hsk30Level2.js';
 
 import {
   loadHsk30ExamByLevel,
@@ -322,5 +326,51 @@ describe('HSK 3.0 Complete 485-Question Bank Integrity Suite', () => {
     assert.ok(taking && taking.questions.length === 70);
     assert.equal(taking.questions[0].correctIndex, undefined);
     assert.equal(taking.questions[0].correct_option_index, undefined);
+  });
+
+  test('5. Content Audit Regression: zero numbered pinyin in prompts, 60/60 HSK 3.0 L2 pinyin, canonical hanzigo.io.vn domains', async () => {
+    // 5.1 Zero raw numbered pinyin in HSK 3.0 & supplement prompts
+    const numberedPinyinRe = /\([a-zA-Z]{1,6}[1-5]\)/;
+    const banks = await loadAllHsk30Exams();
+    for (const bank of banks) {
+      for (const q of [...bank.questions, ...(bank.speakingTasks || [])]) {
+        assert.ok(
+          !numberedPinyinRe.test(String(q.prompt || '')),
+          `Raw numbered pinyin found in HSK 3.0 prompt (${q.id}): ${q.prompt}`
+        );
+      }
+    }
+    const supplements = await ensureAllExamSupplementsLoaded();
+    for (const exam of Object.values(supplements || {})) {
+      for (const q of exam.questions || []) {
+        assert.ok(
+          !numberedPinyinRe.test(String(q.prompt || '')),
+          `Raw numbered pinyin found in supplement prompt (${q.id}): ${q.prompt}`
+        );
+      }
+    }
+
+    // 5.2 All 60 HSK 3.0 Level 2 questions must have explicit tone-marked pinyin
+    assert.equal(HSK30_LEVEL2_QUESTIONS.length, 60);
+    for (const q of HSK30_LEVEL2_QUESTIONS) {
+      const py = String(q.pinyin || '').trim();
+      assert.ok(py.length >= 3, `HSK 3.0 Level 2 question ${q.id} is missing explicit pinyin`);
+      assert.ok(!/[a-zA-Z][1-5]\b/.test(py), `HSK 3.0 Level 2 pinyin ${q.id} must use tone marks, not numbers: ${py}`);
+    }
+
+    // 5.3 Canonical domain enforcement (no legacy hanzigo.com or hanzigo-xi.vercel.app)
+    const filesToCheck = [
+      'src/components/certificate/CertificateGeneratorModal.jsx',
+      'src/components/dictionary/WorksheetGeneratorModal.jsx',
+      'src/data/hskExamsData.js',
+      'src/data/hskMockExamsExpanded.js',
+      'src/data/hsk6FullExamData.js',
+      'src/data/hskResourcesData.js',
+    ];
+    for (const relPath of filesToCheck) {
+      const src = fs.readFileSync(path.resolve(relPath), 'utf8');
+      assert.ok(!src.includes('hanzigo-xi.vercel.app'), `Legacy vercel.app URL remains in ${relPath}`);
+      assert.ok(!src.includes('https://hanzigo.com/'), `Legacy hanzigo.com URL remains in ${relPath}`);
+    }
   });
 });

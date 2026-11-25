@@ -232,7 +232,7 @@ export default function HanziCanvasStage({
               <button
                 type="button"
                 onClick={onPlayAudio}
-                className="px-3 py-1.5 rounded-xl bg-[#E85D3F] hover:bg-[#d44d30] text-white text-xs font-bold cursor-pointer inline-flex items-center gap-1.5"
+                className="min-h-11 px-3 py-1.5 rounded-xl bg-[#E85D3F] hover:bg-[#d44d30] text-white text-xs font-bold cursor-pointer inline-flex items-center gap-1.5"
               >
                 <Volume2 size={14} />
                 <span>Nghe phát âm để viết</span>
@@ -335,7 +335,7 @@ export default function HanziCanvasStage({
           <button
             type="button"
             onClick={onAnimate}
-            className="px-3 py-1.5 rounded-xl bg-[#243447] hover:bg-[#1a2636] text-white text-xs font-bold cursor-pointer inline-flex items-center gap-1.5"
+            className="min-h-11 px-3 py-1.5 rounded-xl bg-[#243447] hover:bg-[#1a2636] text-white text-xs font-bold cursor-pointer inline-flex items-center gap-1.5"
           >
             <Play size={13} />
             <span>Xem mẫu</span>
@@ -344,7 +344,7 @@ export default function HanziCanvasStage({
           <button
             type="button"
             onClick={onHint}
-            className="px-3 py-1.5 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25 text-xs font-bold cursor-pointer inline-flex items-center gap-1.5"
+            className="min-h-11 px-3 py-1.5 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25 text-xs font-bold cursor-pointer inline-flex items-center gap-1.5"
           >
             <HelpCircle size={13} />
             <span>Gợi ý nét</span>
@@ -353,7 +353,7 @@ export default function HanziCanvasStage({
           <button
             type="button"
             onClick={onRestart}
-            className="px-3 py-1.5 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-[#243447] dark:text-white text-xs font-bold cursor-pointer inline-flex items-center gap-1.5"
+            className="min-h-11 px-3 py-1.5 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-[#243447] dark:text-white text-xs font-bold cursor-pointer inline-flex items-center gap-1.5"
           >
             <RotateCcw size={13} />
             <span>Làm mới</span>
@@ -362,7 +362,7 @@ export default function HanziCanvasStage({
           <button
             type="button"
             onClick={onPlayAudio}
-            className="px-3 py-1.5 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-[#243447] dark:text-white text-xs font-bold cursor-pointer inline-flex items-center gap-1.5"
+            className="min-h-11 px-3 py-1.5 rounded-xl bg-[#FAF6F0] dark:bg-[#0F172A] border border-[#EFE4D6] dark:border-[#2B3A4F] text-[#243447] dark:text-white text-xs font-bold cursor-pointer inline-flex items-center gap-1.5"
           >
             <Volume2 size={13} className="text-[#E85D3F]" />
             <span>Phát âm</span>

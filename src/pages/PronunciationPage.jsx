@@ -936,7 +936,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                     playClickSound();
                     setShowAddModal(true);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-sm transition-all active:scale-95"
+                  className="min-h-11 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold shadow-sm transition-all active:scale-95"
                 >
                   <Plus size={15} />
                   <span>Thêm từ / câu</span>
@@ -1127,7 +1127,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                     playClickSound();
                     setShowHistory(!showHistory);
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#748092] hover:text-[#243447] dark:hover:text-white transition-colors"
+                  className="min-h-11 inline-flex items-center gap-1.5 text-xs font-bold text-[#748092] hover:text-[#243447] dark:hover:text-white transition-colors"
                 >
                   <History size={14} />
                   <span>Lịch sử chấm điểm ({historyList.length})</span>
@@ -1289,7 +1289,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                       playClickSound();
                       setPronounceTargetMode('word');
                     }}
-                    className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex-1 min-h-11 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       pronounceTargetMode === 'word'
                         ? 'bg-[#E85D3F] text-white shadow-xs'
                         : 'text-[#748092] hover:text-[#243447]'
@@ -1303,7 +1303,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                       playClickSound();
                       setPronounceTargetMode('sentence');
                     }}
-                    className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex-1 min-h-11 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       pronounceTargetMode === 'sentence'
                         ? 'bg-[#E85D3F] text-white shadow-xs'
                         : 'text-[#748092] hover:text-[#243447]'
@@ -1424,7 +1424,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                         setAppActiveTab('writing');
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] border border-orange-200 dark:border-orange-800 text-xs font-bold hover:bg-orange-100 transition-colors cursor-pointer"
+                    className="min-h-11 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] border border-orange-200 dark:border-orange-800 text-xs font-bold hover:bg-orange-100 transition-colors cursor-pointer"
                     title="Chuyển sang Luyện viết chữ này trên ô Mễ tự"
                   >
                     <PenTool size={14} />
@@ -1438,7 +1438,7 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                         playClickSound();
                         setAppActiveTab('vocabulary');
                       }}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-50 dark:bg-[#131B24] text-[#748092] hover:text-[#243447] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold transition-colors cursor-pointer"
+                      className="min-h-11 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-50 dark:bg-[#131B24] text-[#748092] hover:text-[#243447] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold transition-colors cursor-pointer"
                       title="Quay lại luyện tập từ vựng"
                     >
                       <BookOpen size={14} />

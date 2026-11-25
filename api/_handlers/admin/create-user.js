@@ -15,7 +15,11 @@
  *    (Never exposes Service Role Key to frontend).
  */
 
-import { verifyRequestAuth, getSupabaseAdminClient } from '../../_utils/supabaseServer.js';
+import {
+  verifyRequestAuth,
+  getSupabaseAdminClient,
+  sendSafeServerError,
+} from '../../_utils/supabaseServer.js';
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
 
 export default async function createUserHandler(req, res) {
@@ -198,7 +202,12 @@ export default async function createUserHandler(req, res) {
     });
 
   } catch (err) {
-    console.error('[/api/admin/create-user] Server error:', err);
-    return res.status(500).json({ error: 'Lỗi máy chủ nội bộ khi tạo tài khoản người dùng.' });
+    console.error('[/api/admin/create-user] Server error:', err?.message || err);
+    return sendSafeServerError(
+      res,
+      'Lỗi máy chủ nội bộ khi tạo tài khoản người dùng.',
+      err,
+      500
+    );
   }
 }

@@ -135,7 +135,7 @@ export default function PrivacyPolicyPage({ setActiveTab }) {
                   <button
                     key={sec.id}
                     onClick={() => scrollToSection(sec.id)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                    className={`w-full min-h-11 text-left px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                       isCurrent
                         ? 'bg-[#E85D3F]/10 text-[#E85D3F] font-bold'
                         : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
@@ -426,7 +426,7 @@ export default function PrivacyPolicyPage({ setActiveTab }) {
               <span className="font-bold text-xs text-[#243447] dark:text-white">Xem chi tiết Chính Sách Lưu Trữ & Cookie</span>
               <button
                 onClick={() => handleNav('cookies')}
-                className="px-3.5 py-1.5 rounded-lg bg-[#E85D3F] text-white font-bold text-xs hover:bg-[#CB4529] transition-colors cursor-pointer"
+                className="min-h-11 px-3.5 py-1.5 rounded-lg bg-[#E85D3F] text-white font-bold text-xs hover:bg-[#CB4529] transition-colors cursor-pointer"
               >
                 Mở chính sách cookie &rarr;
               </button>

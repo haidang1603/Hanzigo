@@ -90,16 +90,16 @@ export default function WorksheetGeneratorModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       {/* Container Modal (ẩn khi kích hoạt lệnh in) */}
-      <div className="bg-white dark:bg-[#1E293B] rounded-3xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl border border-[#F1E5D8] dark:border-[#334155] overflow-hidden no-print">
+      <div className="bg-white dark:bg-[#1E293B] rounded-3xl w-full max-w-6xl max-h-[90dvh] flex flex-col shadow-2xl border border-[#F1E5D8] dark:border-[#334155] overflow-hidden no-print">
         
         {/* Header Thanh Tiêu Đề */}
-        <div className="p-4 sm:p-5 border-b border-[#F1E5D8] dark:border-[#334155] flex items-center justify-between gap-4 bg-[#FFF9F2] dark:bg-[#0F172A]/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#E85D3F] to-[#CB4529] flex items-center justify-center text-white shadow-md shadow-[#E85D3F]/20">
+        <div className="p-4 sm:p-5 border-b border-[#F1E5D8] dark:border-[#334155] flex flex-wrap items-center justify-between gap-3 bg-[#FFF9F2] dark:bg-[#0F172A]/50">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#E85D3F] to-[#CB4529] flex items-center justify-center text-white shadow-md shadow-[#E85D3F]/20 shrink-0">
               <Printer className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-black text-[#243447] dark:text-[#F3F4F6] flex items-center gap-2">
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-xl font-black text-[#243447] dark:text-[#F3F4F6] flex flex-wrap items-center gap-2">
                 <span>In Bảng Tập Viết Chữ Hán (Worksheet Generator)</span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E85D3F]/10 text-[#E85D3F] border border-[#E85D3F]/20">
                   Chuẩn A4 PDF
@@ -111,12 +111,12 @@ export default function WorksheetGeneratorModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {/* Nút In Nhanh */}
             <button
               type="button"
               onClick={handlePrint}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-[#E85D3F]/20 active:scale-95 transition-all"
+              className="min-h-11 px-4 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] hover:opacity-95 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-[#E85D3F]/20 active:scale-95 transition-all"
             >
               <Printer className="w-4 h-4" />
               <span>In ngay / Lưu PDF</span>
@@ -125,7 +125,7 @@ export default function WorksheetGeneratorModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="min-h-11 min-w-11 flex items-center justify-center p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -365,7 +365,7 @@ export default function WorksheetGeneratorModal({
           </div>
 
           {/* CỘT PHẢI: XEM TRƯỚC TRỰC QUAN KHỔ GIẤY A4 (7 CỘT) */}
-          <div className="lg:col-span-7 p-4 sm:p-6 bg-gray-200 dark:bg-[#0B111A] overflow-y-auto flex flex-col items-center justify-start relative">
+          <div className="lg:col-span-7 p-4 sm:p-6 bg-gray-200 dark:bg-[#0B111A] overflow-y-auto overflow-x-auto max-w-full flex flex-col items-center justify-start relative">
             
             {/* Toolbar thu phóng preview */}
             <div className="w-full max-w-[620px] flex items-center justify-between mb-3 text-xs text-gray-500">
@@ -502,7 +502,7 @@ export default function WorksheetGeneratorModal({
               {/* Footer Trang */}
               <div className="pt-6 border-t border-gray-200 flex items-center justify-between text-[10px] text-gray-400 mt-auto">
                 <span>HanziGo — Nền tảng học tiếng Trung trực tuyến cho người Việt</span>
-                <span>https://hanzigo-xi.vercel.app</span>
+                <span>https://www.hanzigo.io.vn</span>
               </div>
             </div>
           </div>
@@ -616,7 +616,7 @@ export default function WorksheetGeneratorModal({
           {/* Footer A4 */}
           <div className="pt-6 border-t border-gray-300 flex items-center justify-between text-xs text-gray-500">
             <span>HanziGo — Nền tảng học tiếng Trung trực tuyến cho người Việt</span>
-            <span>https://hanzigo-xi.vercel.app</span>
+            <span>https://www.hanzigo.io.vn</span>
           </div>
         </div>
       </div>

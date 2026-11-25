@@ -274,7 +274,7 @@ export default function HskWritingEvaluator({
                 type="button"
                 onClick={() => void handleEvaluate()}
                 disabled={evaluating || !responseText.trim()}
-                className="px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#d44d30] disabled:opacity-50 text-white text-xs font-bold cursor-pointer inline-flex items-center gap-1.5 transition-colors"
+                className="min-h-11 px-4 py-2 rounded-xl bg-[#E85D3F] hover:bg-[#d44d30] disabled:opacity-50 text-white text-xs font-bold cursor-pointer inline-flex items-center gap-1.5 transition-colors"
               >
                 <Play size={13} />
                 <span>{evaluating ? 'Đang chấm bài...' : 'Chấm điểm & Sửa lỗi'}</span>

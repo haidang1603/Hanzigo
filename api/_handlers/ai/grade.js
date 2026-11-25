@@ -10,7 +10,12 @@
 import crypto from 'node:crypto';
 import { getGeminiApiKeys, markGeminiKeyRateLimited } from '../../_utils/aiProviderAdapter.js';
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
-import { sendSafeServerError } from '../../_utils/supabaseServer.js';
+import { sendSafeServerError, verifyRequestAuth } from '../../_utils/supabaseServer.js';
+import {
+  applyCorsAllowlist,
+  enforceAiKillSwitch,
+  getTrustedClientIp,
+} from '../../_utils/corsAndIp.js';
 import { AGENT_INTENTS } from '../../_agent/contracts.js';
 import { validateAgentInput, redactSensitiveData } from '../../_agent/guardrails.js';
 import { selectModelTier } from '../../_agent/modelRouter.js';
@@ -21,14 +26,6 @@ const RATE_LIMIT_MAX_REQUESTS = 30;
 const DAILY_QUOTA_MAX_REQUESTS = 300;
 const MAX_TEXT_LEN = 3000;
 const MAX_AUDIO_BASE64_LEN = 4_000_000;
-
-function getClientKey(req) {
-  const forwarded = req.headers?.['x-forwarded-for'];
-  if (forwarded) {
-    return `ip:${String(forwarded).split(',')[0].trim()}`;
-  }
-  return `ip:${req.headers?.['x-real-ip'] || req.socket?.remoteAddress || 'anon-client'}`;
-}
 
 async function callGeminiJson({ systemInstruction, parts, model = null }) {
   const apiKeys = getGeminiApiKeys();
@@ -80,16 +77,21 @@ async function callGeminiJson({ systemInstruction, parts, model = null }) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-user-id');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (applyCorsAllowlist(req, res, 'POST, OPTIONS')) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Chỉ chấp nhận POST' });
+  if (enforceAiKillSwitch(res)) return;
 
   try {
+    const auth = await verifyRequestAuth(req);
+    if (!auth.authenticated || !auth.user) {
+      return res.status(401).json({
+        error: auth.error || 'Yêu cầu chưa được xác thực. Vui lòng đăng nhập.',
+      });
+    }
+
+    const clientIp = getTrustedClientIp(req);
     const rateCheck = await checkRateLimitAndQuota({
-      clientKey: getClientKey(req),
+      clientKey: `user:${auth.user.id}:ip:${clientIp}`,
       windowMs: RATE_LIMIT_WINDOW_MS,
       maxRequests: RATE_LIMIT_MAX_REQUESTS,
       dailyQuotaMax: DAILY_QUOTA_MAX_REQUESTS,

@@ -12,6 +12,7 @@
 import crypto from 'node:crypto';
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
 import { verifyRequestAuth, sendSafeServerError } from '../../_utils/supabaseServer.js';
+import { enforceAiKillSwitch } from '../../_utils/corsAndIp.js';
 import { callUnifiedAiProvider } from '../../_utils/aiProviderAdapter.js';
 import { AGENT_INTENTS } from '../../_agent/contracts.js';
 import { validateAgentInput, redactSensitiveData } from '../../_agent/guardrails.js';
@@ -94,6 +95,10 @@ BẮT BUỘC trả về định dạng JSON thuần túy (không bọc trong mar
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed. Use POST.' });
+  }
+
+  if (enforceAiKillSwitch(res)) {
+    return;
   }
 
   // 1. Client Authentication & JWT Validation

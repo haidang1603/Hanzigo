@@ -350,7 +350,7 @@ export default function AiMonitoringDashboard() {
             <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-start gap-2 text-slate-700 dark:text-slate-300">
               <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
               <div>
-                <strong>Bảo Mật API Secret Server-Side:</strong> Các khóa <code>GEMINI_API_KEY</code>, <code>GROQ_API_KEY</code>, <code>OPENROUTER_API_KEY</code> chỉ nằm trên Server Runtime và dùng <code>sendSafeServerError()</code> che toàn bộ stack/lỗi nội bộ ở Production.
+                <strong>Bảo Mật API Secret Server-Side:</strong> Toàn bộ khóa bí mật của các nhà cung cấp AI được cách ly hoàn toàn trên Server Runtime và dùng <code>sendSafeServerError()</code> để che toàn bộ stack/lỗi nội bộ ở Production.
               </div>
             </div>
 

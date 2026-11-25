@@ -409,7 +409,7 @@ export default function InteractiveWritingPad({
             <button
               type="button"
               onClick={toggleQuizOutline}
-              className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-all ${
+              className={`flex-1 min-h-11 py-2 px-3 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-all ${
                 quizState.showOutline
                   ? 'bg-[#E85D3F]/10 border-[#E85D3F]/30 text-[#E85D3F]'
                   : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'
@@ -423,7 +423,7 @@ export default function InteractiveWritingPad({
             <button
               type="button"
               onClick={() => startQuiz(quizState.showOutline)}
-              className="py-2 px-4 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 hover:brightness-105 active:scale-95 transition-all"
+              className="min-h-11 py-2 px-4 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 hover:brightness-105 active:scale-95 transition-all"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Viết lại</span>
@@ -528,7 +528,7 @@ export default function InteractiveWritingPad({
                 playClickSound();
                 setShowGhostOutline(!showGhostOutline);
               }}
-              className={`p-2 rounded-xl border text-xs font-medium flex items-center gap-1 transition-all ${
+              className={`min-h-11 p-2 rounded-xl border text-xs font-medium flex items-center gap-1 transition-all ${
                 showGhostOutline
                   ? 'bg-[#E85D3F]/10 border-[#E85D3F]/30 text-[#E85D3F]'
                   : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'

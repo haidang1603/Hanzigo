@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '../supabase/config.js';
+import { supabase, isSupabaseConfigured, getClientAuthHeaders } from '../supabase/config.js';
 import { saveWordToDeck, type DictionaryEntry } from './dictionaryService.ts';
 import { getUserStorageKey } from '../utils/gamification.js';
 
@@ -813,9 +813,10 @@ export async function evaluateTranslationWithAi(
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timeoutId = controller ? setTimeout(() => controller.abort(), 9000) : null;
   try {
+    const authHeaders = await getClientAuthHeaders();
     const res = await fetch('/api/ai/grade', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
       ...(controller ? { signal: controller.signal } : {}),
       body: JSON.stringify({
         type: 'translation',
@@ -913,21 +914,39 @@ export async function saveDomainTermToSRS(
   term: DomainTerminologyItem,
   user?: { id?: string | null } | null
 ): Promise<void> {
+  const pinyinClean = term.pinyin
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
   const entry: DictionaryEntry = {
     id: `domain-term-${term.simplified}`,
     simplified: term.simplified,
     traditional: term.simplified,
-    pinyin: term.pinyin,
-    pinyin_numbered: term.pinyin,
-    hsk_level: 7,
+    pinyin_display: term.pinyin,
+    pinyin_numeric: term.pinyin,
+    pinyin_clean: pinyinClean,
     han_viet: term.han_viet,
-    pos: 'Thuật ngữ chuyên ngành',
-    meanings_vi: [`${term.meaning_vi} (${term.english_equiv})`],
+    hsk_2_level: null,
+    hsk_3_level: 7,
+    frequency_rank: 5000,
+    pos_meanings: [
+      {
+        pos: 'n',
+        definitions_vi: [`${term.meaning_vi} (${term.english_equiv})`],
+        definitions_en: [term.english_equiv],
+        collocations: [],
+      },
+    ],
+    decomposition: null,
+    measure_words: [],
+    synonyms_antonyms: { synonyms: [], antonyms: [] },
     examples: [
       {
-        zh: term.sample_sentence_zh,
+        hanzi: term.sample_sentence_zh,
         pinyin: '',
         vi: term.sample_sentence_vi,
+        hsk_level: 7,
       },
     ],
   };

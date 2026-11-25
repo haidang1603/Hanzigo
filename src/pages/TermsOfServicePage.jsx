@@ -131,7 +131,7 @@ export default function TermsOfServicePage({ setActiveTab }) {
                   <button
                     key={sec.id}
                     onClick={() => scrollToSection(sec.id)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                    className={`w-full min-h-11 text-left px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                       isCurrent
                         ? 'bg-[#E85D3F]/10 text-[#E85D3F] font-bold'
                         : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'

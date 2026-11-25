@@ -319,7 +319,7 @@ export default function AiTutorChatView({ user, openAuthModal }) {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-10.5rem)] min-h-[540px] max-w-5xl mx-auto bg-white dark:bg-[#1E293B] rounded-2xl sm:rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-10.5rem)] max-h-[70dvh] min-h-[360px] max-w-5xl mx-auto bg-white dark:bg-[#1E293B] rounded-2xl sm:rounded-3xl border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm overflow-hidden">
       
       {/* Toast Thông báo */}
       {toastMessage && (
@@ -1124,13 +1124,13 @@ export default function AiTutorChatView({ user, openAuthModal }) {
             <div className="flex gap-2 pt-2">
               <button
                 onClick={() => setShowClearModal(false)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-[#748092] hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+                className="flex-1 min-h-11 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-[#748092] hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
               >
                 Hủy bỏ
               </button>
               <button
                 onClick={handleClearHistory}
-                className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition-colors shadow-sm"
+                className="flex-1 min-h-11 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition-colors shadow-sm"
               >
                 Xác nhận xóa
               </button>
@@ -1142,7 +1142,7 @@ export default function AiTutorChatView({ user, openAuthModal }) {
       {/* MODAL QUẢN LÝ MỤC TIÊU HỌC TẬP & CÁ NHÂN HÓA AI (User Learning Goals Modal) */}
       {showGoalModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-6 max-w-lg w-full space-y-5 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-6 max-w-lg w-full space-y-5 border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl animate-fade-in max-h-[90dvh] overflow-y-auto">
             
             {/* Header Modal */}
             <div className="flex items-center justify-between pb-2 border-b border-[#F1E5D8] dark:border-[#2B3A4F]">
@@ -1161,7 +1161,7 @@ export default function AiTutorChatView({ user, openAuthModal }) {
               </div>
               <button
                 onClick={() => setShowGoalModal(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
+                className="min-h-11 min-w-11 flex items-center justify-center p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
               >
                 <X size={18} />
               </button>

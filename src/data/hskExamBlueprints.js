@@ -18,6 +18,7 @@
 
 import { HSK_EXAMS, HSK_QUESTIONS, getFullExamById, registerDynamicExam } from './hskExamsData.js';
 import { HSK_7_TO_9_EXAM_PAPER } from '../features/hsk-exam/data/hsk7to9SampleExamPaper.js';
+import { getClientAuthHeaders } from '../supabase/config.js';
 
 const MINI_CHAR_PINYIN_MAP = {
   '我': 'wǒ', '你': 'nǐ', '他': 'tā', '她': 'tā', '们': 'men', '的': 'de', '是': 'shì', '不': 'bù', '在': 'zài', '有': 'yǒu',
@@ -1114,10 +1115,11 @@ export async function gradeSubjectiveSubmission({
 
   if (fetchFn) {
     try {
+      const authHeaders = await getClientAuthHeaders().catch(() => ({}));
       if (skill === 'speaking') {
         const res = await fetchFn('/api/ai/pronunciation', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeaders },
           body: JSON.stringify({
             targetHanzi: String(question.prompt || '').slice(0, 180),
             spokenTranscript: cleanAnswer,
@@ -1146,7 +1148,7 @@ export async function gradeSubjectiveSubmission({
         const isTranslation = skill === 'translation' || question.questionType === 'translation';
         const res = await fetchFn('/api/ai/grade', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeaders },
           body: JSON.stringify(
             isTranslation
               ? {

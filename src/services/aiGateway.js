@@ -29,50 +29,9 @@ import {
   diagnoseOfflineHskMistakes,
   recommendOfflineResources
 } from './deterministicPersonalizationEngine.js';
-import { supabase, isSupabaseConfigured } from '../supabase/config.js';
+import { supabase, isSupabaseConfigured, getClientAuthHeaders } from '../supabase/config.js';
 
-/**
- * Lấy Bearer Token và User ID của người dùng hiện tại
- */
-async function getClientAuthHeaders(user = null) {
-  let authToken = user?.token || user?.access_token || '';
-  let authUid = user?.uid || user?.id || '';
-
-  // 1. Trích xuất authoritative session JWT từ Supabase client nếu đã khởi tạo
-  if (isSupabaseConfigured && supabase?.auth) {
-    try {
-      const { data: { session } = {} } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        authToken = session.access_token;
-      }
-      if (session?.user?.id) {
-        authUid = session.user.id;
-      }
-    } catch {}
-  }
-
-  // 2. Dự phòng đọc từ localStorage nếu session chưa kịp hydrate
-  try {
-    if (typeof localStorage !== 'undefined') {
-      const rawUser = localStorage.getItem('hanzigo_user');
-      if (rawUser) {
-        const u = JSON.parse(rawUser);
-        if (!authUid) authUid = u.uid || u.id || '';
-        if (!authToken) authToken = u.token || u.access_token || '';
-      }
-    }
-  } catch {}
-
-  // 3. Trong môi trường dev cục bộ (Vite dev), nếu chưa đăng nhập thì cung cấp uid dev để hỗ trợ kiểm thử
-  if (!authUid && import.meta.env?.DEV) {
-    authUid = 'dev_student_user';
-  }
-
-  return {
-    ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
-    ...(authUid ? { 'x-user-id': authUid } : {})
-  };
-}
+export { getClientAuthHeaders };
 
 /**
  * Hàm điều phối chính gửi yêu cầu tới serverless `/api/ai/personalize`

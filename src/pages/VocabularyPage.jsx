@@ -1533,7 +1533,7 @@ export default function VocabularyPage({
               playClickSound();
               setShowAddModal(true);
             }}
-            className="px-4 py-3 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center gap-2 active:scale-95 shrink-0 cursor-pointer"
+            className="min-h-11 px-4 py-3 rounded-2xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E85D3F]/30 transition-all flex items-center gap-2 active:scale-95 shrink-0 cursor-pointer"
           >
             <Plus size={18} />
             <span>Thêm từ vựng muốn học</span>
@@ -1668,7 +1668,7 @@ export default function VocabularyPage({
                     setViewMode(mode.id);
                   }}
                   title={mode.title}
-                  className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  className={`min-h-11 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                     isActive
                       ? mode.activeCls
                       : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white hover:bg-white/70 dark:hover:bg-[#1E293B]'
@@ -2644,7 +2644,7 @@ export default function VocabularyPage({
                         if (onSelectWriting) onSelectWriting(currentCard);
                         else if (setActiveTab) setActiveTab('writing');
                       }}
-                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                      className="flex-1 min-h-11 py-1.5 px-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
                     >
                       <PenTool size={13} />
                       <span>✍️ Luyện viết chữ</span>
@@ -2656,7 +2656,7 @@ export default function VocabularyPage({
                         if (onSelectPronounce) onSelectPronounce(currentCard);
                         else if (setActiveTab) setActiveTab('pronunciation');
                       }}
-                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                      className="flex-1 min-h-11 py-1.5 px-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
                     >
                       <Mic size={13} />
                       <span>🎙️ Luyện phát âm</span>

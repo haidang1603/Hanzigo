@@ -269,6 +269,33 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('hanzigo_total_xp');
     localStorage.removeItem('hanzigo_bonus_xp');
     localStorage.removeItem('hanzigo_active_tab');
+    localStorage.removeItem('hanzigo_pending_exam_mode');
+    localStorage.removeItem('hanzigo_ai_unified_dict_v1');
+    localStorage.removeItem('hanzigo_oauth_intended_role');
+    try {
+      const localKeysToRemove = [];
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (
+          key &&
+          (key.startsWith('hsk_draft_') || key.startsWith('hanzigo_coach_steps_'))
+        ) {
+          localKeysToRemove.push(key);
+        }
+      }
+      localKeysToRemove.forEach((key) => localStorage.removeItem(key));
+
+      if (typeof sessionStorage !== 'undefined') {
+        const sessionKeysToRemove = [];
+        for (let i = 0; i < sessionStorage.length; i += 1) {
+          const key = sessionStorage.key(i);
+          if (key && (key.startsWith('hsk_') || key.startsWith('hanzigo_'))) {
+            sessionKeysToRemove.push(key);
+          }
+        }
+        sessionKeysToRemove.forEach((key) => sessionStorage.removeItem(key));
+      }
+    } catch {}
     clearLegacyUnscopedLearningKeys();
   };
 

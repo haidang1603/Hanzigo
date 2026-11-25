@@ -207,7 +207,7 @@ export default function AppHeader({
               }}
               aria-label={soundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}
               title={soundEnabled ? 'Âm thanh: Bật' : 'Âm thanh: Tắt'}
-              className="p-1.5 rounded-lg text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] hover:text-[#E85D3F] transition-colors cursor-pointer"
+              className="min-h-11 px-2 py-1.5 rounded-lg text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] hover:text-[#E85D3F] transition-colors cursor-pointer flex items-center justify-center"
             >
               {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} className="text-red-400" />}
             </button>
@@ -220,7 +220,7 @@ export default function AppHeader({
               }}
               aria-label={darkMode ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
               title={darkMode ? 'Giao diện: Tối' : 'Giao diện: Sáng'}
-              className="p-1.5 rounded-lg text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] hover:text-[#E85D3F] transition-colors cursor-pointer"
+              className="min-h-11 px-2 py-1.5 rounded-lg text-[#748092] dark:text-[#94A3B8] hover:bg-white dark:hover:bg-[#1E293B] hover:text-[#E85D3F] transition-colors cursor-pointer flex items-center justify-center"
             >
               {darkMode ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} />}
             </button>
@@ -350,7 +350,7 @@ export default function AppHeader({
               <button
                 type="button"
                 onClick={() => handleNavClick('roadmap')}
-                className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-linear-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-md shadow-[#E85D3F]/25 hover:shadow-lg transition-all cursor-pointer whitespace-nowrap"
+                className="min-h-11 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-linear-to-r from-[#E85D3F] to-[#CB4529] text-white shadow-md shadow-[#E85D3F]/25 hover:shadow-lg transition-all cursor-pointer whitespace-nowrap"
               >
                 Bắt đầu học
               </button>

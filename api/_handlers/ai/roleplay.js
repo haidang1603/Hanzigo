@@ -17,6 +17,7 @@ import crypto from 'crypto';
 import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
 import { verifyRequestAuth } from '../../_utils/verifyAuth.js';
 import { getSupabaseAdminClient, sendSafeServerError } from '../../_utils/supabaseServer.js';
+import { applyCorsAllowlist, enforceAiKillSwitch } from '../../_utils/corsAndIp.js';
 import { callUnifiedAiProvider, extractStructuredJson } from '../../_utils/aiProviderAdapter.js';
 import { retrieveLearnerAdaptiveProfile } from '../../_utils/ragRetriever.js';
 import { AGENT_INTENTS } from '../../_agent/contracts.js';
@@ -482,16 +483,23 @@ async function handleSendTurn({ user, body, admin, res }) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-User-Id');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+  if (
+    applyCorsAllowlist(
+      req,
+      res,
+      'POST, OPTIONS',
+      'Authorization, Content-Type, X-User-Id'
+    )
+  ) {
+    return;
   }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
+  }
+
+  if (enforceAiKillSwitch(res)) {
+    return;
   }
 
   try {

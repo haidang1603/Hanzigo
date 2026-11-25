@@ -171,7 +171,7 @@ export default function CertificateGeneratorModal({
     ctx.fillText(`Ngày cấp phát: ${issueDate}`, 100, 705);
     ctx.font = '500 12px sans-serif';
     ctx.fillStyle = '#94A3B8';
-    ctx.fillText('Tra cứu tính hợp lệ tại: https://hanzigo-xi.vercel.app/verify', 100, 725);
+    ctx.fillText('Tra cứu tính hợp lệ tại: https://www.hanzigo.io.vn/verify', 100, 725);
     ctx.font = 'italic 11px sans-serif';
     ctx.fillText('* Chứng nhận hoàn thành chương trình HSK HanziGo. Không thay thế chứng chỉ HSK quốc tế CTI/Hanban.', 100, 746);
 
@@ -226,37 +226,37 @@ export default function CertificateGeneratorModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-5xl max-h-[95vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden no-print">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-5xl max-h-[90dvh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden no-print">
         {/* Header Modal */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
               <Award className="w-6 h-6" />
             </div>
-            <div>
-              <h3 className="font-black text-slate-900 dark:text-slate-100 text-base">
+            <div className="min-w-0">
+              <h3 className="font-black text-slate-900 dark:text-slate-100 text-base break-words">
                 Chứng Nhận Hoàn Thành Cấp Độ {certificate.hskLevel}
               </h3>
-              <p className="text-xs text-slate-500">Mã định danh xác thực: <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{certificate.certificateCode}</span></p>
+              <p className="text-xs text-slate-500 break-words">Mã định danh xác thực: <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{certificate.certificateCode}</span></p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
               onClick={handleDownloadImage}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="min-h-11 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Download className="w-4 h-4" /> Tải Ảnh HD (2x)
             </button>
             <button
               onClick={handlePrint}
-              className="px-4 py-2 bg-[#E85D3F] hover:bg-[#D44D30] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"
+              className="min-h-11 px-4 py-2 bg-[#E85D3F] hover:bg-[#D44D30] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"
             >
               <Printer className="w-4 h-4" /> In / Lưu PDF A4
             </button>
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl cursor-pointer"
+              className="min-h-11 min-w-11 flex items-center justify-center p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>

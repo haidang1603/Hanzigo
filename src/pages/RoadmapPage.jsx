@@ -778,7 +778,7 @@ export default function RoadmapPage({
                 playClickSound();
                 setRoadmapView('syllabus');
               }}
-              className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              className={`min-h-11 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                 roadmapView === 'syllabus'
                   ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
                   : 'bg-white dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F]'
@@ -794,7 +794,7 @@ export default function RoadmapPage({
                 playClickSound();
                 setRoadmapView('journey');
               }}
-              className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              className={`min-h-11 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                 roadmapView === 'journey'
                   ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
                   : 'bg-white dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F]'
@@ -810,7 +810,7 @@ export default function RoadmapPage({
                 playClickSound();
                 setRoadmapView('skills');
               }}
-              className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              className={`min-h-11 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                 roadmapView === 'skills'
                   ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
                   : 'bg-white dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F]'
@@ -826,7 +826,7 @@ export default function RoadmapPage({
                 playClickSound();
                 setRoadmapView('supplementary');
               }}
-              className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              className={`min-h-11 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                 roadmapView === 'supplementary'
                   ? 'bg-[#E85D3F] text-white shadow-md shadow-[#E85D3F]/25'
                   : 'bg-white dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white border border-[#F1E5D8] dark:border-[#2B3A4F]'
@@ -866,7 +866,7 @@ export default function RoadmapPage({
                       if (activeLevel > 6) setActiveLevel(1);
                       setActiveModuleFilter(0);
                     }}
-                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+                    className={`min-h-11 px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
                       trackGroup === 'hsk1_6'
                         ? 'bg-[#E85D3F] text-white shadow-xs'
                         : 'text-[#5B6B7F] dark:text-slate-300 hover:bg-[#FAF6F0] dark:hover:bg-[#0F172A]'
@@ -883,7 +883,7 @@ export default function RoadmapPage({
                       if (activeLevel < 7) setActiveLevel(7);
                       setActiveModuleFilter(0);
                     }}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+                    className={`min-h-11 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
                       trackGroup === 'hsk7_9'
                         ? 'bg-[#243447] text-amber-300 shadow-xs'
                         : 'text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30'
@@ -899,7 +899,7 @@ export default function RoadmapPage({
                       playClickSound();
                       setTrackGroup('all_9');
                     }}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    className={`min-h-11 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                       trackGroup === 'all_9'
                         ? 'bg-[#FFF5F2] dark:bg-white/10 text-[#E85D3F] dark:text-amber-300'
                         : 'text-[#748092] dark:text-slate-400 hover:text-[#243447] dark:hover:text-white'
@@ -1111,7 +1111,7 @@ export default function RoadmapPage({
                         playClickSound();
                         setActiveModuleFilter(tab.id);
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                      className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
                         activeModuleFilter === tab.id
                           ? 'bg-[#E85D3F] text-white border-[#E85D3F] shadow-xs'
                           : 'bg-white dark:bg-[#1E293B] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092] dark:text-slate-300 hover:border-[#E85D3F]/50'
@@ -1236,7 +1236,7 @@ export default function RoadmapPage({
                                       <button
                                         type="button"
                                         onClick={() => speakChinese(lesson.zh)}
-                                        className="p-1 rounded-lg bg-[#FFF5F2] dark:bg-slate-800 text-[#E85D3F] hover:brightness-95 transition cursor-pointer"
+                                        className="min-w-11 min-h-11 flex items-center justify-center p-1 rounded-lg bg-[#FFF5F2] dark:bg-slate-800 text-[#E85D3F] hover:brightness-95 transition cursor-pointer"
                                         title="Nghe phát âm tiêu đề"
                                       >
                                         <Volume2 className="w-3.5 h-3.5" />
@@ -1274,7 +1274,7 @@ export default function RoadmapPage({
                                   <button
                                     type="button"
                                     onClick={() => navigateToAppRoute(toolInfo.tab)}
-                                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition hover:brightness-95 cursor-pointer ${toolInfo.color}`}
+                                    className={`min-h-11 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition hover:brightness-95 cursor-pointer ${toolInfo.color}`}
                                   >
                                     <ToolIcon className="w-3.5 h-3.5" />
                                     <span>{toolInfo.label}</span>
@@ -1283,7 +1283,7 @@ export default function RoadmapPage({
                                   <button
                                     type="button"
                                     onClick={() => handleStartLesson(lesson)}
-                                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                                    className={`min-h-11 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                                       isDone
                                         ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800'
                                         : 'bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white hover:opacity-95 shadow-xs'

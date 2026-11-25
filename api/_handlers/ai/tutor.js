@@ -28,6 +28,7 @@
 
 import { checkRateLimitAndQuota, recordAgentQuotaWeight } from '../../_utils/distributedRateLimiter.js';
 import { verifyRequestAuth, getSupabaseAdminClient, sendSafeServerError } from '../../_utils/supabaseServer.js';
+import { enforceAiKillSwitch } from '../../_utils/corsAndIp.js';
 import { runAgentOrchestrator } from '../../_agent/orchestrator.js';
 import { validateAgentInput } from '../../_agent/guardrails.js';
 import { AGENT_INTENTS } from '../../_agent/contracts.js';
@@ -288,11 +289,8 @@ export default async function handler(req, res) {
   }
 
   // 1b. Feature Flag & Emergency Kill Switch (Hỗ trợ tắt khẩn cấp tính năng AI)
-  if (process.env.ENABLE_AI_TUTOR === 'false' || process.env.AI_TUTOR_KILL_SWITCH === 'true') {
-    return res.status(503).json({
-      error: 'Dịch vụ Gia sư AI đang tạm thời bảo trì để nâng cấp chất lượng. Vui lòng quay lại sau.',
-      code: 'feature_disabled'
-    });
+  if (enforceAiKillSwitch(res)) {
+    return;
   }
 
   // 2. Client Authentication & Token Verification (Zero-Trust)

@@ -1,5 +1,12 @@
 // Web Speech API and Web Audio API synthesizer for HanziGo
-import { supabase, isSupabaseConfigured } from '../supabase/config.js';
+import {
+  unlockMobileAudio,
+  playChineseTts,
+  stopChineseAudio,
+  prefetchTtsItems,
+} from '../services/ttsAudioService.js';
+
+export { unlockMobileAudio, prefetchTtsItems };
 
 // Danh sách giọng đọc hỗ trợ
 export const AUDIO_VOICES = {
@@ -24,11 +31,11 @@ export const checkChineseVoiceSupport = () => {
     return false;
   }
   const voices = window.speechSynthesis.getVoices() || [];
-  return voices.some(v => 
-    v.lang === 'zh-CN' || 
-    v.lang === 'zh-SG' || 
+  return voices.some(v =>
+    v.lang === 'zh-CN' ||
+    v.lang === 'zh-SG' ||
     v.lang === 'cmn-Hans-CN' ||
-    v.lang.startsWith('zh') || 
+    v.lang.startsWith('zh') ||
     v.name.includes('Chinese') ||
     v.name.includes('Mandarin') ||
     v.name.includes('Putonghua')
@@ -39,14 +46,19 @@ export const checkChineseVoiceSupport = () => {
  * Dừng mọi âm thanh đang phát (cả Web Speech API và HTML5 Audio)
  */
 export const stopChineseSpeech = () => {
+  stopChineseAudio();
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
+    } catch {
+      // Ignore Web Speech cancel errors
+    }
   }
   if (activeAudioElement) {
     try {
       activeAudioElement.pause();
       activeAudioElement.currentTime = 0;
-    } catch {}
+    } catch { }
     activeAudioElement = null;
   }
 };
@@ -55,7 +67,7 @@ export const stopChineseSpeech = () => {
  * Phát âm thông qua Web Speech API (Tầng 1 - Fallback cục bộ 0ms)
  */
 export const speakWithWebSpeech = (text, options = {}) => {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance !== 'function') {
     if (options.onError) {
       options.onError(new Error('Trình duyệt không hỗ trợ Web Speech Synthesis API.'));
     }
@@ -74,22 +86,27 @@ export const speakWithWebSpeech = (text, options = {}) => {
     utterance.rate = rate;
     utterance.pitch = pitch;
 
-    const voices = window.speechSynthesis.getVoices() || [];
-    const chineseVoice = voices.find(v => 
-      v.lang === 'zh-CN' || 
-      v.lang === 'zh-SG' || 
-      v.lang === 'cmn-Hans-CN' || 
-      v.lang.startsWith('zh') || 
-      v.name.includes('Chinese') || 
-      v.name.includes('Mandarin') ||
-      v.name.includes('Putonghua')
-    );
+    let chineseVoice = null;
+    try {
+      const voices = window.speechSynthesis.getVoices?.() || [];
+      chineseVoice = voices.find(v =>
+        v.lang === 'zh-CN' ||
+        v.lang === 'zh-SG' ||
+        v.lang === 'cmn-Hans-CN' ||
+        v.lang?.startsWith('zh') ||
+        v.name?.includes('Chinese') ||
+        v.name?.includes('Mandarin') ||
+        v.name?.includes('Putonghua')
+      );
+    } catch {
+      // Fail-open when iOS voices list is not loaded yet
+    }
 
     if (chineseVoice) {
       utterance.voice = chineseVoice;
-    } else {
-      window.dispatchEvent(new CustomEvent('hanzigo_voice_missing', { 
-        detail: { lang: 'zh-CN', text } 
+    } else if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('hanzigo_voice_missing', {
+        detail: { lang: 'zh-CN', text }
       }));
     }
 
@@ -104,9 +121,11 @@ export const speakWithWebSpeech = (text, options = {}) => {
     utterance.onerror = (e) => {
       console.warn('[HanziGo Audio] Utterance error:', e);
       if (onError) onError(e);
-      window.dispatchEvent(new CustomEvent('hanzigo_audio_error', { 
-        detail: { error: e, text } 
-      }));
+      if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('hanzigo_audio_error', {
+          detail: { error: e, text }
+        }));
+      }
     };
 
     window.speechSynthesis.speak(utterance);
@@ -119,20 +138,15 @@ export const speakWithWebSpeech = (text, options = {}) => {
 };
 
 /**
- * Phát âm tiếng Trung thông minh 2 tầng:
- * - Tầng 2 (Ưu tiên): Azure Neural HD Voice qua proxy backend /api/audio/tts với SHA-256 caching.
- * - Tầng 1 (Fallback): Web Speech API của trình duyệt khi offline hoặc chưa cấu hình API key.
- * 
- * @param {string} text - Văn bản tiếng Trung cần phát âm
- * @param {number|Object} optionsOrRate - Tốc độ (number) hoặc cấu hình chi tiết (object)
- * @returns {Object} Kết quả phát âm
- */
-/**
- * Speak Chinese text using cached cloud TTS or Web Speech API fallback.
+ * Speak Chinese text using low-latency Web Audio / L1+L2 cached cloud TTS or Web Speech API fallback.
+ * Synchronous `unlockMobileAudio()` runs immediately on invocation before any async step.
  * @param {string} text
  * @param {number | { rate?: number; pitch?: number; voiceName?: string; onStart?: () => void; onEnd?: () => void; onError?: (err?: unknown) => void; [key: string]: any }} [optionsOrRate]
  */
 export const speakChinese = (text, optionsOrRate = 0.85) => {
+  // Synchronously unlock mobile AudioContext inside the user tap gesture
+  unlockMobileAudio();
+
   if (!text || typeof text !== 'string' || !text.trim()) {
     return { success: false, reason: 'empty_text' };
   }
@@ -143,109 +157,34 @@ export const speakChinese = (text, optionsOrRate = 0.85) => {
   const preferNeural = options.preferNeural !== false && preferredVoice !== AUDIO_VOICES.DEVICE;
   const hasChinese = /[\u4e00-\u9fa5]/.test(text);
 
-  // Nếu không ưu tiên giọng Neural hoặc văn bản không có chữ Hán / quá dài: dùng Web Speech ngay
-  if (!preferNeural || !hasChinese || text.trim().length > 150) {
+  // If device voice requested, non-Hanzi, or very long passage: use hardened Web Speech directly
+  if (!preferNeural || !hasChinese || text.trim().length > 600) {
     return speakWithWebSpeech(text, options);
   }
 
-  const cacheKey = `${preferredVoice}_${rate.toFixed(2)}_${text.trim()}`;
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 6000) : null;
 
-  // 1. Kiểm tra RAM Cache (Tức thì 0ms, 0 network)
-  if (IN_MEMORY_AUDIO_CACHE.has(cacheKey)) {
-    const audioUrl = IN_MEMORY_AUDIO_CACHE.get(cacheKey);
-    stopChineseSpeech();
-
-    try {
-      const audio = new Audio(audioUrl);
-      activeAudioElement = audio;
-
-      if (options.onStart) options.onStart();
-      audio.onended = () => {
-        activeAudioElement = null;
-        if (options.onEnd) options.onEnd();
-      };
-      audio.onerror = () => {
-        activeAudioElement = null;
-        // Fallback về Web Speech nếu Audio element lỗi
-        speakWithWebSpeech(text, options);
-      };
-
-      audio.play().catch(() => {
-        speakWithWebSpeech(text, options);
-      });
-
-      return { success: true, mode: 'neural-memory-cache', cacheKey };
-    } catch {
-      return speakWithWebSpeech(text, options);
+  void playChineseTts(text, {
+    voice: preferredVoice,
+    rate,
+    signal: controller?.signal,
+    onStart: options.onStart,
+    onEnd: options.onEnd,
+    onError: options.onError,
+  }).then((res) => {
+    if (res?.audioUrl) {
+      const cacheKey = `${preferredVoice}_${Number(rate).toFixed(2)}_${text.trim()}`;
+      IN_MEMORY_AUDIO_CACHE.set(cacheKey, res.audioUrl);
     }
-  }
-
-  // 2. Gọi Proxy Backend /api/audio/tts bất đồng bộ
-  (async () => {
-    try {
-      let accessToken = null;
-      if (isSupabaseConfigured && supabase) {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          accessToken = session?.access_token;
-        } catch {}
-      }
-
-      const headers = { 'Accept': 'application/json' };
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
-      }
-
-      const url = `/api/audio/tts?text=${encodeURIComponent(text.trim())}&voice=${encodeURIComponent(preferredVoice)}&rate=${rate}&format=json`;
-      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      const timeoutId = controller ? setTimeout(() => controller.abort(), 6000) : null;
-      let res;
-      try {
-        res = await fetch(url, {
-          headers,
-          ...(controller ? { signal: controller.signal } : {}),
-        });
-      } finally {
-        if (timeoutId !== null) clearTimeout(timeoutId);
-      }
-
-      if (!res.ok) {
-        // Fallback nếu server trả về mã lỗi HTTP
-        speakWithWebSpeech(text, options);
-        return;
-      }
-
-      const data = await res.json();
-      if (data.fallbackToWebSpeech || !data.audioBase64) {
-        // Graceful fallback nếu server báo fallback
-        speakWithWebSpeech(text, options);
-        return;
-      }
-
-      // Tạo Audio Data URL & Lưu vào RAM Cache
-      const audioUrl = `data:audio/mpeg;base64,${data.audioBase64}`;
-      IN_MEMORY_AUDIO_CACHE.set(cacheKey, audioUrl);
-
-      stopChineseSpeech();
-      const audio = new Audio(audioUrl);
-      activeAudioElement = audio;
-
-      if (options.onStart) options.onStart();
-      audio.onended = () => {
-        activeAudioElement = null;
-        if (options.onEnd) options.onEnd();
-      };
-      audio.onerror = () => {
-        activeAudioElement = null;
-        speakWithWebSpeech(text, options);
-      };
-
-      await audio.play();
-    } catch {
-      // Khi mất mạng hoặc lỗi fetch: tự động chuyển về Web Speech
-      speakWithWebSpeech(text, options);
+    if (res && !res.ok && options.onEnd) {
+      options.onEnd();
     }
-  })();
+  }).catch(() => {
+    speakWithWebSpeech(text, options);
+  }).finally(() => {
+    if (timeoutId !== null) clearTimeout(timeoutId);
+  });
 
   return { success: true, mode: 'neural-fetching', text };
 };
@@ -273,21 +212,21 @@ export const playSuccessSound = () => {
     if (!ctx) return;
     const now = ctx.currentTime;
     const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-    
+
     notes.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      
+
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, now + idx * 0.08);
-      
+
       gain.gain.setValueAtTime(0, now + idx * 0.08);
       gain.gain.linearRampToValueAtTime(0.15, now + idx * 0.08 + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
-      
+
       osc.connect(gain);
       gain.connect(ctx.destination);
-      
+
       osc.start(now + idx * 0.08);
       osc.stop(now + idx * 0.08 + 0.4);
     });
@@ -303,21 +242,21 @@ export const playErrorSound = () => {
     if (!ctx) return;
     const now = ctx.currentTime;
     const notes = [329.63, 293.66]; // E4, D4
-    
+
     notes.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      
+
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, now + idx * 0.12);
-      
+
       gain.gain.setValueAtTime(0, now + idx * 0.12);
       gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.12 + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.3);
-      
+
       osc.connect(gain);
       gain.connect(ctx.destination);
-      
+
       osc.start(now + idx * 0.12);
       osc.stop(now + idx * 0.12 + 0.35);
     });
@@ -334,17 +273,17 @@ export const playClickSound = () => {
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    
+
     osc.type = 'sine';
     osc.frequency.setValueAtTime(800, now);
     osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
-    
+
     gain.gain.setValueAtTime(0.08, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-    
+
     osc.connect(gain);
     gain.connect(ctx.destination);
-    
+
     osc.start(now);
     osc.stop(now + 0.06);
   } catch (e) {
@@ -359,21 +298,21 @@ export const playLevelUpSound = () => {
     if (!ctx) return;
     const now = ctx.currentTime;
     const notes = [440, 554.37, 659.25, 880]; // A4, C#5, E5, A5
-    
+
     notes.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      
+
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, now + idx * 0.1);
-      
+
       gain.gain.setValueAtTime(0, now + idx * 0.1);
       gain.gain.linearRampToValueAtTime(0.2, now + idx * 0.1 + 0.03);
       gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.5);
-      
+
       osc.connect(gain);
       gain.connect(ctx.destination);
-      
+
       osc.start(now + idx * 0.1);
       osc.stop(now + idx * 0.1 + 0.6);
     });

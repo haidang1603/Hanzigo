@@ -1,12 +1,26 @@
 /**
  * HANZI GO - LIVE JOIN HANDLER
  */
-import { verifyRequestAuth, getSupabaseAdminClient, memoryParticipants } from '../../_utils/supabaseServer.js';
+import {
+  verifyRequestAuth,
+  getSupabaseAdminClient,
+  memoryParticipants,
+  sendSafeServerError,
+} from '../../_utils/supabaseServer.js';
 
 export default async function joinHandler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
   }
+
+  try {
+    return await handleJoinPost(req, res);
+  } catch (err) {
+    return sendSafeServerError(res, 'Lỗi hệ thống khi tham gia phòng học trực tuyến.', err, 500);
+  }
+}
+
+async function handleJoinPost(req, res) {
 
   const auth = await verifyRequestAuth(req);
   if (!auth.authenticated) {
@@ -147,7 +161,7 @@ export default async function joinHandler(req, res) {
     } catch (err) {
       console.warn('[/api/live/join] Fallback notice:', err.message);
       if (isProd) {
-        return res.status(500).json({ error: 'Lỗi hệ thống khi tham gia phòng học trực tuyến.' });
+        return sendSafeServerError(res, 'Lỗi hệ thống khi tham gia phòng học trực tuyến.', err, 500);
       }
     }
   } else {

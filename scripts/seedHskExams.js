@@ -13,27 +13,27 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { pathToFileURL } from 'url';
 import { HSK_EXAMS, HSK_QUESTIONS } from '../src/data/hskExamsData.js';
-import { HSK_STRUCTURE_DEFINITIONS, HSK_OFFICIAL_VERSIONS } from '../src/data/hskStructureData.js';
+import { HSK_STRUCTURE_DEFINITIONS } from '../src/data/hskStructureData.js';
 import { ensureAllFullStandardExamsLoaded } from '../src/data/hsk30/index.js';
 import { ensureAllExamSupplementsLoaded, SUPPLEMENTED_TARGET_TOTALS } from '../src/data/examSupplements/index.js';
 
 const isDryRun = process.argv.includes('--dry-run');
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ Lỗi: Thiếu VITE_SUPABASE_URL hoặc SUPABASE_SERVICE_ROLE_KEY trong .env');
-  process.exit(1);
+function getSupabaseClient() {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('❌ Lỗi: Thiếu VITE_SUPABASE_URL hoặc SUPABASE_SERVICE_ROLE_KEY trong .env');
+    process.exit(1);
+  }
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: { persistSession: false, autoRefreshToken: false }
-});
-
-async function seedStructures() {
-  console.log('\n--- 1. SEEDING HSK EXAM STRUCTURES ---');
+export function buildHskStructurePayloads() {
   const structuresToSeed = [];
 
   for (const [levelKey, def] of Object.entries(HSK_STRUCTURE_DEFINITIONS)) {
@@ -56,7 +56,7 @@ async function seedStructures() {
         audio_play_count: ver.audioPlayCount || 1,
         sections: ver.sections || [],
         source_reference: 'chinesetest.cn (CTI / CLEC)',
-        source_url: 'http://www.chinesetest.cn/',
+        source_url: 'https://www.chinesetest.cn/',
         verification_status: ver.verificationStatus || 'verified',
         verified_date: ver.verifiedDate || '2026-10-12',
         unverified_fields: ver.unverifiedFields || [],
@@ -64,6 +64,12 @@ async function seedStructures() {
       });
     }
   }
+  return structuresToSeed;
+}
+
+async function seedStructures(supabase) {
+  console.log('\n--- 1. SEEDING HSK EXAM STRUCTURES ---');
+  const structuresToSeed = buildHskStructurePayloads();
 
   console.log(`Tìm thấy ${structuresToSeed.length} cấu trúc HSK cần nạp.`);
   if (isDryRun) {
@@ -107,8 +113,7 @@ function normalizeExamRow(e, totalOverride) {
   };
 }
 
-async function seedExams() {
-  console.log('\n--- 2. SEEDING HSK EXAMS ---');
+export async function buildHskExamPayloads() {
   const { hsk30Exams = [], hsk20FullExams = [] } = await ensureAllFullStandardExamsLoaded();
   const examMap = new Map();
 
@@ -120,7 +125,12 @@ async function seedExams() {
     examMap.set(e.id, normalizeExamRow(e, qCount));
   }
 
-  const examsToSeed = Array.from(examMap.values());
+  return Array.from(examMap.values());
+}
+
+async function seedExams(supabase) {
+  console.log('\n--- 2. SEEDING HSK EXAMS ---');
+  const examsToSeed = await buildHskExamPayloads();
 
   console.log(`Tìm thấy ${examsToSeed.length} bộ đề HSK cần nạp.`);
   if (isDryRun) {
@@ -170,8 +180,7 @@ function normalizeQuestionRow(q, overrideId, overrideExamId, fallbackQuestionNum
   };
 }
 
-async function seedQuestions() {
-  console.log('\n--- 3. SEEDING HSK QUESTIONS ---');
+export async function buildHskQuestionPayloads() {
   const questionMap = new Map();
 
   // 1. Base HSK_QUESTIONS (preserve original IDs)
@@ -203,7 +212,12 @@ async function seedQuestions() {
     }
   }
 
-  const questionsToSeed = Array.from(questionMap.values());
+  return Array.from(questionMap.values());
+}
+
+async function seedQuestions(supabase) {
+  console.log('\n--- 3. SEEDING HSK QUESTIONS ---');
+  const questionsToSeed = await buildHskQuestionPayloads();
 
   console.log(`Tìm thấy ${questionsToSeed.length} câu hỏi HSK cần nạp.`);
   if (isDryRun) {
@@ -233,10 +247,11 @@ async function seedQuestions() {
 async function run() {
   console.log('🚀 Bắt đầu tiến trình nạp dữ liệu HSK Exam Center...');
   console.log(`Chế độ: ${isDryRun ? 'DRY-RUN (Xem trước)' : 'COMMIT (Ghi thực tế)'}`);
+  const supabase = getSupabaseClient();
   try {
-    await seedStructures();
-    await seedExams();
-    await seedQuestions();
+    await seedStructures(supabase);
+    await seedExams(supabase);
+    await seedQuestions(supabase);
     console.log('\n🎉 TIẾN TRÌNH SEED HSK HOÀN TẤT!');
   } catch (err) {
     console.error('❌ Lỗi ngoại lệ trong quá trình seed:', err);
@@ -244,4 +259,7 @@ async function run() {
   }
 }
 
-run();
+const isDirectCli = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isDirectCli) {
+  run();
+}

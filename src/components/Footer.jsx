@@ -262,7 +262,7 @@ export default function Footer({ setActiveTab, user = null }) {
             <button
               type="button"
               onClick={() => speakChinese(currentQuote.hanzi)}
-              className="px-6 py-3 rounded-full bg-white hover:bg-orange-50 active:scale-95 text-[#DF5334] font-bold text-xs sm:text-sm shadow-lg shadow-black/15 hover:scale-105 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer shrink-0 self-start sm:self-center lg:self-center"
+              className="min-h-11 px-6 py-3 rounded-full bg-white hover:bg-orange-50 active:scale-95 text-[#DF5334] font-bold text-xs sm:text-sm shadow-lg shadow-black/15 hover:scale-105 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer shrink-0 self-start sm:self-center lg:self-center"
               title={`Nghe phát âm chuẩn: "${currentQuote.hanzi}"`}
             >
               <Volume2 size={16} />

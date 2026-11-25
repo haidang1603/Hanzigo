@@ -28,8 +28,11 @@ import {
   BOSS_CHALLENGES 
 } from '../src/data/learningPathData.js';
 import { HANZI_DECOMPOSITION_DATABASE } from '../src/data/hanziDecomposition.js';
-import { HSK_STRUCTURE_DEFINITIONS } from '../src/data/hskStructureData.js';
-import { HSK_EXAMS, HSK_QUESTIONS } from '../src/data/hskExamsData.js';
+import {
+  buildHskStructurePayloads,
+  buildHskExamPayloads,
+  buildHskQuestionPayloads
+} from './seedHskExams.js';
 import { VOCABULARY_LIST } from '../src/data/chineseData.js';
 import { HSK6_IDIOMS_DATABASE } from '../src/data/hsk6IdiomsData.js';
 import { DEFAULT_MATERIALS } from '../src/utils/materialsStorage.js';
@@ -241,39 +244,11 @@ async function syncHanziDecompositions() {
 // 5. SYNC HSK EXAM CENTER (STRUCTURES, EXAMS, QUESTIONS)
 // -----------------------------------------------------------------------------
 async function syncHskExamCenter() {
-  console.log('\n--- 5. ĐỒNG BỘ TRUNG TÂM KHẢO THÍ HSK (EXAMS & QUESTIONS) ---');
+  console.log('\n--- 5. ĐỒNG BỘ TRUNG TÂM KHẢO THÍ HSK (STRUCTURES, EXAMS, QUESTIONS, RESOURCES) ---');
   if (target !== 'all' && target !== 'exams') return;
 
-  // 5.1 Exam Structures
-  const structuresPayload = [];
-  for (const [_levelKey, def] of Object.entries(HSK_STRUCTURE_DEFINITIONS)) {
-    for (const [versionKey, ver] of Object.entries(def.versions || {})) {
-      const structId = `hsk-${def.level.replace(/[^0-9-]/g, '') || '1'}-${versionKey.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-      const numericPassing = typeof ver.passingScore === 'number' ? ver.passingScore : parseInt(ver.passingScore, 10) || 120;
-      const numericMax = typeof ver.maxScore === 'number' ? ver.maxScore : parseInt(ver.maxScore, 10) || 200;
-      const vocabReq = ver.vocabRequirement || (def.level === 'HSK 1' ? 150 : def.level === 'HSK 2' ? 300 : def.level === 'HSK 3' ? 600 : def.level === 'HSK 4' ? 1200 : def.level === 'HSK 5' ? 2500 : 5000);
-
-      structuresPayload.push({
-        id: structId,
-        level: def.level,
-        version: versionKey,
-        level_name_vi: `${def.levelNameVi} (${versionKey})`,
-        total_duration_minutes: ver.totalDurationMinutes || 40,
-        total_questions: ver.totalQuestions || 40,
-        passing_score: numericPassing,
-        max_score: numericMax,
-        vocabulary_requirement: vocabReq,
-        character_requirement: ver.characterRequirement || null,
-        has_pinyin: ver.hasPinyin ?? (def.level === 'HSK 1' || def.level === 'HSK 2'),
-        audio_play_count: ver.audioPlayCount || (def.level === 'HSK 1' || def.level === 'HSK 2' ? 2 : 1),
-        sections: ver.sections || [],
-        source_reference: 'chinesetest.cn (CTI / CLEC)',
-        source_url: 'http://www.chinesetest.cn/',
-        verification_status: 'verified',
-        notes_vi: def.tagline || ''
-      });
-    }
-  }
+  // 5.1 Exam Structures (13 structures across 2015-Standard & HSK 3.0-2021)
+  const structuresPayload = buildHskStructurePayloads();
 
   if (isDryRun) {
     recordMetric('hsk_exam_structures', { total: structuresPayload.length, skipped: structuresPayload.length, notes: 'DRY-RUN' });
@@ -282,27 +257,8 @@ async function syncHskExamCenter() {
     recordMetric('hsk_exam_structures', { total: structuresPayload.length, inserted: res.inserted, errors: res.errors });
   }
 
-  // 5.2 Exams
-  const examsPayload = HSK_EXAMS.map(e => ({
-    id: e.id,
-    title: e.title,
-    level: e.level,
-    exam_version: e.exam_version || '2015-Standard',
-    exam_type: e.exam_type || 'mock',
-    skill_category: e.skill_category || 'mixed',
-    duration_minutes: e.duration_minutes || 40,
-    total_questions: e.total_questions || 20,
-    passing_score: e.passing_score || 120,
-    max_score: e.max_score || 200,
-    description: e.description || '',
-    source_url: e.source_url || 'http://www.chinesetest.cn/',
-    source_author: e.source_author || 'HanziGo Academic Team',
-    license: e.license || 'CC BY-NC-SA 4.0 / HanziGo Educational Content',
-    permission_status: e.permission_status || 'reproducible',
-    review_status: 'published',
-    difficulty_estimate: 'standard',
-    audio_play_limit: e.level === 'HSK 1' || e.level === 'HSK 2' ? 2 : 1
-  }));
+  // 5.2 Exams (Base + HSK 2.0 Full + HSK 3.0 Full)
+  const examsPayload = await buildHskExamPayloads();
 
   if (isDryRun) {
     recordMetric('hsk_exams', { total: examsPayload.length, skipped: examsPayload.length, notes: 'DRY-RUN' });
@@ -311,41 +267,49 @@ async function syncHskExamCenter() {
     recordMetric('hsk_exams', { total: examsPayload.length, inserted: res.inserted, errors: res.errors });
   }
 
-  // 5.3 Questions
-  const letterMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5 };
-  const questionsPayload = HSK_QUESTIONS.map(q => {
-    const correctLetter = q.correct_answer || 'A';
-    const correctIdx = typeof correctLetter === 'number' 
-      ? correctLetter 
-      : (letterMap[String(correctLetter).toUpperCase()] ?? 0);
-
-    return {
-      id: q.id,
-      exam_id: q.exam_id,
-      part_type: q.part_type || 'listening',
-      part_number: q.part_number || 1,
-      question_number: q.question_number || 1,
-      question_type: q.question_type || 'multiple_choice',
-      prompt: q.prompt || q.stem || 'Câu hỏi',
-      pinyin: q.pinyin || '',
-      translation: q.translation || q.meaning || '',
-      audio_url: q.audio_url || null,
-      audio_script: q.audio_script || '',
-      options: q.options || [],
-      correct_option_index: correctIdx,
-      explanation: q.explanation || '',
-      points: q.score_weight || q.points || 5,
-      words: q.words || [],
-      correct_order: q.correct_order || [],
-      accepted_answers: q.accepted_answers || []
-    };
-  });
+  // 5.3 Questions (Base + Append-only Supplements + Dual-system HSK 2.0 & 3.0)
+  const questionsPayload = await buildHskQuestionPayloads();
 
   if (isDryRun) {
     recordMetric('hsk_questions', { total: questionsPayload.length, skipped: questionsPayload.length, notes: 'DRY-RUN' });
   } else {
     const res = await chunkUpsert('hsk_questions', questionsPayload, 'id', 50);
     recordMetric('hsk_questions', { total: questionsPayload.length, inserted: res.inserted, errors: res.errors });
+  }
+
+  // 5.4 HSK Resources (56 verified resources)
+  const resourcesPayload = HSK_RESOURCES.map(r => ({
+    id: r.id,
+    title: r.title,
+    level: r.level || 'All',
+    exam_version: r.exam_version || '2015-Standard',
+    category: r.category || 'sample_exam',
+    academic_category: r.academic_category || 'textbooks_courses',
+    skill: r.skill || 'mixed',
+    format: r.format || 'web_link',
+    source_url: r.source_url,
+    source_author: r.source_author || 'HanziGo Academic Team',
+    publisher: r.publisher || null,
+    host_type: r.host_type || 'free_external',
+    language_of_instruction: r.language_of_instruction || 'Song ngữ Trung - Việt',
+    license_status: r.license_status || 'Public Educational Sample',
+    permission_status: r.permission_status || 'linked_only',
+    review_status: r.review_status || 'published',
+    is_published: r.is_published !== false,
+    download_url: r.download_url || null,
+    description: r.description || '',
+    tags: Array.isArray(r.tags) ? r.tags : [],
+    learning_objectives: Array.isArray(r.learning_objectives) ? r.learning_objectives : [],
+    related_lesson_ids: Array.isArray(r.related_lesson_ids) ? r.related_lesson_ids : [],
+    related_exam_ids: Array.isArray(r.related_exam_ids) ? r.related_exam_ids : [],
+    verified_date: r.verified_date || '2026-11-25'
+  }));
+
+  if (isDryRun) {
+    recordMetric('hsk_resources', { total: resourcesPayload.length, skipped: resourcesPayload.length, notes: 'DRY-RUN' });
+  } else {
+    const res = await chunkUpsert('hsk_resources', resourcesPayload, 'id', 25);
+    recordMetric('hsk_resources', { total: resourcesPayload.length, inserted: res.inserted, errors: res.errors });
   }
 }
 

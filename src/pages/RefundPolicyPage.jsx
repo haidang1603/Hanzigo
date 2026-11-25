@@ -127,7 +127,7 @@ export default function RefundPolicyPage({ setActiveTab }) {
                   <button
                     key={sec.id}
                     onClick={() => scrollToSection(sec.id)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                    className={`w-full min-h-11 text-left px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                       isCurrent
                         ? 'bg-[#E85D3F]/10 text-[#E85D3F] font-bold'
                         : 'text-[#748092] dark:text-[#94A3B8] hover:text-[#243447] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
@@ -167,7 +167,7 @@ export default function RefundPolicyPage({ setActiveTab }) {
                 Danh mục tính năng hoàn toàn MIỄN PHÍ:
               </strong>
               <ul className="list-disc list-inside space-y-1.5 pl-1">
-                <li><strong>Toàn bộ 60 bài học</strong> thuộc Lộ trình chuẩn từ Nhập môn đến HSK 4.</li>
+                <li><strong>Toàn bộ 180 bài học</strong> thuộc Lộ trình chuẩn HSK 1–6 (120 bài) và HSK 7–9 (60 bài).</li>
                 <li><strong>Hệ thống Flashcard 3D</strong> và thuật toán ngắt quãng SM-2 không giới hạn số từ vựng.</li>
                 <li><strong>Công cụ AI Speaking Lab</strong> nhận diện giọng nói và chẩn đoán thanh điệu.</li>
                 <li><strong>Bàn tập viết Ô Mễ Tự A4</strong> với hoạt ảnh bút thuận và xuất file in A4 PDF.</li>

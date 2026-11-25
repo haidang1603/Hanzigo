@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useState } from 'react';
-import { supabase, isSupabaseConfigured } from '../../supabase/config.js';
+import { supabase, isSupabaseConfigured, getClientAuthHeaders } from '../../supabase/config.js';
 import { playChineseTts } from '../../services/ttsAudioService.js';
 import {
   searchDictionaryMultimodal,
@@ -204,9 +204,10 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
             const timeoutId = controller ? setTimeout(() => controller.abort(), 9000) : null;
             let aiRes: Response;
             try {
+              const authHeaders = await getClientAuthHeaders();
               aiRes = await fetch('/api/ai/grade', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...authHeaders },
                 ...(controller ? { signal: controller.signal } : {}),
                 body: JSON.stringify({
                   type: 'dictionary',

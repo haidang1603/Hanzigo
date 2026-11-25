@@ -6,7 +6,11 @@
  */
 import { getFullExamById } from '../../../src/data/hskExamsData.js';
 import { calculateHskCbtScore } from '../../../src/utils/examScoringEngine.js';
-import { getSupabaseAdminClient, verifyRequestAuth } from '../../_utils/supabaseServer.js';
+import {
+  getSupabaseAdminClient,
+  verifyRequestAuth,
+  sendSafeServerError,
+} from '../../_utils/supabaseServer.js';
 
 // In-memory idempotency cache for deduplication on retry or double-submission
 const recentSubmissions = new Map();
@@ -16,6 +20,15 @@ export default async function submitHandler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Chỉ chấp nhận phương thức POST.' });
   }
+
+  try {
+    return await handleSubmitPost(req, res);
+  } catch (err) {
+    return sendSafeServerError(res, 'Lỗi máy chủ nội bộ khi chấm điểm bài thi.', err, 500);
+  }
+}
+
+async function handleSubmitPost(req, res) {
 
   const { 
     examId, 
