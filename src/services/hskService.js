@@ -21,6 +21,11 @@ import {
 } from '../data/hskExamsData.js';
 import { ensureAllFullStandardExamsLoaded } from '../data/hsk30/index.js';
 import {
+  buildAttemptAnswerSnapshots,
+  compactAttemptsForLocalStorage,
+  MAX_LOCAL_SNAPSHOT_ATTEMPTS,
+} from '../utils/examAttemptSnapshot.js';
+import {
   ensureExamSupplementLoaded,
   SUPPLEMENTED_EXAM_IDS,
   SUPPLEMENTED_TARGET_TOTALS,
@@ -222,14 +227,15 @@ export async function getExamForTaking(examId, user = null) {
  * @param {Object} params - { examId, submittedAnswers, timeSpentSeconds, user, examMode }
  */
 export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, maybeTimeSpent = 0, maybeUser = null, maybeMode = 'simulation') {
-  let examId, submittedAnswers, timeSpentSeconds, user, examMode;
+  let examId, submittedAnswers, timeSpentSeconds, user, examMode, subjectiveGrades;
   if (typeof optionsOrExamId === 'object' && optionsOrExamId !== null) {
     ({ 
       examId, 
       submittedAnswers = {}, 
       timeSpentSeconds = 0, 
       user = null, 
-      examMode = 'simulation' 
+      examMode = 'simulation',
+      subjectiveGrades = {}
     } = optionsOrExamId);
   } else {
     examId = optionsOrExamId;
@@ -237,6 +243,7 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
     timeSpentSeconds = maybeTimeSpent || 0;
     user = maybeUser || null;
     examMode = maybeMode || 'simulation';
+    subjectiveGrades = {};
   }
   const hasSupplementAnswers = Object.keys(submittedAnswers || {}).some((k) => String(k).includes('-sup-'));
   if (hasSupplementAnswers && SUPPLEMENTED_EXAM_IDS.includes(examId) && !DYNAMIC_EXAMS.has(examId)) {
@@ -284,7 +291,8 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
             timeSpentSeconds,
             anonymousSessionId: anonSessionId,
             examMode,
-            attemptId
+            attemptId,
+            subjectiveGrades
           })
         });
       } finally {
@@ -472,13 +480,21 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
     ? cbtScoring.totalScore
     : estimatedScore;
 
+  const answerSnapshots = buildAttemptAnswerSnapshots(questions, {
+    answers: submittedAnswers,
+    detailedResults,
+    subjectiveGrades,
+  });
+
   const attemptResult = {
     id: attemptId,
     examId: fullExam.id,
     examTitle: fullExam.title,
     examLevel: fullExam.level,
     examType: fullExam.exam_type,
+    examSystem: fullExam.examSystem || 'hsk_2_0',
     examMode,
+    practiceMode: examMode === 'practice' ? 'learning' : 'exam',
     userId: user?.id || null,
     anonymousSessionId: anonSessionId,
     timeSpentSeconds,
@@ -500,6 +516,7 @@ export async function submitExamAttempt(optionsOrExamId, maybeAnswers = {}, mayb
     weakestSkill: cbtScoring.weakestSkill,
     recommendations: cbtScoring.recommendations,
     detailedResults,
+    answerSnapshots,
     isEstimatedScore: true,
     disclaimer: 'Điểm số luyện tập mô phỏng theo chuẩn CTI của HanziGo, không thay thế chứng chỉ khảo thí chính thức.',
     createdAt: new Date().toISOString()
@@ -538,9 +555,31 @@ function saveAttemptToLocal(attempt) {
     const storageKey = getAttemptsStorageKey(attempt?.userId ? { id: attempt.userId } : null);
     const raw = localStorage.getItem(storageKey);
     const list = raw ? JSON.parse(raw) : [];
-    // Lưu tối đa 30 lượt làm bài gần nhất
-    const updated = [attempt, ...list.filter(a => a.id !== attempt.id)].slice(0, 30);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
+    const merged = [attempt, ...(Array.isArray(list) ? list : []).filter(a => a.id !== attempt.id)];
+    const compacted = compactAttemptsForLocalStorage(merged, {
+      maxSnapshotAttempts: MAX_LOCAL_SNAPSHOT_ATTEMPTS,
+      maxTotalAttempts: 30,
+    });
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(compacted));
+    } catch {
+      // QuotaExceededError fail-open: thu gọn số bản ghi giữ snapshot xuống 5 rồi 0
+      try {
+        const tighter = compactAttemptsForLocalStorage(merged, {
+          maxSnapshotAttempts: 5,
+          maxTotalAttempts: 20,
+        });
+        localStorage.setItem(storageKey, JSON.stringify(tighter));
+      } catch {
+        try {
+          const minimal = compactAttemptsForLocalStorage(merged, {
+            maxSnapshotAttempts: 0,
+            maxTotalAttempts: 15,
+          });
+          localStorage.setItem(storageKey, JSON.stringify(minimal));
+        } catch {}
+      }
+    }
   } catch {}
 }
 
@@ -602,12 +641,19 @@ async function syncAttemptToSupabase(attempt) {
     passed: attempt.passed,
     skill_breakdown: attempt.skillBreakdown,
     detailed_results: attempt.detailedResults,
+    answer_snapshots: attempt.answerSnapshots || null,
     created_at: attempt.createdAt
   };
   try {
     if (!supabase) throw new Error('Supabase unavailable');
     const { error } = await supabase.from('hsk_attempts').upsert(payload, { onConflict: 'id' });
-    if (error) throw error;
+    if (error && /answer_snapshots/i.test(error.message || '')) {
+      const { answer_snapshots: _ignored, ...legacyPayload } = payload;
+      const { error: retryErr } = await supabase.from('hsk_attempts').upsert(legacyPayload, { onConflict: 'id' });
+      if (retryErr) throw retryErr;
+    } else if (error) {
+      throw error;
+    }
   } catch {
     if (attempt?.userId) {
       enqueueOfflineMutation({
@@ -658,6 +704,7 @@ export async function getAttemptResult(attemptId, user = null) {
           passed: data.passed,
           skillBreakdown: data.skill_breakdown,
           detailedResults: data.detailed_results,
+          answerSnapshots: Array.isArray(data.answer_snapshots) ? data.answer_snapshots : null,
           createdAt: data.created_at
         };
       }
@@ -699,6 +746,13 @@ export function saveTemporaryAnswers(examId, answers, extra = {}) {
       currentIdx: extra.currentIdx || 0,
       timeLeft: typeof extra.timeLeft === 'number' ? extra.timeLeft : null,
       timeSpentSeconds: typeof extra.timeSpentSeconds === 'number' ? extra.timeSpentSeconds : 0,
+      shuffleOptions: typeof extra.shuffleOptions === 'boolean' ? extra.shuffleOptions : undefined,
+      sessionSeed: extra.sessionSeed || null,
+      activeSectionIndex: Number.isInteger(extra.activeSectionIndex) ? extra.activeSectionIndex : undefined,
+      lockedSections: Array.isArray(extra.lockedSections) ? extra.lockedSections : undefined,
+      sectionRemainingSeconds: Array.isArray(extra.sectionRemainingSeconds)
+        ? extra.sectionRemainingSeconds
+        : undefined,
       savedAt: Date.now()
     }));
   } catch {}

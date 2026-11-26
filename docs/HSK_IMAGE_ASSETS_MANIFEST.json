@@ -1,0 +1,620 @@
+{
+  "generatedAt": "2026-11-26T18:46:14.704Z",
+  "totalAssets": 42,
+  "totalSizeKb": 71.58,
+  "assets": [
+    {
+      "path": "/images/hsk/generated/hsk12-airport-welcome.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Man greeting arriving traveler with suitcase in airport hall.",
+      "fileSizeKb": 1.05,
+      "usedByQuestionIds": [
+        "q-hsk1-01-23",
+        "q-hsk2-ref2-06",
+        "q-hsk1-read02-01",
+        "q-hsk2-lis02-03",
+        "q-hsk2-02-05",
+        "hsk30-l2-lis-p2-04"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-basketball-friends.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Friends playing basketball on sunny outdoor court.",
+      "fileSizeKb": 0.99,
+      "usedByQuestionIds": [
+        "q-hsk2-01-35",
+        "q-hsk2-ref-10",
+        "q-hsk2-02-09",
+        "hsk30-l2-lis-p2-03",
+        "hsk30-l2-rea-p1-02"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-cat-under-chair.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Cute orange tabby cat curled asleep under a wooden chair.",
+      "fileSizeKb": 1.21,
+      "usedByQuestionIds": [
+        "q-hsk1-01-09",
+        "q-hsk1-02-27",
+        "q-hsk1-ref-05",
+        "q-hsk1-02-04",
+        "hsk2-mock-01-sup-04",
+        "hsk30-l1-lis-p2-01"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-classroom-teacher.webp",
+      "sourceType": "ai_generated_webp",
+      "license": "AI-Generated-Custom",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Teacher beside green chalkboard with two students in sunlit classroom.",
+      "fileSizeKb": 10.4,
+      "usedByQuestionIds": [
+        "q-hsk1-01-10",
+        "q-hsk1-01-24",
+        "q-hsk1-01-26",
+        "q-hsk1-02-13",
+        "q-hsk1-02-17",
+        "q-hsk1-02-23",
+        "q-hsk1-02-25",
+        "q-hsk1-02-28",
+        "q-hsk1-02-29",
+        "q-hsk2-01-05",
+        "q-hsk2-01-09",
+        "q-hsk2-01-22",
+        "q-hsk2-01-23",
+        "q-hsk2-01-24",
+        "q-hsk1-03-05",
+        "q-hsk1-03-09",
+        "q-hsk1-03-10",
+        "q-hsk2-03-05",
+        "q-hsk1-ref-01",
+        "q-hsk1-ref-09",
+        "q-hsk1-ref-14",
+        "q-hsk1-ref-16",
+        "q-hsk1-ref-17",
+        "q-hsk1-ref-18",
+        "q-hsk2-ref-09",
+        "q-hsk2-ref-17",
+        "q-hsk2-ref-18",
+        "q-hsk2-ref-20",
+        "q-hsk2-ref2-05",
+        "q-hsk2-lis02-04",
+        "q-hsk1-02-01",
+        "q-hsk1-02-05",
+        "q-hsk1-02-07",
+        "q-hsk2-02-07",
+        "q-hsk1-03-04",
+        "hsk2-mock-01-sup-05",
+        "hsk2-mock-01-sup-17",
+        "hsk30-l1-lis-p1-01",
+        "hsk30-l1-lis-p2-04",
+        "hsk30-l1-rea-p2-02"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-doctor-patient.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Friendly doctor with stethoscope consulting patient in bright clinic.",
+      "fileSizeKb": 1.15,
+      "usedByQuestionIds": [
+        "q-hsk1-02-30",
+        "q-hsk2-ref-04",
+        "hsk2-mock-01-sup-19",
+        "hsk30-l1-rea-p1-01",
+        "hsk30-l2-lis-p2-06",
+        "hsk30-l2-rea-p1-03"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-drinking-tea.webp",
+      "sourceType": "ai_generated_webp",
+      "license": "AI-Generated-Custom",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Young woman smiling warmly while holding a steaming ceramic teacup.",
+      "fileSizeKb": 5.81,
+      "usedByQuestionIds": [
+        "q-hsk1-02-08",
+        "q-hsk2-03-04",
+        "hsk30-l1-lis-p1-05"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-family-dinner.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Happy family dining around round table with bowls and dishes.",
+      "fileSizeKb": 1.53,
+      "usedByQuestionIds": [
+        "q-hsk1-01-05",
+        "q-hsk1-01-07",
+        "q-hsk1-01-22",
+        "q-hsk1-01-27",
+        "q-hsk1-01-29",
+        "q-hsk1-02-19",
+        "q-hsk2-01-04",
+        "q-hsk2-01-27",
+        "q-hsk1-03-06",
+        "q-hsk1-03-07",
+        "q-hsk2-03-06",
+        "q-hsk1-ref-04",
+        "q-hsk1-ref-11",
+        "q-hsk2-ref-05",
+        "q-hsk2-ref-15",
+        "q-hsk2-ref2-01",
+        "q-hsk2-ref2-04",
+        "q-hsk2-02-08",
+        "hsk2-mock-01-sup-02",
+        "hsk30-l1-rea-p2-03",
+        "hsk30-l2-lis-p2-01"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-kitchen-cooking.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Mother cooking fresh meal at warm home kitchen stove.",
+      "fileSizeKb": 1.28,
+      "usedByQuestionIds": [
+        "q-hsk2-01-08",
+        "q-hsk2-01-30",
+        "q-hsk1-03-08",
+        "q-hsk1-read02-05",
+        "hsk2-mock-01-sup-10",
+        "hsk30-l1-lis-p2-02",
+        "hsk30-l2-rea-p2-06"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-library-reading.webp",
+      "sourceType": "ai_generated_webp",
+      "license": "AI-Generated-Custom",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Student reading an open book quietly at library desk.",
+      "fileSizeKb": 11.57,
+      "usedByQuestionIds": [
+        "q-hsk1-01-02",
+        "q-hsk1-01-21",
+        "q-hsk1-02-11",
+        "q-hsk1-ref-13",
+        "q-hsk2-ref-01",
+        "q-hsk1-read02-02",
+        "q-hsk1-read02-07",
+        "q-hsk1-02-02",
+        "hsk2-mock-01-sup-16",
+        "hsk30-l1-lis-p1-04"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-rainy-mountain.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Rain clouds over scenic green hills with colorful umbrella.",
+      "fileSizeKb": 0.84,
+      "usedByQuestionIds": [
+        "hsk30-l2-rea-p2-01"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-shopping-red-dress.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Parents admiring a red dress hanging on boutique rack.",
+      "fileSizeKb": 0.97,
+      "usedByQuestionIds": [
+        "q-hsk1-02-26",
+        "q-hsk2-01-28",
+        "q-hsk1-read02-06",
+        "q-hsk2-lis02-05",
+        "hsk30-l2-lis-p2-02"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-sleeping-waking.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Person resting peacefully under cozy blanket at night.",
+      "fileSizeKb": 0.8,
+      "usedByQuestionIds": [
+        "hsk30-l2-lis-p1-04"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-taxi-station.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Traveler boarding yellow taxi outside modern train station.",
+      "fileSizeKb": 1.31,
+      "usedByQuestionIds": [
+        "q-hsk1-02-15",
+        "q-hsk2-01-03",
+        "q-hsk1-ref-03",
+        "q-hsk2-ref-07",
+        "q-hsk2-02-02",
+        "q-hsk2-03-01",
+        "hsk30-l1-lis-p2-03"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-walking-to-office.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Office worker with briefcase walking along tree-lined sidewalk.",
+      "fileSizeKb": 1.52,
+      "usedByQuestionIds": [
+        "hsk30-l2-lis-p1-03"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk12-watching-movie-home.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Person relaxing on cozy living room sofa watching television.",
+      "fileSizeKb": 0.99,
+      "usedByQuestionIds": [
+        "q-hsk2-01-01",
+        "q-hsk2-01-06",
+        "q-hsk2-01-33",
+        "q-hsk2-ref-03",
+        "q-hsk2-lis02-07",
+        "hsk2-mock-01-sup-20",
+        "hsk30-l2-lis-p1-01"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk4-basketball-celebration.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. College basketball teammates celebrating victory enthusiastically on court.",
+      "fileSizeKb": 1.22,
+      "usedByQuestionIds": [
+        "hsk4-mock-01-sup-70"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk4-family-making-dumplings.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Family gathered around festive table wrapping dumplings together.",
+      "fileSizeKb": 1.41,
+      "usedByQuestionIds": [
+        "hsk30-l4-wri-p1-03"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk4-library-tablet-discuss.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Two university students discussing over a tablet in quiet library.",
+      "fileSizeKb": 1.16,
+      "usedByQuestionIds": [
+        "hsk4-mock-01-sup-68"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk4-mom-tying-shoelaces.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Mother patiently teaching young son how to tie shoelaces by home doorway.",
+      "fileSizeKb": 1.03,
+      "usedByQuestionIds": [
+        "hsk4-mock-01-sup-69"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk4-office-whiteboard-discuss.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Two office colleagues discussing work in front of blank whiteboard.",
+      "fileSizeKb": 1.01,
+      "usedByQuestionIds": [
+        "hsk30-l4-wri-p1-01"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk4-park-morning-jog.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Young woman with headphones jogging along sunlit park trail.",
+      "fileSizeKb": 1.07,
+      "usedByQuestionIds": [
+        "hsk30-l4-wri-p1-02"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk4-playing-piano.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Pianist playing piano gracefully in warm sunlit music room.",
+      "fileSizeKb": 1.39,
+      "usedByQuestionIds": [
+        "q-hsk4-01-29"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk4-saving-water.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Hand turning off dripping water faucet above clean ceramic sink.",
+      "fileSizeKb": 0.7,
+      "usedByQuestionIds": [
+        "q-hsk4-03-09"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk4-student-tidying-desk.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Student neatly organizing stacked books and notebooks on study desk.",
+      "fileSizeKb": 0.98,
+      "usedByQuestionIds": [
+        "hsk30-l4-wri-p1-05"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk4-volunteer-directions-station.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Volunteer in red vest holding blank map pointing directions outside train station.",
+      "fileSizeKb": 1.02,
+      "usedByQuestionIds": [
+        "hsk30-l4-wri-p1-04"
+      ]
+    },
+    {
+      "path": "/images/hsk/generated/hsk5-four-panel-growth.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Clean flat vector textbook illustration for Chinese language exam, soft pastel palette, warm daylight, simple clear silhouettes, light cream background, friendly modern educational style, absolutely no text/characters/watermarks. Four-panel visual comic grid showing personal growth from leaving home to city career success.",
+      "fileSizeKb": 2.07,
+      "usedByQuestionIds": [
+        "hsk30-l5-wri-p1-01"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/airplane-sky.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector airplane flying across bright clouds (CC0 textbook pack)",
+      "fileSizeKb": 1.27,
+      "usedByQuestionIds": [
+        "hsk30-l2-rea-p1-01",
+        "hsk30-l2-rea-p2-05"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/apple-book-desk.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector study desk with book and red apples (CC0 textbook pack)",
+      "fileSizeKb": 1.35,
+      "usedByQuestionIds": [
+        "q-hsk1-01-03",
+        "q-hsk1-01-08",
+        "q-hsk1-02-12",
+        "q-hsk2-01-34",
+        "q-hsk2-03-07",
+        "q-hsk1-ref-06",
+        "q-hsk1-ref-15",
+        "q-hsk1-ref-20",
+        "q-hsk2-ref-19",
+        "q-hsk1-read02-03",
+        "q-hsk1-02-06",
+        "q-hsk1-02-10",
+        "q-hsk1-03-03",
+        "hsk2-mock-01-sup-06",
+        "hsk30-l1-lis-p1-03"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/clock-time.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector analog wall clock face with tick marks (CC0 textbook pack)",
+      "fileSizeKb": 1.38,
+      "usedByQuestionIds": [
+        "q-hsk1-02-14",
+        "q-hsk1-02-20",
+        "q-hsk2-01-07",
+        "q-hsk2-01-10",
+        "q-hsk2-01-26",
+        "q-hsk2-01-29",
+        "q-hsk2-01-31",
+        "q-hsk2-03-08",
+        "q-hsk1-ref-07",
+        "q-hsk2-ref-06",
+        "q-hsk2-ref-08",
+        "q-hsk2-ref-14",
+        "q-hsk2-ref-16",
+        "q-hsk2-lis02-06",
+        "q-hsk1-02-03",
+        "q-hsk1-02-09",
+        "q-hsk2-02-01",
+        "q-hsk2-02-04",
+        "q-hsk2-02-10",
+        "q-hsk1-03-02",
+        "q-hsk2-03-02",
+        "hsk2-mock-01-sup-03",
+        "hsk2-mock-01-sup-08",
+        "hsk2-mock-01-sup-09",
+        "hsk30-l1-lis-p2-05",
+        "hsk30-l1-rea-p2-01",
+        "hsk30-l2-rea-p1-04"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/coffee-cup.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector warm coffee mug with steam (CC0 textbook pack)",
+      "fileSizeKb": 0.91,
+      "usedByQuestionIds": [
+        "q-hsk2-lis02-02"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/happy-smile.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector joyful smiling face emblem (CC0 textbook pack)",
+      "fileSizeKb": 0.77,
+      "usedByQuestionIds": [
+        "q-hsk1-01-01",
+        "q-hsk1-ref-08",
+        "q-hsk1-03-01",
+        "hsk30-l1-rea-p1-05",
+        "hsk30-l2-rea-p2-03"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/key-ring.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector brass key and ring (CC0 textbook pack)",
+      "fileSizeKb": 0.89,
+      "usedByQuestionIds": [
+        "hsk30-l2-lis-p1-06"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/movie-tickets.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector pair of cinema tickets with star emblem (CC0 textbook pack)",
+      "fileSizeKb": 1.01,
+      "usedByQuestionIds": [
+        "hsk30-l2-lis-p1-05"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/open-window.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector sunlit bedroom window with curtains (CC0 textbook pack)",
+      "fileSizeKb": 0.91,
+      "usedByQuestionIds": [
+        "hsk30-l2-rea-p1-05"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/pencil-paper.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector yellow pencil and blank lined paper (CC0 textbook pack)",
+      "fileSizeKb": 1.08,
+      "usedByQuestionIds": [
+        "hsk30-l2-lis-p2-05",
+        "hsk30-l2-rea-p2-02",
+        "hsk30-l2-rea-p2-04"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/phone-call.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector smartphone call illustration (CC0 textbook pack)",
+      "fileSizeKb": 0.96,
+      "usedByQuestionIds": [
+        "q-hsk1-01-06",
+        "q-hsk1-02-22",
+        "q-hsk2-ref-12",
+        "q-hsk1-read02-04",
+        "hsk30-l1-rea-p1-03"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/tea-cup.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector steaming green teacup on saucer (CC0 textbook pack)",
+      "fileSizeKb": 0.99,
+      "usedByQuestionIds": [
+        "q-hsk1-01-28",
+        "q-hsk1-02-16",
+        "q-hsk1-02-21",
+        "q-hsk2-03-10",
+        "q-hsk1-ref-02",
+        "q-hsk1-ref-19",
+        "hsk2-mock-01-sup-18",
+        "hsk30-l1-rea-p2-04"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/television-screen.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector living room television screen (CC0 textbook pack)",
+      "fileSizeKb": 0.77,
+      "usedByQuestionIds": [
+        "hsk30-l1-rea-p1-04"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/train-rail.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector high-speed train on railway tracks (CC0 textbook pack)",
+      "fileSizeKb": 1.56,
+      "usedByQuestionIds": [
+        "hsk30-l1-rea-p1-02",
+        "hsk30-l2-rea-p1-06"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/weather-rainy.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector rain clouds with falling droplets (CC0 textbook pack)",
+      "fileSizeKb": 0.85,
+      "usedByQuestionIds": [
+        "q-hsk1-01-25",
+        "q-hsk2-01-25",
+        "q-hsk2-ref-13",
+        "q-hsk2-02-06",
+        "q-hsk2-03-03",
+        "hsk2-mock-01-sup-07",
+        "hsk30-l1-rea-p2-05"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/weather-sunny.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector sunny sky with soft white clouds (CC0 textbook pack)",
+      "fileSizeKb": 1.04,
+      "usedByQuestionIds": [
+        "q-hsk1-01-04",
+        "q-hsk1-01-30",
+        "q-hsk1-02-18",
+        "q-hsk1-02-24",
+        "q-hsk2-01-02",
+        "q-hsk2-01-21",
+        "q-hsk2-01-32",
+        "q-hsk2-03-09",
+        "q-hsk1-ref-10",
+        "q-hsk1-ref-12",
+        "q-hsk2-ref-02",
+        "q-hsk2-ref-11",
+        "q-hsk2-ref2-02",
+        "q-hsk2-ref2-03",
+        "q-hsk2-lis02-01",
+        "q-hsk2-02-03",
+        "hsk2-mock-01-sup-01",
+        "hsk30-l1-lis-p1-02"
+      ]
+    },
+    {
+      "path": "/images/hsk/sourced/white-dog.svg",
+      "sourceType": "custom_svg",
+      "license": "CC0-1.0",
+      "sourceUrlOrPrompt": "Flat vector playful white puppy running on grass (CC0 textbook pack)",
+      "fileSizeKb": 1.36,
+      "usedByQuestionIds": [
+        "hsk30-l2-lis-p1-02"
+      ]
+    }
+  ]
+}

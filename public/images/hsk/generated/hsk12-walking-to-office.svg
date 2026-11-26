@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" width="480" height="320" role="img">
+  <rect width="480" height="320" rx="18" fill="#F0F9FF"/>
+
+    <rect x="0" y="220" width="480" height="100" fill="#E2E8F0"/>
+    <rect x="0" y="198" width="480" height="26" fill="#86EFAC"/>
+    <rect x="308" y="56" width="128" height="164" rx="8" fill="#94A3B8"/>
+    <g fill="#E0F2FE">
+      <rect x="326" y="74" width="24" height="24" rx="3"/><rect x="360" y="74" width="24" height="24" rx="3"/><rect x="394" y="74" width="24" height="24" rx="3"/>
+      <rect x="326" y="110" width="24" height="24" rx="3"/><rect x="360" y="110" width="24" height="24" rx="3"/><rect x="394" y="110" width="24" height="24" rx="3"/>
+      <rect x="326" y="146" width="24" height="24" rx="3"/><rect x="360" y="146" width="24" height="24" rx="3"/><rect x="394" y="146" width="24" height="24" rx="3"/>
+    </g>
+    <circle cx="84" cy="144" r="36" fill="#4ADE80"/><rect x="78" y="176" width="12" height="44" fill="#92400E"/>
+    <circle cx="42" cy="54" r="24" fill="#FDE047"/>
+    <g transform="translate(186 178) scale(1)"><circle cx="0" cy="-34" r="18" fill="#1E293B"/><circle cx="0" cy="-30" r="15" fill="#FDBA74"/><path d="M-20 8c0-20 40-20 40 0v28h-40V8z" fill="#3B82F6"/></g>
+    <rect x="210" y="186" width="32" height="24" rx="4" fill="#78350F"/>
+    <line x1="176" y1="214" x2="162" y2="254" stroke="#1E293B" stroke-width="10" stroke-linecap="round"/>
+    <line x1="196" y1="214" x2="212" y2="254" stroke="#1E293B" stroke-width="10" stroke-linecap="round"/>
+  
+</svg>

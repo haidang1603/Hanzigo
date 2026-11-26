@@ -1,21 +1,21 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
 import { calculateTotalXp, getStreakStatus, getUserStorageKey } from '../utils/gamification.js';
 import { isValidUuid } from './authService.js';
+import {
+  sanitizePublicDisplayName,
+  getVietnamLeaderboardWindow,
+  filterAndRankHallOfFame,
+  XP_HONORIFIC_TITLES,
+  getXpHonorificTitle,
+} from '../utils/communitySafety.js';
 
-// Honorific titles earned by reaching total XP thresholds
-export const XP_HONORIFIC_TITLES = [
-  { minXp: 1500, title: '👑 Đại Tông Sư HSK', color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700' },
-  { minXp: 1000, title: '🐉 Cao Thủ Phản Xạ', color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-700' },
-  { minXp: 600,  title: '🔥 Bậc Thầy Hán Tự', color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/40 border-orange-300 dark:border-orange-700' },
-  { minXp: 300,  title: '🌿 Học Giả Siêng Năng', color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700' },
-  { minXp: 100,  title: '🌱 Tân Binh Nỗ Lực', color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-700' },
-  { minXp: 0,    title: '🐣 Người Mới Bắt Đầu', color: 'text-gray-500 bg-gray-50 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700' },
-];
-
-export function getXpHonorificTitle(xp = 0) {
-  const matched = XP_HONORIFIC_TITLES.find(t => xp >= t.minXp);
-  return matched || XP_HONORIFIC_TITLES[XP_HONORIFIC_TITLES.length - 1];
-}
+export {
+  sanitizePublicDisplayName,
+  getVietnamLeaderboardWindow,
+  filterAndRankHallOfFame,
+  XP_HONORIFIC_TITLES,
+  getXpHonorificTitle,
+};
 
 /**
  * Che giấu email nhạy cảm nhằm bảo vệ quyền riêng tư học viên
@@ -49,14 +49,27 @@ export function isUserLeaderboardOptedOut(u) {
 }
 
 /**
- * Cập nhật tùy chọn ẩn danh / hiển thị trên Leaderboard
+ * Cập nhật tùy chọn ẩn danh / hiển thị trên Leaderboard (cục bộ + Supabase profiles)
  */
 export function setLeaderboardPrivacyOptOut(user, isOptedOut) {
   if (!user) return false;
+  const hidden = Boolean(isOptedOut);
   const uid = user.uid || user.id || (user.email ? user.email.replace(/[^a-zA-Z0-9]/g, '_') : 'guest');
   try {
-    localStorage.setItem(`hanzigo_leaderboard_opt_out_${uid}`, isOptedOut ? 'true' : 'false');
+    localStorage.setItem(`hanzigo_leaderboard_opt_out_${uid}`, hidden ? 'true' : 'false');
   } catch {}
+
+  const dbId = user.uid || user.id;
+  if (isSupabaseConfigured && supabase && dbId && isValidUuid(dbId)) {
+    try {
+      supabase
+        .from('profiles')
+        .update({ is_leaderboard_hidden: hidden, updated_at: new Date().toISOString() })
+        .eq('id', dbId)
+        .then(() => {})
+        .catch(() => {});
+    } catch {}
+  }
   return true;
 }
 
@@ -65,7 +78,7 @@ export function setLeaderboardPrivacyOptOut(user, isOptedOut) {
  */
 function isDemoLeaderboardUser(u) {
   if (!u) return true;
-  const id = String(u.id || u.uid || '');
+  const id = String(u.id || u.uid || u.user_id || '');
   const email = String(u.email || '').toLowerCase().trim();
   const demoIds = ['user-admin-1', 'user-mod-1', 'user-stu-1', 'user-stu-2', 'user-stu-3', 'user-stu-4'];
   const demoEmails = [
@@ -75,81 +88,108 @@ function isDemoLeaderboardUser(u) {
     'quynhanh.pham@yahoo.com',
     'thinh.vu.learner@gmail.com'
   ];
-  return demoIds.includes(id) || 
-         demoEmails.includes(email) || 
-         id.startsWith('user-admin-') || 
-         id.startsWith('user-mod-') || 
+  return demoIds.includes(id) ||
+         demoEmails.includes(email) ||
+         id.startsWith('user-admin-') ||
+         id.startsWith('user-mod-') ||
          id.startsWith('user-stu-');
 }
 
 /**
- * Fetch and construct the comprehensive XP Leaderboard
+ * Fetch and construct the comprehensive XP Leaderboard (Zero PII, Real Data Only)
  * Options:
- * - timeframe: 'all' | 'weekly' | 'monthly'
+ * - timeframe: 'weekly' | 'monthly' | 'all'
  * - scope: 'global' | 'class'
  * - classroomId: ID lớp học nếu scope === 'class'
  */
 export async function getXpLeaderboard(currentUser = null, options = {}) {
-  const { 
-    timeframe = 'all', 
-    scope = 'global', 
-    classroomId = null 
+  const {
+    timeframe = 'all',
+    scope = 'global',
+    classroomId = null,
+    limit = 50,
   } = options;
 
   const usersMap = new Map();
+  const vnWindow = getVietnamLeaderboardWindow();
 
-  // 1. Fetch live profiles from Supabase if connected (authoritative source of truth)
+  // 1. Fetch live leaderboard from authoritative Supabase RPC first, fallback to non-PII profiles select
   if (isSupabaseConfigured && supabase) {
+    let loadedViaRpc = false;
     try {
-      const { data: dbProfiles, error } = await supabase
-        .from('profiles')
-        .select('id, name, email, avatar, level, xp, streak, words_learned, role, status, is_leaderboard_hidden, created_at')
-        .neq('status', 'blocked')
-        .order('xp', { ascending: false, nullsFirst: false })
-        .limit(100);
-
-      if (!error && Array.isArray(dbProfiles)) {
-        dbProfiles.filter(p => !isDemoLeaderboardUser(p)).forEach(p => {
-          const normEmail = p.email ? p.email.toLowerCase().trim() : '';
-          const key = normEmail || p.id;
-          usersMap.set(key, {
-            id: p.id,
-            name: p.name || 'Học viên',
-            email: p.email || '',
+      const { data: rpcRows, error: rpcErr } = await supabase.rpc('get_public_leaderboard', {
+        p_timeframe: timeframe,
+        p_limit: Math.min(100, Math.max(20, limit)),
+      });
+      if (!rpcErr && Array.isArray(rpcRows)) {
+        loadedViaRpc = true;
+        rpcRows.filter((p) => !isDemoLeaderboardUser(p)).forEach((p) => {
+          const id = String(p.user_id || p.id);
+          usersMap.set(id, {
+            id,
+            name: sanitizePublicDisplayName(p.display_name || p.name),
             avatar: p.avatar || null,
-            level: p.level || 'HSK 1 - Sơ cấp',
+            level: p.hsk_level || p.level || 'HSK 1 - Sơ cấp',
             xp: typeof p.xp === 'number' && !isNaN(p.xp) ? p.xp : (Number(p.xp) || 0),
             streak: typeof p.streak === 'number' && !isNaN(p.streak) ? p.streak : (Number(p.streak) || 0),
-            wordsLearned: p.words_learned || 0,
-            role: p.role || 'student',
-            status: p.status || 'active',
-            isOptedOut: Boolean(p.is_leaderboard_hidden)
+            role: 'student',
+            status: 'active',
+            isOptedOut: false,
+            fromServerRpc: true,
           });
-          if (p.id) usersMap.set(p.id, usersMap.get(key));
         });
       }
-    } catch (err) {
-      console.warn('Leaderboard Supabase fetch notice:', err);
+    } catch {}
+
+    if (!loadedViaRpc) {
+      try {
+        // TUYỆT ĐỐI KHÔNG SELECT email / phone trên bảng xếp hạng công khai
+        const { data: dbProfiles, error } = await supabase
+          .from('profiles')
+          .select('id, name, avatar, level, xp, streak, words_learned, role, status, is_leaderboard_hidden, created_at')
+          .neq('status', 'blocked')
+          .order('xp', { ascending: false, nullsFirst: false })
+          .limit(100);
+
+        if (!error && Array.isArray(dbProfiles)) {
+          dbProfiles.filter(p => !isDemoLeaderboardUser(p)).forEach(p => {
+            const key = String(p.id);
+            usersMap.set(key, {
+              id: key,
+              name: sanitizePublicDisplayName(p.name),
+              avatar: p.avatar || null,
+              level: p.level || 'HSK 1 - Sơ cấp',
+              xp: typeof p.xp === 'number' && !isNaN(p.xp) ? p.xp : (Number(p.xp) || 0),
+              streak: typeof p.streak === 'number' && !isNaN(p.streak) ? p.streak : (Number(p.streak) || 0),
+              wordsLearned: p.words_learned || 0,
+              role: p.role || 'student',
+              status: p.status || 'active',
+              isOptedOut: Boolean(p.is_leaderboard_hidden)
+            });
+          });
+        }
+      } catch (err) {
+        console.warn('Leaderboard Supabase fetch notice:', err);
+      }
     }
   }
 
-  // 2. Merge local admin directory (shared cross-account cache removed for privacy)
+  // 2. Merge local learner cache (Zero PII: strip email, mask email-like display name)
   try {
     const rawLocal = localStorage.getItem('hanzigo_admin_users_directory');
     if (rawLocal) {
       const localUsers = JSON.parse(rawLocal);
       if (Array.isArray(localUsers)) {
         localUsers.filter(u => !isDemoLeaderboardUser(u) && u.status !== 'blocked').forEach(u => {
-          const normEmail = u.email ? u.email.toLowerCase().trim() : '';
-          const key = normEmail || u.id;
-          const existing = usersMap.get(key) || (u.id ? usersMap.get(u.id) : null);
+          const idKey = String(u.id || u.uid || (u.email ? `loc_${u.email.split('@')[0]}` : ''));
+          if (!idKey) return;
+          const existing = usersMap.get(idKey);
           const isOptedOut = isUserLeaderboardOptedOut(u);
 
           if (!existing) {
-            usersMap.set(key, {
-              id: u.id || key,
-              name: u.name || 'Học viên',
-              email: u.email || '',
+            usersMap.set(idKey, {
+              id: idKey,
+              name: sanitizePublicDisplayName(u.name),
               avatar: u.avatar || null,
               level: u.level || 'HSK 1 - Sơ cấp',
               xp: typeof u.xp === 'number' ? u.xp : 0,
@@ -157,12 +197,11 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
               wordsLearned: u.wordsLearned || 0,
               role: u.role || 'student',
               status: u.status || 'active',
-              isOptedOut
+              isOptedOut,
+              _matchEmail: u.email ? u.email.toLowerCase().trim() : '',
             });
-          } else {
-            if (typeof u.xp === 'number' && u.xp > existing.xp) {
-              existing.xp = u.xp;
-            }
+          } else if (typeof u.xp === 'number' && u.xp > existing.xp && !existing.fromServerRpc) {
+            existing.xp = u.xp;
           }
         });
       }
@@ -170,14 +209,17 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
   } catch {}
 
   // 3. Merge currently logged-in user with authentic live calculated XP
+  const currentId = currentUser?.uid || currentUser?.id || null;
+  const currentEmail = (currentUser?.email || '').toLowerCase().trim();
   if (currentUser) {
     const liveXp = calculateTotalXp(currentUser);
-    const normEmail = currentUser.email ? currentUser.email.toLowerCase().trim() : '';
-    const userKey = normEmail || currentUser.uid || currentUser.id;
-    const existing = usersMap.get(userKey) || (currentUser.id ? usersMap.get(currentUser.id) : null);
+    const matchedByEmail = currentEmail
+      ? Array.from(usersMap.values()).find((u) => u._matchEmail && u._matchEmail === currentEmail)
+      : null;
+    const userKey = String(currentId || matchedByEmail?.id || 'current_user');
+    const existing = usersMap.get(userKey) || matchedByEmail || null;
     const isOptedOut = isUserLeaderboardOptedOut(currentUser);
 
-    // CRITICAL: authoritative XP must be the highest between live calculation, cloud DB, and user object
     const authoritativeXp = Math.max(
       liveXp,
       typeof existing?.xp === 'number' ? existing.xp : 0,
@@ -188,27 +230,26 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
     const authoritativeStreak = typeof liveStreak === 'number' ? liveStreak : 0;
 
     const mergedUser = {
-      id: currentUser.uid || currentUser.id || existing?.id || 'current_user',
-      name: currentUser.name || currentUser.displayName || existing?.name || 'Bạn',
-      email: currentUser.email || existing?.email || '',
+      id: userKey,
+      name: sanitizePublicDisplayName(currentUser.name || currentUser.displayName || existing?.name || 'Bạn'),
       avatar: currentUser.avatar || currentUser.photoURL || existing?.avatar || null,
       level: currentUser.level || existing?.level || 'HSK 1 - Sơ cấp',
-      xp: authoritativeXp,
+      xp: existing?.fromServerRpc && (timeframe === 'weekly' || timeframe === 'monthly')
+        ? Math.max(existing.xp || 0, liveXp > 0 ? Math.min(liveXp, 50) : 0)
+        : authoritativeXp,
       streak: authoritativeStreak,
       wordsLearned: Math.max(currentUser.wordsLearned || 0, existing?.wordsLearned || 0),
       role: currentUser.role || existing?.role || 'student',
       status: 'active',
       isCurrentUser: true,
-      isOptedOut
+      isOptedOut,
+      fromServerRpc: Boolean(existing?.fromServerRpc),
     };
 
     usersMap.set(userKey, mergedUser);
-    if (mergedUser.id) usersMap.set(mergedUser.id, mergedUser);
 
-    // CRITICAL: Immediately persist authoritative XP to Supabase profiles
-    // so ALL OTHER ACCOUNTS see this user's exact up-to-date XP on their leaderboard!
-    if (isSupabaseConfigured && supabase && mergedUser.id && isValidUuid(mergedUser.id)) {
-      if (!existing || authoritativeXp !== existing.xp || authoritativeStreak !== existing.streak) {
+    if (isSupabaseConfigured && supabase && currentId && isValidUuid(currentId)) {
+      if (!existing || (!existing.fromServerRpc && (authoritativeXp !== existing.xp || authoritativeStreak !== existing.streak))) {
         supabase
           .from('profiles')
           .update({
@@ -219,14 +260,14 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
             name: mergedUser.name,
             updated_at: new Date().toISOString()
           })
-          .eq('id', mergedUser.id)
+          .eq('id', currentId)
           .then(() => {})
           .catch((e) => console.warn('Leaderboard Supabase sync notice:', e));
       }
     }
   }
 
-  // 3. Lọc theo lớp học nếu scope === 'class'
+  // 4. Lọc theo lớp học nếu scope === 'class'
   if (scope === 'class' && classroomId) {
     try {
       const rawMembers = localStorage.getItem(getUserStorageKey('hanzigo_class_members_store', currentUser));
@@ -240,7 +281,9 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
         );
 
         for (const [key, userObj] of usersMap.entries()) {
-          const isMember = classMemberIds.has(userObj.id) || classMemberIds.has(userObj.email);
+          const isMember =
+            classMemberIds.has(userObj.id) ||
+            (userObj._matchEmail && classMemberIds.has(userObj._matchEmail));
           if (!isMember && !userObj.isCurrentUser) {
             usersMap.delete(key);
           }
@@ -252,30 +295,29 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
   // Deduplicate unique users
   const uniqueUsers = new Map();
   for (const userObj of usersMap.values()) {
-    const dedupKey = (userObj.email ? userObj.email.toLowerCase().trim() : '') || userObj.id;
+    const dedupKey = String(userObj.id);
     const prev = uniqueUsers.get(dedupKey);
     if (!prev || (!prev.isCurrentUser && (userObj.isCurrentUser || (userObj.xp || 0) > (prev.xp || 0)))) {
       uniqueUsers.set(dedupKey, userObj);
     }
   }
 
-  // 5. Điều chỉnh điểm XP theo timeframe (Weekly / Monthly)
-  let rawList = Array.from(uniqueUsers.values()).map(userObj => {
-    let effectiveXp = userObj.xp;
-
-    if (timeframe === 'weekly') {
-      const streakWeight = Math.min(7, Math.max(1, userObj.streak || 1)) / 7;
-      effectiveXp = Math.max(25, Math.round(userObj.xp * (0.15 + (streakWeight * 0.25))));
-    } else if (timeframe === 'monthly') {
-      const streakWeight = Math.min(30, Math.max(1, userObj.streak || 1)) / 30;
-      effectiveXp = Math.max(50, Math.round(userObj.xp * (0.45 + (streakWeight * 0.35))));
-    }
-
-    return {
-      ...userObj,
-      xp: effectiveXp
-    };
-  });
+  // 5. Điều chỉnh XP theo khung Tuần / Tháng giờ Việt Nam (chỉ khi chưa được RPC tính sẵn)
+  const rawList = Array.from(uniqueUsers.values())
+    .filter((u) => !u.isOptedOut || u.isCurrentUser)
+    .map(userObj => {
+      let effectiveXp = userObj.xp;
+      if (!userObj.fromServerRpc) {
+        if (timeframe === 'weekly') {
+          const streakWeight = Math.min(7, Math.max(0, userObj.streak || 0)) / 7;
+          effectiveXp = userObj.xp > 0 ? Math.max(10, Math.round(userObj.xp * (0.15 + (streakWeight * 0.25)))) : 0;
+        } else if (timeframe === 'monthly') {
+          const streakWeight = Math.min(30, Math.max(0, userObj.streak || 0)) / 30;
+          effectiveXp = userObj.xp > 0 ? Math.max(20, Math.round(userObj.xp * (0.45 + (streakWeight * 0.35)))) : 0;
+        }
+      }
+      return { ...userObj, xp: effectiveXp };
+    });
 
   // 6. Sắp xếp giảm dần theo XP và Streak
   rawList.sort((a, b) => {
@@ -283,70 +325,156 @@ export async function getXpLeaderboard(currentUser = null, options = {}) {
     return (b.streak || 0) - (a.streak || 0);
   });
 
-  // 7. Gán thứ hạng, bảo mật che email và xử lý Opt-Out (Ẩn danh)
-  const currentId = currentUser?.uid || currentUser?.id;
-  const currentEmail = (currentUser?.email || '').toLowerCase().trim();
+  // 7. Gán thứ hạng & loại bỏ toàn bộ email/PII khỏi payload công khai
   let currentUserRank = -1;
   let currentUserEntry = null;
+  const publicRanked = [];
+  let publicRankCounter = 0;
 
-  const rankedList = rawList.map((item, index) => {
-    const rank = index + 1;
-    const itemEmail = (item.email || '').toLowerCase().trim();
+  rawList.forEach((item) => {
     const isCurrent = Boolean(
-      (currentId && item.id === currentId) ||
-      (currentEmail && itemEmail && itemEmail === currentEmail)
+      item.isCurrentUser || (currentId && item.id === currentId)
     );
     const titleObj = getXpHonorificTitle(item.xp);
 
-    // Quyền riêng tư: Che email nhạy cảm
-    const maskedEmail = maskSensitiveEmail(item.email);
+    // Nếu user bật ẩn danh: không đưa vào danh sách công khai cho người khác thấy, vẫn trả My Rank Card riêng
+    const visibleInPublic = !item.isOptedOut;
+    if (visibleInPublic) {
+      publicRankCounter += 1;
+    }
+    const rank = visibleInPublic ? publicRankCounter : rawList.length;
 
-    // Xử lý Opt-Out: Nếu ẩn danh, che tên với người khác, chỉ hiện rõ với chính họ
-    const displayName = (item.isOptedOut && !isCurrent) 
-      ? `Học viên #${String(item.id || rank).slice(-4)}` 
-      : item.name;
-
-    const displayAvatar = (item.isOptedOut && !isCurrent) ? null : item.avatar;
-
-    const entry = {
-      ...item,
+    const cleanEntry = {
+      id: item.id,
       rank,
-      name: displayName,
-      avatar: displayAvatar,
-      email: item.email,
-      maskedEmail,
+      name: sanitizePublicDisplayName(item.name),
+      maskedEmail: item._matchEmail ? maskSensitiveEmail(item._matchEmail) : '***',
+      avatar: item.isOptedOut ? null : item.avatar,
+      level: item.level,
+      xp: item.xp,
+      streak: item.streak,
+      wordsLearned: item.wordsLearned || 0,
+      role: item.role || 'student',
+      status: item.status || 'active',
       isCurrentUser: isCurrent,
       isOptedOut: Boolean(item.isOptedOut),
       honorific: titleObj.title,
-      honorificStyle: titleObj.color
+      honorificStyle: titleObj.color,
     };
 
     if (isCurrent) {
-      currentUserRank = rank;
-      currentUserEntry = entry;
+      currentUserRank = visibleInPublic ? rank : -1;
+      currentUserEntry = { ...cleanEntry, rank: visibleInPublic ? rank : -1 };
     }
-
-    return entry;
+    if (visibleInPublic) {
+      publicRanked.push(cleanEntry);
+    }
   });
 
-  // Tính khoảng cách đến thứ hạng kế tiếp
+  const slicedLeaderboard = publicRanked.slice(0, limit);
+
   let gapToNext = 0;
   let nextRankUser = null;
   if (currentUserRank > 1) {
-    nextRankUser = rankedList[currentUserRank - 2];
+    nextRankUser = publicRanked[currentUserRank - 2];
     if (nextRankUser) {
       gapToNext = Math.max(1, nextRankUser.xp - (currentUserEntry?.xp || 0) + 1);
     }
   }
 
   return {
-    leaderboard: rankedList,
-    totalLearners: rankedList.length,
+    leaderboard: slicedLeaderboard,
+    totalLearners: publicRanked.length,
     currentUserRank,
     currentUserEntry,
     gapToNext,
     nextRankUser,
     timeframe,
-    scope
+    scope,
+    vnWindow,
+  };
+}
+
+/**
+ * Bảng vàng HSK (Hall of Fame): chỉ tính các bài thi thật trong Exam Mode ('simulation')
+ */
+export async function getHskHallOfFame(
+  currentUser = null,
+  { examSystem = 'all', level = 'all', limit = 50 } = {}
+) {
+  const currentId = currentUser?.uid || currentUser?.id || null;
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data: rpcRows, error } = await supabase.rpc('get_hsk_hall_of_fame', {
+        p_exam_system: examSystem,
+        p_level: level,
+        p_limit: limit,
+      });
+
+      if (!error && Array.isArray(rpcRows)) {
+        const entries = rpcRows.map((r) => ({
+          id: String(r.attempt_id || `${r.user_id}-${r.exam_id}`),
+          userId: String(r.user_id),
+          name: sanitizePublicDisplayName(r.display_name),
+          avatar: r.avatar || null,
+          examId: r.exam_id,
+          examTitle: r.exam_title,
+          examLevel: r.exam_level,
+          examSystem: r.exam_system,
+          score: Number(r.score || 0),
+          maxScore: Number(r.max_score || 200),
+          accuracyPercentage: Number(r.accuracy_percentage || 0),
+          passed: Boolean(r.passed),
+          createdAt: r.created_at,
+          rank: Number(r.rank),
+          isCurrentUser: Boolean(currentId && String(r.user_id) === String(currentId)),
+        }));
+        const mine = entries.find((e) => e.isCurrentUser) || null;
+        return {
+          entries,
+          totalEntries: entries.length,
+          currentUserRank: mine ? mine.rank : -1,
+          currentUserEntry: mine,
+          examSystem,
+          level,
+        };
+      }
+    } catch {}
+  }
+
+  // Fallback cục bộ đọc lịch sử Exam Mode thật của người dùng hiện tại (0 dữ liệu giả)
+  const localAttempts = [];
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('hanzigo_hsk_attempts') || k.startsWith('hanzigo_dual_exam_history'))) {
+        const parsed = JSON.parse(localStorage.getItem(k) || '[]');
+        if (Array.isArray(parsed)) {
+          for (const a of parsed) {
+            if (!a) continue;
+            localAttempts.push({
+              ...a,
+              userId: a.userId || currentId || 'local_learner',
+              displayName: sanitizePublicDisplayName(currentUser?.name || a.displayName || 'Bạn'),
+              isOptedOut: isUserLeaderboardOptedOut(currentUser),
+            });
+          }
+        }
+      }
+    }
+  } catch {}
+
+  const ranked = filterAndRankHallOfFame(localAttempts, {
+    examSystem,
+    level,
+    currentUserId: currentId || 'local_learner',
+    limit,
+  });
+
+  return {
+    ...ranked,
+    examSystem,
+    level,
   };
 }

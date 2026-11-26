@@ -22,6 +22,7 @@ function polar(angle, radius) {
 
 export default function HskReadinessRadarCard({
   snapshot,
+  smartSnapshot = null,
   targetHskLevel = 1,
   onLaunchExam,
 }) {
@@ -29,6 +30,7 @@ export default function HskReadinessRadarCard({
     const tri = snapshot?.triDimensionalMastery || {};
     const avgLat = snapshot?.avg_response_latency_ms || {};
     const retention = Number(snapshot?.retention_rate_pct || 0);
+    const examSkills = smartSnapshot?.fiveSkills?.skills || {};
 
     const scoreFromLatency = (ms, goldMs) => {
       if (!ms || ms <= 0) return 0;
@@ -36,13 +38,18 @@ export default function HskReadinessRadarCard({
       return Math.max(25, Math.round((goldMs / ms) * 85));
     };
 
+    const pickRealOrFallback = (examKey, fallbackScore) => {
+      const ex = examSkills[examKey];
+      return ex?.hasData ? Math.round(ex.overallPct || 0) : fallbackScore;
+    };
+
     const values = {
-      listening: scoreFromLatency(avgLat.listening, 12000),
-      reading: scoreFromLatency(avgLat.reading, 35000),
-      vocabulary: Math.round(Number(tri.meaningPct || retention || 0)),
+      listening: pickRealOrFallback('listening', scoreFromLatency(avgLat.listening, 12000)),
+      reading: pickRealOrFallback('reading', scoreFromLatency(avgLat.reading, 35000)),
+      vocabulary: Math.round(Number(tri.meaningPct || smartSnapshot?.roadmapAndSrs?.retentionPct || retention || 0)),
       grammar: scoreFromLatency(avgLat.grammar, 25000),
-      writing: Math.round(Number(tri.writingPct || 0)),
-      pronunciation: Math.round(Number(tri.pronunciationPct || 0)),
+      writing: pickRealOrFallback('writing', Math.round(Number(tri.writingPct || 0))),
+      pronunciation: pickRealOrFallback('speaking', Math.round(Number(tri.pronunciationPct || 0))),
     };
 
     return SKILL_AXES.map((s, idx) => {
@@ -52,7 +59,7 @@ export default function HskReadinessRadarCard({
       const labelPt = polar(angle, RADIUS + 20);
       return { ...s, pct, pt, labelPt };
     });
-  }, [snapshot]);
+  }, [snapshot, smartSnapshot]);
 
   const hasAnyRealData = useMemo(() => axes.some((a) => a.pct > 0), [axes]);
 

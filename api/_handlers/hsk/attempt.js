@@ -47,6 +47,7 @@ export default async function attemptHandler(req, res) {
             passed: data.passed,
             skillBreakdown: data.skill_breakdown,
             detailedResults: data.detailed_results,
+            answerSnapshots: Array.isArray(data.answer_snapshots) ? data.answer_snapshots : null,
             createdAt: data.created_at
           };
         }

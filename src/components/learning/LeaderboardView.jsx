@@ -28,8 +28,10 @@ import {
   Minus,
   ArrowDown
 } from 'lucide-react';
-import { 
-  getXpLeaderboard, 
+import {
+  getXpLeaderboard,
+  getHskHallOfFame,
+  getVietnamLeaderboardWindow,
   XP_HONORIFIC_TITLES,
   isUserLeaderboardOptedOut,
   setLeaderboardPrivacyOptOut
@@ -114,21 +116,9 @@ export function getNextLeague(currentLeagueId) {
   return null;
 }
 
-// Calculate countdown to Sunday 23:59:59
+// Calculate countdown to Monday 00:00:00 (Asia/Ho_Chi_Minh)
 function getSeasonTimeRemaining() {
-  const now = new Date();
-  const day = now.getDay(); // 0 is Sunday
-  const daysUntilSunday = (7 - day) % 7;
-  const target = new Date(now);
-  target.setDate(now.getDate() + daysUntilSunday);
-  target.setHours(23, 59, 59, 999);
-
-  const diff = Math.max(0, target.getTime() - now.getTime());
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-  const minutes = Math.floor((diff / (1000 * 60)) % 60);
-
-  return { days, hours, minutes };
+  return getVietnamLeaderboardWindow().countdownToNextWeek;
 }
 
 export default function LeaderboardView({ user, onNavigateTab }) {
@@ -140,18 +130,26 @@ export default function LeaderboardView({ user, onNavigateTab }) {
     gapToNext: 0,
     nextRankUser: null
   });
+  const [hallData, setHallData] = useState({
+    entries: [],
+    totalEntries: 0,
+    currentUserRank: -1,
+    currentUserEntry: null,
+  });
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
   const [selectedLeague, setSelectedLeague] = useState('all'); // 'all' | 'diamond' | 'platinum' | ...
-  const [timeframe, setTimeframe] = useState('all'); // 'all' | 'weekly' | 'monthly'
+  const [timeframe, setTimeframe] = useState('weekly'); // 'weekly' | 'monthly' | 'hall_of_fame'
+  const [hallSystemFilter, setHallSystemFilter] = useState('all'); // 'all' | 'hsk_2_0' | 'hsk_3_0'
+  const [hallLevelFilter, setHallLevelFilter] = useState('all'); // 'all' | 'HSK 1'..'HSK 7-9'
   const [scope, setScope] = useState('global'); // 'global' | 'class'
   const [isOptedOut, setIsOptedOut] = useState(() => isUserLeaderboardOptedOut(user));
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showStreakModal, setShowStreakModal] = useState(false);
 
-  // Live season countdown state
+  // Live season countdown state (Asia/Ho_Chi_Minh)
   const [seasonCountdown, setSeasonCountdown] = useState(getSeasonTimeRemaining);
 
   useEffect(() => {
@@ -161,14 +159,23 @@ export default function LeaderboardView({ user, onNavigateTab }) {
     return () => clearInterval(timer);
   }, []);
 
-  // Load leaderboard data
+  // Load leaderboard or Hall of Fame data
   const loadData = async (showSpin = false, tf = timeframe, sc = scope) => {
     if (showSpin) setIsRefreshing(true);
     else setLoading(true);
 
     try {
-      const result = await getXpLeaderboard(user, { timeframe: tf, scope: sc });
-      setData(result);
+      if (tf === 'hall_of_fame') {
+        const res = await getHskHallOfFame(user, {
+          examSystem: hallSystemFilter,
+          level: hallLevelFilter,
+          limit: 50,
+        });
+        setHallData(res);
+      } else {
+        const result = await getXpLeaderboard(user, { timeframe: tf, scope: sc, limit: 50 });
+        setData(result);
+      }
     } catch (err) {
       console.error('Failed to load leaderboard:', err);
     } finally {
@@ -208,7 +215,7 @@ export default function LeaderboardView({ user, onNavigateTab }) {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('hanzigo_gamification_updated', handleGamificationUpdated);
     };
-  }, [user, timeframe, scope]);
+  }, [user, timeframe, scope, hallSystemFilter, hallLevelFilter]);
 
   const handleToggleOptOut = () => {
     playClickSound();
@@ -227,14 +234,13 @@ export default function LeaderboardView({ user, onNavigateTab }) {
     ? Math.min(100, Math.round(((userXp - userLeague.minXp) / (nextLeague.minXp - userLeague.minXp)) * 100))
     : 100;
 
-  // Filtered leaderboard
+  // Filtered leaderboard (Zero PII: never filter by raw email)
   const filteredList = useMemo(() => {
     return data.leaderboard.filter(item => {
-      const matchesSearch = !searchQuery.trim() || 
-        (item.name || '').toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
-        (item.email || '').toLowerCase().includes(searchQuery.toLowerCase().trim());
+      const matchesSearch = !searchQuery.trim() ||
+        (item.name || '').toLowerCase().includes(searchQuery.toLowerCase().trim());
 
-      const matchesLevel = levelFilter === 'all' || 
+      const matchesLevel = levelFilter === 'all' ||
         (item.level || '').toLowerCase().includes(levelFilter.toLowerCase());
 
       const itemLeague = getLeagueByXp(item.xp);
@@ -640,22 +646,23 @@ export default function LeaderboardView({ user, onNavigateTab }) {
 
       {/* 4. Scope, Timeframe & Privacy Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs">
-        {/* Timeframe tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-[#FFF9F2] dark:bg-[#131B24] rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
+        {/* 3 Primary Leaderboard Tabs: Tuần này / Tháng này / Bảng vàng HSK */}
+        <div className="flex items-center gap-1.5 p-1 bg-[#FFF9F2] dark:bg-[#131B24] rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] overflow-x-auto max-w-full">
           {[
-            { id: 'all', label: 'Toàn thời gian', icon: Trophy },
             { id: 'weekly', label: 'Tuần này', icon: Zap },
-            { id: 'monthly', label: 'Tháng này', icon: Calendar }
+            { id: 'monthly', label: 'Tháng này', icon: Calendar },
+            { id: 'hall_of_fame', label: 'Bảng vàng HSK', icon: Trophy },
           ].map(tab => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => {
                   playClickSound();
                   setTimeframe(tab.id);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`min-h-11 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   timeframe === tab.id
                     ? 'bg-[#E85D3F] text-white shadow-xs'
                     : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
@@ -670,42 +677,47 @@ export default function LeaderboardView({ user, onNavigateTab }) {
 
         {/* Scope tabs & Privacy opt-out */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 p-1 bg-[#FFF9F2] dark:bg-[#131B24] rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
-            <button
-              onClick={() => {
-                playClickSound();
-                setScope('global');
-              }}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                scope === 'global'
-                  ? 'bg-amber-500 text-white shadow-xs'
-                  : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
-              }`}
-            >
-              <Globe size={13} />
-              <span>Toàn quốc</span>
-            </button>
-            <button
-              onClick={() => {
-                playClickSound();
-                setScope('class');
-              }}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                scope === 'class'
-                  ? 'bg-amber-500 text-white shadow-xs'
-                  : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
-              }`}
-            >
-              <School size={13} />
-              <span>Lớp học</span>
-            </button>
-          </div>
+          {timeframe !== 'hall_of_fame' && (
+            <div className="flex items-center gap-1 p-1 bg-[#FFF9F2] dark:bg-[#131B24] rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F]">
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setScope('global');
+                }}
+                className={`min-h-11 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  scope === 'global'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                }`}
+              >
+                <Globe size={13} />
+                <span>Toàn quốc</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setScope('class');
+                }}
+                className={`min-h-11 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  scope === 'class'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                }`}
+              >
+                <School size={13} />
+                <span>Lớp học</span>
+              </button>
+            </div>
+          )}
 
           {/* Privacy Opt-out Toggle */}
           <button
+            type="button"
             onClick={handleToggleOptOut}
             title={isOptedOut ? 'Nhấn để chuyển sang chế độ công khai' : 'Nhấn để ẩn danh trên bảng xếp hạng'}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+            className={`min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
               isOptedOut
                 ? 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
                 : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400'
@@ -716,6 +728,123 @@ export default function LeaderboardView({ user, onNavigateTab }) {
           </button>
         </div>
       </div>
+
+      {/* HALL OF FAME (HSK EXAM MODE VERIFIED) */}
+      {timeframe === 'hall_of_fame' ? (
+        <div className="space-y-4">
+          <div className="p-4 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-sm sm:text-base font-black text-[#243447] dark:text-white flex items-center gap-2">
+                  <Trophy size={16} className="text-amber-500" />
+                  <span>Bảng Vàng HSK (Chỉ tính Exam Mode xác thực)</span>
+                </h2>
+                <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
+                  Vinh danh thí sinh đạt điểm chuẩn cao nhất từ phòng thi thử CBT (tách biệt hoàn toàn với chế độ Luyện tập).
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+                {[
+                  { id: 'all', label: 'Mọi hệ' },
+                  { id: 'hsk_2_0', label: 'HSK 2.0' },
+                  { id: 'hsk_3_0', label: 'HSK 3.0' },
+                ].map((sys) => (
+                  <button
+                    key={sys.id}
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      setHallSystemFilter(sys.id);
+                    }}
+                    className={`min-h-11 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
+                      hallSystemFilter === sys.id
+                        ? 'bg-[#E85D3F] text-white shadow-xs'
+                        : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                    }`}
+                  >
+                    {sys.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {['all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7-9'].map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  onClick={() => {
+                    playClickSound();
+                    setHallLevelFilter(lvl);
+                  }}
+                  className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 cursor-pointer ${
+                    hallLevelFilter === lvl
+                      ? 'bg-[#E85D3F] text-white shadow-xs'
+                      : 'bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#748092]'
+                  }`}
+                >
+                  {lvl === 'all' ? 'Tất cả cấp' : lvl}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm overflow-hidden">
+            {loading ? (
+              <div className="p-10 text-center text-xs text-[#748092] font-semibold">
+                Đang tải Bảng vàng HSK từ kết quả thi thật...
+              </div>
+            ) : hallData.entries.length === 0 ? (
+              <div className="p-10 text-center space-y-2">
+                <Trophy size={36} className="text-amber-500/60 mx-auto" />
+                <h3 className="text-sm font-bold text-[#243447] dark:text-white">
+                  Chưa có kỷ lục thi thử Exam Mode cho bộ lọc này
+                </h3>
+                <p className="text-xs text-[#748092] max-w-md mx-auto">
+                  Hãy hoàn thành 1 bài thi trong Phòng thi HSK (chế độ Thi thử) để ghi danh bảng vàng thật — hệ thống tuyệt đối không dùng dữ liệu ảo.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-[#F1E5D8] dark:divide-[#2B3A4F]">
+                {hallData.entries.length < 3 && (
+                  <div className="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/30 text-xs font-semibold text-amber-800 dark:text-amber-200">
+                    Hiện có {hallData.entries.length} thí sinh thật ghi danh ở hạng mục này — cơ hội lọt Top 3 rất rộng mở!
+                  </div>
+                )}
+                {hallData.entries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className={`grid grid-cols-12 px-3 sm:px-5 py-3.5 items-center gap-2 ${
+                      entry.isCurrentUser ? 'bg-amber-50/80 dark:bg-amber-950/30 border-l-4 border-l-[#E85D3F]' : ''
+                    }`}
+                  >
+                    <div className="col-span-2 sm:col-span-1 text-center font-black text-sm">
+                      {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : `#${entry.rank}`}
+                    </div>
+                    <div className="col-span-6 sm:col-span-6 min-w-0">
+                      <div className="text-xs font-bold text-[#243447] dark:text-white truncate">
+                        {entry.name} {entry.isCurrentUser ? '(Bạn)' : ''}
+                      </div>
+                      <div className="text-[11px] text-[#748092] truncate">
+                        {entry.examLevel} • {entry.examSystem === 'hsk_3_0' ? 'HSK 3.0' : 'HSK 2.0'} • {entry.examTitle}
+                      </div>
+                    </div>
+                    <div className="col-span-4 sm:col-span-5 text-right">
+                      <div className="font-mono font-black text-sm text-[#E85D3F]">
+                        {entry.score}/{entry.maxScore}đ
+                      </div>
+                      <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        {entry.accuracyPercentage}% chính xác {entry.passed ? '· Đạt' : ''}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
 
       {/* 5. Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -797,6 +926,12 @@ export default function LeaderboardView({ user, onNavigateTab }) {
               </div>
               <span className="font-mono">{filteredList.length} học viên tham gia</span>
             </div>
+
+            {filteredList.length > 0 && filteredList.length < 3 && (
+              <div className="px-4 py-2.5 text-xs text-[#748092] bg-[#FFF9F2] dark:bg-[#131B24] border-b border-[#F1E5D8] dark:border-[#2B3A4F]">
+                Hiện có <strong className="text-[#243447] dark:text-white">{filteredList.length}</strong> học viên thật trên bảng xếp hạng (100% dữ liệu thực, không tạo tài khoản ảo). Hãy học bài & làm đề để giữ vững thứ hạng!
+              </div>
+            )}
 
             {/* Table Header */}
             <div className="grid grid-cols-12 px-3 sm:px-5 py-3 text-[11px] font-bold text-[#748092] uppercase tracking-wider bg-[#FFF9F2]/60 dark:bg-[#131B24]/60">
@@ -961,77 +1096,94 @@ export default function LeaderboardView({ user, onNavigateTab }) {
           </div>
         )}
       </div>
+        </>
+      )}
 
       {/* 7. Sticky User Rank Bar (Thanh Ghim Vị Trí Của Bạn) */}
-      {data.currentUserEntry && (
+      {(timeframe === 'hall_of_fame' ? hallData.currentUserEntry : data.currentUserEntry) && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[95%] max-w-4xl p-3 sm:p-4 rounded-3xl bg-gradient-to-r from-[#1E293B] via-[#0F172A] to-[#1E1B4B] text-white border-2 border-amber-400/40 shadow-2xl flex items-center justify-between gap-4 backdrop-blur-md">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#E85D3F] to-[#CB4529] flex items-center justify-center text-white font-black text-sm shadow-md border border-white/20 shrink-0">
-              {data.currentUserEntry.avatar ? (
-                <img src={data.currentUserEntry.avatar} alt="Me" className="w-full h-full rounded-2xl object-cover" />
-              ) : (
-                'Tôi'
-              )}
-            </div>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm font-bold truncate">
-                  {data.currentUserEntry.name}
-                </span>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#E85D3F] text-white shrink-0">
-                  Hạng #{data.currentUserRank}
-                </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${userLeague.badge} shrink-0`}>
-                  {userLeague.icon} {userLeague.name}
-                </span>
+          {timeframe === 'hall_of_fame' ? (
+            <div className="flex items-center justify-between gap-3 w-full text-xs">
+              <div className="min-w-0">
+                <div className="font-bold truncate">
+                  {hallData.currentUserEntry.name} • Hạng #{hallData.currentUserRank}
+                </div>
+                <div className="text-amber-300 font-mono font-bold">
+                  {hallData.currentUserEntry.score}/{hallData.currentUserEntry.maxScore}đ ({hallData.currentUserEntry.accuracyPercentage}%) — {hallData.currentUserEntry.examLevel}
+                </div>
               </div>
-              <div className="flex items-center gap-3 text-[11px] text-white/70 mt-0.5">
-                <span className="font-mono font-bold text-amber-300">
-                  {(data.currentUserEntry.xp ?? 0).toLocaleString()} XP
-                </span>
-                <span>•</span>
-                <span className="text-orange-300">
-                  🔥 {data.currentUserEntry.streak} ngày streak
-                </span>
-                {data.currentUserRank > 1 && data.gapToNext > 0 && (
-                  <>
-                    <span className="hidden sm:inline">•</span>
-                    <span className="hidden sm:inline text-white/80">
-                      Cần <strong className="text-amber-300 font-mono">+{data.gapToNext} XP</strong> để lên #{data.currentUserRank - 1}
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#E85D3F] to-[#CB4529] flex items-center justify-center text-white font-black text-sm shadow-md border border-white/20 shrink-0">
+                  {data.currentUserEntry.avatar ? (
+                    <img src={data.currentUserEntry.avatar} alt="Me" className="w-full h-full rounded-2xl object-cover" />
+                  ) : (
+                    'Tôi'
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm font-bold truncate">
+                      {data.currentUserEntry.name}
                     </span>
-                  </>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#E85D3F] text-white shrink-0">
+                      {data.currentUserRank > 0 ? `Hạng #${data.currentUserRank}` : 'Đang ẩn danh'}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${userLeague.badge} shrink-0`}>
+                      {userLeague.icon} {userLeague.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-white/70 mt-0.5">
+                    <span className="font-mono font-bold text-amber-300">
+                      {(data.currentUserEntry.xp ?? 0).toLocaleString()} XP
+                    </span>
+                    <span>•</span>
+                    <span className="text-orange-300">
+                      🔥 {data.currentUserEntry.streak} ngày streak
+                    </span>
+                    {data.currentUserRank > 1 && data.gapToNext > 0 && (
+                      <>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="hidden sm:inline text-white/80">
+                          Cần <strong className="text-amber-300 font-mono">+{data.gapToNext} XP</strong> để lên #{data.currentUserRank - 1}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    setShowStreakModal(true);
+                  }}
+                  className="p-2 sm:px-3 sm:py-2 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 text-xs font-bold transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+                  title="Mở bảng chuỗi học"
+                >
+                  <Flame size={14} className="text-orange-400 fill-orange-400" />
+                  <span className="hidden sm:inline">Chuỗi</span>
+                </button>
+
+                {onNavigateTab && (
+                  <button
+                    onClick={() => {
+                      playClickSound();
+                      onNavigateTab('roadmap');
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-[#E85D3F] hover:from-amber-600 hover:to-[#D44B2E] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Cày điểm ngay</span>
+                    <ArrowUpRight size={13} />
+                  </button>
                 )}
               </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => {
-                playClickSound();
-                setShowStreakModal(true);
-              }}
-              className="p-2 sm:px-3 sm:py-2 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 text-xs font-bold transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-              title="Mở bảng chuỗi học"
-            >
-              <Flame size={14} className="text-orange-400 fill-orange-400" />
-              <span className="hidden sm:inline">Chuỗi</span>
-            </button>
-
-            {onNavigateTab && (
-              <button
-                onClick={() => {
-                  playClickSound();
-                  onNavigateTab('roadmap');
-                }}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-[#E85D3F] hover:from-amber-600 hover:to-[#D44B2E] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1 cursor-pointer"
-              >
-                <span>Cày điểm ngay</span>
-                <ArrowUpRight size={13} />
-              </button>
-            )}
-          </div>
+            </>
+          )}
         </div>
       )}
 

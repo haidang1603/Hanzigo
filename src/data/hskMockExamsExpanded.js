@@ -281,8 +281,8 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '李老师今天在学校上课。',
     options: [
-      { text: '✓ Đúng (一致)', pinyin: 'Yízhì', translation: 'Khớp nội dung' },
-      { text: '✗ Sai (不一致)', pinyin: 'Bù yízhì', translation: 'Không khớp nội dung' }
+      { text: '对', pinyin: 'Duì', translation: 'Khớp nội dung' },
+      { text: '错', pinyin: 'Cuò', translation: 'Không khớp nội dung' }
     ],
     correct_option_index: 0,
     explanation: 'Lời thoại: "李老师今天在学校上课。" (Hôm nay thầy Lý dạy học ở trường). Hoàn toàn khớp với nội dung đề bài.',
@@ -303,12 +303,12 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：大卫在房间里吗？男：不在，他在外面看书呢。问：大卫在做什么？',
     options: [
-      { text: '看书 (Kàn shū)', pinyin: 'Kàn shū', translation: 'Đọc sách' },
-      { text: '睡觉 (Shuì jiào)', pinyin: 'Shuì jiào', translation: 'Ngủ' },
-      { text: '吃饭 (Chī fàn)', pinyin: 'Chī fàn', translation: 'Ăn cơm' }
+      { text: '睡觉', pinyin: 'Shuì jiào', translation: 'Ngủ' },
+      { text: '吃饭', pinyin: 'Chī fàn', translation: 'Ăn cơm' },
+      { text: '看书', pinyin: 'Kàn shū', translation: 'Đọc sách' }
     ],
-    correct_option_index: 0,
-    explanation: 'Người nam nói: "他在外面看书呢" (Anh ấy đang ở bên ngoài đọc sách). Đáp án A là chính xác.',
+    correct_option_index: 2,
+    explanation: 'Người nam nói: "他在外面看书呢" (Anh ấy đang ở bên ngoài đọc sách). Đáp án C là chính xác.',
     points: 20,
     relatedVocab: ['看书', '房间', '外面']
   },
@@ -326,11 +326,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：昨天是星期三吗？男：不是，今天是星期三。问：今天星期几？',
     options: [
-      { text: '星期二 (Xīngqī\'èr)', pinyin: 'Xīngqī\'èr', translation: 'Thứ Ba' },
-      { text: '星期三 (Xīngqīsān)', pinyin: 'Xīngqīsān', translation: 'Thứ Tư' },
-      { text: '星期四 (Xīngqīsì)', pinyin: 'Xīngqīsì', translation: 'Thứ Năm' }
+      { text: '星期三', pinyin: 'Xīngqīsān', translation: 'Thứ Tư' },
+      { text: '星期二', pinyin: 'Xīngqī\'èr', translation: 'Thứ Ba' },
+      { text: '星期四', pinyin: 'Xīngqīsì', translation: 'Thứ Năm' }
     ],
-    correct_option_index: 1,
+    correct_option_index: 0,
     explanation: 'Người nam khẳng định: "今天是星期三" (Hôm nay là thứ Tư). Do đó đáp án là B.',
     points: 20,
     relatedVocab: ['今天', '昨天', '星期三']
@@ -349,11 +349,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '桌子上有一个苹果和一个杯子。',
     options: [
-      { text: '杯子 (Bēizi)', pinyin: 'Bēizi', translation: 'Cái cốc / ly' },
-      { text: '椅子 (Yǐzi)', pinyin: 'Yǐzi', translation: 'Cái ghế' },
-      { text: '电脑 (Diànnǎo)', pinyin: 'Diànnǎo', translation: 'Máy tính' }
+      { text: '电脑', pinyin: 'Diànnǎo', translation: 'Máy tính' },
+      { text: '杯子', pinyin: 'Bēizi', translation: 'Cái cốc / ly' },
+      { text: '椅子', pinyin: 'Yǐzi', translation: 'Cái ghế' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Đoạn ghi âm nhắc đến "杯子" (cốc, ly). Phương án đúng là A.',
     points: 20,
     relatedVocab: ['桌子', '苹果', '杯子']
@@ -372,12 +372,12 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '男：你想去中国学汉语吗？女：想，我很想去北京。问：女的想做什么？',
     options: [
-      { text: '去中国 (Qù Zhōngguó)', pinyin: 'Qù Zhōngguó', translation: 'Đi Trung Quốc' },
-      { text: '买衣服 (Mǎi yīfu)', pinyin: 'Mǎi yīfu', translation: 'Mua quần áo' },
-      { text: '回家 (Huí jiā)', pinyin: 'Huí jiā', translation: 'Về nhà' }
+      { text: '回家', pinyin: 'Huí jiā', translation: 'Về nhà' },
+      { text: '买衣服', pinyin: 'Mǎi yīfu', translation: 'Mua quần áo' },
+      { text: '去中国', pinyin: 'Qù Zhōngguó', translation: 'Đi Trung Quốc' }
     ],
-    correct_option_index: 0,
-    explanation: 'Người nữ trả lời "想，我很想去北京" (Muốn, tôi rất muốn đi Bắc Kinh/Trung Quốc). Đáp án A là chính xác.',
+    correct_option_index: 2,
+    explanation: 'Người nữ trả lời "想，我很想去北京" (Muốn, tôi rất muốn đi Bắc Kinh/Trung Quốc). Đáp án C là chính xác.',
     points: 20,
     relatedVocab: ['中国', '汉语', '北京']
   },
@@ -395,11 +395,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'Zhuōzi shang yǒu liǎng ______ shū.',
     translation: 'Chọn lượng từ phù hợp điền vào chỗ trống: Trên bàn có hai quyển sách.',
     options: [
-      { text: '本 (Běn)', pinyin: 'Běn', translation: 'Quyển, cuốn (lượng từ của sách)' },
-      { text: '个 (Gè)', pinyin: 'Gè', translation: 'Cái (lượng từ chung)' },
-      { text: '只 (Zhī)', pinyin: 'Zhī', translation: 'Con (lượng từ động vật)' }
+      { text: '只', pinyin: 'Zhī', translation: 'Con (lượng từ động vật)' },
+      { text: '本', pinyin: 'Běn', translation: 'Quyển, cuốn (lượng từ của sách)' },
+      { text: '个', pinyin: 'Gè', translation: 'Cái (lượng từ chung)' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Lượng từ đi cùng với sách (书 - shū) trong tiếng Hán là "本" (běn). Ví dụ: 两本书.',
     points: 20,
     relatedVocab: ['书', '本', '桌子']
@@ -416,9 +416,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'Wǒ bú huì shuō Hànyǔ, wǒ ______ zài xuéxí.',
     translation: 'Chọn phó từ phù hợp: Tôi chưa biết nói tiếng Trung, tôi đang học tập.',
     options: [
-      { text: '现 (Xiàn)', pinyin: 'Xiàn', translation: 'Hiện' },
-      { text: '正 (Zhèng)', pinyin: 'Zhèng', translation: 'Đang (chỉ hành động diễn tiến)' },
-      { text: '没 (Méi)', pinyin: 'Méi', translation: 'Không / Chưa' }
+      { text: '没', pinyin: 'Méi', translation: 'Không / Chưa' },
+      { text: '正', pinyin: 'Zhèng', translation: 'Đang (chỉ hành động diễn tiến)' },
+      { text: '现', pinyin: 'Xiàn', translation: 'Hiện' }
     ],
     correct_option_index: 1,
     explanation: 'Cấu trúc biểu thị hành động đang diễn ra: "正在 + Động từ" hoặc "正/在 + Động từ". Ở đây "正在学习" (đang học tập) là chuẩn xác nhất.',
@@ -437,11 +437,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'A: "Xièxie nǐ bāngzhù wǒ!" -> B: "______"',
     translation: 'Chọn câu đáp lại lời cảm ơn: "Cảm ơn bạn đã giúp tôi!"',
     options: [
-      { text: '不客气 (Bú kèqi)', pinyin: 'Bú kèqi', translation: 'Không có gì / Đừng khách sáo' },
-      { text: '对不起 (Duìbuqǐ)', pinyin: 'Duìbuqǐ', translation: 'Xin lỗi' },
-      { text: '没关系 (Méi guānxi)', pinyin: 'Méi guānxi', translation: 'Không sao đâu (đáp lại xin lỗi)' }
+      { text: '对不起', pinyin: 'Duìbuqǐ', translation: 'Xin lỗi' },
+      { text: '没关系', pinyin: 'Méi guānxi', translation: 'Không sao đâu (đáp lại xin lỗi)' },
+      { text: '不客气', pinyin: 'Bú kèqi', translation: 'Không có gì / Đừng khách sáo' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Đáp lại lời cảm ơn "谢谢" chuẩn nhất là "不客气" (Đừng khách sáo). "没关系" dùng để đáp lại lời xin lỗi "对不起".',
     points: 20,
     relatedVocab: ['谢谢', '不客气', '对不起']
@@ -454,13 +454,13 @@ export const EXPANDED_MOCK_QUESTIONS = [
     part_number: 2,
     question_number: 9,
     question_type: 'reading_mcq',
-    prompt: '读句子，选择正确的意思：现在是下午四点三十分。',
+    prompt: '读句子，选择一致的时间：现在是下午四点三十分。',
     pinyin: 'Xiànzài shì xiàwǔ sì diǎn sānshí fēn.',
-    translation: 'Bây giờ là 4 giờ 30 phút chiều.',
+    translation: 'Chọn thời gian khớp với câu: "Bây giờ là 4 giờ 30 phút chiều."',
     options: [
-      { text: 'Bây giờ là 4 rưỡi chiều (4:30 PM)', pinyin: '4:30 PM', translation: 'Khớp hoàn toàn' },
-      { text: 'Bây giờ là 3 giờ 40 phút chiều', pinyin: '3:40 PM', translation: 'Sai số giờ' },
-      { text: 'Bây giờ là 4 giờ sáng', pinyin: '4:00 AM', translation: 'Sai buổi trong ngày' }
+      { text: '下午 4:30', pinyin: 'Xiàwǔ sì diǎn bàn', translation: 'Bây giờ là 4 rưỡi chiều (4:30 PM)' },
+      { text: '上午 4:00', pinyin: 'Shàngwǔ sì diǎn', translation: '4 giờ sáng' },
+      { text: '下午 3:40', pinyin: 'Xiàwǔ sān diǎn sìshí fēn', translation: '3 giờ 40 phút chiều' }
     ],
     correct_option_index: 0,
     explanation: '下午 (xiàwǔ - buổi chiều), 四点 (sì diǎn - 4 giờ), 三十分 (sānshí fēn - 30 phút). Câu mang nghĩa "4 giờ 30 phút chiều".',
@@ -479,11 +479,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'Tā jiào Lǐ Yuè, shì Zhōngguó rén.',
     translation: 'Chọn câu hỏi phù hợp với câu trả lời: "Anh ấy tên Lý Nguyệt, là người Trung Quốc."',
     options: [
-      { text: '他是哪国人？(Tā shì nǎ guó rén?)', pinyin: 'Tā shì nǎ guó rén?', translation: 'Anh ấy là người nước nào?' },
-      { text: '他多大了？(Tā duō dà le?)', pinyin: 'Tā duō dà le?', translation: 'Anh ấy bao nhiêu tuổi rồi?' },
-      { text: '他在哪儿？(Tā zài nǎr?)', pinyin: 'Tā zài nǎr?', translation: 'Anh ấy ở đâu?' }
+      { text: '他多大了？', pinyin: 'Tā duō dà le?', translation: 'Anh ấy bao nhiêu tuổi rồi?' },
+      { text: '他在哪儿？', pinyin: 'Tā zài nǎr?', translation: 'Anh ấy ở đâu?' },
+      { text: '他是哪国人？', pinyin: 'Tā shì nǎ guó rén?', translation: 'Anh ấy là người nước nào?' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Câu trả lời giới thiệu quốc tịch "是中国人" (là người Trung Quốc), do đó câu hỏi phù hợp nhất là "他是哪国人？".',
     points: 20,
     relatedVocab: ['中国', '人', '哪国人']
@@ -506,8 +506,8 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '为了健康，他每天早上都去公园跑步。',
     options: [
-      { text: '✓ Đúng (一致)', pinyin: 'Yízhì', translation: 'Nội dung khớp' },
-      { text: '✗ Sai (不一致)', pinyin: 'Bù yízhì', translation: 'Nội dung không khớp' }
+      { text: '对', pinyin: 'Duì', translation: 'Nội dung khớp' },
+      { text: '错', pinyin: 'Cuò', translation: 'Nội dung không khớp' }
     ],
     correct_option_index: 0,
     explanation: 'Lời thoại: "他每天早上都去公园跑步" (Mỗi sáng anh ấy đều đến công viên chạy bộ). Khớp hoàn toàn với nội dung.',
@@ -528,9 +528,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '男：时间不早了，我们坐出租车去机场吧。女：好的，我现在叫车。问：他们怎么去机场？',
     options: [
-      { text: '坐出租车 (Zuò chūzūchē)', pinyin: 'Zuò chūzūchē', translation: 'Đi taxi' },
-      { text: '坐地铁 (Zuò dìtiě)', pinyin: 'Zuò dìtiě', translation: 'Đi tàu điện ngầm' },
-      { text: '走路 (Zǒu lù)', pinyin: 'Zǒu lù', translation: 'Đi bộ' }
+      { text: '坐出租车', pinyin: 'Zuò chūzūchē', translation: 'Đi taxi' },
+      { text: '走路', pinyin: 'Zǒu lù', translation: 'Đi bộ' },
+      { text: '坐地铁', pinyin: 'Zuò dìtiě', translation: 'Đi tàu điện ngầm' }
     ],
     correct_option_index: 0,
     explanation: 'Người nam đề nghị: "我们坐出租车去机场吧" (Chúng ta đi taxi ra sân bay đi) và người nữ đồng ý.',
@@ -551,9 +551,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：外面阴天了，可能要下雨，你带伞了吗？男：带了，在我包里。问：今天天气可能怎么样？',
     options: [
-      { text: '要下雨 (Yào xiàyǔ)', pinyin: 'Yào xiàyǔ', translation: 'Sắp mưa' },
-      { text: '很晴朗 (Hěn qínglǎng)', pinyin: 'Hěn qínglǎng', translation: 'Rất nắng ráo' },
-      { text: '刮大风 (Guā dàfēng)', pinyin: 'Guā dàfēng', translation: 'Gió to' }
+      { text: '要下雨', pinyin: 'Yào xiàyǔ', translation: 'Sắp mưa' },
+      { text: '刮大风', pinyin: 'Guā dàfēng', translation: 'Gió to' },
+      { text: '很晴朗', pinyin: 'Hěn qínglǎng', translation: 'Rất nắng ráo' }
     ],
     correct_option_index: 0,
     explanation: 'Người nữ nói "外面阴天了，可能要下雨" (Bên ngoài trời âm u rồi, có thể sắp mưa). Đáp án A chính xác.',
@@ -574,11 +574,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '男：这件黑色的衣服两百块，太贵了。女：那件白色的便宜一点儿，一百五十块。问：白色的衣服多少钱？',
     options: [
-      { text: '150块 (Yìbǎi wǔshí kuài)', pinyin: 'Yìbǎi wǔshí kuài', translation: '150 tệ' },
-      { text: '200块 (Liǎngbǎi kuài)', pinyin: 'Liǎngbǎi kuài', translation: '200 tệ' },
-      { text: '100块 (Yìbǎi kuài)', pinyin: 'Yìbǎi kuài', translation: '100 tệ' }
+      { text: '100块', pinyin: 'Yìbǎi kuài', translation: '100 tệ' },
+      { text: '150块', pinyin: 'Yìbǎi wǔshí kuài', translation: '150 tệ' },
+      { text: '200块', pinyin: 'Liǎngbǎi kuài', translation: '200 tệ' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Người nữ nói chiếc áo màu trắng (白色的) giá 150 tệ (一百五十块). Câu hỏi hỏi về chiếc áo màu trắng, nên đáp án là A.',
     points: 20,
     relatedVocab: ['衣服', '便宜', '贵']
@@ -597,11 +597,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '医生说，吃完药后要多喝水，好好休息。',
     options: [
-      { text: '多喝水、休息 (Hē shuǐ, xiūxi)', pinyin: 'Hē shuǐ, xiūxi', translation: 'Uống nhiều nước và nghỉ ngơi' },
-      { text: '去上班 (Qù shàngbān)', pinyin: 'Qù shàngbān', translation: 'Đi làm việc' },
-      { text: '去旅游 (Qù lǚyóu)', pinyin: 'Qù lǚyóu', translation: 'Đi du lịch' }
+      { text: '去上班', pinyin: 'Qù shàngbān', translation: 'Đi làm việc' },
+      { text: '多喝水、休息', pinyin: 'Hē shuǐ, xiūxi', translation: 'Uống nhiều nước và nghỉ ngơi' },
+      { text: '去旅游', pinyin: 'Qù lǚyóu', translation: 'Đi du lịch' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Bác sĩ dặn "多喝水，好好休息" (uống nhiều nước, nghỉ ngơi thật tốt). Phương án đúng là A.',
     points: 20,
     relatedVocab: ['医生', '吃药', '休息']
@@ -620,11 +620,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'Suīrán jīntiān hěn lěng, ______ tā háishì chuān de hěn shǎo.',
     translation: 'Chọn liên từ thích hợp: Tuy rằng hôm nay rất lạnh, nhưng anh ấy vẫn mặc rất ít.',
     options: [
-      { text: '但是 (Dànshì)', pinyin: 'Dànshì', translation: 'Nhưng mà' },
-      { text: '因为 (Yīnwèi)', pinyin: 'Yīnwèi', translation: 'Bởi vì' },
-      { text: '所以 (Suǒyǐ)', pinyin: 'Suǒyǐ', translation: 'Cho nên' }
+      { text: '所以', pinyin: 'Suǒyǐ', translation: 'Cho nên' },
+      { text: '因为', pinyin: 'Yīnwèi', translation: 'Bởi vì' },
+      { text: '但是', pinyin: 'Dànshì', translation: 'Nhưng mà' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Cặp liên từ chỉ sự nhượng bộ trong ngữ pháp HSK 2: "虽然......但是/可是......" (Tuy rằng... nhưng mà...).',
     points: 20,
     relatedVocab: ['虽然', '但是', '冷']
@@ -641,11 +641,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'Wǒ yǐjīng xué le yì nián Hànyǔ le, néng kàndǒng yìxiē ______ de shū.',
     translation: 'Chọn tính từ thích hợp: Tôi đã học tiếng Trung được 1 năm rồi, có thể đọc hiểu một số cuốn sách đơn giản.',
     options: [
-      { text: '简单 (Jiǎndān)', pinyin: 'Jiǎndān', translation: 'Đơn giản' },
-      { text: '便宜 (Piányi)', pinyin: 'Piányi', translation: 'Rẻ tiền' },
-      { text: '忙 (Máng)', pinyin: 'Máng', translation: 'Bận rộn' }
+      { text: '忙', pinyin: 'Máng', translation: 'Bận rộn' },
+      { text: '便宜', pinyin: 'Piányi', translation: 'Rẻ tiền' },
+      { text: '简单', pinyin: 'Jiǎndān', translation: 'Đơn giản' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: '"简单" (jiǎndān - đơn giản) bổ nghĩa cho "书" (sách đơn giản).',
     points: 20,
     relatedVocab: ['简单', '已经', '懂']
@@ -662,9 +662,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'Wǒ jiā lí gōngsī hěn jìn, měitiān zǒulù shí fēnzhōng jiù dào le. Wèn: Gōngsī lí jiā yuǎn ma?',
     translation: 'Nhà tôi cách công ty rất gần, mỗi ngày đi bộ 10 phút là tới. Hỏi: Công ty cách nhà có xa không?',
     options: [
-      { text: '不远，很近 (Bù yuǎn, hěn jìn)', pinyin: 'Bù yuǎn, hěn jìn', translation: 'Không xa, rất gần' },
-      { text: '非常远 (Fēicháng yuǎn)', pinyin: 'Fēicháng yuǎn', translation: 'Rất xa' },
-      { text: '不知道 (Bù zhīdào)', pinyin: 'Bù zhīdào', translation: 'Không biết' }
+      { text: '不远，很近', pinyin: 'Bù yuǎn, hěn jìn', translation: 'Không xa, rất gần' },
+      { text: '不知道', pinyin: 'Bù zhīdào', translation: 'Không biết' },
+      { text: '非常远', pinyin: 'Fēicháng yuǎn', translation: 'Rất xa' }
     ],
     correct_option_index: 0,
     explanation: 'Trong bài nêu rõ "离公司很近" (cách công ty rất gần), nên đáp án là A.',
@@ -683,11 +683,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'Gēge bǐ wǒ dà liǎng suì, tā pǎobù pǎo de bǐ wǒ ______.',
     translation: 'Anh trai lớn hơn tôi 2 tuổi, anh ấy chạy bộ nhanh hơn tôi.',
     options: [
-      { text: '快 (Kuài)', pinyin: 'Kuài', translation: 'Nhanh' },
-      { text: '慢 (Màn)', pinyin: 'Màn', translation: 'Chậm' },
-      { text: '高 (Gāo)', pinyin: 'Gāo', translation: 'Cao' }
+      { text: '高', pinyin: 'Gāo', translation: 'Cao' },
+      { text: '慢', pinyin: 'Màn', translation: 'Chậm' },
+      { text: '快', pinyin: 'Kuài', translation: 'Nhanh' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Trong câu so sánh chữ 比 kết hợp bổ ngữ trình độ: "跑得比我快" (chạy nhanh hơn tôi).',
     points: 20,
     relatedVocab: ['比', '快', '跑步']
@@ -704,11 +704,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'Nǐ rènshi xīn lái de Zhāng jīnglǐ ma?',
     translation: 'Bạn có quen biết giám đốc Trương mới đến không?',
     options: [
-      { text: '认识，他以前在上海工作。(Rènshi, tā yǐqián zài Shànghǎi gōngzuò.)', pinyin: 'Rènshi, tā yǐqián zài Shànghǎi gōngzuò.', translation: 'Quen chứ, anh ấy trước đây làm việc ở Thượng Hải.' },
-      { text: '我不吃鱼。(Wǒ bù chī yú.)', pinyin: 'Wǒ bù chī yú.', translation: 'Tôi không ăn cá (không liên quan)' },
-      { text: '明天下午三点。(Míngtiān xiàwǔ sān diǎn.)', pinyin: 'Míngtiān xiàwǔ sān diǎn.', translation: '3 giờ chiều mai (không liên quan)' }
+      { text: '明天下午三点。', pinyin: 'Míngtiān xiàwǔ sān diǎn.', translation: '3 giờ chiều mai (không liên quan)' },
+      { text: '认识，他以前在上海工作。', pinyin: 'Rènshi, tā yǐqián zài Shànghǎi gōngzuò.', translation: 'Quen chứ, anh ấy trước đây làm việc ở Thượng Hải.' },
+      { text: '我不吃鱼。', pinyin: 'Wǒ bù chī yú.', translation: 'Tôi không ăn cá (không liên quan)' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Câu hỏi hỏi về việc quen biết người (认识...吗), câu trả lời phù hợp nhất là "认识，他以前在上海工作".',
     points: 20,
     relatedVocab: ['经理', '认识', '以前']
@@ -732,9 +732,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：小李，总经理说明天的会议改到下午两点半了。男：好的，我马上通知大家。问：会议什么时候开始？',
     options: [
-      { text: '下午 2:30 (Xiàwǔ liǎng diǎn bàn)', pinyin: 'Xiàwǔ liǎng diǎn bàn', translation: '2 giờ 30 phút chiều' },
-      { text: '上午 10:00 (Shàngwǔ shí diǎn)', pinyin: 'Shàngwǔ shí diǎn', translation: '10 giờ sáng' },
-      { text: '下午 3:00 (Xiàwǔ sān diǎn)', pinyin: 'Xiàwǔ sān diǎn', translation: '3 giờ chiều' }
+      { text: '下午 2:30', pinyin: 'Xiàwǔ liǎng diǎn bàn', translation: '2 giờ 30 phút chiều' },
+      { text: '下午 3:00', pinyin: 'Xiàwǔ sān diǎn', translation: '3 giờ chiều' },
+      { text: '上午 10:00', pinyin: 'Shàngwǔ shí diǎn', translation: '10 giờ sáng' }
     ],
     correct_option_index: 0,
     explanation: 'Lời thoại: "改到下午两点半了" (chuyển sang 2 giờ rưỡi chiều). Đáp án đúng là A.',
@@ -755,12 +755,12 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '男：这篇新闻报道有很多生词，你能帮我翻译一下吗？女：没问题，我忙完手头的事就帮你看看。问：男的想请女的做什么？',
     options: [
-      { text: '翻译文章 (Fānyì wénzhāng)', pinyin: 'Fānyì wénzhāng', translation: 'Dịch bài viết' },
-      { text: '买报纸 (Mǎi bàozhǐ)', pinyin: 'Mǎi bàozhǐ', translation: 'Mua báo' },
-      { text: '打扫办公室 (Dǎsǎo bàngōngshì)', pinyin: 'Dǎsǎo bàngōngshì', translation: 'Dọn dẹp văn phòng' }
+      { text: '买报纸', pinyin: 'Mǎi bàozhǐ', translation: 'Mua báo' },
+      { text: '打扫办公室', pinyin: 'Dǎsǎo bàngōngshì', translation: 'Dọn dẹp văn phòng' },
+      { text: '翻译文章', pinyin: 'Fānyì wénzhāng', translation: 'Dịch bài viết' }
     ],
-    correct_option_index: 0,
-    explanation: 'Người nam nhờ: "你能帮我翻译一下吗？" (Bạn có thể giúp tôi dịch một chút không?). Đáp án A là chính xác.',
+    correct_option_index: 2,
+    explanation: 'Người nam nhờ: "你能帮我翻译一下吗？" (Bạn có thể giúp tôi dịch một chút không?). Đáp án C là chính xác.',
     points: 33,
     relatedVocab: ['翻译', '新闻', '生词']
   },
@@ -778,8 +778,8 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '虽然现在的工作收入不错，但是每天坐车要花两个多小时，太累了。所以我打算下个月换一份离家近点儿的工作。',
     options: [
-      { text: '✓ Đúng (正确)', pinyin: 'Zhèngquè', translation: 'Khớp nội dung' },
-      { text: '✗ Sai (错误)', pinyin: 'Cuòwù', translation: 'Không khớp nội dung' }
+      { text: '对', pinyin: 'Duì', translation: 'Khớp nội dung' },
+      { text: '错', pinyin: 'Cuò', translation: 'Không khớp nội dung' }
     ],
     correct_option_index: 0,
     explanation: 'Đoạn văn kết luận: "所以我打算下个月换一份离家近点儿的工作" (Vì vậy tôi dự định tháng sau đổi công việc gần nhà hơn một chút). Hoàn toàn đúng.',
@@ -800,12 +800,12 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'Jīnglǐ duì zhè cì de huódòng cèhuà hěn mǎnyì, tèbié shì guānyú rúhé xīyǐn niánqīng gùkè de xiǎngfǎ, tā juéde fēicháng yǒu chuàngyì.',
     translation: 'Giám đốc rất hài lòng với kế hoạch sự kiện lần này, đặc biệt là ý tưởng thu hút khách hàng trẻ tuổi, ông ấy cảm thấy rất sáng tạo.',
     options: [
-      { text: '经理很满意这个策划 (Jīnglǐ hěn mǎnyì zhège cèhuà)', pinyin: 'Jīnglǐ hěn mǎnyì zhège cèhuà', translation: 'Giám đốc rất hài lòng với kế hoạch này' },
-      { text: '年轻顾客不喜欢这个活动 (Niánqīng gùkè bù xǐhuan zhège huódòng)', pinyin: 'Niánqīng gùkè bù xǐhuan zhège huódòng', translation: 'Khách hàng trẻ không thích sự kiện' },
-      { text: '策划完全没有新想法 (Cèhuà wánquán méiyǒu xīn xiǎngfǎ)', pinyin: 'Cèhuà wánquán méiyǒu xīn xiǎngfǎ', translation: 'Kế hoạch không có ý tưởng mới' }
+      { text: '年轻顾客不喜欢这个活动', pinyin: 'Niánqīng gùkè bù xǐhuan zhège huódòng', translation: 'Khách hàng trẻ không thích sự kiện' },
+      { text: '经理很满意这个策划', pinyin: 'Jīnglǐ hěn mǎnyì zhège cèhuà', translation: 'Giám đốc rất hài lòng với kế hoạch này' },
+      { text: '策划完全没有新想法', pinyin: 'Cèhuà wánquán méiyǒu xīn xiǎngfǎ', translation: 'Kế hoạch không có ý tưởng mới' }
     ],
-    correct_option_index: 0,
-    explanation: 'Câu đầu tiên nêu rõ: "经理对这次的活动策划很满意" (Giám đốc rất hài lòng với kế hoạch hoạt động lần này). Đáp án A là chính xác.',
+    correct_option_index: 1,
+    explanation: 'Câu đầu tiên nêu rõ: "经理对这次的活动策划很满意" (Giám đốc rất hài lòng với kế hoạch hoạt động lần này). Đáp án B là chính xác.',
     points: 33,
     relatedVocab: ['满意', '特别是', '顾客']
   },
@@ -821,11 +821,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'Yùdào kùnnan de shíhou, wǒmen ______ lěngjìng, bù néng zháojí.',
     translation: 'Khi gặp khó khăn, chúng ta cần phải bình tĩnh, không được sốt ruột.',
     options: [
-      { text: '必须 (Bìxū)', pinyin: 'Bìxū', translation: 'Bắt buộc / Cần phải' },
-      { text: '突然 (Tūrán)', pinyin: 'Tūrán', translation: 'Đột nhiên' },
-      { text: '其实 (Qíshí)', pinyin: 'Qíshí', translation: 'Kỳ thực / Thật ra' }
+      { text: '突然', pinyin: 'Tūrán', translation: 'Đột nhiên' },
+      { text: '其实', pinyin: 'Qíshí', translation: 'Kỳ thực / Thật ra' },
+      { text: '必须', pinyin: 'Bìxū', translation: 'Bắt buộc / Cần phải' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: '"必须" (bìxū - cần phải, bắt buộc) biểu thị yêu cầu về hành động và thái độ khi xử lý tình huống: "必须冷静" (phải bình tĩnh).',
     points: 33,
     relatedVocab: ['必须', '冷静', '着急']
@@ -842,9 +842,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'Zhè zhāng dìtú fēicháng yǒuyòng, ______ tā, wǒmen hěn shùnlì de zhǎodào le bīnguǎn.',
     translation: 'Tấm bản đồ này rất hữu dụng, nhờ có nó, chúng tôi đã tìm thấy khách sạn rất thuận lợi.',
     options: [
-      { text: '多亏 (Duōkuī)', pinyin: 'Duōkuī', translation: 'Nhờ có / May mà có' },
-      { text: '除了 (Chúle)', pinyin: 'Chúle', translation: 'Ngoài ra' },
-      { text: '关于 (Guānyú)', pinyin: 'Guānyú', translation: 'Về vấn đề' }
+      { text: '多亏', pinyin: 'Duōkuī', translation: 'Nhờ có / May mà có' },
+      { text: '关于', pinyin: 'Guānyú', translation: 'Về vấn đề' },
+      { text: '除了', pinyin: 'Chúle', translation: 'Ngoài ra' }
     ],
     correct_option_index: 0,
     explanation: '"多亏" (duōkuī - may nhờ có) biểu thị sự biết ơn hoặc nguyên nhân thuận lợi dẫn đến kết quả tốt đẹp.',
@@ -861,7 +861,7 @@ export const EXPANDED_MOCK_QUESTIONS = [
     part_number: 3,
     question_number: 7,
     question_type: 'writing_reorder',
-    prompt: '书写第一部分：将词语排列成一句通顺的话（Sắp xếp từ thành câu）：',
+    prompt: '书写第一部分：将词语排列成一句通顺的话：',
     pinyin: 'Shūxiě: Jiāng cíyǔ páiliè chéng yí jù tōngshùn de huà:',
     translation: 'Phần Viết: Sắp xếp các từ ngữ sau thành câu hoàn chỉnh đúng ngữ pháp:',
     words: ['请', '护照', '把', '给我'],
@@ -870,11 +870,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     answerKey: ['请', '把', '护照', '给我'],
     correct_sentence: '请把护照给我。',
     options: [
-      { text: '请把护照给我。', pinyin: 'Qǐng bǎ hùzhào gěi wǒ.', translation: 'Xin hãy đưa hộ chiếu cho tôi.' },
       { text: '护照请把我给。', pinyin: 'Hùzhào qǐng bǎ wǒ gěi.', translation: 'Sai trật tự vị trí từ' },
+      { text: '请把护照给我。', pinyin: 'Qǐng bǎ hùzhào gěi wǒ.', translation: 'Xin hãy đưa hộ chiếu cho tôi.' },
       { text: '请给我把护照。', pinyin: 'Qǐng gěi wǒ bǎ hùzhào.', translation: 'Sai cấu trúc chữ 把' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Cấu trúc câu chữ 把 dạng mệnh lệnh: 请 + 把 + Tân ngữ (护照) + Động từ (给) + Tân ngữ gián tiếp (我).',
     points: 33,
     relatedVocab: ['把', '护照', '给']
@@ -896,11 +896,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     answerKey: ['那本书', '被', '李明', '借走了'],
     correct_sentence: '那本书被李明借走了。',
     options: [
+      { text: '那本书借走了被李明。', pinyin: 'Nà běn shū jiè zǒu le bèi Lǐ Míng.', translation: 'Sai vị trí giới từ 被' },
       { text: '那本书被李明借走了。', pinyin: 'Nà běn shū bèi Lǐ Míng jiè zǒu le.', translation: 'Quyển sách đó bị Lý Minh mượn đi rồi.' },
-      { text: '李明被那本书借走了。', pinyin: 'Lǐ Míng bèi nà běn shū jiè zǒu le.', translation: 'Sai đối tượng chịu tác động' },
-      { text: '那本书借走了被李明。', pinyin: 'Nà běn shū jiè zǒu le bèi Lǐ Míng.', translation: 'Sai vị trí giới từ 被' }
+      { text: '李明被那本书借走了。', pinyin: 'Lǐ Míng bèi nà běn shū jiè zǒu le.', translation: 'Sai đối tượng chịu tác động' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Cấu trúc câu bị động chữ 被: Chủ ngữ tiếp nhận (那本书) + 被 + Tác nhân (李明) + Động từ (借) + Thành phần khác (走了).',
     points: 33,
     relatedVocab: ['被', '借', '书']
@@ -949,11 +949,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：小王这次不仅通过了HSK四级考试，还考了满分呢！男：真没想到！他平时看起来不怎么爱看书，真是让人吃惊。问：男的为什么感到吃惊？',
     options: [
-      { text: '小王考了满分 (Xiǎo Wáng kǎo le mǎnfēn)', pinyin: 'Xiǎo Wáng kǎo le mǎnfēn', translation: 'Tiểu Vương đạt điểm tối đa' },
-      { text: '考试推迟了 (Kǎoshì tuīchí le)', pinyin: 'Kǎoshì tuīchí le', translation: 'Kỳ thi bị hoãn' },
-      { text: '小王没有参加考试 (Xiǎo Wáng méiyǒu cānjiā kǎoshì)', pinyin: 'Xiǎo Wáng méiyǒu cānjiā kǎoshì', translation: 'Tiểu Vương không đi thi' }
+      { text: '考试推迟了', pinyin: 'Kǎoshì tuīchí le', translation: 'Kỳ thi bị hoãn' },
+      { text: '小王考了满分', pinyin: 'Xiǎo Wáng kǎo le mǎnfēn', translation: 'Tiểu Vương đạt điểm tối đa' },
+      { text: '小王没有参加考试', pinyin: 'Xiǎo Wáng méiyǒu cānjiā kǎoshì', translation: 'Tiểu Vương không đi thi' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Người nữ nói Tiểu Vương không những đỗ mà còn được điểm tuyệt đối (考了满分), người nam thốt lên kinh ngạc "真没想到... 真是让人吃惊".',
     points: 33,
     relatedVocab: ['吃惊', '满分', '不仅']
@@ -972,9 +972,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '很多人以为成功靠的是运气或者聪明，其实最关键的是坚持。只要你认定了一个目标，不怕失败，一直走下去，就一定能看到希望。问：说话人认为成功的关键是什么？',
     options: [
-      { text: '坚持 (Jiānchí)', pinyin: 'Jiānchí', translation: 'Sự kiên trì' },
-      { text: '运气 (Yùnqi)', pinyin: 'Yùnqi', translation: 'May mắn' },
-      { text: '聪明 (Cōngmíng)', pinyin: 'Cōngmíng', translation: 'Thông minh' }
+      { text: '坚持', pinyin: 'Jiānchí', translation: 'Sự kiên trì' },
+      { text: '运气', pinyin: 'Yùnqi', translation: 'May mắn' },
+      { text: '聪明', pinyin: 'Cōngmíng', translation: 'Thông minh' }
     ],
     correct_option_index: 0,
     explanation: 'Đoạn văn nêu rõ: "其实最关键的是坚持" (Thực ra mấu chốt nhất chính là sự kiên trì). Do đó đáp án A là đúng.',
@@ -995,11 +995,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     audio_url: '',
     audio_script: '男：下周要去拜访客户，礼品买茶叶合适还是买水果合适？女：客户是南方人，喜欢喝茶，我们还是送上好的龙井茶吧。问：他们正在商量什么？',
     options: [
-      { text: '给客户送什么礼品 (Gěi kèhù sòng shénme lǐpǐn)', pinyin: 'Gěi kèhù sòng shénme lǐpǐn', translation: 'Tặng quà gì cho khách hàng' },
-      { text: '什么时候出发 (Shénme shíhou chūfā)', pinyin: 'Shénme shíhou chūfā', translation: 'Khi nào xuất phát' },
-      { text: '如何制作龙井茶 (Rúhé zhìzuò Lóngjǐng chá)', pinyin: 'Rúhé zhìzuò Lóngjǐng chá', translation: 'Cách làm trà Long Tỉnh' }
+      { text: '如何制作龙井茶', pinyin: 'Rúhé zhìzuò Lóngjǐng chá', translation: 'Cách làm trà Long Tỉnh' },
+      { text: '什么时候出发', pinyin: 'Shénme shíhou chūfā', translation: 'Khi nào xuất phát' },
+      { text: '给客户送什么礼品', pinyin: 'Gěi kèhù sòng shénme lǐpǐn', translation: 'Tặng quà gì cho khách hàng' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Họ đang bàn luận nên mua trà hay hoa quả để làm quà biếu khách hàng (礼品买茶叶合适还是买水果合适).',
     points: 34,
     relatedVocab: ['礼品', '客户', '合适']
@@ -1019,17 +1019,17 @@ export const EXPANDED_MOCK_QUESTIONS = [
       B: '跑步不仅能锻炼身体、减轻压力。',
       C: '所以很多人都喜欢这项运动。'
     },
-    prompt: '阅读第二部分：排列顺序（Hãy sắp xếp các câu sau theo trình tự logic）：\nA. 另外，它还能帮你认识更多志同道合的朋友。\nB. 跑步不仅能锻炼身体、减轻压力。\nC. 所以很多人都喜欢这项运动。',
+    prompt: '阅读第二部分：排列顺序：\nA. 另外，它还能帮你认识更多志同道合的朋友。\nB. 跑步不仅能锻炼身体、减轻压力。\nC. 所以很多人都喜欢这项运动。',
     pinyin: 'Páiliè shùnxù: A. Lìngwài, tā hái néng... B. Pǎobù bùjǐn... C. Suǒyǐ...',
     translation: 'Sắp xếp 3 câu theo thứ tự logic: A. Ngoài ra, nó còn... B. Chạy bộ không những... C. Cho nên nhiều người...',
     answerKey: 'BAC',
     correct_order_abc: 'BAC',
     options: [
-      { text: 'B - A - C', pinyin: 'B - A - C', translation: 'Trình tự chuẩn logic' },
+      { text: 'C - B - A', pinyin: 'C - B - A', translation: 'Sai quan hệ kết quả' },
       { text: 'A - B - C', pinyin: 'A - B - C', translation: 'Sai vị trí mở đầu' },
-      { text: 'C - B - A', pinyin: 'C - B - A', translation: 'Sai quan hệ kết quả' }
+      { text: 'B - A - C', pinyin: 'B - A - C', translation: 'Trình tự chuẩn logic' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Câu B giới thiệu chủ đề và lợi ích đầu tiên "不仅能...". Câu A bổ sung thêm lợi ích thứ hai "另外，还能...". Câu C đưa ra kết luận "所以...". Trình tự đúng là B-A-C.',
     points: 33,
     relatedVocab: ['不仅', '另外', '所以']
@@ -1053,11 +1053,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     answerKey: 'ACB',
     correct_order_abc: 'ACB',
     options: [
+      { text: 'C - A - B', pinyin: 'C - A - B', translation: 'Sai vị trí liên từ thậm chí 甚至' },
       { text: 'A - C - B', pinyin: 'A - C - B', translation: 'Trình tự chuẩn xác' },
-      { text: 'B - A - C', pinyin: 'B - A - C', translation: 'Đưa kết luận lên đầu không hợp ngữ cảnh' },
-      { text: 'C - A - B', pinyin: 'C - A - B', translation: 'Sai vị trí liên từ thậm chí 甚至' }
+      { text: 'B - A - C', pinyin: 'B - A - C', translation: 'Đưa kết luận lên đầu không hợp ngữ cảnh' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Câu A nêu tác hại đầu tiên của việc thiếu ngủ. Câu C dùng "甚至还会..." để nâng mức tác hại trầm trọng hơn. Câu B dùng "因此..." để kết luận giải pháp. Trình tự đúng là A-C-B.',
     points: 33,
     relatedVocab: ['表明', '甚至', '因此']
@@ -1074,9 +1074,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     pinyin: 'Zhè duàn huà zhǔyào gàosu wǒmen: 生活就像一面镜子...',
     translation: 'Đoạn văn này chủ yếu muốn khuyên chúng ta điều gì?',
     options: [
-      { text: '要有积极乐观的生活态度 (Yào yǒu jījí lèguān de shēnghuó tàidù)', pinyin: 'Yào yǒu jījí lèguān de shēnghuó tàidù', translation: 'Cần có thái độ sống tích cực, lạc quan' },
-      { text: '买镜子要注意质量 (Mǎi jìngzi yào zhùyì zhìliàng)', pinyin: 'Mǎi jìngzi yào zhùyì zhìliàng', translation: 'Mua gương phải chú ý chất lượng' },
-      { text: '要学会多批评别人 (Yào xuéhuì duō pīpíng biérén)', pinyin: 'Yào xuéhuì duō pīpíng biérén', translation: 'Phải học cách phê bình người khác' }
+      { text: '要有积极乐观的生活态度', pinyin: 'Yào yǒu jījí lèguān de shēnghuó tàidù', translation: 'Cần có thái độ sống tích cực, lạc quan' },
+      { text: '要学会多批评别人', pinyin: 'Yào xuéhuì duō pīpíng biérén', translation: 'Phải học cách phê bình người khác' },
+      { text: '买镜子要注意质量', pinyin: 'Mǎi jìngzi yào zhùyì zhìliàng', translation: 'Mua gương phải chú ý chất lượng' }
     ],
     correct_option_index: 0,
     explanation: 'Hình ảnh ẩn dụ "生活就像一面镜子，你对它笑，它就对你笑" nhằm khuyên con người giữ thái độ lạc quan, tích cực trước mọi hoàn cảnh.',
@@ -1102,11 +1102,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     answerKey: ['连', '三岁小孩', '都', '知道这个道理'],
     correct_sentence: '连三岁小孩都知道这个道理。',
     options: [
-      { text: '连三岁小孩都知道这个道理。', pinyin: 'Lián sān suì xiǎohái dōu zhīdào zhège dàolǐ.', translation: 'Ngay cả đứa trẻ ba tuổi cũng biết đạo lý này.' },
+      { text: '连这个道理三岁小孩都知。', pinyin: 'Lián zhège dàolǐ sān suì xiǎohái dōu zhī.', translation: 'Sai trật tự nhấn mạnh' },
       { text: '三岁小孩连知道这个道理都。', pinyin: 'Sān suì xiǎohái lián zhīdào zhège dàolǐ dōu.', translation: 'Sai cấu trúc chữ 连...都...' },
-      { text: '连这个道理三岁小孩都知。', pinyin: 'Lián zhège dàolǐ sān suì xiǎohái dōu zhī.', translation: 'Sai trật tự nhấn mạnh' }
+      { text: '连三岁小孩都知道这个道理。', pinyin: 'Lián sān suì xiǎohái dōu zhīdào zhège dàolǐ.', translation: 'Ngay cả đứa trẻ ba tuổi cũng biết đạo lý này.' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Cấu trúc nhấn mạnh HSK 4: "连 + Danh từ/Mệnh đề nhấn mạnh + 都/也 + Vị ngữ": 连三岁小孩都知道这个道理。',
     points: 33,
     relatedVocab: ['连', '道理', '小孩']
@@ -1128,11 +1128,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     answerKey: ['她', '把', '房间', '整理得', '干干净净'],
     correct_sentence: '她把房间整理得干干净净。',
     options: [
-      { text: '她把房间整理得干干净净。', pinyin: 'Tā bǎ fángjiān zhěnglǐ de gāngānjìngjìng.', translation: 'Cô ấy dọn dẹp căn phòng sạch bong kin kít.' },
       { text: '她房间把整理得干干净净。', pinyin: 'Tā fángjiān bǎ zhěnglǐ de gāngānjìngjìng.', translation: 'Đặt sai vị trí chữ 把' },
+      { text: '她把房间整理得干干净净。', pinyin: 'Tā bǎ fángjiān zhěnglǐ de gāngānjìngjìng.', translation: 'Cô ấy dọn dẹp căn phòng sạch bong kin kít.' },
       { text: '房间把她整理得干干净净。', pinyin: 'Fángjiān bǎ tā zhěnglǐ de gāngānjìngjìng.', translation: 'Đảo ngược chủ ngữ tân ngữ' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Cấu trúc câu chữ 把 kết hợp bổ ngữ trạng thái: Chủ ngữ (她) + 把 + Tân ngữ (房间) + Động từ (整理) + 得 + Tính từ lặp (干干净净)。',
     points: 33,
     relatedVocab: ['整理', '干净', '房间']
@@ -1179,9 +1179,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "audio_script": "很高兴认识你。",
     "options": [
       {
-        "text": "很高兴认识你。",
-        "pinyin": "Hěn gāoxìng rènshi nǐ.",
-        "translation": "Rất vui được quen biết bạn."
+        "text": "对不起。",
+        "pinyin": "Duìbuqǐ.",
+        "translation": "Xin lỗi."
       },
       {
         "text": "谢谢你。",
@@ -1189,13 +1189,13 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Cảm ơn bạn."
       },
       {
-        "text": "对不起。",
-        "pinyin": "Duìbuqǐ.",
-        "translation": "Xin lỗi."
+        "text": "很高兴认识你。",
+        "pinyin": "Hěn gāoxìng rènshi nǐ.",
+        "translation": "Rất vui được quen biết bạn."
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Băng ghi âm phát câu \"很高兴认识你\" (Rất vui được làm quen với bạn). Phương án A chính xác.",
+    "correct_option_index": 2,
+    "explanation": "Băng ghi âm phát câu \"很高兴认识你\" (Rất vui được làm quen với bạn). Phương án C chính xác.",
     "points": 50,
     "relatedVocab": [
       "高兴",
@@ -1219,9 +1219,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "audio_script": "男：现在几点了？ 女：现在八点三十分。",
     "options": [
       {
-        "text": "8:30",
-        "pinyin": "bā diǎn sānshí fēn",
-        "translation": "8 giờ 30 phút"
+        "text": "9:00",
+        "pinyin": "jiǔ diǎn",
+        "translation": "9 giờ đúng"
       },
       {
         "text": "7:30",
@@ -1229,13 +1229,13 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "7 giờ 30 phút"
       },
       {
-        "text": "9:00",
-        "pinyin": "jiǔ diǎn",
-        "translation": "9 giờ đúng"
+        "text": "8:30",
+        "pinyin": "bā diǎn sānshí fēn",
+        "translation": "8 giờ 30 phút"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Nhân vật nữ nói rõ \"八点三十分\" (8 giờ 30 phút). Chọn A.",
+    "correct_option_index": 2,
+    "explanation": "Nhân vật nữ nói rõ \"八点三十分\" (8 giờ 30 phút). Chọn C.",
     "points": 50,
     "relatedVocab": [
       "现在",
@@ -1262,14 +1262,14 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "cái, quả (lượng từ phổ biến)"
       },
       {
-        "text": "本",
-        "pinyin": "běn",
-        "translation": "quyển, cuốn (cho sách vở)"
-      },
-      {
         "text": "位",
         "pinyin": "wèi",
         "translation": "vị, ngài (chỉ người trang trọng)"
+      },
+      {
+        "text": "本",
+        "pinyin": "běn",
+        "translation": "quyển, cuốn (cho sách vở)"
       }
     ],
     "correct_option_index": 0,
@@ -1295,6 +1295,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "translation": "Chọn đại từ phù hợp: Cô ấy là giáo viên tiếng Trung của tôi.",
     "options": [
       {
+        "text": "哪儿",
+        "pinyin": "nǎr",
+        "translation": "ở đâu"
+      },
+      {
         "text": "她",
         "pinyin": "tā",
         "translation": "cô ấy, bà ấy"
@@ -1303,14 +1308,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "text": "什么",
         "pinyin": "shénme",
         "translation": "cái gì"
-      },
-      {
-        "text": "哪儿",
-        "pinyin": "nǎr",
-        "translation": "ở đâu"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Vị trí đầu câu cần một đại từ nhân xưng làm chủ ngữ: \"她\" (Cô ấy/Bà ấy). Câu hoàn chỉnh: 她是我的汉语老师。",
     "points": 50,
     "relatedVocab": [
@@ -1413,9 +1413,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "translation": "Đọc câu và chọn từ điền vào chỗ trống: Ngoài trời mưa to rồi, bạn đừng quên mang ô.",
     "options": [
       {
-        "text": "雨伞",
-        "pinyin": "yǔsǎn",
-        "translation": "cái ô, chiếc dù"
+        "text": "报纸",
+        "pinyin": "bàozhǐ",
+        "translation": "tờ báo"
       },
       {
         "text": "手表",
@@ -1423,12 +1423,12 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "đồng hồ đeo tay"
       },
       {
-        "text": "报纸",
-        "pinyin": "bàozhǐ",
-        "translation": "tờ báo"
+        "text": "雨伞",
+        "pinyin": "yǔsǎn",
+        "translation": "cái ô, chiếc dù"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Ngữ cảnh trời mưa (下大雨) nên vật dụng cần mang theo để che mưa là chiếc ô (雨伞).",
     "points": 50,
     "relatedVocab": [
@@ -1451,6 +1451,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "translation": "Chọn trợ từ đúng: Anh trai chạy nhanh hơn em trai.",
     "options": [
       {
+        "text": "地",
+        "pinyin": "de",
+        "translation": "trợ từ trạng ngữ"
+      },
+      {
         "text": "得",
         "pinyin": "de",
         "translation": "trợ từ bổ ngữ trạng thái"
@@ -1459,14 +1464,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "text": "的",
         "pinyin": "de",
         "translation": "trợ từ định ngữ sở hữu"
-      },
-      {
-        "text": "地",
-        "pinyin": "de",
-        "translation": "trợ từ trạng ngữ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Sau động từ \"跑\" và trước tính từ miêu tả trình độ \"快\" bắt buộc dùng trợ từ kết cấu \"得\" để tạo bổ ngữ trạng thái (跑得快).",
     "points": 50,
     "relatedVocab": [
@@ -1491,14 +1491,14 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "audio_script": "男：先生，请问您想喝点儿什么？咖啡还是绿茶？ 女：给我一杯温水就可以了，顺便把菜单拿给我看看。",
     "options": [
       {
-        "text": "餐厅/咖啡厅",
-        "pinyin": "cāntīng / kāfēitīng",
-        "translation": "Nhà hàng / Quán cà phê"
-      },
-      {
         "text": "图书馆",
         "pinyin": "túshūguǎn",
         "translation": "Thư viện"
+      },
+      {
+        "text": "餐厅/咖啡厅",
+        "pinyin": "cāntīng / kāfēitīng",
+        "translation": "Nhà hàng / Quán cà phê"
       },
       {
         "text": "火车站",
@@ -1506,7 +1506,7 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Nhà ga xe lửa"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Từ khóa \"咖啡\" (cà phê), \"绿茶\" (trà xanh), \"菜单\" (thực đơn) chỉ ra bối cảnh diễn ra tại nhà hàng hoặc quán cà phê.",
     "points": 50,
     "relatedVocab": [
@@ -1569,11 +1569,6 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "translation": "Đọc câu và chọn từ điền vào chỗ trống: Tuy gặp nhiều khó khăn, nhưng anh ấy vẫn không từ bỏ kế hoạch học tiếng Trung.",
     "options": [
       {
-        "text": "依然",
-        "pinyin": "yīrán",
-        "translation": "vẫn như cũ, y nguyên"
-      },
-      {
         "text": "突然",
         "pinyin": "tūrán",
         "translation": "đột nhiên"
@@ -1582,9 +1577,14 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "text": "或者",
         "pinyin": "huòzhě",
         "translation": "hoặc là"
+      },
+      {
+        "text": "依然",
+        "pinyin": "yīrán",
+        "translation": "vẫn như cũ, y nguyên"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Cặp liên từ nhượng bộ \"虽然...但...依然...\" (Tuy... nhưng vẫn...). \"依然\" mang sắc thái kiên trì, không thay đổi.",
     "points": 50,
     "relatedVocab": [
@@ -1607,14 +1607,14 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "translation": "Đọc đoạn văn và chọn ý chính: Thể thao không chỉ giúp cơ thể khỏe mạnh, mà còn làm tâm trạng vui vẻ. Cho nên mỗi ngày dù chỉ đi bộ nửa giờ cũng rất có ích.",
     "options": [
       {
-        "text": "每天坚持运动对身心都有益处",
-        "pinyin": "Měitiān jiānchí yùndòng duì shēnxīn dōu yǒu yìchu",
-        "translation": "Kiên trì vận động mỗi ngày có ích cho cả thể chất lẫn tinh thần"
-      },
-      {
         "text": "散步是最累的运动方式",
         "pinyin": "Sànbù shì zuì lèi de yùndòng fāngshì",
         "translation": "Đi bộ là phương thức vận động mệt nhất"
+      },
+      {
+        "text": "每天坚持运动对身心都有益处",
+        "pinyin": "Měitiān jiānchí yùndòng duì shēnxīn dōu yǒu yìchu",
+        "translation": "Kiên trì vận động mỗi ngày có ích cho cả thể chất lẫn tinh thần"
       },
       {
         "text": "身体健康不需要运动",
@@ -1622,8 +1622,8 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Khỏe mạnh không cần thể thao"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Đoạn văn nhấn mạnh lợi ích của việc vận động mỗi ngày (哪怕只散步半小时，也是很有好处的). Phương án A tóm tắt trọn vẹn chủ đề.",
+    "correct_option_index": 1,
+    "explanation": "Đoạn văn nhấn mạnh lợi ích của việc vận động mỗi ngày (哪怕只散步半小时，也是很有好处的). Phương án B tóm tắt trọn vẹn chủ đề.",
     "points": 50,
     "relatedVocab": [
       "坚持",
@@ -1741,9 +1741,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "correct_sentence": "他完全能够听懂中文广播。",
     "options": [
       {
-        "text": "他完全能够听懂中文广播。",
-        "pinyin": "Tā wánquán nénggòu tīngdǒng Zhōngwén guǎngbō.",
-        "translation": "Anh ấy hoàn toàn có thể nghe hiểu đài phát thanh tiếng Trung."
+        "text": "中文广播完全能够听懂他。",
+        "pinyin": "Zhōngwén guǎngbō wánquán nénggòu tīngdǒng tā.",
+        "translation": "Đảo ngược chủ thể và đối tượng"
       },
       {
         "text": "他能够听懂完全中文广播。",
@@ -1751,12 +1751,12 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Phó từ 完全 đặt sai sau động từ"
       },
       {
-        "text": "中文广播完全能够听懂他。",
-        "pinyin": "Zhōngwén guǎngbō wánquán nénggòu tīngdǒng tā.",
-        "translation": "Đảo ngược chủ thể và đối tượng"
+        "text": "他完全能够听懂中文广播。",
+        "pinyin": "Tā wánquán nénggòu tīngdǒng Zhōngwén guǎngbō.",
+        "translation": "Anh ấy hoàn toàn có thể nghe hiểu đài phát thanh tiếng Trung."
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Trật tự câu: Chủ ngữ (他) + Phó từ mức độ (完全) + Động từ năng nguyện (能够) + Động từ kết quả (听懂) + Tân ngữ (中文广播)。",
     "points": 50,
     "relatedVocab": [
@@ -1781,9 +1781,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "audio_script": "男：这次市场调查报告，你打算什么时候提交？ 女：我还需要整理一部分问卷数据，预计周五下午开会前交给经理。",
     "options": [
       {
-        "text": "提交市场调查报告的时间",
-        "pinyin": "Tíjiāo shìchǎng diàochá bàogào de shíjiān",
-        "translation": "Thời gian nộp báo cáo khảo sát thị trường"
+        "text": "取消周五的部门会议",
+        "pinyin": "Qǔxiāo zhōuwǔ de bùmén huìyì",
+        "translation": "Hủy cuộc họp phòng ban thứ Sáu"
       },
       {
         "text": "招聘新员工面试",
@@ -1791,13 +1791,13 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Phỏng vấn tuyển nhân viên mới"
       },
       {
-        "text": "取消周五的部门会议",
-        "pinyin": "Qǔxiāo zhōuwǔ de bùmén huìyì",
-        "translation": "Hủy cuộc họp phòng ban thứ Sáu"
+        "text": "提交市场调查报告的时间",
+        "pinyin": "Tíjiāo shìchǎng diàochá bàogào de shíjiān",
+        "translation": "Thời gian nộp báo cáo khảo sát thị trường"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Hai nhân vật thảo luận về \"市场调查报告什么时候提交\" (Thời điểm nộp báo cáo khảo sát thị trường). Chọn A.",
+    "correct_option_index": 2,
+    "explanation": "Hai nhân vật thảo luận về \"市场调查报告什么时候提交\" (Thời điểm nộp báo cáo khảo sát thị trường). Chọn C.",
     "points": 50,
     "relatedVocab": [
       "调查",
@@ -1859,21 +1859,21 @@ export const EXPANDED_MOCK_QUESTIONS = [
       "B": "语言能力的提升并不是一朝一夕的事情，",
       "C": "就一定能够取得令人惊喜的进步。"
     },
-    "prompt": "阅读第二部分：排列顺序（Hãy sắp xếp các câu sau theo trình tự logic）：\nA. 只要我们每天坚持阅读和交流，\nB. 语言能力的提升并不是一朝一夕的事情，\nC. 就一定能够取得令人惊喜的进步。",
+    "prompt": "阅读第二部分：排列顺序：\nA. 只要我们每天坚持阅读和交流，\nB. 语言能力的提升并不是一朝一夕的事情，\nC. 就一定能够取得令人惊喜的进步。",
     "pinyin": "Páiliè shùnxù: A. Zhǐyào wǒmen měitiān... B. Yǔyán nénglì de tíshēng... C. Jiù yídìng nénggòu...",
     "translation": "Sắp xếp câu: B nêu tiền đề ngôn ngữ cần thời gian. A đưa điều kiện \"只要...\". C đưa kết quả \"就...\". Trật tự đúng là B-A-C.",
     "answerKey": "BAC",
     "correct_order_abc": "BAC",
     "options": [
       {
-        "text": "B - A - C",
-        "pinyin": "B - A - C",
-        "translation": "Trình tự logic chuẩn"
-      },
-      {
         "text": "A - B - C",
         "pinyin": "A - B - C",
         "translation": "Đặt điều kiện trước mở đề"
+      },
+      {
+        "text": "B - A - C",
+        "pinyin": "B - A - C",
+        "translation": "Trình tự logic chuẩn"
       },
       {
         "text": "C - A - B",
@@ -1881,7 +1881,7 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Sai vị trí hệ quả 就"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Câu B mở đầu nêu thực tế khách quan. Cặp liên từ điều kiện \"只要 (A) ... 就 (C) ...\". Trình tự đúng: B-A-C.",
     "points": 50,
     "relatedVocab": [
@@ -1904,9 +1904,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "translation": "Đọc đoạn văn và chọn phương án chuẩn xác: Tình bạn chân chính không phải ngày ngày dính lấy nhau, mà là khi bạn cần giúp đỡ, đối phương không do dự đưa tay tương trợ.",
     "options": [
       {
-        "text": "患难时刻见真情才是真正的友谊",
-        "pinyin": "Huànnàn shíkè jiàn zhēnqíng cái shì zhēnzhèng de yǒuyì",
-        "translation": "Lúc hoạn nạn mới thấy chân tình chính là tình bạn thực sự"
+        "text": "友谊不需要互相帮助",
+        "pinyin": "Yǒuyì bù xūyào hùxiāng bāngzhù",
+        "translation": "Tình bạn không cần tương trợ lẫn nhau"
       },
       {
         "text": "好朋友必须天天在一起吃饭",
@@ -1914,13 +1914,13 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Bạn tốt bắt buộc ngày nào cũng ăn cùng nhau"
       },
       {
-        "text": "友谊不需要互相帮助",
-        "pinyin": "Yǒuyì bù xūyào hùxiāng bāngzhù",
-        "translation": "Tình bạn không cần tương trợ lẫn nhau"
+        "text": "患难时刻见真情才是真正的友谊",
+        "pinyin": "Huànnàn shíkè jiàn zhēnqíng cái shì zhēnzhèng de yǒuyì",
+        "translation": "Lúc hoạn nạn mới thấy chân tình chính là tình bạn thực sự"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Đoạn văn định nghĩa tình bạn đích thực qua việc sẵn lòng tương trợ khi gặp khó khăn. Chọn A.",
+    "correct_option_index": 2,
+    "explanation": "Đoạn văn định nghĩa tình bạn đích thực qua việc sẵn lòng tương trợ khi gặp khó khăn. Chọn C.",
     "points": 50,
     "relatedVocab": [
       "友谊",
@@ -2038,6 +2038,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "correct_sentence": "由于交通拥堵，他迟到了半个小时。",
     "options": [
       {
+        "text": "交通拥堵由于他半个小时迟到了。",
+        "pinyin": "Jiāotōng yōngdǔ yóuyú tā bàn ge xiǎoshí chídào le.",
+        "translation": "Lỗi ngữ pháp trật tự từ"
+      },
+      {
         "text": "由于交通拥堵，他迟到了半个小时。",
         "pinyin": "Yóuyú jiāotōng yōngdǔ, tā chídào le bàn ge xiǎoshí.",
         "translation": "Do tắc đường, anh ấy đã đến muộn nửa tiếng đồng hồ."
@@ -2046,14 +2051,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "text": "他迟到了由于交通拥堵半个小时。",
         "pinyin": "Tā chídào le yóuyú jiāotōng yōngdǔ bàn ge xiǎoshí.",
         "translation": "Ngắt sai ngữ đoạn nguyên nhân"
-      },
-      {
-        "text": "交通拥堵由于他半个小时迟到了。",
-        "pinyin": "Jiāotōng yōngdǔ yóuyú tā bàn ge xiǎoshí chídào le.",
-        "translation": "Lỗi ngữ pháp trật tự từ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cấu trúc biểu thị nguyên nhân: 由于 + Cụm danh từ nguyên nhân (交通拥堵) + Mệnh đề kết quả (他迟到了半个小时)。",
     "points": 50,
     "relatedVocab": [
@@ -2083,14 +2083,14 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Cơ chế nghiên cứu dung nạp thất bại, khuyến khích tìm tòi và nhân tài trẻ"
       },
       {
-        "text": "只依靠大量资本并购其他小公司",
-        "pinyin": "Zhǐ yīkào dàliàng zīběn bìnggòu qítā xiǎo gōngsī",
-        "translation": "Chỉ dựa vào thâu tóm vốn các công ty nhỏ"
-      },
-      {
         "text": "完全模仿国外成熟的产品设计",
         "pinyin": "Wánquán mófǎng guówài chéngshú de chǎnpǐn shèjì",
         "translation": "Sao chép hoàn toàn mẫu mã nước ngoài"
+      },
+      {
+        "text": "只依靠大量资本并购其他小公司",
+        "pinyin": "Zhǐ yīkào dàliàng zīběn bìnggòu qítā xiǎo gōngsī",
+        "translation": "Chỉ dựa vào thâu tóm vốn các công ty nhỏ"
       }
     ],
     "correct_option_index": 0,
@@ -2118,6 +2118,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "audio_script": "生态环境保护不仅需要严格的法律制度红线，更依赖于科技赋能。通过清洁能源替代和工业碳减排，实现经济发展与绿水青山的协同共赢。",
     "options": [
       {
+        "text": "放任排污以换取短期经济高速增长",
+        "pinyin": "Fàngrèn páiwū yǐ huànqǔ duǎnqī jīngjì gāosù zēngzhǎng",
+        "translation": "Thả nổi xả thải để tăng trưởng nóng"
+      },
+      {
         "text": "法律刚性约束与清洁能源低碳科技协同",
         "pinyin": "Fǎlǜ gāngxìng yuēshù yǔ qīngjié néngyuán dītàn kējì xiétóng",
         "translation": "Khung pháp lý nghiêm ngặt kết hợp công nghệ năng lượng sạch giảm carbon"
@@ -2126,15 +2131,10 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "text": "全面叫停所有工业生产活动",
         "pinyin": "Quánmiàn jiàotíng suǒyǒu gōngyè shēngchǎn huódòng",
         "translation": "Dừng toàn bộ sản xuất công nghiệp"
-      },
-      {
-        "text": "放任排污以换取短期经济高速增长",
-        "pinyin": "Fàngrèn páiwū yǐ huànqǔ duǎnqī jīngjì gāosù zēngzhǎng",
-        "translation": "Thả nổi xả thải để tăng trưởng nóng"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Báo cáo chỉ rõ cần phối hợp chặt chẽ giữa kỷ cương luật pháp (法律红线) và giải pháp năng lượng sạch (清洁能源协同). Chọn A.",
+    "correct_option_index": 1,
+    "explanation": "Báo cáo chỉ rõ cần phối hợp chặt chẽ giữa kỷ cương luật pháp (法律红线) và giải pháp năng lượng sạch (清洁能源协同). Chọn B.",
     "points": 50,
     "relatedVocab": [
       "协同",
@@ -2156,6 +2156,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "translation": "Chọn từ điền vào chỗ trống: Đối mặt với tình hình kinh tế biến chuyển phức tạp, chúng ta phải giữ vững định lực chiến lược, nắm chắc cơ hội lịch sử nâng cấp ngành công nghiệp.",
     "options": [
       {
+        "text": "渐渐",
+        "pinyin": "jiànjiàn",
+        "translation": "dần dần"
+      },
+      {
         "text": "牢牢",
         "pinyin": "láoláo",
         "translation": "vững chắc, chặt chẽ (nắm giữ)"
@@ -2164,15 +2169,10 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "text": "匆匆",
         "pinyin": "cōngcōng",
         "translation": "vội vã, hấp tấp"
-      },
-      {
-        "text": "渐渐",
-        "pinyin": "jiànjiàn",
-        "translation": "dần dần"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Cụm từ phối hợp chuẩn HSK 5: \"牢牢抓住机遇\" (nắm chắc, giữ chặt lấy thời cơ). Chọn A.",
+    "correct_option_index": 1,
+    "explanation": "Cụm từ phối hợp chuẩn HSK 5: \"牢牢抓住机遇\" (nắm chắc, giữ chặt lấy thời cơ). Chọn B.",
     "points": 50,
     "relatedVocab": [
       "机遇",
@@ -2199,14 +2199,14 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Tinh thần nghệ nhân là sự thăng hoa của tính tận tâm và lòng kính nghiệp"
       },
       {
-        "text": "工匠精神只适用于古代手工艺制作",
-        "pinyin": "Gōngjiàng jīngshén zhǐ shìyòng yú gǔdài...",
-        "translation": "Tinh thần này chỉ dành cho thủ công cổ đại"
-      },
-      {
         "text": "现代工业流水线不需要工匠精神",
         "pinyin": "Xiàndài gōngyè liúshuǐxiàn bù xūyào...",
         "translation": "Dây chuyền hiện đại không cần tinh thần nghệ nhân"
+      },
+      {
+        "text": "工匠精神只适用于古代手工艺制作",
+        "pinyin": "Gōngjiàng jīngshén zhǐ shìyòng yú gǔdài...",
+        "translation": "Tinh thần này chỉ dành cho thủ công cổ đại"
       }
     ],
     "correct_option_index": 0,
@@ -2257,9 +2257,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "correct_sentence": "任何事物的发展都不可避免地要经历曲折的过程。",
     "options": [
       {
-        "text": "任何事物的发展都不可避免地要经历曲折的过程。",
-        "pinyin": "Rènhé shìwù de fāzhǎn dōu bùkě bìmiǎn de yào jīnglì qūzhé de guòchéng.",
-        "translation": "Sự phát triển của bất kỳ sự vật nào cũng không thể tránh khỏi phải trải qua quá trình quanh co trắc trở."
+        "text": "任何事物的发展经历都不可避免地要曲折的过程。",
+        "pinyin": "Rènhé shìwù de fāzhǎn jīnglì...",
+        "translation": "Sai trật tự trạng ngữ và động từ"
       },
       {
         "text": "曲折的过程都不可避免地要经历任何事物的发展。",
@@ -2267,12 +2267,12 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Đảo lộn chủ ngữ vị ngữ triết học"
       },
       {
-        "text": "任何事物的发展经历都不可避免地要曲折的过程。",
-        "pinyin": "Rènhé shìwù de fāzhǎn jīnglì...",
-        "translation": "Sai trật tự trạng ngữ và động từ"
+        "text": "任何事物的发展都不可避免地要经历曲折的过程。",
+        "pinyin": "Rènhé shìwù de fāzhǎn dōu bùkě bìmiǎn de yào jīnglì qūzhé de guòchéng.",
+        "translation": "Sự phát triển của bất kỳ sự vật nào cũng không thể tránh khỏi phải trải qua quá trình quanh co trắc trở."
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Chủ ngữ (任何事物的发展) + Trạng ngữ (都不可避免地要) + Động từ (经历) + Tân ngữ (曲折的过程)。",
     "points": 50,
     "relatedVocab": [
@@ -2320,9 +2320,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "correct_sentence": "细节的精雕细琢往往决定了一件作品的成败。",
     "options": [
       {
-        "text": "细节的精雕细琢往往决定了一件作品的成败。",
-        "pinyin": "Xìjié de jīngdiāoxìzhuó wǎngwǎng juédìng le yí jiàn zuòpǐn de chéngbài.",
-        "translation": "Sự trau chuốt tỉ mỉ ở từng chi tiết thường quyết định sự thành bại của một tác phẩm."
+        "text": "往往细节的精雕细琢决定了一件作品的成败。",
+        "pinyin": "Wǎngwǎng xìjié de...",
+        "translation": "Đặt sai vị trí phó từ 往往"
       },
       {
         "text": "一件作品的成败往往决定了细节的精雕细琢。",
@@ -2330,12 +2330,12 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Đảo ngược nguyên nhân kết quả"
       },
       {
-        "text": "往往细节的精雕细琢决定了一件作品的成败。",
-        "pinyin": "Wǎngwǎng xìjié de...",
-        "translation": "Đặt sai vị trí phó từ 往往"
+        "text": "细节的精雕细琢往往决定了一件作品的成败。",
+        "pinyin": "Xìjié de jīngdiāoxìzhuó wǎngwǎng juédìng le yí jiàn zuòpǐn de chéngbài.",
+        "translation": "Sự trau chuốt tỉ mỉ ở từng chi tiết thường quyết định sự thành bại của một tác phẩm."
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Chủ ngữ (细节的精雕细琢) + Phó từ trạng ngữ (往往) + Động từ (决定了) + Tân ngữ (一件作品的成败)。",
     "points": 50,
     "relatedVocab": [
@@ -2360,14 +2360,14 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "audio_script": "女：中国传统绘画讲究“留白”，这该如何理解？ 男：“留白”并非画家的偷懒，而是给观赏者留出无限遐想的心灵空间，达到“虚实相生、无画处皆成妙境”的哲学境界。",
     "options": [
       {
-        "text": "“留白”是给观赏者创造无限想象空间的虚实相生哲学",
-        "pinyin": "“Liúbái” shì gěi guānshǎngzhě chuàngzào wúxiàn xiǎngxiàng kōngjiān...",
-        "translation": "\"Lưu bạch\" (khoảng trắng) tạo không gian tưởng tượng vô tận, hư thực tương sinh"
-      },
-      {
         "text": "“留白”是因为画纸面积过大无法画满",
         "pinyin": "“Liúbái” shì yīnwèi huàzhǐ miànjī guò dà...",
         "translation": "Lưu bạch vì giấy quá lớn không vẽ hết"
+      },
+      {
+        "text": "“留白”是给观赏者创造无限想象空间的虚实相生哲学",
+        "pinyin": "“Liúbái” shì gěi guānshǎngzhě chuàngzào wúxiàn xiǎngxiàng kōngjiān...",
+        "translation": "\"Lưu bạch\" (khoảng trắng) tạo không gian tưởng tượng vô tận, hư thực tương sinh"
       },
       {
         "text": "水墨画完全不讲究结构与色彩",
@@ -2375,8 +2375,8 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Tranh thủy mặc không chú trọng bố cục"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Họa sĩ giải thích nghệ thuật \"留白\" (khoảng trống trắng) giúp gợi mở không gian suy tưởng hư thực tương sinh vô tận. Chọn A.",
+    "correct_option_index": 1,
+    "explanation": "Họa sĩ giải thích nghệ thuật \"留白\" (khoảng trống trắng) giúp gợi mở không gian suy tưởng hư thực tương sinh vô tận. Chọn B.",
     "points": 50,
     "relatedVocab": [
       "水墨",
@@ -2476,9 +2476,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "translation": "Đọc ngụ ngôn triết học và chọn bài học rút ra: Cây lớn vượt qua trăm năm bão táp không đổ vì rễ cắm sâu vào đất; học vấn và tu dưỡng của con người cũng vậy, không có nền tảng vững chắc thì khó đứng vững trước sóng gió tương lai.",
     "options": [
       {
-        "text": "深厚扎实的基础是成就长远事业与品格的前提",
-        "pinyin": "Shēnhòu zhāshi de jīchǔ shì chéngjiù chángyuǎn...",
-        "translation": "Nền tảng sâu dày vững chắc là tiền đề cho sự nghiệp và phẩm cách lâu dài"
+        "text": "学习不需要打好基础",
+        "pinyin": "Xuéxí bù xūyào dǎ hǎo jīchǔ",
+        "translation": "Học tập không cần nền tảng"
       },
       {
         "text": "树木比人类更懂得生存的智慧",
@@ -2486,13 +2486,13 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Cây cối hiểu trí tuệ sinh tồn hơn con người"
       },
       {
-        "text": "学习不需要打好基础",
-        "pinyin": "Xuéxí bù xūyào dǎ hǎo jīchǔ",
-        "translation": "Học tập không cần nền tảng"
+        "text": "深厚扎实的基础是成就长远事业与品格的前提",
+        "pinyin": "Shēnhòu zhāshi de jīchǔ shì chéngjiù chángyuǎn...",
+        "translation": "Nền tảng sâu dày vững chắc là tiền đề cho sự nghiệp và phẩm cách lâu dài"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Hình ảnh rễ cây cắm sâu tượng trưng cho tầm quan trọng của nền tảng căn bản (深厚扎实的基础). Chọn A.",
+    "correct_option_index": 2,
+    "explanation": "Hình ảnh rễ cây cắm sâu tượng trưng cho tầm quan trọng của nền tảng căn bản (深厚扎实的基础). Chọn C.",
     "points": 50,
     "relatedVocab": [
       "根基",
@@ -2543,9 +2543,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "correct_sentence": "传统的茶道文化历经千年的洗礼依然散发着独特的魅力。",
     "options": [
       {
-        "text": "传统的茶道文化历经千年的洗礼依然散发着独特的魅力。",
-        "pinyin": "Chuántǒng de chádào wénhuà lìjīng qiānnián de xǐlǐ yīrán sànfā zhe dútè de mèilì.",
-        "translation": "Văn hóa trà đạo truyền thống trải qua thử thách ngàn năm vẫn tỏa ra sức hấp dẫn độc đáo."
+        "text": "历经千年的洗礼散发着传统的茶道文化依然独特的魅力。",
+        "pinyin": "Lìjīng qiānnián de xǐlǐ sànfā...",
+        "translation": "Trật tự cú pháp sai nghiêm trọng"
       },
       {
         "text": "独特的魅力传统的茶道文化散发着依然历经千年的洗礼。",
@@ -2553,12 +2553,12 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Lộn xộn giữa chủ ngữ và tân ngữ"
       },
       {
-        "text": "历经千年的洗礼散发着传统的茶道文化依然独特的魅力。",
-        "pinyin": "Lìjīng qiānnián de xǐlǐ sànfā...",
-        "translation": "Trật tự cú pháp sai nghiêm trọng"
+        "text": "传统的茶道文化历经千年的洗礼依然散发着独特的魅力。",
+        "pinyin": "Chuántǒng de chádào wénhuà lìjīng qiānnián de xǐlǐ yīrán sànfā zhe dútè de mèilì.",
+        "translation": "Văn hóa trà đạo truyền thống trải qua thử thách ngàn năm vẫn tỏa ra sức hấp dẫn độc đáo."
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Chủ ngữ (传统的茶道文化) + Ngữ vị ngữ bổ trợ (历经千年的洗礼) + Phó từ (依然) + Động từ (散发着) + Tân ngữ (独特的魅力)。",
     "points": 50,
     "relatedVocab": [
@@ -2610,14 +2610,14 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "correct_sentence": "唯有脚踏实地地努力才能够实现心中的宏伟抱负。",
     "options": [
       {
-        "text": "唯有脚踏实地地努力才能够实现心中的宏伟抱负。",
-        "pinyin": "Wéiyǒu jiǎotàshídì de nǔlì cái nénggòu shíxiàn xīnzhōng de hóngwěi bàofù.",
-        "translation": "Chỉ có nỗ lực bước từng bước vững chắc thì mới có thể thực hiện được hoài bão lớn lao trong tim."
-      },
-      {
         "text": "才能够实现唯有脚踏实地地努力心中的宏伟抱负。",
         "pinyin": "Cái nénggòu shíxiàn wéiyǒu...",
         "translation": "Đảo sai liên từ 唯有...才..."
+      },
+      {
+        "text": "唯有脚踏实地地努力才能够实现心中的宏伟抱负。",
+        "pinyin": "Wéiyǒu jiǎotàshídì de nǔlì cái nénggòu shíxiàn xīnzhōng de hóngwěi bàofù.",
+        "translation": "Chỉ có nỗ lực bước từng bước vững chắc thì mới có thể thực hiện được hoài bão lớn lao trong tim."
       },
       {
         "text": "心中的宏伟抱负才能够唯有实现脚踏实地地努力。",
@@ -2625,7 +2625,7 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Sai hoàn toàn trật tự logic câu"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cặp liên từ độc tôn biểu thị điều kiện duy nhất: \"唯有 (A) ... 才能/才能够 (B) ...\": 唯有脚踏实地地努力才能够实现心中的宏伟抱负。",
     "points": 50,
     "relatedVocab": [
@@ -2650,11 +2650,6 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "audio_script": "专家指出，新一轮全球产业链分工正在从单一的“成本优先”转向“安全韧性与本土化”并重。跨国企业不仅要追求边际效益最大化，更须筑牢抵御不可抗力冲击的弹性屏障。",
     "options": [
       {
-        "text": "供应链策略由单一低成本转向兼顾安全韧性与弹性缓冲",
-        "pinyin": "Gōngyìngliàn cèlüè yóu dānyī dī chéngběn...",
-        "translation": "Chiến lược chuyển từ đơn thuần chi phí thấp sang coi trọng độ an toàn dẻo dai và bộ đệm đàn hồi"
-      },
-      {
         "text": "全球贸易已完全杜绝任何跨国分工合作",
         "pinyin": "Quánqiú màoyì yǐ wánquán dùjué...",
         "translation": "Thương mại toàn cầu chấm dứt hoàn toàn hợp tác"
@@ -2663,10 +2658,15 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "text": "企业应当放弃所有风险防范以节约支出",
         "pinyin": "Qǐyè yīngdāng fàngqì suǒyǒu...",
         "translation": "Doanh nghiệp nên từ bỏ mọi phòng ngừa rủi ro"
+      },
+      {
+        "text": "供应链策略由单一低成本转向兼顾安全韧性与弹性缓冲",
+        "pinyin": "Gōngyìngliàn cèlüè yóu dānyī dī chéngběn...",
+        "translation": "Chiến lược chuyển từ đơn thuần chi phí thấp sang coi trọng độ an toàn dẻo dai và bộ đệm đàn hồi"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Chuyên gia chỉ rõ xu hướng chuyển đổi từ \"成本优先\" (ưu tiên chi phí) sang \"安全韧性\" (an toàn và dẻo dai chống chịu rủi ro). Chọn A.",
+    "correct_option_index": 2,
+    "explanation": "Chuyên gia chỉ rõ xu hướng chuyển đổi từ \"成本优先\" (ưu tiên chi phí) sang \"安全韧性\" (an toàn và dẻo dai chống chịu rủi ro). Chọn C.",
     "points": 50,
     "relatedVocab": [
       "供应链",
@@ -2695,14 +2695,14 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "AI mạnh về tính toán và nhận diện mẫu, trong khi con người có lòng trắc ẩn và trực giác phản biện độc nhất"
       },
       {
-        "text": "机器算法在所有维度已全面超越并取代人类意识",
-        "pinyin": "Jīqì suànfǎ zài suǒyǒu wéidù...",
-        "translation": "Thuật toán máy tính đã thay thế hoàn toàn ý thức con người"
-      },
-      {
         "text": "人类不需要学习任何批判性思维",
         "pinyin": "Rénlèi bù xūyào xuéxí...",
         "translation": "Con người không cần tư duy phản biện"
+      },
+      {
+        "text": "机器算法在所有维度已全面超越并取代人类意识",
+        "pinyin": "Jīqì suànfǎ zài suǒyǒu wéidù...",
+        "translation": "Thuật toán máy tính đã thay thế hoàn toàn ý thức con người"
       }
     ],
     "correct_option_index": 0,
@@ -2728,11 +2728,6 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "translation": "Phân tích lỗi cú pháp HSK 6: Chọn câu KHÔNG CÓ LỖI NGỮ PHÁP trong các câu sau:",
     "options": [
       {
-        "text": "通过这次深入调研，专家组掌握了大量真实可靠的第一手科学数据。",
-        "pinyin": "Tōngguò zhè cì shēnrù diàoyán, zhuānjiāzǔ zhǎngwò le dàliàng zhēnshí kěkào de dì-yī-shǒu kēxué shùjù.",
-        "translation": "Thông qua đợt khảo sát sâu sắc này, tổ chuyên gia đã nắm bắt được lượng lớn số liệu khoa học gốc xác thực và đáng tin cậy."
-      },
-      {
         "text": "经过大家的共同努力，使我们圆满完成了这一艰巨的历史任务。",
         "pinyin": "Jīngguò dàjiā de gòngtóng nǔlì, shǐ wǒmen...",
         "translation": "Thiếu chủ ngữ do dùng đồng thời 经过 và 使"
@@ -2741,10 +2736,15 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "text": "能否保持乐观的心态，是决定高考取得优异成绩的关键因素。",
         "pinyin": "Néng fǒu bǎochí... shì juédìng...",
         "translation": "Lỗi đối ứng một mặt - hai mặt (能否 vs 优异)"
+      },
+      {
+        "text": "通过这次深入调研，专家组掌握了大量真实可靠的第一手科学数据。",
+        "pinyin": "Tōngguò zhè cì shēnrù diàoyán, zhuānjiāzǔ zhǎngwò le dàliàng zhēnshí kěkào de dì-yī-shǒu kēxué shùjù.",
+        "translation": "Thông qua đợt khảo sát sâu sắc này, tổ chuyên gia đã nắm bắt được lượng lớn số liệu khoa học gốc xác thực và đáng tin cậy."
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Câu B mắc lỗi thiếu chủ ngữ (lạm dụng cặp 经过...使...). Câu C mắc lỗi bất đối xứng logic (能否 là 2 mặt, 优异成绩 là 1 mặt). Câu A chuẩn xác về cấu trúc ngữ pháp.",
+    "correct_option_index": 2,
+    "explanation": "Câu A mắc lỗi thiếu chủ ngữ (lạm dụng cặp 经过...使...). Câu B mắc lỗi bất đối xứng logic (能否 là 2 mặt, 优异成绩 là 1 mặt). Câu C chuẩn xác về cấu trúc ngữ pháp.",
     "points": 50,
     "relatedVocab": [
       "调研",
@@ -2833,6 +2833,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "correct_sentence": "文化软实力的持续提升凝聚了全体人民的共同价值追求，更向世界展现了大国风范。",
     "options": [
       {
+        "text": "更向世界展现了大国风范凝聚了文化软实力的持续提升。",
+        "pinyin": "Gèng xiàng shìjiè...",
+        "translation": "Đảo ngược vị trí mệnh đề liên từ"
+      },
+      {
         "text": "文化软实力的持续提升凝聚了全体人民的共同价值追求，更向世界展现了大国风范。",
         "pinyin": "Wénhuà ruǎnshílì de chíxù tíshēng níngjù le...",
         "translation": "Việc nâng cao sức mạnh mềm văn hóa đã ngưng tụ giá trị mưu cầu chung của toàn dân, đồng thời thể hiện phong thái của một nước lớn ra thế giới."
@@ -2841,14 +2846,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "text": "大国风范凝聚了文化软实力的持续提升全体人民的共同价值追求更向世界展现了。",
         "pinyin": "Dàguó fēngfàn níngjù le...",
         "translation": "Lỗi xáo trộn cấu trúc câu"
-      },
-      {
-        "text": "更向世界展现了大国风范凝聚了文化软实力的持续提升。",
-        "pinyin": "Gèng xiàng shìjiè...",
-        "translation": "Đảo ngược vị trí mệnh đề liên từ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cấu trúc câu tăng tiến HSK 6: Chủ ngữ (文化软实力的持续提升) + Động từ 1 + Tân ngữ 1 (凝聚了全体人民的共同价值追求) + Liên từ tăng tiến + Động từ 2 + Tân ngữ 2 (更向世界展现了大国风范)。",
     "points": 50,
     "relatedVocab": [
@@ -2896,11 +2896,6 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "correct_sentence": "真理的探索过程往往伴随着对固有认知体系的勇敢质疑与深刻重构。",
     "options": [
       {
-        "text": "真理的探索过程往往伴随着对固有认知体系的勇敢质疑与深刻重构。",
-        "pinyin": "Zhēnlǐ de tànsuǒ guòchéng wǎngwǎng bànsuí zhe duì gùyǒu rènzhī tǐxì de yǒnggǎn zhìyí yǔ shēnkè chónggòu.",
-        "translation": "Quá trình khám phá chân lý thường đi đôi với sự dũng cảm hoài nghi và tái cấu trúc sâu sắc hệ thống nhận thức vốn có."
-      },
-      {
         "text": "对固有认知体系的勇敢质疑与深刻重构往往伴随着真理的探索过程。",
         "pinyin": "Duì gùyǒu rènzhī tǐxì...",
         "translation": "Đảo lộn chiều hướng chủ khách quan"
@@ -2909,9 +2904,14 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "text": "往往伴随着真理的探索过程对固有认知体系的勇敢质疑。",
         "pinyin": "Wǎngwǎng bànsuí zhe...",
         "translation": "Sai trật tự trạng ngữ đầu câu"
+      },
+      {
+        "text": "真理的探索过程往往伴随着对固有认知体系的勇敢质疑与深刻重构。",
+        "pinyin": "Zhēnlǐ de tànsuǒ guòchéng wǎngwǎng bànsuí zhe duì gùyǒu rènzhī tǐxì de yǒnggǎn zhìyí yǔ shēnkè chónggòu.",
+        "translation": "Quá trình khám phá chân lý thường đi đôi với sự dũng cảm hoài nghi và tái cấu trúc sâu sắc hệ thống nhận thức vốn có."
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Chủ ngữ (真理的探索过程) + Động từ vị ngữ kèm trạng từ (往往伴随着) + Định ngữ giới từ (对固有认知体系的) + Cụm danh từ trung tâm (勇敢质疑与深刻重构)。",
     "points": 50,
     "relatedVocab": [
@@ -2936,11 +2936,6 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "audio_script": "探测百亿光年外的宇宙深空，绝非单纯满足好奇心，而是为了追溯物质创生与时空演化的终极密码，反观人类在宏大宇宙中的坐标与归宿。",
     "options": [
       {
-        "text": "追溯时空演化终极密码并认知人类自身存在坐标",
-        "pinyin": "Zhuīsù shíkōng yǎnhuà zhōngjí mìmǎ...",
-        "translation": "Truy tìm mật mã tiến hóa thời không và định vị tọa độ tồn tại của chính loài người"
-      },
-      {
         "text": "仅仅为了寻找可开采的稀有黄金矿产",
         "pinyin": "Jǐnjǐn wèile xúnzhǎo kě kāicǎi...",
         "translation": "Chỉ nhằm tìm khoáng sản vàng để khai thác"
@@ -2949,10 +2944,15 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "text": "证明外星生命已完全掌控银河系",
         "pinyin": "Zhèngmíng wàixīng shēngmìng...",
         "translation": "Chứng minh người ngoài hành tinh đã kiểm soát dải ngân hà"
+      },
+      {
+        "text": "追溯时空演化终极密码并认知人类自身存在坐标",
+        "pinyin": "Zhuīsù shíkōng yǎnhuà zhōngjí mìmǎ...",
+        "translation": "Truy tìm mật mã tiến hóa thời không và định vị tọa độ tồn tại của chính loài người"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Diễn giả khẳng định thám hiểm vũ trụ sâu mang ý nghĩa triết học và khoa học: truy tìm nguồn gốc vũ trụ và định vị sự tồn tại của con người. Chọn A.",
+    "correct_option_index": 2,
+    "explanation": "Diễn giả khẳng định thám hiểm vũ trụ sâu mang ý nghĩa triết học và khoa học: truy tìm nguồn gốc vũ trụ và định vị sự tồn tại của con người. Chọn C.",
     "points": 50,
     "relatedVocab": [
       "探测",
@@ -3014,23 +3014,23 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "translation": "Đọc văn đoạn học thuật, giải nghĩa thành ngữ gạch chân \"Phù quang lược ảnh\" (浮光掠影):",
     "options": [
       {
-        "text": "观察不深入，观察事物如水面浮光浮光掠过般表面化",
-        "pinyin": "Guānchá bù shēnrù, guānchá shìwù...",
-        "translation": "Quan sát hời hợt, không đi sâu vào thực chất giống như ánh sáng lướt trên mặt nước"
-      },
-      {
         "text": "形容光芒耀眼夺目让人无法直视",
-        "pinyin": "Xíngróng guāngmáng yàoyǎn...",
+        "pinyin": "Xíngróng guāngmáng yàoyǎn duómù ràng rén wúfǎ zhíshì.",
         "translation": "Miêu tả ánh sáng lóa mắt"
       },
       {
+        "text": "观察不深入，观察事物如水面浮光掠过般表面化",
+        "pinyin": "Guānchá bù shēnrù, guānchá shìwù rú shuǐmiàn fúguāng lüèguò bān biǎomiànhuà.",
+        "translation": "Quan sát hời hợt, không đi sâu vào thực chất giống như ánh sáng lướt trên mặt nước"
+      },
+      {
         "text": "形容行动极其敏捷迅速",
-        "pinyin": "Xíngróng xíngdòng jíqí mǐnjié...",
+        "pinyin": "Xíngróng xíngdòng jíqí mǐnjié xùnsù.",
         "translation": "Miêu tả hành động cực kỳ mau lẹ"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Thành ngữ \"浮光掠影\" (phù quang lược ảnh) mang ý nghĩa chê bai sự hời hợt, xem hoa thoảng qua, không chịu đào sâu suy nghĩ. Chọn A.",
+    "correct_option_index": 1,
+    "explanation": "Thành ngữ \"浮光掠影\" (phù quang lược ảnh) mang ý nghĩa chê bai sự hời hợt, xem hoa thoảng qua, không chịu đào sâu suy nghĩ. Chọn B.",
     "points": 50,
     "relatedVocab": [
       "浮光掠影",
@@ -3052,28 +3052,29 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "translation": "Phân tích lỗi câu: Chọn câu CÓ LỖI NGỮ PHÁP RÕ RỆT trong các câu sau:",
     "options": [
       {
-        "text": "这部反映历史沧桑的记录片，自从公映以来，受到了广大观众的一致好评。",
-        "pinyin": "Zhè bù fǎnyìng lìshǐ cāngsāng de jìlùpiàn, zìcóng gōngyìng yǐlái, shòudào le...",
-        "translation": "Câu bị lỗi kết cấu đầu câu (chủ ngữ bị tách rời bởi giới từ 自从)"
+        "text": "自从这部反映历史沧桑的纪录片公映以来，使广大观众对那段峥嵘岁月有了更加深刻的认识。",
+        "pinyin": "Zìcóng zhè bù fǎnyìng lìshǐ cāngsāng de jìlùpiàn gōngyìng yǐlái, shǐ guǎngdà guānzhòng duì nà duàn zhēngróng suìyuè yǒu le gèngjiā shēnkè de rènshi.",
+        "translation": "Câu mắc lỗi khuyết chủ ngữ do dùng đồng thời 自从……以来 và 使"
       },
       {
         "text": "科学技术的日新月异，深刻改变了人类的生活方式与交往习惯。",
-        "pinyin": "Kēxué jìshù de rìxīnyuèyì, shēnkè gǎibiàn le...",
+        "pinyin": "Kēxué jìshù de rìxīnyuèyì, shēnkè gǎibiàn le rénlèi de shēnghuó fāngshì yǔ jiāowǎng xíguàn.",
         "translation": "Câu đúng chuẩn"
       },
       {
         "text": "在全球气候治理进程中，各国应当恪守共同但有区别的责任原则。",
-        "pinyin": "Zài quánqiú qìhòu zhìlǐ jìnchéng zhōng, gèguó yīngdāng kèshǒu...",
+        "pinyin": "Zài quánqiú qìhòu zhìlǐ jìnchéng zhōng, gèguó yīngdāng kèshǒu gòngtóng dàn yǒu qūbié de zérèn yuánzé.",
         "translation": "Câu đúng chuẩn"
       }
     ],
     "correct_option_index": 0,
-    "explanation": "Câu A mắc lỗi ngữ pháp kinh điển HSK 6: \"这部记录片，自从公映以来...\" biến chủ ngữ đầu câu thành lửng lơ vô vị ngữ trước mệnh đề giới từ. Phải sửa thành: \"自从这部反映历史沧桑的记录片公映以来...\"。Chọn A.",
+    "explanation": "Phương án A mắc lỗi ngữ pháp kinh điển HSK 6 (khuyết chủ ngữ do lạm dụng kết cấu giới từ \"自从……以来\" đi kèm \"使……\"). Cần bỏ \"自从……以来\" hoặc bỏ chữ \"使\". Chọn A.",
     "points": 50,
     "relatedVocab": [
       "沧桑",
       "语病",
-      "恪守"
+      "恪守",
+      "纪录片"
     ]
   },
 
@@ -3115,6 +3116,11 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "correct_sentence": "文明的交流互鉴绝非简单的形式模仿，而是推动人类社会向前迈进的根本动力。",
     "options": [
       {
+        "text": "向前迈进的根本动力而是文明的交流互鉴绝非简单的形式模仿。",
+        "pinyin": "Xiàngqián màijìn de...",
+        "translation": "Sai trật tự liên từ và cấu trúc"
+      },
+      {
         "text": "文明的交流互鉴绝非简单的形式模仿，而是推动人类社会向前迈进的根本动力。",
         "pinyin": "Wénmíng de jiāoliú hùjiàn juéfēi jiǎndān de xíngshì mófǎng, érshì tuīdòng rénlèi shèhuì xiàngqián màijìn de gēnběn dònglì.",
         "translation": "Sự giao lưu học hỏi lẫn nhau giữa các nền văn minh tuyệt nhiên không phải sự bắt chước hình thức đơn giản, mà là động lực căn bản thúc đẩy xã hội loài người tiến lên phía trước."
@@ -3123,14 +3129,9 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "text": "绝非简单的形式模仿文明的交流互鉴而是推动人类社会向前迈进的根本动力。",
         "pinyin": "Juéfēi jiǎndān de...",
         "translation": "Đặt sai vị trí chủ ngữ chính"
-      },
-      {
-        "text": "向前迈进的根本动力而是文明的交流互鉴绝非简单的形式模仿。",
-        "pinyin": "Xiàngqián màijìn de...",
-        "translation": "Sai trật tự liên từ và cấu trúc"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cấu trúc câu phức phủ định - khẳng định cao cấp: \"绝非 (Không phải) ... 而是 (Mà là) ...\": 文明的交流互鉴绝非简单的形式模仿，而是推动人类社会向前迈进的根本动力。",
     "points": 50,
     "relatedVocab": [
@@ -3182,14 +3183,14 @@ export const EXPANDED_MOCK_QUESTIONS = [
     "correct_sentence": "非物质文化遗产的保护不仅在于静态典藏，更在于在现代化转型中实现创造性转化。",
     "options": [
       {
-        "text": "非物质文化遗产的保护不仅在于静态典藏，更在于在现代化转型中实现创造性转化。",
-        "pinyin": "Fēiwùzhì wénhuà yíchǎn de bǎohù bùjǐn zàiyú jìngtài diǎncáng, gèng zàiyú zài xiàndàihuà zhuǎnxíng zhōng shíxiàn chuàngzàoxìng zhuǎnhuà.",
-        "translation": "Việc bảo tồn di sản văn hóa phi vật thể không chỉ dừng ở việc lưu trữ tĩnh, mà quan trọng hơn là thực hiện chuyển hóa sáng tạo trong quá trình chuyển mình hiện đại hóa."
-      },
-      {
         "text": "在现代化转型中不仅在于静态典藏非物质文化遗产的保护更在于实现创造性转化。",
         "pinyin": "Zài xiàndàihuà zhuǎnxíng zhōng...",
         "translation": "Trật tự các vế câu lộn xộn"
+      },
+      {
+        "text": "非物质文化遗产的保护不仅在于静态典藏，更在于在现代化转型中实现创造性转化。",
+        "pinyin": "Fēiwùzhì wénhuà yíchǎn de bǎohù bùjǐn zàiyú jìngtài diǎncáng, gèng zàiyú zài xiàndàihuà zhuǎnxíng zhōng shíxiàn chuàngzàoxìng zhuǎnhuà.",
+        "translation": "Việc bảo tồn di sản văn hóa phi vật thể không chỉ dừng ở việc lưu trữ tĩnh, mà quan trọng hơn là thực hiện chuyển hóa sáng tạo trong quá trình chuyển mình hiện đại hóa."
       },
       {
         "text": "更在于实现创造性转化非物质文化遗产的保护不仅在于静态典藏。",
@@ -3197,7 +3198,7 @@ export const EXPANDED_MOCK_QUESTIONS = [
         "translation": "Đảo ngược thứ tự liên từ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cấu trúc câu tăng tiến: \"不仅在于 (Không chỉ ở) ... 更在于 (Càng ở chỗ) ...\": 非物质文化遗产的保护不仅在于静态典藏，更在于在现代化转型中实现创造性转化。",
     "points": 50,
     "relatedVocab": [

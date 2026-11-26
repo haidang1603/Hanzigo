@@ -657,6 +657,19 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
       }
     } catch (mediaErr) {
       console.warn('Microphone access / MediaRecorder notice:', mediaErr);
+      if (
+        mediaErr?.name === 'NotAllowedError' ||
+        mediaErr?.name === 'PermissionDeniedError' ||
+        mediaErr?.name === 'NotFoundError'
+      ) {
+        cleanupAudioRecording();
+        setSpeechError(
+          mediaErr.name === 'NotFoundError'
+            ? 'Không tìm thấy Micro trên thiết bị. Bạn vẫn có thể bấm nút nghe mẫu bản xứ.'
+            : 'Microphone chưa được cấp quyền. Vui lòng cho phép quyền Micro trên trình duyệt để luyện nói.'
+        );
+        return;
+      }
     }
 
     // 2. Setup SpeechRecognition
@@ -1556,6 +1569,11 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                       <p className="text-xs text-[#243447] dark:text-[#E2E8F0] font-medium leading-relaxed">
                         {recordingScore.feedback}
                       </p>
+                      {recordingScore.fallbackNotice && (
+                        <div className="mt-1 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[11px] font-semibold text-amber-800 dark:text-amber-200">
+                          ℹ️ {recordingScore.fallbackNotice}
+                        </div>
+                      )}
                       {recordingScore.articulatoryTip && (
                         <div className="mt-1 p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-[11px] text-purple-900 dark:text-purple-200">
                           <strong>💡 Mẹo khẩu hình từ chuyên gia: </strong>
@@ -1664,6 +1682,20 @@ export default function PronunciationPage({ user, targetVocab, onClearTargetVoca
                           <span>{isPlayingUserAudio ? 'Đang phát giọng bạn...' : '🎧 Nghe lại giọng của bạn'}</span>
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const lvl =
+                            categoryFilter !== 'all' && categoryFilter !== 'dialogue' && categoryFilter !== 'custom'
+                              ? categoryFilter
+                              : selectedItem?.level || 'HSK 1';
+                          window.location.hash = `#conversation?level=${encodeURIComponent(lvl)}`;
+                        }}
+                        className="min-h-11 px-3 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] border border-orange-200 dark:border-orange-800 hover:bg-orange-100 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Sparkles size={14} />
+                        <span>Luyện phản xạ hội thoại AI</span>
+                      </button>
                     </div>
                   </div>
 

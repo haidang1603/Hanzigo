@@ -23,7 +23,7 @@ import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
 import { verifyRequestAuth, sendSafeServerError } from '../../_utils/supabaseServer.js';
 import { enforceAiKillSwitch } from '../../_utils/corsAndIp.js';
 import { callUnifiedAiProvider } from '../../_utils/aiProviderAdapter.js';
-import { AGENT_INTENTS } from '../../_agent/contracts.js';
+import { AGENT_INTENTS, createPendingConfirmationContract } from '../../_agent/contracts.js';
 import { validateAgentInput, redactSensitiveData } from '../../_agent/guardrails.js';
 import { selectModelTier } from '../../_agent/modelRouter.js';
 import { buildSafeLearnerMemoryContext } from '../../_agent/memoryManager.js';
@@ -280,6 +280,7 @@ export default async function handler(req, res) {
   const route = selectModelTier({
     intent: AGENT_INTENTS.PROGRESS_COACH,
     hskLevel,
+    allowPremiumTier: false,
   });
   const memoryEnabled = body.memory_enabled !== false && payload.memory_enabled !== false;
   const memoryContext = buildSafeLearnerMemoryContext({
@@ -347,7 +348,18 @@ export default async function handler(req, res) {
       });
     }
 
-    const parsedResult = aiResult.data || {};
+    const parsedResult = redactSensitiveData(aiResult.data || {});
+
+    if (Array.isArray(parsedResult.pending_confirmations)) {
+      parsedResult.pending_confirmations = parsedResult.pending_confirmations.map((item) =>
+        createPendingConfirmationContract({
+          actionType: item?.actionType || 'save_vocab_to_srs',
+          label: item?.label || 'Xác nhận đề xuất học tập',
+          payload: item?.payload || {},
+          requiresConfirmation: true,
+        })
+      );
+    }
 
     // Attach metadata
     parsedResult._metadata = {

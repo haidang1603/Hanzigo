@@ -13,6 +13,7 @@ import {
   syncUserVocabSrsFromCloud
 } from '../services';
 import { clearLegacyUnscopedLearningKeys } from '../utils/gamification';
+import { clearTelemetryLocalState } from '../core/telemetry/learningTelemetryService';
 
 const AuthContext =
   (typeof globalThis !== 'undefined' && globalThis.__HANZIGO_AUTH_CONTEXT__) ||
@@ -278,7 +279,13 @@ export function AuthProvider({ children }) {
         const key = localStorage.key(i);
         if (
           key &&
-          (key.startsWith('hsk_draft_') || key.startsWith('hanzigo_coach_steps_'))
+          (key.startsWith('hsk_draft_') ||
+            key.startsWith('hanzigo_coach_steps_') ||
+            key.startsWith('hanzigo_mistake_notebook_') ||
+            key.startsWith('hanzigo_dual_exam_history_') ||
+            key.startsWith('hanzigo_smart_coach_cache_') ||
+            key.startsWith('hanzigo_ai_coach_cache_') ||
+            key.startsWith('hanzigo_telemetry_'))
         ) {
           localKeysToRemove.push(key);
         }
@@ -296,6 +303,7 @@ export function AuthProvider({ children }) {
         sessionKeysToRemove.forEach((key) => sessionStorage.removeItem(key));
       }
     } catch {}
+    clearTelemetryLocalState();
     clearLegacyUnscopedLearningKeys();
   };
 

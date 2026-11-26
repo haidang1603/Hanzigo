@@ -38,14 +38,14 @@ export const HSK_7_TO_9_EXAM_PAPER = {
           promptVi:
             'Theo bài giảng, diễn giả đánh giá làn sóng Trí tuệ nhân tạo hiện nay như thế nào?',
           options: [
-            'A. 仅仅是一场局限于消费端的软件升级',
-            'B. 是对传统产业底层逻辑的彻底重塑',
-            'C. 已经彻底消除了工业制造领域的所有瓶颈',
-            'D. 尚未对企业供应链韧性产生实质性影响',
+            'A. 已经彻底消除了工业制造领域的所有瓶颈',
+            'B. 尚未对企业供应链韧性产生实质性影响',
+            'C. 是对传统产业底层逻辑的彻底重塑',
+            'D. 仅仅是一场局限于消费端的软件升级',
           ],
-          correctIndex: 1,
+          correctIndex: 2,
           explanationVi:
-            'Diễn giả sử dụng cấu trúc HSK 7 “与其说……毋宁说……” (Thay vì nói là một cuộc nâng cấp phần mềm đơn thuần, chi bằng nói đó là sự tái định hình triệt để logic tầng đáy của ngành công nghiệp -> Đáp án B).',
+            'Diễn giả sử dụng cấu trúc HSK 7 “与其说……毋宁说……” (Thay vì nói là một cuộc nâng cấp phần mềm đơn thuần, chi bằng nói đó là sự tái định hình triệt để logic tầng đáy của ngành công nghiệp -> Đáp án C).',
           targetVocab: ['赋能', '瓶颈', '毋宁说', '重塑'],
         },
         {
@@ -57,13 +57,13 @@ export const HSK_7_TO_9_EXAM_PAPER = {
             'Điều kiện tiền đề giúp doanh nghiệp tối ưu hóa sức chống chịu của chuỗi cung ứng được nhắc tới là gì?',
           options: [
             'A. 传统制造业完全放弃线下生产模式',
-            'B. 削减研发预算以降低短期财务风险',
-            'C. 高并发算力基础设施的日益完善',
-            'D. 依赖单一供应商以简化物流流程',
+            'B. 依赖单一供应商以简化物流流程',
+            'C. 削减研发预算以降低短期财务风险',
+            'D. 高并发算力基础设施的日益完善',
           ],
-          correctIndex: 2,
+          correctIndex: 3,
           explanationVi:
-            'Trong bài nói có câu: “鉴于高并发算力基础设施的日益完善，越来越多的企业得以利用实时数据流优化供应链韧性” (Xét thấy hạ tầng năng lực tính toán chịu tải cao ngày càng hoàn thiện... -> Đáp án C).',
+            'Trong bài nói có câu: “鉴于高并发算力基础设施的日益完善，越来越多的企业得以利用实时数据流优化供应链韧性” (Xét thấy hạ tầng năng lực tính toán chịu tải cao ngày càng hoàn thiện... -> Đáp án D).',
           targetVocab: ['鉴于', '高并发', '算力', '韧性'],
         },
         {
@@ -121,14 +121,14 @@ export const HSK_7_TO_9_EXAM_PAPER = {
           promptVi:
             'Dựa vào biểu đồ và văn bản, mô tả nào dưới đây hoàn toàn khớp với số liệu thực tế?',
           options: [
-            'A. 2022年至2026年，绿色能源转型投入占比的增长幅度大于AI研发投入',
-            'B. 2026年人工智能研发投入占比首次超过50%，达到52%',
-            'C. 传统粗放型产能扩张占比在五年间保持稳步增长态势',
-            'D. 数字化赋能与绿色能源转型之间存在自相矛盾的竞争关系',
+            'A. 2026年人工智能研发投入占比首次超过50%，达到52%',
+            'B. 2022年至2026年，绿色能源转型投入占比的增长幅度大于AI研发投入',
+            'C. 数字化赋能与绿色能源转型之间存在自相矛盾的竞争关系',
+            'D. 传统粗放型产能扩张占比在五年间保持稳步增长态势',
           ],
-          correctIndex: 1,
+          correctIndex: 0,
           explanationVi:
-            'Theo biểu đồ và đoạn 1: “人工智能研发占比由2022年的18%飙升至2026年的52%，首次突破半数大关” (vượt mốc 50%, đạt 52% vào năm 2026 -> Đáp án B).',
+            'Theo biểu đồ và đoạn 1: “人工智能研发占比由2022年的18%飙升至2026年的52%，首次突破半数大关” (vượt mốc 50%, đạt 52% vào năm 2026 -> Đáp án A).',
           targetVocab: ['飙升', '占比', '态势', '范式'],
         },
         {
@@ -139,10 +139,10 @@ export const HSK_7_TO_9_EXAM_PAPER = {
           promptVi:
             'Thành ngữ “相辅相成” (bổ trợ lẫn nhau) trong đoạn 2 dùng để miêu tả mối quan hệ giữa hai yếu tố nào?',
           options: [
-            'A. 粗放型扩张与高耗能模式',
+            'A. 短期利润与关税壁垒',
             'B. 数字化赋能与绿色能源转型',
-            'C. 短期利润与关税壁垒',
-            'D. 抽样偏差与因果倒置',
+            'C. 抽样偏差与因果倒置',
+            'D. 粗放型扩张与高耗能模式',
           ],
           correctIndex: 1,
           explanationVi:
@@ -157,14 +157,14 @@ export const HSK_7_TO_9_EXAM_PAPER = {
           promptVi:
             'Trong 4 câu học thuật dưới đây, câu nào mắc lỗi ngữ pháp câu bệnh (语病)?',
           options: [
-            'A. 鉴于碳中和目标迫在眉睫，各大企业纷纷加大了清洁能源的研发投入。',
-            'B. 通过引入高并发实时监测算法，使电网的能源损耗率降低了近三成。',
-            'C. 唯有兼顾技术突破与生态伦理，现代产业方能实现行稳致远的发展。',
-            'D. 智能制造不仅提升了生产效率，更从根本上重塑了全球供应链的格局。',
+            'A. 唯有兼顾技术突破与生态伦理，现代产业方能实现行稳致远的发展。',
+            'B. 智能制造不仅提升了生产效率，更从根本上重塑了全球供应链的格局。',
+            'C. 通过引入高并发实时监测算法，使电网的能源损耗率降低了近三成。',
+            'D. 鉴于碳中和目标迫在眉睫，各大企业纷纷加大了清洁能源的研发投入。',
           ],
-          correctIndex: 1,
+          correctIndex: 2,
           explanationVi:
-            'Câu B mắc lỗi kinh điển “通过……，使……” (Lạm dụng giới từ cùng động từ sai khiến làm cả câu bị khuyết mất Chủ ngữ). Cách sửa: Bỏ “通过” hoặc bỏ “使”.',
+            'Câu C mắc lỗi kinh điển “通过……，使……” (Lạm dụng giới từ cùng động từ sai khiến làm cả câu bị khuyết mất Chủ ngữ). Cách sửa: Bỏ “通过” hoặc bỏ “使”.',
           targetVocab: ['迫在眉睫', '兼顾', '行稳致远'],
         },
       ],

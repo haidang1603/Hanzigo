@@ -12,6 +12,7 @@ import {
   DYNAMIC_EXAMS,
   registerDynamicExam,
 } from '../hskExamsData.js';
+import { enrichQuestionWithImageAsset } from '../hskQuestionImageRegistry.js';
 
 export const SUPPLEMENT_LOADERS = Object.freeze({
   'hsk2-mock-01': () => import('./hsk2Mock01Supplement.js').then((m) => m.HSK2_MOCK01_SUPPLEMENT_QUESTIONS),
@@ -62,7 +63,9 @@ export async function ensureExamSupplementLoaded(examId) {
   const supplementQuestions = await loadSupplementQuestionsForExam(examId);
 
   const existingIds = new Set(baseQuestions.map((q) => q.id));
-  const appendedOnly = supplementQuestions.filter((q) => !existingIds.has(q.id));
+  const appendedOnly = supplementQuestions
+    .filter((q) => !existingIds.has(q.id))
+    .map((q) => enrichQuestionWithImageAsset(q, baseExam.level));
   const mergedQuestions = [...baseQuestions, ...appendedOnly];
 
   const mergedExam = {

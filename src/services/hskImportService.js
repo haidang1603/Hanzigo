@@ -311,6 +311,11 @@ export async function importHskExamWithValidation(arg1, arg2 = null, arg3 = true
       translation: q.translation || q.vietnamese_translation || '',
       audio_url: q.audio_url || '',
       audio_script: q.audio_script || '',
+      image_url: q.imageUrl || q.image_url || null,
+      image_alt: q.imageAlt || q.image_alt || null,
+      option_images: Array.isArray(q.optionImages)
+        ? q.optionImages
+        : (Array.isArray(q.option_images) ? q.option_images : null),
       options: q.options.map(opt => typeof opt === 'string' ? { text: opt } : opt),
       correct_option_index: Number(q.correct_option_index !== undefined ? q.correct_option_index : (q.correct_answer !== undefined ? q.correct_answer : q.answer_index)),
       explanation: q.explanation || 'Chưa có lời giải chi tiết cho câu hỏi này.',

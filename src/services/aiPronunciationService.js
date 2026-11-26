@@ -48,6 +48,7 @@ export async function scorePronunciationWithAi({
   }
 
   // 1. Thử gọi qua API backend serverless (/api/ai/pronunciation)
+  let authRequired = false;
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timeoutId = controller ? setTimeout(() => controller.abort(), 9000) : null;
   try {
@@ -69,13 +70,17 @@ export async function scorePronunciationWithAi({
       })
     });
 
-    if (res.ok) {
+    if (res.status === 401) {
+      authRequired = true;
+    } else if (res.ok) {
       const data = await res.json();
       if (data?.success && data?.result) {
         return {
           ...data.result,
           isValid: true,
-          isAiEvaluated: true
+          isAiEvaluated: true,
+          authRequired: false,
+          fallbackNotice: ''
         };
       }
     }
@@ -95,7 +100,11 @@ export async function scorePronunciationWithAi({
 
   return {
     ...localResult,
-    isAiEvaluated: false
+    isAiEvaluated: false,
+    authRequired,
+    fallbackNotice: authRequired
+      ? 'Đang dùng chế độ so khớp cục bộ — Hãy đăng nhập tài khoản để mở khóa chấm thanh điệu AI chuyên sâu.'
+      : 'Đang dùng chế độ chấm phát âm cục bộ (ngoại tuyến).'
   };
 }
 

@@ -405,11 +405,28 @@ export default function InteractiveWritingPad({
           </div>
 
           {/* Quiz Action Buttons */}
-          <div className="flex items-center gap-2 mt-4 w-full max-w-[280px]">
+          <div className="flex flex-wrap items-center gap-2 mt-4 w-full max-w-[280px]">
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound();
+                if (quizWriterRef.current && typeof quizWriterRef.current.animateCharacter === 'function') {
+                  quizWriterRef.current.animateCharacter({
+                    onComplete: () => startQuiz(quizState.showOutline),
+                  });
+                }
+              }}
+              className="min-h-11 py-2 px-3 rounded-xl text-xs font-semibold border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 flex items-center justify-center gap-1.5 cursor-pointer"
+              title="Xem hoạt ảnh thứ tự nét mẫu"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Xem mẫu nét</span>
+            </button>
+
             <button
               type="button"
               onClick={toggleQuizOutline}
-              className={`flex-1 min-h-11 py-2 px-3 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-all ${
+              className={`flex-1 min-h-11 py-2 px-3 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 quizState.showOutline
                   ? 'bg-[#E85D3F]/10 border-[#E85D3F]/30 text-[#E85D3F]'
                   : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'
@@ -417,16 +434,16 @@ export default function InteractiveWritingPad({
               title={quizState.showOutline ? 'Bấm để ẩn mẫu mờ (chế độ nhớ)' : 'Bấm để hiện mẫu mờ'}
             >
               {quizState.showOutline ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-              <span>{quizState.showOutline ? 'Có mẫu mờ' : 'Tập nhớ (Ẩn mẫu)'}</span>
+              <span>{quizState.showOutline ? 'Tô theo nét' : 'Tập nhớ'}</span>
             </button>
 
             <button
               type="button"
               onClick={() => startQuiz(quizState.showOutline)}
-              className="min-h-11 py-2 px-4 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 hover:brightness-105 active:scale-95 transition-all"
+              className="min-h-11 py-2 px-4 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 hover:brightness-105 active:scale-95 transition-all cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Viết lại</span>
+              <span>Xóa viết lại</span>
             </button>
           </div>
 

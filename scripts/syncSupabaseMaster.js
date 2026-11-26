@@ -278,6 +278,13 @@ async function syncHskExamCenter() {
   }
 
   // 5.4 HSK Resources (56 verified resources)
+  const ALLOWED_RESOURCE_PERMISSION_STATUSES = new Set(['reproducible', 'linked_only', 'unverified']);
+  const normalizeResourcePermissionStatus = (status) => {
+    if (ALLOWED_RESOURCE_PERMISSION_STATUSES.has(status)) return status;
+    if (status === 'open_educational') return 'reproducible';
+    return 'linked_only';
+  };
+
   const resourcesPayload = HSK_RESOURCES.map(r => ({
     id: r.id,
     title: r.title,
@@ -293,7 +300,7 @@ async function syncHskExamCenter() {
     host_type: r.host_type || 'free_external',
     language_of_instruction: r.language_of_instruction || 'Song ngữ Trung - Việt',
     license_status: r.license_status || 'Public Educational Sample',
-    permission_status: r.permission_status || 'linked_only',
+    permission_status: normalizeResourcePermissionStatus(r.permission_status),
     review_status: r.review_status || 'published',
     is_published: r.is_published !== false,
     download_url: r.download_url || null,

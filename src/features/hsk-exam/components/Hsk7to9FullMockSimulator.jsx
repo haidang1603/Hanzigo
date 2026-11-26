@@ -13,6 +13,21 @@ import {
   CheckCircle2,
   Send,
 } from 'lucide-react';
+import {
+  SECTION_STATES,
+  buildExamSectionSchedule,
+  createSectionLockState,
+  getSectionStatus,
+  canAccessSection,
+  tickSectionTimer,
+  finishCurrentSectionEarly,
+  getActiveSectionRemainingSeconds,
+  getTotalRemainingSeconds,
+  isSectionTimeLow,
+  serializeSectionLockDraft,
+} from '../../../utils/examSectionLockEngine.js';
+
+const HSK79_SECTION_DRAFT_PREFIX = 'hanzigo_hsk79_section_lock_v1_';
 
 const SKILL_META = [
   { id: 'listening', label: '1. 听力', titleZh: '第一部分：听力理解', icon: Headphones },
@@ -49,8 +64,9 @@ export default function Hsk7to9FullMockSimulator({
   exam,
   answers = {},
   onAnswerChange,
-  timeLeft = 12000,
+  timeLeft: initialTimeLeft = 12000,
   isSubmitting = false,
+  strictSectionLock = true,
   onSubmit,
   onExit,
 }) {
@@ -64,16 +80,88 @@ export default function Hsk7to9FullMockSimulator({
     }).filter((sec) => sec.items.length > 0);
   }, [questions]);
 
-  const [activeSkill, setActiveSkill] = useState(() => sections[0]?.id || 'listening');
+  const sectionSchedule = useMemo(
+    () => buildExamSectionSchedule({ exam: { ...exam, duration_minutes: exam?.duration_minutes || 200 }, questions }),
+    [exam, questions]
+  );
+
+  const lockStorageKey = `${HSK79_SECTION_DRAFT_PREFIX}${exam?.id || 'default'}`;
+  const [sectionLock, setSectionLock] = useState(() => {
+    let saved = null;
+    try {
+      const raw = localStorage.getItem(lockStorageKey);
+      if (raw) saved = JSON.parse(raw);
+    } catch {}
+    return createSectionLockState({
+      sections: sectionSchedule,
+      strictSectionLock,
+      restoredDraft: saved,
+    });
+  });
+
+  const [activeSkill, setActiveSkill] = useState(
+    () => sectionSchedule[sectionLock?.activeSectionIndex]?.skill || sections[0]?.id || 'listening'
+  );
   const [playingId, setPlayingId] = useState(null);
   const [playCounts, setPlayCounts] = useState({});
   const [recordingId, setRecordingId] = useState(null);
   const [showGenkouMap, setShowGenkouMap] = useState({});
   const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
+  const [confirmFinishSectionOpen, setConfirmFinishSectionOpen] = useState(false);
   const [isComposingIme, setIsComposingIme] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
 
   const recognitionRef = useRef(null);
+  const sectionLockRef = useRef(sectionLock);
+  const autoSubmitTriggeredRef = useRef(false);
+  sectionLockRef.current = sectionLock;
+
+  const stopMediaOnTransition = useCallback(() => {
+    try {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    } catch {}
+    setPlayingId(null);
+    setRecordingId(null);
+  }, []);
+
+  const persistLockDraft = useCallback(
+    (nextState) => {
+      try {
+        localStorage.setItem(
+          lockStorageKey,
+          JSON.stringify({ ...serializeSectionLockDraft(nextState), savedAt: Date.now() })
+        );
+      } catch {}
+    },
+    [lockStorageKey]
+  );
+
+  useEffect(() => {
+    if (sectionSchedule.length === 0) return;
+    setSectionLock((prev) => {
+      if (prev && prev.sectionDurations?.length === sectionSchedule.length) {
+        return prev;
+      }
+      let saved = null;
+      try {
+        const raw = localStorage.getItem(lockStorageKey);
+        if (raw) saved = JSON.parse(raw);
+      } catch {}
+      const next = createSectionLockState({
+        sections: sectionSchedule,
+        strictSectionLock,
+        restoredDraft: saved,
+      });
+      const targetSkill = sectionSchedule[next.activeSectionIndex]?.skill;
+      if (targetSkill) setActiveSkill(targetSkill);
+      return next;
+    });
+  }, [sectionSchedule, strictSectionLock, lockStorageKey]);
 
   useEffect(() => {
     if (sections.length > 0 && !sections.some((s) => s.id === activeSkill)) {
@@ -81,24 +169,79 @@ export default function Hsk7to9FullMockSimulator({
     }
   }, [sections, activeSkill]);
 
-  // Cleanup TTS & microphone on unmount
-  useEffect(() => {
-    return () => {
-      try {
-        if (typeof window !== 'undefined' && window.speechSynthesis) {
-          window.speechSynthesis.cancel();
-        }
-        if (recognitionRef.current) {
-          recognitionRef.current.stop();
-        }
-      } catch {}
-    };
-  }, []);
-
   const showToast = useCallback((msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 3200);
   }, []);
+
+  // CTI Section Timer Tick (Nghe 30p -> Đọc 60p -> Viết 55p -> Dịch 30p -> Nói 25p = 200p)
+  useEffect(() => {
+    if (!strictSectionLock || isSubmitting || sectionSchedule.length === 0) return;
+    let tickCount = 0;
+    const timer = setInterval(() => {
+      tickCount += 1;
+      const res = tickSectionTimer(sectionLockRef.current, 1);
+      sectionLockRef.current = res.nextState;
+      setSectionLock(res.nextState);
+
+      if (res.sectionAdvanced) {
+        stopMediaOnTransition();
+        const prevSec = sections[res.previousSectionIndex];
+        const nextSec = sections[res.nextState.activeSectionIndex];
+        if (nextSec) setActiveSkill(nextSec.id);
+        persistLockDraft(res.nextState);
+        showToast(
+          `⏱️ ${prevSec?.label || '上一部分'} 时间结束并已锁定，已进入 ${nextSec?.label || '下一部分'}。`
+        );
+      } else if (tickCount % 5 === 0) {
+        persistLockDraft(res.nextState);
+      }
+
+      if (res.autoSubmit && !autoSubmitTriggeredRef.current) {
+        autoSubmitTriggeredRef.current = true;
+        stopMediaOnTransition();
+        persistLockDraft(res.nextState);
+        clearInterval(timer);
+        if (onSubmit) onSubmit();
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [strictSectionLock, isSubmitting, sectionSchedule.length, sections, onSubmit, persistLockDraft, showToast, stopMediaOnTransition]);
+
+  // Cleanup TTS & microphone on unmount
+  useEffect(() => {
+    return () => {
+      stopMediaOnTransition();
+    };
+  }, [stopMediaOnTransition]);
+
+  const handleConfirmFinishSectionEarly = () => {
+    setConfirmFinishSectionOpen(false);
+    stopMediaOnTransition();
+    const res = finishCurrentSectionEarly(sectionLockRef.current);
+    sectionLockRef.current = res.nextState;
+    setSectionLock(res.nextState);
+    persistLockDraft(res.nextState);
+    if (res.sectionAdvanced) {
+      const prevSec = sections[res.previousSectionIndex];
+      const nextSec = sections[res.nextState.activeSectionIndex];
+      if (nextSec) setActiveSkill(nextSec.id);
+      showToast(`🔒 已锁定 ${prevSec?.label || '本部分'}，进入 ${nextSec?.label || '下一部分'}。`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (res.autoSubmit && onSubmit) {
+      onSubmit();
+    }
+  };
+
+  const activeSecRemaining = strictSectionLock
+    ? getActiveSectionRemainingSeconds(sectionLock)
+    : initialTimeLeft;
+  const totalExamRemaining = strictSectionLock
+    ? getTotalRemainingSeconds(sectionLock)
+    : initialTimeLeft;
+  const sectionLowTime = strictSectionLock && isSectionTimeLow(sectionLock, 120);
+  const activeSecIdx = sectionLock?.activeSectionIndex ?? 0;
+  const hasNextUnlockedSection = strictSectionLock && activeSecIdx < sections.length - 1;
 
   const speakAudio = useCallback((q, rate = 0.92) => {
     const text = q.audio_script || q.audioText || q.prompt || '';
@@ -229,10 +372,34 @@ export default function Hsk7to9FullMockSimulator({
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
-              <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-mono font-bold text-[#E85D3F]">
+              <div
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-mono font-bold ${
+                  sectionLowTime
+                    ? 'bg-rose-100 border-rose-300 text-rose-700 animate-pulse'
+                    : 'bg-[#FFF9F2] dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#E85D3F]'
+                }`}
+              >
                 <Clock className="w-4 h-4 text-amber-500" />
-                <span>{formatClock(timeLeft)}</span>
+                <span>
+                  {activeSection?.label || ''}: {formatClock(activeSecRemaining)}
+                </span>
+                {strictSectionLock && (
+                  <span className="text-[10px] font-sans text-[#748092] dark:text-slate-400">
+                    / {formatClock(totalExamRemaining)}
+                  </span>
+                )}
               </div>
+
+              {hasNextUnlockedSection && (
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => setConfirmFinishSectionOpen(true)}
+                  className="px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 font-bold text-xs hover:bg-amber-100 transition cursor-pointer"
+                >
+                  Kết thúc phần này sớm
+                </button>
+              )}
 
               <button
                 type="button"
@@ -246,24 +413,37 @@ export default function Hsk7to9FullMockSimulator({
             </div>
           </div>
 
-          {/* 5-Section CBT Navigation Tabs */}
+          {/* 5-Section CBT Navigation Tabs (Khóa cứng theo pha CTI) */}
           <nav className="flex sm:grid sm:grid-cols-5 gap-2 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none">
-            {sections.map((sec) => {
+            {sections.map((sec, secIdx) => {
               const Icon = sec.icon;
               const isActive = activeSection?.id === sec.id;
+              const status = getSectionStatus(sectionLock, secIdx);
+              const accessible = canAccessSection(sectionLock, secIdx);
               const doneCount = sec.items.filter((q) => isQuestionAnswered(answers[q.id])).length;
               return (
                 <button
                   key={sec.id}
                   type="button"
-                  onClick={() => setActiveSkill(sec.id)}
-                  className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition whitespace-nowrap shrink-0 cursor-pointer ${
+                  disabled={!accessible}
+                  onClick={() => {
+                    if (accessible) setActiveSkill(sec.id);
+                  }}
+                  className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition whitespace-nowrap shrink-0 ${
                     isActive
-                      ? 'bg-[#E85D3F] text-white border-[#E85D3F] shadow-sm'
-                      : 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#5B6B7F] dark:text-slate-300 border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]/50'
+                      ? 'bg-[#E85D3F] text-white border-[#E85D3F] shadow-sm cursor-pointer'
+                      : accessible
+                        ? 'bg-[#FFF9F2] dark:bg-[#131B24] text-[#5B6B7F] dark:text-slate-300 border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F]/50 cursor-pointer'
+                        : 'bg-slate-100 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 opacity-50 cursor-not-allowed'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  {status === SECTION_STATES.LOCKED_COMPLETED ? (
+                    <span className="shrink-0">🔒</span>
+                  ) : status === SECTION_STATES.LOCKED_UPCOMING ? (
+                    <span className="shrink-0">⏳</span>
+                  ) : (
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                  )}
                   <span>{sec.label}</span>
                   <span
                     className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${
@@ -647,32 +827,46 @@ export default function Hsk7to9FullMockSimulator({
             const idx = sections.findIndex((s) => s.id === activeSection?.id);
             const prevSec = idx > 0 ? sections[idx - 1] : null;
             const nextSec = idx >= 0 && idx < sections.length - 1 ? sections[idx + 1] : null;
+            const prevAccessible = prevSec ? canAccessSection(sectionLock, idx - 1) : false;
+            const nextAccessible = nextSec ? canAccessSection(sectionLock, idx + 1) : false;
             return (
               <>
                 <button
                   type="button"
-                  disabled={!prevSec}
+                  disabled={!prevSec || !prevAccessible}
                   onClick={() => {
-                    if (prevSec) {
+                    if (prevSec && prevAccessible) {
                       setActiveSkill(prevSec.id);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                   }}
                   className="px-4 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-slate-200 disabled:opacity-40 cursor-pointer"
                 >
-                  {prevSec ? `← 上一部分：${prevSec.label}` : '← 已是第一部分'}
+                  {prevSec ? (prevAccessible ? `← 上一部分：${prevSec.label}` : `🔒 ${prevSec.label}`) : '← 已是第一部分'}
                 </button>
                 {nextSec ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveSkill(nextSec.id);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="px-4 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-extrabold cursor-pointer"
-                  >
-                    下一部分：{nextSec.label} →
-                  </button>
+                  strictSectionLock ? (
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => setConfirmFinishSectionOpen(true)}
+                      className="px-4 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-extrabold cursor-pointer"
+                    >
+                      Kết thúc phần này & sang {nextSec.label} →
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={!nextAccessible}
+                      onClick={() => {
+                        setActiveSkill(nextSec.id);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-extrabold cursor-pointer"
+                    >
+                      下一部分：{nextSec.label} →
+                    </button>
+                  )
                 ) : (
                   <button
                     type="button"
@@ -688,6 +882,36 @@ export default function Hsk7to9FullMockSimulator({
           })()}
         </div>
       </main>
+
+      {/* 2-Step Early Finish Section Confirmation Modal */}
+      {confirmFinishSectionOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4">
+            <h3 className="text-lg font-black text-[#243447] dark:text-white">
+              Xác nhận kết thúc sớm phân môn?
+            </h3>
+            <p className="text-sm text-[#5B6B7F] dark:text-slate-300 leading-relaxed">
+              Sau khi kết thúc <strong>{activeSection?.label}</strong>, phân môn này sẽ bị khóa cứng và không thể quay lại chỉnh sửa. Hệ thống sẽ chuyển ngay sang phân môn kế tiếp.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmFinishSectionOpen(false)}
+                className="px-4 py-2 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#243447] dark:text-slate-200 cursor-pointer"
+              >
+                Tiếp tục làm phần này
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmFinishSectionEarly}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white text-xs font-extrabold cursor-pointer"
+              >
+                Khóa phần này & chuyển tiếp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Chinese Submit Confirmation Modal */}
       {confirmSubmitOpen && (

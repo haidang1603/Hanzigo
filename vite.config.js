@@ -592,6 +592,9 @@ export default defineConfig({
           if (normalizedId.includes('/src/utils/chineseNlpEngine')) {
             return 'utils-chinese-nlp';
           }
+          if (normalizedId.includes('/src/data/defaultMaterialsData')) {
+            return 'data-default-materials';
+          }
           if (normalizedId.includes('/src/data/hsk6FullExamData')) {
             return 'data-hsk6-exam';
           }

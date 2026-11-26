@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" width="480" height="320" role="img">
+  <rect width="480" height="320" rx="18" fill="#FFF9F0"/>
+  <circle cx="420" cy="54" r="28" fill="#FEF3C7" opacity="0.7"/>
+  <circle cx="62" cy="272" r="36" fill="#E0F2FE" opacity="0.65"/>
+
+    <g transform="translate(226 168) rotate(-10)">
+      <rect x="-112" y="-58" width="224" height="116" rx="14" fill="#E85D3F"/>
+      <line x1="48" y1="-50" x2="48" y2="50" stroke="#FED7AA" stroke-width="4" stroke-dasharray="8 8"/>
+      <polygon points="-36,-24 -28,-6 -8,-6 -24,6 -18,24 -36,13 -54,24 -48,6 -64,-6 -44,-6" fill="#FDE047"/>
+    </g>
+    <g transform="translate(256 154) rotate(8)">
+      <rect x="-112" y="-58" width="224" height="116" rx="14" fill="#F59E0B" stroke="#FFFFFF" stroke-width="4"/>
+      <line x1="48" y1="-50" x2="48" y2="50" stroke="#FEF3C7" stroke-width="4" stroke-dasharray="8 8"/>
+      <polygon points="-36,-24 -28,-6 -8,-6 -24,6 -18,24 -36,13 -54,24 -48,6 -64,-6 -44,-6" fill="#FFFFFF"/>
+    </g>
+  
+</svg>

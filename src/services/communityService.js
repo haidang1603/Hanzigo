@@ -1,4 +1,10 @@
 import { supabase, isSupabaseConfigured } from '../supabase/config.js';
+import {
+  sanitizePublicDisplayName,
+  validateCommunityPostInput,
+  validateCommunityCommentInput,
+  checkActionCooldown,
+} from '../utils/communitySafety.js';
 
 /**
  * Format relative or localized date string for community posts and comments
@@ -36,11 +42,12 @@ export function normalizePostData(row, currentUserId = null, userLikedSet = new 
   if (!row) return null;
 
   const postIdStr = String(row.id);
-  const authorName = (row.author_name || '').trim();
-  const isBqt = authorName.includes('Ban Quản Trị') || 
+  const rawAuthorName = (row.author_name || '').trim();
+  const isBqt = rawAuthorName.includes('Ban Quản Trị') || 
                 row.author_level === 'Quản trị viên' || 
                 row.author_level === 'BQT' ||
                 postIdStr === 'system-welcome';
+  const authorName = isBqt ? rawAuthorName : sanitizePublicDisplayName(rawAuthorName);
 
   const isLegacyUnsplash = (row.author_avatar && row.author_avatar.includes('photo-1534528741775-53994a69daeb'));
   const avatarUrl = (isBqt || isLegacyUnsplash)
@@ -87,7 +94,7 @@ export async function getCommunityPosts(options = {}) {
     return { posts: [], nextCursor: null, hasMore: false };
   }
 
-  const { limit = 20, cursor = null, tag = 'all' } = options;
+  const { limit = 20, cursor = null, tag = 'all', sort = 'newest' } = options;
 
   try {
     // 1. Get current authenticated user ID for reaction and ownership resolution
@@ -140,9 +147,14 @@ export async function getCommunityPosts(options = {}) {
       }
     }
 
-    // Stable deterministic order: pinned first, then newest created_at, then highest id
+    // Stable deterministic order: pinned first, then popular or newest
+    query = query.order('is_pinned', { ascending: false });
+    if (sort === 'popular') {
+      query = query
+        .order('likes_count', { ascending: false })
+        .order('comments_count', { ascending: false });
+    }
     query = query
-      .order('is_pinned', { ascending: false })
       .order('created_at', { ascending: false })
       .order('id', { ascending: false })
       .limit(limit + 1);
@@ -249,14 +261,41 @@ export async function getCommunityPostById(postId) {
  * @param {string} [payload.image]
  * @returns {Promise<{success: boolean, id: string|null, post: Object|null}>}
  */
-export async function createCommunityPost(payload) {
-  if (!isSupabaseConfigured || !supabase) return { success: false, id: null, post: null };
+export async function createCommunityPost(payload = {}) {
+  const validation = validateCommunityPostInput({
+    content: payload.content || '',
+    imageUrl: payload.image_url || payload.image || '',
+  });
+  if (!validation.valid) {
+    return { success: false, id: null, post: null, error: validation.error };
+  }
+
+  if (!isSupabaseConfigured || !supabase) {
+    return { success: false, id: null, post: null, code: 'AUTH_REQUIRED', error: 'Vui lòng đăng nhập để đăng bài.' };
+  }
 
   try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const currentUserId = sessionData?.session?.user?.id || null;
+    if (!currentUserId) {
+      return { success: false, id: null, post: null, code: 'AUTH_REQUIRED', error: 'Vui lòng đăng nhập để đăng bài.' };
+    }
+
+    const cooldown = checkActionCooldown(`post:${currentUserId}`, 10000);
+    if (!cooldown.allowed) {
+      return {
+        success: false,
+        id: null,
+        post: null,
+        code: 'RATE_LIMITED',
+        error: `Vui lòng đợi ${cooldown.waitSeconds}s trước khi đăng bài tiếp theo.`,
+      };
+    }
+
     const insertPayload = {
-      content: payload.content ? payload.content.trim() : '',
-      tag: payload.tag || '#HoiDapNguPhap',
-      image_url: payload.image_url || payload.image || null
+      content: validation.sanitized.content,
+      tag: payload.tag || '#ThiHSK',
+      image_url: validation.sanitized.imageUrl,
     };
 
     const { data, error } = await supabase
@@ -267,7 +306,6 @@ export async function createCommunityPost(payload) {
 
     if (error) throw error;
 
-    const currentUserId = (await supabase.auth.getSession())?.data?.session?.user?.id || null;
     const normalized = normalizePostData(data, currentUserId, new Set());
 
     return {
@@ -277,7 +315,7 @@ export async function createCommunityPost(payload) {
     };
   } catch (err) {
     console.error('Could not create Supabase post:', err);
-    return { success: false, id: null, post: null };
+    return { success: false, id: null, post: null, error: err?.message || 'Không thể đăng bài viết.' };
   }
 }
 
@@ -357,10 +395,11 @@ export async function deleteCommunityPost(postId) {
  */
 function mapCommentRow(row, currentUserId) {
   const profile = row.profiles || {};
-  const authorName = (row.author_id && (profile.name || profile.full_name))
+  const rawAuthorName = (row.author_id && (profile.name || profile.full_name))
     ? (profile.name || profile.full_name)
     : (row.legacy_author_name || (!row.author_id ? 'Học viên ẩn danh' : 'Học viên HanziGo'));
-  const isBqt = (profile.role === 'admin') || authorName.includes('Ban Quản Trị');
+  const isBqt = (profile.role === 'admin') || rawAuthorName.includes('Ban Quản Trị');
+  const authorName = isBqt ? rawAuthorName : sanitizePublicDisplayName(rawAuthorName);
   const avatarUrl = isBqt 
     ? '/hanzigo-logo.svg' 
     : (profile.avatar || profile.avatar_url || null);
@@ -477,14 +516,22 @@ export async function getPostComments(postId, options = {}) {
  * @returns {Promise<Object|null>}
  */
 export async function createCommunityComment(postId, content) {
-  if (!isSupabaseConfigured || !supabase || !postId || !content?.trim()) return null;
+  const validation = validateCommunityCommentInput(content);
+  if (!validation.valid) return null;
+  if (!isSupabaseConfigured || !supabase || !postId) return null;
 
   try {
+    const currentUserId = (await supabase.auth.getSession())?.data?.session?.user?.id || null;
+    if (!currentUserId) return null;
+
+    const cooldown = checkActionCooldown(`comment:${currentUserId}`, 3000);
+    if (!cooldown.allowed) return null;
+
     const { data, error } = await supabase
       .from('community_comments')
       .insert([{
         post_id: postId,
-        content: content.trim()
+        content: validation.sanitizedContent
       }])
       .select(`
         id,
@@ -506,10 +553,10 @@ export async function createCommunityComment(postId, content) {
 
     if (error) throw error;
 
-    const currentUserId = (await supabase.auth.getSession())?.data?.session?.user?.id || null;
     const profile = data.profiles || {};
-    const authorName = profile.name || profile.full_name || 'Học viên HanziGo';
-    const isBqt = (profile.role === 'admin') || authorName.includes('Ban Quản Trị');
+    const rawAuthor = profile.name || profile.full_name || 'Học viên HanziGo';
+    const isBqt = (profile.role === 'admin') || rawAuthor.includes('Ban Quản Trị');
+    const authorName = isBqt ? rawAuthor : sanitizePublicDisplayName(rawAuthor);
 
     return {
       id: String(data.id),
@@ -536,13 +583,14 @@ export async function createCommunityComment(postId, content) {
  * @returns {Promise<boolean>}
  */
 export async function updateCommunityComment(commentId, content) {
-  if (!isSupabaseConfigured || !supabase || !commentId || !content?.trim()) return false;
+  const validation = validateCommunityCommentInput(content);
+  if (!validation.valid || !isSupabaseConfigured || !supabase || !commentId) return false;
 
   try {
     const { error } = await supabase
       .from('community_comments')
       .update({
-        content: content.trim(),
+        content: validation.sanitizedContent,
         updated_at: new Date().toISOString()
       })
       .eq('id', commentId);
@@ -592,10 +640,15 @@ export async function deleteCommunityComment(commentId) {
  */
 export async function togglePostReaction(postId, reactionType = 'like') {
   if (!isSupabaseConfigured || !supabase || !postId) {
-    return { success: false, error: 'Supabase is not configured or postId is missing.' };
+    return { success: false, code: 'AUTH_REQUIRED', error: 'Vui lòng đăng nhập để thích bài viết.' };
   }
 
   try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData?.session?.user?.id) {
+      return { success: false, code: 'AUTH_REQUIRED', error: 'Vui lòng đăng nhập để thích bài viết.' };
+    }
+
     const { data, error } = await supabase.rpc('toggle_community_post_reaction', {
       p_post_id: Number(postId) || postId,
       p_reaction_type: reactionType
@@ -615,6 +668,26 @@ export async function togglePostReaction(postId, reactionType = 'like') {
   } catch (err) {
     console.warn(`Could not toggle reaction for post ${postId}:`, err);
     return { success: false, error: err.message || 'Error executing reaction RPC' };
+  }
+}
+
+/**
+ * Moderate community post (pin / unpin / hide) for Admin & Teacher roles.
+ */
+export async function moderateCommunityPost(postId, action) {
+  if (!isSupabaseConfigured || !supabase || !postId || !action) {
+    return { success: false, error: 'Thiếu thông tin kiểm duyệt.' };
+  }
+  try {
+    const { data, error } = await supabase.rpc('moderate_community_post', {
+      p_post_id: Number(postId) || postId,
+      p_action: String(action).toLowerCase(),
+    });
+    if (error) throw error;
+    return data && typeof data === 'object' ? data : { success: true };
+  } catch (err) {
+    console.warn(`Could not moderate post ${postId}:`, err);
+    return { success: false, error: err.message || 'Không có quyền thực hiện thao tác.' };
   }
 }
 

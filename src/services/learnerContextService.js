@@ -13,7 +13,7 @@
 
 import { getUserStorageKey, getStreakStatus } from '../utils/gamification.js';
 import { getUserJourneyProgress, getRecommendedNextLesson, getRecommendedReviewLessons } from './learningPathService.js';
-import { isCardDueForReview, getDueReviewCards } from '../utils/srsEngine.js';
+import { STORAGE_SRS_STATE, calculateSrsStats, getDueReviewCards } from '../utils/srsEngine.js';
 
 export const LEARNER_STORAGE_KEYS = {
   PREFERENCES: 'hanzigo_learner_preferences',
@@ -134,16 +134,33 @@ export function buildComprehensiveLearnerContext(user = null) {
     if (pRaw) pronounceHistory = JSON.parse(pRaw) || [];
   } catch {}
 
-  // 4. Lịch sử làm bài thi thử HSK và danh sách câu sai
+  // 4. Lịch sử làm bài thi thử HSK và danh sách câu sai (cô lập theo userId)
+  let notebookMistakes = [];
+  try {
+    const nbUid = user?.id || user?.uid || 'guest';
+    const nbRaw = localStorage.getItem(`hanzigo_mistake_notebook_v1_${nbUid}`);
+    if (nbRaw) {
+      const parsedNb = JSON.parse(nbRaw);
+      if (Array.isArray(parsedNb)) notebookMistakes = parsedNb.filter((m) => m && m.questionId);
+    }
+  } catch {}
   let hskMistakes = [];
   try {
-    const mRaw = localStorage.getItem('hanzigo_hsk_mistakes');
+    const mKey = getUserStorageKey('hanzigo_hsk_mistakes', user);
+    const mRaw = localStorage.getItem(mKey) || (!user ? localStorage.getItem('hanzigo_hsk_mistakes') : null);
     if (mRaw) hskMistakes = JSON.parse(mRaw) || [];
   } catch {}
+  if (notebookMistakes.length > 0) {
+    const seen = new Set(hskMistakes.map((m) => m.questionId || m.id).filter(Boolean));
+    notebookMistakes.forEach((m) => {
+      if (!seen.has(m.questionId)) hskMistakes.push(m);
+    });
+  }
 
   let hskAttempts = [];
   try {
-    const aRaw = localStorage.getItem('hanzigo_hsk_attempts');
+    const aKey = getUserStorageKey('hanzigo_hsk_attempts', user);
+    const aRaw = localStorage.getItem(aKey) || (!user ? localStorage.getItem('hanzigo_hsk_attempts') : null);
     if (aRaw) hskAttempts = JSON.parse(aRaw) || [];
   } catch {}
 
@@ -157,15 +174,27 @@ export function buildComprehensiveLearnerContext(user = null) {
   } catch {}
   const totalStudyMinutes = Object.values(studyMinutesMap).reduce((acc, m) => acc + (Number(m) || 0), 0);
 
-  // 6. Tính số từ SRS đến hạn
-  const simulatedCards = reviewWords.map(id => ({
-    id,
-    nextReviewAt: new Date(Date.now() - 3600000).toISOString(),
-    stage: 1,
-    easeFactor: 1.8
-  }));
-  const srsDueCards = getDueReviewCards(simulatedCards);
-  const srsDueCount = srsDueCards.length;
+  // 6. Tính số từ SRS đến hạn (ưu tiên STORAGE_SRS_STATE thực tế)
+  let srsDueCount = 0;
+  try {
+    const srsKey = getUserStorageKey(STORAGE_SRS_STATE, user);
+    const srsRaw = localStorage.getItem(srsKey) || (!user ? localStorage.getItem(STORAGE_SRS_STATE) : null);
+    if (srsRaw) {
+      const srsMap = JSON.parse(srsRaw);
+      if (srsMap && typeof srsMap === 'object') {
+        srsDueCount = calculateSrsStats(Object.values(srsMap)).dueCount || 0;
+      }
+    }
+  } catch {}
+  if (srsDueCount === 0 && reviewWords.length > 0) {
+    const simulatedCards = reviewWords.map(id => ({
+      id,
+      nextReviewAt: new Date(Date.now() - 3600000).toISOString(),
+      stage: 1,
+      easeFactor: 1.8
+    }));
+    srsDueCount = getDueReviewCards(simulatedCards).length;
+  }
 
   // 7. Xác định bài tiếp theo và bài cần ôn lại
   const nextLesson = getRecommendedNextLesson(user);
@@ -368,7 +397,7 @@ export function sanitizeContextForAi(context) {
 
   const safe = { ...context };
 
-  // Xóa bỏ tất cả credentials và token nếu vô tình lọt vào
+  // Xóa bỏ tất cả credentials, token và PII nếu vô tình lọt vào
   delete safe.password;
   delete safe.token;
   delete safe.access_token;
@@ -376,6 +405,12 @@ export function sanitizeContextForAi(context) {
   delete safe.secret;
   delete safe.apiKey;
   delete safe.api_key;
+  delete safe.email;
+  delete safe.phone;
+  delete safe.phoneNumber;
+  delete safe.fullName;
+  delete safe.name;
+  delete safe.userName;
 
   // Xóa bỏ các thuộc tính phân quyền bảo mật (Zero-Trust)
   delete safe.role;
@@ -385,6 +420,17 @@ export function sanitizeContextForAi(context) {
   delete safe.isAdmin;
   delete safe.is_admin;
   delete safe.claims;
+
+  const redactStr = (val) =>
+    typeof val === 'string'
+      ? val
+          .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, '[REDACTED_EMAIL]')
+          .replace(/(?:\+84|0)(?:[\s.-]?\d){8,10}\b/g, '[REDACTED_PHONE]')
+      : val;
+
+  for (const [k, v] of Object.entries(safe)) {
+    if (typeof v === 'string') safe[k] = redactStr(v);
+  }
 
   // Giới hạn số lượng phần tử để payload gửi lên AI gọn gàng, súc tích
   if (Array.isArray(safe.weakVocabHanzi)) safe.weakVocabHanzi = safe.weakVocabHanzi.slice(0, 15);

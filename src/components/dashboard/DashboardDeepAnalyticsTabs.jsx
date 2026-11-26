@@ -18,11 +18,12 @@ import {
 } from 'lucide-react';
 import AudioButton from '../AudioButton';
 import { playClickSound } from '../../utils/audio';
-import { getXpHonorificTitle } from '../../services/leaderboardService';
+import { getXpHonorificTitle } from '../../utils/communitySafety';
 import {
   computeLocalTelemetrySnapshot,
   fetchTelemetryDashboardSummary,
 } from '../../core/telemetry/learningTelemetryService.js';
+import { buildSmartLearningSnapshot } from '../../services/smartLearningTelemetryService.js';
 
 const HskReadinessRadarCard = lazy(() =>
   import('../../features/analytics/HskReadinessRadarCard.jsx')
@@ -70,9 +71,14 @@ export default function DashboardDeepAnalyticsTabs({
 }) {
   const [activeDeepTab, setActiveDeepTab] = useState('readiness');
   const [telemetrySnapshot, setTelemetrySnapshot] = useState(() =>
-    computeLocalTelemetrySnapshot()
+    computeLocalTelemetrySnapshot({ user })
   );
   const [telemetryLoaded, setTelemetryLoaded] = useState(false);
+
+  const smartSnapshot = useMemo(
+    () => buildSmartLearningSnapshot(user, { targetHskLevel }),
+    [user, targetHskLevel]
+  );
 
   // Lazy-fetch cloud telemetry summary only once when readiness/telemetry tab is active
   useEffect(() => {
@@ -96,11 +102,12 @@ export default function DashboardDeepAnalyticsTabs({
     };
   }, [activeDeepTab, telemetryLoaded, user]);
 
-  // 6-skill strength / weakness summary derived from telemetrySnapshot
+  // 6-skill strength / weakness summary derived from telemetrySnapshot + real exam answerSnapshots
   const skillSummary = useMemo(() => {
     const tri = telemetrySnapshot?.triDimensionalMastery || {};
     const avgLat = telemetrySnapshot?.avg_response_latency_ms || {};
     const retention = Number(telemetrySnapshot?.retention_rate_pct || 0);
+    const examSkills = smartSnapshot?.fiveSkills?.skills || {};
 
     const scoreFromLatency = (ms, goldMs) => {
       if (!ms || ms <= 0) return 0;
@@ -108,13 +115,19 @@ export default function DashboardDeepAnalyticsTabs({
       return Math.max(25, Math.round((goldMs / ms) * 85));
     };
 
+    const pickRealOrLatency = (examKey, latencyScore) => {
+      const ex = examSkills[examKey];
+      if (ex?.hasData) return Math.round(ex.overallPct || 0);
+      return latencyScore;
+    };
+
     const items = [
-      { key: 'listening', label: 'Nghe hiểu', score: scoreFromLatency(avgLat.listening, 12000), tab: 'listening-studio' },
-      { key: 'reading', label: 'Đọc hiểu', score: scoreFromLatency(avgLat.reading, 35000), tab: 'reader' },
-      { key: 'vocabulary', label: 'Từ vựng SRS', score: Math.round(Number(tri.meaningPct || retention || 0)), tab: 'vocabulary' },
+      { key: 'listening', label: 'Nghe hiểu', score: pickRealOrLatency('listening', scoreFromLatency(avgLat.listening, 12000)), tab: 'listening-studio' },
+      { key: 'reading', label: 'Đọc hiểu', score: pickRealOrLatency('reading', scoreFromLatency(avgLat.reading, 35000)), tab: 'reader' },
+      { key: 'vocabulary', label: 'Từ vựng SRS', score: Math.round(Number(tri.meaningPct || smartSnapshot?.roadmapAndSrs?.retentionPct || retention || 0)), tab: 'vocabulary' },
       { key: 'grammar', label: 'Ngữ pháp', score: scoreFromLatency(avgLat.grammar, 25000), tab: 'grammar' },
-      { key: 'writing', label: 'Viết / Hán tự', score: Math.round(Number(tri.writingPct || 0)), tab: 'writing' },
-      { key: 'pronunciation', label: 'Phát âm', score: Math.round(Number(tri.pronunciationPct || 0)), tab: 'pronunciation' },
+      { key: 'writing', label: 'Viết / Dịch', score: pickRealOrLatency('writing', Math.round(Number(tri.writingPct || 0))), tab: 'writing' },
+      { key: 'pronunciation', label: 'Phát âm / Nói', score: pickRealOrLatency('speaking', Math.round(Number(tri.pronunciationPct || 0))), tab: 'pronunciation' },
     ];
 
     const sorted = [...items].sort((a, b) => b.score - a.score);
@@ -125,7 +138,7 @@ export default function DashboardDeepAnalyticsTabs({
       strongest: sorted[0],
       weakest: sorted[sorted.length - 1],
     };
-  }, [telemetrySnapshot]);
+  }, [telemetrySnapshot, smartSnapshot]);
 
   return (
     <section
@@ -182,6 +195,7 @@ export default function DashboardDeepAnalyticsTabs({
             <Suspense fallback={<TabLoadingFallback label="Đang tải biểu đồ Radar 6 kỹ năng..." />}>
               <HskReadinessRadarCard
                 snapshot={telemetrySnapshot}
+                smartSnapshot={smartSnapshot}
                 targetHskLevel={targetHskLevel}
                 onLaunchExam={() => {
                   playClickSound();

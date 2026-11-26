@@ -6,6 +6,7 @@
  */
 import { getFullExamById } from '../../../src/data/hskExamsData.js';
 import { calculateHskCbtScore } from '../../../src/utils/examScoringEngine.js';
+import { buildAttemptAnswerSnapshots } from '../../../src/utils/examAttemptSnapshot.js';
 import {
   getSupabaseAdminClient,
   verifyRequestAuth,
@@ -36,7 +37,8 @@ async function handleSubmitPost(req, res) {
     timeSpentSeconds = 0, 
     anonymousSessionId = '', 
     examMode = 'simulation',
-    attemptId: clientAttemptId = null
+    attemptId: clientAttemptId = null,
+    subjectiveGrades = {}
   } = req.body || {};
 
   if (!examId) {
@@ -178,6 +180,8 @@ async function handleSubmitPost(req, res) {
       translation: q.translation,
       audio_url: q.audio_url,
       audio_script: q.audio_script,
+      ...(q.imageUrl ? { imageUrl: q.imageUrl } : {}),
+      ...(q.imageAlt ? { imageAlt: q.imageAlt } : {}),
       options: q.options,
       words: q.words || [],
       writingCriteria: q.writing_criteria || [],
@@ -226,6 +230,13 @@ async function handleSubmitPost(req, res) {
 
   const attemptId = clientAttemptId || ('hsk-att-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7));
 
+  // Server-authoritative immutable snapshot (tuyệt đối không tin isCorrect / correctText / scoreAwarded từ client)
+  const answerSnapshots = buildAttemptAnswerSnapshots(questions, {
+    answers,
+    detailedResults,
+    subjectiveGrades: subjectiveGrades && typeof subjectiveGrades === 'object' ? subjectiveGrades : {},
+  });
+
   const attemptResult = {
     id: attemptId,
     examId: fullExam.id,
@@ -254,6 +265,7 @@ async function handleSubmitPost(req, res) {
     weakestSkill: cbtScoring.weakestSkill,
     recommendations: cbtScoring.recommendations,
     detailedResults,
+    answerSnapshots,
     createdAt: new Date().toISOString()
   };
 
@@ -261,7 +273,7 @@ async function handleSubmitPost(req, res) {
   const supabase = getSupabaseAdminClient();
   if (supabase) {
     try {
-      await supabase.from('hsk_attempts').insert({
+      const attemptRow = {
         id: attemptResult.id,
         user_id: userId,
         anonymous_session_id: anonSessionId,
@@ -275,8 +287,14 @@ async function handleSubmitPost(req, res) {
         passed: attemptResult.passed,
         skill_breakdown: attemptResult.skillBreakdown,
         detailed_results: attemptResult.detailedResults,
+        answer_snapshots: attemptResult.answerSnapshots,
         created_at: attemptResult.createdAt
-      });
+      };
+      const { error: insertErr } = await supabase.from('hsk_attempts').insert(attemptRow);
+      if (insertErr && /answer_snapshots/i.test(insertErr.message || '')) {
+        const { answer_snapshots: _ignored, ...legacyRow } = attemptRow;
+        await supabase.from('hsk_attempts').insert(legacyRow);
+      }
 
       // Server-side Mistake Notebook Recording (Deduplicated via deterministic primary key)
       const incorrectQuestions = detailedResults.filter(q => !q.isCorrect && !q.isSubjective);

@@ -15,6 +15,7 @@ import {
   registerHsk30LevelBank,
   registerHsk20ExpansionQuestions,
 } from '../hskExamBlueprints.js';
+import { enrichQuestionWithImageAsset } from '../hskQuestionImageRegistry.js';
 
 const LOADED_BANKS = new Map();
 const IN_FLIGHT_LOADS = new Map();
@@ -154,9 +155,13 @@ export async function loadHsk30ExamByLevel(levelKey = 'hsk1') {
 
   const promise = importLevelModule(canonicalKey)
     .then((bank) => {
-      LOADED_BANKS.set(canonicalKey, bank);
-      registerHsk30LevelBank(bank.level, bank);
-      return bank;
+      const enrichedBank = {
+        ...bank,
+        questions: (bank.questions || []).map((q) => enrichQuestionWithImageAsset(q, bank.level)),
+      };
+      LOADED_BANKS.set(canonicalKey, enrichedBank);
+      registerHsk30LevelBank(enrichedBank.level, enrichedBank);
+      return enrichedBank;
     })
     .finally(() => {
       IN_FLIGHT_LOADS.delete(canonicalKey);
@@ -188,7 +193,9 @@ export async function loadHsk20FullExpansion() {
 
   inFlightHsk20Expansion = import('./hsk20FullExpansion.js')
     .then((mod) => {
-      loadedHsk20Expansion = mod.HSK20_FULL_EXPANSION_QUESTIONS || [];
+      loadedHsk20Expansion = (mod.HSK20_FULL_EXPANSION_QUESTIONS || []).map((q) =>
+        enrichQuestionWithImageAsset(q, q.level)
+      );
       registerHsk20ExpansionQuestions(loadedHsk20Expansion);
       return loadedHsk20Expansion;
     })

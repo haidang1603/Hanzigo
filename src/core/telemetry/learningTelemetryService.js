@@ -205,7 +205,7 @@ export function clearTelemetryLocalState(user = null) {
 }
 
 export async function flushTelemetryBuffer(user = null) {
-  ensureBufferLoaded();
+  ensureBufferLoaded(user);
   if (isFlushing || memoryBuffer.length === 0) {
     return { flushed: 0, remaining: memoryBuffer.length };
   }
@@ -309,6 +309,30 @@ function averageOrZero(values) {
 
 function formatIsoDate(date) {
   return getLocalDateString(date);
+}
+
+function getVietnamCalendarKey(dateInput = new Date()) {
+  const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (Number.isNaN(d.getTime())) return getLocalDateString(new Date());
+  try {
+    const formatted = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(d);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(formatted)) return formatted;
+  } catch {}
+  const shifted = new Date(d.getTime() + 7 * 3600 * 1000);
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(shifted.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function shiftCalendarKey(dateKey, deltaDays) {
+  const [y, m, day] = String(dateKey).split('-').map(Number);
+  return getLocalDateString(new Date(y, (m || 1) - 1, (day || 1) + deltaDays));
 }
 
 function buildSrsForecast7Days(vocabItems = [], now = new Date()) {
@@ -466,14 +490,14 @@ export function computeLocalTelemetrySnapshot({
 
   const events7d = recentEvents.filter((ev) => new Date(ev.created_at).getTime() >= sevenDayCutoff);
 
-  // Streak days
+  // Streak days (normalized to Asia/Ho_Chi_Minh)
   const activeDaySet = new Set(
-    recentEvents.map((ev) => String(ev.created_at || '').slice(0, 10)).filter(Boolean)
+    recentEvents.map((ev) => (ev?.created_at ? getVietnamCalendarKey(ev.created_at) : '')).filter(Boolean)
   );
   let streakDays = 0;
-  const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const todayVnKey = getVietnamCalendarKey(now);
   for (let offset = 0; offset < days; offset += 1) {
-    const checkIso = formatIsoDate(new Date(todayUtc.getTime() - offset * 86400000));
+    const checkIso = shiftCalendarKey(todayVnKey, -offset);
     if (activeDaySet.has(checkIso)) {
       streakDays += 1;
     } else if (offset > 0) {
@@ -576,7 +600,7 @@ export function computeLocalTelemetrySnapshot({
 }
 
 export async function fetchTelemetryDashboardSummary(user = null, days = 14) {
-  const localSnapshot = computeLocalTelemetrySnapshot({ days });
+  const localSnapshot = computeLocalTelemetrySnapshot({ days, user });
 
   if (!isSupabaseConfigured || !supabase || !user?.id) {
     return localSnapshot;

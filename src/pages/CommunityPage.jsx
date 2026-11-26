@@ -36,12 +36,12 @@ import {
   Edit3,
   ExternalLink,
   Clock,
-  Target
+  Target,
+  Filter
 } from 'lucide-react';
 import ReportModal from '../components/community/ReportModal';
 import LeaderboardView from '../components/learning/LeaderboardView';
 import ChineseChallengeCard from '../components/learning/ChineseChallengeCard';
-import { COMMUNITY_POSTS } from '../data/chineseData';
 import { playClickSound, playSuccessSound, speakChinese } from '../utils/audio';
 import { 
   getCommunityPosts, 
@@ -49,8 +49,10 @@ import {
   createCommunityPost,
   updateCommunityPost, 
   deleteCommunityPost,
+  moderateCommunityPost,
   getPostComments,
   createCommunityComment,
+  updateCommunityComment,
   deleteCommunityComment,
   togglePostReaction,
   getStudyPartnersFromDb,
@@ -59,8 +61,17 @@ import {
   toggleStudyPartnerStatusInDb,
   deleteStudyPartnerFromDb,
   subscribeToCommunityRealtime
-} from '../supabase/services';
+} from '../services/communityService';
+import { getPastAttempts } from '../services/hskService';
 import { awardXp, getLocalDateString } from '../utils/gamification';
+import {
+  POST_LIMITS,
+  formatStructuredPostContent,
+  parseStructuredPostContent,
+  validateCommunityPostInput,
+  validateCommunityCommentInput,
+  toggleLikeOptimisticList,
+} from '../utils/communitySafety.js';
 
 // Helper nén ảnh cục bộ cho mã QR và tệp đính kèm (giữ độ sắc nét cho QR)
 function compressImageFile(file, maxWidth = 600, maxHeight = 600) {
@@ -110,12 +121,20 @@ const STORAGE_KEYS = {
 
 const TAG_FILTERS = [
   { id: 'all', label: 'Tất cả bài viết' },
-  { id: '#HoiDapNguPhap', label: '💡 #HỏiĐápNgữPháp' },
-  { id: '#ChuDeHomNay', label: '🏮 #ChủĐềHômNay' },
-  { id: '#TimBanLuyenNoi', label: '🗣️ #TìmBạnLuyệnNói' },
-  { id: '#KinhNghiemHoc', label: '📚 #KinhNghiệmHọc' },
-  { id: '#ThiHSK', label: '🎯 #ThiHSK' },
+  { id: '#ThiHSK', label: '🎯 Hỏi đáp HSK' },
+  { id: '#SuaCauLuyenViet', label: '✍️ Sửa câu / Luyện viết' },
+  { id: '#MeoHocTuVung', label: '💡 Mẹo học từ vựng' },
+  { id: '#KinhNghiemHoc', label: '📚 Chia sẻ kinh nghiệm' },
+  { id: '#TimBanLuyenNoi', label: '🗣️ Tìm bạn học' },
+  { id: '#HoiDapNguPhap', label: '💬 Ngữ pháp' },
   { id: 'saved', label: '⭐ Đã lưu' }
+];
+
+const HSK_GROUP_FILTERS = [
+  { id: 'all', label: 'Tất cả HSK' },
+  { id: 'HSK 1–3', label: 'HSK 1–3' },
+  { id: 'HSK 4–6', label: 'HSK 4–6' },
+  { id: 'HSK 7–9', label: 'HSK 7–9' },
 ];
 
 // Daily Discussion Topic of the day
@@ -237,7 +256,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     }
   }, [initialView]);
 
-  // Posts state initialized with offline cache fallback (Supabase is Single Source of Truth)
+  // Posts state initialized cleanly without fake mock posts (Supabase is Single Source of Truth)
   const [posts, setPosts] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.POSTS);
@@ -248,7 +267,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
         }
       }
     } catch {}
-    return sanitizeCommunityPosts(COMMUNITY_POSTS);
+    return [];
   });
 
   // Cursor-based pagination state
@@ -343,15 +362,17 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
   const [isCloudSynced, setIsCloudSynced] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Tag filter state declared early for pagination dependency
+  // Tag, HSK level group & sort state declared early for pagination dependency
   const [selectedTag, setSelectedTag] = useState('all');
+  const [selectedHskGroup, setSelectedHskGroup] = useState('all');
+  const [postSort, setPostSort] = useState('newest'); // 'newest' | 'popular'
 
-  // Load paginated community posts from Supabase on mount and when filter tag changes
+  // Load paginated community posts from Supabase on mount and when filter tag / sort changes
   useEffect(() => {
     let isMounted = true;
     setIsLoadingPosts(true);
 
-    getCommunityPosts({ limit: 15, tag: selectedTag })
+    getCommunityPosts({ limit: 15, tag: selectedTag, sort: postSort })
       .then((res) => {
         if (!isMounted) return;
         const fetched = res?.posts || (Array.isArray(res) ? res : []);
@@ -375,7 +396,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     return () => {
       isMounted = false;
     };
-  }, [selectedTag]);
+  }, [selectedTag, postSort]);
 
   // Load study partners on mount
   useEffect(() => {
@@ -557,12 +578,21 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
 
 
   // Post creation inputs
+  const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
-  const [newPostTag, setNewPostTag] = useState('#HoiDapNguPhap');
+  const [newPostTag, setNewPostTag] = useState('#ThiHSK');
+  const [newPostHskLevel, setNewPostHskLevel] = useState(user?.level || 'HSK 1');
+  const [newPostChinese, setNewPostChinese] = useState('');
+  const [newPostPinyin, setNewPostPinyin] = useState('');
+  const [showSnippetInputs, setShowSnippetInputs] = useState(false);
   const [postContactMethod, setPostContactMethod] = useState('Zalo');
   const [postContactInfo, setPostContactInfo] = useState('');
   const [postImage, setPostImage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingPostId, setEditingPostId] = useState(null);
+  const [editPostDraft, setEditPostDraft] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editCommentDraft, setEditCommentDraft] = useState('');
 
   // Study partner filters & state
   const [partnerFilterLevel, setPartnerFilterLevel] = useState('all');
@@ -630,7 +660,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     playClickSound();
     try {
       const [resPosts, dbPartners] = await Promise.all([
-        getCommunityPosts({ limit: 15, tag: selectedTag }),
+        getCommunityPosts({ limit: 15, tag: selectedTag, sort: postSort }),
         getStudyPartnersFromDb()
       ]);
       if (resPosts?.posts) {
@@ -667,7 +697,8 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
       const res = await getCommunityPosts({
         limit: 15,
         cursor: nextPostCursor,
-        tag: selectedTag
+        tag: selectedTag,
+        sort: postSort,
       });
       const newPosts = res?.posts || [];
       const cleanNew = sanitizeCommunityPosts(newPosts);
@@ -685,49 +716,137 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     }
   };
 
-  // Handle post creation with Supabase Single Source of Truth
+  // Guest check helper
+  const requireAuthForCommunity = (actionLabel = 'thao tác này') => {
+    if (user?.id || user?.uid) return true;
+    showToast(`Vui lòng đăng nhập tài khoản HanziGo để thực hiện ${actionLabel}.`);
+    return false;
+  };
+
+  // Share verified HSK achievement / streak snapshot into post composer
+  const handleShareAchievement = async () => {
+    playClickSound();
+    if (!requireAuthForCommunity('chia sẻ thành tích')) return;
+    try {
+      const attempts = await getPastAttempts(user);
+      const latest = Array.isArray(attempts) && attempts.length > 0 ? attempts[0] : null;
+      if (latest) {
+        setNewPostTag('#ThiHSK');
+        setNewPostHskLevel(latest.examLevel || user?.level || 'HSK 1');
+        setNewPostTitle(`Chia sẻ kết quả ${latest.examTitle || latest.examLevel || 'HSK'}`);
+        setNewPostContent(
+          `Mình vừa hoàn thành "${latest.examTitle || 'bài thi thử HSK'}" đạt ${latest.score}/${latest.maxScore} điểm (chính xác ${latest.accuracyPercentage}%) ở chế độ ${latest.examMode === 'simulation' ? 'Phòng thi CBT' : 'Luyện tập'}! Cùng cố gắng giữ phong độ nhé 💪`
+        );
+        showToast('Đã điền nhanh thành tích thật của bạn vào khung soạn bài!');
+        return;
+      }
+    } catch {}
+    setNewPostTag('#KinhNghiemHoc');
+    setNewPostTitle(`Cập nhật chuỗi học ${currentStreak || 1} ngày cùng HanziGo`);
+    setNewPostContent(
+      `Hôm nay mình đã tích lũy ${totalUserXp} XP và duy trì chuỗi ${currentStreak} ngày học tiếng Trung liên tục. Mọi người cùng cố gắng nhé!`
+    );
+    showToast('Đã điền thành tích chuỗi học vào khung soạn bài!');
+  };
+
+  // Handle post creation with Supabase Single Source of Truth + Input Validation
   const handleCreatePost = async (e) => {
     e.preventDefault();
-    if (!newPostContent.trim()) return;
+    if (!requireAuthForCommunity('đăng bài')) return;
 
-    playSuccessSound();
-    awardXp(20);
-    try {
-      confetti({
-        particleCount: 45,
-        spread: 60,
-        origin: { y: 0.5 }
-      });
-    } catch {}
-
-    let finalContent = newPostContent.trim();
-    if (postContactInfo.trim()) {
-      finalContent += `\n\n📌 Thông tin liên hệ (${postContactMethod}): ${postContactInfo.trim()}`;
+    const validation = validateCommunityPostInput({
+      title: newPostTitle,
+      content: newPostContent,
+      chineseSnippet: newPostChinese,
+      pinyinSnippet: newPostPinyin,
+      imageUrl: postImage,
+    });
+    if (!validation.valid) {
+      showToast(validation.error);
+      return;
     }
 
-    const payload = {
-      content: finalContent,
-      tag: newPostTag,
-      image_url: postImage || null
-    };
+    let finalBody = validation.sanitized.content;
+    if (postContactInfo.trim()) {
+      finalBody += `\n\n📌 Thông tin liên hệ (${postContactMethod}): ${postContactInfo.trim().slice(0, 120)}`;
+    }
 
-    setNewPostContent('');
-    setPostContactInfo('');
-    setPostImage('');
-    showToast('Đang đăng bài viết lên cộng đồng...');
+    const formattedContent = formatStructuredPostContent({
+      title: validation.sanitized.title,
+      hskLevel: newPostHskLevel,
+      chineseSnippet: validation.sanitized.chineseSnippet,
+      pinyinSnippet: validation.sanitized.pinyinSnippet,
+      content: finalBody,
+    });
+
+    const payload = {
+      content: formattedContent,
+      tag: newPostTag,
+      image_url: validation.sanitized.imageUrl,
+    };
 
     try {
       const res = await createCommunityPost(payload);
       if (res?.success && res.post) {
+        playSuccessSound();
+        awardXp(20);
+        try {
+          confetti({ particleCount: 45, spread: 60, origin: { y: 0.5 } });
+        } catch {}
         setIsCloudSynced(true);
         setPosts(prev => [res.post, ...prev]);
+        setNewPostTitle('');
+        setNewPostContent('');
+        setNewPostChinese('');
+        setNewPostPinyin('');
+        setPostContactInfo('');
+        setPostImage('');
+        setShowSnippetInputs(false);
         showToast('Đã đăng bài viết thành công (+20 XP)!');
       } else {
-        showToast('Không thể kết nối Supabase. Vui lòng thử lại!');
+        showToast(res?.error || 'Không thể đăng bài viết. Vui lòng thử lại!');
       }
     } catch (err) {
       console.warn('Error creating community post:', err);
       showToast('Lỗi khi đăng bài viết.');
+    }
+  };
+
+  // Save edited own post
+  const handleSaveEditPost = async (postId) => {
+    if (!requireAuthForCommunity('chỉnh sửa bài viết')) return;
+    const validation = validateCommunityPostInput({ content: editPostDraft });
+    if (!validation.valid) {
+      showToast(validation.error);
+      return;
+    }
+    const ok = await updateCommunityPost(postId, { content: validation.sanitized.content });
+    if (ok) {
+      setPosts(prev => prev.map(p => String(p.id) === String(postId) ? { ...p, content: validation.sanitized.content } : p));
+      setEditingPostId(null);
+      setEditPostDraft('');
+      showToast('Đã cập nhật bài viết!');
+    } else {
+      showToast('Không thể cập nhật bài viết.');
+    }
+  };
+
+  // Admin / Teacher moderation (Pin / Unpin / Hide)
+  const handleModeratePost = async (postId, action) => {
+    if (!requireAuthForCommunity('kiểm duyệt')) return;
+    playClickSound();
+    const res = await moderateCommunityPost(postId, action);
+    if (res?.success) {
+      if (action === 'hide') {
+        setPosts(prev => prev.filter(p => String(p.id) !== String(postId)));
+        showToast('Đã ẩn bài viết vi phạm.');
+      } else {
+        const pinned = action === 'pin';
+        setPosts(prev => prev.map(p => String(p.id) === String(postId) ? { ...p, isPinned: pinned } : p));
+        showToast(pinned ? 'Đã ghim bài viết!' : 'Đã bỏ ghim bài viết.');
+      }
+    } else {
+      showToast(res?.error || 'Không có quyền thực hiện thao tác.');
     }
   };
 
@@ -738,25 +857,14 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     setNewPostContent(item.prompt);
   };
 
-  // Toggle like using atomic RPC (zero client-side increment/decrement)
+  // Toggle like using atomic RPC with Guest Guard & auto rollback
   const handleToggleLike = async (postId) => {
     playClickSound();
+    if (!requireAuthForCommunity('thích bài viết')) return;
     const idStr = String(postId);
 
-    // Optimistic UI update
-    setPosts(prev => prev.map(p => {
-      if (String(p.id) === idStr) {
-        const isLiked = !p.liked;
-        return {
-          ...p,
-          liked: isLiked,
-          likes: isLiked ? (p.likes || 0) + 1 : Math.max(0, (p.likes || 0) - 1)
-        };
-      }
-      return p;
-    }));
+    setPosts(prev => toggleLikeOptimisticList(prev, idStr));
 
-    // Authoritative RPC call
     const res = await togglePostReaction(idStr, 'like');
     if (res?.success && res.data) {
       setPosts(prev => prev.map(p => {
@@ -770,19 +878,8 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
         return p;
       }));
     } else {
-      // Rollback optimistic update
-      setPosts(prev => prev.map(p => {
-        if (String(p.id) === idStr) {
-          const rollbackLiked = !p.liked;
-          return {
-            ...p,
-            liked: rollbackLiked,
-            likes: rollbackLiked ? (p.likes || 0) + 1 : Math.max(0, (p.likes || 0) - 1)
-          };
-        }
-        return p;
-      }));
-      showToast('Không thể cập nhật lượt thích. Vui lòng đăng nhập!');
+      setPosts(prev => toggleLikeOptimisticList(prev, idStr));
+      showToast(res?.error || 'Không thể cập nhật lượt thích. Vui lòng đăng nhập!');
     }
   };
 
@@ -803,10 +900,12 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
 
   // Toggle Solved status for questions
   const handleToggleSolved = async (id) => {
+    if (!requireAuthForCommunity('đánh dấu giải đáp')) return;
     playClickSound();
     const idStr = String(id);
     const targetPost = posts.find(p => String(p.id) === idStr);
-    const newSolved = !targetPost?.isSolved;
+    const prevSolved = Boolean(targetPost?.isSolved);
+    const newSolved = !prevSolved;
 
     setPosts(prev => prev.map(p => String(p.id) === idStr ? { ...p, isSolved: newSolved } : p));
     if (newSolved) {
@@ -817,9 +916,14 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     }
 
     try {
-      await updateCommunityPost(idStr, { is_solved: newSolved });
+      const ok = await updateCommunityPost(idStr, { is_solved: newSolved });
+      if (!ok) {
+        setPosts(prev => prev.map(p => String(p.id) === idStr ? { ...p, isSolved: prevSolved } : p));
+        showToast('Không thể cập nhật trạng thái giải đáp.');
+      }
     } catch (err) {
       console.warn('Error updating solved status on Supabase:', err);
+      setPosts(prev => prev.map(p => String(p.id) === idStr ? { ...p, isSolved: prevSolved } : p));
     }
   };
 
@@ -875,19 +979,25 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     }
   };
 
-  // Submit comment via relational table and database counter sync
+  // Submit comment via relational table with Guest Guard & validation
   const handleAddComment = async (postId) => {
     const idStr = String(postId);
-    const text = commentInputs[idStr]?.trim();
-    if (!text || submittingCommentMap[idStr]) return;
+    if (!requireAuthForCommunity('bình luận')) return;
+    if (submittingCommentMap[idStr]) return;
 
-    playSuccessSound();
-    awardXp(5);
+    const validation = validateCommunityCommentInput(commentInputs[idStr] || '');
+    if (!validation.valid) {
+      showToast(validation.error);
+      return;
+    }
+
     setSubmittingCommentMap(prev => ({ ...prev, [idStr]: true }));
 
     try {
-      const newComment = await createCommunityComment(idStr, text);
+      const newComment = await createCommunityComment(idStr, validation.sanitizedContent);
       if (newComment) {
+        playSuccessSound();
+        awardXp(5);
         setPostCommentsMap(prev => ({
           ...prev,
           [idStr]: [...(prev[idStr] || []), newComment]
@@ -901,7 +1011,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
         setCommentInputs(prev => ({ ...prev, [idStr]: '' }));
         showToast('Đã gửi bình luận (+5 XP)!');
       } else {
-        showToast('Không thể gửi bình luận. Vui lòng đăng nhập!');
+        showToast('Không thể gửi bình luận. Vui lòng thử lại sau vài giây!');
       }
     } catch (err) {
       console.warn('Error submitting comment:', err);
@@ -911,8 +1021,34 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     }
   };
 
+  // Save edited own comment
+  const handleSaveEditComment = async (postId, commentId) => {
+    if (!requireAuthForCommunity('chỉnh sửa bình luận')) return;
+    const validation = validateCommunityCommentInput(editCommentDraft);
+    if (!validation.valid) {
+      showToast(validation.error);
+      return;
+    }
+    const ok = await updateCommunityComment(commentId, validation.sanitizedContent);
+    if (ok) {
+      const postIdStr = String(postId);
+      setPostCommentsMap(prev => ({
+        ...prev,
+        [postIdStr]: (prev[postIdStr] || []).map(c =>
+          String(c.id) === String(commentId) ? { ...c, content: validation.sanitizedContent } : c
+        ),
+      }));
+      setEditingCommentId(null);
+      setEditCommentDraft('');
+      showToast('Đã cập nhật bình luận!');
+    } else {
+      showToast('Không thể cập nhật bình luận.');
+    }
+  };
+
   // Delete comment via relational table
   const handleDeleteComment = async (postId, commentId) => {
+    if (!requireAuthForCommunity('xóa bình luận')) return;
     const idStr = String(postId);
     if (!window.confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
     playClickSound();
@@ -1200,19 +1336,37 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
   const rankTier = getRankTier(totalUserXp);
   const isCheckedInToday = challengeData.lastDate === getLocalDateString();
 
-  // Filter posts
-  const filteredPosts = posts.filter(post => {
-    const matchesSearch = 
-      post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.tag.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter & sort posts
+  const filteredPosts = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    const list = posts.filter(post => {
+      const matchesSearch = !q ||
+        (post.content || '').toLowerCase().includes(q) ||
+        (post.author || '').toLowerCase().includes(q) ||
+        (post.tag || '').toLowerCase().includes(q);
+      if (!matchesSearch) return false;
 
-    if (!matchesSearch) return false;
+      if (selectedTag === 'saved' && !post.saved) return false;
+      if (selectedTag !== 'all' && selectedTag !== 'saved' && post.tag !== selectedTag) return false;
 
-    if (selectedTag === 'all') return true;
-    if (selectedTag === 'saved') return post.saved;
-    return post.tag === selectedTag;
-  });
+      if (selectedHskGroup !== 'all') {
+        const parsed = parseStructuredPostContent(post.content);
+        const rawLvl = `${parsed.hskLevel || ''} ${post.level || ''}`.toUpperCase();
+        if (selectedHskGroup === 'HSK 1–3' && !/HSK\s*[123]\b/.test(rawLvl)) return false;
+        if (selectedHskGroup === 'HSK 4–6' && !/HSK\s*[456]\b/.test(rawLvl)) return false;
+        if (selectedHskGroup === 'HSK 7–9' && !/HSK\s*[789]/.test(rawLvl)) return false;
+      }
+      return true;
+    });
+
+    if (postSort === 'popular') {
+      return [...list].sort((a, b) => {
+        if (Boolean(a.isPinned) !== Boolean(b.isPinned)) return a.isPinned ? -1 : 1;
+        return (b.likes || 0) - (a.likes || 0) || (b.commentsCount || 0) - (a.commentsCount || 0);
+      });
+    }
+    return list;
+  }, [posts, searchTerm, selectedTag, selectedHskGroup, postSort]);
 
   // My own study partner profile if exists
   const myPartnerProfile = useMemo(() => {
@@ -1895,16 +2049,32 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
             </div>
 
             {/* 2. Post Creation Box */}
-            <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
+            <div id="community-composer" className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-bold text-[#243447] dark:text-white flex items-center gap-2">
                   <Sparkles size={16} className="text-[#E85D3F]" />
-                  <span>Chia sẻ câu hỏi hoặc cảm nhận học tập</span>
+                  <span>Chia sẻ câu hỏi, bài viết HSK hoặc kinh nghiệm học tập</span>
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                  +20 XP khi đăng bài
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleShareAchievement}
+                    className="min-h-11 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Trophy size={13} />
+                    <span>Chia sẻ thành tích</span>
+                  </button>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    +20 XP khi đăng bài
+                  </span>
+                </div>
               </div>
+
+              {!user && (
+                <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-center justify-between gap-2">
+                  <span>Bạn đang xem ở chế độ Khách (chỉ đọc). Hãy đăng nhập để đăng bài, bình luận hoặc thích bài viết.</span>
+                </div>
+              )}
 
               {/* Quick Starter Prompts */}
               <div className="space-y-1.5">
@@ -1917,7 +2087,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                       key={idx}
                       type="button"
                       onClick={() => handleApplyPrompt(item)}
-                      className="px-2.5 py-1 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F] hover:text-[#E85D3F] transition-all font-medium cursor-pointer"
+                      className="min-h-11 px-2.5 py-1.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F] hover:text-[#E85D3F] transition-all font-medium cursor-pointer"
                     >
                       {item.label}
                     </button>
@@ -1926,13 +2096,68 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
               </div>
 
               <form onSubmit={handleCreatePost} className="space-y-3">
-                <textarea
-                  rows={3}
-                  placeholder="Bạn đang vướng mắc điểm ngữ pháp nào, hoặc muốn tìm bạn cùng học? Hãy viết câu hỏi tại đây..."
-                  value={newPostContent}
-                  onChange={(e) => setNewPostContent(e.target.value)}
-                  className="w-full p-4 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] resize-none"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <input
+                    type="text"
+                    maxLength={POST_LIMITS.TITLE_MAX}
+                    placeholder="Tiêu đề ngắn gọn (tùy chọn, tối đa 120 ký tự)..."
+                    value={newPostTitle}
+                    onChange={(e) => setNewPostTitle(e.target.value)}
+                    className="sm:col-span-2 px-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                  />
+                  <select
+                    aria-label="Cấp độ HSK của bài viết"
+                    value={newPostHskLevel}
+                    onChange={(e) => setNewPostHskLevel(e.target.value)}
+                    className="px-3 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white font-medium focus:outline-none focus:border-[#E85D3F] cursor-pointer"
+                  >
+                    {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7-9'].map((lvl) => (
+                      <option key={lvl} value={lvl}>{lvl}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <textarea
+                    rows={3}
+                    maxLength={POST_LIMITS.CONTENT_MAX}
+                    placeholder="Bạn đang vướng mắc điểm ngữ pháp nào, cần sửa câu tiếng Trung hay chia sẻ mẹo học? Hãy viết tại đây..."
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
+                    className="w-full p-4 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] resize-none"
+                  />
+                  <div className="flex items-center justify-between text-[11px] text-[#748092] mt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowSnippetInputs(prev => !prev)}
+                      className="font-bold text-[#E85D3F] hover:underline cursor-pointer"
+                    >
+                      {showSnippetInputs ? '− Ẩn khung Câu tiếng Trung cần hỏi / sửa' : '+ Thêm Câu tiếng Trung cần hỏi / sửa (Hanzi & Pinyin)'}
+                    </button>
+                    <span>{newPostContent.length}/{POST_LIMITS.CONTENT_MAX}</span>
+                  </div>
+                </div>
+
+                {showSnippetInputs && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+                    <input
+                      type="text"
+                      maxLength={POST_LIMITS.SNIPPET_MAX}
+                      placeholder="Câu chữ Hán (ví dụ: 我昨天去了图书馆。)"
+                      value={newPostChinese}
+                      onChange={(e) => setNewPostChinese(e.target.value)}
+                      className="px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    />
+                    <input
+                      type="text"
+                      maxLength={POST_LIMITS.SNIPPET_MAX}
+                      placeholder="Pinyin kèm theo (tùy chọn)..."
+                      value={newPostPinyin}
+                      onChange={(e) => setNewPostPinyin(e.target.value)}
+                      className="px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                    />
+                  </div>
+                )}
 
                 {/* Contact info strip */}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-2 border-t border-[#F1E5D8]/80 dark:border-[#2B3A4F]/80">
@@ -1991,11 +2216,12 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                         onChange={(e) => setNewPostTag(e.target.value)}
                         className="text-base sm:text-sm px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-medium focus:outline-none focus:border-[#E85D3F] cursor-pointer"
                       >
-                        <option value="#HoiDapNguPhap">#HỏiĐápNgữPháp</option>
-                        <option value="#ChuDeHomNay">#ChủĐềHômNay</option>
-                        <option value="#TimBanLuyenNoi">#TìmBạnLuyệnNói</option>
-                        <option value="#KinhNghiemHoc">#KinhNghiệmHọc</option>
-                        <option value="#ThiHSK">#ThiHSK</option>
+                        <option value="#ThiHSK">Hỏi đáp HSK</option>
+                        <option value="#SuaCauLuyenViet">Sửa câu / Luyện viết</option>
+                        <option value="#MeoHocTuVung">Mẹo học từ vựng</option>
+                        <option value="#KinhNghiemHoc">Chia sẻ kinh nghiệm</option>
+                        <option value="#TimBanLuyenNoi">Tìm bạn học</option>
+                        <option value="#HoiDapNguPhap">Ngữ pháp &amp; Mẫu câu</option>
                       </select>
                     </div>
 
@@ -2063,11 +2289,12 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                 {TAG_FILTERS.map(tag => (
                   <button
                     key={tag.id}
+                    type="button"
                     onClick={() => {
                       playClickSound();
                       setSelectedTag(tag.id);
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                    className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                       selectedTag === tag.id
                         ? 'bg-[#E85D3F] text-white shadow-sm'
                         : 'bg-white dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:text-[#243447] dark:hover:text-white'
@@ -2076,6 +2303,52 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                     {tag.label}
                   </button>
                 ))}
+              </div>
+
+              {/* HSK Level Group Filter + Sort Toggle */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {HSK_GROUP_FILTERS.map((grp) => (
+                    <button
+                      key={grp.id}
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setSelectedHskGroup(grp.id);
+                      }}
+                      className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer ${
+                        selectedHskGroup === grp.id
+                          ? 'bg-slate-800 text-white dark:bg-slate-700'
+                          : 'bg-white dark:bg-[#1E293B] text-[#748092] border border-[#F1E5D8] dark:border-[#2B3A4F]'
+                      }`}
+                    >
+                      {grp.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F]">
+                  {[
+                    { id: 'newest', label: 'Mới nhất' },
+                    { id: 'popular', label: 'Nổi bật nhất' },
+                  ].map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setPostSort(s.id);
+                      }}
+                      className={`min-h-11 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
+                        postSort === s.id
+                          ? 'bg-[#E85D3F] text-white'
+                          : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -2089,10 +2362,21 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
               ) : filteredPosts.length === 0 ? (
                 <div className="p-10 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-center space-y-3 shadow-sm">
                   <MessageCircle size={40} className="mx-auto text-[#748092]/50" />
-                  <p className="text-sm font-bold text-[#243447] dark:text-white">Chưa có bài viết nào phù hợp</p>
+                  <p className="text-sm font-bold text-[#243447] dark:text-white">Chưa có bài viết nào trong chuyên mục này</p>
                   <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-                    Hãy thử tìm kiếm với từ khóa khác hoặc là người đầu tiên đăng bài trong chủ đề này!
+                    Hãy trở thành người đầu tiên chia sẻ câu hỏi, mẫu câu HSK hoặc kinh nghiệm học tập với cộng đồng!
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClickSound();
+                      document.getElementById('community-composer')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    className="min-h-11 px-5 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#D44C2E] text-white font-bold text-xs shadow-sm cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <Plus size={14} />
+                    <span>Tạo bài thảo luận đầu tiên</span>
+                  </button>
                 </div>
               ) : (
                 filteredPosts.map((post) => {
@@ -2100,20 +2384,22 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   const comments = postCommentsMap[post.id] || post.comments || [];
                   const commentsCount = post.commentsCount ?? comments.length;
                   const isSolved = post.isSolved || solvedPostIds.includes(post.id);
+                  const parsedPost = parseStructuredPostContent(post.content);
                   const hasChinese = /[\u4e00-\u9fa5]/.test(post.content);
+                  const canModerate = user?.role === 'admin' || user?.role === 'teacher';
 
                   return (
                     <div 
                       key={post.id}
-                      className={`p-6 rounded-3xl bg-white dark:bg-[#1E293B] border shadow-sm space-y-4 transition-all ${
+                      className={`p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#1E293B] border shadow-sm space-y-4 transition-all ${
                         post.isPinned 
                           ? 'border-[#E85D3F]/50 bg-gradient-to-br from-white to-[#FEF7E9]/40 dark:from-[#1E293B] dark:to-[#2D2619]/30' 
                           : 'border-[#F1E5D8] dark:border-[#2B3A4F]'
                       }`}
                     >
                       {/* Author & Meta */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-3 min-w-0">
                           {(() => {
                             const isBqt = (post.author || '').includes('Ban Quản Trị') || 
                                           post.level === 'Quản trị viên' || 
@@ -2150,9 +2436,9 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                               </div>
                             );
                           })()}
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-[#243447] dark:text-white">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-bold text-[#243447] dark:text-white truncate">
                                 {post.author}
                               </span>
                               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
@@ -2160,7 +2446,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                                   ? 'bg-[#E85D3F] text-white'
                                   : 'bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706]'
                               }`}>
-                                {post.level}
+                                {parsedPost.hskLevel || post.level}
                               </span>
                             </div>
                             <p className="text-[11px] text-[#748092] flex items-center gap-1">
@@ -2170,7 +2456,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           {isSolved && (
                             <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
                               <CheckCircle size={12} />
@@ -2181,19 +2467,53 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                           <span className="text-xs font-bold text-[#E85D3F] bg-[#FDEEEB] dark:bg-[#2D1E1B] px-2.5 py-1 rounded-lg">
                             {post.tag}
                           </span>
+                          {canModerate && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleModeratePost(post.id, post.isPinned ? 'unpin' : 'pin')}
+                                className="min-h-11 px-2 rounded-lg text-xs font-bold text-[#748092] hover:text-[#E85D3F] cursor-pointer"
+                                title={post.isPinned ? 'Bỏ ghim bài viết' : 'Ghim bài viết'}
+                              >
+                                <Pin size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleModeratePost(post.id, 'hide')}
+                                className="min-h-11 px-2 rounded-lg text-xs font-bold text-[#748092] hover:text-rose-500 cursor-pointer"
+                                title="Ẩn bài viết vi phạm"
+                              >
+                                <EyeOff size={14} />
+                              </button>
+                            </>
+                          )}
                           {post.isMyPost ? (
-                            <button
-                              onClick={() => handleDeletePost(post.id)}
-                              className="p-1.5 rounded-lg text-[#748092] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
-                              title="Xóa bài viết của bạn"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingPostId(post.id);
+                                  setEditPostDraft(post.content);
+                                }}
+                                className="min-h-11 p-2 rounded-lg text-[#748092] hover:text-[#E85D3F] cursor-pointer"
+                                title="Chỉnh sửa bài viết"
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeletePost(post.id)}
+                                className="min-h-11 p-2 rounded-lg text-[#748092] hover:text-red-500 cursor-pointer"
+                                title="Xóa bài viết của bạn"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </>
                           ) : (
                             <button
                               type="button"
                               onClick={() => handleOpenReportModal('post', post.id, post)}
-                              className="p-1.5 rounded-lg text-[#748092] hover:text-[#E85D3F] hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors cursor-pointer"
+                              className="min-h-11 p-2 rounded-lg text-[#748092] hover:text-[#E85D3F] cursor-pointer"
                               title="Báo cáo bài viết vi phạm"
                             >
                               <Flag size={14} />
@@ -2202,24 +2522,72 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                         </div>
                       </div>
 
-                      {/* Content */}
-                      <div className="space-y-2">
-                        <p className="text-xs sm:text-sm text-[#243447] dark:text-[#CBD5E1] leading-relaxed whitespace-pre-line">
-                          {post.content}
-                        </p>
+                      {/* Content (Pure React text rendering — Zero raw HTML injection) */}
+                      {editingPostId === post.id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            rows={4}
+                            maxLength={POST_LIMITS.CONTENT_MAX}
+                            value={editPostDraft}
+                            onChange={(e) => setEditPostDraft(e.target.value)}
+                            className="w-full p-3 rounded-2xl border border-[#E85D3F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none"
+                          />
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditingPostId(null)}
+                              className="min-h-11 px-3 py-1.5 rounded-xl border border-[#F1E5D8] text-xs font-bold text-[#748092] cursor-pointer"
+                            >
+                              Hủy
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveEditPost(post.id)}
+                              className="min-h-11 px-4 py-1.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold cursor-pointer"
+                            >
+                              Lưu chỉnh sửa
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {parsedPost.title && (
+                            <h4 className="text-sm sm:text-base font-black text-[#243447] dark:text-white break-words">
+                              {parsedPost.title}
+                            </h4>
+                          )}
+                          {(parsedPost.chineseSnippet || parsedPost.pinyinSnippet) && (
+                            <div className="p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-orange-200 dark:border-orange-900/40 space-y-1">
+                              {parsedPost.chineseSnippet && (
+                                <p className="text-base font-bold text-[#243447] dark:text-white break-words">
+                                  {parsedPost.chineseSnippet}
+                                </p>
+                              )}
+                              {parsedPost.pinyinSnippet && (
+                                <p className="text-xs font-semibold text-[#D97706] break-words">
+                                  {parsedPost.pinyinSnippet}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          <p className="text-xs sm:text-sm text-[#243447] dark:text-[#CBD5E1] leading-relaxed whitespace-pre-line break-words">
+                            {parsedPost.body}
+                          </p>
 
-                        {/* Audio reader button if post contains Chinese characters */}
-                        {hasChinese && (
-                          <button
-                            onClick={() => handleSpeakChinesePost(post.content)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] text-xs font-bold hover:bg-orange-100 transition-colors cursor-pointer"
-                            title="Nghe phát âm các từ chữ Hán trong bài viết"
-                          >
-                            <Volume2 size={13} />
-                            <span>Nghe phát âm chữ Hán</span>
-                          </button>
-                        )}
-                      </div>
+                          {/* Audio reader button if post contains Chinese characters */}
+                          {hasChinese && (
+                            <button
+                              type="button"
+                              onClick={() => handleSpeakChinesePost(post.content)}
+                              className="min-h-11 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] text-xs font-bold hover:bg-orange-100 transition-colors cursor-pointer"
+                              title="Nghe phát âm các từ chữ Hán trong bài viết"
+                            >
+                              <Volume2 size={13} />
+                              <span>Nghe phát âm chữ Hán</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
 
                       {/* Image / QR preview */}
                       {post.image && (
@@ -2244,11 +2612,11 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                       )}
 
                       {/* Actions: Like, Comment, Save, Solved */}
-                      <div className="flex items-center justify-between pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] text-xs text-[#748092]">
-                        <div className="flex items-center gap-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] text-xs text-[#748092]">
+                        <div className="flex flex-wrap items-center gap-3">
                           <button
                             onClick={() => handleToggleLike(post.id)}
-                            className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
+                            className={`min-h-11 px-2 flex items-center gap-1.5 rounded-lg transition-colors cursor-pointer ${
                               post.liked ? 'text-[#E85D3F] font-bold' : 'hover:text-[#E85D3F]'
                             }`}
                           >
@@ -2258,7 +2626,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
 
                           <button 
                             onClick={() => handleToggleComments(post.id)}
-                            className="flex items-center gap-1.5 hover:text-[#243447] dark:hover:text-white transition-colors cursor-pointer"
+                            className="min-h-11 px-2 flex items-center gap-1.5 rounded-lg hover:text-[#243447] dark:hover:text-white transition-colors cursor-pointer"
                           >
                             <MessageCircle size={16} />
                             <span>{commentsCount} bình luận</span>
@@ -2268,7 +2636,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                           {post.tag === '#HoiDapNguPhap' && (
                             <button
                               onClick={() => handleToggleSolved(post.id)}
-                              className={`text-[11px] font-semibold flex items-center gap-1 hover:text-emerald-600 transition-colors cursor-pointer ${
+                              className={`min-h-11 px-2 text-[11px] font-semibold flex items-center gap-1 rounded-lg hover:text-emerald-600 transition-colors cursor-pointer ${
                                 isSolved ? 'text-emerald-600 font-bold' : ''
                               }`}
                             >
@@ -2278,10 +2646,10 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                           )}
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           <button 
                             onClick={() => handleToggleSave(post.id)}
-                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                            className={`min-h-11 px-2.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center ${
                               post.saved ? 'text-[#F4B942]' : 'hover:text-[#243447] dark:hover:text-white'
                             }`}
                             title="Lưu bài viết"
@@ -2294,7 +2662,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                               navigator.clipboard.writeText(`${window.location.origin}/#${post.id}`);
                               showToast('Đã sao chép liên kết bài viết!');
                             }}
-                            className="p-1.5 rounded-lg hover:text-[#243447] dark:hover:text-white cursor-pointer"
+                            className="min-h-11 px-2.5 rounded-lg hover:text-[#243447] dark:hover:text-white cursor-pointer flex items-center justify-center"
                             title="Chia sẻ"
                           >
                             <Share2 size={16} />
@@ -2317,28 +2685,42 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                                   key={c.id} 
                                   className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-1"
                                 >
-                                  <div className="flex items-center justify-between text-[11px]">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="font-bold text-[#243447] dark:text-white">{c.author}</span>
+                                  <div className="flex items-center justify-between gap-2 text-[11px]">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span className="font-bold text-[#243447] dark:text-white truncate">{c.author}</span>
                                       {c.level && (
-                                        <span className="text-[10px] text-[#D97706] bg-[#FEF7E9] dark:bg-[#2D2619] px-1.5 py-0.2 rounded font-semibold">{c.level}</span>
+                                        <span className="text-[10px] text-[#D97706] bg-[#FEF7E9] dark:bg-[#2D2619] px-1.5 py-0.5 rounded font-semibold shrink-0">{c.level}</span>
                                       )}
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1 shrink-0">
                                       <span className="text-[#748092]">{c.time}</span>
                                       {c.isMyComment ? (
-                                        <button
-                                          onClick={() => handleDeleteComment(post.id, c.id)}
-                                          className="text-[#748092] hover:text-red-500 transition-colors p-0.5 cursor-pointer"
-                                          title="Xóa bình luận"
-                                        >
-                                          <Trash2 size={12} />
-                                        </button>
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingCommentId(c.id);
+                                              setEditCommentDraft(c.content || '');
+                                            }}
+                                            className="min-h-11 px-1.5 text-[#748092] hover:text-[#E85D3F] transition-colors cursor-pointer flex items-center"
+                                            title="Chỉnh sửa bình luận"
+                                          >
+                                            <Edit3 size={12} />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeleteComment(post.id, c.id)}
+                                            className="min-h-11 px-1.5 text-[#748092] hover:text-red-500 transition-colors cursor-pointer flex items-center"
+                                            title="Xóa bình luận"
+                                          >
+                                            <Trash2 size={12} />
+                                          </button>
+                                        </>
                                       ) : (
                                         <button
                                           type="button"
                                           onClick={() => handleOpenReportModal('comment', c.id, c)}
-                                          className="text-[#748092] hover:text-[#E85D3F] transition-colors p-0.5 cursor-pointer"
+                                          className="min-h-11 px-1.5 text-[#748092] hover:text-[#E85D3F] transition-colors cursor-pointer flex items-center"
                                           title="Báo cáo bình luận vi phạm"
                                         >
                                           <Flag size={12} />
@@ -2346,9 +2728,43 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                                       )}
                                     </div>
                                   </div>
-                                  <p className="text-xs text-[#243447] dark:text-[#CBD5E1] leading-relaxed">
-                                    {c.content}
-                                  </p>
+                                  {editingCommentId === c.id ? (
+                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                      <input
+                                        type="text"
+                                        value={editCommentDraft}
+                                        maxLength={POST_LIMITS.COMMENT_MAX}
+                                        onChange={(e) => setEditCommentDraft(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' && !e.nativeEvent?.isComposing && !e.isComposing) {
+                                            handleSaveEditComment(post.id, c.id);
+                                          }
+                                        }}
+                                        className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-base sm:text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSaveEditComment(post.id, c.id)}
+                                        className="min-h-11 px-3 rounded-xl bg-[#E85D3F] text-white font-bold text-xs cursor-pointer"
+                                      >
+                                        Lưu
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingCommentId(null);
+                                          setEditCommentDraft('');
+                                        }}
+                                        className="min-h-11 px-3 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs text-[#748092] cursor-pointer"
+                                      >
+                                        Hủy
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-[#243447] dark:text-[#CBD5E1] leading-relaxed break-words">
+                                      {c.content}
+                                    </p>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -2361,6 +2777,7 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                             <input
                               type="text"
                               placeholder="Viết bình luận của bạn..."
+                              maxLength={POST_LIMITS.COMMENT_MAX}
                               value={commentInputs[post.id] || ''}
                               onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
                               onKeyDown={(e) => {
@@ -2373,12 +2790,12 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                                 }
                               }}
                               disabled={submittingCommentMap[post.id]}
-                              className="flex-1 px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-50"
+                              className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-50"
                             />
                             <button
                               onClick={() => handleAddComment(post.id)}
                               disabled={!commentInputs[post.id]?.trim() || submittingCommentMap[post.id]}
-                              className="px-3.5 py-2 rounded-xl bg-[#E85D3F] disabled:opacity-40 text-white font-bold text-xs hover:bg-[#D44C2E] transition-colors flex items-center gap-1 cursor-pointer"
+                              className="min-h-11 px-3.5 py-2 rounded-xl bg-[#E85D3F] disabled:opacity-40 text-white font-bold text-xs hover:bg-[#D44C2E] transition-colors flex items-center gap-1 cursor-pointer shrink-0"
                             >
                               <span>{submittingCommentMap[post.id] ? 'Đang gửi...' : 'Gửi'}</span>
                               <Send size={11} />

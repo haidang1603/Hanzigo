@@ -233,9 +233,9 @@ test('PHASE 5 - 5. LEADERBOARD: Email masking, Weekly/Monthly scopes, and Privac
   assert.equal(maskSensitiveEmail('hoang.tran@hanzigo.com'), 'h***n@hanzigo.com');
   assert.equal(maskSensitiveEmail('mai@gmail.com'), 'm***i@gmail.com');
 
-  // Seed learners
+  // Seed learners (non-demo real accounts)
   const learners = [
-    { id: 'user-a', name: 'Trần Văn Hoàng', email: 'hoang.tran@hanzigo.com', xp: 1200, streak: 14 },
+    { id: 'user-a', name: 'Trần Văn Hoàng', email: 'hoang.tran@learner.vn', xp: 1200, streak: 14 },
     { id: 'user-b', name: 'Lê Thị Thu', email: 'thu.le@hanzigo.com', xp: 800, streak: 3 }
   ];
   localStorage.setItem('hanzigo_admin_users_directory', JSON.stringify(learners));

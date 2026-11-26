@@ -56,8 +56,10 @@ test('Leaderboard: Dynamic ranking and current user placement', async () => {
     );
   }
 
-  // Top 1 should be Thanh Tùng with 850 XP
-  assert.equal(result.leaderboard[0].email, 'tung.thanh@test.com');
+  // Top 1 should be Thanh Tùng with 850 XP and ZERO raw email PII exposed
+  assert.equal(result.leaderboard[0].id, 'learner-2');
+  assert.equal(result.leaderboard[0].name, 'Thanh Tùng');
+  assert.equal(result.leaderboard[0].email, undefined, 'Public leaderboard must never expose raw email PII');
   assert.equal(result.leaderboard[0].rank, 1);
 
   // Current user rank must be identified
@@ -75,9 +77,10 @@ test('Leaderboard: Demo users filtering', async () => {
   localStorage.setItem('hanzigo_admin_users_directory', JSON.stringify(mixedDirectory));
 
   const result = await getXpLeaderboard();
-  const fakeFound = result.leaderboard.some(u => u.name === 'Fake Demo Student' || u.email === 'mai.nguyen@gmail.com');
+  const fakeFound = result.leaderboard.some(u => u.id === 'user-stu-1' || u.name === 'Fake Demo Student');
   assert.equal(fakeFound, false, 'Demo user must be filtered out from leaderboard');
 
-  const realFound = result.leaderboard.some(u => u.email === 'real.student@domain.com');
+  const realFound = result.leaderboard.some(u => u.id === 'real-stu-1' && u.name === 'Học viên thật');
   assert.equal(realFound, true, 'Real student must be retained on leaderboard');
+  assert.ok(result.leaderboard.every(u => u.email === undefined), 'No raw email may exist in public leaderboard payload');
 });

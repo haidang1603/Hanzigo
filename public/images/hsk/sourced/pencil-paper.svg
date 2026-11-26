@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" width="480" height="320" role="img">
+  <rect width="480" height="320" rx="18" fill="#FFF9F0"/>
+  <circle cx="420" cy="54" r="28" fill="#FEF3C7" opacity="0.7"/>
+  <circle cx="62" cy="272" r="36" fill="#E0F2FE" opacity="0.65"/>
+
+    <rect x="116" y="54" width="186" height="218" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="4"/>
+    <g stroke="#E2E8F0" stroke-width="4" stroke-linecap="round">
+      <line x1="146" y1="98" x2="272" y2="98"/><line x1="146" y1="128" x2="272" y2="128"/>
+      <line x1="146" y1="158" x2="272" y2="158"/><line x1="146" y1="188" x2="242" y2="188"/>
+      <line x1="146" y1="218" x2="220" y2="218"/>
+    </g>
+    <g transform="translate(320 168) rotate(28)">
+      <rect x="-14" y="-92" width="28" height="162" rx="4" fill="#FBBF24"/>
+      <rect x="-14" y="-92" width="28" height="24" rx="4" fill="#FB7185"/>
+      <rect x="-14" y="-72" width="28" height="8" fill="#CBD5E1"/>
+      <polygon points="-14,70 14,70 0,104" fill="#FDE68A"/>
+      <polygon points="-5,91 5,91 0,104" fill="#1E293B"/>
+    </g>
+  
+</svg>

@@ -19,6 +19,11 @@
 import { HSK_EXAMS, HSK_QUESTIONS, getFullExamById, registerDynamicExam } from './hskExamsData.js';
 import { HSK_7_TO_9_EXAM_PAPER } from '../features/hsk-exam/data/hsk7to9SampleExamPaper.js';
 import { getClientAuthHeaders } from '../supabase/config.js';
+import {
+  compactAttemptsForLocalStorage,
+  MAX_LOCAL_SNAPSHOT_ATTEMPTS,
+} from '../utils/examAttemptSnapshot.js';
+import { enrichQuestionWithImageAsset } from './hskQuestionImageRegistry.js';
 
 const MINI_CHAR_PINYIN_MAP = {
   '我': 'wǒ', '你': 'nǐ', '他': 'tā', '她': 'tā', '们': 'men', '的': 'de', '是': 'shì', '不': 'bù', '在': 'zài', '有': 'yǒu',
@@ -565,7 +570,7 @@ export function normalizeQuestionForDualSystem(rawQ = {}, fallbackExamSystem = E
           ? 'fill_blank'
           : 'multiple_choice');
 
-  return {
+  const baseNormalized = {
     ...rawQ,
     examSystem,
     skill,
@@ -592,10 +597,14 @@ export function normalizeQuestionForDualSystem(rawQ = {}, fallbackExamSystem = E
     sample_answer: rawQ.sample_answer || rawQ.sampleAnswer || '',
     writing_criteria: rawQ.writing_criteria || rawQ.rubric || [],
     explanation: rawQ.explanation || rawQ.explanationVi || '',
+    imageUrl: rawQ.imageUrl || rawQ.image_url,
+    imageAlt: rawQ.imageAlt || rawQ.image_alt,
+    optionImages: Array.isArray(rawQ.optionImages) ? rawQ.optionImages : undefined,
     is_subjective: Boolean(
       rawQ.is_subjective || questionType === 'essay' || questionType === 'translation' || questionType === 'speaking'
     ),
   };
+  return enrichQuestionWithImageAsset(baseNormalized, rawQ.level);
 }
 
 /**
@@ -842,10 +851,14 @@ export function assembleDualSystemExam({
     .filter(([, cfg]) => cfg && cfg.count > 0)
     .map(([sk]) => sk);
 
+  let unsupportedSkillReason = null;
   if ((mode === EXAM_MODES.BY_SKILL || mode === EXAM_MODES.BY_PART) && skill) {
     const normSkill = normalizeSkill(skill);
     if (blueprint.skills?.[normSkill]?.count > 0) {
       targetSkills = [normSkill];
+    } else {
+      targetSkills = [];
+      unsupportedSkillReason = `Cấp độ ${blueprint.level} (${examSystem === EXAM_SYSTEMS.HSK_3_0 ? 'HSK 3.0' : 'HSK 2.0'}) chưa áp dụng kỹ năng ${SKILL_LABELS_VI[normSkill] || normSkill}. Hãy chọn kỹ năng có sẵn hoặc nâng lên HSK 7–9 để luyện Dịch thuật / Nói tích hợp.`;
     }
   }
 
@@ -947,7 +960,10 @@ export function assembleDualSystemExam({
       assembledQuestionsCount: assembledCount,
       coverageRatio,
       isCondensedBank,
-      coverageLabelVi: isCondensedBank
+      emptyReasonVi: unsupportedSkillReason,
+      coverageLabelVi: unsupportedSkillReason
+        ? unsupportedSkillReason
+        : isCondensedBank
         ? `Đề rút gọn theo ngân hàng hiện có (${assembledCount}/${blueprintTargetCount} câu chuẩn — không sinh câu lặp)`
         : `Đề chuẩn đầy đủ (${assembledCount}/${blueprintTargetCount} câu)`,
       perSkillCoverage,
@@ -1113,6 +1129,7 @@ export async function gradeSubjectiveSubmission({
     return deterministicGradeSubjective(question, cleanAnswer, level);
   }
 
+  let authRequired = false;
   if (fetchFn) {
     try {
       const authHeaders = await getClientAuthHeaders().catch(() => ({}));
@@ -1126,7 +1143,9 @@ export async function gradeSubjectiveSubmission({
             hskLevel: level,
           }),
         });
-        if (res?.ok) {
+        if (res?.status === 401) {
+          authRequired = true;
+        } else if (res?.ok) {
           const data = await res.json();
           const r = data?.result || data;
           const overall = Number(r?.overall);
@@ -1141,6 +1160,7 @@ export async function gradeSubjectiveSubmission({
               },
               feedbackVi: r.feedback || 'Đã thẩm định khẩu ngữ bằng AI.',
               gradingSource: 'ai_pronunciation',
+              authRequired: false,
             };
           }
         }
@@ -1171,7 +1191,9 @@ export async function gradeSubjectiveSubmission({
                 }
           ),
         });
-        if (res?.ok) {
+        if (res?.status === 401) {
+          authRequired = true;
+        } else if (res?.ok) {
           const data = await res.json();
           const r = data?.result || data;
           const dim = r?.dimensions;
@@ -1193,6 +1215,7 @@ export async function gradeSubjectiveSubmission({
               },
               feedbackVi: r?.detailed_feedback_vi || 'Đã chấm điểm theo Rubric AI chuẩn HSK.',
               gradingSource: 'ai_grade',
+              authRequired: false,
             };
           }
         }
@@ -1202,7 +1225,14 @@ export async function gradeSubjectiveSubmission({
     }
   }
 
-  return deterministicGradeSubjective(question, cleanAnswer, level);
+  const fallback = deterministicGradeSubjective(question, cleanAnswer, level);
+  return {
+    ...fallback,
+    authRequired,
+    fallbackNotice: authRequired
+      ? 'Đang chấm Rubric cục bộ — Đăng nhập để mở khóa chấm chuyên sâu bằng AI.'
+      : '',
+  };
 }
 
 /**
@@ -1359,13 +1389,30 @@ export function saveDualExamHistoryRecord({ user = null, analytics = {} } = {}) 
     passed: Boolean(analytics.passed),
     certifiedBand: analytics.certifiedBand || null,
     skillBreakdown: analytics.skillBreakdown || {},
+    ...(Array.isArray(analytics.answerSnapshots) && analytics.answerSnapshots.length > 0
+      ? { answerSnapshots: analytics.answerSnapshots }
+      : {}),
     createdAt: analytics.createdAt || new Date().toISOString(),
   };
 
   try {
     const existing = JSON.parse(localStorage.getItem(key) || '[]');
-    const updated = [record, ...(Array.isArray(existing) ? existing : [])].slice(0, 100);
-    localStorage.setItem(key, JSON.stringify(updated));
+    const merged = [record, ...(Array.isArray(existing) ? existing : [])];
+    const compacted = compactAttemptsForLocalStorage(merged, {
+      maxSnapshotAttempts: MAX_LOCAL_SNAPSHOT_ATTEMPTS,
+      maxTotalAttempts: 100,
+    });
+    try {
+      localStorage.setItem(key, JSON.stringify(compacted));
+    } catch {
+      try {
+        const minimal = compactAttemptsForLocalStorage(merged, {
+          maxSnapshotAttempts: 3,
+          maxTotalAttempts: 50,
+        });
+        localStorage.setItem(key, JSON.stringify(minimal));
+      } catch {}
+    }
   } catch {}
 
   return record;

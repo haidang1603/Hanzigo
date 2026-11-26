@@ -53,7 +53,12 @@ export default async function examDetailHandler(req, res) {
                 explanation: _explanation,
                 ...safeQ
               } = q;
-              return safeQ;
+              return {
+                ...safeQ,
+                ...(safeQ.image_url ? { imageUrl: safeQ.image_url } : {}),
+                ...(safeQ.image_alt ? { imageAlt: safeQ.image_alt } : {}),
+                ...(Array.isArray(safeQ.option_images) ? { optionImages: safeQ.option_images } : {}),
+              };
             })
           }
         });

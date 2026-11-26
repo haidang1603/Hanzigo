@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" width="640" height="420" role="img">
+  <rect width="640" height="420" rx="20" fill="#FFF9F0"/>
+
+    <rect x="52" y="48" width="144" height="206" rx="10" fill="#D99B66"/>
+    <rect x="68" y="68" width="112" height="44" fill="#FFF7ED"/><rect x="68" y="128" width="112" height="44" fill="#FFF7ED"/>
+    <rect x="82" y="74" width="16" height="38" fill="#60A5FA"/><rect x="104" y="74" width="16" height="38" fill="#FB7185"/><rect x="126" y="74" width="16" height="38" fill="#4ADE80"/>
+    <g transform="translate(288 198) scale(1.2)"><circle cx="0" cy="-34" r="18" fill="#1E293B"/><circle cx="0" cy="-30" r="15" fill="#FDBA74"/><path d="M-20 8c0-20 40-20 40 0v28h-40V8z" fill="#3B82F6"/></g>
+    <g transform="translate(444 198) scale(1.2)"><circle cx="0" cy="-34" r="18" fill="#334155"/><circle cx="0" cy="-30" r="15" fill="#FDBA74"/><path d="M-20 8c0-20 40-20 40 0v28h-40V8z" fill="#22C55E"/></g>
+    <rect x="198" y="242" width="340" height="26" rx="10" fill="#C2824F"/>
+    <polygon points="322,238 410,238 396,214 336,214" fill="#334155"/>
+    <polygon points="330,234 402,234 391,218 341,218" fill="#BAE6FD"/>
+  
+</svg>

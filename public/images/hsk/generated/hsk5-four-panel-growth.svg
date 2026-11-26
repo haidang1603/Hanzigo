@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" width="640" height="420" role="img">
+  <rect width="640" height="420" rx="20" fill="#FFFFFF"/>
+
+    <rect x="20" y="20" width="290" height="180" rx="14" fill="#E0F2FE" stroke="#CBD5E1" stroke-width="4"/>
+    <rect x="330" y="20" width="290" height="180" rx="14" fill="#FEF3C7" stroke="#CBD5E1" stroke-width="4"/>
+    <rect x="20" y="220" width="290" height="180" rx="14" fill="#F0FDF4" stroke="#CBD5E1" stroke-width="4"/>
+    <rect x="330" y="220" width="290" height="180" rx="14" fill="#FFF7ED" stroke="#CBD5E1" stroke-width="4"/>
+    <g transform="translate(144 146) scale(0.9)"><circle cx="0" cy="-34" r="18" fill="#1E293B"/><circle cx="0" cy="-30" r="15" fill="#FDBA74"/><path d="M-20 8c0-20 40-20 40 0v28h-40V8z" fill="#3B82F6"/></g>
+    <rect x="176" y="140" width="32" height="44" rx="6" fill="#E85D3F"/>
+    <rect x="404" y="142" width="144" height="18" rx="6" fill="#D99B66"/>
+    <g transform="translate(468 122) scale(0.88)"><circle cx="0" cy="-34" r="18" fill="#1E293B"/><circle cx="0" cy="-30" r="15" fill="#FDBA74"/><path d="M-20 8c0-20 40-20 40 0v28h-40V8z" fill="#60A5FA"/></g>
+    <polygon points="528,96 558,96 548,78 538,78" fill="#F59E0B"/>
+    <rect x="52" y="250" width="130" height="84" rx="8" fill="#FFFFFF" stroke="#94A3B8" stroke-width="4"/>
+    <polyline points="72,312 104,290 132,300 164,270" fill="none" stroke="#22C55E" stroke-width="5" stroke-linecap="round"/>
+    <g transform="translate(232 336) scale(0.9)"><circle cx="0" cy="-34" r="18" fill="#1E293B"/><circle cx="0" cy="-30" r="15" fill="#FDBA74"/><path d="M-20 8c0-20 40-20 40 0v28h-40V8z" fill="#3B82F6"/></g>
+    <circle cx="514" cy="284" r="32" fill="#FDE047"/>
+    <rect x="460" y="314" width="38" height="72" fill="#94A3B8"/><rect x="506" y="294" width="44" height="92" fill="#64748B"/><rect x="556" y="324" width="36" height="62" fill="#94A3B8"/>
+    <g transform="translate(402 340) scale(0.95)"><circle cx="0" cy="-34" r="18" fill="#1E293B"/><circle cx="0" cy="-30" r="15" fill="#FDBA74"/><path d="M-20 8c0-20 40-20 40 0v28h-40V8z" fill="#E85D3F"/></g>
+  
+</svg>

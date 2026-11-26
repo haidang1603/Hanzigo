@@ -27,13 +27,13 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "你好！很高兴认识你。",
     "options": [
       {
-        "text": "✓ Đúng (一致)",
-        "pinyin": "Yízhì",
+        "text": "对",
+        "pinyin": "Duì",
         "translation": "Khớp hoàn toàn"
       },
       {
-        "text": "✗ Sai (不一致)",
-        "pinyin": "Bù yízhì",
+        "text": "错",
+        "pinyin": "Cuò",
         "translation": "Không khớp"
       }
     ],
@@ -55,13 +55,13 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "他在喝茶呢。",
     "options": [
       {
-        "text": "✓ Đúng (一致)",
-        "pinyin": "Yízhì",
+        "text": "对",
+        "pinyin": "Duì",
         "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (不一致)",
-        "pinyin": "Bù yízhì",
+        "text": "错",
+        "pinyin": "Cuò",
         "translation": "Sai"
       }
     ],
@@ -83,13 +83,13 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "桌子上有三本书和一个水杯。",
     "options": [
       {
-        "text": "✓ Đúng (一致)",
-        "pinyin": "Yízhì",
+        "text": "对",
+        "pinyin": "Duì",
         "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (不一致)",
-        "pinyin": "Bù yízhì",
+        "text": "错",
+        "pinyin": "Cuò",
         "translation": "Sai"
       }
     ],
@@ -111,13 +111,13 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "明天天气很好，不冷也不热。",
     "options": [
       {
-        "text": "✓ Đúng (一致)",
-        "pinyin": "Yízhì",
+        "text": "对",
+        "pinyin": "Duì",
         "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (不一致)",
-        "pinyin": "Bù yízhì",
+        "text": "错",
+        "pinyin": "Cuò",
         "translation": "Sai"
       }
     ],
@@ -139,13 +139,13 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "她叫李月，是我的中国朋友。",
     "options": [
       {
-        "text": "✓ Đúng (一致)",
-        "pinyin": "Yízhì",
+        "text": "对",
+        "pinyin": "Duì",
         "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (不一致)",
-        "pinyin": "Bù yízhì",
+        "text": "错",
+        "pinyin": "Cuò",
         "translation": "Sai"
       }
     ],
@@ -167,7 +167,12 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "小明正在打电话呢。",
     "options": [
       {
-        "text": "Gọi điện thoại (打电话)",
+        "text": "睡觉",
+        "pinyin": "Shuìjiào",
+        "translation": "Đi ngủ"
+      },
+      {
+        "text": "打电话",
         "pinyin": "Dǎ diànhuà",
         "translation": "Gọi điện thoại"
       },
@@ -175,15 +180,10 @@ export const REAL_SIMULATION_QUESTIONS = [
         "text": "Xem ti vi (看电视)",
         "pinyin": "Kàn diànshì",
         "translation": "Xem ti vi"
-      },
-      {
-        "text": "Đi ngủ (睡觉)",
-        "pinyin": "Shuìjiào",
-        "translation": "Đi ngủ"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Lời thoại: '小明正在打电话呢。' (Tiểu Minh đang gọi điện thoại). Chọn phương án A.",
+    "correct_option_index": 1,
+    "explanation": "Lời thoại: '小明正在打电话呢。' (Tiểu Minh đang gọi điện thoại). Chọn phương án B.",
     "points": 5
   },
   {
@@ -200,14 +200,14 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "我爸爸坐飞机去北京了。",
     "options": [
       {
-        "text": "Máy bay (飞机)",
-        "pinyin": "Fēijī",
-        "translation": "Máy bay"
-      },
-      {
-        "text": "Xe buýt (公共汽车)",
+        "text": "公共汽车",
         "pinyin": "Gōnggòng qìchē",
         "translation": "Xe buýt"
+      },
+      {
+        "text": "飞机",
+        "pinyin": "Fēijī",
+        "translation": "Máy bay"
       },
       {
         "text": "Xe taxi (出租车)",
@@ -215,7 +215,7 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "Xe taxi"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Lời thoại: '坐飞机去北京了' (đi máy bay đến Bắc Kinh rồi).",
     "points": 5
   },
@@ -233,19 +233,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "中午我想吃一点儿米饭。",
     "options": [
       {
-        "text": "Cơm trắng (米饭)",
+        "text": "米饭",
         "pinyin": "Mǐfàn",
         "translation": "Cơm trắng"
       },
       {
-        "text": "Mì sợi (面条)",
-        "pinyin": "Miàntiáo",
-        "translation": "Mì sợi"
-      },
-      {
-        "text": "Táo (苹果)",
+        "text": "苹果",
         "pinyin": "Píngguǒ",
         "translation": "Quả táo"
+      },
+      {
+        "text": "面条",
+        "pinyin": "Miàntiáo",
+        "translation": "Mì sợi"
       }
     ],
     "correct_option_index": 0,
@@ -266,12 +266,7 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "看，那只小猫在睡觉呢。",
     "options": [
       {
-        "text": "Con mèo (猫)",
-        "pinyin": "Māo",
-        "translation": "Mèo"
-      },
-      {
-        "text": "Con chó (狗)",
+        "text": "狗",
         "pinyin": "Gǒu",
         "translation": "Chó"
       },
@@ -279,9 +274,14 @@ export const REAL_SIMULATION_QUESTIONS = [
         "text": "Con chim (鸟)",
         "pinyin": "Niǎo",
         "translation": "Chim"
+      },
+      {
+        "text": "猫",
+        "pinyin": "Māo",
+        "translation": "Mèo"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Lời thoại: '那只小猫在睡觉呢' (Con mèo con kia đang ngủ).",
     "points": 5
   },
@@ -299,22 +299,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "王老师现在在学校里。",
     "options": [
       {
-        "text": "Trường học (学校)",
-        "pinyin": "Xuéxiào",
-        "translation": "Trường học"
+        "text": "商店",
+        "pinyin": "Shāngdiàn",
+        "translation": "Cửa hàng"
       },
       {
-        "text": "Bệnh viện (医院)",
+        "text": "医院",
         "pinyin": "Yīyuàn",
         "translation": "Bệnh viện"
       },
       {
-        "text": "Cửa hàng (商店)",
-        "pinyin": "Shāngdiàn",
-        "translation": "Cửa hàng"
+        "text": "学校",
+        "pinyin": "Xuéxiào",
+        "translation": "Trường học"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Lời thoại: '王老师现在在学校里' (Thầy giáo Vương hiện đang ở trong trường).",
     "points": 5
   },
@@ -332,19 +332,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：请问，苹果多少钱一斤？男：三块钱一斤。问：苹果多少钱一斤？",
     "options": [
       {
-        "text": "2块 (Liǎng kuài)",
-        "pinyin": "Liǎng kuài",
-        "translation": "2 tệ"
+        "text": "5块",
+        "pinyin": "Wǔ kuài",
+        "translation": "5 tệ"
       },
       {
-        "text": "3块 (Sān kuài)",
+        "text": "3块",
         "pinyin": "Sān kuài",
         "translation": "3 tệ"
       },
       {
-        "text": "5块 (Wǔ kuài)",
-        "pinyin": "Wǔ kuài",
-        "translation": "5 tệ"
+        "text": "2块",
+        "pinyin": "Liǎng kuài",
+        "translation": "2 tệ"
       }
     ],
     "correct_option_index": 1,
@@ -365,22 +365,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：李老师好！男：你好，王同学，请进。问：他们是什么关系？",
     "options": [
       {
-        "text": "Thầy trò (老师和学生)",
-        "pinyin": "Lǎoshī hé xuésheng",
-        "translation": "Thầy giáo và học trò"
-      },
-      {
-        "text": "Bác sĩ và bệnh nhân (医生和病人)",
+        "text": "医生和病人",
         "pinyin": "Yīshēng hé bìngrén",
         "translation": "Bác sĩ và bệnh nhân"
       },
       {
-        "text": "Mẹ và con trai (妈妈和儿子)",
+        "text": "妈妈和儿子",
         "pinyin": "Māma hé érzi",
         "translation": "Mẹ và con trai"
+      },
+      {
+        "text": "老师和学生",
+        "pinyin": "Lǎoshī hé xuésheng",
+        "translation": "Thầy giáo và học trò"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Xưng hô '李老师' và '王同学' chứng tỏ mối quan hệ thầy trò.",
     "points": 5
   },
@@ -398,14 +398,14 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：请问现在几点了？女：现在下午两点十分。问：现在几点？",
     "options": [
       {
-        "text": "1:20 (一点二十分)",
-        "pinyin": "Yì diǎn èrshí fēn",
-        "translation": "1 giờ 20"
-      },
-      {
         "text": "2:10 (两点十分)",
         "pinyin": "Liǎng diǎn shí fēn",
         "translation": "2 giờ 10"
+      },
+      {
+        "text": "1:20 (一点二十分)",
+        "pinyin": "Yì diǎn èrshí fēn",
+        "translation": "1 giờ 20"
       },
       {
         "text": "3:00 (三点整)",
@@ -413,8 +413,8 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "3 giờ"
       }
     ],
-    "correct_option_index": 1,
-    "explanation": "Người nữ trả lời: '现在下午两点十分' (Hiện tại 2 giờ 10 phút chiều). Chọn B.",
+    "correct_option_index": 0,
+    "explanation": "Người nữ trả lời: '现在下午两点十分' (Hiện tại 2 giờ 10 phút chiều). Chọn A.",
     "points": 5
   },
   {
@@ -431,23 +431,23 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：你想喝茶还是喝水？男：给我一杯茶吧，谢谢。问：男的想喝什么？",
     "options": [
       {
-        "text": "Trà (茶)",
+        "text": "牛奶",
+        "pinyin": "Niúnǎi",
+        "translation": "Sữa bò"
+      },
+      {
+        "text": "茶",
         "pinyin": "Chá",
         "translation": "Trà"
       },
       {
-        "text": "Nước lọc (水)",
+        "text": "水",
         "pinyin": "Shuǐ",
         "translation": "Nước lọc"
-      },
-      {
-        "text": "Sữa bò (牛奶)",
-        "pinyin": "Niúnǎi",
-        "translation": "Sữa bò"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Người nam trả lời rõ ràng: '给我一杯茶吧' (Cho tôi một cốc trà). Chọn A.",
+    "correct_option_index": 1,
+    "explanation": "Người nam trả lời rõ ràng: '给我一杯茶吧' (Cho tôi một cốc trà). Chọn B.",
     "points": 5
   },
   {
@@ -464,23 +464,23 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：外面下雨了吗？男：对，下大雨了，你带雨伞吧。问：外面天气怎么样？",
     "options": [
       {
-        "text": "Trời mưa (下雨)",
-        "pinyin": "Xià yǔ",
-        "translation": "Trời mưa"
-      },
-      {
-        "text": "Trời nắng (晴天)",
+        "text": "晴天",
         "pinyin": "Qíngtiān",
         "translation": "Trời nắng"
       },
       {
-        "text": "Rơi tuyết (下雪)",
+        "text": "下雪",
         "pinyin": "Xià xuě",
         "translation": "Rơi tuyết"
+      },
+      {
+        "text": "下雨",
+        "pinyin": "Xià yǔ",
+        "translation": "Trời mưa"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Người nam nói: '下大雨了' (mưa to rồi). Chọn A.",
+    "correct_option_index": 2,
+    "explanation": "Người nam nói: '下大雨了' (mưa to rồi). Chọn C.",
     "points": 5
   },
   {
@@ -497,19 +497,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：张先生在家吗？女：不在，他去商店买东西了。问：张先生去哪儿了？",
     "options": [
       {
-        "text": "Cửa hàng (商店)",
+        "text": "商店",
         "pinyin": "Shāngdiàn",
         "translation": "Cửa hàng"
       },
       {
-        "text": "Bệnh viện (医院)",
-        "pinyin": "Yīyuàn",
-        "translation": "Bệnh viện"
-      },
-      {
-        "text": "Trường học (学校)",
+        "text": "学校",
         "pinyin": "Xuéxiào",
         "translation": "Trường học"
+      },
+      {
+        "text": "医院",
+        "pinyin": "Yīyuàn",
+        "translation": "Bệnh viện"
       }
     ],
     "correct_option_index": 0,
@@ -530,22 +530,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：你认识那个人吗？男：认识，他是我们学校的汉语老师。问：那个人是做什么的？",
     "options": [
       {
-        "text": "Giáo viên tiếng Trung (汉语老师)",
+        "text": "学生",
+        "pinyin": "Xuésheng",
+        "translation": "Học sinh"
+      },
+      {
+        "text": "汉语老师",
         "pinyin": "Hànyǔ lǎoshī",
         "translation": "Giáo viên tiếng Trung"
       },
       {
-        "text": "Bác sĩ (医生)",
+        "text": "医生",
         "pinyin": "Yīshēng",
         "translation": "Bác sĩ"
-      },
-      {
-        "text": "Học sinh (学生)",
-        "pinyin": "Xuésheng",
-        "translation": "Học sinh"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Người nam trả lời: '他是我们学校的汉语老师' (Anh ấy là thầy giáo tiếng Trung trường chúng tôi).",
     "points": 5
   },
@@ -563,17 +563,17 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：你看见我的小狗了吗？女：看见了，它在椅子下面呢。问：小狗在哪里？",
     "options": [
       {
-        "text": "Dưới ghế (椅子下面)",
+        "text": "椅子下面",
         "pinyin": "Yǐzi xiàmiàn",
         "translation": "Dưới ghế"
       },
       {
-        "text": "Trên bàn (桌子上面)",
+        "text": "桌子上面",
         "pinyin": "Zhuōzi shàngmiàn",
         "translation": "Trên bàn"
       },
       {
-        "text": "Trong phòng (房间里面)",
+        "text": "房间里面",
         "pinyin": "Fángjiān lǐmiàn",
         "translation": "Trong phòng"
       }
@@ -596,23 +596,23 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：你女儿今年几岁了？男：她今年五岁了。问：他女儿多大了？",
     "options": [
       {
-        "text": "4 tuổi (四岁)",
-        "pinyin": "Sì suì",
-        "translation": "4 tuổi"
-      },
-      {
-        "text": "5 tuổi (五岁)",
+        "text": "五岁",
         "pinyin": "Wǔ suì",
         "translation": "5 tuổi"
       },
       {
-        "text": "6 tuổi (六岁)",
+        "text": "四岁",
+        "pinyin": "Sì suì",
+        "translation": "4 tuổi"
+      },
+      {
+        "text": "六岁",
         "pinyin": "Liù suì",
         "translation": "6 tuổi"
       }
     ],
-    "correct_option_index": 1,
-    "explanation": "Người nam trả lời: '她今年五岁了' (Năm nay cháu 5 tuổi). Chọn B.",
+    "correct_option_index": 0,
+    "explanation": "Người nam trả lời: '她今年五岁了' (Năm nay cháu 5 tuổi). Chọn A.",
     "points": 5
   },
   {
@@ -629,23 +629,23 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：喂，王小姐在吗？女：我就是，请问您是哪位？问：接电话的人是谁？",
     "options": [
       {
-        "text": "Cô Vương (王小姐)",
-        "pinyin": "Wáng xiǎojiě",
-        "translation": "Cô Vương"
-      },
-      {
-        "text": "Thầy Vương (王老师)",
+        "text": "王老师",
         "pinyin": "Wáng lǎoshī",
         "translation": "Thầy Vương"
       },
       {
-        "text": "Bác sĩ Lý (李医生)",
+        "text": "李医生",
         "pinyin": "Lǐ yīshēng",
         "translation": "Bác sĩ Lý"
+      },
+      {
+        "text": "王小姐",
+        "pinyin": "Wáng xiǎojiě",
+        "translation": "Cô Vương"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Người nữ trả lời điện thoại: '我就是' (Tôi chính là cô Vương đây). Chọn A.",
+    "correct_option_index": 2,
+    "explanation": "Người nữ trả lời điện thoại: '我就是' (Tôi chính là cô Vương đây). Chọn C.",
     "points": 5
   },
   {
@@ -655,20 +655,20 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 1,
     "question_number": 21,
     "question_type": "true_false",
-    "prompt": "看汉字与词义，判断是否正确：[看书 —— đọc sách]",
-    "pinyin": "Kàn hànzì yǔ cíyì, pànduàn shìfǒu zhèngquè: [kàn shū —— đọc sách]",
+    "prompt": "看词语与句子，判断是否一致：[看书 —— 他在看书。]",
+    "pinyin": "Kàn cíyǔ yǔ jùzi, pànduàn shìfǒu yízhì: [Kàn shū —— Tā zài kàn shū.]",
     "translation": "Xem chữ Hán và ý nghĩa, phán đoán đúng sai: [看书 —— đọc sách]",
     "audio_url": "",
     "audio_script": "",
     "options": [
       {
-        "text": "✓ Đúng (正确)",
-        "pinyin": "Zhèngquè",
+        "text": "对",
+        "pinyin": "Duì",
         "translation": "Đúng nghĩa"
       },
       {
-        "text": "✗ Sai (错误)",
-        "pinyin": "Cuòwù",
+        "text": "错",
+        "pinyin": "Cuò",
         "translation": "Sai nghĩa"
       }
     ],
@@ -683,20 +683,20 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 1,
     "question_number": 22,
     "question_type": "true_false",
-    "prompt": "看汉字与词义，判断是否正确：[喝水 —— ăn cơm]",
-    "pinyin": "Kàn hànzì yǔ cíyì, pànduàn shìfǒu zhèngquè: [hē shuǐ —— ăn cơm]",
+    "prompt": "看词语与句子，判断是否一致：[喝水 —— 他在吃饭。]",
+    "pinyin": "Kàn cíyǔ yǔ jùzi, pànduàn shìfǒu yízhì: [Hē shuǐ —— Tā zài chī fàn.]",
     "translation": "Xem chữ Hán và ý nghĩa, phán đoán đúng sai: [喝水 —— ăn cơm]",
     "audio_url": "",
     "audio_script": "",
     "options": [
       {
-        "text": "✓ Đúng (正确)",
-        "pinyin": "Zhèngquè",
+        "text": "对",
+        "pinyin": "Duì",
         "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (错误)",
-        "pinyin": "Cuòwù",
+        "text": "错",
+        "pinyin": "Cuò",
         "translation": "Sai"
       }
     ],
@@ -711,20 +711,20 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 1,
     "question_number": 23,
     "question_type": "true_false",
-    "prompt": "看汉字与词义，判断是否正确：[飞机 —— máy bay]",
-    "pinyin": "Kàn hànzì yǔ cíyì, pànduàn shìfǒu zhèngquè: [fēijī —— máy bay]",
+    "prompt": "看词语与句子，判断是否一致：[飞机 —— 我坐飞机去北京。]",
+    "pinyin": "Kàn cíyǔ yǔ jùzi, pànduàn shìfǒu yízhì: [Fēijī —— Wǒ zuò fēijī qù Běijīng.]",
     "translation": "Xem chữ Hán và ý nghĩa: [飞机 —— máy bay]",
     "audio_url": "",
     "audio_script": "",
     "options": [
       {
-        "text": "✓ Đúng (正确)",
-        "pinyin": "Zhèngquè",
+        "text": "对",
+        "pinyin": "Duì",
         "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (错误)",
-        "pinyin": "Cuòwù",
+        "text": "错",
+        "pinyin": "Cuò",
         "translation": "Sai"
       }
     ],
@@ -739,20 +739,20 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 1,
     "question_number": 24,
     "question_type": "true_false",
-    "prompt": "看汉字与词义，判断是否正确：[医生 —— học sinh]",
-    "pinyin": "Kàn hànzì yǔ cíyì, pànduàn shìfǒu zhèngquè: [yīshēng —— học sinh]",
+    "prompt": "看词语与句子，判断是否一致：[医生 —— 他在学校学习。]",
+    "pinyin": "Kàn cíyǔ yǔ jùzi, pànduàn shìfǒu yízhì: [Yīshēng —— Tā zài xuéxiào xuéxí.]",
     "translation": "Xem chữ Hán và ý nghĩa: [医生 —— học sinh]",
     "audio_url": "",
     "audio_script": "",
     "options": [
       {
-        "text": "✓ Đúng (正确)",
-        "pinyin": "Zhèngquè",
+        "text": "对",
+        "pinyin": "Duì",
         "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (错误)",
-        "pinyin": "Cuòwù",
+        "text": "错",
+        "pinyin": "Cuò",
         "translation": "Sai"
       }
     ],
@@ -767,20 +767,20 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 1,
     "question_number": 25,
     "question_type": "true_false",
-    "prompt": "看汉字与词义，判断是否正确：[下雨 —— trời mưa]",
-    "pinyin": "Kàn hànzì yǔ cíyì, pànduàn shìfǒu zhèngquè: [xià yǔ —— trời mưa]",
+    "prompt": "看词语与句子，判断是否一致：[下雨 —— 今天下雨了。]",
+    "pinyin": "Kàn cíyǔ yǔ jùzi, pànduàn shìfǒu yízhì: [Xià yǔ —— Jīntiān xià yǔ le.]",
     "translation": "Xem chữ Hán và ý nghĩa: [下雨 —— trời mưa]",
     "audio_url": "",
     "audio_script": "",
     "options": [
       {
-        "text": "✓ Đúng (正确)",
-        "pinyin": "Zhèngquè",
+        "text": "对",
+        "pinyin": "Duì",
         "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (错误)",
-        "pinyin": "Cuòwù",
+        "text": "错",
+        "pinyin": "Cuò",
         "translation": "Sai"
       }
     ],
@@ -802,24 +802,24 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "Cô ấy là giáo viên tiếng Trung của tôi.",
-        "pinyin": "Tā shì wǒ de Hànyǔ lǎoshī.",
+        "text": "她教我汉语。",
+        "pinyin": "Tā jiāo wǒ Hànyǔ.",
         "translation": "Chuẩn xác"
       },
       {
-        "text": "Cô ấy là bạn học tiếng Trung của tôi.",
+        "text": "她是我的汉语同学。",
         "pinyin": "Tā shì wǒ de Hànyǔ tóngxué.",
         "translation": "Sai danh từ"
       },
       {
-        "text": "Mẹ tôi là giáo viên.",
-        "pinyin": "Wǒ māma shì lǎoshī.",
-        "translation": "Sai chủ ngữ"
+        "text": "我是她的汉语老师。",
+        "pinyin": "Wǒ shì tā de Hànyǔ lǎoshī.",
+        "translation": "Sai đại từ"
       },
       {
-        "text": "Tôi là giáo viên tiếng Trung.",
-        "pinyin": "Wǒ shì Hànyǔ lǎoshī.",
-        "translation": "Sai đại từ"
+        "text": "我妈妈是汉语老师。",
+        "pinyin": "Wǒ māma shì Hànyǔ lǎoshī.",
+        "translation": "Sai chủ ngữ"
       }
     ],
     "correct_option_index": 0,
@@ -840,27 +840,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "本 (Běn - quyển/cuốn)",
-        "pinyin": "Běn",
-        "translation": "Lượng từ cho sách"
-      },
-      {
-        "text": "个 (Gè - cái/chiếc)",
-        "pinyin": "Gè",
-        "translation": "Lượng từ phổ quát"
-      },
-      {
-        "text": "只 (Zhī - con)",
+        "text": "只",
         "pinyin": "Zhī",
         "translation": "Lượng từ cho động vật"
       },
       {
-        "text": "张 (Zhāng - tờ/tấm)",
+        "text": "本",
+        "pinyin": "Běn",
+        "translation": "Lượng từ cho sách"
+      },
+      {
+        "text": "个",
+        "pinyin": "Gè",
+        "translation": "Lượng từ phổ quát"
+      },
+      {
+        "text": "张",
         "pinyin": "Zhāng",
         "translation": "Lượng từ cho mặt phẳng"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Lượng từ chuẩn của sách (书) là '本' (běn).",
     "points": 5
   },
@@ -878,14 +878,14 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "②④①③ (我住在北京。)",
-        "pinyin": "Wǒ zhù zài Běijīng.",
-        "translation": "Tôi sống ở Bắc Kinh."
-      },
-      {
         "text": "①③②④ (在北京我住。)",
         "pinyin": "Zài Běijīng wǒ zhù.",
         "translation": "Sai vị ngữ"
+      },
+      {
+        "text": "②④①③ (我住在北京。)",
+        "pinyin": "Wǒ zhù zài Běijīng.",
+        "translation": "Tôi sống ở Bắc Kinh."
       },
       {
         "text": "②①④③ (我在住北京。)",
@@ -898,7 +898,7 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "Sai chủ ngữ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cấu trúc chuẩn: 'Chủ ngữ + 住 + 在 + Địa điểm' (我住在北京。). Trật tự đúng là ②④①③.",
     "points": 5
   },
@@ -909,12 +909,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 2,
     "question_number": 29,
     "question_type": "multiple_choice",
-    "prompt": "看拼音选汉字：māma (mẹ)",
+    "prompt": "看拼音选汉字：māma",
     "pinyin": "Kàn pīnyīn xuǎn hànzì: māma (mẹ)",
     "translation": "Nhìn pinyin chọn chữ Hán đúng: māma (mẹ)",
     "audio_url": "",
     "audio_script": "",
     "options": [
+      {
+        "text": "姐姐",
+        "pinyin": "jiějie",
+        "translation": "Chị gái"
+      },
+      {
+        "text": "哥哥",
+        "pinyin": "gēge",
+        "translation": "Anh trai"
+      },
       {
         "text": "妈妈",
         "pinyin": "māma",
@@ -924,19 +934,9 @@ export const REAL_SIMULATION_QUESTIONS = [
         "text": "爸爸",
         "pinyin": "bàba",
         "translation": "Bố"
-      },
-      {
-        "text": "哥哥",
-        "pinyin": "gēge",
-        "translation": "Anh trai"
-      },
-      {
-        "text": "姐姐",
-        "pinyin": "jiějie",
-        "translation": "Chị gái"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "'māma' là phiên âm của chữ '妈妈' (mẹ).",
     "points": 5
   },
@@ -954,27 +954,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "大 (To, lớn)",
-        "pinyin": "Dà",
-        "translation": "Lớn"
-      },
-      {
-        "text": "冷 (Lạnh)",
+        "text": "冷",
         "pinyin": "Lěng",
         "translation": "Lạnh"
       },
       {
-        "text": "热 (Nóng)",
+        "text": "多",
+        "pinyin": "Duō",
+        "translation": "Nhiều"
+      },
+      {
+        "text": "热",
         "pinyin": "Rè",
         "translation": "Nóng"
       },
       {
-        "text": "多 (Nhiều)",
-        "pinyin": "Duō",
-        "translation": "Nhiều"
+        "text": "大",
+        "pinyin": "Dà",
+        "translation": "Lớn"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 3,
     "explanation": "Từ trái nghĩa với '小' (nhỏ) là '大' (to, lớn).",
     "points": 5
   },
@@ -992,28 +992,28 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "在前面左拐。 (Ở phía trước rẽ trái)",
-        "pinyin": "Zài qiánmiàn zuǒ guǎi.",
-        "translation": "Chỉ phương hướng"
-      },
-      {
-        "text": "不用谢。 (Không có gì)",
-        "pinyin": "Bú yòng xiè.",
-        "translation": "Đáp lại lời cảm ơn"
-      },
-      {
-        "text": "今天星期五。 (Hôm nay thứ Sáu)",
+        "text": "今天星期五。",
         "pinyin": "Jīntiān xīngqīwǔ.",
         "translation": "Nói về thứ ngày"
       },
       {
-        "text": "我不是学生。 (Tôi không phải học sinh)",
+        "text": "我不是学生。",
         "pinyin": "Wǒ bú shì xuésheng.",
         "translation": "Nói về nghề nghiệp"
+      },
+      {
+        "text": "在前面左拐。",
+        "pinyin": "Zài qiánmiàn zuǒ guǎi.",
+        "translation": "Chỉ phương hướng"
+      },
+      {
+        "text": "不用谢。",
+        "pinyin": "Bú yòng xiè.",
+        "translation": "Đáp lại lời cảm ơn"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Câu hỏi hỏi về địa điểm ('在哪里？' - ở đâu?), phương án A chỉ phương hướng vị trí là phù hợp nhất.",
+    "correct_option_index": 2,
+    "explanation": "Câu hỏi hỏi về địa điểm ('在哪里？' - ở đâu?), phương án C chỉ phương hướng vị trí là phù hợp nhất.",
     "points": 5
   },
   {
@@ -1030,27 +1030,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "认识，他是我的老师。 (Quen chứ, thầy ấy là giáo viên của tôi)",
-        "pinyin": "Rènshi, tā shì wǒ de lǎoshī.",
-        "translation": "Trả lời chính xác"
-      },
-      {
-        "text": "我很高兴。 (Tôi rất vui)",
-        "pinyin": "Wǒ hěn gāoxìng.",
-        "translation": "Sai ngữ cảnh"
-      },
-      {
-        "text": "三块钱。 (Ba đồng)",
+        "text": "三块钱。",
         "pinyin": "Sān kuài qián.",
         "translation": "Nói giá tiền"
       },
       {
-        "text": "他在喝茶。 (Anh ấy đang uống trà)",
+        "text": "他在喝茶。",
         "pinyin": "Tā zài hē chá.",
         "translation": "Hành động người khác"
+      },
+      {
+        "text": "我很高兴。",
+        "pinyin": "Wǒ hěn gāoxìng.",
+        "translation": "Sai ngữ cảnh"
+      },
+      {
+        "text": "认识，他是我的老师。",
+        "pinyin": "Rènshi, tā shì wǒ de lǎoshī.",
+        "translation": "Trả lời chính xác"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 3,
     "explanation": "Câu hỏi '你认识...吗？', câu trả lời phù hợp là '认识，他是...'.",
     "points": 5
   },
@@ -1068,24 +1068,24 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "不客气！ (Không có gì/Đừng khách sáo!)",
+        "text": "不客气！",
         "pinyin": "Bú kèqi!",
         "translation": "Đáp lễ cảm ơn chuẩn mực"
       },
       {
-        "text": "没关系！ (Không sao đâu!)",
-        "pinyin": "Méi guānxi!",
-        "translation": "Đáp lại xin lỗi"
-      },
-      {
-        "text": "对不起！ (Xin lỗi!)",
+        "text": "对不起！",
         "pinyin": "Duìbuqǐ!",
         "translation": "Xin lỗi"
       },
       {
-        "text": "再见！ (Tạm biệt!)",
+        "text": "再见！",
         "pinyin": "Zàijiàn!",
         "translation": "Chào tạm biệt"
+      },
+      {
+        "text": "没关系！",
+        "pinyin": "Méi guānxi!",
+        "translation": "Đáp lại xin lỗi"
       }
     ],
     "correct_option_index": 0,
@@ -1106,28 +1106,28 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "很喜欢，中国菜很好吃。 (Rất thích, món ăn Trung Quốc rất ngon)",
-        "pinyin": "Hěn xǐhuan, Zhōngguó cài hěn hǎochī.",
-        "translation": "Đáp chuẩn sở thích"
-      },
-      {
-        "text": "明天去。 (Ngày mai đi)",
+        "text": "明天去。",
         "pinyin": "Míngtiān qù.",
         "translation": "Nói về thời gian"
       },
       {
-        "text": "我是越南人。 (Tôi là người Việt Nam)",
+        "text": "很喜欢，中国菜很好吃。",
+        "pinyin": "Hěn xǐhuan, Zhōngguó cài hěn hǎochī.",
+        "translation": "Đáp chuẩn sở thích"
+      },
+      {
+        "text": "我是越南人。",
         "pinyin": "Wǒ shì Yuènán rén.",
         "translation": "Nói về quốc tịch"
       },
       {
-        "text": "太冷了。 (Lạnh quá)",
+        "text": "太冷了。",
         "pinyin": "Tài lěng le.",
         "translation": "Nói về thời tiết"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Câu hỏi về sở thích ẩm thực '喜欢吃...吗？', phương án A '很喜欢...' là câu trả lời chuẩn nhất.",
+    "correct_option_index": 1,
+    "explanation": "Câu hỏi về sở thích ẩm thực '喜欢吃...吗？', phương án B '很喜欢...' là câu trả lời chuẩn nhất.",
     "points": 5
   },
   {
@@ -1144,27 +1144,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "他叫李月。 (Anh ấy tên là Lý Nguyệt)",
-        "pinyin": "Tā jiào Lǐ Yuè.",
-        "translation": "Nêu tên nhân vật"
-      },
-      {
-        "text": "他二十岁。 (Anh ấy hai mươi tuổi)",
-        "pinyin": "Tā èrshí suì.",
-        "translation": "Nêu số tuổi"
-      },
-      {
-        "text": "他在北京。 (Anh ấy ở Bắc Kinh)",
+        "text": "他在北京。",
         "pinyin": "Tā zài Běijīng.",
         "translation": "Nêu nơi ở"
       },
       {
-        "text": "他是医生。 (Anh ấy là bác sĩ)",
+        "text": "他二十岁。",
+        "pinyin": "Tā èrshí suì.",
+        "translation": "Nêu số tuổi"
+      },
+      {
+        "text": "他是医生。",
         "pinyin": "Tā shì yīshēng.",
         "translation": "Nêu nghề nghiệp"
+      },
+      {
+        "text": "他叫李月。",
+        "pinyin": "Tā jiào Lǐ Yuè.",
+        "translation": "Nêu tên nhân vật"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 3,
     "explanation": "Hỏi '叫什么名字？' (tên gì?), câu trả lời phải nêu tên nhân vật: '他叫李月。'",
     "points": 5
   },
@@ -1182,24 +1182,24 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "什么 (Gì / Cái gì)",
+        "text": "什么",
         "pinyin": "Shénme",
         "translation": "Cái gì"
       },
       {
-        "text": "谁 (Ai)",
-        "pinyin": "Shéi",
-        "translation": "Ai"
+        "text": "怎么",
+        "pinyin": "Zěnme",
+        "translation": "Như thế nào"
       },
       {
-        "text": "哪儿 (Ở đâu)",
+        "text": "哪儿",
         "pinyin": "Nǎr",
         "translation": "Ở đâu"
       },
       {
-        "text": "怎么 (Làm sao / Thế nào)",
-        "pinyin": "Zěnme",
-        "translation": "Như thế nào"
+        "text": "谁",
+        "pinyin": "Shéi",
+        "translation": "Ai"
       }
     ],
     "correct_option_index": 0,
@@ -1220,27 +1220,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "喜欢 (Thích)",
-        "pinyin": "Xǐhuan",
-        "translation": "Thích"
-      },
-      {
-        "text": "坐 (Ngồi)",
+        "text": "坐",
         "pinyin": "Zuò",
         "translation": "Ngồi"
       },
       {
-        "text": "叫 (Gọi / Kêu)",
+        "text": "买",
+        "pinyin": "Mǎi",
+        "translation": "Mua"
+      },
+      {
+        "text": "叫",
         "pinyin": "Jiào",
         "translation": "Gọi"
       },
       {
-        "text": "买 (Mua)",
-        "pinyin": "Mǎi",
-        "translation": "Mua"
+        "text": "喜欢",
+        "pinyin": "Xǐhuan",
+        "translation": "Thích"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 3,
     "explanation": "Vế sau có '很好吃' (rất ngon), do đó vế đầu bày tỏ sở thích: '喜欢' (thích).",
     "points": 5
   },
@@ -1258,27 +1258,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "汉语 (Tiếng Trung)",
-        "pinyin": "Hànyǔ",
-        "translation": "Tiếng Hán"
-      },
-      {
-        "text": "学校 (Trường học)",
+        "text": "学校",
         "pinyin": "Xuéxiào",
         "translation": "Trường học"
       },
       {
-        "text": "苹果 (Quả táo)",
-        "pinyin": "Píngguǒ",
-        "translation": "Quả táo"
-      },
-      {
-        "text": "衣服 (Quần áo)",
+        "text": "衣服",
         "pinyin": "Yīfu",
         "translation": "Trang phục"
+      },
+      {
+        "text": "汉语",
+        "pinyin": "Hànyǔ",
+        "translation": "Tiếng Hán"
+      },
+      {
+        "text": "苹果",
+        "pinyin": "Píngguǒ",
+        "translation": "Quả táo"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Động từ '说' (nói) kết hợp với danh từ chỉ ngôn ngữ '汉语' (tiếng Trung).",
     "points": 5
   },
@@ -1296,27 +1296,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "喝 (Uống)",
-        "pinyin": "Hē",
-        "translation": "Uống nước"
-      },
-      {
-        "text": "吃 (Ăn)",
-        "pinyin": "Chī",
-        "translation": "Ăn"
-      },
-      {
-        "text": "听 (Nghe)",
+        "text": "听",
         "pinyin": "Tīng",
         "translation": "Nghe"
       },
       {
-        "text": "读 (Đọc)",
+        "text": "读",
         "pinyin": "Dú",
         "translation": "Đọc"
+      },
+      {
+        "text": "喝",
+        "pinyin": "Hē",
+        "translation": "Uống nước"
+      },
+      {
+        "text": "吃",
+        "pinyin": "Chī",
+        "translation": "Ăn"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Tân ngữ là '水' (nước), động từ phù hợp là '喝' (uống): 喝水.",
     "points": 5
   },
@@ -1334,27 +1334,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "三 (Ba —— Thứ Tư)",
+        "text": "五",
+        "pinyin": "Wǔ",
+        "translation": "Thứ Sáu"
+      },
+      {
+        "text": "三",
         "pinyin": "Sān",
         "translation": "Thứ Tư"
       },
       {
-        "text": "二 (Hai —— Thứ Ba)",
+        "text": "二",
         "pinyin": "Èr",
         "translation": "Thứ Ba"
       },
       {
-        "text": "四 (Bốn —— Thứ Năm)",
+        "text": "四",
         "pinyin": "Sì",
         "translation": "Thứ Năm"
-      },
-      {
-        "text": "五 (Năm —— Thứ Sáu)",
-        "pinyin": "Wǔ",
-        "translation": "Thứ Sáu"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Hôm qua là thứ Hai (星期一), vậy hôm nay là thứ Ba (星期二), ngày mai sẽ là thứ Tư (星期三 - xīngqīsān). Điền 三.",
     "points": 5
   },
@@ -1365,25 +1365,25 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 1,
     "question_number": 11,
     "question_type": "true_false",
-    "prompt": "听录音，判断对错：[看书]",
-    "pinyin": "Tīng lùyīn, pànduàn duìcuò: [kàn shū]",
-    "translation": "Nghe ghi âm, phán đoán đúng sai: [Đọc sách]",
+    "prompt": "听录音，判断对错：[写字]",
+    "pinyin": "Tīng lùyīn, pànduàn duìcuò: [xiě zì]",
+    "translation": "Nghe ghi âm, phán đoán đúng sai: [Viết chữ]",
     "audio_url": "",
     "audio_script": "他在看书呢。",
     "options": [
       {
-        "text": "✓ Đúng (一致)",
-        "pinyin": "Yízhì",
-        "translation": "✓ Đúng (一致)"
+        "text": "对",
+        "pinyin": "Duì",
+        "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (不一致)",
-        "pinyin": "Bù yízhì",
-        "translation": "✗ Sai (不一致)"
+        "text": "错",
+        "pinyin": "Cuò",
+        "translation": "Sai"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Khớp lời thoại '看书'.",
+    "correct_option_index": 1,
+    "explanation": "Lời thoại nói '他在看书呢' (Anh ấy đang đọc sách), không phải '写字' (viết chữ), nên chọn Sai (✗).",
     "points": 10
   },
   {
@@ -1400,22 +1400,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "桌子上有一个苹果。",
     "options": [
       {
-        "text": "Quả táo (苹果)",
-        "pinyin": "Píngguǒ",
-        "translation": "Quả táo (苹果)"
-      },
-      {
-        "text": "Cốc nước (水杯)",
+        "text": "水杯",
         "pinyin": "Shuǐbēi",
-        "translation": "Cốc nước (水杯)"
+        "translation": "Cốc nước"
       },
       {
-        "text": "Quyển sách (书)",
+        "text": "书",
         "pinyin": "Shū",
-        "translation": "Quyển sách (书)"
+        "translation": "Quyển sách"
+      },
+      {
+        "text": "苹果",
+        "pinyin": "Píngguǒ",
+        "translation": "Quả táo"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Lời thoại nói về quả táo (苹果).",
     "points": 10
   },
@@ -1433,23 +1433,23 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "我爸爸在医院工作，他是医生。",
     "options": [
       {
-        "text": "Bác sĩ (医生)",
+        "text": "医生",
         "pinyin": "Yīshēng",
-        "translation": "Bác sĩ (医生)"
+        "translation": "Bác sĩ"
       },
       {
-        "text": "Thầy giáo (老师)",
+        "text": "老师",
         "pinyin": "Lǎoshī",
-        "translation": "Thầy giáo (老师)"
+        "translation": "Thầy giáo"
       },
       {
-        "text": "Sinh viên (学生)",
+        "text": "学生",
         "pinyin": "Xuésheng",
-        "translation": "Sinh viên (学生)"
+        "translation": "Sinh viên"
       }
     ],
     "correct_option_index": 0,
-    "explanation": "Nói rõ '他是医生'.",
+    "explanation": "Lời thoại nói rõ '我爸爸在医院工作，他是医生' (Bố tôi làm việc ở bệnh viện, ông ấy là bác sĩ), nên đáp án là Bác sĩ (医生).",
     "points": 10
   },
   {
@@ -1499,22 +1499,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "我们坐出租车去火车站吧。",
     "options": [
       {
+        "text": "火车",
+        "pinyin": "Huǒchē",
+        "translation": "Tàu hỏa"
+      },
+      {
+        "text": "飞机",
+        "pinyin": "Fēijī",
+        "translation": "Máy bay"
+      },
+      {
         "text": "Xe taxi (出租车)",
         "pinyin": "Chūzūchē",
         "translation": "Xe taxi (出租车)"
-      },
-      {
-        "text": "Máy bay (飞机)",
-        "pinyin": "Fēijī",
-        "translation": "Máy bay (飞机)"
-      },
-      {
-        "text": "Tàu hỏa (火车)",
-        "pinyin": "Huǒchē",
-        "translation": "Tàu hỏa (火车)"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Đi bằng taxi: 坐出租车.",
     "points": 10
   },
@@ -1532,19 +1532,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：你想喝茶吗？男：不，我想喝冷水。问：男的想喝什么？",
     "options": [
       {
-        "text": "Nước lạnh (冷水)",
+        "text": "冷水",
         "pinyin": "Lěngshuǐ",
-        "translation": "Nước lạnh (冷水)"
+        "translation": "Nước lạnh"
       },
       {
-        "text": "Trà nóng (热茶)",
+        "text": "热茶",
         "pinyin": "Rèchá",
-        "translation": "Trà nóng (热茶)"
+        "translation": "Trà nóng"
       },
       {
-        "text": "Sữa tươi (牛奶)",
+        "text": "牛奶",
         "pinyin": "Niúnǎi",
-        "translation": "Sữa tươi (牛奶)"
+        "translation": "Sữa tươi"
       }
     ],
     "correct_option_index": 0,
@@ -1565,22 +1565,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：王小姐在学校吗？女：不在，她在商店买衣服。问：王小姐在哪儿？",
     "options": [
       {
-        "text": "Cửa hàng (商店)",
-        "pinyin": "Shāngdiàn",
-        "translation": "Cửa hàng (商店)"
-      },
-      {
-        "text": "Trường học (学校)",
-        "pinyin": "Xuéxiào",
-        "translation": "Trường học (学校)"
-      },
-      {
-        "text": "Bệnh viện (医院)",
+        "text": "医院",
         "pinyin": "Yīyuàn",
-        "translation": "Bệnh viện (医院)"
+        "translation": "Bệnh viện"
+      },
+      {
+        "text": "商店",
+        "pinyin": "Shāngdiàn",
+        "translation": "Cửa hàng"
+      },
+      {
+        "text": "学校",
+        "pinyin": "Xuéxiào",
+        "translation": "Trường học"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Đang ở cửa hàng mua quần áo.",
     "points": 10
   },
@@ -1598,19 +1598,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "今天天气太冷了，你多穿点儿衣服。",
     "options": [
       {
-        "text": "Rất lạnh (很冷)",
+        "text": "很冷",
         "pinyin": "Hěn lěng",
-        "translation": "Rất lạnh (很冷)"
+        "translation": "Rất lạnh"
       },
       {
-        "text": "Rất nóng (很热)",
-        "pinyin": "Hěn rè",
-        "translation": "Rất nóng (很热)"
-      },
-      {
-        "text": "Mưa to (下雨)",
+        "text": "下雨",
         "pinyin": "Xià yǔ",
-        "translation": "Mưa to (下雨)"
+        "translation": "Mưa to"
+      },
+      {
+        "text": "很热",
+        "pinyin": "Hěn rè",
+        "translation": "Rất nóng"
       }
     ],
     "correct_option_index": 0,
@@ -1631,22 +1631,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：你家有几口人？女：我家有四口人。问：她家有几口人？",
     "options": [
       {
-        "text": "4 người (四口人)",
-        "pinyin": "Sì kǒu rén",
-        "translation": "4 người (四口人)"
-      },
-      {
-        "text": "3 người (三口人)",
+        "text": "三口人",
         "pinyin": "Sān kǒu rén",
-        "translation": "3 người (三口人)"
+        "translation": "3 người"
       },
       {
-        "text": "5 người (五口人)",
+        "text": "四口人",
+        "pinyin": "Sì kǒu rén",
+        "translation": "4 người"
+      },
+      {
+        "text": "五口人",
         "pinyin": "Wǔ kǒu rén",
-        "translation": "5 người (五口人)"
+        "translation": "5 người"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Có 4 người: 四口人.",
     "points": 10
   },
@@ -1664,19 +1664,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：你的儿子多大了？男：他今年八岁了。问：他儿子多大？",
     "options": [
       {
-        "text": "8 tuổi (八岁)",
+        "text": "八岁",
         "pinyin": "Bā suì",
-        "translation": "8 tuổi (八岁)"
+        "translation": "8 tuổi"
       },
       {
-        "text": "6 tuổi (六岁)",
-        "pinyin": "Liù suì",
-        "translation": "6 tuổi (六岁)"
-      },
-      {
-        "text": "10 tuổi (十岁)",
+        "text": "十岁",
         "pinyin": "Shí suì",
-        "translation": "10 tuổi (十岁)"
+        "translation": "10 tuổi"
+      },
+      {
+        "text": "六岁",
+        "pinyin": "Liù suì",
+        "translation": "6 tuổi"
       }
     ],
     "correct_option_index": 0,
@@ -1690,21 +1690,21 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 1,
     "question_number": 21,
     "question_type": "true_false",
-    "prompt": "看词语判断正误：[喝茶 —— uống trà]",
-    "pinyin": "Kàn cíyǔ pànduàn zhèngwù: [hē chá —— uống trà]",
+    "prompt": "看词语与句子，判断是否一致：[喝茶 —— 爸爸在喝茶。]",
+    "pinyin": "Kàn cíyǔ yǔ jùzi, pànduàn shìfǒu yízhì: [Hē chá —— Bàba zài hē chá.]",
     "translation": "Đọc từ ngữ phán đoán đúng sai:",
     "audio_url": "",
     "audio_script": "",
     "options": [
       {
-        "text": "✓ Đúng (正确)",
-        "pinyin": "Zhèngquè",
-        "translation": "✓ Đúng (正确)"
+        "text": "对",
+        "pinyin": "Duì",
+        "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (错误)",
-        "pinyin": "Cuòwù",
-        "translation": "✗ Sai (错误)"
+        "text": "错",
+        "pinyin": "Cuò",
+        "translation": "Sai"
       }
     ],
     "correct_option_index": 0,
@@ -1718,21 +1718,21 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 1,
     "question_number": 22,
     "question_type": "true_false",
-    "prompt": "看词语判断正误：[电脑 —— điện thoại]",
-    "pinyin": "Kàn cíyǔ pànduàn zhèngwù: [diànnǎo —— điện thoại]",
+    "prompt": "看词语与句子，判断是否一致：[电脑 —— 我在打电话。]",
+    "pinyin": "Kàn cíyǔ yǔ jùzi, pànduàn shìfǒu yízhì: [Diànnǎo —— Wǒ zài dǎ diànhuà.]",
     "translation": "Đọc từ ngữ phán đoán đúng sai:",
     "audio_url": "",
     "audio_script": "",
     "options": [
       {
-        "text": "✓ Đúng (正确)",
-        "pinyin": "Zhèngquè",
-        "translation": "✓ Đúng (正确)"
+        "text": "对",
+        "pinyin": "Duì",
+        "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (错误)",
-        "pinyin": "Cuòwù",
-        "translation": "✗ Sai (错误)"
+        "text": "错",
+        "pinyin": "Cuò",
+        "translation": "Sai"
       }
     ],
     "correct_option_index": 1,
@@ -1753,22 +1753,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "个 (Gè)",
-        "pinyin": "Gè",
-        "translation": "个 (Gè)"
+        "text": "张",
+        "pinyin": "Zhāng",
+        "translation": "张 (Zhāng)"
       },
       {
-        "text": "本 (Běn)",
+        "text": "本",
         "pinyin": "Běn",
         "translation": "本 (Běn)"
       },
       {
-        "text": "张 (Zhāng)",
-        "pinyin": "Zhāng",
-        "translation": "张 (Zhāng)"
+        "text": "个",
+        "pinyin": "Gè",
+        "translation": "Gè"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Lượng từ cho người: 个人.",
     "points": 10
   },
@@ -1819,22 +1819,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "是 (Là)",
-        "pinyin": "Shì",
-        "translation": "是 (Là)"
-      },
-      {
-        "text": "有 (Có)",
-        "pinyin": "Yǒu",
-        "translation": "有 (Có)"
-      },
-      {
-        "text": "去 (Đi)",
+        "text": "去",
         "pinyin": "Qù",
-        "translation": "去 (Đi)"
+        "translation": "Đi"
+      },
+      {
+        "text": "是",
+        "pinyin": "Shì",
+        "translation": "Là"
+      },
+      {
+        "text": "有",
+        "pinyin": "Yǒu",
+        "translation": "Có"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cấu trúc phán đoán: 我是... (Tôi là...).",
     "points": 10
   },
@@ -1852,19 +1852,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "什么 (Gì)",
+        "text": "什么",
         "pinyin": "Shénme",
-        "translation": "什么 (Gì)"
+        "translation": "Gì"
       },
       {
-        "text": "谁 (Ai)",
+        "text": "哪儿",
+        "pinyin": "Nǎr",
+        "translation": "Ở đâu"
+      },
+      {
+        "text": "谁",
         "pinyin": "Shéi",
         "translation": "谁 (Ai)"
-      },
-      {
-        "text": "哪儿 (Ở đâu)",
-        "pinyin": "Nǎr",
-        "translation": "哪儿 (Ở đâu)"
       }
     ],
     "correct_option_index": 0,
@@ -1885,22 +1885,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "下 (Dưới)",
-        "pinyin": "Xià",
-        "translation": "下 (Dưới)"
-      },
-      {
-        "text": "大 (To)",
+        "text": "大",
         "pinyin": "Dà",
         "translation": "大 (To)"
       },
       {
-        "text": "小 (Nhỏ)",
+        "text": "下",
+        "pinyin": "Xià",
+        "translation": "Dưới"
+      },
+      {
+        "text": "小",
         "pinyin": "Xiǎo",
-        "translation": "小 (Nhỏ)"
+        "translation": "Nhỏ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Vị trí: 下面 (bên dưới).",
     "points": 10
   },
@@ -1918,9 +1918,9 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "①③② (我想喝水。)",
-        "pinyin": "Wǒ xiǎng hē shuǐ.",
-        "translation": "①③② (我想喝水。)"
+        "text": "②①③ (喝水我想。)",
+        "pinyin": "Hē shuǐ wǒ xiǎng.",
+        "translation": "②①③ (喝水我想。)"
       },
       {
         "text": "③①② (想我喝水。)",
@@ -1928,12 +1928,12 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "③①② (想我喝水。)"
       },
       {
-        "text": "②①③ (喝水我想。)",
-        "pinyin": "Hē shuǐ wǒ xiǎng.",
-        "translation": "②①③ (喝水我想。)"
+        "text": "①③② (我想喝水。)",
+        "pinyin": "Wǒ xiǎng hē shuǐ.",
+        "translation": "①③② (我想喝水。)"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Cấu trúc: Chủ ngữ + 想 + Động từ (我想喝水。).",
     "points": 10
   },
@@ -1944,21 +1944,21 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 2,
     "question_number": 29,
     "question_type": "multiple_choice",
-    "prompt": "看拼音选汉字：xuéxí (học tập)",
+    "prompt": "看拼音选汉字：xuéxí",
     "pinyin": "Kàn pīnyīn xuǎn hànzì: xuéxí (học tập)",
     "translation": "Nhìn phiên âm chọn chữ Hán:",
     "audio_url": "",
     "audio_script": "",
     "options": [
       {
-        "text": "学习",
-        "pinyin": "xuéxí",
-        "translation": "学习"
-      },
-      {
         "text": "学校",
         "pinyin": "xuéxiào",
         "translation": "学校"
+      },
+      {
+        "text": "学习",
+        "pinyin": "xuéxí",
+        "translation": "学习"
       },
       {
         "text": "学生",
@@ -1966,7 +1966,7 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "学生"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "学习 nghĩa là học tập.",
     "points": 10
   },
@@ -1978,28 +1978,28 @@ export const REAL_SIMULATION_QUESTIONS = [
     "question_number": 30,
     "question_type": "multiple_choice",
     "prompt": "阅读理解：[我叫大卫，是美国人。我在清华大学学习中文。] 问：大卫学习什么？",
-    "pinyin": "Yuèdú lǐjiě: [Wǒ jiào Dàwèi...] Wèn: Dàwèi xuéxí shénme?",
+    "pinyin": "Yuèdú lǐjiě: [Wǒ jiào Dàwèi, shì Měiguórén. Wǒ zài Qīnghuá Dàxué xuéxí Zhōngwén.] Wèn: Dàwèi xuéxí shénme?",
     "translation": "Đọc hiểu: David học ngành gì?",
     "audio_url": "",
     "audio_script": "",
     "options": [
       {
-        "text": "中文 (Tiếng Trung)",
-        "pinyin": "Zhōngwén",
-        "translation": "中文 (Tiếng Trung)"
-      },
-      {
-        "text": "英语 (Tiếng Anh)",
-        "pinyin": "Yīngyǔ",
-        "translation": "英语 (Tiếng Anh)"
-      },
-      {
-        "text": "法文 (Tiếng Pháp)",
+        "text": "法文",
         "pinyin": "Fǎwén",
-        "translation": "法文 (Tiếng Pháp)"
+        "translation": "Tiếng Pháp"
+      },
+      {
+        "text": "中文",
+        "pinyin": "Zhōngwén",
+        "translation": "Tiếng Trung"
+      },
+      {
+        "text": "英语",
+        "pinyin": "Yīngyǔ",
+        "translation": "Tiếng Anh"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Trong bài ghi rõ: 学习中文.",
     "points": 10
   },
@@ -2017,14 +2017,14 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：今天晚上一起去看电影吧？男：真不巧，我今晚要加班。",
     "options": [
       {
-        "text": "✓ Đúng (对)",
+        "text": "对",
         "pinyin": "Duì",
-        "translation": "✓ Đúng (对)"
+        "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (错)",
+        "text": "错",
         "pinyin": "Cuò",
-        "translation": "✗ Sai (错)"
+        "translation": "Sai"
       }
     ],
     "correct_option_index": 1,
@@ -2045,14 +2045,14 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：外面天气怎么样？男：太阳很大，非常热。",
     "options": [
       {
-        "text": "✓ Đúng (对)",
+        "text": "对",
         "pinyin": "Duì",
-        "translation": "✓ Đúng (对)"
+        "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (错)",
+        "text": "错",
         "pinyin": "Cuò",
-        "translation": "✗ Sai (错)"
+        "translation": "Sai"
       }
     ],
     "correct_option_index": 1,
@@ -2073,14 +2073,14 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：我们怎么去机场？女：坐出租车吧，又快又方便。",
     "options": [
       {
-        "text": "✓ Đúng (对)",
+        "text": "对",
         "pinyin": "Duì",
-        "translation": "✓ Đúng (对)"
+        "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (错)",
+        "text": "错",
         "pinyin": "Cuò",
-        "translation": "✗ Sai (错)"
+        "translation": "Sai"
       }
     ],
     "correct_option_index": 0,
@@ -2101,14 +2101,14 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：这件衣服两千块，怎么样？女：太贵了，我们再去别家看看吧。",
     "options": [
       {
-        "text": "✓ Đúng (对)",
+        "text": "对",
         "pinyin": "Duì",
-        "translation": "✓ Đúng (对)"
+        "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (错)",
+        "text": "错",
         "pinyin": "Cuò",
-        "translation": "✗ Sai (错)"
+        "translation": "Sai"
       }
     ],
     "correct_option_index": 0,
@@ -2129,14 +2129,14 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：李老师今天怎么没来上班？男：他感冒生病了，在医院看病呢。",
     "options": [
       {
-        "text": "✓ Đúng (对)",
+        "text": "对",
         "pinyin": "Duì",
-        "translation": "✓ Đúng (对)"
+        "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (错)",
+        "text": "错",
         "pinyin": "Cuò",
-        "translation": "✗ Sai (错)"
+        "translation": "Sai"
       }
     ],
     "correct_option_index": 0,
@@ -2157,22 +2157,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "每天早晨我都去公园跑步半个小时。",
     "options": [
       {
-        "text": "Chạy bộ (跑步)",
-        "pinyin": "Pǎobù",
-        "translation": "Chạy bộ (跑步)"
-      },
-      {
-        "text": "Bơi lội (游泳)",
+        "text": "游泳",
         "pinyin": "Yóuyǒng",
-        "translation": "Bơi lội (游泳)"
+        "translation": "Bơi lội"
       },
       {
-        "text": "Đá bóng (踢足球)",
+        "text": "踢足球",
         "pinyin": "Tī zúqiú",
-        "translation": "Đá bóng (踢足球)"
+        "translation": "Đá bóng"
+      },
+      {
+        "text": "跑步",
+        "pinyin": "Pǎobù",
+        "translation": "Chạy bộ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Đang nói về môn chạy bộ: 跑步.",
     "points": 5
   },
@@ -2190,22 +2190,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：您需要买点儿什么？男：我想买一件黑色的羽绒服。问：男的想买什么？",
     "options": [
       {
-        "text": "Áo khoác lông vũ (羽绒服)",
-        "pinyin": "Yǔróngfú",
-        "translation": "Áo khoác lông vũ (羽绒服)"
-      },
-      {
-        "text": "Giày thể thao (运动鞋)",
-        "pinyin": "Yùndòngxié",
-        "translation": "Giày thể thao (运动鞋)"
-      },
-      {
-        "text": "Mũ nón (帽子)",
+        "text": "帽子",
         "pinyin": "Màozi",
-        "translation": "Mũ nón (帽子)"
+        "translation": "Mũ nón"
+      },
+      {
+        "text": "羽绒服",
+        "pinyin": "Yǔróngfú",
+        "translation": "Áo khoác lông vũ"
+      },
+      {
+        "text": "运动鞋",
+        "pinyin": "Yùndòngxié",
+        "translation": "Giày thể thao"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Người nam nói muốn mua 羽绒服.",
     "points": 5
   },
@@ -2223,22 +2223,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "服务员，请给我们拿一份菜单。",
     "options": [
       {
-        "text": "Nhà hàng (餐馆)",
-        "pinyin": "Cānguǎn",
-        "translation": "Nhà hàng (餐馆)"
-      },
-      {
-        "text": "Hiệu sách (书店)",
+        "text": "书店",
         "pinyin": "Shūdiàn",
-        "translation": "Hiệu sách (书店)"
+        "translation": "Hiệu sách"
       },
       {
-        "text": "Ngân hàng (银行)",
+        "text": "餐馆",
+        "pinyin": "Cānguǎn",
+        "translation": "Nhà hàng"
+      },
+      {
+        "text": "银行",
         "pinyin": "Yínháng",
-        "translation": "Ngân hàng (银行)"
+        "translation": "Ngân hàng"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Gọi người phục vụ và xin thực đơn (菜单) là ở nhà hàng.",
     "points": 5
   },
@@ -2256,19 +2256,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "路上车太多了，我骑自行车去学校更快。",
     "options": [
       {
-        "text": "Xe đạp (自行车)",
+        "text": "自行车",
         "pinyin": "Zìxíngchē",
-        "translation": "Xe đạp (自行车)"
+        "translation": "Xe đạp"
       },
       {
-        "text": "Tàu điện ngầm (地铁)",
-        "pinyin": "Dìtiě",
-        "translation": "Tàu điện ngầm (地铁)"
-      },
-      {
-        "text": "Xe buýt (公共汽车)",
+        "text": "公共汽车",
         "pinyin": "Gōnggòng qìchē",
-        "translation": "Xe buýt (公共汽车)"
+        "translation": "Xe buýt"
+      },
+      {
+        "text": "地铁",
+        "pinyin": "Dìtiě",
+        "translation": "Tàu điện ngầm"
       }
     ],
     "correct_option_index": 0,
@@ -2289,22 +2289,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "我今天眼睛有点儿不舒服，想休息一下。",
     "options": [
       {
-        "text": "Mắt (眼睛)",
-        "pinyin": "Yǎnjing",
-        "translation": "Mắt (眼睛)"
-      },
-      {
-        "text": "Chân (腿)",
+        "text": "腿",
         "pinyin": "Tuǐ",
-        "translation": "Chân (腿)"
+        "translation": "Chân"
       },
       {
-        "text": "Cánh tay (手臂)",
+        "text": "眼睛",
+        "pinyin": "Yǎnjing",
+        "translation": "Mắt"
+      },
+      {
+        "text": "手臂",
         "pinyin": "Shǒubì",
-        "translation": "Cánh tay (手臂)"
+        "translation": "Cánh tay"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Nói rõ '眼睛有点儿不舒服' (mắt hơi khó chịu).",
     "points": 5
   },
@@ -2322,19 +2322,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：这块手表真漂亮，多少钱买的？女：不贵，只要三百多块。问：这块手表多少钱？",
     "options": [
       {
-        "text": "300 hơn đồng (三百多块)",
+        "text": "三百多块",
         "pinyin": "Sānbǎi duō kuài",
-        "translation": "300 hơn đồng (三百多块)"
+        "translation": "300 hơn đồng"
       },
       {
-        "text": "1000 đồng (一千块)",
-        "pinyin": "Yìqiān kuài",
-        "translation": "1000 đồng (一千块)"
-      },
-      {
-        "text": "500 đồng (五百块)",
+        "text": "五百块",
         "pinyin": "Wǔbǎi kuài",
-        "translation": "500 đồng (五百块)"
+        "translation": "500 đồng"
+      },
+      {
+        "text": "一千块",
+        "pinyin": "Yìqiān kuài",
+        "translation": "1000 đồng"
       }
     ],
     "correct_option_index": 0,
@@ -2355,22 +2355,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：你学汉语学了多长时间了？男：我已经学了一年多了。问：男的学汉语多久了？",
     "options": [
       {
-        "text": "Hơn 1 năm (一年多)",
-        "pinyin": "Yì nián duō",
-        "translation": "Hơn 1 năm (一年多)"
-      },
-      {
-        "text": "Mấy tháng (几个月)",
+        "text": "几个月",
         "pinyin": "Jǐ gè yuè",
-        "translation": "Mấy tháng (几个月)"
+        "translation": "Mấy tháng"
       },
       {
-        "text": "Ba năm (三年)",
+        "text": "三年",
         "pinyin": "Sān nián",
-        "translation": "Ba năm (三年)"
+        "translation": "Ba năm"
+      },
+      {
+        "text": "一年多",
+        "pinyin": "Yì nián duō",
+        "translation": "Hơn 1 năm"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Đã học hơn 1 năm: 一年多了.",
     "points": 5
   },
@@ -2388,19 +2388,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：从这里到火车站远吗？女：不远，走路十分钟就到了。问：去火车站远不远？",
     "options": [
       {
-        "text": "Không xa, đi bộ 10 phút (不远，走路十分钟)",
+        "text": "不远，走路十分钟",
         "pinyin": "Bù yuǎn, zǒulù shí fēnzhōng",
-        "translation": "Không xa, đi bộ 10 phút (不远，走路十分钟)"
+        "translation": "Không xa, đi bộ 10 phút"
       },
       {
-        "text": "Rất xa, phải đi xe bus (很远)",
+        "text": "很远",
         "pinyin": "Hěn yuǎn",
-        "translation": "Rất xa, phải đi xe bus (很远)"
+        "translation": "Rất xa, phải đi xe bus"
       },
       {
-        "text": "Cần 1 tiếng (要一个小时)",
+        "text": "要一个小时",
         "pinyin": "Yào yí gè xiǎoshí",
-        "translation": "Cần 1 tiếng (要一个小时)"
+        "translation": "Cần 1 tiếng"
       }
     ],
     "correct_option_index": 0,
@@ -2421,22 +2421,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：先生，您看这件红色的衣服怎么样？男：颜色很好看，但我更喜欢白色的。问：男的喜欢什么颜色的？",
     "options": [
       {
-        "text": "Màu trắng (白色的)",
-        "pinyin": "Báisè de",
-        "translation": "Màu trắng (白色的)"
-      },
-      {
-        "text": "Màu đỏ (红色的)",
-        "pinyin": "Hóngsè de",
-        "translation": "Màu đỏ (红色的)"
-      },
-      {
-        "text": "Màu đen (黑色的)",
+        "text": "黑色的",
         "pinyin": "Hēisè de",
-        "translation": "Màu đen (黑色的)"
+        "translation": "Màu đen"
+      },
+      {
+        "text": "红色的",
+        "pinyin": "Hóngsè de",
+        "translation": "Màu đỏ"
+      },
+      {
+        "text": "白色的",
+        "pinyin": "Báisè de",
+        "translation": "Màu trắng"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Người nam thích màu trắng: 我更喜欢白色的.",
     "points": 5
   },
@@ -2454,22 +2454,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：听说你要去北京旅游？女：对，下个星期一出发。问：女的什么时候出发？",
     "options": [
       {
-        "text": "Thứ Hai tuần sau (下个星期一)",
-        "pinyin": "Xià gè xīngqīyī",
-        "translation": "Thứ Hai tuần sau (下个星期一)"
-      },
-      {
-        "text": "Hôm nay (今天)",
-        "pinyin": "Jīntiān",
-        "translation": "Hôm nay (今天)"
-      },
-      {
-        "text": "Tháng sau (下个月)",
+        "text": "下个月",
         "pinyin": "Xià gè yuè",
-        "translation": "Tháng sau (下个月)"
+        "translation": "Tháng sau"
+      },
+      {
+        "text": "下个星期一",
+        "pinyin": "Xià gè xīngqīyī",
+        "translation": "Thứ Hai tuần sau"
+      },
+      {
+        "text": "今天",
+        "pinyin": "Jīntiān",
+        "translation": "Hôm nay"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Khởi hành vào thứ Hai tuần sau: 下个星期一出发.",
     "points": 5
   },
@@ -2487,22 +2487,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：小丽，周末有时间一起去打篮球吗？女：不行，这个周末我要准备汉语考试。男：那祝你考出好成绩！问：女的周末要做什么？",
     "options": [
       {
-        "text": "Chuẩn bị thi tiếng Trung (准备汉语考试)",
-        "pinyin": "Zhǔnbèi Hànyǔ kǎoshì",
-        "translation": "Chuẩn bị thi tiếng Trung (准备汉语考试)"
-      },
-      {
-        "text": "Đi chơi bóng rổ (去打篮球)",
-        "pinyin": "Qù dǎ lánqiú",
-        "translation": "Đi chơi bóng rổ (去打篮球)"
-      },
-      {
-        "text": "Đi xem phim (去看电影)",
+        "text": "去看电影",
         "pinyin": "Qù kàn diànyǐng",
-        "translation": "Đi xem phim (去看电影)"
+        "translation": "Đi xem phim"
+      },
+      {
+        "text": "去打篮球",
+        "pinyin": "Qù dǎ lánqiú",
+        "translation": "Đi chơi bóng rổ"
+      },
+      {
+        "text": "准备汉语考试",
+        "pinyin": "Zhǔnbèi Hànyǔ kǎoshì",
+        "translation": "Chuẩn bị thi tiếng Trung"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Người nữ bận chuẩn bị cho kỳ thi tiếng Trung: 准备汉语考试.",
     "points": 5
   },
@@ -2520,19 +2520,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：服务员，我们点的西瓜还没上来。男：不好意思，现在客人比较多，我马上给您催一下。问：女的在等什么？",
     "options": [
       {
-        "text": "Dưa hấu (西瓜)",
+        "text": "西瓜",
         "pinyin": "Xīguā",
-        "translation": "Dưa hấu (西瓜)"
+        "translation": "Dưa hấu"
       },
       {
-        "text": "Trà (茶)",
+        "text": "茶",
         "pinyin": "Chá",
-        "translation": "Trà (茶)"
+        "translation": "Trà"
       },
       {
-        "text": "Cơm chiên (炒饭)",
+        "text": "炒饭",
         "pinyin": "Chǎofàn",
-        "translation": "Cơm chiên (炒饭)"
+        "translation": "Cơm chiên"
       }
     ],
     "correct_option_index": 0,
@@ -2553,22 +2553,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：你每天怎么去公司上班？女：以前我坐公交车，现在我每天骑共享单车，既锻炼身体又环保。问：女的现在怎么上班？",
     "options": [
       {
-        "text": "Đi xe đạp (骑自行车)",
-        "pinyin": "Qí zìxíngchē",
-        "translation": "Đi xe đạp (骑自行车)"
-      },
-      {
-        "text": "Đi xe bus (坐公交车)",
-        "pinyin": "Zuò gōngjiāochē",
-        "translation": "Đi xe bus (坐公交车)"
-      },
-      {
-        "text": "Lái xe hơi (开车)",
+        "text": "开车",
         "pinyin": "Kāichē",
-        "translation": "Lái xe hơi (开车)"
+        "translation": "Lái xe hơi"
+      },
+      {
+        "text": "骑自行车",
+        "pinyin": "Qí zìxíngchē",
+        "translation": "Đi xe đạp"
+      },
+      {
+        "text": "坐公交车",
+        "pinyin": "Zuò gōngjiāochē",
+        "translation": "Đi xe bus"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Hiện tại đi xe đạp: 骑共享单车/自行车.",
     "points": 5
   },
@@ -2586,22 +2586,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：外面风很大，快把窗户关上吧。男：好，今天晚上气温可能降到零度以下呢。问：男的接下来要做什么？",
     "options": [
       {
-        "text": "Đóng cửa sổ (关上窗户)",
-        "pinyin": "Guānshang chuānghu",
-        "translation": "Đóng cửa sổ (关上窗户)"
-      },
-      {
-        "text": "Mở cửa sổ (开窗户)",
+        "text": "开窗户",
         "pinyin": "Kāi chuānghu",
-        "translation": "Mở cửa sổ (开窗户)"
+        "translation": "Mở cửa sổ"
       },
       {
-        "text": "Đi ra ngoài (出去)",
+        "text": "出去",
         "pinyin": "Chūqù",
-        "translation": "Đi ra ngoài (出去)"
+        "translation": "Đi ra ngoài"
+      },
+      {
+        "text": "关上窗户",
+        "pinyin": "Guānshang chuānghu",
+        "translation": "Đóng cửa sổ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Người nam sẽ đi đóng cửa sổ theo đề nghị: 把窗户关上.",
     "points": 5
   },
@@ -2619,19 +2619,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：喂，王阿姨，大卫在家吗？女：他不在，他跟同学去图书馆借书了，下午四点才回来。问：大卫去了哪里？",
     "options": [
       {
-        "text": "Thư viện (图书馆)",
+        "text": "图书馆",
         "pinyin": "Túshūguǎn",
-        "translation": "Thư viện (图书馆)"
+        "translation": "Thư viện"
       },
       {
-        "text": "Rạp chiếu phim (电影院)",
-        "pinyin": "Diànyǐngyuàn",
-        "translation": "Rạp chiếu phim (电影院)"
-      },
-      {
-        "text": "Bệnh viện (医院)",
+        "text": "医院",
         "pinyin": "Yīyuàn",
-        "translation": "Bệnh viện (医院)"
+        "translation": "Bệnh viện"
+      },
+      {
+        "text": "电影院",
+        "pinyin": "Diànyǐngyuàn",
+        "translation": "Rạp chiếu phim"
       }
     ],
     "correct_option_index": 0,
@@ -2652,24 +2652,24 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "冷 (Lạnh)",
+        "text": "冷",
         "pinyin": "Lěng",
-        "translation": "冷 (Lạnh)"
+        "translation": "Lạnh"
       },
       {
-        "text": "热 (Nóng)",
-        "pinyin": "Rè",
-        "translation": "热 (Nóng)"
+        "text": "快",
+        "pinyin": "Kuài",
+        "translation": "快 (Nhanh)"
       },
       {
-        "text": "远 (Xa)",
+        "text": "远",
         "pinyin": "Yuǎn",
         "translation": "远 (Xa)"
       },
       {
-        "text": "快 (Nhanh)",
-        "pinyin": "Kuài",
-        "translation": "快 (Nhanh)"
+        "text": "热",
+        "pinyin": "Rè",
+        "translation": "Nóng"
       }
     ],
     "correct_option_index": 0,
@@ -2690,27 +2690,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "但是 (Nhưng)",
-        "pinyin": "Dànshì",
-        "translation": "但是 (Nhưng)"
-      },
-      {
-        "text": "所以 (Cho nên)",
-        "pinyin": "Suǒyǐ",
-        "translation": "所以 (Cho nên)"
-      },
-      {
-        "text": "因为 (Bởi vì)",
+        "text": "因为",
         "pinyin": "Yīnwèi",
-        "translation": "因为 (Bởi vì)"
+        "translation": "Bởi vì"
       },
       {
-        "text": "或者 (Hoặc)",
+        "text": "或者",
         "pinyin": "Huòzhě",
-        "translation": "或者 (Hoặc)"
+        "translation": "Hoặc"
+      },
+      {
+        "text": "但是",
+        "pinyin": "Dànshì",
+        "translation": "Nhưng"
+      },
+      {
+        "text": "所以",
+        "pinyin": "Suǒyǐ",
+        "translation": "Cho nên"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Cặp liên từ: 虽然...但是... (Tuy...nhưng...).",
     "points": 6
   },
@@ -2728,24 +2728,24 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "做 (Làm)",
+        "text": "做",
         "pinyin": "Zuò",
-        "translation": "做 (Làm)"
+        "translation": "Làm"
       },
       {
-        "text": "吃 (Ăn)",
+        "text": "吃",
         "pinyin": "Chī",
-        "translation": "吃 (Ăn)"
+        "translation": "Ăn"
       },
       {
-        "text": "买 (Mua)",
+        "text": "买",
         "pinyin": "Mǎi",
         "translation": "买 (Mua)"
       },
       {
-        "text": "听 (Nghe)",
+        "text": "听",
         "pinyin": "Tīng",
-        "translation": "听 (Nghe)"
+        "translation": "Nghe"
       }
     ],
     "correct_option_index": 0,
@@ -2766,27 +2766,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "近 (Gần)",
+        "text": "长",
+        "pinyin": "Cháng",
+        "translation": "Dài"
+      },
+      {
+        "text": "近",
         "pinyin": "Jìn",
-        "translation": "近 (Gần)"
+        "translation": "Gần"
       },
       {
-        "text": "远 (Xa)",
-        "pinyin": "Yuǎn",
-        "translation": "远 (Xa)"
-      },
-      {
-        "text": "高 (Cao)",
+        "text": "高",
         "pinyin": "Gāo",
         "translation": "高 (Cao)"
       },
       {
-        "text": "长 (Dài)",
-        "pinyin": "Cháng",
-        "translation": "长 (Dài)"
+        "text": "远",
+        "pinyin": "Yuǎn",
+        "translation": "远 (Xa)"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Đi bộ 5 phút tới nơi chứng tỏ rất gần: 近 (jìn).",
     "points": 6
   },
@@ -2804,27 +2804,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "所以 (Cho nên / Vì vậy)",
-        "pinyin": "Suǒyǐ",
-        "translation": "所以 (Cho nên / Vì vậy)"
-      },
-      {
-        "text": "虽然 (Tuy rằng)",
+        "text": "虽然",
         "pinyin": "Suīrán",
-        "translation": "虽然 (Tuy rằng)"
+        "translation": "Tuy rằng"
       },
       {
-        "text": "如果 (Nếu như)",
+        "text": "所以",
+        "pinyin": "Suǒyǐ",
+        "translation": "Cho nên / Vì vậy"
+      },
+      {
+        "text": "如果",
         "pinyin": "Rúguǒ",
-        "translation": "如果 (Nếu như)"
+        "translation": "Nếu như"
       },
       {
-        "text": "而且 (Hơn nữa)",
+        "text": "而且",
         "pinyin": "Érqiě",
-        "translation": "而且 (Hơn nữa)"
+        "translation": "Hơn nữa"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cặp liên từ nhân quả: 因为...所以... (Bởi vì...cho nên...).",
     "points": 6
   },
@@ -2842,28 +2842,28 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "完 (Xong)",
+        "text": "完",
         "pinyin": "Wán",
         "translation": "完 (Xong)"
       },
       {
-        "text": "懂 (Hiểu)",
-        "pinyin": "Dǒng",
-        "translation": "懂 (Hiểu)"
-      },
-      {
-        "text": "错 (Sai)",
-        "pinyin": "Cuò",
-        "translation": "错 (Sai)"
-      },
-      {
-        "text": "见 (Thấy)",
+        "text": "见",
         "pinyin": "Jiàn",
-        "translation": "见 (Thấy)"
+        "translation": "Thấy"
+      },
+      {
+        "text": "懂",
+        "pinyin": "Dǒng",
+        "translation": "Hiểu"
+      },
+      {
+        "text": "错",
+        "pinyin": "Cuò",
+        "translation": "Sai"
       }
     ],
     "correct_option_index": 0,
-    "explanation": "Đọc xong: 看完了.",
+    "explanation": "Bổ ngữ kết quả '完' (wán - xong, hoàn tất) kết hợp với động từ '看' tạo thành '看完' (đọc xong cuốn sách).",
     "points": 6
   },
   {
@@ -2880,24 +2880,24 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "快 (Mau / Nhanh)",
+        "text": "快",
         "pinyin": "Kuài",
         "translation": "快 (Mau / Nhanh)"
       },
       {
-        "text": "慢 (Chậm)",
-        "pinyin": "Màn",
-        "translation": "慢 (Chậm)"
-      },
-      {
-        "text": "远 (Xa)",
+        "text": "远",
         "pinyin": "Yuǎn",
         "translation": "远 (Xa)"
       },
       {
-        "text": "高 (Cao)",
+        "text": "高",
         "pinyin": "Gāo",
         "translation": "高 (Cao)"
+      },
+      {
+        "text": "慢",
+        "pinyin": "Màn",
+        "translation": "Chậm"
       }
     ],
     "correct_option_index": 0,
@@ -2918,27 +2918,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "支 (Cây / Chiếc)",
-        "pinyin": "Zhī",
-        "translation": "支 (Cây / Chiếc)"
-      },
-      {
-        "text": "本 (Quyển)",
-        "pinyin": "Běn",
-        "translation": "本 (Quyển)"
-      },
-      {
-        "text": "张 (Tờ)",
+        "text": "张",
         "pinyin": "Zhāng",
-        "translation": "张 (Tờ)"
+        "translation": "Tờ"
       },
       {
-        "text": "块 (Miếng)",
+        "text": "块",
         "pinyin": "Kuài",
-        "translation": "块 (Miếng)"
+        "translation": "Miếng"
+      },
+      {
+        "text": "本",
+        "pinyin": "Běn",
+        "translation": "Quyển"
+      },
+      {
+        "text": "支",
+        "pinyin": "Zhī",
+        "translation": "Cây / Chiếc"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 3,
     "explanation": "Lượng từ cho bút là 支: 两支铅笔.",
     "points": 6
   },
@@ -2956,27 +2956,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "更 (Càng / Hơn)",
-        "pinyin": "Gèng",
-        "translation": "更 (Càng / Hơn)"
-      },
-      {
-        "text": "最 (Nhất)",
-        "pinyin": "Zuì",
-        "translation": "最 (Nhất)"
-      },
-      {
-        "text": "都 (Đều)",
+        "text": "都",
         "pinyin": "Dōu",
-        "translation": "都 (Đều)"
+        "translation": "Đều"
       },
       {
-        "text": "很 (Rất)",
+        "text": "最",
+        "pinyin": "Zuì",
+        "translation": "Nhất"
+      },
+      {
+        "text": "更",
+        "pinyin": "Gèng",
+        "translation": "Càng / Hơn"
+      },
+      {
+        "text": "很",
         "pinyin": "Hěn",
-        "translation": "很 (Rất)"
+        "translation": "Rất"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "So sánh hơn: 更大一点儿 (cỡ to hơn một chút).",
     "points": 6
   },
@@ -2994,27 +2994,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "药 (Thuốc)",
-        "pinyin": "Yào",
-        "translation": "药 (Thuốc)"
-      },
-      {
-        "text": "茶 (Trà)",
-        "pinyin": "Chá",
-        "translation": "茶 (Trà)"
-      },
-      {
-        "text": "饭 (Cơm)",
+        "text": "饭",
         "pinyin": "Fàn",
-        "translation": "饭 (Cơm)"
+        "translation": "Cơm"
       },
       {
-        "text": "菜 (Thức ăn)",
+        "text": "药",
+        "pinyin": "Yào",
+        "translation": "Thuốc"
+      },
+      {
+        "text": "茶",
+        "pinyin": "Chá",
+        "translation": "Trà"
+      },
+      {
+        "text": "菜",
         "pinyin": "Cài",
-        "translation": "菜 (Thức ăn)"
+        "translation": "Thức ăn"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Uống thuốc là 吃药 (chī yào).",
     "points": 6
   },
@@ -3032,27 +3032,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "在二楼，电梯旁边。 (Ở tầng 2, bên cạnh thang máy)",
-        "pinyin": "Zài èr lóu...",
-        "translation": "在二楼，电梯旁边。 (Ở tầng 2, bên cạnh thang máy)"
-      },
-      {
-        "text": "我不要。 (Tôi không cần)",
-        "pinyin": "Wǒ bú yào.",
-        "translation": "我不要。 (Tôi không cần)"
-      },
-      {
-        "text": "三十块钱。 (Ba mươi đồng)",
+        "text": "三十块钱。",
         "pinyin": "Sānshí kuài.",
-        "translation": "三十块钱。 (Ba mươi đồng)"
+        "translation": "Ba mươi đồng"
       },
       {
-        "text": "昨天去的。 (Đi hôm qua)",
+        "text": "昨天去的。",
         "pinyin": "Zuótiān qù de.",
-        "translation": "昨天去的。 (Đi hôm qua)"
+        "translation": "Đi hôm qua"
+      },
+      {
+        "text": "在二楼，电梯旁边。",
+        "pinyin": "Zài èr lóu, diàntī pángbiān.",
+        "translation": "Ở tầng 2, bên cạnh thang máy"
+      },
+      {
+        "text": "我不要。",
+        "pinyin": "Wǒ bú yào.",
+        "translation": "Tôi không cần"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Chỉ vị trí tầng: 在二楼.",
     "points": 6
   },
@@ -3064,33 +3064,33 @@ export const REAL_SIMULATION_QUESTIONS = [
     "question_number": 32,
     "question_type": "multiple_choice",
     "prompt": "阅读理解：[北京的秋天天气最好，不冷也不热，树叶都变黄了，非常漂亮。] 问：北京什么时候天气最好？",
-    "pinyin": "Yuèdú lǐjiě: [Běijīng de qiūtiān tiānqì zuì hǎo...] Wèn: Běijīng shénme shíhou tiānqì zuì hǎo?",
+    "pinyin": "Yuèdú lǐjiě: [Běijīng de qiūtiān tiānqì zuì hǎo, bù lěng yě bù rè, shùyè dōu biànhuáng le, fēicháng piàoliang.] Wèn: Běijīng shénme shíhou tiānqì zuì hǎo?",
     "translation": "Đọc đoạn văn ngắn: Mùa nào ở Bắc Kinh thời tiết đẹp nhất?",
     "audio_url": "",
     "audio_script": "",
     "options": [
       {
-        "text": "秋天 (Mùa thu)",
-        "pinyin": "Qiūtiān",
-        "translation": "秋天 (Mùa thu)"
-      },
-      {
-        "text": "春天 (Mùa xuân)",
-        "pinyin": "Chūntiān",
-        "translation": "春天 (Mùa xuân)"
-      },
-      {
-        "text": "夏天 (Mùa hè)",
+        "text": "夏天",
         "pinyin": "Xiàtiān",
-        "translation": "夏天 (Mùa hè)"
+        "translation": "Mùa hè"
       },
       {
-        "text": "冬天 (Mùa đông)",
+        "text": "秋天",
+        "pinyin": "Qiūtiān",
+        "translation": "Mùa thu"
+      },
+      {
+        "text": "春天",
+        "pinyin": "Chūntiān",
+        "translation": "Mùa xuân"
+      },
+      {
+        "text": "冬天",
         "pinyin": "Dōngtiān",
-        "translation": "冬天 (Mùa đông)"
+        "translation": "Mùa đông"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Đoạn văn viết: 北京的秋天天气最好 (Mùa thu ở Bắc Kinh thời tiết đẹp nhất).",
     "points": 6
   },
@@ -3108,27 +3108,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "游泳 (Bơi lội)",
-        "pinyin": "Yóuyǒng",
-        "translation": "游泳 (Bơi lội)"
-      },
-      {
-        "text": "跑步 (Chạy bộ)",
-        "pinyin": "Pǎobù",
-        "translation": "跑步 (Chạy bộ)"
-      },
-      {
-        "text": "打篮球 (Bóng rổ)",
+        "text": "打篮球",
         "pinyin": "Dǎ lánqiú",
-        "translation": "打篮球 (Bóng rổ)"
+        "translation": "Bóng rổ"
       },
       {
-        "text": "踢足球 (Đá bóng)",
+        "text": "踢足球",
         "pinyin": "Tī zúqiú",
-        "translation": "踢足球 (Đá bóng)"
+        "translation": "Đá bóng"
+      },
+      {
+        "text": "跑步",
+        "pinyin": "Pǎobù",
+        "translation": "Chạy bộ"
+      },
+      {
+        "text": "游泳",
+        "pinyin": "Yóuyǒng",
+        "translation": "Bơi lội"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 3,
     "explanation": "Đoạn văn nói rõ: 哥哥比我更喜欢游泳 (Anh trai thích bơi hơn).",
     "points": 6
   },
@@ -3146,16 +3146,6 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "②①③④ (哥哥比弟弟高。)",
-        "pinyin": "Gēge bǐ dìdi gāo.",
-        "translation": "②①③④ (哥哥比弟弟高。)"
-      },
-      {
-        "text": "①③②④ (比弟弟哥哥高。)",
-        "pinyin": "Bǐ dìdi gēge gāo.",
-        "translation": "①③②④ (比弟弟哥哥高。)"
-      },
-      {
         "text": "③④①② (弟弟高比哥哥。)",
         "pinyin": "Dìdi gāo bǐ gēge.",
         "translation": "③④①② (弟弟高比哥哥。)"
@@ -3164,9 +3154,19 @@ export const REAL_SIMULATION_QUESTIONS = [
         "text": "②④①③ (哥哥高比弟弟。)",
         "pinyin": "Gēge gāo bǐ dìdi.",
         "translation": "②④①③ (哥哥高比弟弟。)"
+      },
+      {
+        "text": "①③②④ (比弟弟哥哥高。)",
+        "pinyin": "Bǐ dìdi gēge gāo.",
+        "translation": "①③②④ (比弟弟哥哥高。)"
+      },
+      {
+        "text": "②①③④ (哥哥比弟弟高。)",
+        "pinyin": "Gēge bǐ dìdi gāo.",
+        "translation": "②①③④ (哥哥比弟弟高。)"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 3,
     "explanation": "Cấu trúc: A + 比 + B + Tính từ (哥哥比弟弟高。).",
     "points": 6
   },
@@ -3184,27 +3184,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "白衬衫 (Áo sơ mi trắng)",
-        "pinyin": "Bái chènshān",
-        "translation": "白衬衫 (Áo sơ mi trắng)"
-      },
-      {
-        "text": "红外套 (Áo khoác đỏ)",
-        "pinyin": "Hóng wàitào",
-        "translation": "红外套 (Áo khoác đỏ)"
-      },
-      {
-        "text": "黑毛衣 (Áo len đen)",
-        "pinyin": "Hēi máoyī",
-        "translation": "黑毛衣 (Áo len đen)"
-      },
-      {
-        "text": "运动裤 (Quần thể thao)",
+        "text": "运动裤",
         "pinyin": "Yùndòngkù",
-        "translation": "运动裤 (Quần thể thao)"
+        "translation": "Quần thể thao"
+      },
+      {
+        "text": "黑毛衣",
+        "pinyin": "Hēi máoyī",
+        "translation": "Áo len đen"
+      },
+      {
+        "text": "白衬衫",
+        "pinyin": "Bái chènshān",
+        "translation": "Áo sơ mi trắng"
+      },
+      {
+        "text": "红外套",
+        "pinyin": "Hóng wàitào",
+        "translation": "Áo khoác đỏ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Nội dung: 穿了一件新的白衬衫 (mặc chiếc áo sơ mi trắng mới).",
     "points": 6
   },
@@ -3222,19 +3222,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：小王，请问会议室在几层？女：在五层，出电梯往左走就是。问：会议室在几层？",
     "options": [
       {
-        "text": "三层 (Tầng 3)",
+        "text": "三层",
         "pinyin": "Sān céng",
-        "translation": "三层 (Tầng 3)"
+        "translation": "Tầng 3"
       },
       {
-        "text": "五层 (Tầng 5)",
+        "text": "五层",
         "pinyin": "Wǔ céng",
-        "translation": "五层 (Tầng 5)"
+        "translation": "Tầng 5"
       },
       {
-        "text": "七层 (Tầng 7)",
+        "text": "七层",
         "pinyin": "Qī céng",
-        "translation": "七层 (Tầng 7)"
+        "translation": "Tầng 7"
       }
     ],
     "correct_option_index": 1,
@@ -3255,22 +3255,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：天气越来越冷了，你得多穿点儿。女：是啊，我打算周末去商场买一件厚羽绒服。问：女的打算买什么？",
     "options": [
       {
-        "text": "羽绒服 (Áo phao lông vũ)",
-        "pinyin": "Yǔróngfú",
-        "translation": "羽绒服 (Áo phao lông vũ)"
-      },
-      {
-        "text": "衬衫 (Áo sơ mi)",
-        "pinyin": "Chènshān",
-        "translation": "衬衫 (Áo sơ mi)"
-      },
-      {
-        "text": "雨伞 (Cái ô)",
+        "text": "雨伞",
         "pinyin": "Yǔsǎn",
-        "translation": "雨伞 (Cái ô)"
+        "translation": "Cái ô"
+      },
+      {
+        "text": "羽绒服",
+        "pinyin": "Yǔróngfú",
+        "translation": "Áo phao lông vũ"
+      },
+      {
+        "text": "衬衫",
+        "pinyin": "Chènshān",
+        "translation": "Áo sơ mi"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Người nữ nói: '我打算周末去商场买一件厚羽绒服'.",
     "points": 8
   },
@@ -3288,22 +3288,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：你怎么迟到了半个小时？男：真抱歉，路上堵车太严重了。问：男的为什么迟到？",
     "options": [
       {
-        "text": "Kẹt xe trên đường (路上堵车)",
-        "pinyin": "Lùshang dǔchē",
-        "translation": "Kẹt xe trên đường (路上堵车)"
-      },
-      {
-        "text": "Ngủ quên (睡过头)",
+        "text": "睡过头",
         "pinyin": "Shuì guòtóu",
-        "translation": "Ngủ quên (睡过头)"
+        "translation": "Ngủ quên"
       },
       {
-        "text": "Xe hỏng (车坏了)",
+        "text": "车坏了",
         "pinyin": "Chē huài le",
-        "translation": "Xe hỏng (车坏了)"
+        "translation": "Xe hỏng"
+      },
+      {
+        "text": "路上堵车",
+        "pinyin": "Lùshang dǔchē",
+        "translation": "Kẹt xe trên đường"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Lý do: 路上堵车太严重了 (kẹt xe nghiêm trọng).",
     "points": 8
   },
@@ -3321,19 +3321,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：请问，去故宫坐几路公共汽车？女：您得过马路，在对面坐103路车。问：男的要去哪里？",
     "options": [
       {
-        "text": "Cố Cung (故宫)",
+        "text": "故宫",
         "pinyin": "Gùgōng",
-        "translation": "Cố Cung (故宫)"
+        "translation": "Cố Cung"
       },
       {
-        "text": "Sân bay (机场)",
-        "pinyin": "Jīchǎng",
-        "translation": "Sân bay (机场)"
-      },
-      {
-        "text": "Bệnh viện (医院)",
+        "text": "医院",
         "pinyin": "Yīyuàn",
-        "translation": "Bệnh viện (医院)"
+        "translation": "Bệnh viện"
+      },
+      {
+        "text": "机场",
+        "pinyin": "Jīchǎng",
+        "translation": "Sân bay"
       }
     ],
     "correct_option_index": 0,
@@ -3354,14 +3354,14 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "张经理今天下午两点在三楼会议室主持工作会议，请大家准时参加。",
     "options": [
       {
-        "text": "✓ Đúng (正确)",
-        "pinyin": "Zhèngquè",
-        "translation": "✓ Đúng (正确)"
+        "text": "对",
+        "pinyin": "Duì",
+        "translation": "Đúng"
       },
       {
-        "text": "✗ Sai (错误)",
-        "pinyin": "Cuòwù",
-        "translation": "✗ Sai (错误)"
+        "text": "错",
+        "pinyin": "Cuò",
+        "translation": "Sai"
       }
     ],
     "correct_option_index": 0,
@@ -3382,19 +3382,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：医生，我发烧38度，头很疼。女：你感冒了，回去多喝温水，按时吃药，好好休息两天。问：女的建议男的怎么做？",
     "options": [
       {
-        "text": "Nghỉ ngơi và uống nhiều nước (多喝水休息)",
+        "text": "多喝水休息",
         "pinyin": "Duō hē shuǐ xiūxi",
-        "translation": "Nghỉ ngơi và uống nhiều nước (多喝水休息)"
+        "translation": "Nghỉ ngơi và uống nhiều nước"
       },
       {
-        "text": "Đi làm việc ngay (去上班)",
+        "text": "去上班",
         "pinyin": "Qù shàngbān",
-        "translation": "Đi làm việc ngay (去上班)"
+        "translation": "Đi làm việc ngay"
       },
       {
-        "text": "Tập thể dục mạnh (去跑步)",
+        "text": "去跑步",
         "pinyin": "Qù pǎobù",
-        "translation": "Tập thể dục mạnh (去跑步)"
+        "translation": "Tập thể dục mạnh"
       }
     ],
     "correct_option_index": 0,
@@ -3415,22 +3415,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：服务员，请给我们换一个靠窗的桌子。女：好的先生，请随我来这边。问：他们是什么关系？",
     "options": [
       {
-        "text": "Khách và phục vụ (顾客和服务员)",
-        "pinyin": "Gùkè hé fúwùyuán",
-        "translation": "Khách và phục vụ (顾客和服务员)"
-      },
-      {
-        "text": "Đồng nghiệp (同事)",
-        "pinyin": "Tóngshì",
-        "translation": "Đồng nghiệp (同事)"
-      },
-      {
-        "text": "Vợ chồng (夫妻)",
+        "text": "夫妻",
         "pinyin": "Fūqī",
-        "translation": "Vợ chồng (夫妻)"
+        "translation": "Vợ chồng"
+      },
+      {
+        "text": "同事",
+        "pinyin": "Tóngshì",
+        "translation": "Đồng nghiệp"
+      },
+      {
+        "text": "顾客和服务员",
+        "pinyin": "Gùkè hé fúwùyuán",
+        "translation": "Khách và phục vụ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Xưng hô '服务员' và '先生' là quan hệ khách - người phục vụ.",
     "points": 8
   },
@@ -3448,22 +3448,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：这双皮鞋原价八百块，今天打五折，只要四百块。男：太划算了，我买一双。问：男的要付多少钱？",
     "options": [
       {
-        "text": "400 đồng (四百块)",
-        "pinyin": "Sìbǎi kuài",
-        "translation": "400 đồng (四百块)"
-      },
-      {
-        "text": "800 đồng (八百块)",
-        "pinyin": "Bābǎi kuài",
-        "translation": "800 đồng (八百块)"
-      },
-      {
-        "text": "500 đồng (五百块)",
+        "text": "五百块",
         "pinyin": "Wǔbǎi kuài",
-        "translation": "500 đồng (五百块)"
+        "translation": "500 đồng"
+      },
+      {
+        "text": "四百块",
+        "pinyin": "Sìbǎi kuài",
+        "translation": "400 đồng"
+      },
+      {
+        "text": "八百块",
+        "pinyin": "Bābǎi kuài",
+        "translation": "800 đồng"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Giảm 50% còn 400 tệ: 只要四百块.",
     "points": 8
   },
@@ -3481,22 +3481,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：你学中国画学了多久了？女：三年了，我每逢周末都去文化宫跟老师练习。问：女的学中国画几年了？",
     "options": [
       {
-        "text": "3 năm (三年)",
-        "pinyin": "Sān nián",
-        "translation": "3 năm (三年)"
-      },
-      {
-        "text": "1 năm (一年)",
-        "pinyin": "Yì nián",
-        "translation": "1 năm (一年)"
-      },
-      {
-        "text": "5 năm (五年)",
+        "text": "五年",
         "pinyin": "Wǔ nián",
-        "translation": "5 năm (五年)"
+        "translation": "5 năm"
+      },
+      {
+        "text": "一年",
+        "pinyin": "Yì nián",
+        "translation": "1 năm"
+      },
+      {
+        "text": "三年",
+        "pinyin": "Sān nián",
+        "translation": "3 năm"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Học vẽ tranh Trung Quốc 3 năm: 三年了.",
     "points": 8
   },
@@ -3514,22 +3514,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：你看见我的护照了吗？明天出国要用呢。男：放在客厅茶几上面的包里了，快去拿吧。问：护照在哪里？",
     "options": [
       {
-        "text": "Trong túi trên bàn trà (包里)",
-        "pinyin": "Bāo lǐ",
-        "translation": "Trong túi trên bàn trà (包里)"
-      },
-      {
-        "text": "Dưới giường (床下)",
+        "text": "床下",
         "pinyin": "Chuáng xià",
-        "translation": "Dưới giường (床下)"
+        "translation": "Dưới giường"
       },
       {
-        "text": "Trong văn phòng (办公室)",
+        "text": "办公室",
         "pinyin": "Bàngōngshì",
-        "translation": "Trong văn phòng (办公室)"
+        "translation": "Trong văn phòng"
+      },
+      {
+        "text": "包里",
+        "pinyin": "Bāo lǐ",
+        "translation": "Trong túi trên bàn trà"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "放在客厅茶几上面的包里了 (trong túi xách trên bàn trà).",
     "points": 8
   },
@@ -3547,19 +3547,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：小李，这份报告写得非常清楚，数据也很准确。女：谢谢经理，都是大家共同努力的结果。问：经理对这份报告态度如何？",
     "options": [
       {
-        "text": "Khen ngợi, hài lòng (非常满意)",
+        "text": "非常满意",
         "pinyin": "Fēicháng mǎnyì",
-        "translation": "Khen ngợi, hài lòng (非常满意)"
+        "translation": "Khen ngợi, hài lòng"
       },
       {
-        "text": "Chê bai (不满意)",
+        "text": "不满意",
         "pinyin": "Bù mǎnyì",
-        "translation": "Chê bai (不满意)"
+        "translation": "Chê bai"
       },
       {
-        "text": "Yêu cầu viết lại (重写)",
+        "text": "重写",
         "pinyin": "Chóngxiě",
-        "translation": "Yêu cầu viết lại (重写)"
+        "translation": "Yêu cầu viết lại"
       }
     ],
     "correct_option_index": 0,
@@ -3580,22 +3580,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：听说你搬新家了？环境怎么样？男：小区绿化特别好，附近还有公园和超市，非常方便。问：男的新家附近有什么？",
     "options": [
       {
-        "text": "Công viên và siêu thị (公园和超市)",
-        "pinyin": "Gōngyuán hé chāoshì",
-        "translation": "Công viên và siêu thị (公园和超市)"
-      },
-      {
-        "text": "Trường đại học (大学)",
+        "text": "大学",
         "pinyin": "Dàxué",
-        "translation": "Trường đại học (大学)"
+        "translation": "Trường đại học"
       },
       {
-        "text": "Bến xe khách (车站)",
+        "text": "车站",
         "pinyin": "Chēzhàn",
-        "translation": "Bến xe khách (车站)"
+        "translation": "Bến xe khách"
+      },
+      {
+        "text": "公园和超市",
+        "pinyin": "Gōngyuán hé chāoshì",
+        "translation": "Công viên và siêu thị"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Gần công viên và siêu thị: 附近还有公园和超市.",
     "points": 8
   },
@@ -3613,24 +3613,24 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "一定要 (Nhất định phải)",
+        "text": "一定要",
         "pinyin": "Yídìng yào",
-        "translation": "一定要 (Nhất định phải)"
+        "translation": "Nhất định phải"
       },
       {
-        "text": "随便 (Tùy tiện)",
-        "pinyin": "Suíbiàn",
-        "translation": "随便 (Tùy tiện)"
-      },
-      {
-        "text": "偶尔 (Thỉnh thoảng)",
-        "pinyin": "Ǒu'ěr",
-        "translation": "偶尔 (Thỉnh thoảng)"
-      },
-      {
-        "text": "大概 (Đại khái)",
+        "text": "大概",
         "pinyin": "Dàgài",
-        "translation": "大概 (Đại khái)"
+        "translation": "Đại khái"
+      },
+      {
+        "text": "偶尔",
+        "pinyin": "Ǒu'ěr",
+        "translation": "Thỉnh thoảng"
+      },
+      {
+        "text": "随便",
+        "pinyin": "Suíbiàn",
+        "translation": "Tùy tiện"
       }
     ],
     "correct_option_index": 0,
@@ -3651,24 +3651,24 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "提高 (Nâng cao / Tiến bộ)",
+        "text": "提高",
         "pinyin": "Tígāo",
-        "translation": "提高 (Nâng cao / Tiến bộ)"
+        "translation": "Nâng cao / Tiến bộ"
       },
       {
-        "text": "发现 (Phát hiện)",
-        "pinyin": "Fāxiàn",
-        "translation": "发现 (Phát hiện)"
-      },
-      {
-        "text": "检查 (Kiểm tra)",
-        "pinyin": "Jiǎnchá",
-        "translation": "检查 (Kiểm tra)"
-      },
-      {
-        "text": "同意 (Đồng ý)",
+        "text": "同意",
         "pinyin": "Tóngyì",
-        "translation": "同意 (Đồng ý)"
+        "translation": "Đồng ý"
+      },
+      {
+        "text": "检查",
+        "pinyin": "Jiǎnchá",
+        "translation": "Kiểm tra"
+      },
+      {
+        "text": "发现",
+        "pinyin": "Fāxiàn",
+        "translation": "Phát hiện"
       }
     ],
     "correct_option_index": 0,
@@ -3689,27 +3689,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "出来 (Ra được)",
-        "pinyin": "Chūlai",
-        "translation": "出来 (Ra được)"
-      },
-      {
-        "text": "过去 (Qua được)",
-        "pinyin": "Guòqu",
-        "translation": "过去 (Qua được)"
-      },
-      {
-        "text": "起来 (Lên được)",
-        "pinyin": "Qǐlai",
-        "translation": "起来 (Lên được)"
-      },
-      {
-        "text": "下去 (Tiếp được)",
+        "text": "下去",
         "pinyin": "Xiàqu",
-        "translation": "下去 (Tiếp được)"
+        "translation": "Tiếp được"
+      },
+      {
+        "text": "起来",
+        "pinyin": "Qǐlai",
+        "translation": "Lên được"
+      },
+      {
+        "text": "出来",
+        "pinyin": "Chūlai",
+        "translation": "Ra được"
+      },
+      {
+        "text": "过去",
+        "pinyin": "Guòqu",
+        "translation": "Qua được"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Bổ ngữ khả năng: 算不出来 (không tính ra được).",
     "points": 8
   },
@@ -3727,27 +3727,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "千万 (Nhất thiết / Tuyệt đối)",
-        "pinyin": "Qiānwàn",
-        "translation": "千万 (Nhất thiết / Tuyệt đối)"
-      },
-      {
-        "text": "或者 (Hoặc)",
-        "pinyin": "Huòzhě",
-        "translation": "或者 (Hoặc)"
-      },
-      {
-        "text": "难道 (Chẳng lẽ)",
+        "text": "难道",
         "pinyin": "Nándào",
-        "translation": "难道 (Chẳng lẽ)"
+        "translation": "Chẳng lẽ"
       },
       {
-        "text": "故意 (Cố ý)",
+        "text": "故意",
         "pinyin": "Gùyì",
-        "translation": "故意 (Cố ý)"
+        "translation": "Cố ý"
+      },
+      {
+        "text": "千万",
+        "pinyin": "Qiānwàn",
+        "translation": "Nhất thiết / Tuyệt đối"
+      },
+      {
+        "text": "或者",
+        "pinyin": "Huòzhě",
+        "translation": "Hoặc"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Lời dặn dò khuyên can thiết tha: 千万要注意身体.",
     "points": 8
   },
@@ -3765,27 +3765,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "如果...就... (Nếu...thì...)",
-        "pinyin": "Rúguǒ...jiù...",
-        "translation": "如果...就... (Nếu...thì...)"
-      },
-      {
-        "text": "虽然...但是... (Tuy...nhưng...)",
+        "text": "虽然...但是...",
         "pinyin": "Suīrán...dànshì...",
-        "translation": "虽然...但是... (Tuy...nhưng...)"
+        "translation": "Tuy...nhưng..."
       },
       {
-        "text": "不仅...而且... (Không chỉ...mà còn...)",
-        "pinyin": "Bùjǐn...érqiě...",
-        "translation": "不仅...而且... (Không chỉ...mà còn...)"
-      },
-      {
-        "text": "只有...才... (Chỉ có...mới...)",
+        "text": "只有...才...",
         "pinyin": "Zhǐyǒu...cái...",
-        "translation": "只有...才... (Chỉ có...mới...)"
+        "translation": "Chỉ có...mới..."
+      },
+      {
+        "text": "不仅...而且...",
+        "pinyin": "Bùjǐn...érqiě...",
+        "translation": "Không chỉ...mà còn..."
+      },
+      {
+        "text": "如果...就...",
+        "pinyin": "Rúguǒ...jiù...",
+        "translation": "Nếu...thì..."
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 3,
     "explanation": "Giả thiết điều kiện: 如果明天下雨，就推迟.",
     "points": 8
   },
@@ -3803,24 +3803,24 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "说话 (Nói chuyện)",
+        "text": "说话",
         "pinyin": "Shuōhuà",
-        "translation": "说话 (Nói chuyện)"
+        "translation": "Nói chuyện"
       },
       {
-        "text": "看书 (Đọc sách)",
-        "pinyin": "Kàn shū",
-        "translation": "看书 (Đọc sách)"
-      },
-      {
-        "text": "借书 (Mượn sách)",
-        "pinyin": "Jiè shū",
-        "translation": "借书 (Mượn sách)"
-      },
-      {
-        "text": "走路 (Đi bộ)",
+        "text": "走路",
         "pinyin": "Zǒu lù",
-        "translation": "走路 (Đi bộ)"
+        "translation": "Đi bộ"
+      },
+      {
+        "text": "借书",
+        "pinyin": "Jiè shū",
+        "translation": "Mượn sách"
+      },
+      {
+        "text": "看书",
+        "pinyin": "Kàn shū",
+        "translation": "Đọc sách"
       }
     ],
     "correct_option_index": 0,
@@ -3841,27 +3841,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "Luyện tập nhiều sẽ thành thạo và giỏi (经常练习就能做好)",
-        "pinyin": "Jīngcháng liànxí jiù néng zuò hǎo",
-        "translation": "Luyện tập nhiều sẽ thành thạo và giỏi (经常练习就能做好)"
-      },
-      {
-        "text": "Phải có tài năng bẩm sinh (需要天赋)",
-        "pinyin": "Xūyào tiānfù",
-        "translation": "Phải có tài năng bẩm sinh (需要天赋)"
-      },
-      {
-        "text": "Làm việc phải nhờ người khác (依靠别人)",
-        "pinyin": "Yīkào biérén",
-        "translation": "Làm việc phải nhờ người khác (依靠别人)"
-      },
-      {
-        "text": "Không cần luyện tập (不用练习)",
+        "text": "不用练习",
         "pinyin": "Bú yòng liànxí",
-        "translation": "Không cần luyện tập (不用练习)"
+        "translation": "Không cần luyện tập"
+      },
+      {
+        "text": "经常练习就能做好",
+        "pinyin": "Jīngcháng liànxí jiù néng zuò hǎo",
+        "translation": "Luyện tập nhiều sẽ thành thạo và giỏi"
+      },
+      {
+        "text": "需要天赋",
+        "pinyin": "Xūyào tiānfù",
+        "translation": "Phải có tài năng bẩm sinh"
+      },
+      {
+        "text": "依靠别人",
+        "pinyin": "Yīkào biérén",
+        "translation": "Làm việc phải nhờ người khác"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Đoạn văn giải thích: 经常练习，掌握规律，就能做好.",
     "points": 8
   },
@@ -3879,27 +3879,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "Tâm trạng tốt, sinh hoạt điều độ và thể dục (心情愉快、规律作息和运动)",
-        "pinyin": "Xīnqíng yúkuài, guīlǜ zuòxī...",
-        "translation": "Tâm trạng tốt, sinh hoạt điều độ và thể dục (心情愉快、规律作息和运动)"
-      },
-      {
-        "text": "Chỉ cần uống thật nhiều thuốc (多吃药)",
-        "pinyin": "Duō chī yào",
-        "translation": "Chỉ cần uống thật nhiều thuốc (多吃药)"
-      },
-      {
-        "text": "Làm việc suốt ngày đêm (一直工作)",
-        "pinyin": "Yìzhí gōngzuò",
-        "translation": "Làm việc suốt ngày đêm (一直工作)"
-      },
-      {
-        "text": "Ăn nhiều đồ ngọt (多吃甜食)",
+        "text": "多吃甜食",
         "pinyin": "Duō chī tiánshí",
-        "translation": "Ăn nhiều đồ ngọt (多吃甜食)"
+        "translation": "Ăn nhiều đồ ngọt"
+      },
+      {
+        "text": "一直工作",
+        "pinyin": "Yìzhí gōngzuò",
+        "translation": "Làm việc suốt ngày đêm"
+      },
+      {
+        "text": "多吃药",
+        "pinyin": "Duō chī yào",
+        "translation": "Chỉ cần uống thật nhiều thuốc"
+      },
+      {
+        "text": "心情愉快、规律作息和运动",
+        "pinyin": "Xīnqíng yúkuài, guīlǜ zuòxī...",
+        "translation": "Tâm trạng tốt, sinh hoạt điều độ và thể dục"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 3,
     "explanation": "Tác giả chỉ ra: 保持心情愉快、规律作息和适量运动更重要.",
     "points": 8
   },
@@ -3917,27 +3917,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "Cuộc thi diễn thuyết hôm nay thể hiện rất xuất sắc (今天演讲很出色)",
-        "pinyin": "Jīntiān yǎnjiǎng hěn chūsè",
-        "translation": "Cuộc thi diễn thuyết hôm nay thể hiện rất xuất sắc (今天演讲很出色)"
-      },
-      {
-        "text": "Thường ngày rất hoạt ngôn (平时爱说话)",
+        "text": "平时爱说话",
         "pinyin": "Píngshí ài shuōhuà",
-        "translation": "Thường ngày rất hoạt ngôn (平时爱说话)"
+        "translation": "Thường ngày rất hoạt ngôn"
       },
       {
-        "text": "Không tham gia thi (没参加比赛)",
-        "pinyin": "Méi cānjiā bǐsài",
-        "translation": "Không tham gia thi (没参加比赛)"
+        "text": "今天演讲很出色",
+        "pinyin": "Jīntiān yǎnjiǎng hěn chūsè",
+        "translation": "Cuộc thi diễn thuyết hôm nay thể hiện rất xuất sắc"
       },
       {
-        "text": "Giám khảo không vỗ tay (评委没鼓掌)",
+        "text": "评委没鼓掌",
         "pinyin": "Píngwěi méi gǔzhǎng",
-        "translation": "Giám khảo không vỗ tay (评委没鼓掌)"
+        "translation": "Giám khảo không vỗ tay"
+      },
+      {
+        "text": "没参加比赛",
+        "pinyin": "Méi cānjiā bǐsài",
+        "translation": "Không tham gia thi"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Đoạn văn viết: 表现非常出色，赢得了掌声.",
     "points": 8
   },
@@ -3955,27 +3955,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "讨论 (Thảo luận)",
-        "pinyin": "Tǎolùn",
-        "translation": "讨论 (Thảo luận)"
-      },
-      {
-        "text": "以为 (Tưởng rằng)",
-        "pinyin": "Yǐwéi",
-        "translation": "以为 (Tưởng rằng)"
-      },
-      {
-        "text": "回答 (Trả lời)",
+        "text": "回答",
         "pinyin": "Huídá",
-        "translation": "回答 (Trả lời)"
+        "translation": "Trả lời"
       },
       {
-        "text": "明白 (Hiểu rõ)",
+        "text": "讨论",
+        "pinyin": "Tǎolùn",
+        "translation": "Thảo luận"
+      },
+      {
+        "text": "明白",
         "pinyin": "Míngbai",
-        "translation": "明白 (Hiểu rõ)"
+        "translation": "Hiểu rõ"
+      },
+      {
+        "text": "以为",
+        "pinyin": "Yǐwéi",
+        "translation": "Tưởng rằng"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Họp để bàn bạc kỹ lưỡng: 详细讨论一下.",
     "points": 8
   },
@@ -3993,27 +3993,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "打 (Bật)",
-        "pinyin": "Dǎ",
-        "translation": "打 (Bật)"
-      },
-      {
-        "text": "拿 (Cầm)",
-        "pinyin": "Ná",
-        "translation": "拿 (Cầm)"
-      },
-      {
-        "text": "拉 (Kéo)",
-        "pinyin": "Lā",
-        "translation": "拉 (Kéo)"
-      },
-      {
-        "text": "推 (Đẩy)",
+        "text": "推",
         "pinyin": "Tuī",
-        "translation": "推 (Đẩy)"
+        "translation": "Đẩy"
+      },
+      {
+        "text": "拿",
+        "pinyin": "Ná",
+        "translation": "Cầm"
+      },
+      {
+        "text": "拉",
+        "pinyin": "Lā",
+        "translation": "Kéo"
+      },
+      {
+        "text": "打",
+        "pinyin": "Dǎ",
+        "translation": "Bật"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 3,
     "explanation": "Bật đèn: 打开灯 / 把灯打开.",
     "points": 8
   },
@@ -4031,27 +4031,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "仍然 (Vẫn / Vẫn cứ)",
-        "pinyin": "Réngrán",
-        "translation": "仍然 (Vẫn / Vẫn cứ)"
-      },
-      {
-        "text": "突然 (Đột nhiên)",
-        "pinyin": "Tūrán",
-        "translation": "突然 (Đột nhiên)"
-      },
-      {
-        "text": "马上 (Ngay lập tức)",
-        "pinyin": "Mǎshàng",
-        "translation": "马上 (Ngay lập tức)"
-      },
-      {
-        "text": "特别 (Đặc biệt)",
+        "text": "特别",
         "pinyin": "Tèbié",
-        "translation": "特别 (Đặc biệt)"
+        "translation": "Đặc biệt"
+      },
+      {
+        "text": "突然",
+        "pinyin": "Tūrán",
+        "translation": "Đột nhiên"
+      },
+      {
+        "text": "仍然",
+        "pinyin": "Réngrán",
+        "translation": "Vẫn / Vẫn cứ"
+      },
+      {
+        "text": "马上",
+        "pinyin": "Mǎshàng",
+        "translation": "Ngay lập tức"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Vẫn kiên trì hoàn thành: 仍然坚持完成.",
     "points": 8
   },
@@ -4092,14 +4092,14 @@ export const REAL_SIMULATION_QUESTIONS = [
     "correct_sentence": "请把空调关上。",
     "options": [
       {
-        "text": "请把空调关上。",
-        "pinyin": "Qǐng bǎ kōngtiáo guānshang.",
-        "translation": "Xin hãy tắt điều hòa."
-      },
-      {
         "text": "把空调请关上。",
         "pinyin": "Bǎ kōngtiáo qǐng guānshang.",
         "translation": "Sai vị trí từ thỉnh cầu"
+      },
+      {
+        "text": "请把空调关上。",
+        "pinyin": "Qǐng bǎ kōngtiáo guānshang.",
+        "translation": "Xin hãy tắt điều hòa."
       },
       {
         "text": "请关上把空调。",
@@ -4107,7 +4107,7 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "Sai cấu trúc câu chữ 把"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cấu trúc câu chữ 把: 主语 (请) + 把 + 宾语 (空调) + 动词及补语 (关上).",
     "points": 10
   },
@@ -4148,11 +4148,6 @@ export const REAL_SIMULATION_QUESTIONS = [
     "correct_sentence": "桌子上的蛋糕被弟弟吃光了。",
     "options": [
       {
-        "text": "桌子上的蛋糕被弟弟吃光了。",
-        "pinyin": "Zhuōzi shang de dàngāo bèi dìdi chīguāng le.",
-        "translation": "Bánh kem trên bàn bị em trai ăn sạch rồi."
-      },
-      {
         "text": "弟弟被桌子上的蛋糕吃光了。",
         "pinyin": "Dìdi bèi zhuōzi shang de dàngāo chīguāng le.",
         "translation": "Nghịch nghĩa logic"
@@ -4161,9 +4156,14 @@ export const REAL_SIMULATION_QUESTIONS = [
         "text": "桌子上的蛋糕吃光了被弟弟。",
         "pinyin": "Zhuōzi shang de dàngāo chīguāng le bèi dìdi.",
         "translation": "Sai vị trí chữ 被"
+      },
+      {
+        "text": "桌子上的蛋糕被弟弟吃光了。",
+        "pinyin": "Zhuōzi shang de dàngāo bèi dìdi chīguāng le.",
+        "translation": "Bánh kem trên bàn bị em trai ăn sạch rồi."
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Cấu trúc câu chữ 被: 受事 (桌子上的蛋糕) + 被 + 施事 (弟弟) + 动词补语 (吃光了).",
     "points": 10
   },
@@ -4209,14 +4209,14 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "Mưa càng rơi càng to."
       },
       {
-        "text": "越下雨越大发。",
-        "pinyin": "Yuè xià yǔ yuè dà fā.",
-        "translation": "Sai cấu trúc"
-      },
-      {
         "text": "越大雨越下了。",
         "pinyin": "Yuè dà yǔ yuè xià le.",
         "translation": "Lộn trật tự"
+      },
+      {
+        "text": "越下雨越大发。",
+        "pinyin": "Yuè xià yǔ yuè dà fā.",
+        "translation": "Sai cấu trúc"
       }
     ],
     "correct_option_index": 0,
@@ -4265,14 +4265,14 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "Em gái nhỏ hơn chị gái 2 tuổi."
       },
       {
-        "text": "妹妹小两岁比姐姐。",
-        "pinyin": "Mèimei xiǎo liǎng suì bǐ jiějie.",
-        "translation": "Sai trật tự bổ ngữ"
-      },
-      {
         "text": "姐姐比妹妹小两岁。",
         "pinyin": "Jiějie bǐ mèimei xiǎo liǎng suì.",
         "translation": "Sai logic gia đình"
+      },
+      {
+        "text": "妹妹小两岁比姐姐。",
+        "pinyin": "Mèimei xiǎo liǎng suì bǐ jiějie.",
+        "translation": "Sai trật tự bổ ngữ"
       }
     ],
     "correct_option_index": 0,
@@ -4296,22 +4296,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "sample_answer": "友",
     "options": [
       {
-        "text": "友 (Bạn)",
+        "text": "又",
+        "pinyin": "yòu",
+        "translation": "Sai chữ Hán"
+      },
+      {
+        "text": "友",
         "pinyin": "yǒu",
         "translation": "Chữ Hán chính xác trong 朋友"
       },
       {
-        "text": "有 (Có)",
+        "text": "有",
         "pinyin": "yǒu",
         "translation": "Sai nghĩa từ vựng"
-      },
-      {
-        "text": "又 (Lại)",
-        "pinyin": "yòu",
-        "translation": "Sai chữ Hán"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Từ ghép '朋友' (péngyou). Chữ cần điền là '友'.",
     "points": 10
   },
@@ -4331,22 +4331,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "sample_answer": "点",
     "options": [
       {
-        "text": "点 (Giờ)",
+        "text": "电",
+        "pinyin": "diàn",
+        "translation": "Sai nghĩa"
+      },
+      {
+        "text": "点",
         "pinyin": "diǎn",
         "translation": "Chữ Hán chính xác chỉ giờ giấc"
       },
       {
-        "text": "电 (Điện)",
-        "pinyin": "diàn",
-        "translation": "Sai nghĩa"
-      },
-      {
-        "text": "店 (Tiệm)",
+        "text": "店",
         "pinyin": "diàn",
         "translation": "Sai nghĩa"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Từ chỉ giờ: '点' (diǎn) trong '三点'.",
     "points": 10
   },
@@ -4364,22 +4364,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：李经理，这是我们部门下季度的广告预算方案，请您过目。女：好的，先放这儿吧，我今天下午仔细看看，明天上午咱们再开会讨论。问：女的打算什么时候开会讨论？",
     "options": [
       {
-        "text": "Thứ Hai tuần sau (下周一)",
-        "pinyin": "Xià zhōuyī",
-        "translation": "Thứ Hai tuần sau (下周一)"
-      },
-      {
-        "text": "Sáng mai (明天上午)",
+        "text": "明天上午",
         "pinyin": "Míngtiān shàngwǔ",
-        "translation": "Sáng mai (明天上午)"
+        "translation": "Sáng mai"
       },
       {
-        "text": "Chiều nay (今天下午)",
+        "text": "今天下午",
         "pinyin": "Jīntiān xiàwǔ",
-        "translation": "Chiều nay (今天下午)"
+        "translation": "Chiều nay"
+      },
+      {
+        "text": "下周一",
+        "pinyin": "Xià zhōuyī",
+        "translation": "Thứ Hai tuần sau"
       }
     ],
-    "correct_option_index": 1,
+    "correct_option_index": 0,
     "explanation": "Lời thoại người nữ: '明天上午咱们再开会讨论'. Chọn Sáng mai.",
     "points": 8
   },
@@ -4397,22 +4397,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：听说你打算辞职去深圳发展？男：是的，虽然现在这份工作很稳定，但深圳的机会更多，我想趁年轻多去闯一闯。问：男的为什么想去深圳？",
     "options": [
       {
-        "text": "Muốn tìm thêm nhiều cơ hội thử thách (机会更多，想去闯闯)",
-        "pinyin": "Jīhuì gèng duō...",
-        "translation": "Muốn tìm thêm nhiều cơ hội thử thách (机会更多，想去闯闯)"
-      },
-      {
-        "text": "Vì bị sa thải (被开除)",
-        "pinyin": "Bèi kāichú",
-        "translation": "Vì bị sa thải (被开除)"
-      },
-      {
-        "text": "Vì không thích đồng nghiệp (不喜欢同事)",
+        "text": "不喜欢同事",
         "pinyin": "Bù xǐhuan tóngshì",
-        "translation": "Vì không thích đồng nghiệp (不喜欢同事)"
+        "translation": "Vì không thích đồng nghiệp"
+      },
+      {
+        "text": "被开除",
+        "pinyin": "Bèi kāichú",
+        "translation": "Vì bị sa thải"
+      },
+      {
+        "text": "机会更多，想去闯闯",
+        "pinyin": "Jīhuì gèng duō...",
+        "translation": "Muốn tìm thêm nhiều cơ hội thử thách"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Lý do: 深圳的机会更多，想趁年轻多闯一闯.",
     "points": 8
   },
@@ -4430,22 +4430,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：这套两居室一个月租金多少钱？女：押一付三，一个月三千五，包物业费和取暖费。问：租金一个月多少？",
     "options": [
       {
-        "text": "3500 tệ (三千五百块)",
-        "pinyin": "Sānqiān wǔbǎi kuài",
-        "translation": "3500 tệ (三千五百块)"
-      },
-      {
-        "text": "2000 tệ (两千块)",
+        "text": "两千块",
         "pinyin": "Liǎngqiān kuài",
-        "translation": "2000 tệ (两千块)"
+        "translation": "2000 tệ"
       },
       {
-        "text": "4000 tệ (四千块)",
+        "text": "四千块",
         "pinyin": "Sìqiān kuài",
-        "translation": "4000 tệ (四千块)"
+        "translation": "4000 tệ"
+      },
+      {
+        "text": "三千五百块",
+        "pinyin": "Sānqiān wǔbǎi kuài",
+        "translation": "3500 tệ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Giá thuê: 一个月三千五 (3500 tệ/tháng).",
     "points": 8
   },
@@ -4463,22 +4463,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：先生，如果衣服不合身，七天之内凭小票可以无理由退换。男：好的，那请帮我开一下发票。问：退换货的要求是什么？",
     "options": [
       {
-        "text": "Trong vòng 7 ngày kèm hóa đơn (七天内凭小票)",
-        "pinyin": "Qī tiān nèi píng xiǎopiào",
-        "translation": "Trong vòng 7 ngày kèm hóa đơn (七天内凭小票)"
-      },
-      {
-        "text": "Trong vòng 1 tháng (一个月内)",
+        "text": "一个月内",
         "pinyin": "Yí gè yuè nèi",
-        "translation": "Trong vòng 1 tháng (一个月内)"
+        "translation": "Trong vòng 1 tháng"
       },
       {
-        "text": "Không được đổi (不能退换)",
+        "text": "七天内凭小票",
+        "pinyin": "Qī tiān nèi píng xiǎopiào",
+        "translation": "Trong vòng 7 ngày kèm hóa đơn"
+      },
+      {
+        "text": "不能退换",
         "pinyin": "Bù néng tuìhuàn",
-        "translation": "Không được đổi (不能退换)"
+        "translation": "Không được đổi"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Yêu cầu: 七天之内凭小票可以无理由退换.",
     "points": 8
   },
@@ -4496,22 +4496,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "现在越来越多的年轻人选择在网络上购买生活日用品。网购不仅价格相对便宜，而且送货上门，极大地方便了忙碌的上班族。问：年轻人喜欢网购的主要原因是什么？",
     "options": [
       {
-        "text": "Giá rẻ và tiện lợi giao tận nhà (便宜且方便)",
-        "pinyin": "Piányi qiě fāngbiàn",
-        "translation": "Giá rẻ và tiện lợi giao tận nhà (便宜且方便)"
-      },
-      {
-        "text": "Vì không có tiền (因为没钱)",
+        "text": "因为没钱",
         "pinyin": "Yīnwèi méi qián",
-        "translation": "Vì không có tiền (因为没钱)"
+        "translation": "Vì không có tiền"
       },
       {
-        "text": "Vì không thích đi chơi (不爱出门)",
+        "text": "便宜且方便",
+        "pinyin": "Piányi qiě fāngbiàn",
+        "translation": "Giá rẻ và tiện lợi giao tận nhà"
+      },
+      {
+        "text": "不爱出门",
         "pinyin": "Bú ài chūmén",
-        "translation": "Vì không thích đi chơi (不爱出门)"
+        "translation": "Vì không thích đi chơi"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Ưu điểm nêu trong bài: 价格便宜，送货上门，极大地方便了上班族.",
     "points": 8
   },
@@ -4529,22 +4529,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "长时间面对电脑屏幕会导致眼睛干涩。眼科专家建议，每工作四十五分钟，就应该站起来远眺几分钟，多看绿色的植物，放松眼部肌肉。问：专家建议工作45分钟后应该做什么？",
     "options": [
       {
-        "text": "Nhìn ra xa và thư giãn mắt (远眺放松眼睛)",
-        "pinyin": "Yuǎntiào fàngsōng yǎnjing",
-        "translation": "Nhìn ra xa và thư giãn mắt (远眺放松眼睛)"
-      },
-      {
-        "text": "Uống cà phê (喝咖啡)",
+        "text": "喝咖啡",
         "pinyin": "Hē kāfēi",
-        "translation": "Uống cà phê (喝咖啡)"
+        "translation": "Uống cà phê"
       },
       {
-        "text": "Tiếp tục làm việc (继续工作)",
+        "text": "继续工作",
         "pinyin": "Jìxù gōngzuò",
-        "translation": "Tiếp tục làm việc (继续工作)"
+        "translation": "Tiếp tục làm việc"
+      },
+      {
+        "text": "远眺放松眼睛",
+        "pinyin": "Yuǎntiào fàngsōng yǎnjing",
+        "translation": "Nhìn ra xa và thư giãn mắt"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Lời khuyên: 每工作四十五分钟，就应该站起来远眺几分钟.",
     "points": 8
   },
@@ -4562,19 +4562,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：王主管，下周五的迎新晚会场地定好了吗？女：学校大礼堂已经被艺术团借用了，我们临时改在学生活动中心三楼多功能厅。问：迎新晚会最终改在哪个地点举行？",
     "options": [
       {
-        "text": "Hội trường đa năng tầng 3 trung tâm sinh viên (活动中心三楼多功能厅)",
+        "text": "活动中心三楼多功能厅",
         "pinyin": "Huódòng zhōngxīn sān lóu...",
-        "translation": "Hội trường đa năng tầng 3 trung tâm sinh viên (活动中心三楼多功能厅)"
+        "translation": "Hội trường đa năng tầng 3 trung tâm sinh viên"
       },
       {
-        "text": "Lễ đường trường (大礼堂)",
-        "pinyin": "Dà lǐtáng",
-        "translation": "Lễ đường trường (大礼堂)"
-      },
-      {
-        "text": "Sân bóng đá (足球场)",
+        "text": "足球场",
         "pinyin": "Zúqiú chǎng",
-        "translation": "Sân bóng đá (足球场)"
+        "translation": "Sân bóng đá"
+      },
+      {
+        "text": "大礼堂",
+        "pinyin": "Dà lǐtáng",
+        "translation": "Lễ đường trường"
       }
     ],
     "correct_option_index": 0,
@@ -4595,22 +4595,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：张教授，您对于当下青年人的创业热潮怎么看？男：创业需要热情，但更需要充分的市场调研和风险意识，盲目跟风往往会导致失败。问：张教授认为创业最不可取的心态是什么？",
     "options": [
       {
-        "text": "Chạy theo phong trào mù quáng (盲目跟风)",
-        "pinyin": "Mángmù gēnfēng",
-        "translation": "Chạy theo phong trào mù quáng (盲目跟风)"
-      },
-      {
-        "text": "Thiếu vốn (缺少资金)",
-        "pinyin": "Quēshǎo zījīn",
-        "translation": "Thiếu vốn (缺少资金)"
-      },
-      {
-        "text": "Không có bằng cấp (没有学历)",
+        "text": "没有学历",
         "pinyin": "Méiyǒu xuélì",
-        "translation": "Không có bằng cấp (没有学历)"
+        "translation": "Không có bằng cấp"
+      },
+      {
+        "text": "盲目跟风",
+        "pinyin": "Mángmù gēnfēng",
+        "translation": "Chạy theo phong trào mù quáng"
+      },
+      {
+        "text": "缺少资金",
+        "pinyin": "Quēshǎo zījīn",
+        "translation": "Thiếu vốn"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Giáo sư Trương cảnh báo: 盲目跟风往往会导致失败.",
     "points": 8
   },
@@ -4628,22 +4628,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：小周，你最近的销售业绩非常突出，公司决定提前给你转正。女：太感谢您了陈总，我一定再接再厉，不辜负大家的期望！问：小周获得了什么奖励？",
     "options": [
       {
-        "text": "Được ký hợp đồng chính thức trước hạn (提前转正)",
-        "pinyin": "Tíqián zhuǎnzhèng",
-        "translation": "Được ký hợp đồng chính thức trước hạn (提前转正)"
-      },
-      {
-        "text": "Được tặng xe hơi (发汽车)",
+        "text": "发汽车",
         "pinyin": "Fā qìchē",
-        "translation": "Được tặng xe hơi (发汽车)"
+        "translation": "Được tặng xe hơi"
       },
       {
-        "text": "Được đi du lịch châu Âu (去欧洲旅游)",
+        "text": "去欧洲旅游",
         "pinyin": "Qù Ōuzhōu lǚyóu",
-        "translation": "Được đi du lịch châu Âu (去欧洲旅游)"
+        "translation": "Được đi du lịch châu Âu"
+      },
+      {
+        "text": "提前转正",
+        "pinyin": "Tíqián zhuǎnzhèng",
+        "translation": "Được ký hợp đồng chính thức trước hạn"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Quyết định của công ty: 提前给你转正.",
     "points": 8
   },
@@ -4661,19 +4661,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "著名作家老舍曾经说过，生活是一本永远读不完的大书。只有深入观察生活中的点点滴滴，才能写出真正打动人心的优秀文学作品。问：文学创作怎样才能打动人心？",
     "options": [
       {
-        "text": "Quan sát sâu sắc từng chi tiết cuộc sống (深入观察生活)",
+        "text": "深入观察生活",
         "pinyin": "Shēnrù guānchá shēnghuó",
-        "translation": "Quan sát sâu sắc từng chi tiết cuộc sống (深入观察生活)"
+        "translation": "Quan sát sâu sắc từng chi tiết cuộc sống"
       },
       {
-        "text": "Chép sách của người khác (抄袭别人)",
-        "pinyin": "Chāoxí biérén",
-        "translation": "Chép sách của người khác (抄袭别人)"
-      },
-      {
-        "text": "Chỉ tưởng tượng trong phòng (闭门造车)",
+        "text": "闭门造车",
         "pinyin": "Bìmén zàochē",
-        "translation": "Chỉ tưởng tượng trong phòng (闭门造车)"
+        "translation": "Chỉ tưởng tượng trong phòng"
+      },
+      {
+        "text": "抄袭别人",
+        "pinyin": "Chāoxí biérén",
+        "translation": "Chép sách của người khác"
       }
     ],
     "correct_option_index": 0,
@@ -4694,22 +4694,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：这台空气净化器的噪音大不大？男：它采用了静音技术，睡眠模式下只有不到三十分贝，完全不会影响休息。问：这台机器的特点是什么？",
     "options": [
       {
-        "text": "Vận hành cực êm ái (非常安静/静音)",
-        "pinyin": "Fēicháng ānjìng/jìngyīn",
-        "translation": "Vận hành cực êm ái (非常安静/静音)"
-      },
-      {
-        "text": "Tiêu tốn điện (费电)",
-        "pinyin": "Fèi diàn",
-        "translation": "Tiêu tốn điện (费电)"
-      },
-      {
-        "text": "Kích thước to lớn (体积很大)",
+        "text": "体积很大",
         "pinyin": "Tǐjī hěn dà",
-        "translation": "Kích thước to lớn (体积很大)"
+        "translation": "Kích thước to lớn"
+      },
+      {
+        "text": "非常安静/静音",
+        "pinyin": "Fēicháng ānjìng/jìngyīn",
+        "translation": "Vận hành cực êm ái"
+      },
+      {
+        "text": "费电",
+        "pinyin": "Fèi diàn",
+        "translation": "Tiêu tốn điện"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Đặc điểm: 采用了静音技术，不会影响休息.",
     "points": 8
   },
@@ -4727,19 +4727,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：听说这次国际马拉松比赛有三万人参加？女：是的，不仅有来自各国的专业选手，还有许多业余长跑爱好者。问：关于这项比赛哪项正确？",
     "options": [
       {
-        "text": "Hàng vạn người thuộc nhiều lứa tuổi tham gia (规模盛大/选手众多)",
+        "text": "规模盛大/选手众多",
         "pinyin": "Guīmó shèngdà",
-        "translation": "Hàng vạn người thuộc nhiều lứa tuổi tham gia (规模盛大/选手众多)"
+        "translation": "Hàng vạn người thuộc nhiều lứa tuổi tham gia"
       },
       {
-        "text": "Chỉ có vận động viên chuyên nghiệp (只有专业选手)",
-        "pinyin": "Zhǐyǒu zhuānyè xuǎnshǒu",
-        "translation": "Chỉ có vận động viên chuyên nghiệp (只有专业选手)"
-      },
-      {
-        "text": "Bị hoãn thi (推迟举行)",
+        "text": "推迟举行",
         "pinyin": "Tuīchí jǔxíng",
-        "translation": "Bị hoãn thi (推迟举行)"
+        "translation": "Bị hoãn thi"
+      },
+      {
+        "text": "只有专业选手",
+        "pinyin": "Zhǐyǒu zhuānyè xuǎnshǒu",
+        "translation": "Chỉ có vận động viên chuyên nghiệp"
       }
     ],
     "correct_option_index": 0,
@@ -4760,27 +4760,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "选择 (Lựa chọn)",
-        "pinyin": "Xuǎnzé",
-        "translation": "选择 (Lựa chọn)"
-      },
-      {
-        "text": "故意 (Cố ý)",
-        "pinyin": "Gùyì",
-        "translation": "故意 (Cố ý)"
-      },
-      {
-        "text": "随便 (Tùy tiện)",
+        "text": "随便",
         "pinyin": "Suíbiàn",
-        "translation": "随便 (Tùy tiện)"
+        "translation": "Tùy tiện"
       },
       {
-        "text": "后悔 (Hối hận)",
+        "text": "选择",
+        "pinyin": "Xuǎnzé",
+        "translation": "Lựa chọn"
+      },
+      {
+        "text": "后悔",
         "pinyin": "Hòuhuǐ",
-        "translation": "后悔 (Hối hận)"
+        "translation": "Hối hận"
+      },
+      {
+        "text": "故意",
+        "pinyin": "Gùyì",
+        "translation": "Cố ý"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Ngữ pháp: 选择放弃 (lựa chọn từ bỏ).",
     "points": 8
   },
@@ -4798,27 +4798,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "彼此 (Lẫn nhau / Đôi bên)",
-        "pinyin": "Bǐcǐ",
-        "translation": "彼此 (Lẫn nhau / Đôi bên)"
-      },
-      {
-        "text": "到处 (Khắp nơi)",
-        "pinyin": "Dàochù",
-        "translation": "到处 (Khắp nơi)"
-      },
-      {
-        "text": "平时 (Bình thường)",
-        "pinyin": "Píngshí",
-        "translation": "平时 (Bình thường)"
-      },
-      {
-        "text": "暂时 (Tạm thời)",
+        "text": "暂时",
         "pinyin": "Zànshí",
-        "translation": "暂时 (Tạm thời)"
+        "translation": "Tạm thời"
+      },
+      {
+        "text": "平时",
+        "pinyin": "Píngshí",
+        "translation": "Bình thường"
+      },
+      {
+        "text": "到处",
+        "pinyin": "Dàochù",
+        "translation": "Khắp nơi"
+      },
+      {
+        "text": "彼此",
+        "pinyin": "Bǐcǐ",
+        "translation": "Lẫn nhau / Đôi bên"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 3,
     "explanation": "Cụm cố định: 互相尊重和彼此理解.",
     "points": 8
   },
@@ -4836,27 +4836,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "经验 (Kinh nghiệm)",
-        "pinyin": "Jīngyàn",
-        "translation": "经验 (Kinh nghiệm)"
-      },
-      {
-        "text": "价格 (Giá cả)",
-        "pinyin": "Jiàgé",
-        "translation": "价格 (Giá cả)"
-      },
-      {
-        "text": "气候 (Khí hậu)",
+        "text": "气候",
         "pinyin": "Qìhòu",
-        "translation": "气候 (Khí hậu)"
+        "translation": "Khí hậu"
       },
       {
-        "text": "交通 (Giao thông)",
+        "text": "交通",
         "pinyin": "Jiāotōng",
-        "translation": "交通 (Giao thông)"
+        "translation": "Giao thông"
+      },
+      {
+        "text": "经验",
+        "pinyin": "Jīngyàn",
+        "translation": "Kinh nghiệm"
+      },
+      {
+        "text": "价格",
+        "pinyin": "Jiàgé",
+        "translation": "Giá cả"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Cụm danh từ: 积累了宝贵的经验.",
     "points": 8
   },
@@ -4874,24 +4874,24 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "价值 (Giá trị)",
+        "text": "价值",
         "pinyin": "Jiàzhí",
-        "translation": "价值 (Giá trị)"
+        "translation": "Giá trị"
       },
       {
-        "text": "速度 (Tốc độ)",
-        "pinyin": "Sùdù",
-        "translation": "速度 (Tốc độ)"
-      },
-      {
-        "text": "温度 (Nhiệt độ)",
-        "pinyin": "Wēndù",
-        "translation": "温度 (Nhiệt độ)"
-      },
-      {
-        "text": "态度 (Thái độ)",
+        "text": "态度",
         "pinyin": "Tàidu",
-        "translation": "态度 (Thái độ)"
+        "translation": "Thái độ"
+      },
+      {
+        "text": "温度",
+        "pinyin": "Wēndù",
+        "translation": "Nhiệt độ"
+      },
+      {
+        "text": "速度",
+        "pinyin": "Sùdù",
+        "translation": "Tốc độ"
       }
     ],
     "correct_option_index": 0,
@@ -4951,9 +4951,9 @@ export const REAL_SIMULATION_QUESTIONS = [
     },
     "options": [
       {
-        "text": "B - A - C",
-        "pinyin": "B - A - C",
-        "translation": "Đúng trật tự: Khái quát (B) -> Chuyển ý giả thiết (A) -> Hậu quả (C)"
+        "text": "C - B - A",
+        "pinyin": "C - B - A",
+        "translation": "Lộn ngược trật tự"
       },
       {
         "text": "A - B - C",
@@ -4961,12 +4961,12 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "Sai vị trí liên từ chuyển tiếp"
       },
       {
-        "text": "C - B - A",
-        "pinyin": "C - B - A",
-        "translation": "Lộn ngược trật tự"
+        "text": "B - A - C",
+        "pinyin": "B - A - C",
+        "translation": "Đúng trật tự: Khái quát (B) -> Chuyển ý giả thiết (A) -> Hậu quả (C)"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Câu B giới thiệu môn chạy bộ, câu A chuyển tiếp nhượng bộ (但是如果...), câu C nêu kết quả điều kiện (就很难...). Trình tự chuẩn: B - A - C.",
     "points": 8
   },
@@ -4987,14 +4987,14 @@ export const REAL_SIMULATION_QUESTIONS = [
     },
     "options": [
       {
-        "text": "B - A - C",
-        "pinyin": "B - A - C",
-        "translation": "Trật tự mạch lạc: Nguyên nhân áp lực (B) -> Ảnh hưởng giấc ngủ (A) -> Hệ quả ngoại hình (C)"
-      },
-      {
         "text": "C - A - B",
         "pinyin": "C - A - B",
         "translation": "Sai logic nhân quả"
+      },
+      {
+        "text": "B - A - C",
+        "pinyin": "B - A - C",
+        "translation": "Trật tự mạch lạc: Nguyên nhân áp lực (B) -> Ảnh hưởng giấc ngủ (A) -> Hệ quả ngoại hình (C)"
       },
       {
         "text": "A - B - C",
@@ -5002,7 +5002,7 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "Sai vị trí liên từ tăng tiến '甚至'"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "B nêu hoàn cảnh nguyên nhân (工作压力大), A tăng tiến tác hại (甚至影响睡眠), C kết luận hiện trạng (整个人显得疲倦). Thứ tự: B - A - C.",
     "points": 8
   },
@@ -5056,19 +5056,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "Nụ cười có thể giúp cải thiện tâm trạng (微笑能改善心情)",
+        "text": "微笑能改善心情",
         "pinyin": "Wēixiào néng gǎishàn xīnqíng",
-        "translation": "Nụ cười có thể giúp cải thiện tâm trạng (微笑能改善心情)"
+        "translation": "Nụ cười có thể giúp cải thiện tâm trạng"
       },
       {
-        "text": "Mỉm cười rất mệt mỏi (微笑很累)",
-        "pinyin": "Wēixiào hěn lèi",
-        "translation": "Mỉm cười rất mệt mỏi (微笑很累)"
-      },
-      {
-        "text": "Không nên mỉm cười với người lạ (不要对陌生人微笑)",
+        "text": "不要对陌生人微笑",
         "pinyin": "Bú yào duì mòshēngrén wēixiào",
-        "translation": "Không nên mỉm cười với người lạ (不要对陌生人微笑)"
+        "translation": "Không nên mỉm cười với người lạ"
+      },
+      {
+        "text": "微笑很累",
+        "pinyin": "Wēixiào hěn lèi",
+        "translation": "Mỉm cười rất mệt mỏi"
       }
     ],
     "correct_option_index": 0,
@@ -5089,22 +5089,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "Mỗi cá nhân đều có thể hành động từ việc nhỏ (每个人从小事做起)",
-        "pinyin": "Měi gèrén cóng xiǎoshì zuòqǐ",
-        "translation": "Mỗi cá nhân đều có thể hành động từ việc nhỏ (每个人从小事做起)"
-      },
-      {
-        "text": "Chỉ chính phủ mới giải quyết được (只有政府能解决)",
+        "text": "只有政府能解决",
         "pinyin": "Zhǐyǒu zhèngfǔ néng jiějué",
-        "translation": "Chỉ chính phủ mới giải quyết được (只有政府能解决)"
+        "translation": "Chỉ chính phủ mới giải quyết được"
       },
       {
-        "text": "Bảo vệ môi trường rất tốn kém (环保很费钱)",
+        "text": "环保很费钱",
         "pinyin": "Huánbǎo hěn fèiqián",
-        "translation": "Bảo vệ môi trường rất tốn kém (环保很费钱)"
+        "translation": "Bảo vệ môi trường rất tốn kém"
+      },
+      {
+        "text": "每个人从小事做起",
+        "pinyin": "Měi gèrén cóng xiǎoshì zuòqǐ",
+        "translation": "Mỗi cá nhân đều có thể hành động từ việc nhỏ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Nhấn mạnh: 与每个普通人息息相关，从小事贡献力量.",
     "points": 8
   },
@@ -5122,22 +5122,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "Không ngừng học tập và cập nhật kiến thức (不断更新知识/终身学习)",
-        "pinyin": "Búduàn gēngxīn zhīshi...",
-        "translation": "Không ngừng học tập và cập nhật kiến thức (不断更新知识/终身学习)"
-      },
-      {
-        "text": "Chỉ làm một công việc cố định (只做一份工作)",
+        "text": "只做一份工作",
         "pinyin": "Zhǐ zuò yí fèn gōngzuò",
-        "translation": "Chỉ làm một công việc cố định (只做一份工作)"
+        "translation": "Chỉ làm một công việc cố định"
       },
       {
-        "text": "Từ chối dùng công nghệ (不用新技术)",
+        "text": "不用新技术",
         "pinyin": "Bù yòng xīn jìshù",
-        "translation": "Từ chối dùng công nghệ (不用新技术)"
+        "translation": "Từ chối dùng công nghệ"
+      },
+      {
+        "text": "不断更新知识/终身学习",
+        "pinyin": "Búduàn gēngxīn zhīshi...",
+        "translation": "Không ngừng học tập và cập nhật kiến thức"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Đáp án trong bài: 只有不断更新知识结构，才能保持竞争力.",
     "points": 8
   },
@@ -5155,22 +5155,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "Vừa đáp ứng nhu cầu sinh hoạt vừa mang giá trị tinh thần (既解渴又有精神享受)",
-        "pinyin": "Jì jiěkě yòu yǒu jīngshén xiǎngshòu",
-        "translation": "Vừa đáp ứng nhu cầu sinh hoạt vừa mang giá trị tinh thần (既解渴又有精神享受)"
-      },
-      {
-        "text": "Chỉ có tác dụng chữa bệnh (只能治病)",
+        "text": "只能治病",
         "pinyin": "Zhǐ néng zhìbìng",
-        "translation": "Chỉ có tác dụng chữa bệnh (只能治病)"
+        "translation": "Chỉ có tác dụng chữa bệnh"
       },
       {
-        "text": "Mới xuất hiện gần đây (刚出现不久)",
+        "text": "既解渴又有精神享受",
+        "pinyin": "Jì jiěkě yòu yǒu jīngshén xiǎngshòu",
+        "translation": "Vừa đáp ứng nhu cầu sinh hoạt vừa mang giá trị tinh thần"
+      },
+      {
+        "text": "刚出现不久",
         "pinyin": "Gāng chūxiàn bù jiǔ",
-        "translation": "Mới xuất hiện gần đây (刚出现不久)"
+        "translation": "Mới xuất hiện gần đây"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Bài viết: 不仅是解渴习惯，更是一种静心修性的艺术享受.",
     "points": 8
   },
@@ -5211,6 +5211,11 @@ export const REAL_SIMULATION_QUESTIONS = [
     "correct_sentence": "请把这份文件寄到北京分公司。",
     "options": [
       {
+        "text": "北京分公司请把这份文件寄到。",
+        "pinyin": "Běijīng fēn gōngsī...",
+        "translation": "Đảo ngữ sai chủ thể"
+      },
+      {
         "text": "请把这份文件寄到北京分公司。",
         "pinyin": "Qǐng bǎ zhè fèn wénjiàn jì dào Běijīng fēn gōngsī.",
         "translation": "Xin hãy gửi tập tài liệu này đến chi nhánh Bắc Kinh."
@@ -5219,14 +5224,9 @@ export const REAL_SIMULATION_QUESTIONS = [
         "text": "请寄到这份文件把北京分公司。",
         "pinyin": "Qǐng jì dào...",
         "translation": "Sai cấu trúc câu chữ 把"
-      },
-      {
-        "text": "北京分公司请把这份文件寄到。",
-        "pinyin": "Běijīng fēn gōngsī...",
-        "translation": "Đảo ngữ sai chủ thể"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cấu trúc câu chữ 把 kết hợp động từ chỉ hướng: 主语 (请) + 把 + 宾语 (这份文件) + 动词 + 到 + 地点 (寄到北京分公司).",
     "points": 10
   },
@@ -5323,9 +5323,9 @@ export const REAL_SIMULATION_QUESTIONS = [
     "correct_sentence": "他不仅工作认真，而且非常乐于助人。",
     "options": [
       {
-        "text": "他不仅工作认真，而且非常乐于助人。",
-        "pinyin": "Tā bùjǐn gōngzuò rènzhēn, érqiě fēicháng lèyú zhùrén.",
-        "translation": "Anh ấy không chỉ làm việc nghiêm túc, mà còn rất thích giúp đỡ người khác."
+        "text": "他工作认真不仅，而且非常乐于助人。",
+        "pinyin": "Tā gōngzuò rènzhēn bùjǐn...",
+        "translation": "Sai trật tự liên từ"
       },
       {
         "text": "而且他工作认真，不仅非常乐于助人。",
@@ -5333,12 +5333,12 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "Sai vị trí liên từ"
       },
       {
-        "text": "他工作认真不仅，而且非常乐于助人。",
-        "pinyin": "Tā gōngzuò rènzhēn bùjǐn...",
-        "translation": "Sai trật tự liên từ"
+        "text": "他不仅工作认真，而且非常乐于助人。",
+        "pinyin": "Tā bùjǐn gōngzuò rènzhēn, érqiě fēicháng lèyú zhùrén.",
+        "translation": "Anh ấy không chỉ làm việc nghiêm túc, mà còn rất thích giúp đỡ người khác."
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Cặp liên từ tăng tiến: 主语 + 不仅 + Vế 1, 而且 + Vế 2.",
     "points": 10
   },
@@ -5379,14 +5379,14 @@ export const REAL_SIMULATION_QUESTIONS = [
     "correct_sentence": "无论天气多么恶劣，他都准时到达训练场。",
     "options": [
       {
-        "text": "无论天气多么恶劣，他都准时到达训练场。",
-        "pinyin": "Wúlùn tiānqì duōme èliè, tā dōu zhǔnshí dàodá xùnliànchǎng.",
-        "translation": "Bất kể thời tiết khắc nghiệt thế nào, anh ấy đều đến sân tập đúng giờ."
-      },
-      {
         "text": "他都无论天气多么恶劣，准时到达训练场。",
         "pinyin": "Tā dōu wúlùn tiānqì...",
         "translation": "Đặt sai phó từ 都"
+      },
+      {
+        "text": "无论天气多么恶劣，他都准时到达训练场。",
+        "pinyin": "Wúlùn tiānqì duōme èliè, tā dōu zhǔnshí dàodá xùnliànchǎng.",
+        "translation": "Bất kể thời tiết khắc nghiệt thế nào, anh ấy đều đến sân tập đúng giờ."
       },
       {
         "text": "准时到达训练场，无论天气多么恶劣他都。",
@@ -5394,7 +5394,7 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "Lộn vế câu"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cấu trúc: 无论 + 条件, 主语 + 都 + 结果/行为.",
     "points": 10
   },
@@ -5405,7 +5405,7 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 2,
     "question_number": 29,
     "question_type": "free_writing",
-    "prompt": "看图并用所给词语写一个句子：[弹钢琴] (Đàn piano)",
+    "prompt": "看图并用所给词语写一个句子：[弹钢琴]",
     "pinyin": "Kàn tú bìng yòng suǒ gěi cíyǔ xiě yí gè jùzi: [tán gāngqín]",
     "translation": "Phần Viết tự luận HSK 4: Viết một câu hoàn chỉnh có chứa từ bắt buộc [弹钢琴 - Đánh đàn piano]:",
     "required_words": [
@@ -5424,12 +5424,12 @@ export const REAL_SIMULATION_QUESTIONS = [
     "is_subjective": true,
     "options": [
       {
-        "text": "Đoạn văn mẫu tham khảo: 妹妹每天晚上都在客厅认真地弹钢琴。",
+        "text": "参考范文：妹妹每天晚上都在客厅认真地弹钢琴。",
         "pinyin": "",
         "translation": "Câu/đoạn văn mẫu đạt chuẩn ngữ pháp HSK"
       },
       {
-        "text": "Bài làm tự luận của thí sinh (Tự đánh giá theo thang điểm)",
+        "text": "考生自由作答（按评分标准自评）",
         "pinyin": "",
         "translation": "Hệ thống đối sánh tiêu chí Rubric và lưu bài tự luận"
       }
@@ -5477,9 +5477,9 @@ export const REAL_SIMULATION_QUESTIONS = [
     "correct_sentence": "在中国留学两年后，大卫汉语说得很流利。",
     "options": [
       {
-        "text": "在中国留学两年后，大卫汉语说得很流利。",
-        "pinyin": "Zài Zhōngguó liúxué liǎng nián hòu, Dàwèi Hànyǔ shuō de hěn liúlì.",
-        "translation": "Sau hai năm du học tại Trung Quốc, David nói tiếng Trung rất lưu loát."
+        "text": "在汉语说得大卫很流利留学两年后。",
+        "pinyin": "Zài Hànyǔ shuō de Dàwèi hěn liúlì liúxué liǎng nián hòu.",
+        "translation": "Trật tự câu lộn xộn"
       },
       {
         "text": "大卫在中国留学两年后很流利说得汉语。",
@@ -5487,12 +5487,12 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "Sai trật tự bổ ngữ mức độ"
       },
       {
-        "text": "在汉语说得大卫很流利留学两年后。",
-        "pinyin": "Zài Hànyǔ shuō de Dàwèi hěn liúlì liúxué liǎng nián hòu.",
-        "translation": "Trật tự câu lộn xộn"
+        "text": "在中国留学两年后，大卫汉语说得很流利。",
+        "pinyin": "Zài Zhōngguó liúxué liǎng nián hòu, Dàwèi Hànyǔ shuō de hěn liúlì.",
+        "translation": "Sau hai năm du học tại Trung Quốc, David nói tiếng Trung rất lưu loát."
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "points": 10,
     "explanation": "Cấu trúc bổ ngữ mức độ: Chủ ngữ + Tân ngữ + Động từ + 得 + Phó từ + Tính từ (大卫汉语说得很流利)."
   },
@@ -5510,19 +5510,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：关于这次设备的交货期，如果贵方能在下个月底前全部交付，我们可以同意预付40%的货款。男：下个月底时间确实非常紧张，不过为了双方的长远合作，我们工厂可以安排加班赶工，尽最大努力满足贵方的需求。问：男方的最终态度是什么？",
     "options": [
       {
-        "text": "Khắc phục khó khăn để hoàn thành giao hàng đúng hạn (加班赶工满足需求)",
+        "text": "加班赶工满足需求",
         "pinyin": "Jiābān gǎngōng...",
-        "translation": "Khắc phục khó khăn để hoàn thành giao hàng đúng hạn (加班赶工满足需求)"
+        "translation": "Khắc phục khó khăn để hoàn thành giao hàng đúng hạn"
       },
       {
-        "text": "Từ chối đàm phán (拒绝谈判)",
+        "text": "拒绝谈判",
         "pinyin": "Jùjué tánpàn",
-        "translation": "Từ chối đàm phán (拒绝谈判)"
+        "translation": "Từ chối đàm phán"
       },
       {
-        "text": "Đòi tăng giá (要求提价)",
+        "text": "要求提价",
         "pinyin": "Yāoqiú tíjià",
-        "translation": "Đòi tăng giá (要求提价)"
+        "translation": "Đòi tăng giá"
       }
     ],
     "correct_option_index": 0,
@@ -5543,22 +5543,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "在人工智能迅速发展的背景下，跨学科复合型人才的需求呈现爆发式增长。未来的教育不仅要注重专业技能的传授，更要培养学生的批判性思维和终身学习能力。问：讲座强调未来教育的核心是什么？",
     "options": [
       {
-        "text": "Bồi dưỡng tư duy phản biện và năng lực học tập suốt đời (培养批判性思维与终身学习能力)",
-        "pinyin": "Péiyǎng pīpànxìng sīwéi...",
-        "translation": "Bồi dưỡng tư duy phản biện và năng lực học tập suốt đời (培养批判性思维与终身学习能力)"
-      },
-      {
-        "text": "Chỉ dạy lập trình (只学编程)",
-        "pinyin": "Zhǐ xué biānchéng",
-        "translation": "Chỉ dạy lập trình (只学编程)"
-      },
-      {
-        "text": "Cắt giảm môn xã hội (取消人文课程)",
+        "text": "取消人文课程",
         "pinyin": "Qūxiāo rénwén kèchéng",
-        "translation": "Cắt giảm môn xã hội (取消人文课程)"
+        "translation": "Cắt giảm môn xã hội"
+      },
+      {
+        "text": "培养批判性思维与终身学习能力",
+        "pinyin": "Péiyǎng pīpànxìng sīwéi...",
+        "translation": "Bồi dưỡng tư duy phản biện và năng lực học tập suốt đời"
+      },
+      {
+        "text": "只学编程",
+        "pinyin": "Zhǐ xué biānchéng",
+        "translation": "Chỉ dạy lập trình"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Trọng tâm bài giảng: 培养批判性思维和终身学习能力.",
     "points": 10
   },
@@ -5576,22 +5576,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "国家统计局今天发布数据显示，今年前三季度高技术制造业投资同比增长12.5%，绿色低碳转型步伐加快，展现了宏观经济强大的韧性与活力。问：这组数据主要反映了什么？",
     "options": [
       {
-        "text": "Sự chuyển đổi xanh và sức bật dẻo dai của nền kinh tế (经济韧性与高质量转型)",
-        "pinyin": "Jīngjì rènxìng...",
-        "translation": "Sự chuyển đổi xanh và sức bật dẻo dai của nền kinh tế (经济韧性与高质量转型)"
-      },
-      {
-        "text": "Kinh tế đình đốn (经济衰退)",
+        "text": "经济衰退",
         "pinyin": "Jīngjì shuāituì",
-        "translation": "Kinh tế đình đốn (经济衰退)"
+        "translation": "Kinh tế đình đốn"
       },
       {
-        "text": "Đầu tư sụt giảm (投资下降)",
+        "text": "投资下降",
         "pinyin": "Tóuzī xiàjiàng",
-        "translation": "Đầu tư sụt giảm (投资下降)"
+        "translation": "Đầu tư sụt giảm"
+      },
+      {
+        "text": "经济韧性与高质量转型",
+        "pinyin": "Jīngjì rènxìng...",
+        "translation": "Sự chuyển đổi xanh và sức bật dẻo dai của nền kinh tế"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Bản tin phản ánh: 宏观经济强大的韧性与活力，绿色转型步伐加快.",
     "points": 10
   },
@@ -5609,22 +5609,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "男：我最近感觉遭遇了职业瓶颈期，无论怎么做都没有成就感。女：这种心态很普遍，不妨把大目标拆解成每天可执行的微习惯，同时多与导师沟通，往往能找到新的突破口。问：女的提出了什么建议？",
     "options": [
       {
-        "text": "Chia nhỏ mục tiêu và tham khảo ý kiến người hướng dẫn (拆解目标并与导师沟通)",
-        "pinyin": "Chāijiě mùbiāo...",
-        "translation": "Chia nhỏ mục tiêu và tham khảo ý kiến người hướng dẫn (拆解目标并与导师沟通)"
-      },
-      {
-        "text": "Nghỉ việc ngay (马上辞职)",
+        "text": "马上辞职",
         "pinyin": "Mǎshàng cízhí",
-        "translation": "Nghỉ việc ngay (马上辞职)"
+        "translation": "Nghỉ việc ngay"
       },
       {
-        "text": "Lơ là công việc (放弃努力)",
+        "text": "放弃努力",
         "pinyin": "Fàngqì nǔlì",
-        "translation": "Lơ là công việc (放弃努力)"
+        "translation": "Lơ là công việc"
+      },
+      {
+        "text": "拆解目标并与导师沟通",
+        "pinyin": "Chāijiě mùbiāo...",
+        "translation": "Chia nhỏ mục tiêu và tham khảo ý kiến người hướng dẫn"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Lời khuyên: 把大目标拆解成可执行的微习惯，多与导师沟通.",
     "points": 10
   },
@@ -5642,22 +5642,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "记者：您创作历史长篇小说的灵感通常来自哪里？作家：大部分来源于浩瀚的民间史料和方志。正史记载的是帝王将相，而民间叙事里才蕴藏着鲜活的人间烟火与生命温度。问：作家最珍视的创作灵感源泉是什么？",
     "options": [
       {
-        "text": "Tư liệu lịch sử dân gian và ký ức nhân gian (民间史料与人间烟火)",
-        "pinyin": "Mínjiān shǐliào...",
-        "translation": "Tư liệu lịch sử dân gian và ký ức nhân gian (民间史料与人间烟火)"
-      },
-      {
-        "text": "Sách giáo khoa (教科书)",
+        "text": "教科书",
         "pinyin": "Jiàokēshū",
-        "translation": "Sách giáo khoa (教科书)"
+        "translation": "Sách giáo khoa"
       },
       {
-        "text": "Phim nước ngoài (外国电影)",
+        "text": "民间史料与人间烟火",
+        "pinyin": "Mínjiān shǐliào...",
+        "translation": "Tư liệu lịch sử dân gian và ký ức nhân gian"
+      },
+      {
+        "text": "外国电影",
         "pinyin": "Wàiguó diànyǐng",
-        "translation": "Phim nước ngoài (外国电影)"
+        "translation": "Phim nước ngoài"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Nhà văn nhấn mạnh: 民间史料和方志，蕴藏着人间烟火与生命温度.",
     "points": 10
   },
@@ -5675,27 +5675,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "考验 (Thử thách / Khảo nghiệm)",
-        "pinyin": "Kǎoyàn",
-        "translation": "考验 (Thử thách / Khảo nghiệm)"
-      },
-      {
-        "text": "待遇 (Đãi ngộ)",
-        "pinyin": "Dàiyù",
-        "translation": "待遇 (Đãi ngộ)"
-      },
-      {
-        "text": "借口 (Cớ / Viện cớ)",
+        "text": "借口",
         "pinyin": "Jièkǒu",
-        "translation": "借口 (Cớ / Viện cớ)"
+        "translation": "Cớ / Viện cớ"
       },
       {
-        "text": "比例 (Tỷ lệ)",
+        "text": "待遇",
+        "pinyin": "Dàiyù",
+        "translation": "Đãi ngộ"
+      },
+      {
+        "text": "考验",
+        "pinyin": "Kǎoyàn",
+        "translation": "Thử thách / Khảo nghiệm"
+      },
+      {
+        "text": "比例",
         "pinyin": "Bǐlì",
-        "translation": "比例 (Tỷ lệ)"
+        "translation": "Tỷ lệ"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Cụm danh từ cao cấp HSK 5: 面临严峻的考验 (đối mặt với thử thách cam go).",
     "points": 10
   },
@@ -5713,22 +5713,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "Lúc yên bình cũng phải phòng xa hiểm họa (处在平安中也要提防危险)",
-        "pinyin": "Chǔ zài píng'ān...",
-        "translation": "Lúc yên bình cũng phải phòng xa hiểm họa (处在平安中也要提防危险)"
-      },
-      {
-        "text": "Chỉ lo lắng khi tai họa ập đến (临渴掘井)",
-        "pinyin": "Línkě juéjǐng",
-        "translation": "Chỉ lo lắng khi tai họa ập đến (临渴掘井)"
-      },
-      {
-        "text": "Không cần nghĩ đến tương lai (得过且过)",
+        "text": "得过且过",
         "pinyin": "Déguò qiěguò",
-        "translation": "Không cần nghĩ đến tương lai (得过且过)"
+        "translation": "Không cần nghĩ đến tương lai"
+      },
+      {
+        "text": "临渴掘井",
+        "pinyin": "Línkě juéjǐng",
+        "translation": "Chỉ lo lắng khi tai họa ập đến"
+      },
+      {
+        "text": "处在平安中也要提防危险",
+        "pinyin": "Chǔ zài píng'ān...",
+        "translation": "Lúc yên bình cũng phải phòng xa hiểm họa"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Ý nghĩa thành ngữ: 处在平安环境中也要随时提防可能的危机.",
     "points": 10
   },
@@ -5746,27 +5746,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "循序渐进 (Tuần tự tiệm tiến - Theo thứ tự từng bước một)",
-        "pinyin": "Xúnxù jiànjìn",
-        "translation": "循序渐进 (Tuần tự tiệm tiến - Theo thứ tự từng bước một)"
-      },
-      {
-        "text": "急功近利 (Hám lợi trước mắt)",
-        "pinyin": "Jígōng jìnlì",
-        "translation": "急功近利 (Hám lợi trước mắt)"
-      },
-      {
-        "text": "粗枝大叶 (Cẩu thả qua loa)",
+        "text": "粗枝大叶",
         "pinyin": "Cūzhī dàyè",
-        "translation": "粗枝大叶 (Cẩu thả qua loa)"
+        "translation": "Cẩu thả qua loa"
       },
       {
-        "text": "半途而废 (Bỏ dở nửa chừng)",
+        "text": "半途而废",
         "pinyin": "Bàntú érfèi",
-        "translation": "半途而废 (Bỏ dở nửa chừng)"
+        "translation": "Bỏ dở nửa chừng"
+      },
+      {
+        "text": "急功近利",
+        "pinyin": "Jígōng jìnlì",
+        "translation": "Hám lợi trước mắt"
+      },
+      {
+        "text": "循序渐进",
+        "pinyin": "Tuần tự tiệm tiến",
+        "translation": "Theo thứ tự từng bước một"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 3,
     "explanation": "Thành ngữ '循序渐进' (từng bước vững chắc có thứ tự) là chuẩn xác nhất.",
     "points": 10
   },
@@ -5784,19 +5784,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "Sự liên đới mật thiết giữa các mắt xích sinh thái (物种灭绝会引发连锁危机)",
+        "text": "物种灭绝会引发连锁危机",
         "pinyin": "Wùzhǒng mièjué huì yǐnfā liánsuǒ wēijī",
-        "translation": "Sự liên đới mật thiết giữa các mắt xích sinh thái (物种灭绝会引发连锁危机)"
+        "translation": "Sự liên đới mật thiết giữa các mắt xích sinh thái"
       },
       {
-        "text": "Các loài vật không liên quan nhau (物种毫无关系)",
-        "pinyin": "Wùzhǒng háo wú guānxì",
-        "translation": "Các loài vật không liên quan nhau (物种毫无关系)"
-      },
-      {
-        "text": "Đa dạng sinh học không quan trọng (多样性不重要)",
+        "text": "多样性不重要",
         "pinyin": "Duōyàngxìng bù zhòngyào",
-        "translation": "Đa dạng sinh học không quan trọng (多样性不重要)"
+        "translation": "Đa dạng sinh học không quan trọng"
+      },
+      {
+        "text": "物种毫无关系",
+        "pinyin": "Wùzhǒng háo wú guānxì",
+        "translation": "Các loài vật không liên quan nhau"
       }
     ],
     "correct_option_index": 0,
@@ -5817,24 +5817,24 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "被动 (Bị động / Yếu thế)",
+        "text": "被动",
         "pinyin": "Bèidòng",
-        "translation": "被动 (Bị động / Yếu thế)"
+        "translation": "Bị động / Yếu thế"
       },
       {
-        "text": "灵活 (Linh hoạt)",
-        "pinyin": "Línghuó",
-        "translation": "灵活 (Linh hoạt)"
-      },
-      {
-        "text": "主动 (Chủ động)",
+        "text": "主动",
         "pinyin": "Zhǔdòng",
-        "translation": "主动 (Chủ động)"
+        "translation": "Chủ động"
       },
       {
-        "text": "乐观 (Lạc quan)",
+        "text": "乐观",
         "pinyin": "Lèguān",
-        "translation": "乐观 (Lạc quan)"
+        "translation": "Lạc quan"
+      },
+      {
+        "text": "灵活",
+        "pinyin": "Línghuó",
+        "translation": "Linh hoạt"
       }
     ],
     "correct_option_index": 0,
@@ -5878,6 +5878,11 @@ export const REAL_SIMULATION_QUESTIONS = [
     "correct_sentence": "这项重大科学实验耗费了团队整整三年的心血。",
     "options": [
       {
+        "text": "这项重大科学实验整整耗费了三年的心血团队。",
+        "pinyin": "Zhè xiàng zhòngdà...",
+        "translation": "Đặt sai vị trí bổ ngữ gián tiếp"
+      },
+      {
         "text": "这项重大科学实验耗费了团队整整三年的心血。",
         "pinyin": "Zhè xiàng zhòngdà kēxué shíyàn hàofèi le tuánduì zhěngzhěng sān nián de xīnxuè.",
         "translation": "Thí nghiệm khoa học trọng đại này đã tiêu tốn tròn ba năm tâm huyết của cả đội ngũ."
@@ -5886,14 +5891,9 @@ export const REAL_SIMULATION_QUESTIONS = [
         "text": "整整三年的心血这项重大科学实验耗费了团队。",
         "pinyin": "Zhěngzhěng sān nián de xīnxuè...",
         "translation": "Lộn tân ngữ lên đầu sai ngữ pháp"
-      },
-      {
-        "text": "这项重大科学实验整整耗费了三年的心血团队。",
-        "pinyin": "Zhè xiàng zhòngdà...",
-        "translation": "Đặt sai vị trí bổ ngữ gián tiếp"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cấu trúc: 主语 (这项重大科学实验) + 谓语动词 (耗费了) + 间接宾语 (团队) + 数量定语 (整整三年的) + 核心宾语 (心血).",
     "points": 10
   },
@@ -5939,14 +5939,14 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "Chế độ vận động nghỉ ngơi hợp lý có thể nâng cao hệ miễn dịch, từ đó phòng ngự hữu hiệu virus bên ngoài."
       },
       {
-        "text": "从而有效抵御外界病毒合理的运动作息能够提高免疫力。",
-        "pinyin": "Cóng'ér...",
-        "translation": "Đặt sai liên từ chỉ hệ quả 从而 lên đầu"
-      },
-      {
         "text": "能够提高免疫力合理的运动作息从而有效抵御外界病毒。",
         "pinyin": "Nénggòu tígāo...",
         "translation": "Lộn vế chủ vị"
+      },
+      {
+        "text": "从而有效抵御外界病毒合理的运动作息能够提高免疫力。",
+        "pinyin": "Cóng'ér...",
+        "translation": "Đặt sai liên từ chỉ hệ quả 从而 lên đầu"
       }
     ],
     "correct_option_index": 0,
@@ -5990,11 +5990,6 @@ export const REAL_SIMULATION_QUESTIONS = [
     "correct_sentence": "请把这些调查数据整理成一份完整的对比报告。",
     "options": [
       {
-        "text": "请把这些调查数据整理成一份完整的对比报告。",
-        "pinyin": "Qǐng bǎ zhèxiē diàochá shùjù zhěnglǐ chéng yí fèn wánzhěng de duìbǐ bàogào.",
-        "translation": "Xin hãy chỉnh lý các số liệu khảo sát này thành một bản báo cáo đối chiếu hoàn chỉnh."
-      },
-      {
         "text": "一份完整的对比报告请把这些调查数据整理成。",
         "pinyin": "Yí fèn wánzhěng...",
         "translation": "Lộn tân ngữ biến đổi lên đầu"
@@ -6003,9 +5998,14 @@ export const REAL_SIMULATION_QUESTIONS = [
         "text": "请整理成这些调查数据把一份完整的对比报告。",
         "pinyin": "Qǐng zhěnglǐ chéng...",
         "translation": "Sai vị trí chữ 把"
+      },
+      {
+        "text": "请把这些调查数据整理成一份完整的对比报告。",
+        "pinyin": "Qǐng bǎ zhèxiē diàochá shùjù zhěnglǐ chéng yí fèn wánzhěng de duìbǐ bàogào.",
+        "translation": "Xin hãy chỉnh lý các số liệu khảo sát này thành một bản báo cáo đối chiếu hoàn chỉnh."
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Cấu trúc chuyển hóa: 把 + Đối tượng gốc (这些调查数据) + Động từ + 成 + Đối tượng sau chuyển hóa (一份完整的对比报告).",
     "points": 10
   },
@@ -6016,7 +6016,7 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 2,
     "question_number": 14,
     "question_type": "free_writing",
-    "prompt": "结合所给成语写一个80字左右的短文：[举一反三] (Cử nhất phản tam - Biết một suy ra ba, suy diễn linh hoạt)",
+    "prompt": "结合所给成语写一个80字左右的短文：[举一反三]",
     "pinyin": "Jiéhé suǒ gěi chéngyǔ xiě yí gè duǎnwén: [jǔyīfǎnsān]",
     "translation": "Phần Viết tự luận HSK 5: Viết đoạn văn ngắn khoảng 80 chữ kết hợp thành ngữ [举一反三]:",
     "required_words": [
@@ -6035,12 +6035,12 @@ export const REAL_SIMULATION_QUESTIONS = [
     "is_subjective": true,
     "options": [
       {
-        "text": "Đoạn văn mẫu tham khảo: 在学习过程中，死记硬背往往难以取得优异的成绩。我们应当注重掌握知识的核心规律与解题逻辑，学会举一反三，触类旁通。只有善于灵活变通，才能在面对复杂多变的新问题时游刃有余。",
+        "text": "参考范文：在学习过程中，死记硬背往往难以取得优异的成绩。我们应当注重掌握知识的核心规律与解题逻辑，学会举一反三，触类旁通。只有善于灵活变通，才能在面对复杂多变的新问题时游刃有余。",
         "pinyin": "",
         "translation": "Câu/đoạn văn mẫu đạt chuẩn ngữ pháp HSK"
       },
       {
-        "text": "Bài làm tự luận của thí sinh (Tự đánh giá theo thang điểm)",
+        "text": "考生自由作答（按评分标准自评）",
         "pinyin": "",
         "translation": "Hệ thống đối sánh tiêu chí Rubric và lưu bài tự luận"
       }
@@ -6075,12 +6075,12 @@ export const REAL_SIMULATION_QUESTIONS = [
     "is_subjective": true,
     "options": [
       {
-        "text": "Đoạn văn mẫu tham khảo: 人生就像一场充满未知的马拉松，沿途必然会遭遇各种各样的困难与挑战。只要我们坚定信念、持之以恒，勇敢地战胜每一次挫折，就一定能在奋斗的终点收获丰硕的果实与内心的成长。",
+        "text": "参考范文：人生就像一场充满未知的马拉松，沿途必然会遭遇各种各样的困难与挑战。只要我们坚定信念、持之以恒，勇敢地战胜每一次挫折，就一定能在奋斗的终点收获丰硕的果实与内心的成长。",
         "pinyin": "",
         "translation": "Câu/đoạn văn mẫu đạt chuẩn ngữ pháp HSK"
       },
       {
-        "text": "Bài làm tự luận của thí sinh (Tự đánh giá theo thang điểm)",
+        "text": "考生自由作答（按评分标准自评）",
         "pinyin": "",
         "translation": "Hệ thống đối sánh tiêu chí Rubric và lưu bài tự luận"
       }
@@ -6101,19 +6101,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "国务院日前印发《数字中国建设整体布局规划》，明确指出要打通数字基础设施大动脉，畅通数据资源大循环，推动数字技术与实体经济深度融合，以数字化驱动中国式现代化进程。问：规划的核心战略方向是什么？",
     "options": [
       {
-        "text": "Thúc đẩy kỹ thuật số kết hợp sâu rộng với kinh tế thực thể (数字技术与实体经济深度融合)",
+        "text": "数字技术与实体经济深度融合",
         "pinyin": "Shùzì jìshù...",
-        "translation": "Thúc đẩy kỹ thuật số kết hợp sâu rộng với kinh tế thực thể (数字技术与实体经济深度融合)"
+        "translation": "Thúc đẩy kỹ thuật số kết hợp sâu rộng với kinh tế thực thể"
       },
       {
-        "text": "Hạn chế chuyển đổi số (限制数字化)",
+        "text": "限制数字化",
         "pinyin": "Xiànzhì shùzìhuà",
-        "translation": "Hạn chế chuyển đổi số (限制数字化)"
+        "translation": "Hạn chế chuyển đổi số"
       },
       {
-        "text": "Chỉ phát triển nông nghiệp truyền thống (只发展传统农业)",
+        "text": "只发展传统农业",
         "pinyin": "Zhǐ fāzhǎn nóngyè",
-        "translation": "Chỉ phát triển nông nghiệp truyền thống (只发展传统农业)"
+        "translation": "Chỉ phát triển nông nghiệp truyền thống"
       }
     ],
     "correct_option_index": 0,
@@ -6134,19 +6134,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "学者指出，过度城市化过程中出现的‘职住分离’现象，不仅加剧了早晚高峰的潮汐式交通拥堵，更在无形中剥夺了通勤者的闲暇时光，对家庭陪伴和社区公共生活的构建造成了深层次冲击。问：‘职住分离’带来了什么负面影响？",
     "options": [
       {
-        "text": "Gia tăng áp lực đi lại và làm suy giảm đời sống gia đình (加剧通勤压力与挤压闲暇时光)",
+        "text": "加剧通勤压力与挤压闲暇时光",
         "pinyin": "Jiājù tōngqín yālì...",
-        "translation": "Gia tăng áp lực đi lại và làm suy giảm đời sống gia đình (加剧通勤压力与挤压闲暇时光)"
+        "translation": "Gia tăng áp lực đi lại và làm suy giảm đời sống gia đình"
       },
       {
-        "text": "Giảm giá nhà (降低房价)",
+        "text": "降低房价",
         "pinyin": "Jiàngdī fángjià",
-        "translation": "Giảm giá nhà (降低房价)"
+        "translation": "Giảm giá nhà"
       },
       {
-        "text": "Tăng thời gian nghỉ ngơi (增加休息时间)",
+        "text": "增加休息时间",
         "pinyin": "Zēngjiā xiūxi shíjiān",
-        "translation": "Tăng thời gian nghỉ ngơi (增加休息时间)"
+        "translation": "Tăng thời gian nghỉ ngơi"
       }
     ],
     "correct_option_index": 0,
@@ -6167,22 +6167,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "虽然量子计算展现了指数级超越传统超级计算机的潜在算力，但在实际工程落地中，量子比特的退相干效应以及极低温环境的严苛维持，依然是全球物理学界面临的巨大工程壁垒。问：量子计算实际落地面临的主要瓶颈是什么？",
     "options": [
       {
-        "text": "Hiện tượng mất liên kết lượng tử và đòi hỏi nhiệt độ cực thấp (退相干效应与维持极低温环境)",
-        "pinyin": "Tuìxiānggān xiàoyìng...",
-        "translation": "Hiện tượng mất liên kết lượng tử và đòi hỏi nhiệt độ cực thấp (退相干效应与维持极低温环境)"
-      },
-      {
-        "text": "Thiếu tiền (缺少资金)",
-        "pinyin": "Quēshǎo zījīn",
-        "translation": "Thiếu tiền (缺少资金)"
-      },
-      {
-        "text": "Không có máy tính điện tử (没有电子计算机)",
+        "text": "没有电子计算机",
         "pinyin": "Méiyǒu suànlì",
-        "translation": "Không có máy tính điện tử (没有电子计算机)"
+        "translation": "Không có máy tính điện tử"
+      },
+      {
+        "text": "退相干效应与维持极低温环境",
+        "pinyin": "Tuìxiānggān xiàoyìng...",
+        "translation": "Hiện tượng mất liên kết lượng tử và đòi hỏi nhiệt độ cực thấp"
+      },
+      {
+        "text": "缺少资金",
+        "pinyin": "Quēshǎo zījīn",
+        "translation": "Thiếu tiền"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Điểm nghẽn then chốt: 退相干效应以及极低温环境的维持壁垒.",
     "points": 10
   },
@@ -6200,22 +6200,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "中国传统水墨山水画贵在‘计白当黑’与‘意到笔不到’。空白绝非虚无，而是蕴藉着气韵流转与无限时空的哲理留白，给予观赏者以广阔的心理共鸣与审美再创造空间。问：中国画‘留白’的核心美学价值是什么？",
     "options": [
       {
-        "text": "Gợi mở không gian triết lý và sự đồng sáng tạo của người thưởng lãm (蕴藉无限时空与审美再创造)",
-        "pinyin": "Yùnjiè wúxiàn shíkōng...",
-        "translation": "Gợi mở không gian triết lý và sự đồng sáng tạo của người thưởng lãm (蕴藉无限时空与审美再创造)"
-      },
-      {
-        "text": "Tiết kiệm mực vẽ (节约墨水)",
-        "pinyin": "Jiéyuē mòshuǐ",
-        "translation": "Tiết kiệm mực vẽ (节约墨水)"
-      },
-      {
-        "text": "Họa sĩ chưa vẽ xong (没画完)",
+        "text": "没画完",
         "pinyin": "Méi huà wán",
-        "translation": "Họa sĩ chưa vẽ xong (没画完)"
+        "translation": "Họa sĩ chưa vẽ xong"
+      },
+      {
+        "text": "节约墨水",
+        "pinyin": "Jiéyuē mòshuǐ",
+        "translation": "Tiết kiệm mực vẽ"
+      },
+      {
+        "text": "蕴藉无限时空与审美再创造",
+        "pinyin": "Yùnjiè wúxiàn shíkōng...",
+        "translation": "Gợi mở không gian triết lý và sự đồng sáng tạo của người thưởng lãm"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Giá trị mỹ học: 空白绝非虚无，而是蕴藉无限时空与审美再创造空间.",
     "points": 10
   },
@@ -6233,19 +6233,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "国家公园体制建设之所以被视为生态文明的最高形态，是因为它打破了传统行政区划的碎片化分割，实现了全流域、全生态系统的整体性原真保护，为顶级旗舰物种提供了无障碍繁衍廊道。问：国家公园体制的根本优势在于？",
     "options": [
       {
-        "text": "Bảo tồn nguyên vẹn tính toàn thể của hệ sinh thái (实现生态系统整体性原真保护)",
+        "text": "实现生态系统整体性原真保护",
         "pinyin": "Shíxiàn zhěngtǐxìng bǎohù...",
-        "translation": "Bảo tồn nguyên vẹn tính toàn thể của hệ sinh thái (实现生态系统整体性原真保护)"
+        "translation": "Bảo tồn nguyên vẹn tính toàn thể của hệ sinh thái"
       },
       {
-        "text": "Phát triển du lịch ồ ạt (大规模旅游)",
-        "pinyin": "Dàguīmó lǚyóu",
-        "translation": "Phát triển du lịch ồ ạt (大规模旅游)"
-      },
-      {
-        "text": "Ngăn chặn nghiên cứu khoa học (禁止科学考察)",
+        "text": "禁止科学考察",
         "pinyin": "Jìnzhǐ kēkǎo",
-        "translation": "Ngăn chặn nghiên cứu khoa học (禁止科学考察)"
+        "translation": "Ngăn chặn nghiên cứu khoa học"
+      },
+      {
+        "text": "大规模旅游",
+        "pinyin": "Dàguīmó lǚyóu",
+        "translation": "Phát triển du lịch ồ ạt"
       }
     ],
     "correct_option_index": 0,
@@ -6266,9 +6266,9 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "经过专家组深入现场的周密调研，这份关于运河流域生态修复的长远规划终于顺利通过了评审。",
-        "pinyin": "Jīngguò zhuānjiāzǔ shēnrù xiànchǎng de zhōumì diàoyán, zhè fèn guīhuà tōngguò le píngshěn.",
-        "translation": "经过专家组深入现场的周密调研，这份关于运河流域生态修复的长远规划终于顺利通过了评审。"
+        "text": "为了防止这类恶性交通事故不再发生，交管部门进一步升级了全路段的智能测速预警系统。",
+        "pinyin": "Wèile fángzhǐ bù zài fāshēng... (Lỗi phủ định kép ngược nghĩa: 防止 + 不)",
+        "translation": "为了防止这类恶性交通事故不再发生，交管部门进一步升级了全路段的智能测速预警系统。"
       },
       {
         "text": "通过这次防灾减灾宣传周活动，使广大市民的自救互救能力得到了显著的增强。",
@@ -6276,9 +6276,9 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "通过这次防灾减灾宣传周活动，使广大市民的自救互救能力得到了显著的增强。"
       },
       {
-        "text": "为了防止这类恶性交通事故不再发生，交管部门进一步升级了全路段的智能测速预警系统。",
-        "pinyin": "Wèile fángzhǐ bù zài fāshēng... (Lỗi phủ định kép ngược nghĩa: 防止 + 不)",
-        "translation": "为了防止这类恶性交通事故不再发生，交管部门进一步升级了全路段的智能测速预警系统。"
+        "text": "经过专家组深入现场的周密调研，这份关于运河流域生态修复的长远规划终于顺利通过了评审。",
+        "pinyin": "Jīngguò zhuānjiāzǔ shēnrù xiànchǎng de zhōumì diàoyán, zhè fèn guīhuà tōngguò le píngshěn.",
+        "translation": "经过专家组深入现场的周密调研，这份关于运河流域生态修复的长远规划终于顺利通过了评审。"
       },
       {
         "text": "他的革命先烈事迹不仅感染了在场的每一位听众，也深深地教育了我们大家。",
@@ -6286,8 +6286,8 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "他的革命先烈事迹不仅感染了在场的每一位听众，也深深地教育了我们大家。"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Phương án A hoàn toàn chuẩn xác. B mắc lỗi khuyết chủ ngữ do dùng '通过...使...'; C mắc lỗi phủ định nghịch lý ('防止...不再发生' biến thành mong tai nạn xảy ra); D kết hợp ngữ nghĩa lủng củng.",
+    "correct_option_index": 2,
+    "explanation": "Phương án C hoàn toàn chuẩn xác. B mắc lỗi khuyết chủ ngữ do dùng '通过...使...'; A mắc lỗi phủ định nghịch lý ('防止...不再发生' biến thành mong tai nạn xảy ra); D kết hợp ngữ nghĩa lủng củng.",
     "points": 10
   },
   {
@@ -6304,11 +6304,6 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "能否持之以恒地加强自主核心技术研发，是决定这家制造企业在激烈市场博弈中立于不败之地的关键因素。",
-        "pinyin": "Néngfǒu chízhīyǐhéng... shì juédìng... de guānjiàn yīnsù. (Lỗi hai mặt đối chiếu một mặt: 能否 đối với 立于不败之地)",
-        "translation": "能否持之以恒地加强自主核心技术研发，是决定这家制造企业在激烈市场博弈中立于不败之地的关键因素。"
-      },
-      {
         "text": "这部纪录片以生动质朴的镜头语言，客观记录了塞罕坝林场建设者半个世纪的绿色奉献历程。",
         "pinyin": "Zhè bù jìlùpiàn... (Chuẩn)",
         "translation": "这部纪录片以生动质朴的镜头语言，客观记录了塞罕坝林场建设者半个世纪的绿色奉献历程。"
@@ -6322,10 +6317,15 @@ export const REAL_SIMULATION_QUESTIONS = [
         "text": "文化交流的真谛在于增进理解与互信，而不是单向的价值输出或文化优越感的宣示。",
         "pinyin": "Wénhuà jiāoliú... (Chuẩn)",
         "translation": "文化交流的真谛在于增进理解与互信，而不是单向的价值输出或文化优越感的宣示。"
+      },
+      {
+        "text": "能否持之以恒地加强自主核心技术研发，是决定这家制造企业在激烈市场博弈中立于不败之地的关键因素。",
+        "pinyin": "Néngfǒu chízhīyǐhéng... shì juédìng... de guānjiàn yīnsù. (Lỗi hai mặt đối chiếu một mặt: 能否 đối với 立于不败之地)",
+        "translation": "能否持之以恒地加强自主核心技术研发，是决定这家制造企业在激烈市场博弈中立于不败之地的关键因素。"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "Phương án A mắc lỗi kinh điển HSK 6: '两面对一面' (vế đầu có '能否' gồm 2 mặt được/không được, nhưng vế sau chỉ khẳng định 1 mặt '立于不败之地').",
+    "correct_option_index": 3,
+    "explanation": "Phương án D mắc lỗi kinh điển HSK 6: '两面对一面' (vế đầu có '能否' gồm 2 mặt được/không được, nhưng vế sau chỉ khẳng định 1 mặt '立于不败之地').",
     "points": 10
   },
   {
@@ -6342,24 +6342,24 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "居安思危 —— 防微杜渐 —— 运筹帷幄 (Lo xa lúc an bình — Ngăn chặn từ mầm mống — Bày mưu tính kế điều binh)",
+        "text": "居安思危 —— 防微杜渐 —— 运筹帷幄",
         "pinyin": "jū'ānsīwēi — fángwēidùjiàn — yùnchóuwéiwò",
-        "translation": "居安思危 —— 防微杜渐 —— 运筹帷幄 (Lo xa lúc an bình — Ngăn chặn từ mầm mống — Bày mưu tính kế điều binh)"
+        "translation": "Lo xa lúc an bình — Ngăn chặn từ mầm mống — Bày mưu tính kế điều binh"
       },
       {
-        "text": "自相矛盾 —— 掩耳盗铃 —— 画蛇添足 (Mâu thuẫn — Bịt tai trộm chuông — Vẽ rắn thêm chân)",
-        "pinyin": "zìxiāng máodùn — yǎn'ěrdàolíng — huàshétiānzú",
-        "translation": "自相矛盾 —— 掩耳盗铃 —— 画蛇添足 (Mâu thuẫn — Bịt tai trộm chuông — Vẽ rắn thêm chân)"
-      },
-      {
-        "text": "朝三暮四 —— 走马观花 —— 井底之蛙 (Sáng ba chiều bốn — Cưỡi ngựa xem hoa — Ếch ngồi đáy giếng)",
+        "text": "朝三暮四 —— 走马观花 —— 井底之蛙",
         "pinyin": "zhāosānmùsì — zǒumǎguānhuā — jǐngdǐzhīwā",
-        "translation": "朝三暮四 —— 走马观花 —— 井底之蛙 (Sáng ba chiều bốn — Cưỡi ngựa xem hoa — Ếch ngồi đáy giếng)"
+        "translation": "Sáng ba chiều bốn — Cưỡi ngựa xem hoa — Ếch ngồi đáy giếng"
       },
       {
-        "text": "南辕北辙 —— 守株待兔 —— 拔苗助长 (Trống đánh xuôi kèn thổi ngược — Ôm cây đợi thỏ — Đốt cháy giai đoạn)",
+        "text": "南辕北辙 —— 守株待兔 —— 拔苗助长",
         "pinyin": "nányuánběizhé — shǒuzhūdàitù — bámiáozhùzhǎng",
-        "translation": "南辕北辙 —— 守株待兔 —— 拔苗助长 (Trống đánh xuôi kèn thổi ngược — Ôm cây đợi thỏ — Đốt cháy giai đoạn)"
+        "translation": "Trống đánh xuôi kèn thổi ngược — Ôm cây đợi thỏ — Đốt cháy giai đoạn"
+      },
+      {
+        "text": "自相矛盾 —— 掩耳盗铃 —— 画蛇添足",
+        "pinyin": "zìxiāng máodùn — yǎn'ěrdàolíng — huàshétiānzú",
+        "translation": "Mâu thuẫn — Bịt tai trộm chuông — Vẽ rắn thêm chân"
       }
     ],
     "correct_option_index": 0,
@@ -6380,22 +6380,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "Tôn trọng quy luật sinh sôi tự nhiên và giữ lòng bao dung với muôn loài (顺应自然、包容万物生息)",
-        "pinyin": "Shùnyìng zìrán...",
-        "translation": "Tôn trọng quy luật sinh sôi tự nhiên và giữ lòng bao dung với muôn loài (顺应自然、包容万物生息)"
-      },
-      {
-        "text": "Phủ nhận sức mạnh con người (否定人类)",
+        "text": "否定人类",
         "pinyin": "Fǒudìng rénlèi",
-        "translation": "Phủ nhận sức mạnh con người (否定人类)"
+        "translation": "Phủ nhận sức mạnh con người"
       },
       {
-        "text": "Khuyên con người tàn phá thiên nhiên (征服自然)",
+        "text": "顺应自然、包容万物生息",
+        "pinyin": "Shùnyìng zìrán...",
+        "translation": "Tôn trọng quy luật sinh sôi tự nhiên và giữ lòng bao dung với muôn loài"
+      },
+      {
+        "text": "征服自然",
         "pinyin": "Zhēngfú zìrán",
-        "translation": "Khuyên con người tàn phá thiên nhiên (征服自然)"
+        "translation": "Khuyên con người tàn phá thiên nhiên"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Triết lý '生生不息' nhấn mạnh con người thuận theo tự nhiên và bao dung vạn vật.",
     "points": 10
   },
@@ -6413,9 +6413,9 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "每一次看似失败的实验，实际上都在为最终的成功排除错误的路径",
-        "pinyin": "Měi yí cì kànsì shībài de shíyàn, shíjìshang dōu zài wèi zuìzhōng de chénggōng páichú cuòwù de lùjìng",
-        "translation": "每一次看似失败的实验，实际上都在为最终的成功排除错误的路径"
+        "text": "因此只要有钱就一定能出成果",
+        "pinyin": "Yīncǐ zhǐyào yǒu qián jiù yídìng néng chū chéngguǒ",
+        "translation": "因此只要有钱就一定能出成果"
       },
       {
         "text": "所以科学家都不愿意做实验",
@@ -6423,12 +6423,12 @@ export const REAL_SIMULATION_QUESTIONS = [
         "translation": "所以科学家都不愿意做实验"
       },
       {
-        "text": "因此只要有钱就一定能出成果",
-        "pinyin": "Yīncǐ zhǐyào yǒu qián jiù yídìng néng chū chéngguǒ",
-        "translation": "因此只要有钱就一定能出成果"
+        "text": "每一次看似失败的实验，实际上都在为最终的成功排除错误的路径",
+        "pinyin": "Měi yí cì kànsì shībài de shíyàn, shíjìshang dōu zài wèi zuìzhōng de chénggōng páichú cuòwù de lùjìng",
+        "translation": "每一次看似失败的实验，实际上都在为最终的成功排除错误的路径"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Vế trước nói về '充满试错与曲折' (đầy rẫy thử sai và trắc trở), câu kết nối giải thích giá trị của việc thất bại để loại bỏ con đường sai là mạch lạc và học thuật nhất.",
     "points": 10
   },
@@ -6446,27 +6446,27 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "忠实于原文叙事主线与因果脉络，提炼核心事件，不得掺入个人主观评论 (Trung thực với mạch truyện và nhân quả nguyên tác, cô đọng biến cố cốt lõi, tuyệt đối KHÔNG lồng bình luận chủ quan cá nhân)",
-        "pinyin": "Zhōngshí yú yuánwén xùshì zhǔxiàn...",
-        "translation": "Quy tắc vàng tóm tắt văn bản HSK 6"
-      },
-      {
-        "text": "必须加入大量个人读后感和主观议论抒情 (Cần thêm nhiều cảm nghĩ và bình luận cá nhân)",
+        "text": "必须加入大量个人读后感和主观议论抒情",
         "pinyin": "Bìxū jiārù dàliàng gèrén dúhòugǎn...",
         "translation": "Sai lầm làm trừ điểm nặng"
       },
       {
-        "text": "可以任意更改原著主角姓名和故事结局 (Có thể tự đổi kết thúc truyện)",
-        "pinyin": "Kěyǐ rènyì gēnggǎi...",
-        "translation": "Xuyên tạc cốt truyện"
+        "text": "忠实于原文叙事主线与因果脉络，提炼核心事件，不得掺入个人主观评论",
+        "pinyin": "Zhōngshí yú yuánwén xùshì zhǔxiàn...",
+        "translation": "Quy tắc vàng tóm tắt văn bản HSK 6"
       },
       {
-        "text": "直接抄写原文前两段凑足400字 (Chép nguyên vẹn 2 đoạn đầu)",
+        "text": "直接抄写原文前两段凑足400字",
         "pinyin": "Zhíjiē chāoxiě yuánwén...",
         "translation": "Gian lận bị điểm liệt"
+      },
+      {
+        "text": "可以任意更改原著主角姓名和故事结局",
+        "pinyin": "Kěyǐ rènyì gēnggǎi...",
+        "translation": "Xuyên tạc cốt truyện"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Tiêu chuẩn chấm thi Viết HSK 6: Đề bài yêu cầu '缩写' (tóm tắt khách quan). Thí sinh phải bảo lưu ngôi kể thứ 3, bám sát các sự kiện mấu chốt, tuyệt đối không được đưa quan điểm, cảm nhận cá nhân.",
     "points": 10
   },
@@ -6511,11 +6511,6 @@ export const REAL_SIMULATION_QUESTIONS = [
     "correct_sentence": "非物质文化遗产的保护不仅在于静态典藏，更在于在现代化转型中实现创造性转化。",
     "options": [
       {
-        "text": "非物质文化遗产的保护不仅在于静态典藏，更在于在现代化转型中实现创造性转化。",
-        "pinyin": "Fēiwùzhì wénhuà yíchǎn de bǎohù bùjǐn zàiyú jìngtài diǎncáng, gèng zàiyú zài xiàndàihuà zhuǎnxíng zhōng shíxiàn chuàngzàoxìng zhuǎnhuà.",
-        "translation": "Việc bảo tồn di sản văn hóa phi vật thể không chỉ dừng ở việc lưu trữ tĩnh, mà quan trọng hơn là thực hiện chuyển hóa sáng tạo trong quá trình chuyển mình hiện đại hóa."
-      },
-      {
         "text": "在现代化转型中不仅在于静态典藏非物质文化遗产的保护更在于实现创造性转化。",
         "pinyin": "Zài xiàndàihuà zhuǎnxíng zhōng...",
         "translation": "Trật tự các vế câu lộn xộn"
@@ -6524,9 +6519,14 @@ export const REAL_SIMULATION_QUESTIONS = [
         "text": "更在于实现创造性转化非物质文化遗产的保护不仅在于静态典藏。",
         "pinyin": "Gèng zàiyú...",
         "translation": "Đảo ngược thứ tự liên từ"
+      },
+      {
+        "text": "非物质文化遗产的保护不仅在于静态典藏，更在于在现代化转型中实现创造性转化。",
+        "pinyin": "Fēiwùzhì wénhuà yíchǎn de bǎohù bùjǐn zàiyú jìngtài diǎncáng, gèng zàiyú zài xiàndàihuà zhuǎnxíng zhōng shíxiàn chuàngzàoxìng zhuǎnhuà.",
+        "translation": "Việc bảo tồn di sản văn hóa phi vật thể không chỉ dừng ở việc lưu trữ tĩnh, mà quan trọng hơn là thực hiện chuyển hóa sáng tạo trong quá trình chuyển mình hiện đại hóa."
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Cấu trúc câu tăng tiến: '不仅在于 (Không chỉ ở) ... 更在于 (Càng ở chỗ) ...': 非物质文化遗产的保护不仅在于静态典藏，更在于在现代化转型中实现创造性转化。",
     "points": 10
   },
@@ -6567,6 +6567,11 @@ export const REAL_SIMULATION_QUESTIONS = [
     "correct_sentence": "只有构建开放型世界经济，促进贸易和投资自由化，才能有效抵御逆全球化思潮，推动全球繁荣。",
     "options": [
       {
+        "text": "推动全球繁荣促进贸易和投资自由化只有构建开放型世界经济才能有效抵御逆全球化思潮。",
+        "pinyin": "Tuīdòng...",
+        "translation": "Đảo ngữ sai liên từ 只有...才能"
+      },
+      {
         "text": "只有构建开放型世界经济，促进贸易和投资自由化，才能有效抵御逆全球化思潮，推动全球繁荣。",
         "pinyin": "Zhǐyǒu gòujiàn kāifàngxíng shìjiè jīngjì, cùjìn màoyì hé tóuzī zìyóuhuà, cáinéng yǒuxiào dǐyù nìquánqiúhuà sīcháo, tuīdòng quánqiú fánróng.",
         "translation": "Chỉ có xây dựng nền kinh tế thế giới mở, thúc đẩy tự do hóa thương mại và đầu tư, mới có thể chống lại làn sóng chống toàn cầu hóa và thúc đẩy thịnh vượng toàn cầu hữu hiệu."
@@ -6575,14 +6580,9 @@ export const REAL_SIMULATION_QUESTIONS = [
         "text": "才能有效抵御逆全球化思潮只有构建开放型世界经济促进贸易和投资自由化推动全球繁荣。",
         "pinyin": "Cáinéng yǒuxiào...",
         "translation": "Lộn vế điều kiện và kết quả"
-      },
-      {
-        "text": "推动全球繁荣促进贸易和投资自由化只有构建开放型世界经济才能有效抵御逆全球化思潮。",
-        "pinyin": "Tuīdòng...",
-        "translation": "Đảo ngữ sai liên từ 只有...才能"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Cấu trúc điều kiện duy nhất: 只有 + Điều kiện hành động, 才能 + Kết quả mục tiêu.",
     "points": 10
   },
@@ -6609,12 +6609,12 @@ export const REAL_SIMULATION_QUESTIONS = [
     "is_subjective": true,
     "options": [
       {
-        "text": "Đoạn văn mẫu tham khảo: 绝处逢生的智慧",
+        "text": "参考范文：绝处逢生的智慧",
         "pinyin": "",
         "translation": "Câu/đoạn văn mẫu đạt chuẩn ngữ pháp HSK"
       },
       {
-        "text": "Bài làm tự luận của thí sinh (Tự đánh giá theo thang điểm)",
+        "text": "考生自由作答（按评分标准自评）",
         "pinyin": "",
         "translation": "Hệ thống đối sánh tiêu chí Rubric và lưu bài tự luận"
       }
@@ -6644,12 +6644,12 @@ export const REAL_SIMULATION_QUESTIONS = [
     "is_subjective": true,
     "options": [
       {
-        "text": "Đoạn văn mẫu tham khảo: 祸兮福所倚，福兮祸所伏。顺境中不可得意忘形，逆境中更需抱持希望，辩证看待人生的得失起伏。",
+        "text": "参考范文：祸兮福所倚，福兮祸所伏。顺境中不可得意忘形，逆境中更需抱持希望，辩证看待人生的得失起伏。",
         "pinyin": "",
         "translation": "Câu/đoạn văn mẫu đạt chuẩn ngữ pháp HSK"
       },
       {
-        "text": "Bài làm tự luận của thí sinh (Tự đánh giá theo thang điểm)",
+        "text": "考生自由作答（按评分标准自评）",
         "pinyin": "",
         "translation": "Hệ thống đối sánh tiêu chí Rubric và lưu bài tự luận"
       }
@@ -6670,22 +6670,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "这是我的大学同学，他叫大卫。",
     "options": [
       {
-        "text": "Bạn học (同学)",
-        "pinyin": "Tóngxué",
-        "translation": "Bạn học (同学)"
-      },
-      {
-        "text": "Giáo viên (老师)",
-        "pinyin": "Lǎoshī",
-        "translation": "Giáo viên (老师)"
-      },
-      {
-        "text": "Bác sĩ (医生)",
+        "text": "医生",
         "pinyin": "Yīshēng",
-        "translation": "Bác sĩ (医生)"
+        "translation": "Bác sĩ"
+      },
+      {
+        "text": "老师",
+        "pinyin": "Lǎoshī",
+        "translation": "Giáo viên"
+      },
+      {
+        "text": "同学",
+        "pinyin": "Tóngxué",
+        "translation": "Bạn học"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Nói rõ '这是我的大学同学'.",
     "points": 10
   },
@@ -6703,23 +6703,23 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "我爸爸坐出租车去火车站了。",
     "options": [
       {
+        "text": "自行车",
+        "pinyin": "Zìxíngchē",
+        "translation": "Xe đạp"
+      },
+      {
         "text": "Xe taxi (出租车)",
         "pinyin": "Chūzūchē",
         "translation": "Xe taxi (出租车)"
       },
       {
-        "text": "Máy bay (飞机)",
+        "text": "飞机",
         "pinyin": "Fēijī",
-        "translation": "Máy bay (飞机)"
-      },
-      {
-        "text": "Xe đạp (自行车)",
-        "pinyin": "Zìxíngchē",
-        "translation": "Xe đạp (自行车)"
+        "translation": "Máy bay"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "坐出租车去火车站.",
+    "correct_option_index": 1,
+    "explanation": "Lời thoại nói rõ '我爸爸坐出租车去火车站了' (Bố tôi đã đi taxi ra ga tàu hỏa rồi), nên phương tiện đúng là Xe taxi (出租车).",
     "points": 10
   },
   {
@@ -6736,22 +6736,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "什么 (Gì)",
-        "pinyin": "Shénme",
-        "translation": "什么 (Gì)"
-      },
-      {
-        "text": "谁 (Ai)",
+        "text": "谁",
         "pinyin": "Shéi",
         "translation": "谁 (Ai)"
       },
       {
-        "text": "哪儿 (Ở đâu)",
+        "text": "哪儿",
         "pinyin": "Nǎr",
-        "translation": "哪儿 (Ở đâu)"
+        "translation": "Ở đâu"
+      },
+      {
+        "text": "什么",
+        "pinyin": "Shénme",
+        "translation": "Gì"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Tân ngữ đồ vật: 看什么.",
     "points": 10
   },
@@ -6769,22 +6769,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "衣服 (Quần áo)",
-        "pinyin": "Yīfu",
-        "translation": "衣服 (Quần áo)"
-      },
-      {
-        "text": "米饭 (Cơm)",
+        "text": "米饭",
         "pinyin": "Mǐfàn",
-        "translation": "米饭 (Cơm)"
+        "translation": "Cơm"
       },
       {
-        "text": "水 (Nước)",
+        "text": "衣服",
+        "pinyin": "Yīfu",
+        "translation": "Quần áo"
+      },
+      {
+        "text": "水",
         "pinyin": "Shuǐ",
-        "translation": "水 (Nước)"
+        "translation": "Nước"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Động từ '穿' (mặc) đi với '衣服' (quần áo).",
     "points": 10
   },
@@ -6802,19 +6802,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "给我一杯茶吧，谢谢。 (Cho tôi cốc trà, cảm ơn)",
-        "pinyin": "Gěi wǒ yì bēi chá ba...",
-        "translation": "给我一杯茶吧，谢谢。 (Cho tôi cốc trà, cảm ơn)"
+        "text": "给我一杯茶吧，谢谢。",
+        "pinyin": "Gěi wǒ yì bēi chá ba, xièxie.",
+        "translation": "Cho tôi cốc trà, cảm ơn"
       },
       {
-        "text": "明天去。 (Ngày mai đi)",
-        "pinyin": "Míngtiān qù.",
-        "translation": "明天去。 (Ngày mai đi)"
-      },
-      {
-        "text": "他是学生。 (Cậu ấy là học sinh)",
+        "text": "他是学生。",
         "pinyin": "Tā shì xuésheng.",
-        "translation": "他是学生。 (Cậu ấy là học sinh)"
+        "translation": "Cậu ấy là học sinh"
+      },
+      {
+        "text": "明天去。",
+        "pinyin": "Míngtiān qù.",
+        "translation": "Ngày mai đi"
       }
     ],
     "correct_option_index": 0,
@@ -6828,7 +6828,7 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 2,
     "question_number": 10,
     "question_type": "multiple_choice",
-    "prompt": "看拼音选汉字：xuéxiào (trường học)",
+    "prompt": "看拼音选汉字：xuéxiào",
     "pinyin": "Kàn pīnyīn xuǎn hànzì: xuéxiào",
     "translation": "Nhìn pinyin chọn chữ Hán:",
     "audio_url": "",
@@ -6868,22 +6868,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：请问还有空房间吗？男：对不起，今天所有的客房都住满了。问：他们最可能在哪里？",
     "options": [
       {
-        "text": "Khách sạn (宾馆/酒店)",
-        "pinyin": "Bīnguǎn",
-        "translation": "Khách sạn (宾馆/酒店)"
-      },
-      {
-        "text": "Trường học (学校)",
+        "text": "学校",
         "pinyin": "Xuéxiào",
-        "translation": "Trường học (学校)"
+        "translation": "Trường học"
       },
       {
-        "text": "Bệnh viện (医院)",
+        "text": "宾馆/酒店",
+        "pinyin": "Bīnguǎn",
+        "translation": "Khách sạn"
+      },
+      {
+        "text": "医院",
         "pinyin": "Yīyuàn",
-        "translation": "Bệnh viện (医院)"
+        "translation": "Bệnh viện"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Hỏi về phòng trống (空房间) và phòng khách (客房) là ở khách sạn.",
     "points": 10
   },
@@ -6901,22 +6901,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "女：今天我们去吃烤鸭怎么样？男：好啊，听说附近那家全聚德味道特别地道。问：男的同意去吃烤鸭吗？",
     "options": [
       {
-        "text": "Rất đồng ý (非常赞同)",
-        "pinyin": "Fēicháng zàntóng",
-        "translation": "Rất đồng ý (非常赞同)"
-      },
-      {
-        "text": "Không muốn đi (不想去)",
+        "text": "不想去",
         "pinyin": "Bù xiǎng qù",
-        "translation": "Không muốn đi (不想去)"
+        "translation": "Không muốn đi"
       },
       {
-        "text": "Không thích ăn thịt (不喜欢吃肉)",
+        "text": "不喜欢吃肉",
         "pinyin": "Bù xǐhuan chī ròu",
-        "translation": "Không thích ăn thịt (不喜欢吃肉)"
+        "translation": "Không thích ăn thịt"
+      },
+      {
+        "text": "非常赞同",
+        "pinyin": "Fēicháng zàntóng",
+        "translation": "Rất đồng ý"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Người nam khen và đồng ý: 好啊，味道特别地道.",
     "points": 10
   },
@@ -6934,22 +6934,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "贵 (Đắt)",
-        "pinyin": "Guì",
-        "translation": "贵 (Đắt)"
-      },
-      {
-        "text": "长 (Dài)",
-        "pinyin": "Cháng",
-        "translation": "长 (Dài)"
-      },
-      {
-        "text": "快 (Nhanh)",
+        "text": "快",
         "pinyin": "Kuài",
         "translation": "快 (Nhanh)"
+      },
+      {
+        "text": "长",
+        "pinyin": "Cháng",
+        "translation": "Dài"
+      },
+      {
+        "text": "贵",
+        "pinyin": "Guì",
+        "translation": "Đắt"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 2,
     "explanation": "Đắt hơn 200 tệ: 贵两百块钱.",
     "points": 10
   },
@@ -6967,19 +6967,19 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "快点儿 (Nhanh lên chút)",
+        "text": "快点儿",
         "pinyin": "Kuài diǎnr",
-        "translation": "快点儿 (Nhanh lên chút)"
+        "translation": "Nhanh lên chút"
       },
       {
-        "text": "慢慢 (Từ từ)",
+        "text": "慢慢",
         "pinyin": "Mànman",
-        "translation": "慢慢 (Từ từ)"
+        "translation": "Từ từ"
       },
       {
-        "text": "已经 (Đã)",
+        "text": "已经",
         "pinyin": "Yǐjīng",
-        "translation": "已经 (Đã)"
+        "translation": "Đã"
       }
     ],
     "correct_option_index": 0,
@@ -7000,22 +7000,22 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "我肚子有点儿疼，想去医务室。 (Tôi đau bụng, muốn đi phòng y tế)",
-        "pinyin": "Wǒ dùzi...",
-        "translation": "我肚子有点儿疼，想去医务室。 (Tôi đau bụng, muốn đi phòng y tế)"
-      },
-      {
-        "text": "今天天气很好。 (Hôm nay trời đẹp)",
-        "pinyin": "Jīntiān tiānqì...",
-        "translation": "今天天气很好。 (Hôm nay trời đẹp)"
-      },
-      {
-        "text": "他是新来的。 (Cậu ấy mới tới)",
+        "text": "他是新来的。",
         "pinyin": "Tā shì xīn lái de.",
-        "translation": "他是新来的。 (Cậu ấy mới tới)"
+        "translation": "Cậu ấy mới tới"
+      },
+      {
+        "text": "我肚子有点儿疼，想去医务室。",
+        "pinyin": "Wǒ dùzi yǒudiǎnr téng, xiǎng qù yīwùshì.",
+        "translation": "Tôi đau bụng, muốn đi phòng y tế"
+      },
+      {
+        "text": "今天天气很好。",
+        "pinyin": "Jīntiān tiānqì hěn hǎo.",
+        "translation": "Hôm nay trời đẹp"
       }
     ],
-    "correct_option_index": 0,
+    "correct_option_index": 1,
     "explanation": "Đáp lại trạng thái sức khỏe: 我肚子有点儿疼.",
     "points": 10
   },
@@ -7039,12 +7039,12 @@ export const REAL_SIMULATION_QUESTIONS = [
       },
       {
         "text": "②①③ (这本小说看完了我。)",
-        "pinyin": "Zhè běn xiǎoshuō...",
+        "pinyin": "Zhè běn xiǎoshuō kànwán le wǒ.",
         "translation": "②①③ (这本小说看完了我。)"
       },
       {
         "text": "①③② (看完了我这本小说。)",
-        "pinyin": "Kànwán le wǒ...",
+        "pinyin": "Kànwán le wǒ zhè běn xiǎoshuō.",
         "translation": "①③② (看完了我这本小说。)"
       }
     ],
@@ -7162,12 +7162,12 @@ export const REAL_SIMULATION_QUESTIONS = [
     "sample_answer": "步",
     "options": [
       {
-        "text": "步 (bù)",
+        "text": "步",
         "pinyin": "bù",
         "translation": "Chữ Hán chính xác trong 跑步"
       },
       {
-        "text": "不 (bù)",
+        "text": "不",
         "pinyin": "bù",
         "translation": "Sai nghĩa từ vựng"
       }
@@ -7281,7 +7281,7 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 2,
     "question_number": 9,
     "question_type": "free_writing",
-    "prompt": "看图并用所给词语写一个句子：[节约] (Tiết kiệm)",
+    "prompt": "看图并用所给词语写一个句子：[节约]",
     "pinyin": "Kàn tú bìng yòng suǒ gěi cíyǔ xiě yí gè jùzi: [jiéyuē]",
     "translation": "Viết câu hoàn chỉnh có từ [节约 - Tiết kiệm]:",
     "required_words": [
@@ -7299,12 +7299,12 @@ export const REAL_SIMULATION_QUESTIONS = [
     "is_subjective": true,
     "options": [
       {
-        "text": "Đoạn văn mẫu tham khảo: 在日常生活中，我们每个人都应当养成节约用水的好习惯。",
+        "text": "参考范文：在日常生活中，我们每个人都应当养成节约用水的好习惯。",
         "pinyin": "",
         "translation": "Câu/đoạn văn mẫu đạt chuẩn ngữ pháp HSK"
       },
       {
-        "text": "Bài làm tự luận của thí sinh (Tự đánh giá theo thang điểm)",
+        "text": "考生自由作答（按评分标准自评）",
         "pinyin": "",
         "translation": "Hệ thống đối sánh tiêu chí Rubric và lưu bài tự luận"
       }
@@ -7416,7 +7416,7 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 2,
     "question_number": 9,
     "question_type": "free_writing",
-    "prompt": "结合成语写80字短文：[脚踏实地] (Chân đạp thực địa - Làm việc thiết thực, chắc chắn)",
+    "prompt": "结合成语写80字短文：[脚踏实地]",
     "pinyin": "Jiéhé chéngyǔ xiě duǎnwén: [jiǎotàshídì]",
     "translation": "Viết đoạn văn ngắn khoảng 80 chữ kết hợp thành ngữ [脚踏实地]:",
     "required_words": [
@@ -7434,12 +7434,12 @@ export const REAL_SIMULATION_QUESTIONS = [
     "is_subjective": true,
     "options": [
       {
-        "text": "Đoạn văn mẫu tham khảo: 任何远大的理想如果脱离了实干，都不过是空中楼阁。只有脚踏实地做好当下的每一件小事，持之以恒地积累经验，我们才能在通往成功的道路上走得更加稳健从容。",
+        "text": "参考范文：任何远大的理想如果脱离了实干，都不过是空中楼阁。只有脚踏实地做好当下的每一件小事，持之以恒地积累经验，我们才能在通往成功的道路上走得更加稳健从容。",
         "pinyin": "",
         "translation": "Câu/đoạn văn mẫu đạt chuẩn ngữ pháp HSK"
       },
       {
-        "text": "Bài làm tự luận của thí sinh (Tự đánh giá theo thang điểm)",
+        "text": "考生自由作答（按评分标准自评）",
         "pinyin": "",
         "translation": "Hệ thống đối sánh tiêu chí Rubric và lưu bài tự luận"
       }
@@ -7551,7 +7551,7 @@ export const REAL_SIMULATION_QUESTIONS = [
     "part_number": 2,
     "question_number": 9,
     "question_type": "free_writing",
-    "prompt": "结合成语写80字短文：[脚踏实地] (Chân đạp thực địa - Làm việc thiết thực, chắc chắn)",
+    "prompt": "结合成语写80字短文：[脚踏实地]",
     "pinyin": "Jiéhé chéngyǔ xiě duǎnwén: [jiǎotàshídì]",
     "translation": "Viết đoạn văn ngắn khoảng 80 chữ kết hợp thành ngữ [脚踏实地]:",
     "required_words": [
@@ -7569,12 +7569,12 @@ export const REAL_SIMULATION_QUESTIONS = [
     "is_subjective": true,
     "options": [
       {
-        "text": "Đoạn văn mẫu tham khảo: 任何远大的理想如果脱离了实干，都不过是空中楼阁。只有脚踏实地做好当下的每一件小事，持之以恒地积累经验，我们才能在通往成功的道路上走得更加稳健从容。",
+        "text": "参考范文：任何远大的理想如果脱离了实干，都不过是空中楼阁。只有脚踏实地做好当下的每一件小事，持之以恒地积累经验，我们才能在通往成功的道路上走得更加稳健从容。",
         "pinyin": "",
         "translation": "Câu/đoạn văn mẫu đạt chuẩn ngữ pháp HSK"
       },
       {
-        "text": "Bài làm tự luận của thí sinh (Tự đánh giá theo thang điểm)",
+        "text": "考生自由作答（按评分标准自评）",
         "pinyin": "",
         "translation": "Hệ thống đối sánh tiêu chí Rubric và lưu bài tự luận"
       }
@@ -7595,20 +7595,20 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
+        "text": "能否切实减轻中小学生的课业负担，关键在于各级教育部门彻底转变唯升学率论的观念。",
+        "pinyin": "Néngfǒu... guānjiàn zàiyú... (Lỗi hai mặt đối chiếu một mặt)"
+      },
+      {
         "text": "在深化经济体制改革的过程中，我们必须破除一切阻碍高质量发展的体制机制弊端。",
         "pinyin": "Zài shēnhuà jīngjì tǐzhì gǎigé de guòchéng zhōng..."
       },
       {
         "text": "由于缺乏科学合理的规划，使这座历史文化古城的原有风貌遭到了难以逆转的破坏。",
         "pinyin": "Yóuyú... shǐ... (Lỗi khuyết chủ ngữ do dùng 由于...使...)"
-      },
-      {
-        "text": "能否切实减轻中小学生的课业负担，关键在于各级教育部门彻底转变唯升学率论的观念。",
-        "pinyin": "Néngfǒu... guānjiàn zàiyú... (Lỗi hai mặt đối chiếu một mặt)"
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "A hoàn toàn chuẩn xác. B mắc lỗi khuyết chủ ngữ; C mắc lỗi '两面对一面'.",
+    "correct_option_index": 1,
+    "explanation": "B hoàn toàn chuẩn xác. C mắc lỗi khuyết chủ ngữ; A mắc lỗi '两面对一面'.",
     "points": 34
   },
   {
@@ -7680,12 +7680,12 @@ export const REAL_SIMULATION_QUESTIONS = [
     "is_subjective": true,
     "options": [
       {
-        "text": "Đoạn văn mẫu tham khảo: 绿色发展的本质在于摒弃以牺牲资源环境为代价的粗放型增长模式，推动人与自然和谐共生的可持续发展道路。",
+        "text": "参考范文：绿色发展的本质在于摒弃以牺牲资源环境为代价的粗放型增长模式，推动人与自然和谐共生的可持续发展道路。",
         "pinyin": "",
         "translation": "Câu/đoạn văn mẫu đạt chuẩn ngữ pháp HSK"
       },
       {
-        "text": "Bài làm tự luận của thí sinh (Tự đánh giá theo thang điểm)",
+        "text": "考生自由作答（按评分标准自评）",
         "pinyin": "",
         "translation": "Hệ thống đối sánh tiêu chí Rubric và lưu bài tự luận"
       }
@@ -7706,20 +7706,20 @@ export const REAL_SIMULATION_QUESTIONS = [
     "audio_script": "",
     "options": [
       {
-        "text": "在深化经济体制改革的过程中，我们必须破除一切阻碍高质量发展的体制机制弊端。",
-        "pinyin": "Zài shēnhuà jīngjì tǐzhì gǎigé de guòchéng zhōng..."
+        "text": "能否切实减轻中小学生的课业负担，关键在于各级教育部门彻底转变唯升学率论的观念。",
+        "pinyin": "Néngfǒu... guānjiàn zàiyú... (Lỗi hai mặt đối chiếu một mặt)"
       },
       {
         "text": "由于缺乏科学合理的规划，使这座历史文化古城的原有风貌遭到了难以逆转的破坏。",
         "pinyin": "Yóuyú... shǐ... (Lỗi khuyết chủ ngữ do dùng 由于...使...)"
       },
       {
-        "text": "能否切实减轻中小学生的课业负担，关键在于各级教育部门彻底转变唯升学率论的观念。",
-        "pinyin": "Néngfǒu... guānjiàn zàiyú... (Lỗi hai mặt đối chiếu một mặt)"
+        "text": "在深化经济体制改革的过程中，我们必须破除一切阻碍高质量发展的体制机制弊端。",
+        "pinyin": "Zài shēnhuà jīngjì tǐzhì gǎigé de guòchéng zhōng..."
       }
     ],
-    "correct_option_index": 0,
-    "explanation": "A hoàn toàn chuẩn xác. B mắc lỗi khuyết chủ ngữ; C mắc lỗi '两面对一面'.",
+    "correct_option_index": 2,
+    "explanation": "C hoàn toàn chuẩn xác. B mắc lỗi khuyết chủ ngữ; A mắc lỗi '两面对一面'.",
     "points": 34
   },
   {
@@ -7791,12 +7791,12 @@ export const REAL_SIMULATION_QUESTIONS = [
     "is_subjective": true,
     "options": [
       {
-        "text": "Đoạn văn mẫu tham khảo: 绿色发展的本质在于摒弃以牺牲资源环境为代价的粗放型增长模式，推动人与自然和谐共生的可持续发展道路。",
+        "text": "参考范文：绿色发展的本质在于摒弃以牺牲资源环境为代价的粗放型增长模式，推动人与自然和谐共生的可持续发展道路。",
         "pinyin": "",
         "translation": "Câu/đoạn văn mẫu đạt chuẩn ngữ pháp HSK"
       },
       {
-        "text": "Bài làm tự luận của thí sinh (Tự đánh giá theo thang điểm)",
+        "text": "考生自由作答（按评分标准自评）",
         "pinyin": "",
         "translation": "Hệ thống đối sánh tiêu chí Rubric và lưu bài tự luận"
       }

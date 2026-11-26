@@ -14,7 +14,7 @@ import { checkRateLimitAndQuota } from '../../_utils/distributedRateLimiter.js';
 import { verifyRequestAuth, sendSafeServerError } from '../../_utils/supabaseServer.js';
 import { enforceAiKillSwitch } from '../../_utils/corsAndIp.js';
 import { callUnifiedAiProvider } from '../../_utils/aiProviderAdapter.js';
-import { AGENT_INTENTS } from '../../_agent/contracts.js';
+import { AGENT_INTENTS, RISK_LEVELS, createPendingConfirmationContract } from '../../_agent/contracts.js';
 import { validateAgentInput, redactSensitiveData } from '../../_agent/guardrails.js';
 import { selectModelTier } from '../../_agent/modelRouter.js';
 import { buildSafeLearnerMemoryContext } from '../../_agent/memoryManager.js';
@@ -151,20 +151,22 @@ export default async function handler(req, res) {
   const startedAt = Date.now();
   const route = selectModelTier({
     intent: AGENT_INTENTS.PROGRESS_COACH,
-    hskLevel: payload.hskLevel || 'HSK 1',
+    hskLevel: payload.hskLevel || payload.targetHskLevel || 'HSK 1',
+    allowPremiumTier: false,
   });
   const memoryEnabled = body.memory_enabled !== false && payload.memory_enabled !== false;
 
   // 3.5 Telemetry Briefing Action (with instant deterministic fallback)
   if (action === 'generate_telemetry_briefing') {
-    const targetHsk = String(payload.hskLevel || 'HSK 1');
-    const retention = Number(payload.retention_rate_pct || 0);
-    const streakDays = Number(payload.study_streak_days || 0);
-    const events7d = Number(payload.events_count_7d || 0);
-    const weakDim = String(payload.weakestDimension || 'writing');
-    const avgLatency = payload.avg_response_latency_ms || {};
-    const bottlenecks = Array.isArray(payload.top_cognitive_bottlenecks)
-      ? payload.top_cognitive_bottlenecks
+    const safeBriefPayload = redactSensitiveData(payload);
+    const targetHsk = String(safeBriefPayload.hskLevel || 'HSK 1');
+    const retention = Number(safeBriefPayload.retention_rate_pct || 0);
+    const streakDays = Number(safeBriefPayload.study_streak_days || 0);
+    const events7d = Number(safeBriefPayload.events_count_7d || 0);
+    const weakDim = String(safeBriefPayload.weakestDimension || 'writing');
+    const avgLatency = safeBriefPayload.avg_response_latency_ms || {};
+    const bottlenecks = Array.isArray(safeBriefPayload.top_cognitive_bottlenecks)
+      ? safeBriefPayload.top_cognitive_bottlenecks
       : [];
 
     const weakDimLabel =
@@ -184,13 +186,13 @@ export default async function handler(req, res) {
     };
 
     try {
-      const briefingPrompt = `Tóm tắt chẩn đoán telemetry học viên tiếng Trung bằng tiếng Việt (trả về JSON thuần {"greeting": string, "summary": string, "examTactic": string}):
+      const briefingPrompt = redactSensitiveData(`Tóm tắt chẩn đoán telemetry học viên tiếng Trung bằng tiếng Việt (trả về JSON thuần {"greeting": string, "summary": string, "examTactic": string}):
 - Mục tiêu: ${targetHsk}
 - Chuỗi học: ${streakDays} ngày, 7 ngày qua: ${events7d} sự kiện
 - Tỷ lệ ghi nhớ SRS: ${retention}%
 - Kỹ năng yếu nhất: ${weakDimLabel}
 - Tốc độ phản xạ (ms): Nghe=${avgLatency.listening || 0}, Đọc=${avgLatency.reading || 0}, Ngữ pháp=${avgLatency.grammar || 0}, Viết=${avgLatency.writing || 0}
-- Điểm nghẽn: ${bottlenecks.map(b => b.target_key).join(', ') || 'Chưa có'}`;
+- Điểm nghẽn: ${bottlenecks.map(b => b.target_key).join(', ') || 'Chưa có'}`);
 
       const aiBriefing = await callUnifiedAiProvider({
         action: 'generate_telemetry_briefing',
@@ -201,7 +203,7 @@ export default async function handler(req, res) {
       });
 
       if (aiBriefing.success && aiBriefing.data?.summary) {
-        return res.status(200).json({
+        return res.status(200).json(redactSensitiveData({
           source: 'ai_coach',
           greeting: aiBriefing.data.greeting || deterministicBriefing.greeting,
           summary: aiBriefing.data.summary,
@@ -211,13 +213,197 @@ export default async function handler(req, res) {
             model: aiBriefing.model,
             latencyMs: aiBriefing.latencyMs,
           },
-        });
+        }));
       }
     } catch {
       // Fall back deterministically below
     }
 
     return res.status(200).json(deterministicBriefing);
+  }
+
+  // 3.6 Smart Adaptive Plan Action (4 real telemetry signals + HITL pending_confirmations)
+  if (action === 'generate_smart_adaptive_plan') {
+    const safeSmart = redactSensitiveData(payload);
+    const targetHsk = String(safeSmart.targetHskLevel || safeSmart.hskLevel || 'HSK 1');
+    const readinessScore = Number(safeSmart.readinessScore || 0);
+    const isColdStart = Boolean(safeSmart.isColdStart);
+    const srsDueToday = Number(safeSmart.srsDueToday || 0);
+    const streakVn = Number(safeSmart.streakVn || 0);
+    const weakestSkill = safeSmart.weakestSkill ? String(safeSmart.weakestSkill) : null;
+    const topLeechWords = Array.isArray(safeSmart.topLeechWords) ? safeSmart.topLeechWords.slice(0, 5) : [];
+    const mistakeClusters = Array.isArray(safeSmart.mistakeClusters) ? safeSmart.mistakeClusters.slice(0, 3) : [];
+    const fiveSkills = Array.isArray(safeSmart.fiveSkills) ? safeSmart.fiveSkills.slice(0, 5) : [];
+
+    const pendingConfirmations = [];
+    if (topLeechWords[0]?.hanzi) {
+      pendingConfirmations.push(
+        createPendingConfirmationContract({
+          actionType: 'save_vocab_to_srs',
+          label: `Đưa "${topLeechWords[0].hanzi}" vào sổ ôn cấp bách SRS`,
+          riskLevel: RISK_LEVELS.MEDIUM,
+          requiresConfirmation: true,
+          payload: {
+            hanzi: topLeechWords[0].hanzi,
+            pinyin: topLeechWords[0].pinyin || '',
+            meaning: topLeechWords[0].meaning || 'Từ cần củng cố',
+            hskLevel: targetHsk,
+          },
+        })
+      );
+    }
+
+    const fallbackTasks = isColdStart
+      ? [
+          {
+            id: 'smart-placement',
+            priority: 1,
+            category: 'placement',
+            title: `Làm bài kiểm tra xếp lớp ${targetHsk}`,
+            reason: 'Chưa có dữ liệu thực tế — làm 1 bài đo để định vị đúng trình độ.',
+            durationMinutes: 5,
+            targetRoute: 'hsk',
+            actionLabel: 'Làm bài kiểm tra',
+          },
+          {
+            id: 'smart-starter-srs',
+            priority: 2,
+            category: 'srs',
+            title: 'Ôn 5 thẻ từ vựng đầu tiên',
+            reason: 'Khởi tạo sổ SRS để hệ thống theo dõi tỷ lệ ghi nhớ.',
+            durationMinutes: 4,
+            targetRoute: 'vocabulary',
+            actionLabel: 'Ôn 5 từ đầu tiên',
+          },
+          {
+            id: 'smart-starter-roadmap',
+            priority: 3,
+            category: 'roadmap',
+            title: 'Học Bài #1 trên Lộ trình 180 bài',
+            reason: 'Xây nền phát âm và mẫu câu giao tiếp chuẩn.',
+            durationMinutes: 6,
+            targetRoute: 'roadmap',
+            actionLabel: 'Vào Lộ trình',
+          },
+        ]
+      : [
+          {
+            id: 'smart-srs-due',
+            priority: 1,
+            category: 'srs',
+            title: srsDueToday > 0 ? `Ôn ${srsDueToday} thẻ SRS đến hạn` : 'Củng cố từ vựng trọng tâm',
+            reason: topLeechWords.length > 0
+              ? `Ưu tiên các từ hay quên: ${topLeechWords.slice(0, 3).map((w) => w.hanzi).join(', ')}.`
+              : 'Giữ nhịp ôn tập ngắt quãng SM-2 trong ngày.',
+            durationMinutes: 5,
+            targetRoute: 'vocabulary',
+            actionLabel: 'Ôn SRS ngay',
+          },
+          {
+            id: 'smart-mistakes',
+            priority: 2,
+            category: 'mistakes',
+            title: mistakeClusters[0]
+              ? `Khắc phục ${mistakeClusters[0].count} lỗi nhóm ${mistakeClusters[0].key}`
+              : 'Kiểm tra lại các câu sai gần đây',
+            reason: 'Giảm lỗi lặp lại để kéo điểm Sẵn sàng HSK lên nhanh nhất.',
+            durationMinutes: 6,
+            targetRoute: 'hsk',
+            actionLabel: 'Sửa câu sai',
+          },
+          {
+            id: 'smart-weak-skill',
+            priority: 3,
+            category: weakestSkill || 'reading',
+            title: weakestSkill ? `Luyện kỹ năng yếu: ${weakestSkill}` : `Luyện bài mới ${targetHsk}`,
+            reason: 'Cân bằng năng lực 5 kỹ năng trước kỳ thi thử CBT.',
+            durationMinutes: 7,
+            targetRoute: weakestSkill === 'speaking' ? 'pronunciation' : weakestSkill === 'writing' ? 'writing' : 'hsk',
+            actionLabel: 'Bắt đầu ngay',
+          },
+        ];
+
+    const fallbackSmart = {
+      source: 'rule_based_fallback',
+      greeting: `Cố vấn học tập thông minh · ${targetHsk}`,
+      coachInsight: isColdStart
+        ? 'Bạn chưa có dữ liệu học tập thật. Hãy làm bài kiểm tra xếp lớp hoặc ôn 5 từ đầu tiên.'
+        : `Sẵn sàng ${targetHsk}: ${readinessScore}% · Chuỗi ${streakVn} ngày · ${srsDueToday} thẻ SRS đến hạn.`,
+      weakestSkillNote: weakestSkill
+        ? `Kỹ năng cần ưu tiên kéo lên hôm nay: ${weakestSkill}.`
+        : 'Chưa đủ dữ liệu chấm 5 kỹ năng.',
+      dailyPlan: fallbackTasks,
+      pending_confirmations: pendingConfirmations,
+      generatedAt: new Date().toISOString(),
+    };
+
+    try {
+      const smartPrompt = redactSensitiveData(`Phân tích Telemetry học viên (JSON thuần, KHÔNG bịa số liệu):
+- Mục tiêu: ${targetHsk} | Sẵn sàng: ${readinessScore}% | Streak VN: ${streakVn} ngày
+- SRS đến hạn: ${srsDueToday} | Từ hay quên: ${topLeechWords.map((w) => `${w.hanzi}(${w.lapses} lần)`).join(', ') || 'Không'}
+- 5 kỹ năng: ${fiveSkills.map((s) => `${s.skill}:${s.overallPct ?? 'N/A'}%`).join(', ') || 'Chưa đo'}
+- Cụm lỗi: ${mistakeClusters.map((c) => `${c.key}(${c.count})`).join(', ') || 'Không'}
+Trả về JSON: {"greeting":string,"coachInsight":string,"weakestSkillNote":string,"dailyPlan":[{"id":string,"priority":number,"category":string,"title":string,"reason":string,"durationMinutes":number,"targetRoute":"vocabulary|hsk|pronunciation|writing|reader|roadmap","actionLabel":string}]}`);
+
+      const aiSmart = await callUnifiedAiProvider({
+        action: 'generate_smart_adaptive_plan',
+        systemPrompt: 'Bạn là Lão Sư HanziGo. Trả về JSON thuần tiếng Việt ngắn gọn, súc tích, chỉ dựa trên số liệu thật được cung cấp.',
+        userPrompt: smartPrompt,
+        temperature: route.temperature,
+        maxTokens: Math.min(900, route.maxOutputTokens),
+        timeoutMs: route.timeoutMs,
+      });
+
+      if (aiSmart.success && Array.isArray(aiSmart.data?.dailyPlan) && aiSmart.data.dailyPlan.length > 0) {
+        const aiPending = Array.isArray(aiSmart.data.pending_confirmations)
+          ? aiSmart.data.pending_confirmations.map((p) =>
+              createPendingConfirmationContract({
+                actionType: p?.actionType || 'save_vocab_to_srs',
+                label: p?.label || 'Xác nhận đề xuất học tập',
+                payload: p?.payload || {},
+                requiresConfirmation: true,
+              })
+            )
+          : [];
+
+        emitAgentTrace(
+          buildAgentTraceRecord({
+            traceId,
+            userId: auth.user.id,
+            intent: AGENT_INTENTS.PROGRESS_COACH,
+            tier: route.tier,
+            model: aiSmart.model || route.model,
+            memoryApplied: false,
+            totalTokens: aiSmart.usage?.totalTokens || 0,
+            costUsd: aiSmart.costUsd || 0,
+            latencyMs: aiSmart.latencyMs || Date.now() - startedAt,
+            status: 'ok',
+          })
+        );
+
+        return res.status(200).json(
+          redactSensitiveData({
+            source: 'ai_coach',
+            greeting: aiSmart.data.greeting || fallbackSmart.greeting,
+            coachInsight: aiSmart.data.coachInsight || fallbackSmart.coachInsight,
+            weakestSkillNote: aiSmart.data.weakestSkillNote || fallbackSmart.weakestSkillNote,
+            dailyPlan: aiSmart.data.dailyPlan.slice(0, 4),
+            pending_confirmations: aiPending.length > 0 ? aiPending : pendingConfirmations,
+            generatedAt: new Date().toISOString(),
+            _metadata: {
+              provider: aiSmart.provider,
+              model: aiSmart.model || route.model,
+              model_tier: route.tier,
+              trace_id: traceId,
+            },
+          })
+        );
+      }
+    } catch {
+      // Fall back deterministically below
+    }
+
+    return res.status(200).json(fallbackSmart);
   }
 
   // 4. Construct Prompts (respecting memory_enabled opt-out)

@@ -13,6 +13,7 @@ import { EXPANDED_MOCK_EXAMS, EXPANDED_MOCK_QUESTIONS } from './hskMockExamsExpa
 import { REAL_SIMULATION_QUESTIONS } from './hskRealExamQuestions.js';
 import { OFFICIAL_PUBLIC_EXAMS, OFFICIAL_PUBLIC_QUESTIONS } from './hskOfficialPublicExams.js';
 import { HSK6_FULL_101_EXAM, HSK6_FULL_101_QUESTIONS } from './hsk6FullExamData.js';
+import { enrichQuestionWithImageAsset } from './hskQuestionImageRegistry.js';
 
 const BASE_HSK_EXAMS = [
   {
@@ -205,8 +206,8 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '你好！很高兴认识你。',
     options: [
-      { text: '✓ Đúng (一致)', pinyin: 'Yízhì', translation: 'Nội dung khớp hoàn toàn' },
-      { text: '✗ Sai (不一致)', pinyin: 'Bù yízhì', translation: 'Nội dung không khớp' }
+      { text: '对', pinyin: 'Duì', translation: 'Nội dung khớp hoàn toàn' },
+      { text: '错', pinyin: 'Cuò', translation: 'Nội dung không khớp' }
     ],
     correct_option_index: 0,
     explanation: 'Lời thoại phát thanh: "你好！很高兴认识你。" (Xin chào! Rất vui được quen biết bạn). Khớp chính xác với nội dung đề bài.',
@@ -224,9 +225,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '他在喝茶。',
     options: [
-      { text: 'Uống trà (喝茶)', pinyin: 'Hē chá', translation: 'Anh ấy đang uống trà' },
-      { text: 'Ăn cơm (吃饭)', pinyin: 'Chī fàn', translation: 'Anh ấy đang ăn cơm' },
-      { text: 'Xem sách (看书)', pinyin: 'Kàn shū', translation: 'Anh ấy đang đọc sách' }
+      { text: '喝茶', pinyin: 'Hē chá', translation: 'Anh ấy đang uống trà' },
+      { text: '吃饭', pinyin: 'Chī fàn', translation: 'Anh ấy đang ăn cơm' },
+      { text: '看书', pinyin: 'Kàn shū', translation: 'Anh ấy đang đọc sách' }
     ],
     correct_option_index: 0,
     explanation: 'Lời thoại phát thanh: "他在喝茶。" (Tā zài hē chá - Anh ấy đang uống trà). Đáp án chính xác là phương án A.',
@@ -244,9 +245,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：请问，苹果多少钱一斤？男：三块钱一斤。问：苹果多少钱一斤？',
     options: [
-      { text: '2块 (Liǎng kuài)', pinyin: 'Liǎng kuài', translation: '2 tệ' },
-      { text: '3块 (Sān kuài)', pinyin: 'Sān kuài', translation: '3 tệ' },
-      { text: '5块 (Wǔ kuài)', pinyin: 'Wǔ kuài', translation: '5 tệ' }
+      { text: '2块', pinyin: 'Liǎng kuài', translation: '2 tệ' },
+      { text: '3块', pinyin: 'Sān kuài', translation: '3 tệ' },
+      { text: '5块', pinyin: 'Wǔ kuài', translation: '5 tệ' }
     ],
     correct_option_index: 1,
     explanation: 'Người nam trả lời: "三块钱一斤" (Sān kuài qián yì jīn - 3 tệ một cân). Do đó quả táo có giá 3 tệ.',
@@ -264,9 +265,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '男：今天星期几？女：今天星期三。问：今天星期几？',
     options: [
-      { text: '星期二 (Thứ Ba)', pinyin: 'Xīngqī\'èr', translation: 'Thứ Ba' },
-      { text: '星期三 (Thứ Tư)', pinyin: 'Xīngqīsān', translation: 'Thứ Tư' },
-      { text: '星期四 (Thứ Năm)', pinyin: 'Xīngqīsì', translation: 'Thứ Năm' }
+      { text: '星期二', pinyin: 'Xīngqī\'èr', translation: 'Thứ Ba' },
+      { text: '星期三', pinyin: 'Xīngqīsān', translation: 'Thứ Tư' },
+      { text: '星期四', pinyin: 'Xīngqīsì', translation: 'Thứ Năm' }
     ],
     correct_option_index: 1,
     explanation: 'Người nữ trả lời: "今天星期三" (Hôm nay là thứ Tư). Chú ý: 星期三 trong tiếng Trung tương ứng với Thứ Tư trong tiếng Việt.',
@@ -284,9 +285,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：小王在哪里？男：他在学校看书呢。问：小王在哪里？',
     options: [
-      { text: '学校 (Trường học)', pinyin: 'Xuéxiào', translation: 'Ở trường học' },
-      { text: '医院 (Bệnh viện)', pinyin: 'Yīyuàn', translation: 'Ở bệnh viện' },
-      { text: '商店 (Cửa hàng)', pinyin: 'Shāngdiàn', translation: 'Ở cửa hàng' }
+      { text: '学校', pinyin: 'Xuéxiào', translation: 'Ở trường học' },
+      { text: '医院', pinyin: 'Yīyuàn', translation: 'Ở bệnh viện' },
+      { text: '商店', pinyin: 'Shāngdiàn', translation: 'Ở cửa hàng' }
     ],
     correct_option_index: 0,
     explanation: 'Người nam nói rõ: "他在学校看书呢" (Anh ấy đang ở trường học đọc sách). Địa điểm là 学校 (trường học).',
@@ -304,8 +305,8 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '桌子上有一本书和一个杯子。',
     options: [
-      { text: '✓ Đúng (一致)', pinyin: 'Yízhì', translation: 'Đúng' },
-      { text: '✗ Sai (不一致)', pinyin: 'Bù yízhì', translation: 'Sai' }
+      { text: '对', pinyin: 'Duì', translation: 'Đúng' },
+      { text: '错', pinyin: 'Cuò', translation: 'Sai' }
     ],
     correct_option_index: 1,
     explanation: 'Lời thoại phát: "桌子上有一本书和一个杯子" (Trên bàn có 1 cuốn sách và 1 chiếc cốc), khác với nhận định "có 3 cuốn sách". Do đó chọn Sai.',
@@ -323,9 +324,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '男：李老师，明天见！女：明天见，路上小心。',
     options: [
-      { text: '医生与病人 (Bác sĩ & bệnh nhân)', pinyin: 'Yīshēng yǔ bìngrén', translation: 'Y tế' },
-      { text: '老师与学生 (Thầy cô & học sinh)', pinyin: 'Lǎoshī yǔ xuésheng', translation: 'Trường học' },
-      { text: '父子 (Bố con)', pinyin: 'Fù zǐ', translation: 'Gia đình' }
+      { text: '医生与病人', pinyin: 'Yīshēng yǔ bìngrén', translation: 'Y tế' },
+      { text: '老师与学生', pinyin: 'Lǎoshī yǔ xuésheng', translation: 'Trường học' },
+      { text: '父子', pinyin: 'Fù zǐ', translation: 'Gia đình' }
     ],
     correct_option_index: 1,
     explanation: 'Người nam gọi "李老师" (Cô giáo Lý) và chào tạm biệt. Đây là quan hệ thầy trò (老师与学生).',
@@ -363,9 +364,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：今天天气怎么样？男：今天太冷了，还下雨了。',
     options: [
-      { text: '下雨 (Trời mưa)', pinyin: 'Xiàyǔ', translation: 'Trời mưa' },
-      { text: '很热 (Rất nóng)', pinyin: 'Hěn rè', translation: 'Rất nóng' },
-      { text: '晴天 (Trời nắng ráo)', pinyin: 'Qíngtiān', translation: 'Trời nắng' }
+      { text: '下雨', pinyin: 'Xiàyǔ', translation: 'Trời mưa' },
+      { text: '很热', pinyin: 'Hěn rè', translation: 'Rất nóng' },
+      { text: '晴天', pinyin: 'Qíngtiān', translation: 'Trời nắng' }
     ],
     correct_option_index: 0,
     explanation: 'Người nam nói: "今天太冷了，还下雨了" (Hôm nay lạnh quá, trời còn mưa nữa). Đáp án là 下雨.',
@@ -383,9 +384,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '男：你在做什么呢？女：我在看电视呢。问：女的在做什么？',
     options: [
-      { text: '睡觉 (Ngủ)', pinyin: 'Shuìjiào', translation: 'Ngủ' },
-      { text: '做饭 (Nấu cơm)', pinyin: 'Zuòfàn', translation: 'Nấu ăn' },
-      { text: '看电视 (Xem tivi)', pinyin: 'Kàn diànshì', translation: 'Xem tivi' }
+      { text: '睡觉', pinyin: 'Shuìjiào', translation: 'Ngủ' },
+      { text: '做饭', pinyin: 'Zuòfàn', translation: 'Nấu ăn' },
+      { text: '看电视', pinyin: 'Kàn diànshì', translation: 'Xem tivi' }
     ],
     correct_option_index: 2,
     explanation: 'Người nữ trả lời rõ: "我在看电视呢" (Tôi đang xem tivi).',
@@ -405,10 +406,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '喜欢 (Thích)', pinyin: 'Xǐhuan', translation: 'Yêu thích' },
-      { text: '去 (Đi)', pinyin: 'Qù', translation: 'Đi' },
-      { text: '买 (Mua)', pinyin: 'Mǎi', translation: 'Mua' },
-      { text: '叫 (Gọi/Tên là)', pinyin: 'Jiào', translation: 'Tên là' }
+      { text: '喜欢', pinyin: 'Xǐhuan', translation: 'Yêu thích' },
+      { text: '去', pinyin: 'Qù', translation: 'Đi' },
+      { text: '买', pinyin: 'Mǎi', translation: 'Mua' },
+      { text: '叫', pinyin: 'Jiào', translation: 'Tên là' }
     ],
     correct_option_index: 0,
     explanation: 'Vế sau khen "món ăn Trung Quốc rất ngon", nên động từ phù hợp nhất về mặt ngữ nghĩa là 喜欢 (thích).',
@@ -447,10 +448,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '学校 (Trường học)', pinyin: 'Xuéxiào', translation: 'Danh từ nơi chốn' },
-      { text: '汉语 (Tiếng Hán/Tiếng Trung)', pinyin: 'Hànyǔ', translation: 'Ngôn ngữ' },
-      { text: '米饭 (Cơm trắng)', pinyin: 'Mǐfàn', translation: 'Thức ăn' },
-      { text: '衣服 (Quần áo)', pinyin: 'Yīfu', translation: 'Trang phục' }
+      { text: '学校', pinyin: 'Xuéxiào', translation: 'Danh từ nơi chốn' },
+      { text: '汉语', pinyin: 'Hànyǔ', translation: 'Ngôn ngữ' },
+      { text: '米饭', pinyin: 'Mǐfàn', translation: 'Thức ăn' },
+      { text: '衣服', pinyin: 'Yīfu', translation: 'Trang phục' }
     ],
     correct_option_index: 1,
     explanation: 'Động từ "说" (nói) chỉ kết hợp với danh từ chỉ ngôn ngữ. Ở đây là "汉语" (tiếng Trung).',
@@ -489,10 +490,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '什么 (Gì/Cái gì)', pinyin: 'Shénme', translation: 'Cái gì' },
-      { text: '谁 (Ai)', pinyin: 'Shéi', translation: 'Ai' },
-      { text: '哪儿 (Ở đâu)', pinyin: 'Nǎr', translation: 'Ở đâu' },
-      { text: '怎么 (Như thế nào)', pinyin: 'Zěnme', translation: 'Thế nào' }
+      { text: '什么', pinyin: 'Shénme', translation: 'Cái gì' },
+      { text: '谁', pinyin: 'Shéi', translation: 'Ai' },
+      { text: '哪儿', pinyin: 'Nǎr', translation: 'Ở đâu' },
+      { text: '怎么', pinyin: 'Zěnme', translation: 'Thế nào' }
     ],
     correct_option_index: 0,
     explanation: '"你在看什么呢？" (Bạn đang xem cái gì vậy?). "什么" là đại từ hỏi tân ngữ chỉ đồ vật/nội dung.',
@@ -510,10 +511,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '北京大学 (Đại học Bắc Kinh)', pinyin: 'Běijīng Dàxué', translation: 'Bắc Đại' },
-      { text: '清华大学 (Đại học Thanh Hoa)', pinyin: 'Qīnghuá Dàxué', translation: 'Thanh Hoa' },
-      { text: '河内大学 (Đại học Hà Nội)', pinyin: 'Hénèi Dàxué', translation: 'Hà Nội' },
-      { text: '纽约大学 (Đại học New York)', pinyin: 'Niǔyuē Dàxué', translation: 'New York' }
+      { text: '北京大学', pinyin: 'Běijīng Dàxué', translation: 'Bắc Đại' },
+      { text: '清华大学', pinyin: 'Qīnghuá Dàxué', translation: 'Thanh Hoa' },
+      { text: '河内大学', pinyin: 'Hénèi Dàxué', translation: 'Hà Nội' },
+      { text: '纽约大学', pinyin: 'Niǔyuē Dàxué', translation: 'New York' }
     ],
     correct_option_index: 1,
     explanation: 'Đoạn văn viết rõ: "在清华大学学习中文" (học tiếng Trung ở Đại học Thanh Hoa). Chọn phương án B.',
@@ -552,10 +553,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '本 (Běn - quyển/cuốn)', pinyin: 'Běn', translation: 'Lượng từ cho sách' },
-      { text: '个 (Gè - cái/chiếc)', pinyin: 'Gè', translation: 'Lượng từ chung' },
-      { text: '只 (Zhī - con)', pinyin: 'Zhī', translation: 'Lượng từ cho động vật' },
-      { text: '张 (Zhāng - tờ/tấm)', pinyin: 'Zhāng', translation: 'Lượng từ cho mặt phẳng' }
+      { text: '本', pinyin: 'Běn', translation: 'Lượng từ cho sách' },
+      { text: '个', pinyin: 'Gè', translation: 'Lượng từ chung' },
+      { text: '只', pinyin: 'Zhī', translation: 'Lượng từ cho động vật' },
+      { text: '张', pinyin: 'Zhāng', translation: 'Lượng từ cho mặt phẳng' }
     ],
     correct_option_index: 0,
     explanation: 'Lượng từ chuẩn xác đi cùng sách (书) là 本 (běn - quyển/cuốn): 两本书 (liǎng běn shū).',
@@ -594,10 +595,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '大 (Đại - to/lớn)', pinyin: 'Dà', translation: 'To lớn' },
-      { text: '冷 (Lãnh - lạnh)', pinyin: 'Lěng', translation: 'Lạnh' },
-      { text: '热 (Nhiệt - nóng)', pinyin: 'Rè', translation: 'Nóng' },
-      { text: '多 (Đa - nhiều)', pinyin: 'Duō', translation: 'Nhiều' }
+      { text: '大', pinyin: 'Đại', translation: 'To lớn' },
+      { text: '冷', pinyin: 'Lãnh', translation: 'Lạnh' },
+      { text: '热', pinyin: 'Nhiệt', translation: 'Nóng' },
+      { text: '多', pinyin: 'Đa', translation: 'Nhiều' }
     ],
     correct_option_index: 0,
     explanation: 'Trái nghĩa với 小 (xiǎo - nhỏ) là 大 (dà - to, lớn).',
@@ -619,8 +620,8 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：今天晚上一起去看电影吧？男：真不巧，我今晚要加班。',
     options: [
-      { text: '✓ Đúng (对)', pinyin: 'Duì', translation: 'Đúng' },
-      { text: '✗ Sai (错)', pinyin: 'Cuò', translation: 'Sai' }
+      { text: '对', pinyin: 'Duì', translation: 'Đúng' },
+      { text: '错', pinyin: 'Cuò', translation: 'Sai' }
     ],
     correct_option_index: 1,
     explanation: 'Người nam nói: "我今晚要加班" (Tối nay tôi phải tăng ca), chứng tỏ anh ấy không rảnh rỗi. Nhận định "có thời gian rảnh" là Sai (错).',
@@ -638,9 +639,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：您需要买点儿什么？男：我想买一件黑色的羽绒服。问：男的想买什么？',
     options: [
-      { text: '羽绒服 (Áo khoác lông vũ)', pinyin: 'Yǔróngfú', translation: 'Áo phao lông vũ' },
-      { text: '运动鞋 (Giày thể thao)', pinyin: 'Yùndòngxié', translation: 'Giày thể thao' },
-      { text: '帽子 (Mũ nón)', pinyin: 'Màozi', translation: 'Mũ' }
+      { text: '羽绒服', pinyin: 'Yǔróngfú', translation: 'Áo phao lông vũ' },
+      { text: '运动鞋', pinyin: 'Yùndòngxié', translation: 'Giày thể thao' },
+      { text: '帽子', pinyin: 'Màozi', translation: 'Mũ' }
     ],
     correct_option_index: 0,
     explanation: 'Người nam nói: "我想买一件黑色的羽绒服" (Tôi muốn mua một chiếc áo khoác lông vũ màu đen).',
@@ -658,10 +659,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '冷 (Lạnh)', pinyin: 'Lěng', translation: 'Lạnh' },
-      { text: '热 (Nóng)', pinyin: 'Rè', translation: 'Nóng' },
-      { text: '远 (Xa)', pinyin: 'Yuǎn', translation: 'Xa' },
-      { text: '快 (Nhanh)', pinyin: 'Kuài', translation: 'Nhanh' }
+      { text: '冷', pinyin: 'Lěng', translation: 'Lạnh' },
+      { text: '热', pinyin: 'Rè', translation: 'Nóng' },
+      { text: '远', pinyin: 'Yuǎn', translation: 'Xa' },
+      { text: '快', pinyin: 'Kuài', translation: 'Nhanh' }
     ],
     correct_option_index: 0,
     explanation: 'Vế sau khuyên "快穿上外套吧" (mau mặc áo khoác ngoài vào), do đó tính từ phù hợp là 冷 (lạnh). Cấu trúc: A + 比 + B + Adj + 多了.',
@@ -679,10 +680,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '但是 (Nhưng)', pinyin: 'Dànshì', translation: 'Nhưng/Tuy nhiên' },
-      { text: '所以 (Cho nên)', pinyin: 'Suǒyǐ', translation: 'Vì vậy' },
-      { text: '因为 (Bởi vì)', pinyin: 'Yīnwèi', translation: 'Bởi vì' },
-      { text: '或者 (Hoặc là)', pinyin: 'Huòzhě', translation: 'Hoặc là' }
+      { text: '但是', pinyin: 'Dànshì', translation: 'Nhưng/Tuy nhiên' },
+      { text: '所以', pinyin: 'Suǒyǐ', translation: 'Vì vậy' },
+      { text: '因为', pinyin: 'Yīnwèi', translation: 'Bởi vì' },
+      { text: '或者', pinyin: 'Huòzhě', translation: 'Hoặc là' }
     ],
     correct_option_index: 0,
     explanation: 'Cặp liên từ chỉ sự nhượng bộ: 虽然...但是... (Tuy...nhưng...).',
@@ -700,10 +701,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '做 (Làm)', pinyin: 'Zuò', translation: 'Làm bài tập' },
-      { text: '吃 (Ăn)', pinyin: 'Chī', translation: 'Ăn' },
-      { text: '买 (Mua)', pinyin: 'Mǎi', translation: 'Mua' },
-      { text: '听 (Nghe)', pinyin: 'Tīng', translation: 'Nghe' }
+      { text: '做', pinyin: 'Zuò', translation: 'Làm bài tập' },
+      { text: '吃', pinyin: 'Chī', translation: 'Ăn' },
+      { text: '买', pinyin: 'Mǎi', translation: 'Mua' },
+      { text: '听', pinyin: 'Tīng', translation: 'Nghe' }
     ],
     correct_option_index: 0,
     explanation: 'Cụm từ cố định: 做作业 (zuò zuòyè - làm bài tập).',
@@ -726,9 +727,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '男：小王，请问会议室在几层？女：在五层，出电梯往左走就是。问：会议室在几层？',
     options: [
-      { text: '三层 (Tầng 3)', pinyin: 'Sān céng', translation: 'Tầng 3' },
-      { text: '五层 (Tầng 5)', pinyin: 'Wǔ céng', translation: 'Tầng 5' },
-      { text: '七层 (Tầng 7)', pinyin: 'Qī céng', translation: 'Tầng 7' }
+      { text: '三层', pinyin: 'Sān céng', translation: 'Tầng 3' },
+      { text: '五层', pinyin: 'Wǔ céng', translation: 'Tầng 5' },
+      { text: '七层', pinyin: 'Qī céng', translation: 'Tầng 7' }
     ],
     correct_option_index: 1,
     explanation: 'Lời thoại người nữ: "在五层，出电梯往左走就是" (Ở tầng 5, ra khỏi thang máy rẽ trái là tới).',
@@ -747,9 +748,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '男：天气越来越冷了，你得多穿点儿。女：是啊，我打算周末去商场买一件厚羽绒服。问：女的打算买什么？',
     options: [
-      { text: '羽绒服 (Áo phao lông vũ)', pinyin: 'Yǔróngfú', translation: 'Áo phao' },
-      { text: '衬衫 (Áo sơ mi)', pinyin: 'Chènshān', translation: 'Áo sơ mi' },
-      { text: '雨伞 (Cái ô)', pinyin: 'Yǔsǎn', translation: 'Cái ô' }
+      { text: '羽绒服', pinyin: 'Yǔróngfú', translation: 'Áo phao' },
+      { text: '衬衫', pinyin: 'Chènshān', translation: 'Áo sơ mi' },
+      { text: '雨伞', pinyin: 'Yǔsǎn', translation: 'Cái ô' }
     ],
     correct_option_index: 0,
     explanation: 'Người nữ nói: "我打算周末去商场买一件厚羽绒服" (Tôi định cuối tuần đi trung tâm mua sắm mua một chiếc áo phao dày).',
@@ -768,10 +769,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '关上 (Đóng lại)', pinyin: 'Guān shàng', translation: 'Đóng lại' },
-      { text: '打开 (Mở ra)', pinyin: 'Dǎ kāi', translation: 'Mở ra' },
-      { text: '扔掉 (Vứt đi)', pinyin: 'Rēng diào', translation: 'Vứt đi' },
-      { text: '洗干净 (Rửa sạch)', pinyin: 'Xǐ gānjìng', translation: 'Rửa sạch' }
+      { text: '关上', pinyin: 'Guān shàng', translation: 'Đóng lại' },
+      { text: '打开', pinyin: 'Dǎ kāi', translation: 'Mở ra' },
+      { text: '扔掉', pinyin: 'Rēng diào', translation: 'Vứt đi' },
+      { text: '洗干净', pinyin: 'Xǐ gānjìng', translation: 'Rửa sạch' }
     ],
     correct_option_index: 0,
     explanation: 'Bên ngoài đang có gió to (刮大风), vì vậy hành động xử trí đối với cửa sổ là "关上" (đóng lại). Cấu trúc câu chữ 把: S + 把 + O + V + Bổ ngữ kết quả/phương hướng.',
@@ -790,10 +791,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '被 (Bị/Được)', pinyin: 'Bèi', translation: 'Giới từ bị động' },
-      { text: '把 (Đem/Lấy)', pinyin: 'Bǎ', translation: 'Câu xử trí' },
-      { text: '给 (Cho)', pinyin: 'Gěi', translation: 'Cho/Tặng' },
-      { text: '让 (Để)', pinyin: 'Ràng', translation: 'Khiến cho' }
+      { text: '被', pinyin: 'Bèi', translation: 'Giới từ bị động' },
+      { text: '把', pinyin: 'Bǎ', translation: 'Câu xử trí' },
+      { text: '给', pinyin: 'Gěi', translation: 'Cho/Tặng' },
+      { text: '让', pinyin: 'Ràng', translation: 'Khiến cho' }
     ],
     correct_option_index: 0,
     explanation: 'Chủ ngữ "我的自行车" là vật bị tác động, mất đi xe đạp mang sắc thái không mong muốn nên dùng câu bị động chữ 被: S (chịu tác động) + 被 + Tác nhân + V + Thành phần khác.',
@@ -838,9 +839,9 @@ const BASE_HSK_QUESTIONS = [
     hint_pinyin: 'yǒu',
     accepted_answers: ['友'],
     options: [
-      { text: '友 (Hữu - bạn bè)', pinyin: 'yǒu', translation: 'Bạn hữu' },
-      { text: '有 (Hữu - có)', pinyin: 'yǒu', translation: 'Có' },
-      { text: '右 (Hữu - bên phải)', pinyin: 'yòu', translation: 'Bên phải' }
+      { text: '友', pinyin: 'Hữu', translation: 'Bạn hữu' },
+      { text: '有', pinyin: 'Hữu', translation: 'Có' },
+      { text: '右', pinyin: 'Hữu', translation: 'Bên phải' }
     ],
     correct_option_index: 0,
     explanation: 'Từ vựng "朋友" (péngyou - bạn bè). Chữ Hán cần điền là chữ 友 (yǒu - có bộ Hựu 又).',
@@ -863,9 +864,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '每个人都会遇到困难，重要的是要保持乐观的心态，勇敢面对。问：遇到困难时最重要的是什么？',
     options: [
-      { text: '放弃目标 (Từ bỏ mục tiêu)', pinyin: 'Fàngqì mùbiāo', translation: 'Từ bỏ' },
-      { text: '保持乐观心态 (Giữ tinh thần lạc quan)', pinyin: 'Bǎochí lèguān xīntài', translation: 'Giữ thái độ lạc quan' },
-      { text: '依靠别人 (Dựa dẫm người khác)', pinyin: 'Yīkào biérén', translation: 'Trông cậy người khác' }
+      { text: '放弃目标', pinyin: 'Fàngqì mùbiāo', translation: 'Từ bỏ' },
+      { text: '保持乐观心态', pinyin: 'Bǎochí lèguān xīntài', translation: 'Giữ thái độ lạc quan' },
+      { text: '依靠别人', pinyin: 'Yīkào biérén', translation: 'Trông cậy người khác' }
     ],
     correct_option_index: 1,
     explanation: 'Lời thoại đoạn văn: "重要的是要保持乐观的心态，勇敢面对" (Điều quan trọng là giữ vững tinh thần lạc quan, dũng cảm đối diện).',
@@ -884,9 +885,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：新工作适应得怎么样了？男：挺好的，同事们都很友好，而且加班也不算多。问：男的觉得新工作怎么样？',
     options: [
-      { text: '挺满意的 (Khá hài lòng)', pinyin: 'Tǐng mǎnyì de', translation: 'Rất hài lòng' },
-      { text: '压力太大 (Áp lực quá lớn)', pinyin: 'Yālì tài dà', translation: 'Quá áp lực' },
-      { text: '想换工作 (Muốn đổi việc)', pinyin: 'Xiǎng huàn gōngzuò', translation: 'Muốn đổi việc' }
+      { text: '挺满意的', pinyin: 'Tǐng mǎnyì de', translation: 'Rất hài lòng' },
+      { text: '压力太大', pinyin: 'Yālì tài dà', translation: 'Quá áp lực' },
+      { text: '想换工作', pinyin: 'Xiǎng huàn gōngzuò', translation: 'Muốn đổi việc' }
     ],
     correct_option_index: 0,
     explanation: 'Người nam trả lời: "挺好的，同事们都很友好..." (Rất tốt, các đồng nghiệp đều thân thiện). Thể hiện thái độ hài lòng.',
@@ -905,10 +906,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '因为 (Bởi vì)', pinyin: 'Yīnwèi', translation: 'Bởi vì' },
-      { text: '尽管 (Mặc dù)', pinyin: 'Jǐnguǎn', translation: 'Mặc dù' },
-      { text: '即使 (Cho dù)', pinyin: 'Jíshǐ', translation: 'Cho dù' },
-      { text: '不仅 (Không những)', pinyin: 'Bùjǐn', translation: 'Không chỉ' }
+      { text: '因为', pinyin: 'Yīnwèi', translation: 'Bởi vì' },
+      { text: '尽管', pinyin: 'Jǐnguǎn', translation: 'Mặc dù' },
+      { text: '即使', pinyin: 'Jíshǐ', translation: 'Cho dù' },
+      { text: '不仅', pinyin: 'Bùjǐn', translation: 'Không chỉ' }
     ],
     correct_option_index: 0,
     explanation: 'Vế sau giải thích nguyên nhân cho vế trước ("họ không bao giờ từ bỏ"), do đó dùng liên từ nguyên nhân "因为" (yīnwèi).',
@@ -927,9 +928,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '睡眠对健康很重要 (Giấc ngủ rất quan trọng với sức khỏe)', pinyin: 'Shuìmián duì jiànkāng hěn zhòngyào', translation: 'Giấc ngủ rất quan trọng' },
-      { text: '饮食比睡眠更关键 (Ăn uống quan trọng hơn giấc ngủ)', pinyin: 'Yǐnshí bǐ shuìmián gèng guānjiàn', translation: 'Ăn uống quan trọng hơn' },
-      { text: '运动是最好的习惯 (Thể thao là thói quen tốt nhất)', pinyin: 'Yùndòng shì zuì hǎo de xíguàn', translation: 'Vận động tốt nhất' }
+      { text: '睡眠对健康很重要', pinyin: 'Shuìmián duì jiànkāng hěn zhòngyào', translation: 'Giấc ngủ rất quan trọng' },
+      { text: '饮食比睡眠更关键', pinyin: 'Yǐnshí bǐ shuìmián gèng guānjiàn', translation: 'Ăn uống quan trọng hơn' },
+      { text: '运动是最好的习惯', pinyin: 'Yùndòng shì zuì hǎo de xíguàn', translation: 'Vận động tốt nhất' }
     ],
     correct_option_index: 0,
     explanation: 'Đoạn văn nhấn mạnh: "保证充足的睡眠也是非常必要的" (đảm bảo ngủ đủ giấc cũng là vô cùng cần thiết).',
@@ -1006,8 +1007,8 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: 'Đúng (正确)', pinyin: 'Zhèngquè', translation: 'Nghĩa chính xác là máy bay' },
-      { text: 'Sai (错误)', pinyin: 'Cuòwù', translation: 'Không phải máy bay' }
+      { text: '对', pinyin: 'Duì', translation: 'Nghĩa chính xác là máy bay' },
+      { text: '错', pinyin: 'Cuò', translation: 'Không phải máy bay' }
     ],
     correct_option_index: 0,
     explanation: '飞机 (fēijī - âm Hán Việt: Phi cơ) có nghĩa chính xác là "Máy bay". Do đó phán đoán Đúng.',
@@ -1020,14 +1021,14 @@ const BASE_HSK_QUESTIONS = [
     part_number: 1,
     question_number: 2,
     question_type: 'multiple_choice',
-    prompt: '看图文对照，判断是否吻合：[看书 (kàn shū) - 他正在睡觉]',
+    prompt: '看词语与句子，判断是否一致：[看书 - 他正在睡觉]',
     pinyin: 'Kàn túwén duìzhào, pànduàn shìfǒu wènhé: [kàn shū - Anh ấy đang ngủ]',
     translation: 'Đối chiếu từ và giải nghĩa: [看书 - Anh ấy đang ngủ]:',
     audio_url: '',
     audio_script: '',
     options: [
-      { text: 'Đúng (正确)', pinyin: 'Zhèngquè', translation: 'Khớp nghĩa' },
-      { text: 'Sai (错误)', pinyin: 'Cuòwù', translation: 'Sai nghĩa' }
+      { text: '对', pinyin: 'Duì', translation: 'Khớp nghĩa' },
+      { text: '错', pinyin: 'Cuò', translation: 'Sai nghĩa' }
     ],
     correct_option_index: 1,
     explanation: '看书 (kàn shū) nghĩa là "Đọc sách / Xem sách". Hành động "ngủ" trong tiếng Trung là 睡觉 (shuìjiào). Do đó phán đoán Sai.',
@@ -1040,14 +1041,14 @@ const BASE_HSK_QUESTIONS = [
     part_number: 1,
     question_number: 3,
     question_type: 'multiple_choice',
-    prompt: '看词语与解释，判断是否正确：[吃苹果 (chī píngguǒ) - 食用苹果]',
+    prompt: '看词语与句子，判断是否一致：[吃苹果 - 食用苹果]',
     pinyin: 'Kàn cíyǔ yǔ jiěshì, pànduàn shìfǒu zhèngquè: [chī píngguǒ - Ăn táo]',
     translation: 'Đối chiếu từ và giải nghĩa: [吃苹果 - Ăn táo]:',
     audio_url: '',
     audio_script: '',
     options: [
-      { text: 'Đúng (正确)', pinyin: 'Zhèngquè', translation: 'Chính xác' },
-      { text: 'Sai (错误)', pinyin: 'Cuòwù', translation: 'Không chính xác' }
+      { text: '对', pinyin: 'Duì', translation: 'Chính xác' },
+      { text: '错', pinyin: 'Cuò', translation: 'Không chính xác' }
     ],
     correct_option_index: 0,
     explanation: '吃 (chī - ăn) + 苹果 (píngguǒ - quả táo) kết hợp thành cụm từ "ăn táo". Phán đoán Đúng.',
@@ -1066,8 +1067,8 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: 'Đúng (正确)', pinyin: 'Zhèngquè', translation: 'Đúng' },
-      { text: 'Sai (错误)', pinyin: 'Cuòwù', translation: 'Sai' }
+      { text: '对', pinyin: 'Duì', translation: 'Đúng' },
+      { text: '错', pinyin: 'Cuò', translation: 'Sai' }
     ],
     correct_option_index: 1,
     explanation: '喝水 (hē shuǐ) nghĩa là "Uống nước". Gọi điện thoại trong tiếng Trung là 打电话 (dǎ diànhuà). Do đó phán đoán Sai.',
@@ -1086,9 +1087,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '好吃 (hǎochī - Ngon)', pinyin: 'Hǎochī', translation: 'Ngon miệng' },
-      { text: '天气 (tiānqì - Thời tiết)', pinyin: 'Tiānqì', translation: 'Thời tiết' },
-      { text: '东西 (dōngxi - Đồ vật)', pinyin: 'Dōngxi', translation: 'Đồ đạc' }
+      { text: '好吃', pinyin: 'hǎochī', translation: 'Ngon miệng' },
+      { text: '天气', pinyin: 'tiānqì', translation: 'Thời tiết' },
+      { text: '东西', pinyin: 'dōngxi', translation: 'Đồ đạc' }
     ],
     correct_option_index: 0,
     explanation: 'Tính từ đi kèm miêu tả món ăn (菜 - cài) là 好吃 (hǎochī - ngon miệng).',
@@ -1107,11 +1108,11 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '买 (mǎi - Mua)', pinyin: 'Mǎi', translation: 'Mua sắm' },
-      { text: '读 (dú - Đọc)', pinyin: 'Dú', translation: 'Đọc' },
-      { text: '坐 (zuò - Ngồi)', pinyin: 'Zuò', translation: 'Ngồi' }
+      { text: '读', pinyin: 'dú', translation: 'Đọc' },
+      { text: '买', pinyin: 'mǎi', translation: 'Mua sắm' },
+      { text: '坐', pinyin: 'zuò', translation: 'Ngồi' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Động từ phù hợp đi cùng tân ngữ "quần áo" (衣服) tại trung tâm thương mại là 买 (mǎi - mua).',
     points: 10
   },
@@ -1128,11 +1129,11 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '看书 (kàn shū - Đọc sách)', pinyin: 'Kàn shū', translation: 'Đọc sách' },
-      { text: '开车 (kāi chē - Lái xe)', pinyin: 'Kāi chē', translation: 'Lái xe' },
-      { text: '做饭 (zuò fàn - Nấu ăn)', pinyin: 'Zuò fàn', translation: 'Nấu cơm' }
+      { text: '开车', pinyin: 'kāi chē', translation: 'Lái xe' },
+      { text: '做饭', pinyin: 'zuò fàn', translation: 'Nấu cơm' },
+      { text: '看书', pinyin: 'kàn shū', translation: 'Đọc sách' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Nơi chốn là "thư viện" (图书馆), hành động logic tương ứng là 看书 (kàn shū - đọc sách).',
     points: 10
   },
@@ -1149,11 +1150,11 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '我叫李明。(Wǒ jiào Lǐ Míng.)', pinyin: 'Wǒ jiào Lǐ Míng.', translation: 'Tôi tên là Lý Minh.' },
-      { text: '我是越南人。(Wǒ shì Yuènán rén.)', pinyin: 'Wǒ shì Yuènán rén.', translation: 'Tôi là người Việt Nam.' },
-      { text: '我二十岁。(Wǒ èrshí suì.)', pinyin: 'Wǒ èrshí suì.', translation: 'Tôi hai mươi tuổi.' }
+      { text: '我二十岁。', pinyin: 'Wǒ èrshí suì.', translation: 'Tôi hai mươi tuổi.' },
+      { text: '我叫李明。', pinyin: 'Wǒ jiào Lǐ Míng.', translation: 'Tôi tên là Lý Minh.' },
+      { text: '我是越南人。', pinyin: 'Wǒ shì Yuènán rén.', translation: 'Tôi là người Việt Nam.' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Câu hỏi về tên họ (叫什么名字) phải được trả lời bằng mẫu câu xưng tên: "我叫 + Tên" (Tôi tên là Lý Minh).',
     points: 10
   },
@@ -1170,11 +1171,11 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '十五块钱。(Shíwǔ kuài qián.)', pinyin: 'Shíwǔ kuài qián.', translation: 'Mười lăm tệ.' },
-      { text: '下午三点。(Xiàwǔ sān diǎn.)', pinyin: 'Xiàwǔ sān diǎn.', translation: 'Ba giờ chiều.' },
-      { text: '不客气。(Bú kèqi.)', pinyin: 'Bú kèqi.', translation: 'Không có chi.' }
+      { text: '下午三点。', pinyin: 'Xiàwǔ sān diǎn.', translation: 'Ba giờ chiều.' },
+      { text: '不客气。', pinyin: 'Bú kèqi.', translation: 'Không có chi.' },
+      { text: '十五块钱。', pinyin: 'Shíwǔ kuài qián.', translation: 'Mười lăm tệ.' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Câu hỏi giá tiền (多少钱) được hồi đáp bằng số tiền kèm đơn vị tiền tệ: "15块钱" (15 tệ).',
     points: 10
   },
@@ -1191,9 +1192,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '是的，她是医生。(Shì de, tā shì yīshēng.)', pinyin: 'Shì de, tā shì yīshēng.', translation: 'Vâng, mẹ tôi là bác sĩ.' },
-      { text: '她喜欢吃水果。(Tā xǐhuan chī shuǐguǒ.)', pinyin: 'Tā xǐhuan chī shuǐguǒ.', translation: 'Mẹ thích ăn hoa quả.' },
-      { text: '明天见。(Míngtiān jiàn.)', pinyin: 'Míngtiān jiàn.', translation: 'Ngày mai gặp lại.' }
+      { text: '是的，她是医生。', pinyin: 'Shì de, tā shì yīshēng.', translation: 'Vâng, mẹ tôi là bác sĩ.' },
+      { text: '她喜欢吃水果。', pinyin: 'Tā xǐhuan chī shuǐguǒ.', translation: 'Mẹ thích ăn hoa quả.' },
+      { text: '明天见。', pinyin: 'Míngtiān jiàn.', translation: 'Ngày mai gặp lại.' }
     ],
     correct_option_index: 0,
     explanation: 'Câu hỏi nghi vấn nghề nghiệp/nơi làm việc ở bệnh viện (在医院工作吗), câu trả lời khẳng định: "是的，她是医生" (Vâng, mẹ là bác sĩ).',
@@ -1216,9 +1217,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '外面下大雨了，你出门别忘了带雨伞。',
     options: [
-      { text: '下雨 (xiàyǔ - Trời mưa)', pinyin: 'Xiàyǔ', translation: 'Trời mưa lớn' },
-      { text: '晴天 (qíngtiān - Trời nắng)', pinyin: 'Qíngtiān', translation: 'Trời nắng ráo' },
-      { text: '刮风 (guāfēng - Nổi gió)', pinyin: 'Guāfēng', translation: 'Gió to' }
+      { text: '下雨', pinyin: 'xiàyǔ', translation: 'Trời mưa lớn' },
+      { text: '晴天', pinyin: 'qíngtiān', translation: 'Trời nắng ráo' },
+      { text: '刮风', pinyin: 'guāfēng', translation: 'Gió to' }
     ],
     correct_option_index: 0,
     explanation: 'Lời thoại phát thanh: "外面下大雨了，你出门别忘了带雨伞" (Bên ngoài mưa to rồi, bạn ra ngoài đừng quên mang theo ô). Thời tiết là 下雨.',
@@ -1237,11 +1238,11 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '服务员，请给我们来两杯热咖啡和一份牛肉面。好的，请稍等。',
     options: [
-      { text: '餐馆/咖啡厅 (Nhà hàng / Quán cà phê)', pinyin: 'Cānguǎn / Kāfēitīng', translation: 'Nhà hàng / Quán cà phê' },
-      { text: '火车站 (Ga tàu hỏa)', pinyin: 'Huǒchēzhàn', translation: 'Nhà ga tàu hỏa' },
-      { text: '电影院 (Rạp chiếu phim)', pinyin: 'Diànyǐngyuàn', translation: 'Rạp chiếu phim' }
+      { text: '火车站', pinyin: 'Huǒchēzhàn', translation: 'Nhà ga tàu hỏa' },
+      { text: '电影院', pinyin: 'Diànyǐngyuàn', translation: 'Rạp chiếu phim' },
+      { text: '餐馆/咖啡厅', pinyin: 'Cānguǎn / Kāfēitīng', translation: 'Nhà hàng / Quán cà phê' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Từ khóa "服务员" (phục vụ), "热咖啡" (cà phê nóng) và "牛肉面" (mì bò) cho thấy bối cảnh diễn ra tại quán ăn / nhà hàng.',
     points: 10
   },
@@ -1258,11 +1259,11 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '我今天身体很不舒服，发烧了，要去医院看医生。',
     options: [
-      { text: '生病了 (shēngbìng le - Bị ốm/sốt)', pinyin: 'Shēngbìng le', translation: 'Bị ốm, sốt' },
-      { text: '很高兴 (hěn gāoxìng - Rất vui)', pinyin: 'Hěn gāoxìng', translation: 'Rất vui vẻ' },
-      { text: '去旅游 (qù lǚyóu - Đi du lịch)', pinyin: 'Qù lǚyóu', translation: 'Đi du lịch' }
+      { text: '很高兴', pinyin: 'hěn gāoxìng', translation: 'Rất vui vẻ' },
+      { text: '生病了', pinyin: 'shēngbìng le', translation: 'Bị ốm, sốt' },
+      { text: '去旅游', pinyin: 'qù lǚyóu', translation: 'Đi du lịch' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Lời thoại: "身体很不舒服，发烧了" (trong người rất khó chịu, bị sốt rồi). Tình trạng nhân vật là bị ốm.',
     points: 10
   },
@@ -1279,11 +1280,11 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '从我们学校到机场，坐出租车大约需要四十分钟。',
     options: [
-      { text: '出租车 (chūzūchē - Xe taxi)', pinyin: 'Chūzūchē', translation: 'Đi xe taxi' },
-      { text: '公共汽车 (gōnggòng qìchē - Xe buýt)', pinyin: 'Gōnggòng qìchē', translation: 'Đi xe buýt' },
-      { text: '自行车 (zìxíngchē - Xe đạp)', pinyin: 'Zìxíngchē', translation: 'Đi xe đạp' }
+      { text: '公共汽车', pinyin: 'gōnggòng qìchē', translation: 'Đi xe buýt' },
+      { text: '自行车', pinyin: 'zìxíngchē', translation: 'Đi xe đạp' },
+      { text: '出租车', pinyin: 'chūzūchē', translation: 'Đi xe taxi' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Lời thoại nói rõ: "坐出租车大约需要四十分钟" (Đi taxi mất khoảng 40 phút). Phương tiện là 出租车.',
     points: 10
   },
@@ -1300,9 +1301,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '男：这件红色的衣服真好看，多少钱？女：原价三百块，今天打折只要两百块。问：这件衣服今天卖多少钱？',
     options: [
-      { text: '两百块 (200 tệ)', pinyin: 'Liǎng bǎi kuài', translation: '200 tệ' },
-      { text: '三百块 (300 tệ)', pinyin: 'Sān bǎi kuài', translation: '300 tệ' },
-      { text: '一百块 (100 tệ)', pinyin: 'Yī bǎi kuài', translation: '100 tệ' }
+      { text: '两百块', pinyin: 'Liǎng bǎi kuài', translation: '200 tệ' },
+      { text: '一百块', pinyin: 'Yī bǎi kuài', translation: '100 tệ' },
+      { text: '三百块', pinyin: 'Sān bǎi kuài', translation: '300 tệ' }
     ],
     correct_option_index: 0,
     explanation: 'Người nữ trả lời: "今天打折只要两百块" (Hôm nay giảm giá chỉ cần 200 tệ). Giá tiền hôm nay là 200 tệ.',
@@ -1321,11 +1322,11 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：喂，王经理，明天下午两点开会可以吗？男：好的，没问题，在三楼会议室见。问：他们明天几点开会？',
     options: [
-      { text: '下午两点 (2 giờ chiều)', pinyin: 'Xiàwǔ liǎng diǎn', translation: '14:00 chiều' },
-      { text: '上午十点 (10 giờ sáng)', pinyin: 'Shàngwǔ shí diǎn', translation: '10:00 sáng' },
-      { text: '下午四点 (4 giờ chiều)', pinyin: 'Xiàwǔ sì diǎn', translation: '16:00 chiều' }
+      { text: '上午十点', pinyin: 'Shàngwǔ shí diǎn', translation: '10:00 sáng' },
+      { text: '下午四点', pinyin: 'Xiàwǔ sì diǎn', translation: '16:00 chiều' },
+      { text: '下午两点', pinyin: 'Xiàwǔ liǎng diǎn', translation: '14:00 chiều' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Người nữ hẹn: "明天下午两点开会可以吗？" (Ngày mai 2 giờ chiều họp được không?). Giờ họp là 下午两点.',
     points: 10
   },
@@ -1342,11 +1343,11 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '男：你平时喜欢做什么运动？女：我每天早上都去公园跑步半小时。问：女的每天早上做什么？',
     options: [
-      { text: '跑步 (pǎobù - Chạy bộ)', pinyin: 'Pǎobù', translation: 'Chạy bộ tập thể dục' },
-      { text: '游泳 (yóuyǒng - Bơi lội)', pinyin: 'Yóuyǒng', translation: 'Bơi lội' },
-      { text: '跳舞 (tiàowǔ - Khiêu vũ)', pinyin: 'Tiàowǔ', translation: 'Nhảy múa' }
+      { text: '游泳', pinyin: 'yóuyǒng', translation: 'Bơi lội' },
+      { text: '跑步', pinyin: 'pǎobù', translation: 'Chạy bộ tập thể dục' },
+      { text: '跳舞', pinyin: 'tiàowǔ', translation: 'Nhảy múa' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Người nữ trả lời: "我每天早上都去公园跑步半小时" (Mỗi sáng tôi đều đến công viên chạy bộ nửa tiếng). Hoạt động là 跑步.',
     points: 10
   },
@@ -1363,11 +1364,11 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '张先生在北京工作了五年，他非常喜欢吃中国菜，汉语也说得非常流利。问：张先生在北京工作了几年？',
     options: [
-      { text: '五年 (wǔ nián - 5 năm)', pinyin: 'Wǔ nián', translation: 'Năm năm' },
-      { text: '三年 (sān nián - 3 năm)', pinyin: 'Sān nián', translation: 'Ba năm' },
-      { text: '八年 (bā nián - 8 năm)', pinyin: 'Bā nián', translation: 'Tám năm' }
+      { text: '八年', pinyin: 'bā nián', translation: 'Tám năm' },
+      { text: '三年', pinyin: 'sān nián', translation: 'Ba năm' },
+      { text: '五年', pinyin: 'wǔ nián', translation: 'Năm năm' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 2,
     explanation: 'Đoạn văn nêu rõ: "张先生在北京工作了五年" (Ông Trương làm việc ở Bắc Kinh được 5 năm). Đáp án là 5 năm.',
     points: 10
   },
@@ -1384,11 +1385,11 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '昨天晚上我复习功课到深夜十二点，太累了，所以今天早晨闹钟响了都没听见，差点儿迟到了。问：他为什么差点儿迟到？',
     options: [
-      { text: '昨晚复习睡得太晚 (Tối qua học bài ngủ muộn)', pinyin: 'Zuówǎn fùxí shuì de tài wǎn', translation: 'Ngủ muộn do ôn bài' },
-      { text: '路上堵车 (Lùshang dǔchē - Kẹt xe)', pinyin: 'Lùshang dǔchē', translation: 'Đường bị tắc' },
-      { text: '生病发烧 (Bị ốm sốt)', pinyin: 'Shēngbìng fāshāo', translation: 'Bị sốt' }
+      { text: '路上堵车', pinyin: 'Lùshang dǔchē', translation: 'Đường bị tắc' },
+      { text: '昨晚复习睡得太晚', pinyin: 'Zuówǎn fùxí shuì de tài wǎn', translation: 'Ngủ muộn do ôn bài' },
+      { text: '生病发烧', pinyin: 'Shēngbìng fāshāo', translation: 'Bị sốt' }
     ],
-    correct_option_index: 0,
+    correct_option_index: 1,
     explanation: 'Người nói giải thích nguyên nhân: "昨天晚上我复习功课到深夜十二点，太累了..." (Tối qua ôn bài đến 12h đêm, mệt quá). Lý do là ngủ muộn.',
     points: 10
   },
@@ -1405,9 +1406,9 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '学汉语虽然一开始觉得有点儿难，但是只要我们每天坚持大声朗读，就一定能学好。问：说话人认为学好汉语的关键是什么？',
     options: [
-      { text: '每天坚持练习 (Kiên trì luyện tập mỗi ngày)', pinyin: 'Měitiān jiānchí liànxí', translation: 'Kiên trì mỗi ngày' },
-      { text: '不需要背生词 (Không cần học từ vựng)', pinyin: 'Bù xūyào bèi shēngcí', translation: 'Không cần học từ' },
-      { text: '只听不说 (Chỉ nghe không cần nói)', pinyin: 'Zhǐ tīng bù shuō', translation: 'Chỉ nghe' }
+      { text: '每天坚持练习', pinyin: 'Měitiān jiānchí liànxí', translation: 'Kiên trì mỗi ngày' },
+      { text: '只听不说', pinyin: 'Zhǐ tīng bù shuō', translation: 'Chỉ nghe' },
+      { text: '不需要背生词', pinyin: 'Bù xūyào bèi shēngcí', translation: 'Không cần học từ' }
     ],
     correct_option_index: 0,
     explanation: 'Lời khuyên then chốt trong bài: "只要我们每天坚持大声朗读，就一定能学好" (Chỉ cần mỗi ngày kiên trì đọc to thì nhất định sẽ học giỏi). Bí quyết là kiên trì luyện tập mỗi ngày.',
@@ -1429,10 +1430,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '女：李总，关于这次跨国并购案，对方财务顾问提出了几项附带条款，似乎在估值上还有分歧。\n男：我们必须坚持审慎原则。你立刻组织法律和审计团队，对他们的核心专利资产重新进行全面尽职调查。\n问：男的主要要求女的做什么？',
     options: [
-      { text: '重新对对方核心专利进行尽职调查 (Tái thẩm định độc lập bằng sáng chế cốt lõi)', pinyin: 'Chóngxīn duì duìfāng héxīn zhuānlì jìnxíng jìnzhí diàochá', translation: 'Thẩm định tài sản trí tuệ' },
-      { text: '立即答应对方提出的估值要求 (Lập tức đồng ý định giá của đối tác)', pinyin: 'Lìjí dāyìng duìfāng tíchū de gūzhí yāoqiú', translation: 'Đồng ý định giá' },
-      { text: '终止所有商务合作谈判 (Chấm dứt đàm phán hợp tác)', pinyin: 'Zhōngzhǐ suǒyǒu shāngwù hézuò tánpàn', translation: 'Chấm dứt đàm phán' },
-      { text: '解散法务与审计团队 (Giải tán đội ngũ pháp lý)', pinyin: 'Jiěsàn fǎwù yǔ shěnjì tuánduì', translation: 'Giải tán nhóm pháp lý' }
+      { text: '重新对对方核心专利进行尽职调查', pinyin: 'Chóngxīn duì duìfāng héxīn zhuānlì jìnxíng jìnzhí diàochá', translation: 'Thẩm định tài sản trí tuệ' },
+      { text: '立即答应对方提出的估值要求', pinyin: 'Lìjí dāyìng duìfāng tíchū de gūzhí yāoqiú', translation: 'Đồng ý định giá' },
+      { text: '终止所有商务合作谈判', pinyin: 'Zhōngzhǐ suǒyǒu shāngwù hézuò tánpàn', translation: 'Chấm dứt đàm phán' },
+      { text: '解散法务与审计团队', pinyin: 'Jiěsàn fǎwù yǔ shěnjì tuánduì', translation: 'Giải tán nhóm pháp lý' }
     ],
     correct_option_index: 0,
     explanation: 'Người nam nói: "我们必须坚持审慎原则。你立刻组织法律和审计团队，对他们的核心专利资产重新进行全面尽职调查。" Do đó đáp án chính xác là tiến hành thẩm định chuyên sâu (尽职调查).',
@@ -1451,10 +1452,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '心理学研究表明，拖延症的本质并非时间管理能力欠缺，而往往是情绪调节困难的体现。当面对一项令人生畏的任务时，大脑本能地逃避当下的焦虑，转而寻求即时满足。因此，克服拖延的关键不是制定更密集的计划，而是学会接纳负面情绪并把任务分解至微不足道的行动。\n问：根据短文，克服拖延的关键是什么？',
     options: [
-      { text: '接纳负面情绪并拆解微小行动 (Chấp nhận cảm xúc tiêu cực và chia nhỏ hành động)', pinyin: 'Jiēnà fùmiàn qíngxù bìng chāijiě wēixiǎo xíngdòng', translation: 'Tiếp nhận cảm xúc và chia nhỏ nhiệm vụ' },
-      { text: '制定更加严密繁重的时间表 (Lập thời gian biểu khắt khe hơn nữa)', pinyin: 'Zhìdìng gèngjiā yánmì fánzhòng de shíjiānbiǎo', translation: 'Thời gian biểu khắt khe' },
-      { text: '完全逃避令人焦虑的任务 (Trốn tránh hoàn toàn nhiệm vụ)', pinyin: 'Wánquán táobì lìngrén jiāolǜ de rènwu', translation: 'Trốn tránh áp lực' },
-      { text: '随时寻求即时的感官满足 (Luôn tìm kiếm thỏa mãn tức thời)', pinyin: 'Suíshí xúnqiú jíshí de gǎnguān mǎnzú', translation: 'Thỏa mãn tức thời' }
+      { text: '接纳负面情绪并拆解微小行动', pinyin: 'Jiēnà fùmiàn qíngxù bìng chāijiě wēixiǎo xíngdòng', translation: 'Tiếp nhận cảm xúc và chia nhỏ nhiệm vụ' },
+      { text: '制定更加严密繁重的时间表', pinyin: 'Zhìdìng gèngjiā yánmì fánzhòng de shíjiānbiǎo', translation: 'Thời gian biểu khắt khe' },
+      { text: '完全逃避令人焦虑的任务', pinyin: 'Wánquán táobì lìngrén jiāolǜ de rènwu', translation: 'Trốn tránh áp lực' },
+      { text: '随时寻求即时的感官满足', pinyin: 'Suíshí xúnqiú jíshí de gǎnguān mǎnzú', translation: 'Thỏa mãn tức thời' }
     ],
     correct_option_index: 0,
     explanation: 'Câu kết đoạn khẳng định: "克服拖延的关键不是制定更密集的计划，而是学会接纳负面情绪并把任务分解至微不足道的行动。"',
@@ -1473,10 +1474,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '推卸 —— 忽视 —— 迫在眉睫 (Thoái thác — Coi nhẹ — Cấp bách ngay trước mắt)', pinyin: 'tuīxiè — hūshì — pòzàiméijié', translation: 'Đẩy trách nhiệm — ngó lơ — cấp bách' },
-      { text: '承担 —— 重视 —— 息息相关 (Đảm đương — Coi trọng — Gắn bó mật thiết)', pinyin: 'chéngdān — zhòngshì — xīxīxiāngguān', translation: 'Gánh vác — coi trọng — liên quan mật thiết' },
-      { text: '逃避 —— 抵触 —— 漫不经心 (Trốn tránh — Xung đột — Vô tâm)', pinyin: 'táobì — dǐchù — mànbùjīngxīn', translation: 'Trốn tránh — đối kháng — hờ hững' },
-      { text: '放弃 —— 观察 —— 井井有条 (Từ bỏ — Quan sát — Ngăn nắp trật tự)', pinyin: 'fàngqì — guānchá — jǐngjǐngyǒutiáo', translation: 'Bỏ cuộc — quan sát — trật tự' }
+      { text: '推卸 —— 忽视 —— 迫在眉睫', pinyin: 'tuīxiè — hūshì — pòzàiméijié', translation: 'Đẩy trách nhiệm — ngó lơ — cấp bách' },
+      { text: '承担 —— 重视 —— 息息相关', pinyin: 'chéngdān — zhòngshì — xīxīxiāngguān', translation: 'Gánh vác — coi trọng — liên quan mật thiết' },
+      { text: '逃避 —— 抵触 —— 漫不经心', pinyin: 'táobì — dǐchù — mànbùjīngxīn', translation: 'Trốn tránh — đối kháng — hờ hững' },
+      { text: '放弃 —— 观察 —— 井井有条', pinyin: 'fàngqì — guānchá — jǐngjǐngyǒutiáo', translation: 'Bỏ cuộc — quan sát — trật tự' }
     ],
     correct_option_index: 1,
     explanation: 'Văn cảnh bảo vệ môi trường: Doanh nghiệp cần [承担] trách nhiệm xã hội, [重视] phát triển bền vững vì tương lai nhân loại [息息相关] (liên quan mật thiết). Nhóm từ B mang tính học thuật và tương thích ngữ nghĩa chặt chẽ.',
@@ -1495,10 +1496,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '真正的探索者从不把失败视为终点，而将其视作排除错误路径的宝贵数据。在科学史上，无数突破性的发现恰恰诞生于对异常结果的重新审视。如果一味回避错误，创新的火花也将随之熄灭。',
     options: [
-      { text: '失败是修正方向与激发创新的必要财富 (Thất bại là tài sản cần thiết để sửa hướng và khơi nguồn đổi mới)', pinyin: 'Shībài shì xiūzhèng fāngxiàng yǔ jīfā chuàngxīn de bìyào cáifù', translation: 'Thất bại là tài sản' },
-      { text: '失败意味着彻底的无能与资源的浪费 (Thất bại đồng nghĩa với bất tài và lãng phí)', pinyin: 'Shībài yìwèizhe chèdǐ de wúnéng yǔ zīyuán de làngfèi', translation: 'Thất bại là bất tài' },
-      { text: '应当竭尽全力隐瞒并避免一切错误 (Nên cố gắng che giấu sai sót)', pinyin: 'Yīngdāng jiéjìn quánlì yǐnmán bìng bìmiǎn yíqiè cuòwù', translation: 'Che giấu lỗi' },
-      { text: '异常结果毫无科学探讨价值 (Kết quả dị thường không có giá trị)', pinyin: 'Yìcháng jiéguǒ háowú kēxué tàntǎo jiàzhí', translation: 'Không có giá trị' }
+      { text: '失败是修正方向与激发创新的必要财富', pinyin: 'Shībài shì xiūzhèng fāngxiàng yǔ jīfā chuàngxīn de bìyào cáifù', translation: 'Thất bại là tài sản' },
+      { text: '失败意味着彻底的无能与资源的浪费', pinyin: 'Shībài yìwèizhe chèdǐ de wúnéng yǔ zīyuán de làngfèi', translation: 'Thất bại là bất tài' },
+      { text: '应当竭尽全力隐瞒并避免一切错误', pinyin: 'Yīngdāng jiéjìn quánlì yǐnmán bìng bìmiǎn yíqiè cuòwù', translation: 'Che giấu lỗi' },
+      { text: '异常结果毫无科学探讨价值', pinyin: 'Yìcháng jiéguǒ háowú kēxué tàntǎo jiàzhí', translation: 'Không có giá trị' }
     ],
     correct_option_index: 0,
     explanation: 'Tác giả xem thất bại là "排除错误路径的宝贵数据" và là tiền đề cho "突破性的发现", do đó thái độ là xem thất bại như tài sản kích hoạt sáng tạo.',
@@ -1520,7 +1521,7 @@ const BASE_HSK_QUESTIONS = [
     options: [
       { text: '这场辩论赛 充分展现了 双方辩手 敏捷的思维 出色的表现', pinyin: '', translation: '' },
       { text: '双方辩手 出色的表现 充分展现了 这场辩论赛 敏捷的思维', pinyin: '', translation: '' },
-      { text: '这场辩论赛 双方辩手的出色表现 充分展现了 敏捷的思维 (Cú pháp chuẩn)', pinyin: 'Zhè chǎng biànlùnsài shuāngfāng biànshǒu de chūsè biǎoxiàn chōngfèn zhǎnxiàn le mǐnjié de sīwéi', translation: 'Trận tranh biện đã thể hiện xuất sắc tư duy nhạy bén của các bên' },
+      { text: '这场辩论赛 双方辩手的出色表现 充分展现了 敏捷的思维', pinyin: 'Zhè chǎng biànlùnsài shuāngfāng biànshǒu de chūsè biǎoxiàn chōngfèn zhǎnxiàn le mǐnjié de sīwéi', translation: 'Trận tranh biện đã thể hiện xuất sắc tư duy nhạy bén của các bên' },
       { text: '敏捷的思维 这场辩论赛 充分展现了 双方辩手', pinyin: '', translation: '' }
     ],
     correct_option_index: 2,
@@ -1566,10 +1567,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '主持人：面对新一代生成式人工智能的爆发式增长，您如何评估它对传统产业劳动力生态的重塑？\n学者：技术的迭代固然会淘汰一部分程序化、机械性的岗位，但这并不意味着人类劳动价值的贬损。恰恰相反，它迫使教育体系与职业培训向审辩式思维、审美鉴赏力以及复杂人文共情等深层素养转型。未来的核心竞争力绝非与算法比拼算力，而在于人机协同中对价值尺度的终极把控。\n问：学者认为未来人类的核心竞争力是什么？',
     options: [
-      { text: '人机协同中对价值尺度的终极把控 (Khả năng kiểm soát chuẩn mực giá trị trong tương tác người - máy)', pinyin: 'Rén-jī xiétóng zhōng duì jiàzhí chǐdù de zhōngjí bǎkòng', translation: 'Kiểm soát chuẩn mực giá trị' },
-      { text: '在计算速度和记忆力上全面超越算法 (Vượt qua thuật toán về tốc độ và ghi nhớ)', pinyin: 'Zài jìsuàn sùdù hé jìyìlì shàng quánmiàn chāoyuè suànfǎ', translation: 'Cạnh tranh máy móc' },
-      { text: '彻底抵制并禁止人工智能进入传统产业 (Tẩy chay trí tuệ nhân tạo)', pinyin: 'Chèdǐ dǐzhì bìng jìnzhǐ réngōng zhìnéng jìnrù chuántǒng chǎnyè', translation: 'Tẩy chay AI' },
-      { text: '保留所有机械性与程序化的初级工作 (Duy trì công việc rập khuôn)', pinyin: 'Bǎoliú suǒyǒu jīxièxìng yǔ chéngxùhuà de chūjí gōngzuò', translation: 'Giữ việc cơ bản' }
+      { text: '人机协同中对价值尺度的终极把控', pinyin: 'Khả năng kiểm soát chuẩn mực giá trị trong tương tác người', translation: 'Kiểm soát chuẩn mực giá trị' },
+      { text: '在计算速度和记忆力上全面超越算法', pinyin: 'Zài jìsuàn sùdù hé jìyìlì shàng quánmiàn chāoyuè suànfǎ', translation: 'Cạnh tranh máy móc' },
+      { text: '彻底抵制并禁止人工智能进入传统产业', pinyin: 'Chèdǐ dǐzhì bìng jìnzhǐ réngōng zhìnéng jìnrù chuántǒng chǎnyè', translation: 'Tẩy chay AI' },
+      { text: '保留所有机械性与程序化的初级工作', pinyin: 'Bǎoliú suǒyǒu jīxièxìng yǔ chéngxùhuà de chūjí gōngzuò', translation: 'Giữ việc cơ bản' }
     ],
     correct_option_index: 0,
     explanation: 'Học giả kết luận: "未来的核心竞争力绝非与算法比拼算力，而在于人机协同中对价值尺度的终极把控。" Đáp án A thể hiện chính xác bản chất.',
@@ -1588,10 +1589,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '深海热泉生态系统的发现彻底颠覆了以往生命完全依赖光合作用的经典假说。在数千米漆黑、高压、富含硫化氢的极端海底环境中，化能合成细菌构成了初级生产力，支撑起繁荣独特的化能自养生物圈。这不仅拓宽了生物圈的物理边界，更为地外天体如木卫二、土卫二是否存在生命提供了关键的地缘比对样本。\n问：深海热泉生态系统带来的重大科学启示是什么？',
     options: [
-      { text: '颠覆了生命全凭光合作用的传统假说，为地外生命探测提供理论支撑 (Lật đổ định kiến quang hợp độc tôn, mở ra cơ sở tìm kiếm sự sống ngoài vũ trụ)', pinyin: 'Diānfù le shēngmìng quán píng guānghé zuòyòng de chuántǒng jiǎshuō...', translation: 'Chứng minh hóa năng tự dưỡng' },
-      { text: '证明深海极端环境没有任何生物生存 (Chứng minh đáy biển không có sự sống)', pinyin: 'Zhèngmíng shēnhǎi jíduān huánjìng méiyǒu rènhé shēngwù shēngcún', translation: 'Vô sinh quyển' },
-      { text: '所有地球生物都必须依赖硫化氢生存 (Tất cả sinh vật đều cần H2S)', pinyin: 'Suǒyǒu dìqiú shēngwù dōu bìxū yīlài liúhuàqīng shēngcún', translation: 'Bắt buộc H2S' },
-      { text: '木卫二的环境与地球热带雨林完全相同 (Môi trường Europa giống rừng nhiệt đới)', pinyin: 'Mùwèi èr de huánjìng yǔ dìqiú rèdài yǔlín wánquán xiāngtóng', translation: 'Giống rừng rậm' }
+      { text: '颠覆了生命全凭光合作用的传统假说，为地外生命探测提供理论支撑', pinyin: 'Diānfù le shēngmìng quán píng guānghé zuòyòng de chuántǒng jiǎshuō...', translation: 'Chứng minh hóa năng tự dưỡng' },
+      { text: '证明深海极端环境没有任何生物生存', pinyin: 'Zhèngmíng shēnhǎi jíduān huánjìng méiyǒu rènhé shēngwù shēngcún', translation: 'Vô sinh quyển' },
+      { text: '所有地球生物都必须依赖硫化氢生存', pinyin: 'Suǒyǒu dìqiú shēngwù dōu bìxū yīlài liúhuàqīng shēngcún', translation: 'Bắt buộc H2S' },
+      { text: '木卫二的环境与地球热带雨林完全相同', pinyin: 'Mùwèi èr de huánjìng yǔ dìqiú rèdài yǔlín wánquán xiāngtóng', translation: 'Giống rừng rậm' }
     ],
     correct_option_index: 0,
     explanation: 'Đoạn văn nhấn mạnh hai hệ quả: 颠覆了以往生命完全依赖光合作用的经典假说 và 为地外天体是否存在生命提供了关键的地缘比对样本.',
@@ -1610,7 +1611,7 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '经过几代科研工作者的艰苦攻关，使该型号超导量子芯片终于突破了关键技术瓶颈。 (Câu khuyết chủ ngữ do lạm dụng giới từ)', pinyin: 'Jīngguò jǐ dài kēyán gōngzuòzhě de jiānkǔ gōngguān, shǐ gāi xínghào...', translation: 'Mắc bệnh lạm dụng "经过...使..." làm triệt tiêu chủ ngữ thực của câu' },
+      { text: '经过几代科研工作者的艰苦攻关，使该型号超导量子芯片终于突破了关键技术瓶颈。', pinyin: 'Jīngguò jǐ dài kēyán gōngzuòzhě de jiānkǔ gōngguān, shǐ gāi xínghào...', translation: 'Mắc bệnh lạm dụng "经过...使..." làm triệt tiêu chủ ngữ thực của câu' },
       { text: '在数字经济迅猛发展的今天，数据要素对实体产业的赋能效应日益凸显。', pinyin: 'Zài shùzì jīngjì xùnměng fāzhǎn de jīntiān, shùjù yàosù duì shítǐ chǎnyè...', translation: 'Câu chuẩn xác cấu trúc và sắc thái nghĩa' },
       { text: '博大精深的中华传统文化，正以崭新的姿态融入当代青年群体的日常生活。', pinyin: 'Bódà jīngshēn de zhōnghuá chuántǒng wénhuà, zhèng yǐ zhǎnxīn de zītài...', translation: 'Câu chuẩn ngữ pháp' },
       { text: '能否健全生态补偿长效机制，是守护绿水青山、实现区域协同发展的制度基石。', pinyin: 'Néng fǒu jiànquán shēngtài bǔcháng chángxiào jīzhì...', translation: 'Cấu trúc đối ứng hai mặt chuẩn xác' }
@@ -1632,10 +1633,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '《论语》有云：“君子和而不同，小人同而不和。”所谓“和”，是在承认并尊重事物多样性与差异性的前提下，实现更高层面的动态和谐与互补协调；而“同”则是消解个性、强求划一的盲目顺从。“和而不同”不仅是中国古人处理人际关系的准则，更为当今跨文化交流与全球文明互鉴提供了超越冷战对抗思维的东方智慧。',
     options: [
-      { text: '承认尊重差异多样性，在互补中追求动态和谐 (Tôn trọng dị biệt và đa nguyên, theo đuổi sự hài hòa phát triển tương hỗ)', pinyin: 'Chéngrèn zūnzhòng chāyì duōyàngxìng, zài hùbǔ zhōng zhuīqiú dòngtài héxié', translation: 'Tôn trọng sự đa dạng để hòa hợp' },
-      { text: '强行抹杀所有不同声音，要求步调绝对统一 (Xóa bỏ mọi tiếng nói khác biệt để đồng nhất hóa)', pinyin: 'Qiángxíng mǒshā suǒyǒu bùtóng shēngyīn, yāoqiú bùdiào juéduì tǒngyī', translation: 'Cưỡng chế đồng nhất' },
-      { text: '凡事盲目妥协奉承，缺乏独立人格 (Thỏa hiệp mù quáng thiếu nhân cách độc lập)', pinyin: 'Fánshì mángmù tuǒxié fèngcheng, quēfá dúlì réngé', translation: 'Thỏa hiệp vô nguyên tắc' },
-      { text: '拒绝与任何不同观点的人产生交往 (Từ chối giao tiếp với người bất đồng chính kiến)', pinyin: 'Jùjué yǔ rènhé bùtóng guāndiǎn de rén chǎnshēng jiāowǎng', translation: 'Cô lập bài ngoại' }
+      { text: '承认尊重差异多样性，在互补中追求动态和谐', pinyin: 'Chéngrèn zūnzhòng chāyì duōyàngxìng, zài hùbǔ zhōng zhuīqiú dòngtài héxié', translation: 'Tôn trọng sự đa dạng để hòa hợp' },
+      { text: '强行抹杀所有不同声音，要求步调绝对统一', pinyin: 'Qiángxíng mǒshā suǒyǒu bùtóng shēngyīn, yāoqiú bùdiào juéduì tǒngyī', translation: 'Cưỡng chế đồng nhất' },
+      { text: '凡事盲目妥协奉承，缺乏独立人格', pinyin: 'Fánshì mángmù tuǒxié fèngcheng, quēfá dúlì réngé', translation: 'Thỏa hiệp vô nguyên tắc' },
+      { text: '拒绝与任何不同观点的人产生交往', pinyin: 'Jùjué yǔ rènhé bùtóng guāndiǎn de rén chǎnshēng jiāowǎng', translation: 'Cô lập bài ngoại' }
     ],
     correct_option_index: 0,
     explanation: 'Đoạn văn phân tích rõ ràng: "所谓和，是在承认并尊重事物多样性与差异性的前提下，实现更高层面的动态和谐与互补协调".',
@@ -1654,10 +1655,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '居安思危 —— 防微杜渐 —— 运筹帷幄 (Lo xa lúc an bình — Ngăn chặn từ mầm mống — Bày mưu tính kế điều binh)', pinyin: "jū'ānsīwēi — fángwēidùjiàn — yùnchóuwéiwò", translation: 'Thành ngữ tư duy chiến lược đỉnh cao' },
-      { text: '自相矛盾 —— 掩耳盗铃 —— 画蛇添足 (Mâu thuẫn — Bịt tai trộm chuông — Vẽ rắn thêm chân)', pinyin: "zìxiāng máodùn — yǎn'ěrdàolíng — huàshétiānzú", translation: 'Thành ngữ tiêu cực chỉ sự vụng về' },
-      { text: '朝三暮四 —— 走马观花 —— 井底之蛙 (Sáng ba chiều bốn — Cưỡi ngựa xem hoa — Ếch ngồi đáy giếng)', pinyin: 'zhāosānmùsì — zǒumǎguānhuā — jǐngdǐzhīwā', translation: 'Thành ngữ chỉ sự thiển cận' },
-      { text: '南辕北辙 —— 守株待兔 —— 拔苗助长 (Trống đánh xuôi kèn thổi ngược — Ôm cây đợi thỏ — Đốt cháy giai đoạn)', pinyin: 'nányuánběizhé — shǒuzhūdàitù — bámiáozhùzhǎng', translation: 'Thành ngữ phản tác dụng' }
+      { text: '居安思危 —— 防微杜渐 —— 运筹帷幄', pinyin: "jū'ānsīwēi — fángwēidùjiàn — yùnchóuwéiwò", translation: 'Thành ngữ tư duy chiến lược đỉnh cao' },
+      { text: '自相矛盾 —— 掩耳盗铃 —— 画蛇添足', pinyin: "zìxiāng máodùn — yǎn'ěrdàolíng — huàshétiānzú", translation: 'Thành ngữ tiêu cực chỉ sự vụng về' },
+      { text: '朝三暮四 —— 走马观花 —— 井底之蛙', pinyin: 'zhāosānmùsì — zǒumǎguānhuā — jǐngdǐzhīwā', translation: 'Thành ngữ chỉ sự thiển cận' },
+      { text: '南辕北辙 —— 守株待兔 —— 拔苗助长', pinyin: 'nányuánběizhé — shǒuzhūdàitù — bámiáozhùzhǎng', translation: 'Thành ngữ phản tác dụng' }
     ],
     correct_option_index: 0,
     explanation: 'Trong hoạch định chiến lược kinh tế vĩ mô và phòng ngừa rủi ro, tam tấu thành ngữ HSK 6 [居安思危、防微杜渐、运筹帷幄] là chuẩn mực văn phong cao cấp.',
@@ -1676,10 +1677,10 @@ const BASE_HSK_QUESTIONS = [
     audio_url: '',
     audio_script: '',
     options: [
-      { text: '忠实于原文叙事主线与因果脉络，提炼核心事件，不得掺入个人主观评论 (Trung thực với mạch truyện và nhân quả nguyên tác, cô đọng biến cố cốt lõi, tuyệt đối KHÔNG lồng bình luận chủ quan cá nhân)', pinyin: 'Zhōngshí yú yuánwén xùshì zhǔxiàn...', translation: 'Quy tắc vàng tóm tắt văn bản HSK 6' },
-      { text: '必须加入大量个人读后感和主观议论抒情 (Cần thêm nhiều cảm nghĩ và bình luận cá nhân)', pinyin: 'Bìxū jiārù dàliàng gèrén dúhòugǎn...', translation: 'Sai lầm làm trừ điểm nặng' },
-      { text: '可以任意更改原著主角姓名和故事结局 (Có thể tự đổi kết thúc truyện)', pinyin: 'Kěyǐ rènyì gēnggǎi yuánzhù zhǔjiǎo xìngmíng...', translation: 'Xuyên tạc cốt truyện' },
-      { text: '直接抄写原文前两段凑足400字 (Chép nguyên vẹn 2 đoạn đầu)', pinyin: 'Zhíjiē chāoxiě yuánwén qián liǎng duàn...', translation: 'Gian lận bị điểm liệt' }
+      { text: '忠实于原文叙事主线与因果脉络，提炼核心事件，不得掺入个人主观评论', pinyin: 'Zhōngshí yú yuánwén xùshì zhǔxiàn...', translation: 'Quy tắc vàng tóm tắt văn bản HSK 6' },
+      { text: '必须加入大量个人读后感和主观议论抒情', pinyin: 'Bìxū jiārù dàliàng gèrén dúhòugǎn...', translation: 'Sai lầm làm trừ điểm nặng' },
+      { text: '可以任意更改原著主角姓名和故事结局', pinyin: 'Kěyǐ rènyì gēnggǎi yuánzhù zhǔjiǎo xìngmíng...', translation: 'Xuyên tạc cốt truyện' },
+      { text: '直接抄写原文前两段凑足400字', pinyin: 'Zhíjiē chāoxiě yuánwén qián liǎng duàn...', translation: 'Gian lận bị điểm liệt' }
     ],
     correct_option_index: 0,
     explanation: 'Tiêu chuẩn chấm thi Viết HSK 6: Đề bài yêu cầu "缩写" (tóm tắt khách quan). Thí sinh phải bảo lưu ngôi kể thứ 3, bám sát các sự kiện mấu chốt, tuyệt đối không được đưa quan điểm, cảm nhận cá nhân (không viết thành bài văn "读后感").',
@@ -1708,13 +1709,15 @@ const REAL_SIMULATION_EXAM_IDS = new Set([
 // Giữ lại các đề kỹ năng đơn lẻ như hsk1-reading-02, hsk2-listening-02
 const curatedBaseQuestions = BASE_HSK_QUESTIONS.filter(q => !REAL_SIMULATION_EXAM_IDS.has(q.exam_id));
 
+const _EXAM_LEVEL_BY_ID = new Map(HSK_EXAMS.map((e) => [e.id, e.level]));
+
 export const HSK_QUESTIONS = [
   ...REAL_SIMULATION_QUESTIONS,
   ...HSK6_FULL_101_QUESTIONS,
   ...OFFICIAL_PUBLIC_QUESTIONS,
   ...curatedBaseQuestions,
   ...EXPANDED_MOCK_QUESTIONS
-];
+].map((q) => enrichQuestionWithImageAsset(q, _EXAM_LEVEL_BY_ID.get(q.exam_id) || ''));
 
 export const DYNAMIC_EXAMS = new Map();
 
@@ -1811,7 +1814,10 @@ export function getSanitizedExamForTaking(examId) {
       max_words: q.max_words || 0,
       is_subjective: !!q.is_subjective,
       points: q.points || 10,
-      relatedVocab: q.relatedVocab || []
+      relatedVocab: q.relatedVocab || [],
+      ...(q.imageUrl ? { imageUrl: q.imageUrl } : {}),
+      ...(q.imageAlt ? { imageAlt: q.imageAlt } : {}),
+      ...(Array.isArray(q.optionImages) ? { optionImages: q.optionImages } : {})
       // BẢO MẬT TUYỆT ĐỐI: Không bao gồm correct_option_index, correctIndex, correct_order, accepted_answers, acceptedAnswers, expectedAnswer, sample_answer, sampleAnswer, rubric và explanation/explanationVi ở đây!
     };
   });

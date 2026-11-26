@@ -164,6 +164,11 @@ function normalizeQuestionRow(q, overrideId, overrideExamId, fallbackQuestionNum
     translation: q.translation || q.translationVi || '',
     audio_url: q.audio_url || '',
     audio_script: q.audio_script || q.audioText || '',
+    image_url: q.imageUrl || q.image_url || null,
+    image_alt: q.imageAlt || q.image_alt || null,
+    option_images: Array.isArray(q.optionImages)
+      ? q.optionImages
+      : (Array.isArray(q.option_images) ? q.option_images : null),
     options,
     correct_option_index: q.correct_option_index !== undefined
       ? q.correct_option_index
