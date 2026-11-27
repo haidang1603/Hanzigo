@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 const DIST_DIR = path.resolve(process.cwd(), 'dist');
@@ -182,6 +184,59 @@ function main() {
   } else {
     for (const err of isolation.errors) {
       console.error(`FAIL: ${err}`);
+    }
+  }
+
+  const entryFile = jsFiles.find((filePath) => /^index-[^/\\]+\.js$/i.test(path.basename(filePath)));
+  console.log('\n=== ENTRY BUNDLE ESM BOOT SMOKE CHECK ===');
+  if (!entryFile) {
+    hasFailure = true;
+    console.error('FAIL: Không tìm thấy file entry index-*.js trong dist/assets/js.');
+  } else {
+    try {
+      const entryUrl = pathToFileURL(entryFile).href;
+      const bootScript = `
+        globalThis.window = globalThis;
+        globalThis.self = globalThis;
+        globalThis.location = { href: 'https://www.hanzigo.io.vn/', origin: 'https://www.hanzigo.io.vn', hash: '', pathname: '/', search: '' };
+        globalThis.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {} };
+        globalThis.sessionStorage = globalThis.localStorage;
+        globalThis.addEventListener = () => {};
+        globalThis.removeEventListener = () => {};
+        globalThis.requestAnimationFrame = (cb) => setTimeout(cb, 0);
+        globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
+        globalThis.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+        if (typeof globalThis.Event !== 'function') globalThis.Event = class Event { constructor(t) { this.type = t; } };
+        if (typeof globalThis.CustomEvent !== 'function') globalThis.CustomEvent = class CustomEvent extends globalThis.Event { constructor(t, o = {}) { super(t); this.detail = o.detail; } };
+        globalThis.MutationObserver = class { observe() {} disconnect() {} };
+        globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+        globalThis.IntersectionObserver = class { observe() {} disconnect() {} };
+        globalThis.Node = class Node {};
+        globalThis.Element = class Element extends globalThis.Node {};
+        globalThis.HTMLElement = class HTMLElement extends globalThis.Element {};
+        globalThis.document = {
+          documentElement: { classList: { add: () => {}, remove: () => {}, toggle: () => {} }, setAttribute: () => {}, style: {}, addEventListener: () => {}, removeEventListener: () => {} },
+          head: { appendChild: () => {} },
+          body: { appendChild: () => {}, classList: { add: () => {}, remove: () => {} } },
+          createElement: () => ({ style: {}, setAttribute: () => {}, appendChild: () => {}, addEventListener: () => {}, removeEventListener: () => {} }),
+          getElementById: () => ({ innerHTML: '', appendChild: () => {}, addEventListener: () => {}, removeEventListener: () => {}, nodeType: 1, ownerDocument: globalThis.document }),
+          querySelector: () => null,
+          querySelectorAll: () => [],
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          title: '',
+        };
+        await import(${JSON.stringify(entryUrl)});
+        process.exit(0);
+      `;
+      execFileSync(process.execPath, ['--input-type=module', '-e', bootScript], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      console.log(`PASS: Entry bundle ${path.basename(entryFile)} khởi chạy sạch, không lỗi circular TDZ / TypeError.`);
+    } catch (bootErr) {
+      hasFailure = true;
+      const errDetail = bootErr?.stderr?.toString()?.trim() || bootErr?.message || String(bootErr);
+      console.error(`FAIL: Entry bundle ${path.basename(entryFile)} bị lỗi khi boot:\n${errDetail}`);
     }
   }
 

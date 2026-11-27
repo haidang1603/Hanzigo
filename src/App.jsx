@@ -44,7 +44,7 @@ import CookieStorageConsentBanner from './components/legal/CookieStorageConsentB
 import TeacherGuard from './components/TeacherGuard';
 import CommandPaletteModal from './components/dictionary/CommandPaletteModal.jsx';
 import { AppSidebar, AppHeader, MobileNavigation, SmartCommandPalette } from './components/navigation';
-import { UnifiedDashboard } from './components/dashboard';
+import UnifiedDashboard from './components/dashboard/UnifiedDashboard';
 import { getRecommendedNextLesson, getLessonById } from './services/learningPathService';
 import { UnifiedToolsProvider, useUnifiedTools } from './core/ecosystem/UnifiedToolsContext.tsx';
 import { GlobalTextSelectionActionBar } from './features/unified-ecosystem/GlobalTextSelectionActionBar.tsx';

@@ -593,7 +593,21 @@ export const COMMON_CHAR_PINYIN_MAP = {
   '利': { pinyin: 'lì', hanviet: 'Lợi' }
 };
 
-// Nạp trước từ VOCABULARY_LIST cho các chữ đơn (ưu tiên Tầng 1 đồng bộ với unifiedLookupService)
+// Gộp từ điển ký tự mở rộng
+Object.entries(EXTENDED_COMMON_CHARS || {}).forEach(([k, v]) => {
+  if (!v) return;
+  if (!COMMON_CHAR_PINYIN_MAP[k]) {
+    COMMON_CHAR_PINYIN_MAP[k] = {
+      pinyin: v.pinyin,
+      hanviet: v.hanviet,
+      meaning: v.meaning || '',
+    };
+  } else if (!COMMON_CHAR_PINYIN_MAP[k].meaning && v.meaning) {
+    COMMON_CHAR_PINYIN_MAP[k].meaning = v.meaning;
+  }
+});
+
+// Nạp thêm từ VOCABULARY_LIST cho các chữ đơn
 (VOCABULARY_LIST || []).forEach(v => {
   if (v && v.hanzi && v.hanzi.length === 1) {
     if (!COMMON_CHAR_PINYIN_MAP[v.hanzi]) {
@@ -605,20 +619,6 @@ export const COMMON_CHAR_PINYIN_MAP = {
     } else if (!COMMON_CHAR_PINYIN_MAP[v.hanzi].meaning && v.meaning) {
       COMMON_CHAR_PINYIN_MAP[v.hanzi].meaning = v.meaning;
     }
-  }
-});
-
-// Gộp từ điển ký tự mở rộng (Tầng 2)
-Object.entries(EXTENDED_COMMON_CHARS || {}).forEach(([k, v]) => {
-  if (!v) return;
-  if (!COMMON_CHAR_PINYIN_MAP[k]) {
-    COMMON_CHAR_PINYIN_MAP[k] = {
-      pinyin: v.pinyin,
-      hanviet: v.hanviet,
-      meaning: v.meaning || '',
-    };
-  } else if (!COMMON_CHAR_PINYIN_MAP[k].meaning && v.meaning) {
-    COMMON_CHAR_PINYIN_MAP[k].meaning = v.meaning;
   }
 });
 
@@ -644,14 +644,14 @@ Object.keys(HETERONYM_COMPOUND_RULES).forEach(word => {
 
 // Thêm các từ nối & cụm từ giao tiếp thường gặp
 [
-  '我们', '你们', '他们', '她们', '它们', '大家', '自己', '什么', '怎么', '怎样', 
-  '哪里', '哪个', '谁的', '为什么', '多少', '几点', '现在', '今天', '明天', '昨天', 
-  '上午', '下午', '晚上', '早晨', '中午', '周末', '去年', '今年', '明年', '星期天', 
-  '高兴', '漂亮', '可爱', '热情', '认真', '努力', '非常', '十分', '特别', '更加', 
-  '因为', '所以', '虽然', '但是', '如果', '或者', '还是', '而且', '不但', '只有', 
-  '只要', '以便', '为了', '从而', '进而', '即使', '不管', '无论', '与其', '不如', 
+  '我们', '你们', '他们', '她们', '它们', '大家', '自己', '什么', '怎么', '怎样',
+  '哪里', '哪个', '谁的', '为什么', '多少', '几点', '现在', '今天', '明天', '昨天',
+  '上午', '下午', '晚上', '早晨', '中午', '周末', '去年', '今年', '明年', '星期天',
+  '高兴', '漂亮', '可爱', '热情', '认真', '努力', '非常', '十分', '特别', '更加',
+  '因为', '所以', '虽然', '但是', '如果', '或者', '还是', '而且', '不但', '只有',
+  '只要', '以便', '为了', '从而', '进而', '即使', '不管', '无论', '与其', '不如',
   '一边', '一起', '一直', '已经', '正在', '将要', '曾经', '马上', '立刻', '渐渐',
-  '人工智能', '移动支付', '共享单车', '电子商务', '社交媒体', '气候变化', '绿色发展', 
+  '人工智能', '移动支付', '共享单车', '电子商务', '社交媒体', '气候变化', '绿色发展',
   '全生命周期', '可持续发展', '道法自然', '形而上学', '知足不辱', '和谐共生',
   '脑机接口', '神经调控', '颠覆性', '临床医疗', '本体论', '意识形态', '哲学反思',
   '现代', '技术', '速度', '跨越', '关于', '人类', '主体', '意识', '哲学', '反思',
@@ -671,7 +671,7 @@ export function extractContextualPinyinArray(sentence) {
   if (!sentence || typeof sentence !== 'string') return [];
   const chars = Array.from(sentence);
   const n = chars.length;
-  
+
   // Khởi tạo mảng kết quả mặc định
   const result = chars.map((ch, idx) => {
     const isHanzi = /[\u4e00-\u9fa5]/.test(ch);
@@ -701,7 +701,7 @@ export function extractContextualPinyinArray(sentence) {
     while ((startIdx = sentence.indexOf(pattern, startIdx)) !== -1) {
       const patternChars = Array.from(pattern);
       const patternLen = patternChars.length;
-      
+
       // Ánh xạ Pinyin chuẩn ngữ cảnh vào từng ký tự tương ứng
       for (let i = 0; i < patternLen; i++) {
         if (result[startIdx + i]) {
@@ -1303,10 +1303,10 @@ export function analyzeChineseText(text = '') {
   if (!text || typeof text !== 'string') {
     return {
       paragraphs: [],
-      stats: { 
-        totalChars: 0, 
-        chineseChars: 0, 
-        wordCount: 0, 
+      stats: {
+        totalChars: 0,
+        chineseChars: 0,
+        wordCount: 0,
         hskStats: {},
         readability: { hskScore: 1.0, recommendedLevel: 'HSK 1 - Sơ cấp', estimatedReadingTimeMinutes: 1, typeTokenRatio: 0, avgSentenceLength: 0, advancedWordRatio: 0 },
         grammarPatterns: [],
@@ -1339,7 +1339,7 @@ export function analyzeChineseText(text = '') {
     totalChars += pText.length;
     // 1. Trích xuất Pinyin theo ngữ cảnh cả đoạn
     const charPinyinArray = extractContextualPinyinArray(pText);
-    
+
     // 2. Tách từ bảo toàn dấu câu
     const tokens = segmentSentenceWithPinyin(pText, charPinyinArray);
 

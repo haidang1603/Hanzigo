@@ -575,40 +575,6 @@ function resolveManualChunk(id) {
   ) {
     return 'utils-chinese-nlp';
   }
-  if (
-    normalizedId.includes('/src/services/classroomService') ||
-    normalizedId.includes('/src/services/liveClassroomService')
-  ) {
-    return 'services-classroom';
-  }
-  if (
-    normalizedId.includes('/src/services/communityService') ||
-    normalizedId.includes('/src/services/admin') ||
-    normalizedId.includes('/src/services/studyPartner') ||
-    normalizedId.includes('/src/services/leaderboard')
-  ) {
-    return 'services-community-admin';
-  }
-  if (
-    normalizedId.includes('/src/services/hskService') ||
-    normalizedId.includes('/src/services/learningPathService') ||
-    normalizedId.includes('/src/services/aiLearningCoachService') ||
-    normalizedId.includes('/src/services/vocabularyService')
-  ) {
-    return 'services-learning-hsk';
-  }
-  if (
-    normalizedId.includes('/src/data/hsk30') ||
-    normalizedId.includes('/src/features/hsk-exam/data/')
-  ) {
-    return 'data-hsk30-bank';
-  }
-  if (normalizedId.includes('/src/features/curriculum/hsk120SupplementalVocab')) {
-    return 'data-hsk120-vocab';
-  }
-  if (normalizedId.includes('/src/features/curriculum/hsk7to9LexiconAndGrammarBank')) {
-    return 'data-hsk79-lexicon';
-  }
   if (normalizedId.includes('/src/data/defaultMaterialsData')) {
     return 'data-default-materials';
   }
@@ -635,15 +601,12 @@ function resolveManualChunk(id) {
   }
   if (
     normalizedId.includes('/src/data/hskStructureData') ||
-    normalizedId.includes('/src/data/hskExamsData')
+    normalizedId.includes('/src/data/hskExamsData') ||
+    normalizedId.includes('/src/data/hskQuestionImageRegistry')
   ) {
     return 'data-hsk-core';
   }
-  if (
-    normalizedId.includes('/src/data/hanziDecomposition') ||
-    normalizedId.includes('/src/data/functionWordsData') ||
-    normalizedId.includes('/src/data/characterDecompositionData')
-  ) {
+  if (normalizedId.includes('/src/data/hanziDecomposition')) {
     return 'data-hanzi-decomposition';
   }
 
@@ -696,12 +659,17 @@ export default defineConfig({
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
         manualChunks: resolveManualChunk,
         codeSplitting: {
-          includeDependenciesRecursively: false,
           groups: [
+            {
+              name: 'data-common-chars',
+              test: /\/src\/data\/commonCharactersDict/,
+              priority: 20,
+            },
             {
               name(id) {
                 return resolveManualChunk(id);
               },
+              priority: 10,
             },
           ],
         },
