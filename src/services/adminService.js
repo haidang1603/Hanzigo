@@ -114,3 +114,40 @@ export async function adminCreateUser({ email, name, role = 'student', password,
   return data;
 }
 
+/**
+ * Admin: Fetch consolidated server-verified KPIs, service health & error logs
+ */
+export async function fetchAdminDashboardSummary() {
+  let authToken = '';
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        authToken = session.access_token;
+      }
+    } catch {}
+  }
+
+  if (!authToken && typeof localStorage !== 'undefined') {
+    authToken = localStorage.getItem('sb-access-token') || localStorage.getItem('supabase.auth.token') || '';
+  }
+
+  const response = await fetch('/api/admin/dashboard', {
+    method: 'GET',
+    headers: {
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+    }
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const err = new Error(data.error || `Không thể tải tổng quan quản trị (Mã lỗi: ${response.status})`);
+    err.status = response.status;
+    throw err;
+  }
+
+  return data;
+}
+

@@ -1,8 +1,13 @@
 const DEDUPE_WINDOW_MS = 60_000;
 const MAX_OFFLINE_QUEUE_SIZE = 10;
+const MAX_SESSION_EVENTS = 5;
+const MAX_COMPONENT_STACK_CHARS = 1500;
 const OFFLINE_QUEUE_STORAGE_KEY = 'hanzigo_error_telemetry_queue_v1';
+const DEFAULT_TELEMETRY_ENDPOINT = '/api/telemetry/client-error';
 
 const recentErrorTimestamps = new Map();
+const sessionSentFingerprints = new Set();
+let sessionEventsSent = 0;
 let isReporterInitialized = false;
 let cleanupListeners = null;
 
@@ -139,18 +144,42 @@ export function buildDiagnosticPayload(errorInput, context = {}) {
           ? errorInput
           : { message: String(errorInput || 'Unknown client error') };
 
+  const rawName = errObj.name || 'Error';
   const rawMessage = errObj.message || errObj.reason?.message || String(errorInput || 'Unknown client error');
   const rawStack = errObj.stack || context.componentStack || '';
   const routePath = sanitizeSensitiveText(context.routePath || getCurrentRoutePath());
+  const cleanMessage = sanitizeSensitiveText(rawMessage).slice(0, 300);
+  const cleanName = sanitizeSensitiveText(rawName).slice(0, 120) || 'Error';
+  const componentStackShort = sanitizeSensitiveText(context.componentStack || rawStack).slice(
+    0,
+    MAX_COMPONENT_STACK_CHARS
+  );
+  const stackSummary = summarizeStack(rawStack);
+  const userAgent = getUserAgent();
+  const appVersion = sanitizeSensitiveText(
+    context.appVersion || (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_APP_VERSION) || ''
+  ).slice(0, 60);
+  const firstStackLine = (stackSummary || '').split('\n')[0] || '';
+  const fingerprint = sanitizeSensitiveText(`${cleanName}::${cleanMessage}::${firstStackLine}::${routePath}`).slice(
+    0,
+    160
+  );
 
   return {
-    message: sanitizeSensitiveText(rawMessage).slice(0, 300),
+    message: cleanMessage,
     category: classifyErrorCategory(errObj, context),
     module: sanitizeSensitiveText(inferSourceModule(context, routePath)).slice(0, 80),
-    stack_summary: summarizeStack(rawStack),
+    stack_summary: stackSummary,
     route_path: routePath,
-    user_agent: getUserAgent(),
+    user_agent: userAgent,
     timestamp: new Date(context.now || Date.now()).toISOString(),
+    route: routePath.slice(0, 250),
+    error_name: cleanName,
+    error_message: cleanMessage,
+    component_stack_short: componentStackShort,
+    app_version: appVersion,
+    user_agent_short: userAgent.slice(0, 200),
+    fingerprint,
   };
 }
 
@@ -191,29 +220,75 @@ function clearOfflineErrorQueue(customStorage) {
   }
 }
 
+/**
+ * Send telemetry payload over the network in Production only (unless forceSend/endpoint override).
+ * Enforces per-session fingerprint Set deduplication and max 5 events/session.
+ * Uses navigator.sendBeacon with fetch(..., { keepalive: true }) fallback. Fail-silent.
+ */
+export async function sendTelemetryPayload(payload, options = {}) {
+  try {
+    let isProd = false;
+    let envEndpoint = '';
+    try {
+      isProd = Boolean(import.meta?.env?.PROD);
+      envEndpoint = import.meta?.env?.VITE_TELEMETRY_ENDPOINT || '';
+    } catch {
+      isProd = false;
+      envEndpoint = '';
+    }
+
+    const endpoint = options.endpoint || envEndpoint || DEFAULT_TELEMETRY_ENDPOINT;
+    const allowSend = options.forceSend === true || isProd || Boolean(envEndpoint) || Boolean(options.endpoint);
+    if (!allowSend) {
+      return { sent: false, reason: 'non_prod' };
+    }
+
+    const fingerprint = payload?.fingerprint || buildErrorFingerprint(payload || {});
+    if (sessionSentFingerprints.has(fingerprint)) {
+      return { sent: false, reason: 'session_deduped' };
+    }
+    if (sessionEventsSent >= MAX_SESSION_EVENTS) {
+      return { sent: false, reason: 'session_cap' };
+    }
+
+    sessionSentFingerprints.add(fingerprint);
+    sessionEventsSent += 1;
+
+    const bodyJson = JSON.stringify(payload);
+    const nav = options.navigatorObj || (typeof navigator !== 'undefined' ? navigator : null);
+    if (nav && typeof nav.sendBeacon === 'function' && typeof Blob !== 'undefined') {
+      const ok = nav.sendBeacon(endpoint, new Blob([bodyJson], { type: 'application/json' }));
+      if (ok) {
+        return { sent: true, method: 'sendBeacon', fingerprint };
+      }
+    }
+
+    const fetchFn = options.fetchFn || (typeof fetch === 'function' ? fetch : null);
+    if (fetchFn) {
+      await fetchFn(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyJson,
+        keepalive: true,
+      });
+      return { sent: true, method: 'fetch', fingerprint };
+    }
+
+    return { sent: false, reason: 'no_transport' };
+  } catch {
+    return { sent: false, reason: 'fail_silent' };
+  }
+}
+
 async function defaultTransport(payload) {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('hanzigo:telemetry-error', { detail: payload }));
-  }
-
-  let endpoint = '';
-  try {
-    endpoint = import.meta?.env?.VITE_TELEMETRY_ENDPOINT || '';
-  } catch {
-    endpoint = '';
-  }
-
-  if (endpoint && typeof fetch === 'function') {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    });
-    if (!res.ok) {
-      throw new Error(`Telemetry HTTP ${res.status}`);
+    try {
+      window.dispatchEvent(new CustomEvent('hanzigo:telemetry-error', { detail: payload }));
+    } catch {
+      // ignore event dispatch errors
     }
   }
+  await sendTelemetryPayload(payload);
 }
 
 /**
@@ -347,6 +422,8 @@ export function initGlobalErrorReporter(options = {}) {
 
 export function __resetErrorReporterForTests() {
   recentErrorTimestamps.clear();
+  sessionSentFingerprints.clear();
+  sessionEventsSent = 0;
   if (cleanupListeners) {
     cleanupListeners();
   }
@@ -355,6 +432,8 @@ export function __resetErrorReporterForTests() {
 export const TELEMETRY_CONSTANTS = {
   DEDUPE_WINDOW_MS,
   MAX_OFFLINE_QUEUE_SIZE,
+  MAX_SESSION_EVENTS,
+  MAX_COMPONENT_STACK_CHARS,
   OFFLINE_QUEUE_STORAGE_KEY,
 };
 

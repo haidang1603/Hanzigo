@@ -4013,7 +4013,7 @@ export const HSK_4_LESSONS = [
         "hanzi": "包邮",
         "pinyin": "bāoyóu",
         "hanviet": "Bao bưu",
-        "meaning": "Miễn phí vận chuyển (Freeship)",
+        "meaning": "Miễn phí vận chuyển",
         "radical": "Bộ 勹",
         "example": {
           "hanzi": "满九十九元全场包邮。",
@@ -4032,7 +4032,7 @@ export const HSK_4_LESSONS = [
         "example": {
           "hanzi": "如果有疑问，可以直接咨询在线客服。",
           "pinyin": "Rúguǒ yǒu yíwèn, kěyǐ zhíjiē zīxún zàixiàn kèfú.",
-          "meaning": "Nếu có thắc mắc, có thể hỏi trực tiếp CSKH online."
+          "meaning": "Nếu có thắc mắc, có thể hỏi trực tiếp chăm sóc khách hàng trực tuyến."
         },
         "pos": "Danh từ"
       }
@@ -4127,7 +4127,7 @@ export const HSK_4_LESSONS = [
           "speaker": "A",
           "hanzi": "有的亲！首页可以领取满三百减五十的优惠券，而且全场现货包邮，顺丰速运直达。",
           "pinyin": "Yǒu de qīn! Shǒuyè kěyǐ lǐngqǔ mǎn sānbǎi jiǎn wǔshí de yōuhuìquàn, érqiě quánchǎng xiànhuò bāoyóu, Shùnfēng sùyùn zhídá.",
-          "meaning": "Có chứ bạn ơi! Trang chủ có thể nhận voucher đơn 300 giảm 50 tệ, hơn nữa toàn sàn hàng sẵn freeship, chuyển phát nhanh SF giao tận nơi."
+          "meaning": "Có chứ bạn ơi! Trang chủ có thể nhận voucher đơn 300 giảm 50 tệ, hơn nữa toàn sàn hàng sẵn miễn phí vận chuyển, chuyển phát nhanh SF giao tận nơi."
         },
         {
           "speaker": "B",
@@ -4151,7 +4151,7 @@ export const HSK_4_LESSONS = [
         "Chỉ giao hàng vào cuối tuần"
       ],
       "correctIndex": 1,
-      "explanation": "Nhân viên CSKH thông báo: \"首页可以领取满三百减五十的优惠券，而且全场现货包邮\" (Trang chủ có voucher đơn 300 giảm 50 và toàn sàn có sẵn freeship)."
+      "explanation": "Nhân viên CSKH thông báo: \"首页可以领取满三百减五十的优惠券，而且全场现货包邮\" (Trang chủ có voucher đơn 300 giảm 50 và toàn sàn có sẵn miễn phí vận chuyển)."
     },
     "step6_speaking": {
       "prompt": "Hỏi chăm sóc khách hàng:",
@@ -4206,7 +4206,7 @@ export const HSK_4_LESSONS = [
     ],
     "step9_challenge": {
       "title": "Mua sắm Taobao",
-      "taskDesc": "Thực hành chat với chủ shop hỏi màu sắc, kích cỡ và xin mã freeship.",
+      "taskDesc": "Thực hành chat với chủ shop hỏi màu sắc, kích cỡ và xin mã miễn phí vận chuyển.",
       "targetPhrase": "quán diàn bāoyóu",
       "xpReward": 60,
       "badge": "Tín Đồ Mua Sắm"
@@ -4818,7 +4818,7 @@ export const HSK_4_LESSONS = [
         "hanzi": "评价",
         "pinyin": "píngjià",
         "hanviet": "Bình giá",
-        "meaning": "Đánh giá, review",
+        "meaning": "Đánh giá, nhận xét",
         "radical": "Bộ 言",
         "example": {
           "hanzi": "确认收货后记得给卖家写一个好评。",

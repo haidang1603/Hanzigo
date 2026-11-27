@@ -28,15 +28,15 @@ export default function AiMonitoringDashboard() {
   const [loading, setLoading] = useState(false);
   const [providerHealth, setProviderHealth] = useState({ status: 'online', message: '' });
   const [stats, setStats] = useState({
-    totalRequestsToday: 142,
-    totalTokensEstimated: 128400,
+    totalRequestsToday: 0,
+    totalTokensEstimated: 0,
     estimatedCostUsd: 0.00,
     freeTokensAvailable: 'Gemini Free / Quota Tier',
-    averageLatencyMs: 420,
-    cacheHitRate: '42.5%',
-    rateLimitBlockedCount: 3,
-    promptInjectionsBlocked: 5,
-    offlineFallbacksServed: 18,
+    averageLatencyMs: 0,
+    cacheHitRate: '0.0%',
+    rateLimitBlockedCount: 0,
+    promptInjectionsBlocked: 0,
+    offlineFallbacksServed: 0,
     primaryProvider: 'Google Gemini Gateway',
     primaryModel: 'gemini-3.5-flash-lite',
     paidFallbackAllowed: false
@@ -336,7 +336,7 @@ export default function AiMonitoringDashboard() {
             <div className="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 flex items-start gap-2 text-emerald-900 dark:text-emerald-200">
               <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
               <div>
-                <strong>Chặn Phát Sinh Chi Phí Ngầm (Zero Silent Charges):</strong> Khi Gemini hết hạn mức (HTTP 429), hệ thống tự hạ cấp sang <strong>Groq</strong> rồi <strong>OpenRouter</strong> miễn phí trước khi dùng Engine Sư phạm Ngoại tuyến; tầng <code>reasoning</code> bị khóa mặc định trừ khi bật <code>AI_ALLOW_PREMIUM_TIER=true</code>.
+                <strong>Chặn Phát Sinh Chi Phí Ngầm (Zero Silent Charges):</strong> Khi Gemini hết hạn mức (HTTP 429), hệ thống tự hạ cấp sang <strong>Groq</strong> rồi <strong>OpenRouter</strong> miễn phí trước khi dùng Engine Sư phạm Ngoại tuyến; tầng <code>reasoning</code> bị khóa mặc định trừ khi chế độ cao cấp được bật từ máy chủ.
               </div>
             </div>
 

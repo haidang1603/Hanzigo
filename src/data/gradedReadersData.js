@@ -460,7 +460,7 @@ Phải thừa nhận rằng, sự chuyển đổi xanh trong ngắn hạn chắc
 Tuy nhiên, khi xem xét từ góc nhìn chu kỳ kinh tế vĩ mô dài hạn, chỉ những thực thể kinh tế tiên phong hoàn tất chuyển đổi xanh phát thải thấp mới có thể gây dựng nên bức tường thành cạnh tranh cốt lõi không thể thay thế trong đợt tái cấu trúc phân công lao động công nghiệp quốc tế và rào cản thương mại xanh mới.
 Phát triển bền vững không còn là một khẩu hiệu đạo đức sáo rỗng, nó đã thực sự trở thành nguyên lý cơ bản tái lập bản đồ tăng trưởng kinh tế toàn cầu trong tương lai.`,
     vocabularyHighlights: [
-      { hanzi: '碳中和', pinyin: 'tàn zhōnghé', hanviet: 'Thán trung hòa', meaning: 'Trung hòa carbon (Net Zero)' },
+      { hanzi: '碳中和', pinyin: 'tàn zhōnghé', hanviet: 'Thán trung hòa', meaning: 'Trung hòa carbon, phát thải ròng bằng không' },
       { hanzi: '粗放型', pinyin: 'cūfàngxíng', hanviet: 'Thô phóng hình', meaning: 'Mô hình phát triển theo chiều rộng, thô sơ' },
       { hanzi: '绿色贸易壁垒', pinyin: 'lǜsè màoyì bìlěi', hanviet: 'Lục sắc mậu dịch bích lũy', meaning: 'Rào cản kỹ thuật thương mại xanh' },
       { hanzi: '全生命周期', pinyin: 'quán shēngmìng zhōuqī', hanviet: 'Toàn sinh mệnh chu kỳ', meaning: 'Toàn bộ vòng đời sản phẩm' }
@@ -886,9 +886,9 @@ Tuy nhiên, sau khi trải qua làn sóng săn đón cuồng nhiệt của các 
 Đối diện với những cơn đau đớn chuyển mình của ngành, các cơ quan giám sát đã liên tục ban hành hàng loạt chính sách quy chuẩn, thúc đẩy kinh tế chia sẻ chuyển hướng từ mở rộng quy mô thô thiển sang vận hành tinh gọn chất lượng cao.
 Thực tiễn chứng minh rằng, sức sống đích thực của kinh tế chia sẻ không nằm ở sự phồn vinh ảo tưởng được thổi phồng bởi dòng vốn đầu cơ, mà nằm ở việc liệu có thể giải quyết thực chất các vấn đề nhức nhối của xã hội, nâng cao phúc lợi chung và kiến tạo một hệ sinh thái lành mạnh cân bằng lâu dài giữa lợi nhuận kinh doanh và lợi ích công cộng xã hội.`,
     vocabularyHighlights: [
-      { hanzi: '边际成本', pinyin: 'biānjì chéngběn', hanviet: 'Biên tế thành bản', meaning: 'Chi phí cận biên (Marginal cost)' },
+      { hanzi: '边际成本', pinyin: 'biānjì chéngběn', hanviet: 'Biên tế thành bản', meaning: 'Chi phí cận biên' },
       { hanzi: '野蛮生长', pinyin: 'yěmán shēngzhǎng', hanviet: 'Dã manh sinh trưởng', meaning: 'Tăng trưởng hoang dã, tự phát thiếu kiểm soát' },
-      { hanzi: '大数据杀熟', pinyin: 'dàshùjù shāshú', hanviet: 'Đại số tự sát thục', meaning: 'Phân biệt giá đối với khách hàng quen dựa vào Big Data' },
+      { hanzi: '大数据杀熟', pinyin: 'dàshùjù shāshú', hanviet: 'Đại số tự sát thục', meaning: 'Phân biệt giá đối với khách hàng quen dựa vào dữ liệu lớn' },
       { hanzi: '良性生态', pinyin: 'liángxìng shēngtài', hanviet: 'Lương tính sinh thái', meaning: 'Hệ sinh thái lành mạnh, bền vững' }
     ],
     questions: [
@@ -925,7 +925,7 @@ Những công đoạn phức tạp cùng tinh thần nghệ nhân tỉ mỉ cầ
 Thêm vào đó, các sản phẩm sáng tạo văn hóa di sản phi vật thể còn kết hợp chặt chẽ với các thiết kế trào lưu hiện đại, cho ra mắt hàng loạt ấn phẩm "Quốc triều" (Guochao) liên kết thương hiệu và bộ sưu tập kỹ thuật số ảo được giới trẻ săn đón nồng nhiệt.
 Mô hình "bảo tồn sống động" này không chỉ giúp các ngón nghề di sản phi vật thể cổ xưa thoát khỏi số phận nằm im lìm thành hiện vật lạnh lẽo nơi viện bảo tàng, mà còn giúp chúng trở lại hòa nhập vào đời sống sinh hoạt thường nhật của công chúng đương đại bằng tư thái tràn đầy sức sống và tự tin.`,
     vocabularyHighlights: [
-      { hanzi: '非物质文化遗产', pinyin: 'fēiwùzhì wénhuà yíchǎn', hanviet: 'Phi vật chất văn hóa di sản', meaning: 'Di sản văn hóa phi vật thể (Intangible cultural heritage)' },
+      { hanzi: '非物质文化遗产', pinyin: 'fēiwùzhì wénhuà yíchǎn', hanviet: 'Phi vật chất văn hóa di sản', meaning: 'Di sản văn hóa phi vật thể' },
       { hanzi: '工匠精神', pinyin: 'gōngjiàng jīngshén', hanviet: 'Công tượng tinh thần', meaning: 'Tinh thần nghệ nhân tỉ mỉ, cầu toàn' },
       { hanzi: '叹为观止', pinyin: 'tànwéiguānzhǐ', hanviet: 'Thán vi quan chỉ', meaning: 'Khen ngợi hết lời, trầm trồ thán phục' },
       { hanzi: '活态传承', pinyin: 'huótài chuánchéng', hanviet: 'Hoạt thái truyền thừa', meaning: 'Kế thừa và bảo tồn sống động trong đời thực' }
@@ -970,7 +970,7 @@ Khi chúng ta có thể phóng tầm mắt từ một đại cục cao rộng si
     vocabularyHighlights: [
       { hanzi: '逍遥游', pinyin: 'xiāoyáoyóu', hanviet: 'Tiêu dao du', meaning: 'Du ngoạn tự do tự tại, cảnh giới siêu thoát tuyệt đối' },
       { hanzi: '至人无己', pinyin: 'zhìrén wújǐ', hanviet: 'Chí nhân vô kỷ', meaning: 'Bậc chí nhân buông bỏ mọi chấp niệm vị kỷ về cái tôi' },
-      { hanzi: '内卷', pinyin: 'nèijuǎn', hanviet: 'Nội quyển', meaning: 'Sự cạnh tranh khốc liệt triệt tiêu lẫn nhau (Involution)' },
+      { hanzi: '内卷', pinyin: 'nèijuǎn', hanviet: 'Nội quyển', meaning: 'Sự cạnh tranh khốc liệt triệt tiêu lẫn nhau' },
       { hanzi: '精神内耗', pinyin: 'jīngshén nèihào', hanviet: 'Tinh thần nội hao', meaning: 'Sự hao mòn năng lượng tâm lý do dằn vặt lo âu nội tại' }
     ],
     questions: [
@@ -1012,9 +1012,9 @@ Nghiêm trọng hơn nữa, sự độc quyền hóa theo giai tầng đối v�
 Khoa học nhằm khám phá "có thể làm được những gì", trong khi triết học nhân văn bắt buộc phải kiên định giữ vững lằn ranh lương tri tối thượng "nên làm những gì", đảm bảo sức mạnh vĩ đại của công nghệ luôn được định hướng di chuyển trên hải trình hướng thiện nhằm nâng cao phúc lợi chung của toàn thể nhân loại.`,
     vocabularyHighlights: [
       { hanzi: '脑机接口', pinyin: 'nǎojī jiēkǒu', hanviet: 'Não cơ tiếp khẩu', meaning: 'Giao diện não - máy (Brain-Computer Interface - BCI)' },
-      { hanzi: '同一性困境', pinyin: 'tóngyīxìng kùnjìng', hanviet: 'Đồng nhất tính khốn cảnh', meaning: 'Nghịch lý đồng nhất bản ngã triết học (Identity dilemma)' },
+      { hanzi: '同一性困境', pinyin: 'tóngyīxìng kùnjìng', hanviet: 'Đồng nhất tính khốn cảnh', meaning: 'Nghịch lý đồng nhất bản ngã trong triết học' },
       { hanzi: '达摩克利斯之剑', pinyin: 'dámókèlìsī zhī jiàn', hanviet: 'Đạt ma khắc lợi tư chi kiếm', meaning: 'Thanh kiếm Damocles (Hiểm họa ngầm treo lơ lửng)' },
-      { hanzi: '科技向善', pinyin: 'kējì xiàngshàn', hanviet: 'Khoa kỹ hướng thiện', meaning: 'Công nghệ phục vụ điều thiện và phúc lợi con người (Tech for Good)' }
+      { hanzi: '科技向善', pinyin: 'kējì xiàngshàn', hanviet: 'Khoa kỹ hướng thiện', meaning: 'Công nghệ vì điều thiện và phúc lợi con người' }
     ],
     questions: [
       {

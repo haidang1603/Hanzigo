@@ -9,6 +9,7 @@
  */
 
 import createUserHandler from '../_handlers/admin/create-user.js';
+import dashboardHandler from '../_handlers/admin/dashboard.js';
 import { sendSafeServerError } from '../_utils/supabaseServer.js';
 
 export default async function handler(req, res) {
@@ -19,6 +20,9 @@ export default async function handler(req, res) {
 
     if (action === 'create-user') {
       return await createUserHandler(req, res);
+    }
+    if (action === 'dashboard') {
+      return await dashboardHandler(req, res);
     }
 
     return res.status(404).json({

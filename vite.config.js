@@ -520,6 +520,159 @@ function localAiTutorDevPlugin() {
   };
 }
 
+function resolveManualChunk(id) {
+  const normalizedId = id.replace(/\\/g, '/');
+
+  if (normalizedId.includes('node_modules')) {
+    if (
+      normalizedId.includes('/node_modules/livekit-client/') ||
+      normalizedId.includes('/node_modules/@livekit/components-react/') ||
+      normalizedId.includes('/node_modules/@livekit/components-core/') ||
+      normalizedId.includes('/node_modules/webrtc-adapter/')
+    ) {
+      return 'vendor-livekit';
+    }
+    if (
+      normalizedId.includes('/node_modules/hanzi-writer/') ||
+      normalizedId.includes('/node_modules/canvas-confetti/')
+    ) {
+      return 'vendor-hanzi';
+    }
+    if (normalizedId.includes('@supabase')) {
+      return 'vendor-supabase';
+    }
+    if (normalizedId.includes('/node_modules/lucide-react/')) {
+      return 'vendor-icons';
+    }
+    if (
+      normalizedId.includes('/node_modules/react/') ||
+      normalizedId.includes('/node_modules/react-dom/') ||
+      normalizedId.includes('/node_modules/scheduler/') ||
+      normalizedId.includes('/node_modules/react-router/') ||
+      normalizedId.includes('/node_modules/react-router-dom/')
+    ) {
+      return 'vendor-react-core';
+    }
+    return 'vendor-deps';
+  }
+
+  if (normalizedId.includes('/src/features/hskk-exam/')) {
+    return 'feature-hskk-exam';
+  }
+  if (normalizedId.includes('/src/features/hsk-exam/renderers/hsk6/')) {
+    return 'feature-hsk6-exam';
+  }
+  if (
+    normalizedId.includes('/src/features/hsk-exam/components/Hsk7to9') ||
+    normalizedId.includes('/src/features/hsk-exam/data/hsk7to9')
+  ) {
+    return 'feature-hsk79-exam';
+  }
+  if (
+    normalizedId.includes('/src/utils/chineseNlpEngine') ||
+    normalizedId.includes('/src/services/unifiedLookupService') ||
+    normalizedId.includes('/src/data/commonCharactersDict')
+  ) {
+    return 'utils-chinese-nlp';
+  }
+  if (
+    normalizedId.includes('/src/services/classroomService') ||
+    normalizedId.includes('/src/services/liveClassroomService')
+  ) {
+    return 'services-classroom';
+  }
+  if (
+    normalizedId.includes('/src/services/communityService') ||
+    normalizedId.includes('/src/services/admin') ||
+    normalizedId.includes('/src/services/studyPartner') ||
+    normalizedId.includes('/src/services/leaderboard')
+  ) {
+    return 'services-community-admin';
+  }
+  if (
+    normalizedId.includes('/src/services/hskService') ||
+    normalizedId.includes('/src/services/learningPathService') ||
+    normalizedId.includes('/src/services/aiLearningCoachService') ||
+    normalizedId.includes('/src/services/vocabularyService')
+  ) {
+    return 'services-learning-hsk';
+  }
+  if (
+    normalizedId.includes('/src/data/hsk30') ||
+    normalizedId.includes('/src/features/hsk-exam/data/')
+  ) {
+    return 'data-hsk30-bank';
+  }
+  if (normalizedId.includes('/src/features/curriculum/hsk120SupplementalVocab')) {
+    return 'data-hsk120-vocab';
+  }
+  if (normalizedId.includes('/src/features/curriculum/hsk7to9LexiconAndGrammarBank')) {
+    return 'data-hsk79-lexicon';
+  }
+  if (normalizedId.includes('/src/data/defaultMaterialsData')) {
+    return 'data-default-materials';
+  }
+  if (normalizedId.includes('/src/data/hsk6FullExamData')) {
+    return 'data-hsk6-exam';
+  }
+
+  if (
+    normalizedId.includes('/src/data/hskRealExamQuestions')
+  ) {
+    return 'data-hsk-real-exams';
+  }
+  if (normalizedId.includes('/src/data/hskOfficialPublicExams')) {
+    return 'data-hsk-public-exams';
+  }
+  if (normalizedId.includes('/src/data/hskMockExamsExpanded')) {
+    return 'data-hsk-mock-exams';
+  }
+  if (
+    normalizedId.includes('/src/data/hskResourcesData') ||
+    normalizedId.includes('/src/data/hsk6IdiomsData')
+  ) {
+    return 'data-hsk-resources';
+  }
+  if (
+    normalizedId.includes('/src/data/hskStructureData') ||
+    normalizedId.includes('/src/data/hskExamsData')
+  ) {
+    return 'data-hsk-core';
+  }
+  if (
+    normalizedId.includes('/src/data/hanziDecomposition') ||
+    normalizedId.includes('/src/data/functionWordsData') ||
+    normalizedId.includes('/src/data/characterDecompositionData')
+  ) {
+    return 'data-hanzi-decomposition';
+  }
+
+  if (normalizedId.includes('curriculum/hsk1Lessons')) {
+    return 'data-curriculum-hsk1';
+  }
+  if (normalizedId.includes('curriculum/hsk2Lessons')) {
+    return 'data-curriculum-hsk2';
+  }
+  if (normalizedId.includes('curriculum/hsk3Lessons')) {
+    return 'data-curriculum-hsk3';
+  }
+  if (normalizedId.includes('curriculum/hsk4Lessons')) {
+    return 'data-curriculum-hsk4';
+  }
+  if (normalizedId.includes('curriculum/hsk5Lessons')) {
+    return 'data-curriculum-hsk5';
+  }
+  if (normalizedId.includes('curriculum/hsk6Lessons')) {
+    return 'data-curriculum-hsk6';
+  }
+  if (normalizedId.includes('chineseData')) {
+    return 'data-chinese';
+  }
+  if (normalizedId.includes('learningPathData')) {
+    return 'data-learning-path';
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -541,116 +694,17 @@ export default defineConfig({
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
-        manualChunks(id) {
-          const normalizedId = id.replace(/\\/g, '/');
-
-          if (normalizedId.includes('node_modules')) {
-            if (
-              normalizedId.includes('/node_modules/livekit-client/') ||
-              normalizedId.includes('/node_modules/@livekit/components-react/') ||
-              normalizedId.includes('/node_modules/@livekit/components-core/') ||
-              normalizedId.includes('/node_modules/webrtc-adapter/')
-            ) {
-              return 'vendor-livekit';
-            }
-            if (
-              normalizedId.includes('/node_modules/hanzi-writer/') ||
-              normalizedId.includes('/node_modules/canvas-confetti/')
-            ) {
-              return 'vendor-hanzi';
-            }
-            if (normalizedId.includes('@supabase')) {
-              return 'vendor-supabase';
-            }
-            if (normalizedId.includes('/node_modules/lucide-react/')) {
-              return 'vendor-icons';
-            }
-            if (
-              normalizedId.includes('/node_modules/react/') ||
-              normalizedId.includes('/node_modules/react-dom/') ||
-              normalizedId.includes('/node_modules/scheduler/') ||
-              normalizedId.includes('/node_modules/react-router/') ||
-              normalizedId.includes('/node_modules/react-router-dom/')
-            ) {
-              return 'vendor-react-core';
-            }
-            return 'vendor-deps';
-          }
-
-          if (normalizedId.includes('/src/features/hskk-exam/')) {
-            return 'feature-hskk-exam';
-          }
-          if (normalizedId.includes('/src/features/hsk-exam/renderers/hsk6/')) {
-            return 'feature-hsk6-exam';
-          }
-          if (
-            normalizedId.includes('/src/features/hsk-exam/components/Hsk7to9') ||
-            normalizedId.includes('/src/features/hsk-exam/data/hsk7to9')
-          ) {
-            return 'feature-hsk79-exam';
-          }
-          if (normalizedId.includes('/src/utils/chineseNlpEngine')) {
-            return 'utils-chinese-nlp';
-          }
-          if (normalizedId.includes('/src/data/defaultMaterialsData')) {
-            return 'data-default-materials';
-          }
-          if (normalizedId.includes('/src/data/hsk6FullExamData')) {
-            return 'data-hsk6-exam';
-          }
-
-          if (
-            normalizedId.includes('/src/data/hskRealExamQuestions')
-          ) {
-            return 'data-hsk-real-exams';
-          }
-          if (normalizedId.includes('/src/data/hskOfficialPublicExams')) {
-            return 'data-hsk-public-exams';
-          }
-          if (normalizedId.includes('/src/data/hskMockExamsExpanded')) {
-            return 'data-hsk-mock-exams';
-          }
-          if (
-            normalizedId.includes('/src/data/hskResourcesData') ||
-            normalizedId.includes('/src/data/hsk6IdiomsData')
-          ) {
-            return 'data-hsk-resources';
-          }
-          if (
-            normalizedId.includes('/src/data/hskStructureData') ||
-            normalizedId.includes('/src/data/hskExamsData')
-          ) {
-            return 'data-hsk-core';
-          }
-          if (normalizedId.includes('/src/data/hanziDecomposition')) {
-            return 'data-hanzi-decomposition';
-          }
-
-          if (normalizedId.includes('curriculum/hsk1Lessons')) {
-            return 'data-curriculum-hsk1';
-          }
-          if (normalizedId.includes('curriculum/hsk2Lessons')) {
-            return 'data-curriculum-hsk2';
-          }
-          if (normalizedId.includes('curriculum/hsk3Lessons')) {
-            return 'data-curriculum-hsk3';
-          }
-          if (normalizedId.includes('curriculum/hsk4Lessons')) {
-            return 'data-curriculum-hsk4';
-          }
-          if (normalizedId.includes('curriculum/hsk5Lessons')) {
-            return 'data-curriculum-hsk5';
-          }
-          if (normalizedId.includes('curriculum/hsk6Lessons')) {
-            return 'data-curriculum-hsk6';
-          }
-          if (normalizedId.includes('chineseData')) {
-            return 'data-chinese';
-          }
-          if (normalizedId.includes('learningPathData')) {
-            return 'data-learning-path';
-          }
-        }
+        manualChunks: resolveManualChunk,
+        codeSplitting: {
+          includeDependenciesRecursively: false,
+          groups: [
+            {
+              name(id) {
+                return resolveManualChunk(id);
+              },
+            },
+          ],
+        },
       }
     }
   }

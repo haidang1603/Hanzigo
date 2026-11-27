@@ -28,9 +28,11 @@
 
 import { checkRateLimitAndQuota, recordAgentQuotaWeight } from '../../_utils/distributedRateLimiter.js';
 import { verifyRequestAuth, getSupabaseAdminClient, sendSafeServerError } from '../../_utils/supabaseServer.js';
-import { enforceAiKillSwitch } from '../../_utils/corsAndIp.js';
+import { applyCorsAllowlist, enforceAiKillSwitch } from '../../_utils/corsAndIp.js';
+import { getGeminiApiKeys, markGeminiKeyRateLimited } from '../../_utils/aiProviderAdapter.js';
 import { runAgentOrchestrator } from '../../_agent/orchestrator.js';
-import { validateAgentInput } from '../../_agent/guardrails.js';
+import { validateAgentInput, redactSensitiveData, sanitizeUntrustedContext } from '../../_agent/guardrails.js';
+import { selectModelTier } from '../../_agent/modelRouter.js';
 import { AGENT_INTENTS } from '../../_agent/contracts.js';
 import {
   retrieveRagKnowledge,
@@ -278,8 +280,414 @@ function buildDeterministicTutorResponse({
   };
 }
 
+const MAX_SELECTION_TEXT_LEN = 120;
+const MAX_SELECTION_CONTEXT_LEN = 300;
+const ALLOWED_SELECTION_ACTIONS = ['grammar', 'context_explain'];
+
+function stripMarkdownFormatting(text) {
+  if (typeof text !== 'string') return '';
+  return text
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .trim();
+}
+
+function normalizeSelectionInsight(rawObj, { selectedText, contextSentence, action }) {
+  const safeObj = rawObj && typeof rawObj === 'object' ? rawObj : {};
+  const breakdown = Array.isArray(safeObj.breakdown)
+    ? safeObj.breakdown
+        .slice(0, 8)
+        .filter((item) => item && typeof item === 'object')
+        .map((item) => ({
+          segment: stripMarkdownFormatting(redactSensitiveData(String(item.segment || '').slice(0, 40))),
+          pinyin: stripMarkdownFormatting(redactSensitiveData(String(item.pinyin || '').slice(0, 80))),
+          role: stripMarkdownFormatting(redactSensitiveData(String(item.role || '').slice(0, 60))),
+          meaningVi: stripMarkdownFormatting(redactSensitiveData(String(item.meaningVi || item.meaning || '').slice(0, 160))),
+        }))
+        .filter((item) => item.segment)
+    : [];
+
+  const examples = Array.isArray(safeObj.examples)
+    ? safeObj.examples
+        .slice(0, 2)
+        .filter((ex) => ex && typeof ex === 'object')
+        .map((ex) => ({
+          chinese: stripMarkdownFormatting(redactSensitiveData(String(ex.chinese || ex.zh || '').slice(0, 140))),
+          pinyin: stripMarkdownFormatting(redactSensitiveData(String(ex.pinyin || '').slice(0, 180))),
+          vietnamese: stripMarkdownFormatting(redactSensitiveData(String(ex.vietnamese || ex.vi || '').slice(0, 200))),
+        }))
+        .filter((ex) => ex.chinese)
+    : [];
+
+  return {
+    selectedText,
+    pinyin: stripMarkdownFormatting(redactSensitiveData(String(safeObj.pinyin || '').slice(0, 160))),
+    contextualMeaningVi: stripMarkdownFormatting(
+      redactSensitiveData(
+        String(
+          safeObj.contextualMeaningVi ||
+            (action === 'grammar'
+              ? `Phân tích cụm "${selectedText}" trong ngữ cảnh câu.`
+              : `Ý nghĩa cụm "${selectedText}" trong câu đang đọc.`)
+        ).slice(0, 500)
+      )
+    ),
+    grammarStructure: stripMarkdownFormatting(
+      redactSensitiveData(
+        String(safeObj.grammarStructure || (contextSentence ? 'Cụm từ / Thành phần trong câu' : 'Cụm từ tiếng Trung')).slice(0, 220)
+      )
+    ),
+    nuanceVi: stripMarkdownFormatting(
+      redactSensitiveData(String(safeObj.nuanceVi || '').slice(0, 350))
+    ),
+    breakdown,
+    vietnamesePitfall: stripMarkdownFormatting(
+      redactSensitiveData(String(safeObj.vietnamesePitfall || '').slice(0, 300))
+    ),
+    examples,
+  };
+}
+
+function buildDeterministicSelectionInsight({
+  selectedText,
+  contextSentence,
+  action,
+  hskLevel = 'HSK 1',
+  ragChunks = [],
+}) {
+  const topChunk = Array.isArray(ragChunks) && ragChunks.length > 0 ? ragChunks[0] : null;
+  const hasDe = selectedText.includes('的');
+  const hasZai = selectedText.includes('在');
+  const hasLe = selectedText.includes('了');
+  const breakdown = [];
+
+  if (topChunk?.simplified && topChunk.simplified === selectedText) {
+    breakdown.push({
+      segment: topChunk.simplified,
+      pinyin: topChunk.pinyin || '',
+      role: 'Từ vựng trọng tâm',
+      meaningVi: topChunk.vietnamese_meaning || 'Nghĩa trong giáo trình chuẩn',
+    });
+  } else {
+    for (const ch of Array.from(selectedText).slice(0, 6)) {
+      if (!/[\u4e00-\u9fa5]/.test(ch)) continue;
+      const role =
+        ch === '的'
+          ? 'Trợ từ kết cấu'
+          : ch === '了'
+            ? 'Trợ từ động thái / ngữ khí'
+            : ch === '在'
+              ? 'Giới từ / Phó từ chỉ vị trí hoặc tiếp diễn'
+              : 'Thành tố Hán tự';
+      breakdown.push({
+        segment: ch,
+        pinyin: topChunk?.simplified === ch ? topChunk.pinyin || '' : '',
+        role,
+        meaningVi:
+          ch === '的'
+            ? 'Nối định ngữ với trung tâm ngữ (“của...”)'
+            : ch === '了'
+              ? 'Biểu thị hoàn thành hoặc thay đổi trạng thái'
+              : ch === '在'
+                ? 'Ở tại hoặc đang diễn ra'
+                : 'Xem chi tiết trong từ điển nội bộ',
+      });
+    }
+  }
+
+  let grammarStructure = 'Cụm từ / Biểu đạt tiếng Trung';
+  let contextualMeaningVi = topChunk?.vietnamese_meaning
+    ? `"${selectedText}" mang nghĩa "${topChunk.vietnamese_meaning}" trong ngữ cảnh câu "${contextSentence || selectedText}".`
+    : `Cụm "${selectedText}" đóng vai trò bổ nghĩa hoặc biểu đạt ý chính trong câu "${contextSentence || selectedText}".`;
+  let nuanceVi =
+    action === 'grammar'
+      ? `Phù hợp trình độ ${hskLevel}. Chú ý trật tự thành phần định ngữ đứng trước trung tâm ngữ trong tiếng Trung.`
+      : `Dùng trực tiếp theo mạch câu đang đọc (${hskLevel}); đối chiếu sắc thái tự nhiên trong ngữ cảnh.`;
+  let vietnamesePitfall =
+    'Người Việt hay dịch xuôi theo trật tự tiếng Việt; tiếng Trung đặt phần bổ nghĩa (định ngữ/trạng ngữ) ở phía trước.';
+
+  if (hasDe) {
+    grammarStructure = '[Định ngữ / Thời gian / Tính chất] + 的 + (Trung tâm ngữ)';
+    vietnamesePitfall =
+      'Người Việt thường đặt danh từ trước rồi mới thêm “của”; trong tiếng Trung cụm đứng trước 的 mới là phần bổ nghĩa cho danh từ phía sau.';
+  } else if (hasLe) {
+    grammarStructure = '[Động từ / Tính từ] + 了';
+    vietnamesePitfall =
+      'Không phải lúc nào 了 cũng dịch là “đã”; đôi khi nó chỉ sự thay đổi trạng thái mới ở cuối câu.';
+  } else if (hasZai) {
+    grammarStructure = '在 + [Địa điểm / Động từ]';
+    vietnamesePitfall =
+      'Trạng ngữ chỉ nơi chốn “在 + địa điểm” phải đứng trước động từ chính, không đặt cuối câu như tiếng Việt.';
+  }
+
+  const examples =
+    Array.isArray(topChunk?.example_sentences) && topChunk.example_sentences.length > 0
+      ? topChunk.example_sentences.slice(0, 2).map((ex) => ({
+          chinese: ex.chinese || '',
+          pinyin: ex.pinyin || '',
+          vietnamese: ex.vietnamese || '',
+        }))
+      : [
+          {
+            chinese: contextSentence || `${selectedText}很重要。`,
+            pinyin: topChunk?.pinyin || '',
+            vietnamese: `Ngữ cảnh trực tiếp chứa "${selectedText}".`,
+          },
+          {
+            chinese: `请多练习使用“${selectedText}”。`,
+            pinyin: '',
+            vietnamese: `Hãy luyện tập dùng cụm "${selectedText}" theo đúng vị trí câu.`,
+          },
+        ];
+
+  return normalizeSelectionInsight(
+    {
+      pinyin: topChunk?.pinyin || '',
+      contextualMeaningVi,
+      grammarStructure,
+      nuanceVi,
+      breakdown,
+      vietnamesePitfall,
+      examples,
+    },
+    { selectedText, contextSentence, action }
+  );
+}
+
+async function handleSelectionInsightMode({ req, res, verifiedUserId, startTime }) {
+  if (Boolean(req.body?.isActiveExamSession)) {
+    return res.status(403).json({
+      error: 'Chế độ thi thật CBT đang bật — tính năng phân tích AI tạm khóa.',
+      code: 'cbt_exam_locked',
+    });
+  }
+
+  const {
+    action = 'context_explain',
+    selectedText = '',
+    contextSentence = '',
+    learner_level = null,
+  } = req.body || {};
+
+  if (!ALLOWED_SELECTION_ACTIONS.includes(action)) {
+    return res.status(400).json({
+      error: 'Hành động phân tích không hợp lệ (chỉ hỗ trợ grammar hoặc context_explain).',
+    });
+  }
+
+  if (typeof selectedText !== 'string') {
+    return res.status(400).json({
+      error: 'Cụm từ bôi đen không hợp lệ (yêu cầu chuỗi ký tự từ 1 đến 120 ký tự).',
+    });
+  }
+
+  const cleanSelectedRaw = selectedText.trim();
+  if (cleanSelectedRaw.length < 1 || cleanSelectedRaw.length > MAX_SELECTION_TEXT_LEN) {
+    return res.status(400).json({
+      error: `Độ dài cụm chữ Hán bôi đen phải từ 1 đến tối đa ${MAX_SELECTION_TEXT_LEN} ký tự.`,
+    });
+  }
+
+  const rawContext = contextSentence === undefined || contextSentence === null ? '' : contextSentence;
+  if (typeof rawContext !== 'string') {
+    return res.status(400).json({ error: 'Câu ngữ cảnh phải là chuỗi ký tự hợp lệ.' });
+  }
+  const cleanContextRaw = rawContext.trim();
+  if (cleanContextRaw.length > MAX_SELECTION_CONTEXT_LEN) {
+    return res.status(400).json({
+      error: `Câu ngữ cảnh không được vượt quá ${MAX_SELECTION_CONTEXT_LEN} ký tự.`,
+    });
+  }
+
+  const selectedGuard = validateAgentInput({ text: cleanSelectedRaw, maxLength: MAX_SELECTION_TEXT_LEN });
+  if (!selectedGuard.allowed || detectAbuseOrInjection(cleanSelectedRaw)) {
+    return res.status(400).json({
+      error: selectedGuard.reason || 'Cụm từ chứa nội dung không hợp lệ.',
+    });
+  }
+
+  if (cleanContextRaw) {
+    const contextGuard = validateAgentInput({ text: cleanContextRaw, maxLength: MAX_SELECTION_CONTEXT_LEN });
+    if (!contextGuard.allowed || detectAbuseOrInjection(cleanContextRaw)) {
+      return res.status(400).json({
+        error: contextGuard.reason || 'Câu ngữ cảnh chứa nội dung không hợp lệ.',
+      });
+    }
+  }
+
+  const safeSelectedText = sanitizeUntrustedContext(redactSensitiveData(cleanSelectedRaw));
+  const safeContextSentence = sanitizeUntrustedContext(redactSensitiveData(cleanContextRaw || safeSelectedText));
+
+  let effectiveHskLevel = ALLOWED_HSK_LEVELS.includes(learner_level) ? learner_level : 'HSK 1';
+  const adminClient = getSupabaseAdminClient();
+  if (adminClient) {
+    try {
+      const { data: profile } = await adminClient
+        .from('profiles')
+        .select('level')
+        .eq('id', verifiedUserId)
+        .single();
+      const levelMatch = String(profile?.level || '').match(/HSK\s*(7-9|[1-9])/i);
+      const parsedLevel = levelMatch ? `HSK ${levelMatch[1]}` : null;
+      if (parsedLevel && ALLOWED_HSK_LEVELS.includes(parsedLevel)) {
+        effectiveHskLevel = parsedLevel;
+      }
+    } catch {}
+  }
+
+  const route = selectModelTier({
+    intent: action === 'grammar' ? AGENT_INTENTS.GRAMMAR_TUTOR : AGENT_INTENTS.VOCAB_TUTOR,
+    hskLevel: effectiveHskLevel,
+    allowPremiumTier: false,
+  });
+
+  let ragResult = null;
+  try {
+    ragResult = await retrieveRagKnowledge({
+      query: safeSelectedText,
+      hskLevel: effectiveHskLevel,
+      topK: 3,
+      matchThreshold: 0.45,
+      userId: verifiedUserId,
+      storageEngine: adminClient,
+    });
+  } catch {}
+
+  const fallbackInsight = buildDeterministicSelectionInsight({
+    selectedText: safeSelectedText,
+    contextSentence: safeContextSentence,
+    action,
+    hskLevel: effectiveHskLevel,
+    ragChunks: ragResult?.chunks || [],
+  });
+
+  const apiKeys = getGeminiApiKeys();
+  if (apiKeys.length === 0) {
+    return res.status(200).json({
+      success: true,
+      mode: 'selection_insight',
+      action,
+      insight: fallbackInsight,
+      learner_level: effectiveHskLevel,
+      _metadata: {
+        provider: 'deterministic_pedagogical_engine',
+        model: route.model,
+        model_tier: route.tier,
+        latency_ms: Date.now() - startTime,
+        sanitized: true,
+      },
+    });
+  }
+
+  const modelName = String(route.model || 'gemini-3.5-flash-lite').replace(/^models\//, '');
+  const systemInstruction = `Bạn là Lão Sư HanziGo. Hãy phân tích cụm chữ Hán được học viên bôi đen theo đúng câu ngữ cảnh và trình độ ${effectiveHskLevel}.
+CHỈ trả về đúng 1 JSON object hợp lệ (không kèm Markdown hay text ngoài JSON):
+{
+  "pinyin": "pinyin có dấu thanh điệu chuẩn cho cụm bôi đen",
+  "contextualMeaningVi": "nghĩa sát ngữ cảnh câu đang đọc bằng tiếng Việt (ngắn gọn, rõ ràng)",
+  "grammarStructure": "công thức ngữ pháp ngắn gọn, ví dụ [Thời gian] + 的 + (Danh từ)",
+  "nuanceVi": "sắc thái sử dụng hoặc điểm cần lưu ý ở trình độ ${effectiveHskLevel}",
+  "breakdown": [
+    { "segment": "từng thành tố", "pinyin": "pinyin có dấu", "role": "vai trò ngữ pháp", "meaningVi": "nghĩa tiếng Việt" }
+  ],
+  "vietnamesePitfall": "1 lỗi phổ biến người Việt hay mắc với cụm/cấu trúc này",
+  "examples": [
+    { "chinese": "câu ví dụ 1 đúng cấp ${effectiveHskLevel}", "pinyin": "pinyin có dấu", "vietnamese": "nghĩa tiếng Việt" },
+    { "chinese": "câu ví dụ 2 đúng cấp ${effectiveHskLevel}", "pinyin": "pinyin có dấu", "vietnamese": "nghĩa tiếng Việt" }
+  ]
+}`;
+
+  const promptUserText = `Hành động: ${action === 'grammar' ? 'Phân tích ngữ pháp chuyên sâu' : 'Giải thích nghĩa sát ngữ cảnh'}
+Cụm bôi đen: "${safeSelectedText}"
+Câu ngữ cảnh: "${safeContextSentence}"
+Trình độ học viên: ${effectiveHskLevel}`;
+
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 12000) : null;
+
+  try {
+    let response = null;
+    for (const key of apiKeys) {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          ...(controller ? { signal: controller.signal } : {}),
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            contents: [{ role: 'user', parts: [{ text: promptUserText }] }],
+            generationConfig: {
+              temperature: 0.2,
+              maxOutputTokens: 650,
+              responseMimeType: 'application/json',
+            },
+          }),
+        }
+      );
+
+      if (response.ok || response.status === 400) break;
+      if (response.status === 429 || response.status === 403) {
+        markGeminiKeyRateLimited(key);
+      }
+    }
+
+    if (response && response.ok) {
+      const json = await response.json();
+      const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (rawText) {
+        const cleanedJson = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanedJson);
+        const normalized = normalizeSelectionInsight(parsed, {
+          selectedText: safeSelectedText,
+          contextSentence: safeContextSentence,
+          action,
+        });
+        return res.status(200).json({
+          success: true,
+          mode: 'selection_insight',
+          action,
+          insight: normalized,
+          learner_level: effectiveHskLevel,
+          _metadata: {
+            provider: 'gemini_selection_insight',
+            model: modelName,
+            model_tier: route.tier,
+            latency_ms: Date.now() - startTime,
+            sanitized: true,
+          },
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('[Selection Insight Fallback]:', redactSensitiveData(err?.message || ''));
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
+  }
+
+  return res.status(200).json({
+    success: true,
+    mode: 'selection_insight',
+    action,
+    insight: fallbackInsight,
+    learner_level: effectiveHskLevel,
+    _metadata: {
+      provider: 'deterministic_pedagogical_engine',
+      model: route.model,
+      model_tier: route.tier,
+      latency_ms: Date.now() - startTime,
+      sanitized: true,
+    },
+  });
+}
+
 export default async function handler(req, res) {
   const startTime = Date.now();
+
+  if (applyCorsAllowlist(req, res, 'POST, OPTIONS')) {
+    return;
+  }
 
   // 1. Chỉ chấp nhận phương thức POST
   if (req.method !== 'POST') {
@@ -318,6 +726,10 @@ export default async function handler(req, res) {
     return res.status(429).json({
       error: limitCheck.reason || 'Bạn đã đạt giới hạn yêu cầu gia sư AI. Vui lòng chờ giây lát hoặc quay lại vào ngày mai.'
     });
+  }
+
+  if (req.body?.mode === 'selection_insight') {
+    return await handleSelectionInsightMode({ req, res, verifiedUserId, startTime });
   }
 
   // 4. Kiểm tra và làm sạch dữ liệu đầu vào (Input Validation & Sanitization)

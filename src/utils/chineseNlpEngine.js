@@ -13,6 +13,10 @@ import { VOCABULARY_LIST } from '../data/chineseData.js';
 import { getHanziDecomposition } from '../data/hanziDecomposition.js';
 import { EXTENDED_COMMON_CHARS } from '../data/commonCharactersDict.js';
 import { findRadical } from '../data/radicalsData.js';
+import {
+  resolveSingleCharMeta,
+  lookupUnifiedChineseWord,
+} from '../services/unifiedLookupService.js';
 
 // =========================================================================
 // 1. TỪ ĐIỂN TỪ ĐA ÂM THEO NGỮ CẢNH (HETERONYM COMPOUND RULES)
@@ -352,7 +356,7 @@ export const COMMON_CHAR_PINYIN_MAP = {
   '它': { pinyin: 'tā', hanviet: 'Tha' },
   '是': { pinyin: 'shì', hanviet: 'Thị' },
   '不': { pinyin: 'bù', hanviet: 'Bất' },
-  '很': { pinyin: 'hěn', hanviet: 'Hẩn' },
+  '很': { pinyin: 'hěn', hanviet: 'Khẩn' },
   '在': { pinyin: 'zài', hanviet: 'Tại' },
   '有': { pinyin: 'yǒu', hanviet: 'Hữu' },
   '人': { pinyin: 'rén', hanviet: 'Nhân' },
@@ -361,7 +365,7 @@ export const COMMON_CHAR_PINYIN_MAP = {
   '了': { pinyin: 'le', hanviet: 'Liễu' },
   '来': { pinyin: 'lái', hanviet: 'Lai' },
   '去': { pinyin: 'qù', hanviet: 'Khứ' },
-  '吃': { pinyin: 'chī', hanviet: 'Ngật' },
+  '吃': { pinyin: 'chī', hanviet: 'Cật' },
   '喝': { pinyin: 'hē', hanviet: 'Hát' },
   '看': { pinyin: 'kàn', hanviet: 'Khán' },
   '听': { pinyin: 'tīng', hanviet: 'Thính' },
@@ -461,11 +465,11 @@ export const COMMON_CHAR_PINYIN_MAP = {
   '答': { pinyin: 'dá', hanviet: 'Đáp' },
   '机': { pinyin: 'jī', hanviet: 'Cơ' },
   '票': { pinyin: 'piào', hanviet: 'Phiếu' },
-  '住': { pinyin: 'zhù', hanviet: 'Trụ' },
+  '住': { pinyin: 'zhù', hanviet: 'Trú' },
   '宿': { pinyin: 'sù', hanviet: 'Túc' },
   '飞': { pinyin: 'fēi', hanviet: 'Phi' },
   '起': { pinyin: 'qǐ', hanviet: 'Khởi' },
-  '拿': { pinyin: 'ná', hanviet: 'Noa' },
+  '拿': { pinyin: 'ná', hanviet: 'Nã' },
   '带': { pinyin: 'dài', hanviet: 'Đới' },
   '进': { pinyin: 'jìn', hanviet: 'Tiến' },
   '出': { pinyin: 'chū', hanviet: 'Xuất' },
@@ -589,17 +593,32 @@ export const COMMON_CHAR_PINYIN_MAP = {
   '利': { pinyin: 'lì', hanviet: 'Lợi' }
 };
 
-// Gộp từ điển ký tự mở rộng
-Object.entries(EXTENDED_COMMON_CHARS || {}).forEach(([k, v]) => {
-  if (!COMMON_CHAR_PINYIN_MAP[k] && v) {
-    COMMON_CHAR_PINYIN_MAP[k] = { pinyin: v.pinyin, hanviet: v.hanviet };
+// Nạp trước từ VOCABULARY_LIST cho các chữ đơn (ưu tiên Tầng 1 đồng bộ với unifiedLookupService)
+(VOCABULARY_LIST || []).forEach(v => {
+  if (v && v.hanzi && v.hanzi.length === 1) {
+    if (!COMMON_CHAR_PINYIN_MAP[v.hanzi]) {
+      COMMON_CHAR_PINYIN_MAP[v.hanzi] = {
+        pinyin: v.pinyin,
+        hanviet: v.hanviet,
+        meaning: v.meaning || '',
+      };
+    } else if (!COMMON_CHAR_PINYIN_MAP[v.hanzi].meaning && v.meaning) {
+      COMMON_CHAR_PINYIN_MAP[v.hanzi].meaning = v.meaning;
+    }
   }
 });
 
-// Nạp thêm từ VOCABULARY_LIST cho các chữ đơn
-(VOCABULARY_LIST || []).forEach(v => {
-  if (v && v.hanzi && v.hanzi.length === 1 && !COMMON_CHAR_PINYIN_MAP[v.hanzi]) {
-    COMMON_CHAR_PINYIN_MAP[v.hanzi] = { pinyin: v.pinyin, hanviet: v.hanviet };
+// Gộp từ điển ký tự mở rộng (Tầng 2)
+Object.entries(EXTENDED_COMMON_CHARS || {}).forEach(([k, v]) => {
+  if (!v) return;
+  if (!COMMON_CHAR_PINYIN_MAP[k]) {
+    COMMON_CHAR_PINYIN_MAP[k] = {
+      pinyin: v.pinyin,
+      hanviet: v.hanviet,
+      meaning: v.meaning || '',
+    };
+  } else if (!COMMON_CHAR_PINYIN_MAP[k].meaning && v.meaning) {
+    COMMON_CHAR_PINYIN_MAP[k].meaning = v.meaning;
   }
 });
 
@@ -657,15 +676,17 @@ export function extractContextualPinyinArray(sentence) {
   const result = chars.map((ch, idx) => {
     const isHanzi = /[\u4e00-\u9fa5]/.test(ch);
     const charMeta = COMMON_CHAR_PINYIN_MAP[ch];
-    let pinyin = charMeta?.pinyin;
+    const resolved = isHanzi ? resolveSingleCharMeta(ch) : null;
+    let pinyin = charMeta?.pinyin || resolved?.pinyin || '';
     if (isHanzi && !pinyin) {
       const rad = findRadical(ch);
-      pinyin = rad?.pinyin || 'zì';
+      pinyin = rad?.pinyin || '';
     }
+    const hanviet = isHanzi ? (charMeta?.hanviet || resolved?.hanviet || '') : null;
     return {
       char: ch,
-      pinyin: pinyin || (isHanzi ? 'zì' : null),
-      hanviet: charMeta?.hanviet || (isHanzi ? 'Tự' : null),
+      pinyin: isHanzi ? pinyin : null,
+      hanviet,
       index: idx
     };
   });
@@ -743,6 +764,9 @@ export function extractContextualPinyinArray(sentence) {
  */
 export function segmentSentenceWithPinyin(sentence, charPinyinArray) {
   if (!sentence) return [];
+  const resolvedCharPinyinArray = Array.isArray(charPinyinArray)
+    ? charPinyinArray
+    : extractContextualPinyinArray(sentence);
   const chars = Array.from(sentence);
   const n = chars.length;
   const tokens = [];
@@ -815,7 +839,7 @@ export function segmentSentenceWithPinyin(sentence, charPinyinArray) {
     const tokenHanviets = [];
 
     for (let k = 0; k < matchLen; k++) {
-      const cMeta = charPinyinArray[i + k] || { char: chars[i + k], pinyin: '', hanviet: '' };
+      const cMeta = resolvedCharPinyinArray[i + k] || { char: chars[i + k], pinyin: '', hanviet: '' };
       tokenChars.push(cMeta.char);
       tokenPinyins.push(cMeta.pinyin || '');
       tokenHanviets.push(cMeta.hanviet || '');
@@ -823,7 +847,8 @@ export function segmentSentenceWithPinyin(sentence, charPinyinArray) {
 
     // Tra cứu dữ liệu giàu (Enrichment)
     const localMeta = VOCAB_LOOKUP_MAP.get(wordText);
-    const decomp = getHanziDecomposition(wordText[0]);
+    const unifiedMeta = lookupUnifiedChineseWord(wordText);
+    const decomp = unifiedMeta.decomposition || getHanziDecomposition(wordText[0]);
     const posInfo = tagTokenPos(wordText, localMeta);
 
     // Xác định cấp HSK mặc định nếu không có trong từ điển cơ bản
@@ -844,20 +869,22 @@ export function segmentSentenceWithPinyin(sentence, charPinyinArray) {
       isChinese: true,
       isPunctuation: false,
       chars: tokenChars,
-      pinyin: tokenPinyins.join(' ').trim(),
+      pinyin: tokenPinyins.filter(Boolean).join(' ').trim() || unifiedMeta.pinyin,
       pinyinList: tokenPinyins,
-      hanviet: localMeta?.hanviet || tokenHanviets.join(' ').trim(),
-      meaningVi: localMeta?.meaning || (matchLen === 1 ? COMMON_CHAR_PINYIN_MAP[wordText]?.meaning || 'Đang cập nhật' : 'Từ ghép tiếng Trung'),
-      meaningEn: localMeta?.en || '',
+      hanviet: localMeta?.hanviet || tokenHanviets.filter(Boolean).join(' ').trim() || unifiedMeta.hanviet,
+      sinoVietnamese: localMeta?.hanviet || tokenHanviets.filter(Boolean).join(' ').trim() || unifiedMeta.sinoVietnamese,
+      meaningVi: localMeta?.meaning || unifiedMeta.meaningVi || (matchLen === 1 ? COMMON_CHAR_PINYIN_MAP[wordText]?.meaning || '' : ''),
+      meaningEn: localMeta?.en || unifiedMeta.meaningEn || '',
       pos: posInfo.label,
       posCode: posInfo.code,
       posLabel: posInfo.label,
       posColor: posInfo.color,
-      level: localMeta?.level || defaultLevel,
-      traditional: localMeta?.traditional || wordText,
+      level: localMeta?.level || unifiedMeta.level || defaultLevel,
+      traditional: localMeta?.traditional || unifiedMeta.traditional || wordText,
       decomposition: decomp,
-      mnemonic: localMeta?.mnemonic || decomp?.mnemonic || '',
-      example: localMeta?.example || null,
+      mnemonic: localMeta?.mnemonic || unifiedMeta.mnemonic || decomp?.mnemonic || '',
+      example: localMeta?.example || unifiedMeta.example || null,
+      relatedCompounds: unifiedMeta.relatedCompounds || [],
       startIndex: i,
       endIndex: i + matchLen
     });

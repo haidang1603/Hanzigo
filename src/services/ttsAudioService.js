@@ -22,6 +22,10 @@ import { getStoragePreferences } from '../core/sync/OfflineSyncManager.js';
 
 export const TTS_CANONICAL_RATES = [0.75, 0.90, 1.00, 1.25];
 export const TTS_VOICE_ALIASES = {
+  female: 'female',
+  male: 'male',
+  dialogue: 'dialogue',
+  auto: 'auto',
   female_standard: 'zh-CN-XiaoxiaoNeural',
   male_standard: 'zh-CN-YunxiNeural',
   female_news: 'zh-CN-XiaoyiNeural',
@@ -30,6 +34,7 @@ export const TTS_VOICE_ALIASES = {
 const AUDIO_SPEED_KEY = 'audio_speed';
 const AUDIO_VOICE_KEY = 'ui_tts_voice';
 const MAX_MEMORY_CACHE_ENTRIES = 50;
+const MAX_CLIENT_TTS_TEXT_LENGTH = 1200;
 const TTS_L2_CACHE_NAME = 'hanzigo-tts-v1';
 
 // L1 LRU cache: Map<signature, { audioBuffer, arrayBuffer, audioUrl, cacheKey, provider }>
@@ -70,26 +75,38 @@ export function normalizeClientTtsRate(rateInput) {
   return nearest;
 }
 
-export function resolveClientTtsVoice(voiceInput) {
-  if (!voiceInput) return TTS_VOICE_ALIASES.female_standard;
-  const raw = String(voiceInput).trim();
-  if (TTS_VOICE_ALIASES[raw]) return TTS_VOICE_ALIASES[raw];
-  if (Object.values(TTS_VOICE_ALIASES).includes(raw)) return raw;
-  return TTS_VOICE_ALIASES.female_standard;
+export function hasDialogueSpeakerTags(text = '') {
+  const clean = normalizeClientTtsText(text);
+  if (!clean) return false;
+  const matches = clean.match(/(?:^|\s)(男|女|A|B|甲|乙)\s*[：:]/g);
+  return Boolean(matches && matches.length >= 2);
 }
 
-export function buildClientTtsSignature(text, voice, rate) {
+export function resolveClientTtsVoice(voiceInput, text = '') {
+  if (!voiceInput || voiceInput === 'auto') {
+    if (hasDialogueSpeakerTags(text)) return 'dialogue';
+    return 'female';
+  }
+  const raw = String(voiceInput).trim();
+  if (raw === 'zh-CN-YunxiNeural' || raw === 'male_standard' || raw === 'male') return 'male';
+  if (raw === 'dialogue') return 'dialogue';
+  if (raw === 'zh-CN-XiaoxiaoNeural' || raw === 'female_standard' || raw === 'female') return 'female';
+  if (raw === 'zh-CN-XiaoyiNeural' || raw === 'female_news') return raw;
+  return hasDialogueSpeakerTags(text) ? 'dialogue' : 'female';
+}
+
+export function buildClientTtsSignature(text, voice, _rate) {
   const cleanText = normalizeClientTtsText(text);
-  const resolvedVoice = resolveClientTtsVoice(voice);
-  const normalizedRate = normalizeClientTtsRate(rate);
-  return `${cleanText}|${resolvedVoice}|${normalizedRate.toFixed(2)}`;
+  const resolvedVoice = resolveClientTtsVoice(voice, cleanText);
+  // Single 1.0x asset signature regardless of requested playbackRate
+  return `${cleanText}|${resolvedVoice}|1.00`;
 }
 
 /**
  * Read default playback speed & preferred voice from Phase 31 `functional` storage group.
  */
 export function getTtsFunctionalSettings() {
-  const defaults = { voice: 'female_standard', rate: 0.90 };
+  const defaults = { voice: 'female', rate: 1.00 };
   if (!hasWindow()) return defaults;
 
   const prefs = getStoragePreferences();
@@ -466,7 +483,35 @@ function speakWithWebSpeechFallback(text, { rate = 0.90, onStart, onEnd, onError
   });
 }
 
-function playDecodedAudioBuffer(audioBuffer, { onStart, onEnd } = {}) {
+function applyElementPlaybackRate(audio, rate = 1.0) {
+  if (!audio) return;
+  const safeRate = Math.max(0.5, Math.min(2.0, Number(rate) || 1.0));
+  audio.preservesPitch = true;
+  audio.webkitPreservesPitch = true;
+  audio.mozPreservesPitch = true;
+  audio.playbackRate = safeRate;
+}
+
+export function setActiveAudioPlaybackRate(rate = 1.0) {
+  const safeRate = Math.max(0.5, Math.min(2.0, Number(rate) || 1.0));
+  if (sharedAudioElement) {
+    try {
+      applyElementPlaybackRate(sharedAudioElement, safeRate);
+    } catch {
+      // ignore playbackRate errors
+    }
+  }
+  if (activeBufferSource?.playbackRate) {
+    try {
+      activeBufferSource.playbackRate.value = safeRate;
+    } catch {
+      // ignore
+    }
+  }
+  return safeRate;
+}
+
+function playDecodedAudioBuffer(audioBuffer, { rate = 1.0, onStart, onEnd } = {}) {
   return new Promise((resolve, reject) => {
     const ctx = getSharedAudioContext();
     if (!ctx || typeof ctx.createBufferSource !== 'function' || !audioBuffer) {
@@ -477,6 +522,9 @@ function playDecodedAudioBuffer(audioBuffer, { onStart, onEnd } = {}) {
     try {
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
+      if (source.playbackRate) {
+        source.playbackRate.value = Math.max(0.5, Math.min(2.0, Number(rate) || 1.0));
+      }
       if (ctx.destination && typeof source.connect === 'function') {
         source.connect(ctx.destination);
       }
@@ -518,7 +566,7 @@ function resolveObjectUrlFromArrayBuffer(arrayBuffer) {
   }
 }
 
-function playUrlOnSharedElement(audioUrl, { onStart, onEnd } = {}) {
+function playUrlOnSharedElement(audioUrl, { rate = 1.0, onStart, onEnd } = {}) {
   return new Promise((resolve, reject) => {
     const audio = getSharedAudioElement();
     if (!audio || !audioUrl) {
@@ -542,6 +590,7 @@ function playUrlOnSharedElement(audioUrl, { onStart, onEnd } = {}) {
     audio.pause();
     audio.src = audioUrl;
     audio.currentTime = 0;
+    applyElementPlaybackRate(audio, rate);
 
     if (onStart) onStart();
     const playPromise = audio.play();
@@ -556,9 +605,22 @@ function playUrlOnSharedElement(audioUrl, { onStart, onEnd } = {}) {
 }
 
 async function playCachedOrResolvedEntry(entry, options = {}) {
+  const isRemoteCdnUrl = Boolean(entry?.audioUrl && /^https?:\/\//i.test(entry.audioUrl));
+  const rate = options.rate !== undefined ? options.rate : 1.0;
+
+  // Prefer native HTMLAudioElement for remote CDN URLs (supports preservesPitch + streaming)
+  if (isRemoteCdnUrl && getSharedAudioElement()) {
+    try {
+      await playUrlOnSharedElement(entry.audioUrl, { ...options, rate });
+      return { ok: true, transport: 'html_audio' };
+    } catch {
+      // Fallback to Web Audio if decoded buffer exists
+    }
+  }
+
   if (entry?.audioBuffer && getSharedAudioContext()) {
     try {
-      await playDecodedAudioBuffer(entry.audioBuffer, options);
+      await playDecodedAudioBuffer(entry.audioBuffer, { ...options, rate });
       return { ok: true, transport: 'web_audio' };
     } catch {
       // Fallback seamlessly to singleton HTMLAudioElement
@@ -573,7 +635,7 @@ async function playCachedOrResolvedEntry(entry, options = {}) {
     throw new Error('No playable audio source available');
   }
 
-  await playUrlOnSharedElement(playableUrl, options);
+  await playUrlOnSharedElement(playableUrl, { ...options, rate });
   return { ok: true, transport: 'html_audio' };
 }
 
@@ -600,10 +662,56 @@ async function getAuthHeaders() {
 }
 
 /**
- * Resolve & cache a TTS entry via L2 Cache API + `/api/audio/tts`, deduplicating
+ * Compute deterministic Supabase CDN URL matching `api/_utils/azureTtsSsml.js`
+ * so pre-generated MP3 assets play directly with 0 serverless calls.
+ */
+export async function computeClientCdnAudioUrl(cleanText, voiceProfile) {
+  try {
+    if (!isSupabaseConfigured || !supabase?.supabaseUrl) return null;
+    const subtle = typeof globalThis !== 'undefined' ? globalThis.crypto?.subtle : null;
+    if (!subtle || typeof TextEncoder === 'undefined') return null;
+
+    const textNoCtrl = String(cleanText || '')
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+      .trim()
+      .replace(/\s+/g, ' ');
+    if (!textNoCtrl) return null;
+
+    const payload = `v1|${voiceProfile}|${textNoCtrl}`;
+    const hashBuffer = await subtle.digest('SHA-256', new TextEncoder().encode(payload));
+    const hashHex = Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
+      .slice(0, 32);
+
+    const safeProfile =
+      voiceProfile === 'male' || voiceProfile === 'dialogue' ? voiceProfile : 'female';
+    const base = String(supabase.supabaseUrl).replace(/\/+$/, '');
+    return `${base}/storage/v1/object/public/hsk-audio/v1/${safeProfile}/${hashHex.slice(0, 2)}/${hashHex}.mp3`;
+  } catch {
+    return null;
+  }
+}
+
+async function probeDirectCdnUrl(url, fetchFn) {
+  if (!url || typeof fetchFn !== 'function') return false;
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), 1500) : null;
+  try {
+    const res = await fetchFn(url, { method: 'HEAD', signal: controller?.signal });
+    return Boolean(res && res.ok);
+  } catch {
+    return false;
+  } finally {
+    if (timer !== null) clearTimeout(timer);
+  }
+}
+
+/**
+ * Resolve & cache a TTS entry via L2 Cache API + direct CDN probe + `/api/audio/tts`, deduplicating
  * concurrent requests sharing the same signature in `inFlightMap`.
  */
-async function resolveTtsAsset(signature, { cleanText, resolvedVoice, normalizedRate, fetchFn, preferWebAudio = true }) {
+async function resolveTtsAsset(signature, { cleanText, resolvedVoice, normalizedRate, fetchFn, hasCustomFetch = false, preferWebAudio = true }) {
   if (inFlightMap.has(signature)) {
     return inFlightMap.get(signature);
   }
@@ -624,16 +732,33 @@ async function resolveTtsAsset(signature, { cleanText, resolvedVoice, normalized
       return { ok: true, mode: 'cache_api', entry };
     }
 
-    // Tier 3: Network fetch -> `/api/audio/tts`
-    const headers = await getAuthHeaders();
+    // Tier 2.5: Direct Public Supabase Storage CDN probe (zero serverless cost)
     const activeFetch = fetchFn || fetch;
-    const response = await activeFetch('/api/audio/tts', {
+    if (!hasCustomFetch && isSupabaseConfigured) {
+      const directCdnUrl = await computeClientCdnAudioUrl(cleanText, resolvedVoice);
+      if (directCdnUrl && (await probeDirectCdnUrl(directCdnUrl, activeFetch))) {
+        const entry = {
+          audioBuffer: null,
+          arrayBuffer: null,
+          audioUrl: directCdnUrl,
+          cacheKey: null,
+          provider: 'supabase_cdn',
+        };
+        setL1Entry(signature, entry);
+        return { ok: true, mode: 'cdn_cache_hit', entry };
+      }
+    }
+
+    // Tier 3: Network fetch -> `/api/audio/tts?format=url` (always 1.0x canonical CDN file)
+    const headers = await getAuthHeaders();
+    const response = await activeFetch('/api/audio/tts?format=url', {
       method: 'POST',
       headers,
       body: JSON.stringify({
         text: cleanText,
         voice: resolvedVoice,
-        rate: normalizedRate,
+        rate: 1.0,
+        format: 'url',
       }),
     });
 
@@ -660,24 +785,24 @@ async function resolveTtsAsset(signature, { cleanText, resolvedVoice, normalized
       }
 
       payloadStatus = payload?.status || null;
-      cacheKey = payload?.cacheKey || null;
+      cacheKey = payload?.hash || payload?.cacheKey || null;
       provider = payload?.provider || null;
-      audioUrl = payload?.audioUrl || null;
+      audioUrl = payload?.url || payload?.audioUrl || null;
 
       if (payload?.audioBase64) {
         arrayBuffer = base64ToArrayBuffer(payload.audioBase64);
         if (!audioUrl) {
           audioUrl = `data:${payload.contentType || 'audio/mpeg'};base64,${payload.audioBase64}`;
         }
-      } else if (audioUrl && preferWebAudio && getSharedAudioContext()) {
-        // Fetch CDN MP3 as ArrayBuffer only when Web Audio API is available
+      } else if (audioUrl && !/^https?:\/\//i.test(audioUrl) && preferWebAudio && getSharedAudioContext()) {
+        // Fetch local/non-CDN audio buffer when Web Audio decoding is needed
         try {
           const binaryRes = await activeFetch(audioUrl);
           if (binaryRes?.ok && typeof binaryRes.arrayBuffer === 'function') {
             arrayBuffer = await binaryRes.arrayBuffer();
           }
         } catch {
-          // Keep audioUrl for singleton HTMLAudioElement fallback
+          // Keep audioUrl for singleton HTMLAudioElement playback
         }
       }
     }
@@ -731,7 +856,7 @@ export async function playChineseTts(text, options = {}) {
 
   const functionalSettings = getTtsFunctionalSettings();
   const voice = options.voice || functionalSettings.voice;
-  const resolvedVoice = resolveClientTtsVoice(voice);
+  const resolvedVoice = resolveClientTtsVoice(voice, cleanText);
   const normalizedRate = normalizeClientTtsRate(
     options.rate !== undefined ? options.rate : functionalSettings.rate
   );
@@ -746,7 +871,8 @@ export async function playChineseTts(text, options = {}) {
   const l1Entry = getL1Entry(signature);
   if (l1Entry) {
     try {
-      await playCachedOrResolvedEntry(l1Entry, options);
+      options.onPlaybackMode?.('cdn');
+      await playCachedOrResolvedEntry(l1Entry, { ...options, rate: normalizedRate });
       return { ok: true, mode: 'memory_cache', audioUrl: l1Entry.audioUrl || null };
     } catch {
       memoryTtsCache.delete(signature);
@@ -756,7 +882,8 @@ export async function playChineseTts(text, options = {}) {
   // Offline or non-Hanzi fast fallback to Web Speech API
   const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
   const hasHanzi = /[\u4e00-\u9fa5]/.test(cleanText);
-  if (isOffline || !hasHanzi) {
+  if (isOffline || !hasHanzi || cleanText.length > MAX_CLIENT_TTS_TEXT_LENGTH) {
+    options.onPlaybackMode?.('device');
     return speakWithWebSpeechFallback(cleanText, {
       ...options,
       rate: normalizedRate,
@@ -769,17 +896,20 @@ export async function playChineseTts(text, options = {}) {
       resolvedVoice,
       normalizedRate,
       fetchFn: options.fetchImpl || fetch,
+      hasCustomFetch: Boolean(options.fetchImpl),
       preferWebAudio: options.preferWebAudio !== false,
     });
 
     if (!resolved?.ok || !resolved.entry) {
+      options.onPlaybackMode?.('device');
       return speakWithWebSpeechFallback(cleanText, {
         ...options,
         rate: normalizedRate,
       });
     }
 
-    await playCachedOrResolvedEntry(resolved.entry, options);
+    options.onPlaybackMode?.('cdn');
+    await playCachedOrResolvedEntry(resolved.entry, { ...options, rate: normalizedRate });
 
     return {
       ok: true,
@@ -789,6 +919,7 @@ export async function playChineseTts(text, options = {}) {
       provider: resolved.entry.provider || null,
     };
   } catch {
+    options.onPlaybackMode?.('device');
     return speakWithWebSpeechFallback(cleanText, {
       ...options,
       rate: normalizedRate,
@@ -824,11 +955,11 @@ export async function prefetchTtsItems(items = [], options = {}) {
   for (const rawItem of items) {
     const item = typeof rawItem === 'string' ? { text: rawItem } : rawItem || {};
     const cleanText = normalizeClientTtsText(item.text);
-    if (!cleanText || !/[\u4e00-\u9fa5]/.test(cleanText) || cleanText.length > 600) {
+    if (!cleanText || !/[\u4e00-\u9fa5]/.test(cleanText) || cleanText.length > MAX_CLIENT_TTS_TEXT_LENGTH) {
       skipped += 1;
       continue;
     }
-    const resolvedVoice = resolveClientTtsVoice(item.voice || options.voice || functionalSettings.voice);
+    const resolvedVoice = resolveClientTtsVoice(item.voice || options.voice || functionalSettings.voice, cleanText);
     const normalizedRate = normalizeClientTtsRate(
       item.rate !== undefined
         ? item.rate
@@ -861,6 +992,7 @@ export async function prefetchTtsItems(items = [], options = {}) {
           resolvedVoice: task.resolvedVoice,
           normalizedRate: task.normalizedRate,
           fetchFn,
+          hasCustomFetch: Boolean(options.fetchImpl),
           preferWebAudio: options.preferWebAudio !== false,
         });
         if (res?.ok) {

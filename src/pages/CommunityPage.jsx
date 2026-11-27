@@ -1,53 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import confetti from 'canvas-confetti';
-import { 
-  Heart, 
-  MessageCircle, 
-  Bookmark, 
-  Share2, 
-  Send, 
-  Users, 
-  Trophy, 
-  Flame, 
-  Sparkles,
+import React, { useState, useEffect } from 'react';
+import {
+  MessageCircle,
+  Users,
+  Trophy,
+  Flame,
   Plus,
   CheckCircle2,
-  Trash2,
-  Copy,
-  X,
-  Search,
-  Check,
-  Award,
-  Pin,
-  Database,
   RefreshCw,
-  QrCode,
-  Image as ImageIcon,
-  Download,
-  Crown,
   ArrowRight,
-  Volume2,
-  Calendar,
-  MessageSquare,
-  CheckCircle,
-  Flag,
-  Eye,
-  EyeOff,
-  Edit3,
-  ExternalLink,
-  Clock,
-  Target,
-  Filter
+  Filter,
 } from 'lucide-react';
 import ReportModal from '../components/community/ReportModal';
 import LeaderboardView from '../components/learning/LeaderboardView';
-import ChineseChallengeCard from '../components/learning/ChineseChallengeCard';
-import { playClickSound, playSuccessSound, speakChinese } from '../utils/audio';
-import { 
-  getCommunityPosts, 
+import { playClickSound } from '../utils/audio';
+import {
+  getCommunityPosts,
   getCommunityPostById,
   createCommunityPost,
-  updateCommunityPost, 
+  updateCommunityPost,
   deleteCommunityPost,
   moderateCommunityPost,
   getPostComments,
@@ -60,182 +30,31 @@ import {
   updateStudyPartnerInDb,
   toggleStudyPartnerStatusInDb,
   deleteStudyPartnerFromDb,
-  subscribeToCommunityRealtime
+  subscribeToCommunityRealtime,
 } from '../services/communityService';
-import { getPastAttempts } from '../services/hskService';
-import { awardXp, getLocalDateString } from '../utils/gamification';
+import { getLocalDateString } from '../utils/gamification';
+import { useCommunityFeed } from '../components/community/hooks/useCommunityFeed.js';
+import CommunityFilterBar from '../components/community/CommunityFilterBar.jsx';
+import PostComposer from '../components/community/PostComposer.jsx';
+import PostCard from '../components/community/PostCard.jsx';
 import {
-  POST_LIMITS,
-  formatStructuredPostContent,
-  parseStructuredPostContent,
-  validateCommunityPostInput,
-  validateCommunityCommentInput,
-  toggleLikeOptimisticList,
-} from '../utils/communitySafety.js';
+  StudyPartnerList,
+  StudyPartnerModals,
+} from '../components/community/StudyPartnerList.jsx';
+import {
+  CommunityChallengeView,
+  CommunityRightSidebar,
+} from '../components/community/CommunitySidebarAndChallenge.jsx';
 
-// Helper nén ảnh cục bộ cho mã QR và tệp đính kèm (giữ độ sắc nét cho QR)
-function compressImageFile(file, maxWidth = 600, maxHeight = 600) {
-  return new Promise((resolve, reject) => {
-    if (!file) return reject(new Error('No file provided'));
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new window.Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-        if (width > maxWidth || height > maxHeight) {
-          if (width > height) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          } else {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
-        resolve(dataUrl);
-      };
-      img.onerror = reject;
-      img.src = e.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+export { sanitizePublicDisplayName } from '../components/community/communityHelpers.js';
 
-const STORAGE_KEYS = {
-  POSTS: 'hanzigo_community_posts',
-  PARTNERS: 'hanzigo_study_partners',
-  CHALLENGE: 'hanzigo_community_challenge',
-  COMPLETED_LESSONS: 'hanzigo_completed_lessons',
-  SAVED_POSTS: 'hanzigo_saved_post_ids',
-  SOLVED_POSTS: 'hanzigo_community_solved_posts'
-};
+const PARTNER_MODAL_PANEL_CLASS =
+  'bg-white dark:bg-[#1E293B] rounded-3xl p-6 w-full max-w-md border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4 max-h-[90dvh] pb-[max(0.75rem,env(safe-area-inset-bottom))] overflow-y-auto';
 
-const TAG_FILTERS = [
-  { id: 'all', label: 'Tất cả bài viết' },
-  { id: '#ThiHSK', label: '🎯 Hỏi đáp HSK' },
-  { id: '#SuaCauLuyenViet', label: '✍️ Sửa câu / Luyện viết' },
-  { id: '#MeoHocTuVung', label: '💡 Mẹo học từ vựng' },
-  { id: '#KinhNghiemHoc', label: '📚 Chia sẻ kinh nghiệm' },
-  { id: '#TimBanLuyenNoi', label: '🗣️ Tìm bạn học' },
-  { id: '#HoiDapNguPhap', label: '💬 Ngữ pháp' },
-  { id: 'saved', label: '⭐ Đã lưu' }
-];
+const isImeEnterSubmit = (e) =>
+  e.key === 'Enter' && !e.nativeEvent?.isComposing && !e.isComposing;
 
-const HSK_GROUP_FILTERS = [
-  { id: 'all', label: 'Tất cả HSK' },
-  { id: 'HSK 1–3', label: 'HSK 1–3' },
-  { id: 'HSK 4–6', label: 'HSK 4–6' },
-  { id: 'HSK 7–9', label: 'HSK 7–9' },
-];
-
-// Daily Discussion Topic of the day
-const DAILY_DISCUSSION_TOPIC = {
-  date: 'Hôm nay',
-  title: 'Chủ đề đàm thoại: Mùa yêu thích trong năm',
-  chinese: '你最喜欢哪个季节？为什么？',
-  pinyin: 'Nǐ zuì xǐhuan nǎge jìjié? Wèishénme?',
-  meaning: 'Bạn thích mùa nào nhất trong năm? Vì sao?',
-  vocabHints: [
-    { zh: '春天', py: 'chūntiān', vi: 'mùa xuân' },
-    { zh: '夏天', py: 'xiàtiān', vi: 'mùa hè' },
-    { zh: '秋天', py: 'qiūtiān', vi: 'mùa thu' },
-    { zh: '冬天', py: 'dōngtiān', vi: 'mùa đông' },
-    { zh: '天气暖和', py: 'tiānqì nuǎnhuo', vi: 'thời tiết ấm áp' }
-  ]
-};
-
-const QUICK_POST_PROMPTS = [
-  {
-    tag: '#ChuDeHomNay',
-    label: '🏮 Trả lời chủ đề hôm nay',
-    prompt: 'Trả lời chủ đề hôm nay: 我最喜欢秋天，因为秋天的天气不冷也不热，非常舒服。(Tôi thích nhất mùa thu vì thời tiết không lạnh cũng không nóng, rất dễ chịu).'
-  },
-  {
-    tag: '#HoiDapNguPhap',
-    label: '💡 Phân biệt câu chữ 把 & 被',
-    prompt: 'Mọi người cho mình hỏi câu chữ 把 (Bǎ) và câu chữ 被 (Bèi) khác nhau cơ bản thế nào và khi nào bắt buộc phải dùng câu chữ 把 ạ? Xin cảm ơn cả nhà!'
-  },
-  {
-    tag: '#TimBanLuyenNoi',
-    label: '🗣️ Tìm bạn luyện nói tối nay',
-    prompt: 'Chào các bạn! Mình đang học HSK 2 lên HSK 3, muốn tìm 1 bạn cùng luyện khẩu ngữ 20 - 30 phút mỗi tối qua Zalo hoặc Google Meet. Bạn nào cùng mục tiêu thì kết nối nhé!'
-  },
-  {
-    tag: '#KinhNghiemHoc',
-    label: '📚 Mẹo nhớ nhanh 214 bộ thủ',
-    prompt: 'Chia sẻ kinh nghiệm: Mình thấy học chữ Hán qua chiết tự và 214 bộ thủ Khang Hy nhớ nhanh hơn rất nhiều so với chép tay từng nét. Mọi người hay áp dụng phương pháp nào?'
-  },
-  {
-    tag: '#ThiHSK',
-    label: '🎯 Kinh nghiệm phân bổ thời gian thi HSK',
-    prompt: 'Các bạn từng thi HSK cho mình xin lời khuyên: Trong phần Nghe hiểu (听力) và Đọc hiểu (阅读), phần nào dễ bẫy nhất và cần lưu ý phân bổ thời gian làm bài thế nào ạ?'
-  }
-];
-
-const FAKE_AUTHORS = [
-  'Trần Thảo Ly', 
-  'Đặng Quốc Anh', 
-  'Phạm Thu Trang', 
-  'Nguyễn Thu Trang', 
-  'Trần Đăng Khoa', 
-  'Lê Hoàng Nam'
-];
-
-const FAKE_PARTNERS = [
-  'Nguyễn Thị Ánh Tuyết', 
-  'Hoàng Minh Tuấn', 
-  'Vũ Lan Phương', 
-  'Nguyễn Thúy Hằng', 
-  'Lê Tuấn Anh', 
-  'Đặng Mai Phương'
-];
-
-function isFakePost(p) {
-  if (!p) return true;
-  const author = (p.author_name || p.author || '').trim();
-  return FAKE_AUTHORS.some(fake => author.includes(fake));
-}
-
-function sanitizeCommunityPosts(list) {
-  if (!Array.isArray(list)) return [];
-  return list
-    .filter(p => !isFakePost(p))
-    .map(p => {
-      const authorName = (p.author_name || p.author || '').trim();
-      const isBqt = authorName.includes('Ban Quản Trị') || 
-                    p.author_level === 'Quản trị viên' || 
-                    p.level === 'Quản trị viên' || 
-                    p.level === 'BQT' ||
-                    p.id === 'system-welcome';
-      const isLegacyUnsplash = (p.author_avatar && p.author_avatar.includes('photo-1534528741775-53994a69daeb')) ||
-                               (p.avatar && p.avatar.includes('photo-1534528741775-53994a69daeb'));
-      if (isBqt || isLegacyUnsplash) {
-        return {
-          ...p,
-          avatar: '/hanzigo-logo.svg',
-          author_avatar: '/hanzigo-logo.svg',
-          level: p.level || p.author_level || 'Quản trị viên'
-        };
-      }
-      return p;
-    });
-}
-
-function isFakePartner(p) {
-  if (!p) return true;
-  const name = (p.name || '').trim();
-  return FAKE_PARTNERS.some(fake => name.includes(fake));
-}
-
+// Deprecated LocalStorage persistence for feed posts (Supabase is Single Source of Truth)
 export default function CommunityPage({ user, setActiveTab, initialView = 'feed' }) {
   const [communityView, setCommunityView] = useState(() => {
     if (['feed', 'leaderboard', 'partners', 'challenge'].includes(initialView)) {
@@ -256,1177 +75,172 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
     }
   }, [initialView]);
 
-  // Posts state initialized cleanly without fake mock posts (Supabase is Single Source of Truth)
-  const [posts, setPosts] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.POSTS);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return sanitizeCommunityPosts(parsed);
+  const feed = useCommunityFeed({
+    user,
+    getTodayDateKey: () => getLocalDateString(),
+    api: {
+      getCommunityPosts,
+      getCommunityPostById,
+      createCommunityPost,
+      updateCommunityPost,
+      deleteCommunityPost,
+      moderateCommunityPost,
+      loadPostComments: (idStr) => getPostComments(idStr),
+      createComment: (idStr, text) => createCommunityComment(idStr, text),
+      updateCommunityComment,
+      deleteComment: (commentId) => deleteCommunityComment(commentId),
+      toggleLikeReaction: async (idStr) => {
+        const res = await togglePostReaction(idStr, 'like');
+        if (res?.success && res.data) {
+          return {
+            success: true,
+            data: {
+              action: res.data.action,
+              likes_count: res.data.likes_count,
+            },
+          };
         }
-      }
-    } catch {}
-    return [];
-  });
-
-  // Cursor-based pagination state
-  const [hasMorePosts, setHasMorePosts] = useState(false);
-  const [nextPostCursor, setNextPostCursor] = useState(null);
-  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
-  const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false);
-
-  // Relational comments state per post
-  const [postCommentsMap, setPostCommentsMap] = useState({});
-  const [loadingCommentsMap, setLoadingCommentsMap] = useState({});
-  const [submittingCommentMap, setSubmittingCommentMap] = useState({});
-
-  // Report Modal State (Phase 24 Task 24.08D)
-  const [reportModalState, setReportModalState] = useState({
-    isOpen: false,
-    targetType: 'post',
-    targetId: null,
-    targetContent: '',
-    targetAuthor: ''
-  });
-
-  const handleOpenReportModal = (targetType, targetId, item) => {
-    playClickSound();
-    if (!user) {
-      alert('Vui lòng đăng nhập tài khoản HanziGo để gửi báo cáo vi phạm.');
-      return;
-    }
-    setReportModalState({
-      isOpen: true,
-      targetType,
-      targetId: String(targetId),
-      targetContent: item?.content || '',
-      targetAuthor: item?.author || item?.author_name || (targetType === 'post' ? 'Tác giả bài viết' : 'Học viên')
-    });
-  };
-
-  // Solved posts tracking
-  const [solvedPostIds, setSolvedPostIds] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.SOLVED_POSTS);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // Study Partners state from localStorage
-  const [studyPartners, setStudyPartners] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.PARTNERS);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const clean = parsed.filter(p => !isFakePartner(p));
-          localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(clean));
-          return clean;
-        }
-      }
-    } catch {}
-    try {
-      localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify([]));
-    } catch {}
-    return [];
-  });
-
-  // Challenge state from localStorage
-  const [challengeData, setChallengeData] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.CHALLENGE);
-      return saved ? JSON.parse(saved) : { joined: false, checkIns: 0, lastDate: null };
-    } catch {
-      return { joined: false, checkIns: 0, lastDate: null };
-    }
-  });
-
-  // Completed lessons from localStorage
-  const [completedLessonsCount] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.COMPLETED_LESSONS);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return Array.isArray(parsed) ? parsed.length : 0;
-      }
-      return 0;
-    } catch {
-      return 0;
-    }
-  });
-
-  // State tracking Supabase DB sync
-  const [isCloudSynced, setIsCloudSynced] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Tag, HSK level group & sort state declared early for pagination dependency
-  const [selectedTag, setSelectedTag] = useState('all');
-  const [selectedHskGroup, setSelectedHskGroup] = useState('all');
-  const [postSort, setPostSort] = useState('newest'); // 'newest' | 'popular'
-
-  // Load paginated community posts from Supabase on mount and when filter tag / sort changes
-  useEffect(() => {
-    let isMounted = true;
-    setIsLoadingPosts(true);
-
-    getCommunityPosts({ limit: 15, tag: selectedTag, sort: postSort })
-      .then((res) => {
-        if (!isMounted) return;
-        const fetched = res?.posts || (Array.isArray(res) ? res : []);
-        const clean = sanitizeCommunityPosts(fetched);
-        setPosts(clean);
-        setHasMorePosts(Boolean(res?.hasMore));
-        setNextPostCursor(res?.nextCursor || null);
-        setIsCloudSynced(true);
-        try {
-          localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(clean.slice(0, 20)));
-        } catch {}
-      })
-      .catch((err) => {
-        console.warn('Could not fetch Supabase community posts:', err);
-        if (isMounted) setIsCloudSynced(false);
-      })
-      .finally(() => {
-        if (isMounted) setIsLoadingPosts(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedTag, postSort]);
-
-  // Load study partners on mount
-  useEffect(() => {
-    let isMounted = true;
-    setIsLoadingPartners(true);
-    getStudyPartnersFromDb({ currentUserId: user?.id, onlyActive: false })
-      .then((dbPartners) => {
-        if (isMounted && dbPartners) {
-          const clean = dbPartners.filter(p => !isFakePartner(p));
-          setStudyPartners(clean);
-          try {
-            localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(clean));
-          } catch (e) {
-            console.error(e);
-          }
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (isMounted) setIsLoadingPartners(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]);
-
-  // Real-time subscription for new posts, relational comments, reactions, and partners
-  useEffect(() => {
-    const unsubscribe = subscribeToCommunityRealtime((event) => {
+        return res;
+      },
+      getStudyPartnersFromDb,
+      addStudyPartnerToDb,
+      updateStudyPartnerInDb,
+      toggleStudyPartnerStatusInDb,
+      deleteStudyPartnerFromDb,
+      subscribeToCommunityRealtime,
+    },
+    realtimeDispatcher: (event, handlers) => {
       if (event.type === 'POST_CHANGE') {
-        const { eventType, new: newRow, old: oldRow } = event.payload;
-
-        if (eventType === 'INSERT' && newRow) {
-          const isBqt = (newRow.author_name || '').includes('Ban Quản Trị') || (newRow.author_level === 'Quản trị viên');
-          const avatarUrl = isBqt || (newRow.author_avatar && newRow.author_avatar.includes('photo-1534528741775-53994a69daeb'))
-            ? '/hanzigo-logo.svg'
-            : (newRow.author_avatar || null);
-
-          const mapped = {
-            id: String(newRow.id),
-            author: newRow.author_name || 'Học viên HanziGo',
-            avatar: avatarUrl,
-            initial: isBqt ? 'HZ' : (newRow.author_name ? newRow.author_name.charAt(0).toUpperCase() : 'H'),
-            level: isBqt ? 'Quản trị viên' : (newRow.author_level || 'HSK 1'),
-            content: newRow.content,
-            tag: newRow.tag || '',
-            image: newRow.image_url || newRow.image || null,
-            likes: Number(newRow.likes_count ?? newRow.likes ?? 0),
-            liked: false,
-            commentsCount: Number(newRow.comments_count ?? 0),
-            comments: [],
-            isPinned: Boolean(newRow.is_pinned),
-            isSolved: Boolean(newRow.is_solved),
-            isMyPost: Boolean(user?.id && newRow.author_id === user.id),
-            time: 'Vừa xong',
-            createdAt: newRow.created_at || new Date().toISOString()
-          };
-
-          if (!isFakePost(mapped)) {
-            setPosts(prev => {
-              if (prev.some(p => String(p.id) === String(mapped.id))) return prev;
-              return [mapped, ...prev];
-            });
-          }
-        } else if (eventType === 'UPDATE' && newRow) {
-          // If post is hidden or deleted by Admin moderation, remove from student feed
-          if (newRow.status === 'hidden' || newRow.deleted_at) {
-            setPosts(prev => prev.filter(p => String(p.id) !== String(newRow.id)));
-          } else {
-            setPosts(prev => prev.map(p => {
-              if (String(p.id) === String(newRow.id)) {
-                return {
-                  ...p,
-                  content: newRow.content ?? p.content,
-                  tag: newRow.tag ?? p.tag,
-                  image: newRow.image_url ?? p.image,
-                  likes: Number(newRow.likes_count ?? p.likes),
-                  commentsCount: Number(newRow.comments_count ?? p.commentsCount),
-                  isPinned: Boolean(newRow.is_pinned ?? p.isPinned),
-                  isSolved: Boolean(newRow.is_solved ?? p.isSolved)
-                };
-              }
-              return p;
-            }));
-          }
-        } else if (eventType === 'DELETE' && oldRow?.id) {
-          setPosts(prev => prev.filter(p => String(p.id) !== String(oldRow.id)));
-        }
+        handlers.handlePostRealtime(event.payload);
       } else if (event.type === 'COMMENT_CHANGE') {
-        const { eventType, new: newCommentRow, old: oldCommentRow } = event.payload;
-        if (eventType === 'INSERT' && newCommentRow) {
-          // Only show published non-deleted comments
-          if (newCommentRow.status === 'published' && !newCommentRow.deleted_at) {
-            const postIdStr = String(newCommentRow.post_id);
-            setPosts(prev => prev.map(p => {
-              if (String(p.id) === postIdStr) {
-                return { ...p, commentsCount: (p.commentsCount || 0) + 1 };
-              }
-              return p;
-            }));
-            setPostCommentsMap(prev => {
-              if (!prev[postIdStr]) return prev;
-              if (prev[postIdStr].some(c => String(c.id) === String(newCommentRow.id))) return prev;
-              const newComment = {
-                id: String(newCommentRow.id),
-                postId: postIdStr,
-                authorId: newCommentRow.author_id,
-                author: 'Học viên HanziGo',
-                avatar: null,
-                level: 'HSK 1',
-                content: newCommentRow.content,
-                time: 'Vừa xong',
-                createdAt: newCommentRow.created_at,
-                isMyComment: Boolean(user?.id && newCommentRow.author_id === user.id)
-              };
-              return {
-                ...prev,
-                [postIdStr]: [...prev[postIdStr], newComment]
-              };
-            });
-          }
-        } else if (eventType === 'UPDATE' && newCommentRow) {
-          // If comment is moderated to hidden or deleted by Admin
-          const postIdStr = String(newCommentRow.post_id);
-          if (newCommentRow.status === 'hidden' || newCommentRow.deleted_at) {
-            setPostCommentsMap(prev => {
-              if (!prev[postIdStr]) return prev;
-              return {
-                ...prev,
-                [postIdStr]: prev[postIdStr].filter(c => String(c.id) !== String(newCommentRow.id))
-              };
-            });
-            setPosts(prev => prev.map(p => {
-              if (String(p.id) === postIdStr) {
-                return { ...p, commentsCount: Math.max(0, (p.commentsCount || 1) - 1) };
-              }
-              return p;
-            }));
-          }
-        } else if (eventType === 'DELETE' && oldCommentRow) {
-          const postIdStr = String(oldCommentRow.post_id);
-          setPosts(prev => prev.map(p => {
-            if (String(p.id) === postIdStr) {
-              return { ...p, commentsCount: Math.max(0, (p.commentsCount || 1) - 1) };
-            }
-            return p;
-          }));
-          setPostCommentsMap(prev => {
-            if (!prev[postIdStr]) return prev;
-            return {
-              ...prev,
-              [postIdStr]: prev[postIdStr].filter(c => String(c.id) !== String(oldCommentRow.id))
-            };
-          });
-        }
+        handlers.handleCommentRealtime(event.payload);
       } else if (event.type === 'REACTION_CHANGE') {
-        const { new: newRow, old: oldRow } = event.payload;
-        const targetPostId = newRow?.post_id || oldRow?.post_id;
-        if (targetPostId) {
-          getCommunityPostById(targetPostId).then(updatedPost => {
-            if (updatedPost) {
-              setPosts(prev => prev.map(p => String(p.id) === String(targetPostId) ? { ...p, likes: updatedPost.likes } : p));
-            }
-          }).catch(() => {});
-        }
+        handlers.handleReactionRealtime(event.payload);
       } else if (event.type === 'PARTNER_CHANGE') {
-        getStudyPartnersFromDb({ currentUserId: user?.id, onlyActive: false }).then(dbPartners => {
-          if (dbPartners) {
-            const clean = dbPartners.filter(p => !isFakePartner(p));
-            setStudyPartners(clean);
-          }
-        });
+        handlers.handlePartnerRealtime(event.payload);
       }
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
-
-  // Post creation inputs
-  const [newPostTitle, setNewPostTitle] = useState('');
-  const [newPostContent, setNewPostContent] = useState('');
-  const [newPostTag, setNewPostTag] = useState('#ThiHSK');
-  const [newPostHskLevel, setNewPostHskLevel] = useState(user?.level || 'HSK 1');
-  const [newPostChinese, setNewPostChinese] = useState('');
-  const [newPostPinyin, setNewPostPinyin] = useState('');
-  const [showSnippetInputs, setShowSnippetInputs] = useState(false);
-  const [postContactMethod, setPostContactMethod] = useState('Zalo');
-  const [postContactInfo, setPostContactInfo] = useState('');
-  const [postImage, setPostImage] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [editingPostId, setEditingPostId] = useState(null);
-  const [editPostDraft, setEditPostDraft] = useState('');
-  const [editingCommentId, setEditingCommentId] = useState(null);
-  const [editCommentDraft, setEditCommentDraft] = useState('');
-
-  // Study partner filters & state
-  const [partnerFilterLevel, setPartnerFilterLevel] = useState('all');
-  const [partnerFilterMethod, setPartnerFilterMethod] = useState('all');
-  const [partnerFilterStatus, setPartnerFilterStatus] = useState('all');
-  const [partnerSearchTerm, setPartnerSearchTerm] = useState('');
-  const [showPartnerFilters, setShowPartnerFilters] = useState(false);
-  const [isLoadingPartners, setIsLoadingPartners] = useState(false);
-
-  // Comments toggled per post
-  const [expandedComments, setExpandedComments] = useState({});
-  const [commentInputs, setCommentInputs] = useState({});
-
-  // Study partner modal (supports both create and edit)
-  const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
-  const [editingPartnerId, setEditingPartnerId] = useState(null);
-  const [partnerForm, setPartnerForm] = useState({
-    name: user?.name || '',
-    level: user?.level || 'HSK 1',
-    goal: '',
-    dailyTime: 'Tối 20h - 21h',
-    skills: 'Luyện khẩu ngữ',
-    contactMethod: 'Zalo',
-    contactInfo: '',
-    isContactPublic: true,
-    isActive: true,
-    qrImage: ''
+    },
   });
 
-  // Contact view modal & image zoom modal
-  const [activeContactModal, setActiveContactModal] = useState(null);
-  const [zoomImageModal, setZoomImageModal] = useState(null);
-
-  // Toast feedback
-  const [toastMessage, setToastMessage] = useState(null);
-
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
-  };
-
-  // Deprecated LocalStorage persistence for feed posts (Supabase is Single Source of Truth)
-  const persistPosts = (updatedPosts) => {
-    setPosts(updatedPosts);
-    try {
-      localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts.slice(0, 20)));
-    } catch (e) {
-      console.error('Error saving community posts cache', e);
-    }
-  };
-
-  // Persist study partners
-  const persistPartners = (updatedPartners) => {
-    setStudyPartners(updatedPartners);
-    try {
-      localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(updatedPartners));
-    } catch (e) {
-      console.error('Error saving study partners', e);
-    }
-  };
-
-  // Refresh feed and study partners from Supabase
-  const handleRefreshCloud = async () => {
-    setIsRefreshing(true);
-    playClickSound();
-    try {
-      const [resPosts, dbPartners] = await Promise.all([
-        getCommunityPosts({ limit: 15, tag: selectedTag, sort: postSort }),
-        getStudyPartnersFromDb()
-      ]);
-      if (resPosts?.posts) {
-        const cleanPosts = sanitizeCommunityPosts(resPosts.posts);
-        setPosts(cleanPosts);
-        setHasMorePosts(Boolean(resPosts.hasMore));
-        setNextPostCursor(resPosts.nextCursor || null);
-        setIsCloudSynced(true);
-        try {
-          localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(cleanPosts.slice(0, 20)));
-        } catch {}
-      }
-      if (dbPartners) {
-        const cleanPartners = dbPartners.filter(p => !isFakePartner(p));
-        setStudyPartners(cleanPartners);
-        try {
-          localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(cleanPartners));
-        } catch {}
-      }
-      showToast('Đã làm mới dữ liệu cộng đồng từ Supabase!');
-    } catch {
-      showToast('Sử dụng dữ liệu lưu trữ cục bộ an toàn.');
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  // Handle Load More Posts via cursor pagination
-  const handleLoadMorePosts = async () => {
-    if (isLoadingMorePosts || !hasMorePosts || !nextPostCursor) return;
-    setIsLoadingMorePosts(true);
-    playClickSound();
-    try {
-      const res = await getCommunityPosts({
-        limit: 15,
-        cursor: nextPostCursor,
-        tag: selectedTag,
-        sort: postSort,
-      });
-      const newPosts = res?.posts || [];
-      const cleanNew = sanitizeCommunityPosts(newPosts);
-      setPosts(prev => {
-        const existingIds = new Set(prev.map(p => String(p.id)));
-        const filtered = cleanNew.filter(p => !existingIds.has(String(p.id)));
-        return [...prev, ...filtered];
-      });
-      setHasMorePosts(Boolean(res?.hasMore));
-      setNextPostCursor(res?.nextCursor || null);
-    } catch (err) {
-      console.warn('Error loading more community posts:', err);
-    } finally {
-      setIsLoadingMorePosts(false);
-    }
-  };
-
-  // Guest check helper
-  const requireAuthForCommunity = (actionLabel = 'thao tác này') => {
-    if (user?.id || user?.uid) return true;
-    showToast(`Vui lòng đăng nhập tài khoản HanziGo để thực hiện ${actionLabel}.`);
-    return false;
-  };
-
-  // Share verified HSK achievement / streak snapshot into post composer
-  const handleShareAchievement = async () => {
-    playClickSound();
-    if (!requireAuthForCommunity('chia sẻ thành tích')) return;
-    try {
-      const attempts = await getPastAttempts(user);
-      const latest = Array.isArray(attempts) && attempts.length > 0 ? attempts[0] : null;
-      if (latest) {
-        setNewPostTag('#ThiHSK');
-        setNewPostHskLevel(latest.examLevel || user?.level || 'HSK 1');
-        setNewPostTitle(`Chia sẻ kết quả ${latest.examTitle || latest.examLevel || 'HSK'}`);
-        setNewPostContent(
-          `Mình vừa hoàn thành "${latest.examTitle || 'bài thi thử HSK'}" đạt ${latest.score}/${latest.maxScore} điểm (chính xác ${latest.accuracyPercentage}%) ở chế độ ${latest.examMode === 'simulation' ? 'Phòng thi CBT' : 'Luyện tập'}! Cùng cố gắng giữ phong độ nhé 💪`
-        );
-        showToast('Đã điền nhanh thành tích thật của bạn vào khung soạn bài!');
-        return;
-      }
-    } catch {}
-    setNewPostTag('#KinhNghiemHoc');
-    setNewPostTitle(`Cập nhật chuỗi học ${currentStreak || 1} ngày cùng HanziGo`);
-    setNewPostContent(
-      `Hôm nay mình đã tích lũy ${totalUserXp} XP và duy trì chuỗi ${currentStreak} ngày học tiếng Trung liên tục. Mọi người cùng cố gắng nhé!`
-    );
-    showToast('Đã điền thành tích chuỗi học vào khung soạn bài!');
-  };
-
-  // Handle post creation with Supabase Single Source of Truth + Input Validation
-  const handleCreatePost = async (e) => {
-    e.preventDefault();
-    if (!requireAuthForCommunity('đăng bài')) return;
-
-    const validation = validateCommunityPostInput({
-      title: newPostTitle,
-      content: newPostContent,
-      chineseSnippet: newPostChinese,
-      pinyinSnippet: newPostPinyin,
-      imageUrl: postImage,
-    });
-    if (!validation.valid) {
-      showToast(validation.error);
-      return;
-    }
-
-    let finalBody = validation.sanitized.content;
-    if (postContactInfo.trim()) {
-      finalBody += `\n\n📌 Thông tin liên hệ (${postContactMethod}): ${postContactInfo.trim().slice(0, 120)}`;
-    }
-
-    const formattedContent = formatStructuredPostContent({
-      title: validation.sanitized.title,
-      hskLevel: newPostHskLevel,
-      chineseSnippet: validation.sanitized.chineseSnippet,
-      pinyinSnippet: validation.sanitized.pinyinSnippet,
-      content: finalBody,
-    });
-
-    const payload = {
-      content: formattedContent,
-      tag: newPostTag,
-      image_url: validation.sanitized.imageUrl,
-    };
-
-    try {
-      const res = await createCommunityPost(payload);
-      if (res?.success && res.post) {
-        playSuccessSound();
-        awardXp(20);
-        try {
-          confetti({ particleCount: 45, spread: 60, origin: { y: 0.5 } });
-        } catch {}
-        setIsCloudSynced(true);
-        setPosts(prev => [res.post, ...prev]);
-        setNewPostTitle('');
-        setNewPostContent('');
-        setNewPostChinese('');
-        setNewPostPinyin('');
-        setPostContactInfo('');
-        setPostImage('');
-        setShowSnippetInputs(false);
-        showToast('Đã đăng bài viết thành công (+20 XP)!');
-      } else {
-        showToast(res?.error || 'Không thể đăng bài viết. Vui lòng thử lại!');
-      }
-    } catch (err) {
-      console.warn('Error creating community post:', err);
-      showToast('Lỗi khi đăng bài viết.');
-    }
-  };
-
-  // Save edited own post
-  const handleSaveEditPost = async (postId) => {
-    if (!requireAuthForCommunity('chỉnh sửa bài viết')) return;
-    const validation = validateCommunityPostInput({ content: editPostDraft });
-    if (!validation.valid) {
-      showToast(validation.error);
-      return;
-    }
-    const ok = await updateCommunityPost(postId, { content: validation.sanitized.content });
-    if (ok) {
-      setPosts(prev => prev.map(p => String(p.id) === String(postId) ? { ...p, content: validation.sanitized.content } : p));
-      setEditingPostId(null);
-      setEditPostDraft('');
-      showToast('Đã cập nhật bài viết!');
-    } else {
-      showToast('Không thể cập nhật bài viết.');
-    }
-  };
-
-  // Admin / Teacher moderation (Pin / Unpin / Hide)
-  const handleModeratePost = async (postId, action) => {
-    if (!requireAuthForCommunity('kiểm duyệt')) return;
-    playClickSound();
-    const res = await moderateCommunityPost(postId, action);
-    if (res?.success) {
-      if (action === 'hide') {
-        setPosts(prev => prev.filter(p => String(p.id) !== String(postId)));
-        showToast('Đã ẩn bài viết vi phạm.');
-      } else {
-        const pinned = action === 'pin';
-        setPosts(prev => prev.map(p => String(p.id) === String(postId) ? { ...p, isPinned: pinned } : p));
-        showToast(pinned ? 'Đã ghim bài viết!' : 'Đã bỏ ghim bài viết.');
-      }
-    } else {
-      showToast(res?.error || 'Không có quyền thực hiện thao tác.');
-    }
-  };
-
-  // Apply quick starter prompt
-  const handleApplyPrompt = (item) => {
-    playClickSound();
-    setNewPostTag(item.tag);
-    setNewPostContent(item.prompt);
-  };
-
-  // Toggle like using atomic RPC with Guest Guard & auto rollback
-  const handleToggleLike = async (postId) => {
-    playClickSound();
-    if (!requireAuthForCommunity('thích bài viết')) return;
-    const idStr = String(postId);
-
-    setPosts(prev => toggleLikeOptimisticList(prev, idStr));
-
-    const res = await togglePostReaction(idStr, 'like');
-    if (res?.success && res.data) {
-      setPosts(prev => prev.map(p => {
-        if (String(p.id) === idStr) {
-          return {
-            ...p,
-            liked: res.data.action === 'added',
-            likes: res.data.likes_count
-          };
-        }
-        return p;
-      }));
-    } else {
-      setPosts(prev => toggleLikeOptimisticList(prev, idStr));
-      showToast(res?.error || 'Không thể cập nhật lượt thích. Vui lòng đăng nhập!');
-    }
-  };
-
-  // Toggle save
-  const handleToggleSave = (id) => {
-    playClickSound();
-    const idStr = String(id);
-    const updated = posts.map(p => {
-      if (String(p.id) === idStr) {
-        const isSaved = !p.saved;
-        showToast(isSaved ? 'Đã lưu bài viết vào mục yêu thích!' : 'Đã bỏ lưu bài viết!');
-        return { ...p, saved: isSaved };
-      }
-      return p;
-    });
-    setPosts(updated);
-  };
-
-  // Toggle Solved status for questions
-  const handleToggleSolved = async (id) => {
-    if (!requireAuthForCommunity('đánh dấu giải đáp')) return;
-    playClickSound();
-    const idStr = String(id);
-    const targetPost = posts.find(p => String(p.id) === idStr);
-    const prevSolved = Boolean(targetPost?.isSolved);
-    const newSolved = !prevSolved;
-
-    setPosts(prev => prev.map(p => String(p.id) === idStr ? { ...p, isSolved: newSolved } : p));
-    if (newSolved) {
-      playSuccessSound();
-      showToast('Đã đánh dấu câu hỏi: Đã được giải đáp! ✅');
-    } else {
-      showToast('Đã bỏ đánh dấu giải đáp.');
-    }
-
-    try {
-      const ok = await updateCommunityPost(idStr, { is_solved: newSolved });
-      if (!ok) {
-        setPosts(prev => prev.map(p => String(p.id) === idStr ? { ...p, isSolved: prevSolved } : p));
-        showToast('Không thể cập nhật trạng thái giải đáp.');
-      }
-    } catch (err) {
-      console.warn('Error updating solved status on Supabase:', err);
-      setPosts(prev => prev.map(p => String(p.id) === idStr ? { ...p, isSolved: prevSolved } : p));
-    }
-  };
-
-  // Speak Chinese text contained in post
-  const handleSpeakChinesePost = (text) => {
-    playClickSound();
-    const chineseChars = text.match(/[\u4e00-\u9fa5]+/g);
-    if (chineseChars && chineseChars.length > 0) {
-      const sentence = chineseChars.join('，');
-      speakChinese(sentence);
-      showToast(`🔊 Đang phát âm giọng đọc: "${sentence}"`);
-    } else {
-      showToast('Bài viết này không có ký tự chữ Hán để phát âm.');
-    }
-  };
-
-  // Delete own post via Supabase RLS
-  const handleDeletePost = async (id) => {
-    const idStr = String(id);
-    if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
-      playClickSound();
-      setPosts(prev => prev.filter(p => String(p.id) !== idStr));
-      try {
-        await deleteCommunityPost(idStr);
-        showToast('Đã xóa bài viết khỏi cộng đồng!');
-      } catch (err) {
-        console.warn('Error deleting post:', err);
-        showToast('Lỗi khi xóa bài viết.');
-      }
-    }
-  };
-
-  // Toggle comment section & fetch relational comments on demand
-  const handleToggleComments = async (id) => {
-    playClickSound();
-    const idStr = String(id);
-    const willExpand = !expandedComments[idStr];
-    setExpandedComments(prev => ({
-      ...prev,
-      [idStr]: willExpand
-    }));
-
-    if (willExpand && !postCommentsMap[idStr]) {
-      setLoadingCommentsMap(prev => ({ ...prev, [idStr]: true }));
-      try {
-        const comments = await getPostComments(idStr);
-        setPostCommentsMap(prev => ({ ...prev, [idStr]: comments }));
-      } catch (err) {
-        console.warn(`Could not load comments for post ${idStr}:`, err);
-      } finally {
-        setLoadingCommentsMap(prev => ({ ...prev, [idStr]: false }));
-      }
-    }
-  };
-
-  // Submit comment via relational table with Guest Guard & validation
-  const handleAddComment = async (postId) => {
-    const idStr = String(postId);
-    if (!requireAuthForCommunity('bình luận')) return;
-    if (submittingCommentMap[idStr]) return;
-
-    const validation = validateCommunityCommentInput(commentInputs[idStr] || '');
-    if (!validation.valid) {
-      showToast(validation.error);
-      return;
-    }
-
-    setSubmittingCommentMap(prev => ({ ...prev, [idStr]: true }));
-
-    try {
-      const newComment = await createCommunityComment(idStr, validation.sanitizedContent);
-      if (newComment) {
-        playSuccessSound();
-        awardXp(5);
-        setPostCommentsMap(prev => ({
-          ...prev,
-          [idStr]: [...(prev[idStr] || []), newComment]
-        }));
-        setPosts(prev => prev.map(p => {
-          if (String(p.id) === idStr) {
-            return { ...p, commentsCount: (p.commentsCount || 0) + 1 };
-          }
-          return p;
-        }));
-        setCommentInputs(prev => ({ ...prev, [idStr]: '' }));
-        showToast('Đã gửi bình luận (+5 XP)!');
-      } else {
-        showToast('Không thể gửi bình luận. Vui lòng thử lại sau vài giây!');
-      }
-    } catch (err) {
-      console.warn('Error submitting comment:', err);
-      showToast('Lỗi khi gửi bình luận.');
-    } finally {
-      setSubmittingCommentMap(prev => ({ ...prev, [idStr]: false }));
-    }
-  };
-
-  // Save edited own comment
-  const handleSaveEditComment = async (postId, commentId) => {
-    if (!requireAuthForCommunity('chỉnh sửa bình luận')) return;
-    const validation = validateCommunityCommentInput(editCommentDraft);
-    if (!validation.valid) {
-      showToast(validation.error);
-      return;
-    }
-    const ok = await updateCommunityComment(commentId, validation.sanitizedContent);
-    if (ok) {
-      const postIdStr = String(postId);
-      setPostCommentsMap(prev => ({
-        ...prev,
-        [postIdStr]: (prev[postIdStr] || []).map(c =>
-          String(c.id) === String(commentId) ? { ...c, content: validation.sanitizedContent } : c
-        ),
-      }));
-      setEditingCommentId(null);
-      setEditCommentDraft('');
-      showToast('Đã cập nhật bình luận!');
-    } else {
-      showToast('Không thể cập nhật bình luận.');
-    }
-  };
-
-  // Delete comment via relational table
-  const handleDeleteComment = async (postId, commentId) => {
-    if (!requireAuthForCommunity('xóa bình luận')) return;
-    const idStr = String(postId);
-    if (!window.confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
-    playClickSound();
-
-    try {
-      const ok = await deleteCommunityComment(commentId);
-      if (ok) {
-        setPostCommentsMap(prev => ({
-          ...prev,
-          [idStr]: (prev[idStr] || []).filter(c => String(c.id) !== String(commentId))
-        }));
-        setPosts(prev => prev.map(p => {
-          if (String(p.id) === idStr) {
-            return { ...p, commentsCount: Math.max(0, (p.commentsCount || 1) - 1) };
-          }
-          return p;
-        }));
-        showToast('Đã xóa bình luận!');
-      }
-    } catch (err) {
-      console.warn('Error deleting comment:', err);
-    }
-  };
-
-  // Join 21-Day Challenge
-  const handleJoinChallenge = () => {
-    playSuccessSound();
-    awardXp(20);
-    try {
-      confetti({
-        particleCount: 55,
-        spread: 65,
-        origin: { y: 0.6 }
-      });
-    } catch {}
-
-    const today = getLocalDateString();
-    const updated = {
-      joined: true,
-      checkIns: 1,
-      lastDate: today
-    };
-    setChallengeData(updated);
-    localStorage.setItem(STORAGE_KEYS.CHALLENGE, JSON.stringify(updated));
-    showToast('Chúc mừng! Bạn đã bắt đầu Thử Thách 21 Ngày (+20 XP)!');
-  };
-
-  // Daily Check-in for Challenge
-  const handleCheckIn = () => {
-    const today = getLocalDateString();
-    if (challengeData.lastDate === today) {
-      showToast('Hôm nay bạn đã điểm danh rồi! Hãy tiếp tục duy trì ngày mai nhé.');
-      return;
-    }
-
-    playSuccessSound();
-    awardXp(15);
-    try {
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.6 }
-      });
-    } catch {}
-
-    const updated = {
-      ...challengeData,
-      checkIns: Math.min(21, (challengeData.checkIns || 0) + 1),
-      lastDate: today
-    };
-    setChallengeData(updated);
-    localStorage.setItem(STORAGE_KEYS.CHALLENGE, JSON.stringify(updated));
-    showToast(`Điểm danh thành công! Đã hoàn thành Ngày ${updated.checkIns}/21 (+15 XP) 🎉`);
-  };
-
-  // Open Create Modal
-  const handleOpenCreatePartnerModal = () => {
-    playClickSound();
-    setEditingPartnerId(null);
-    setPartnerForm({
-      name: user?.name || '',
-      level: user?.level || 'HSK 1',
-      goal: '',
-      dailyTime: 'Tối 20h - 21h',
-      skills: 'Luyện khẩu ngữ',
-      contactMethod: 'Zalo',
-      contactInfo: '',
-      isContactPublic: true,
-      isActive: true,
-      qrImage: ''
-    });
-    setIsPartnerModalOpen(true);
-  };
-
-  // Open Edit Modal
-  const handleOpenEditPartnerModal = (partner) => {
-    playClickSound();
-    setEditingPartnerId(partner.id);
-    setPartnerForm({
-      name: partner.name || '',
-      level: partner.level || partner.targetLevel || 'HSK 1',
-      goal: partner.goal || partner.intro || '',
-      dailyTime: partner.dailyTime || '',
-      skills: partner.skills || 'Luyện khẩu ngữ',
-      contactMethod: partner.contactMethod || 'Zalo',
-      contactInfo: partner.contactInfo || '',
-      isContactPublic: partner.isContactPublic !== false,
-      isActive: partner.isActive !== false,
-      qrImage: partner.qrImage || ''
-    });
-    setIsPartnerModalOpen(true);
-  };
-
-  // Toggle active / paused status
-  const handleTogglePartnerStatus = async (partner) => {
-    playClickSound();
-    const newStatus = !partner.isActive;
-    const actionLabel = newStatus ? 'kích hoạt lại' : 'tạm ngưng';
-
-    const updated = studyPartners.map(p => p.id === partner.id ? { ...p, isActive: newStatus } : p);
-    persistPartners(updated);
-    showToast(`Đã ${actionLabel} hiển thị hồ sơ tìm bạn!`);
-
-    await toggleStudyPartnerStatusInDb(partner.id, newStatus);
-  };
-
-  // Save (Create or Update) study partner request
-  const handleSavePartner = async (e) => {
-    e.preventDefault();
-    if (!partnerForm.name.trim()) {
-      alert('Vui lòng nhập họ tên hoặc biệt danh!');
-      return;
-    }
-
-    playSuccessSound();
-
-    if (editingPartnerId) {
-      // Cập nhật hồ sơ hiện có
-      const updated = studyPartners.map(p => {
-        if (p.id === editingPartnerId) {
-          return {
-            ...p,
-            name: partnerForm.name.trim(),
-            initial: partnerForm.name.trim().charAt(0).toUpperCase(),
-            level: partnerForm.level,
-            targetLevel: partnerForm.level,
-            goal: partnerForm.goal.trim() || 'Luyện phản xạ giao tiếp',
-            intro: partnerForm.goal.trim() || 'Luyện phản xạ giao tiếp',
-            dailyTime: partnerForm.dailyTime.trim(),
-            skills: partnerForm.skills.trim() || 'Luyện khẩu ngữ',
-            contactMethod: partnerForm.contactMethod,
-            contactInfo: partnerForm.contactInfo.trim(),
-            isContactPublic: partnerForm.isContactPublic,
-            isActive: partnerForm.isActive,
-            qrImage: partnerForm.qrImage || null
-          };
-        }
-        return p;
-      });
-      persistPartners(updated);
-      setIsPartnerModalOpen(false);
-      showToast('Đã cập nhật hồ sơ tìm bạn cùng tiến!');
-
-      await updateStudyPartnerInDb(editingPartnerId, {
-        name: partnerForm.name.trim(),
-        level: partnerForm.level,
-        goal: partnerForm.goal.trim() || 'Luyện phản xạ giao tiếp',
-        dailyTime: partnerForm.dailyTime.trim(),
-        skills: partnerForm.skills.trim() || 'Luyện khẩu ngữ',
-        contactMethod: partnerForm.contactMethod,
-        contactInfo: partnerForm.contactInfo.trim(),
-        isContactPublic: partnerForm.isContactPublic,
-        isActive: partnerForm.isActive,
-        qrImage: partnerForm.qrImage || null
-      });
-    } else {
-      // Tạo hồ sơ mới
-      awardXp(15);
-      const tempPartnerId = `partner-${Date.now()}`;
-      const newPartner = {
-        id: tempPartnerId,
-        userId: user?.id || null,
-        name: partnerForm.name.trim(),
-        initial: partnerForm.name.trim().charAt(0).toUpperCase(),
-        level: partnerForm.level,
-        targetLevel: partnerForm.level,
-        goal: partnerForm.goal.trim() || 'Luyện phản xạ giao tiếp',
-        intro: partnerForm.goal.trim() || 'Luyện phản xạ giao tiếp',
-        dailyTime: partnerForm.dailyTime.trim(),
-        skills: partnerForm.skills.trim() || 'Luyện khẩu ngữ',
-        contactMethod: partnerForm.contactMethod,
-        contactInfo: partnerForm.contactInfo.trim(),
-        isContactPublic: partnerForm.isContactPublic,
-        isActive: partnerForm.isActive,
-        qrImage: partnerForm.qrImage || null,
-        createdAt: 'Hôm nay',
-        isMyPartnerPost: true
-      };
-
-      const updated = [newPartner, ...studyPartners];
-      persistPartners(updated);
-      setIsPartnerModalOpen(false);
-      showToast('Đã đăng bài tìm bạn học (+15 XP)!');
-
-      try {
-        const cloudId = await addStudyPartnerToDb({
-          name: newPartner.name,
-          level: newPartner.level,
-          goal: newPartner.goal,
-          dailyTime: newPartner.dailyTime,
-          skills: newPartner.skills,
-          contactMethod: newPartner.contactMethod,
-          contactInfo: newPartner.contactInfo,
-          isContactPublic: newPartner.isContactPublic,
-          isActive: newPartner.isActive,
-          qrImage: newPartner.qrImage,
-          userId: user?.id || null
-        });
-
-        if (cloudId) {
-          setStudyPartners(prev => {
-            const withCloudId = prev.map(p => p.id === tempPartnerId ? { ...p, id: cloudId } : p);
-            try {
-              localStorage.setItem(STORAGE_KEYS.PARTNERS, JSON.stringify(withCloudId));
-            } catch (err) {
-              console.error(err);
-            }
-            return withCloudId;
-          });
-        }
-      } catch (err) {
-        console.warn('Không thể đồng bộ Study Partner lên Cloud:', err);
-      }
-    }
-  };
-
-  // Delete study partner request
-  const handleDeletePartner = async (id) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa bài đăng tìm bạn học này?')) {
-      playClickSound();
-      const updated = studyPartners.filter(p => p.id !== id);
-      persistPartners(updated);
-      await deleteStudyPartnerFromDb(id).catch(() => {});
-      showToast('Đã xóa thông tin tìm bạn học!');
-    }
-  };
-
-  // Open direct contact link
-  const handleOpenContactLink = (contactMethod, contactInfo) => {
-    playClickSound();
-    if (!contactInfo) return;
-    const trimmed = contactInfo.trim();
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      window.open(trimmed, '_blank', 'noopener,noreferrer');
-    } else if (contactMethod === 'Telegram' && trimmed.startsWith('@')) {
-      window.open(`https://t.me/${trimmed.slice(1)}`, '_blank', 'noopener,noreferrer');
-    } else if (contactMethod === 'Zalo' && /^[0-9+]+$/.test(trimmed)) {
-      window.open(`https://zalo.me/${trimmed}`, '_blank', 'noopener,noreferrer');
-    } else if (/^[0-9+]{9,15}$/.test(trimmed)) {
-      window.open(`tel:${trimmed}`, '_self');
-    } else {
-      handleCopyContact(trimmed);
-    }
-  };
-
-  // Copy contact to clipboard
-  const handleCopyContact = (info) => {
-    playClickSound();
-    navigator.clipboard.writeText(info);
-    showToast(`Đã sao chép: ${info}`);
-  };
-
-  // Calculate real XP
-  const totalUserXp = (user?.xp || 0) + (completedLessonsCount * 20) + ((challengeData.checkIns || 0) * 15);
-  const currentStreak = user?.streak || (challengeData.checkIns > 0 ? challengeData.checkIns : 0);
-
-  // Learner rank tier
-  const getRankTier = (xp) => {
-    if (xp >= 600) return { name: 'Bậc Thầy Vàng', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/40', next: 'Tối đa', progress: 100 };
-    if (xp >= 300) return { name: 'Học Giả Bạc', color: 'text-slate-400', bg: 'bg-slate-50 dark:bg-slate-900', next: '600 XP', progress: Math.round(((xp - 300) / 300) * 100) };
-    if (xp >= 100) return { name: 'Chiến Binh Đồng', color: 'text-amber-700', bg: 'bg-amber-100/50 dark:bg-amber-950/30', next: '300 XP', progress: Math.round(((xp - 100) / 200) * 100) };
-    return { name: 'Tân Binh Hanzi', color: 'text-[#45B97C]', bg: 'bg-emerald-50 dark:bg-emerald-950/30', next: '100 XP', progress: Math.round((xp / 100) * 100) };
-  };
-
-  const rankTier = getRankTier(totalUserXp);
-  const isCheckedInToday = challengeData.lastDate === getLocalDateString();
-
-  // Filter & sort posts
-  const filteredPosts = useMemo(() => {
-    const q = searchTerm.toLowerCase().trim();
-    const list = posts.filter(post => {
-      const matchesSearch = !q ||
-        (post.content || '').toLowerCase().includes(q) ||
-        (post.author || '').toLowerCase().includes(q) ||
-        (post.tag || '').toLowerCase().includes(q);
-      if (!matchesSearch) return false;
-
-      if (selectedTag === 'saved' && !post.saved) return false;
-      if (selectedTag !== 'all' && selectedTag !== 'saved' && post.tag !== selectedTag) return false;
-
-      if (selectedHskGroup !== 'all') {
-        const parsed = parseStructuredPostContent(post.content);
-        const rawLvl = `${parsed.hskLevel || ''} ${post.level || ''}`.toUpperCase();
-        if (selectedHskGroup === 'HSK 1–3' && !/HSK\s*[123]\b/.test(rawLvl)) return false;
-        if (selectedHskGroup === 'HSK 4–6' && !/HSK\s*[456]\b/.test(rawLvl)) return false;
-        if (selectedHskGroup === 'HSK 7–9' && !/HSK\s*[789]/.test(rawLvl)) return false;
-      }
-      return true;
-    });
-
-    if (postSort === 'popular') {
-      return [...list].sort((a, b) => {
-        if (Boolean(a.isPinned) !== Boolean(b.isPinned)) return a.isPinned ? -1 : 1;
-        return (b.likes || 0) - (a.likes || 0) || (b.commentsCount || 0) - (a.commentsCount || 0);
-      });
-    }
-    return list;
-  }, [posts, searchTerm, selectedTag, selectedHskGroup, postSort]);
-
-  // My own study partner profile if exists
-  const myPartnerProfile = useMemo(() => {
-    return studyPartners.find(p => 
-      Boolean((user?.id && p.userId && String(user.id) === String(p.userId)) || p.isMyPartnerPost)
-    );
-  }, [studyPartners, user]);
-
-  // Filter partners
-  const filteredPartners = useMemo(() => {
-    return studyPartners.filter(p => {
-      // 1. Level filter (matching prefix resiliently: 'HSK 1 - Sơ cấp' vs 'HSK 1')
-      if (partnerFilterLevel !== 'all') {
-        const pLevel = (p.level || p.targetLevel || '').toLowerCase();
-        if (!pLevel.startsWith(partnerFilterLevel.toLowerCase())) {
-          return false;
-        }
-      }
-
-      // 2. Contact method filter
-      if (partnerFilterMethod !== 'all') {
-        const pMethod = (p.contactMethod || '').toLowerCase();
-        if (pMethod !== partnerFilterMethod.toLowerCase()) {
-          return false;
-        }
-      }
-
-      // 3. Status filter
-      if (partnerFilterStatus === 'active') {
-        const isOwner = Boolean((user?.id && p.userId && String(user.id) === String(p.userId)) || p.isMyPartnerPost);
-        if (p.isActive === false && !isOwner) {
-          return false;
-        }
-      }
-
-      // 4. Search keyword filter (name, goal, skills, daily time)
-      if (partnerSearchTerm.trim()) {
-        const q = partnerSearchTerm.trim().toLowerCase();
-        const matchName = (p.name || '').toLowerCase().includes(q);
-        const matchGoal = (p.goal || p.intro || '').toLowerCase().includes(q);
-        const matchSkills = (p.skills || '').toLowerCase().includes(q);
-        const matchTime = (p.dailyTime || '').toLowerCase().includes(q);
-        const matchMethod = (p.contactMethod || '').toLowerCase().includes(q);
-        if (!matchName && !matchGoal && !matchSkills && !matchTime && !matchMethod) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [studyPartners, partnerFilterLevel, partnerFilterMethod, partnerFilterStatus, partnerSearchTerm, user]);
-
-  const activePartnerFilterCount =
-    (partnerFilterLevel !== 'all' ? 1 : 0) +
-    (partnerFilterMethod !== 'all' ? 1 : 0) +
-    (partnerFilterStatus !== 'all' ? 1 : 0);
+  const {
+    posts,
+    hasMorePosts,
+    nextPostCursor,
+    isLoadingPosts,
+    isLoadingMorePosts,
+    postCommentsMap,
+    loadingCommentsMap,
+    submittingCommentMap,
+    reportModalState,
+    setReportModalState,
+    solvedPostIds,
+    studyPartners,
+    challengeData,
+    completedLessonsCount,
+    isCloudSynced,
+    isRefreshing,
+    selectedTag,
+    setSelectedTag,
+    selectedHskGroup,
+    setSelectedHskGroup,
+    postSort,
+    setPostSort,
+    newPostTitle,
+    setNewPostTitle,
+    newPostContent,
+    setNewPostContent,
+    newPostTag,
+    setNewPostTag,
+    newPostHskLevel,
+    setNewPostHskLevel,
+    newPostChinese,
+    setNewPostChinese,
+    newPostPinyin,
+    setNewPostPinyin,
+    showSnippetInputs,
+    setShowSnippetInputs,
+    postContactMethod,
+    setPostContactMethod,
+    postContactInfo,
+    setPostContactInfo,
+    postImage,
+    setPostImage,
+    searchTerm,
+    setSearchTerm,
+    editingPostId,
+    setEditingPostId,
+    editPostDraft,
+    setEditPostDraft,
+    editingCommentId,
+    setEditingCommentId,
+    editCommentDraft,
+    setEditCommentDraft,
+    partnerFilterLevel,
+    setPartnerFilterLevel,
+    partnerFilterMethod,
+    setPartnerFilterMethod,
+    partnerFilterStatus,
+    setPartnerFilterStatus,
+    partnerSearchTerm,
+    setPartnerSearchTerm,
+    showPartnerFilters,
+    setShowPartnerFilters,
+    isLoadingPartners,
+    expandedComments,
+    commentInputs,
+    setCommentInputs,
+    isPartnerModalOpen,
+    setIsPartnerModalOpen,
+    editingPartnerId,
+    partnerForm,
+    setPartnerForm,
+    activeContactModal,
+    setActiveContactModal,
+    zoomImageModal,
+    setZoomImageModal,
+    toastMessage,
+    totalUserXp,
+    currentStreak,
+    rankTier,
+    isCheckedInToday,
+    filteredPosts,
+    myPartnerProfile,
+    filteredPartners,
+    activePartnerFilterCount,
+    showToast,
+    handleOpenReportModal,
+    handleRefreshCloud,
+    handleLoadMorePosts,
+    handleShareAchievement,
+    handleCreatePost,
+    handleSaveEditPost,
+    handleModeratePost,
+    handleApplyPrompt,
+    handleToggleLike,
+    handleToggleSave,
+    handleToggleSolved,
+    handleSpeakChinesePost,
+    handleDeletePost,
+    handleToggleComments,
+    handleAddComment,
+    handleSaveEditComment,
+    handleDeleteComment,
+    handleJoinChallenge,
+    handleCheckIn,
+    handleOpenCreatePartnerModal,
+    handleOpenEditPartnerModal,
+    handleTogglePartnerStatus,
+    handleSavePartner,
+    handleDeletePartner,
+    handleOpenContactLink,
+    handleCopyContact,
+  } = feed;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-10 animate-in fade-in duration-300">
-      
+    <div
+      data-cursor={nextPostCursor || ''}
+      className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-10 animate-in fade-in duration-300"
+    >
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl bg-[#243447] text-white text-xs sm:text-sm font-bold shadow-2xl flex items-center gap-2 border border-white/10 animate-bounce">
@@ -1444,17 +258,17 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
           <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
             <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-white text-[11px] font-bold backdrop-blur-md border border-white/20">
               <Users size={13} className="text-amber-300" />
-              <span>Không gian Học tập & Giao lưu HanziGo</span>
+              <span>Không gian Học tập &amp; Giao lưu HanziGo</span>
             </div>
-            
+
             <h1 className="text-lg sm:text-2xl lg:text-3xl font-black tracking-tight font-['Noto_Serif_SC'] leading-tight">
               Cộng Đồng Người Học HanziGo
             </h1>
-            
+
             <p className="text-xs text-white/90 leading-relaxed font-medium line-clamp-1 sm:line-clamp-2">
               Hỏi đáp ngữ pháp, thảo luận kinh nghiệm thi HSK, ghép đôi luyện nói 1-1 và vinh danh bảng vàng cao thủ chữ Hán.
             </p>
-            
+
             <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px]">
               <span className="px-2.5 py-1 rounded-lg bg-black/25 font-bold backdrop-blur-md border border-white/10 flex items-center gap-1">
                 💬 <strong>{posts.length}</strong> bài thảo luận
@@ -1568,789 +382,110 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
 
       {/* VIEW: STUDY PARTNERS MATCHING */}
       {communityView === 'partners' && (
-        <div className="space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-4">
-              <div>
-                <h2 className="text-xl font-black text-[#243447] dark:text-white flex items-center gap-2">
-                  <Users size={20} className="text-[#45B97C]" />
-                  <span>Trung Tâm Ghép Đôi Luyện Nói (Call 1-1)</span>
-                </h2>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1">
-                  Tìm bạn bè cùng cấp độ HSK 1–6 để cùng luyện đàm thoại 20–30 phút mỗi ngày qua Zalo, Google Meet hoặc WeChat.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {myPartnerProfile ? (
-                  <button
-                    onClick={() => handleOpenEditPartnerModal(myPartnerProfile)}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#45B97C] hover:bg-emerald-100 font-bold text-xs border border-emerald-200 dark:border-emerald-800 shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
-                  >
-                    <Edit3 size={14} />
-                    <span>Hồ sơ của tôi</span>
-                  </button>
-                ) : null}
-
-                <button
-                  onClick={handleOpenCreatePartnerModal}
-                  className="px-5 py-2.5 rounded-xl bg-[#45B97C] hover:bg-[#3AA56E] text-white font-bold text-xs shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer"
-                >
-                  <Plus size={15} />
-                  <span>{myPartnerProfile ? 'Đăng tin mới' : 'Đăng tin tìm bạn ngay (+15 XP)'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Banner hiển thị hồ sơ cá nhân của học viên nếu đã đăng ký */}
-            {myPartnerProfile && (
-              <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#EBF8F2] dark:bg-[#162B21] border border-emerald-200 dark:border-emerald-800 text-xs">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${myPartnerProfile.isActive ? 'bg-[#45B97C] animate-pulse' : 'bg-slate-400'}`} />
-                  <div className="min-w-0">
-                    <span className="font-bold text-[#243447] dark:text-white">
-                      Hồ sơ của bạn ({myPartnerProfile.name} - {myPartnerProfile.level}):
-                    </span>{' '}
-                    <span className={`font-semibold ${myPartnerProfile.isActive ? 'text-[#45B97C]' : 'text-slate-500'}`}>
-                      {myPartnerProfile.isActive ? 'Đang tìm bạn' : 'Đã tạm ngưng hiển thị'}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleTogglePartnerStatus(myPartnerProfile)}
-                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#131B24] border border-emerald-300 dark:border-emerald-700 font-bold text-[#243447] dark:text-white hover:bg-emerald-50 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
-                    title={myPartnerProfile.isActive ? 'Tạm ngưng để không nhận kết nối mới' : 'Kích hoạt lại hồ sơ'}
-                  >
-                    {myPartnerProfile.isActive ? <EyeOff size={13} className="text-amber-500" /> : <Eye size={13} className="text-[#45B97C]" />}
-                    <span>{myPartnerProfile.isActive ? 'Tạm ngưng' : 'Mở lại'}</span>
-                  </button>
-                  <button
-                    onClick={() => handleOpenEditPartnerModal(myPartnerProfile)}
-                    className="px-3 py-1.5 rounded-xl bg-[#45B97C] text-white font-bold hover:bg-[#3AA56E] transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
-                  >
-                    <Edit3 size={13} />
-                    <span>Sửa hồ sơ</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Partner Search & Filters */}
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-              {/* Ô tìm kiếm từ khóa + nút toggle bộ lọc mobile */}
-              <div className="flex items-center gap-2 flex-1">
-                <div className="relative flex-1">
-                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
-                  <input
-                    type="text"
-                    placeholder="Tìm bạn theo tên, mục tiêu, kỹ năng luyện tập..."
-                    value={partnerSearchTerm}
-                    onChange={(e) => setPartnerSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-8 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
-                  />
-                  {partnerSearchTerm && (
-                    <button
-                      onClick={() => setPartnerSearchTerm('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#748092] hover:text-[#243447] dark:hover:text-white"
-                    >
-                      <X size={13} />
-                    </button>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowPartnerFilters((prev) => !prev)}
-                  className={`sm:hidden min-h-11 px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
-                    showPartnerFilters || activePartnerFilterCount > 0
-                      ? 'bg-[#45B97C]/15 border-[#45B97C]/40 text-[#45B97C]'
-                      : 'bg-[#FFF9F2] dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white'
-                  }`}
-                >
-                  <Filter size={14} />
-                  <span>Bộ lọc</span>
-                  {activePartnerFilterCount > 0 && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-[#45B97C] text-white text-[10px] font-black">
-                      {activePartnerFilterCount}
-                    </span>
-                  )}
-                </button>
-              </div>
-
-              {/* Bộ lọc dropdown */}
-              <div className={`${showPartnerFilters ? 'block' : 'hidden'} sm:block`}>
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-[#748092]">Cấp độ:</span>
-                    <select
-                      value={partnerFilterLevel}
-                      onChange={(e) => setPartnerFilterLevel(e.target.value)}
-                      className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
-                    >
-                      <option value="all">Mọi cấp độ</option>
-                      <option value="HSK 1">HSK 1</option>
-                      <option value="HSK 2">HSK 2</option>
-                      <option value="HSK 3">HSK 3</option>
-                      <option value="HSK 4">HSK 4</option>
-                      <option value="HSK 5">HSK 5</option>
-                      <option value="HSK 6">HSK 6</option>
-                      <option value="Giao tiếp tự do">Giao tiếp tự do</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-[#748092]">Kênh:</span>
-                    <select
-                      value={partnerFilterMethod}
-                      onChange={(e) => setPartnerFilterMethod(e.target.value)}
-                      className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
-                    >
-                      <option value="all">Mọi kênh liên hệ</option>
-                      <option value="Zalo">Zalo</option>
-                      <option value="Google Meet">Google Meet</option>
-                      <option value="WeChat">WeChat</option>
-                      <option value="Zoom">Zoom</option>
-                      <option value="Telegram">Telegram</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-[#748092]">Trạng thái:</span>
-                    <select
-                      value={partnerFilterStatus}
-                      onChange={(e) => setPartnerFilterStatus(e.target.value)}
-                      className="px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm font-semibold text-[#243447] dark:text-white focus:outline-none cursor-pointer"
-                    >
-                      <option value="all">Tất cả</option>
-                      <option value="active">Đang tìm bạn</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Partner Grid */}
-            {isLoadingPartners ? (
-              <div className="p-12 text-center rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                <RefreshCw size={28} className="mx-auto text-[#45B97C] animate-spin mb-2" />
-                <p className="text-xs text-[#748092]">Đang tải danh sách bạn học từ Supabase...</p>
-              </div>
-            ) : filteredPartners.length === 0 ? (
-              <div className="p-12 text-center rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3">
-                <Users size={40} className="mx-auto text-[#748092]/50" />
-                <p className="text-sm font-bold text-[#243447] dark:text-white">Chưa có ai đăng ký phù hợp với bộ lọc</p>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8] max-w-md mx-auto">
-                  Bạn muốn tìm bạn cùng luyện phản xạ khẩu ngữ HSK? Hãy nhấn đăng tin để ghép đôi ngay nhé!
-                </p>
-                <div className="flex items-center justify-center gap-2 pt-1">
-                  {(partnerSearchTerm || partnerFilterLevel !== 'all' || partnerFilterMethod !== 'all' || partnerFilterStatus !== 'all') && (
-                    <button
-                      onClick={() => {
-                        setPartnerSearchTerm('');
-                        setPartnerFilterLevel('all');
-                        setPartnerFilterMethod('all');
-                        setPartnerFilterStatus('all');
-                      }}
-                      className="px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] hover:text-[#243447] dark:hover:text-white cursor-pointer"
-                    >
-                      Xóa bộ lọc
-                    </button>
-                  )}
-                  <button
-                    onClick={handleOpenCreatePartnerModal}
-                    className="px-4 py-2 rounded-xl bg-[#45B97C] text-white text-xs font-bold hover:bg-[#3AA56E] transition-colors cursor-pointer"
-                  >
-                    Đăng ký tìm bạn học
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredPartners.map((partner) => {
-                  const isOwner = Boolean((user?.id && partner.userId && String(user.id) === String(partner.userId)) || partner.isMyPartnerPost);
-                  const isAdmin = user?.role === 'admin';
-
-                  return (
-                    <div 
-                      key={partner.id}
-                      className={`p-5 rounded-3xl bg-white dark:bg-[#131B24] border shadow-xs hover:shadow-md transition-all space-y-3 flex flex-col justify-between ${
-                        partner.isActive === false
-                          ? 'border-dashed border-slate-300 dark:border-slate-700 opacity-80'
-                          : isOwner
-                            ? 'border-emerald-300 dark:border-emerald-700'
-                            : 'border-[#F1E5D8] dark:border-[#2B3A4F]'
-                      }`}
-                    >
-                      <div className="space-y-2.5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-10 h-10 rounded-full bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706] font-black text-sm flex items-center justify-center border border-[#F4B942]/40 shrink-0">
-                              {partner.initial || 'H'}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <h3 className="text-sm font-bold text-[#243447] dark:text-white truncate">{partner.name}</h3>
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] shrink-0">
-                                  {partner.level}
-                                </span>
-                                {partner.isActive === false ? (
-                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 shrink-0">
-                                    Tạm ngưng
-                                  </span>
-                                ) : (
-                                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Đang tìm bạn" />
-                                )}
-                              </div>
-                              <p className="text-xs text-[#748092] mt-0.5 truncate">{partner.goal}</p>
-                            </div>
-                          </div>
-
-                          {/* Toolbar hành động: Chủ sở hữu hoặc Admin */}
-                          <div className="flex items-center gap-1 shrink-0">
-                            {isOwner && (
-                              <>
-                                <button
-                                  onClick={() => handleTogglePartnerStatus(partner)}
-                                  className="text-[#748092] hover:text-[#45B97C] p-1 cursor-pointer transition-colors"
-                                  title={partner.isActive ? 'Tạm ngưng tìm bạn' : 'Mở lại tìm bạn'}
-                                >
-                                  {partner.isActive ? <EyeOff size={13} className="text-amber-500" /> : <Eye size={13} className="text-emerald-500" />}
-                                </button>
-                                <button
-                                  onClick={() => handleOpenEditPartnerModal(partner)}
-                                  className="text-[#748092] hover:text-[#45B97C] p-1 cursor-pointer transition-colors"
-                                  title="Chỉnh sửa hồ sơ"
-                                >
-                                  <Edit3 size={13} />
-                                </button>
-                              </>
-                            )}
-
-                            {(isOwner || isAdmin) && (
-                              <button
-                                onClick={() => handleDeletePartner(partner.id)}
-                                className="text-[#748092] hover:text-red-500 p-1 cursor-pointer transition-colors"
-                                title={isAdmin && !isOwner ? 'Quản trị viên xóa tin vi phạm' : 'Hủy tin tìm bạn'}
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Thông tin kỹ năng & thời gian */}
-                        {(partner.skills || partner.dailyTime) && (
-                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[#748092] dark:text-[#94A3B8]">
-                            {partner.skills && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                                <Target size={11} className="text-[#E85D3F]" />
-                                <span>{partner.skills}</span>
-                              </span>
-                            )}
-                            {partner.dailyTime && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                                <Clock size={11} className="text-[#45B97C]" />
-                                <span>{partner.dailyTime}</span>
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Contact Preview Strip */}
-                        <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <span className="text-[10px] font-bold text-[#E85D3F] uppercase block">
-                              {partner.contactMethod || 'Liên hệ'}
-                            </span>
-                            <span className="text-xs font-mono font-bold text-[#243447] dark:text-white truncate block">
-                              {partner.isContactPublic === false && !isOwner
-                                ? 'Thông tin bảo mật'
-                                : (partner.contactInfo || 'Chưa cung cấp')}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1 shrink-0">
-                            {partner.contactInfo && (partner.isContactPublic !== false || isOwner) && (
-                              <>
-                                <button
-                                  onClick={() => handleCopyContact(partner.contactInfo)}
-                                  className="p-1.5 rounded-lg bg-white dark:bg-[#131B24] text-[#748092] hover:text-[#E85D3F] transition-colors cursor-pointer"
-                                  title="Sao chép"
-                                >
-                                  <Copy size={13} />
-                                </button>
-                                <button
-                                  onClick={() => handleOpenContactLink(partner.contactMethod, partner.contactInfo)}
-                                  className="p-1.5 rounded-lg bg-white dark:bg-[#131B24] text-[#748092] hover:text-[#45B97C] transition-colors cursor-pointer"
-                                  title="Mở liên hệ trực tiếp"
-                                >
-                                  <ExternalLink size={13} />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2">
-                        {partner.qrImage ? (
-                          <button
-                            onClick={() => {
-                              playClickSound();
-                              setZoomImageModal({ url: partner.qrImage, title: `Mã QR kết bạn - ${partner.name}` });
-                            }}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#45B97C] text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1 cursor-pointer"
-                          >
-                            <QrCode size={13} />
-                            <span>Mã QR</span>
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-[#748092]">Sẵn sàng kết nối</span>
-                        )}
-
-                        <button
-                          onClick={() => {
-                            playClickSound();
-                            setActiveContactModal(partner);
-                          }}
-                          className="px-3.5 py-1.5 rounded-xl bg-[#45B97C] text-white text-xs font-bold hover:bg-[#3AA56E] transition-colors cursor-pointer"
-                        >
-                          Chi tiết
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+        <StudyPartnerList
+          user={user}
+          studyPartners={studyPartners}
+          filteredPartners={filteredPartners}
+          myPartnerProfile={myPartnerProfile}
+          isLoadingPartners={isLoadingPartners}
+          partnerSearchTerm={partnerSearchTerm}
+          setPartnerSearchTerm={setPartnerSearchTerm}
+          showPartnerFilters={showPartnerFilters}
+          setShowPartnerFilters={setShowPartnerFilters}
+          activePartnerFilterCount={activePartnerFilterCount}
+          partnerFilterLevel={partnerFilterLevel}
+          setPartnerFilterLevel={setPartnerFilterLevel}
+          partnerFilterMethod={partnerFilterMethod}
+          setPartnerFilterMethod={setPartnerFilterMethod}
+          partnerFilterStatus={partnerFilterStatus}
+          setPartnerFilterStatus={setPartnerFilterStatus}
+          handleOpenCreatePartnerModal={handleOpenCreatePartnerModal}
+          handleOpenEditPartnerModal={handleOpenEditPartnerModal}
+          handleTogglePartnerStatus={handleTogglePartnerStatus}
+          handleDeletePartner={handleDeletePartner}
+          handleCopyContact={handleCopyContact}
+          handleOpenContactLink={handleOpenContactLink}
+          setZoomImageModal={setZoomImageModal}
+          setActiveContactModal={setActiveContactModal}
+          renderMobileFilterToggle={({
+            showPartnerFilters: open,
+            togglePartnerFilters,
+            activePartnerFilterCount: count,
+          }) => (
+            <button
+              type="button"
+              onClick={togglePartnerFilters}
+              className={`sm:hidden min-h-11 px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                open || count > 0
+                  ? 'bg-[#45B97C]/15 border-[#45B97C]/40 text-[#45B97C]'
+                  : 'bg-[#FFF9F2] dark:bg-[#131B24] border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white'
+              }`}
+            >
+              <Filter size={14} />
+              <span>Bộ lọc</span>
+              {count > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-[#45B97C] text-white text-[10px] font-black">
+                  {count}
+                </span>
+              )}
+            </button>
+          )}
+        />
       )}
 
       {/* VIEW: 21-DAY CHALLENGE & ENGINE */}
       {communityView === 'challenge' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <div className="md:col-span-8">
-              <ChineseChallengeCard user={user} onAddXp={awardXp} />
-            </div>
-
-            <div className="md:col-span-4 space-y-6">
-              {/* Challenge Check-in summary */}
-              <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-[#243447] dark:text-white flex items-center gap-2">
-                    <Flame size={16} className="text-[#E85D3F]" />
-                    <span>Hành Trình 21 Ngày</span>
-                  </h3>
-                  <span className="text-xs font-bold text-[#45B97C]">
-                    Ngày {challengeData.checkIns || 0}/21
-                  </span>
-                </div>
-
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8] leading-relaxed">
-                  Duy trì việc học ít nhất 15 phút mỗi ngày để tạo thói quen bền vững và rèn luyện phản xạ ngôn ngữ.
-                </p>
-
-                <div className="w-full h-2.5 rounded-full bg-[#FFF9F2] dark:bg-[#131B24] overflow-hidden border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                  <div 
-                    className="h-full bg-gradient-to-r from-[#E85D3F] to-[#F4B942] rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(100, Math.round(((challengeData.checkIns || 0) / 21) * 100))}%` }}
-                  />
-                </div>
-
-                {!challengeData.joined ? (
-                  <button
-                    onClick={handleJoinChallenge}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#E85D3F] to-[#CB4529] text-white font-bold text-xs shadow-md hover:brightness-105 transition-all cursor-pointer"
-                  >
-                    Bắt đầu thử thách (+20 XP)
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleCheckIn}
-                    disabled={isCheckedInToday}
-                    className={`w-full py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer ${
-                      isCheckedInToday 
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 cursor-default'
-                        : 'bg-[#45B97C] hover:bg-[#3AA56E] text-white'
-                    }`}
-                  >
-                    {isCheckedInToday ? '✓ Đã điểm danh hôm nay' : '🔥 Điểm danh ngày hôm nay (+15 XP)'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <CommunityChallengeView
+          user={user}
+          challengeData={challengeData}
+          isCheckedInToday={isCheckedInToday}
+          handleJoinChallenge={handleJoinChallenge}
+          handleCheckIn={handleCheckIn}
+        />
       )}
 
       {/* VIEW: MAIN FORUM FEED */}
       {communityView === 'feed' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
           {/* Main Feed Column (8 cols) */}
           <div className="lg:col-span-8 space-y-6">
-            
-            {/* 1. DAILY TOPIC STICKY CARD */}
-            <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#FEF7E9] via-white to-[#FFF9F2] dark:from-[#1E293B] dark:via-[#1B2636] dark:to-[#131B24] border-2 border-[#F4B942]/60 shadow-md space-y-2 sm:space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-black uppercase tracking-wider text-[#D97706] bg-[#FEF7E9] dark:bg-[#2D2619] px-2.5 py-0.5 rounded-full border border-[#F4B942]/40 flex items-center gap-1">
-                  <span>🏮</span>
-                  <span>Chủ Đề Đàm Thoại Hôm Nay</span>
-                </span>
-                <button
-                  onClick={() => speakChinese(DAILY_DISCUSSION_TOPIC.chinese)}
-                  className="text-xs text-[#E85D3F] font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <Volume2 size={14} />
-                  <span>Nghe câu hỏi</span>
-                </button>
-              </div>
+            <PostComposer
+              user={user}
+              newPostTitle={newPostTitle}
+              setNewPostTitle={setNewPostTitle}
+              newPostContent={newPostContent}
+              setNewPostContent={setNewPostContent}
+              newPostTag={newPostTag}
+              setNewPostTag={setNewPostTag}
+              newPostHskLevel={newPostHskLevel}
+              setNewPostHskLevel={setNewPostHskLevel}
+              newPostChinese={newPostChinese}
+              setNewPostChinese={setNewPostChinese}
+              newPostPinyin={newPostPinyin}
+              setNewPostPinyin={setNewPostPinyin}
+              showSnippetInputs={showSnippetInputs}
+              setShowSnippetInputs={setShowSnippetInputs}
+              postContactMethod={postContactMethod}
+              setPostContactMethod={setPostContactMethod}
+              postContactInfo={postContactInfo}
+              setPostContactInfo={setPostContactInfo}
+              postImage={postImage}
+              setPostImage={setPostImage}
+              handleShareAchievement={handleShareAchievement}
+              handleApplyPrompt={handleApplyPrompt}
+              handleCreatePost={handleCreatePost}
+            />
 
-              <div>
-                <h3 className="font-['Noto_Serif_SC'] text-lg sm:text-xl font-black text-[#243447] dark:text-white">
-                  {DAILY_DISCUSSION_TOPIC.chinese}
-                </h3>
-                <p className="text-xs font-semibold text-[#D97706] mt-0.5">{DAILY_DISCUSSION_TOPIC.pinyin}</p>
-                <p className="text-xs text-[#748092] dark:text-[#94A3B8] mt-1">{DAILY_DISCUSSION_TOPIC.meaning}</p>
-              </div>
-
-              {/* Vocab Hints */}
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[11px] font-bold text-[#748092]">Gợi ý từ:</span>
-                {DAILY_DISCUSSION_TOPIC.vocabHints.map((vh, vIdx) => (
-                  <span
-                    key={vIdx}
-                    onClick={() => speakChinese(vh.zh)}
-                    className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#243447] dark:text-white hover:border-[#E85D3F] cursor-pointer"
-                    title={`Nhấp để nghe đọc: ${vh.py} (${vh.vi})`}
-                  >
-                    {vh.zh} ({vh.vi})
-                  </span>
-                ))}
-              </div>
-
-              <div className="pt-2 border-t border-[#F1E5D8]/70 dark:border-[#2B3A4F]/70 flex items-center justify-between">
-                <span className="text-[11px] text-[#748092]">Đăng bài trả lời để nhận +20 XP và cùng luyện phản xạ</span>
-                <button
-                  onClick={() => {
-                    playClickSound();
-                    setNewPostTag('#ChuDeHomNay');
-                    setNewPostContent(`Trả lời chủ đề hôm nay (${DAILY_DISCUSSION_TOPIC.chinese}): `);
-                  }}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#E85D3F] hover:bg-[#CB4529] text-white text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                >
-                  <Send size={12} />
-                  <span>Tham gia trả lời</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 2. Post Creation Box */}
-            <div id="community-composer" className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-bold text-[#243447] dark:text-white flex items-center gap-2">
-                  <Sparkles size={16} className="text-[#E85D3F]" />
-                  <span>Chia sẻ câu hỏi, bài viết HSK hoặc kinh nghiệm học tập</span>
-                </h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleShareAchievement}
-                    className="min-h-11 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1"
-                  >
-                    <Trophy size={13} />
-                    <span>Chia sẻ thành tích</span>
-                  </button>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                    +20 XP khi đăng bài
-                  </span>
-                </div>
-              </div>
-
-              {!user && (
-                <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-center justify-between gap-2">
-                  <span>Bạn đang xem ở chế độ Khách (chỉ đọc). Hãy đăng nhập để đăng bài, bình luận hoặc thích bài viết.</span>
-                </div>
-              )}
-
-              {/* Quick Starter Prompts */}
-              <div className="space-y-1.5">
-                <span className="text-[11px] font-bold text-[#748092] uppercase tracking-wider block">
-                  ⚡ Gợi ý chủ đề nhanh (Nhấp để điền):
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {QUICK_POST_PROMPTS.map((item, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleApplyPrompt(item)}
-                      className="min-h-11 px-2.5 py-1.5 rounded-xl text-xs bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#E85D3F] hover:text-[#E85D3F] transition-all font-medium cursor-pointer"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <form onSubmit={handleCreatePost} className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <input
-                    type="text"
-                    maxLength={POST_LIMITS.TITLE_MAX}
-                    placeholder="Tiêu đề ngắn gọn (tùy chọn, tối đa 120 ký tự)..."
-                    value={newPostTitle}
-                    onChange={(e) => setNewPostTitle(e.target.value)}
-                    className="sm:col-span-2 px-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
-                  />
-                  <select
-                    aria-label="Cấp độ HSK của bài viết"
-                    value={newPostHskLevel}
-                    onChange={(e) => setNewPostHskLevel(e.target.value)}
-                    className="px-3 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white font-medium focus:outline-none focus:border-[#E85D3F] cursor-pointer"
-                  >
-                    {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'HSK 7-9'].map((lvl) => (
-                      <option key={lvl} value={lvl}>{lvl}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <textarea
-                    rows={3}
-                    maxLength={POST_LIMITS.CONTENT_MAX}
-                    placeholder="Bạn đang vướng mắc điểm ngữ pháp nào, cần sửa câu tiếng Trung hay chia sẻ mẹo học? Hãy viết tại đây..."
-                    value={newPostContent}
-                    onChange={(e) => setNewPostContent(e.target.value)}
-                    className="w-full p-4 rounded-2xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] resize-none"
-                  />
-                  <div className="flex items-center justify-between text-[11px] text-[#748092] mt-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowSnippetInputs(prev => !prev)}
-                      className="font-bold text-[#E85D3F] hover:underline cursor-pointer"
-                    >
-                      {showSnippetInputs ? '− Ẩn khung Câu tiếng Trung cần hỏi / sửa' : '+ Thêm Câu tiếng Trung cần hỏi / sửa (Hanzi & Pinyin)'}
-                    </button>
-                    <span>{newPostContent.length}/{POST_LIMITS.CONTENT_MAX}</span>
-                  </div>
-                </div>
-
-                {showSnippetInputs && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                    <input
-                      type="text"
-                      maxLength={POST_LIMITS.SNIPPET_MAX}
-                      placeholder="Câu chữ Hán (ví dụ: 我昨天去了图书馆。)"
-                      value={newPostChinese}
-                      onChange={(e) => setNewPostChinese(e.target.value)}
-                      className="px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
-                    />
-                    <input
-                      type="text"
-                      maxLength={POST_LIMITS.SNIPPET_MAX}
-                      placeholder="Pinyin kèm theo (tùy chọn)..."
-                      value={newPostPinyin}
-                      onChange={(e) => setNewPostPinyin(e.target.value)}
-                      className="px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
-                    />
-                  </div>
-                )}
-
-                {/* Contact info strip */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-2 border-t border-[#F1E5D8]/80 dark:border-[#2B3A4F]/80">
-                  <span className="text-[11px] font-bold text-[#748092] dark:text-[#94A3B8] shrink-0">
-                    Thông tin liên hệ (tùy chọn):
-                  </span>
-                  <div className="flex items-center gap-2 flex-1">
-                    <select
-                      value={postContactMethod}
-                      onChange={(e) => setPostContactMethod(e.target.value)}
-                      className="text-base sm:text-sm px-2.5 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-medium focus:outline-none focus:border-[#E85D3F] shrink-0 cursor-pointer"
-                    >
-                      <option value="Zalo">Zalo</option>
-                      <option value="SĐT">SĐT</option>
-                      <option value="WeChat">WeChat</option>
-                      <option value="Telegram">Telegram</option>
-                      <option value="Facebook">Facebook</option>
-                    </select>
-                    <input
-                      type="text"
-                      placeholder="SĐT / Zalo / ID để bạn bè liên hệ trực tiếp..."
-                      value={postContactInfo}
-                      onChange={(e) => setPostContactInfo(e.target.value)}
-                      className="w-full text-base sm:text-sm px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
-                    />
-                  </div>
-                </div>
-
-                {/* Attached image preview */}
-                {postImage && (
-                  <div className="relative inline-block mt-1">
-                    <div className="p-1 rounded-xl bg-white dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-xs">
-                      <img 
-                        src={postImage} 
-                        alt="Ảnh đính kèm" 
-                        className="h-20 w-auto rounded-lg object-contain"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setPostImage('')}
-                      className="absolute -top-1.5 -right-1.5 p-1 rounded-full bg-red-500 hover:bg-red-600 text-white shadow-md transition-colors cursor-pointer"
-                      title="Xóa ảnh"
-                    >
-                      <X size={11} />
-                    </button>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-[#748092] dark:text-[#94A3B8]">Chủ đề:</span>
-                      <select
-                        value={newPostTag}
-                        onChange={(e) => setNewPostTag(e.target.value)}
-                        className="text-base sm:text-sm px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#243447] dark:text-white font-medium focus:outline-none focus:border-[#E85D3F] cursor-pointer"
-                      >
-                        <option value="#ThiHSK">Hỏi đáp HSK</option>
-                        <option value="#SuaCauLuyenViet">Sửa câu / Luyện viết</option>
-                        <option value="#MeoHocTuVung">Mẹo học từ vựng</option>
-                        <option value="#KinhNghiemHoc">Chia sẻ kinh nghiệm</option>
-                        <option value="#TimBanLuyenNoi">Tìm bạn học</option>
-                        <option value="#HoiDapNguPhap">Ngữ pháp &amp; Mẫu câu</option>
-                      </select>
-                    </div>
-
-                    <label className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-[#748092] hover:text-[#E85D3F] hover:border-[#E85D3F] cursor-pointer font-medium transition-colors shrink-0">
-                      <ImageIcon size={14} className="text-[#E85D3F]" />
-                      <span>{postImage ? 'Đổi ảnh/QR' : 'Ảnh / Mã QR'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          if (file.size > 10 * 1024 * 1024) {
-                            alert('Kích thước ảnh tối đa 10MB');
-                            return;
-                          }
-                          try {
-                            const dataUrl = await compressImageFile(file, 800, 800);
-                            setPostImage(dataUrl);
-                            playClickSound();
-                          } catch {
-                            alert('Không thể tải ảnh, vui lòng thử lại.');
-                          }
-                        }}
-                      />
-                    </label>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={!newPostContent.trim()}
-                    className="px-5 py-2.5 rounded-xl bg-[#E85D3F] hover:bg-[#D44C2E] disabled:opacity-40 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
-                  >
-                    <span>Đăng bài (+20 XP)</span>
-                    <Send size={13} />
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* 3. Filter & Search Bar */}
-            <div className="space-y-3">
-              <div className="relative">
-                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#748092]" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm bài viết, tác giả hoặc chủ đề..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-base sm:text-sm font-medium text-[#243447] dark:text-white placeholder-[#748092] focus:outline-none focus:border-[#E85D3F]"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#748092] hover:text-[#243447] cursor-pointer"
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-
-              {/* Tag Filter Pills */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                {TAG_FILTERS.map(tag => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    onClick={() => {
-                      playClickSound();
-                      setSelectedTag(tag.id);
-                    }}
-                    className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                      selectedTag === tag.id
-                        ? 'bg-[#E85D3F] text-white shadow-sm'
-                        : 'bg-white dark:bg-[#1E293B] text-[#748092] dark:text-[#94A3B8] border border-[#F1E5D8] dark:border-[#2B3A4F] hover:text-[#243447] dark:hover:text-white'
-                    }`}
-                  >
-                    {tag.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* HSK Level Group Filter + Sort Toggle */}
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                  {HSK_GROUP_FILTERS.map((grp) => (
-                    <button
-                      key={grp.id}
-                      type="button"
-                      onClick={() => {
-                        playClickSound();
-                        setSelectedHskGroup(grp.id);
-                      }}
-                      className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer ${
-                        selectedHskGroup === grp.id
-                          ? 'bg-slate-800 text-white dark:bg-slate-700'
-                          : 'bg-white dark:bg-[#1E293B] text-[#748092] border border-[#F1E5D8] dark:border-[#2B3A4F]'
-                      }`}
-                    >
-                      {grp.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-1 p-1 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                  {[
-                    { id: 'newest', label: 'Mới nhất' },
-                    { id: 'popular', label: 'Nổi bật nhất' },
-                  ].map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => {
-                        playClickSound();
-                        setPostSort(s.id);
-                      }}
-                      className={`min-h-11 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
-                        postSort === s.id
-                          ? 'bg-[#E85D3F] text-white'
-                          : 'text-[#748092] hover:text-[#243447] dark:hover:text-white'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <CommunityFilterBar
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              selectedTag={selectedTag}
+              setSelectedTag={setSelectedTag}
+              selectedHskGroup={selectedHskGroup}
+              setSelectedHskGroup={setSelectedHskGroup}
+              postSort={postSort}
+              setPostSort={setPostSort}
+            />
 
             {/* 4. Posts Feed List */}
             <div className="space-y-4">
@@ -2379,434 +514,48 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                   </button>
                 </div>
               ) : (
-                filteredPosts.map((post) => {
-                  const isExpanded = expandedComments[post.id];
-                  const comments = postCommentsMap[post.id] || post.comments || [];
-                  const commentsCount = post.commentsCount ?? comments.length;
-                  const isSolved = post.isSolved || solvedPostIds.includes(post.id);
-                  const parsedPost = parseStructuredPostContent(post.content);
-                  const hasChinese = /[\u4e00-\u9fa5]/.test(post.content);
-                  const canModerate = user?.role === 'admin' || user?.role === 'teacher';
-
-                  return (
-                    <div 
-                      key={post.id}
-                      className={`p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#1E293B] border shadow-sm space-y-4 transition-all ${
-                        post.isPinned 
-                          ? 'border-[#E85D3F]/50 bg-gradient-to-br from-white to-[#FEF7E9]/40 dark:from-[#1E293B] dark:to-[#2D2619]/30' 
-                          : 'border-[#F1E5D8] dark:border-[#2B3A4F]'
-                      }`}
-                    >
-                      {/* Author & Meta */}
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {(() => {
-                            const isBqt = (post.author || '').includes('Ban Quản Trị') || 
-                                          post.level === 'Quản trị viên' || 
-                                          post.level === 'BQT' || 
-                                          post.avatar === '/hanzigo-logo.svg' ||
-                                          (post.avatar && post.avatar.includes('photo-1534528741775-53994a69daeb'));
-                            if (isBqt) {
-                              return (
-                                <div 
-                                  className="relative w-10 h-10 rounded-full bg-gradient-to-br from-[#E85D3F] to-[#CB4529] flex items-center justify-center text-white font-bold shadow-md shadow-[#E85D3F]/25 shrink-0 border border-[#E85D3F] select-none"
-                                  title="Ban Quản Trị HanziGo"
-                                >
-                                  <span className="font-['Noto_Serif_SC'] text-xl font-black">汉</span>
-                                  <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#F4B942] rounded-full border-2 border-white dark:border-[#1E293B]" />
-                                </div>
-                              );
-                            }
-                            if (post.avatar) {
-                              return post.avatar.length <= 4 ? (
-                                <div className="w-10 h-10 rounded-full bg-[#FFF5F2] dark:bg-[#2C1D1A] border border-[#E85D3F] flex items-center justify-center text-lg shadow-sm">
-                                  {post.avatar}
-                                </div>
-                              ) : (
-                                <img src={post.avatar} alt={post.author} className="w-10 h-10 rounded-full object-cover border border-[#E85D3F]" />
-                              );
-                            }
-                            return (
-                              <div className={`w-10 h-10 rounded-full font-bold text-xs flex items-center justify-center border ${
-                                post.isPinned 
-                                  ? 'bg-[#E85D3F] text-white border-[#E85D3F]' 
-                                  : 'bg-[#FDEEEB] dark:bg-[#2D1E1B] text-[#E85D3F] border-[#E85D3F]/40'
-                              }`}>
-                                {post.initial || (post.author ? post.author.charAt(0).toUpperCase() : 'H')}
-                              </div>
-                            );
-                          })()}
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-bold text-[#243447] dark:text-white truncate">
-                                {post.author}
-                              </span>
-                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                                post.isPinned
-                                  ? 'bg-[#E85D3F] text-white'
-                                  : 'bg-[#FEF7E9] dark:bg-[#2D2619] text-[#D97706]'
-                              }`}>
-                                {parsedPost.hskLevel || post.level}
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-[#748092] flex items-center gap-1">
-                              {post.isPinned && <Pin size={10} className="text-[#E85D3F]" />}
-                              <span>{post.time}</span>
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {isSolved && (
-                            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
-                              <CheckCircle size={12} />
-                              <span>Đã giải đáp</span>
-                            </span>
-                          )}
-
-                          <span className="text-xs font-bold text-[#E85D3F] bg-[#FDEEEB] dark:bg-[#2D1E1B] px-2.5 py-1 rounded-lg">
-                            {post.tag}
-                          </span>
-                          {canModerate && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleModeratePost(post.id, post.isPinned ? 'unpin' : 'pin')}
-                                className="min-h-11 px-2 rounded-lg text-xs font-bold text-[#748092] hover:text-[#E85D3F] cursor-pointer"
-                                title={post.isPinned ? 'Bỏ ghim bài viết' : 'Ghim bài viết'}
-                              >
-                                <Pin size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleModeratePost(post.id, 'hide')}
-                                className="min-h-11 px-2 rounded-lg text-xs font-bold text-[#748092] hover:text-rose-500 cursor-pointer"
-                                title="Ẩn bài viết vi phạm"
-                              >
-                                <EyeOff size={14} />
-                              </button>
-                            </>
-                          )}
-                          {post.isMyPost ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingPostId(post.id);
-                                  setEditPostDraft(post.content);
-                                }}
-                                className="min-h-11 p-2 rounded-lg text-[#748092] hover:text-[#E85D3F] cursor-pointer"
-                                title="Chỉnh sửa bài viết"
-                              >
-                                <Edit3 size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeletePost(post.id)}
-                                className="min-h-11 p-2 rounded-lg text-[#748092] hover:text-red-500 cursor-pointer"
-                                title="Xóa bài viết của bạn"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenReportModal('post', post.id, post)}
-                              className="min-h-11 p-2 rounded-lg text-[#748092] hover:text-[#E85D3F] cursor-pointer"
-                              title="Báo cáo bài viết vi phạm"
-                            >
-                              <Flag size={14} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Content (Pure React text rendering — Zero raw HTML injection) */}
-                      {editingPostId === post.id ? (
-                        <div className="space-y-2">
-                          <textarea
-                            rows={4}
-                            maxLength={POST_LIMITS.CONTENT_MAX}
-                            value={editPostDraft}
-                            onChange={(e) => setEditPostDraft(e.target.value)}
-                            className="w-full p-3 rounded-2xl border border-[#E85D3F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none"
-                          />
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setEditingPostId(null)}
-                              className="min-h-11 px-3 py-1.5 rounded-xl border border-[#F1E5D8] text-xs font-bold text-[#748092] cursor-pointer"
-                            >
-                              Hủy
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSaveEditPost(post.id)}
-                              className="min-h-11 px-4 py-1.5 rounded-xl bg-[#E85D3F] text-white text-xs font-bold cursor-pointer"
-                            >
-                              Lưu chỉnh sửa
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2.5">
-                          {parsedPost.title && (
-                            <h4 className="text-sm sm:text-base font-black text-[#243447] dark:text-white break-words">
-                              {parsedPost.title}
-                            </h4>
-                          )}
-                          {(parsedPost.chineseSnippet || parsedPost.pinyinSnippet) && (
-                            <div className="p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-orange-200 dark:border-orange-900/40 space-y-1">
-                              {parsedPost.chineseSnippet && (
-                                <p className="text-base font-bold text-[#243447] dark:text-white break-words">
-                                  {parsedPost.chineseSnippet}
-                                </p>
-                              )}
-                              {parsedPost.pinyinSnippet && (
-                                <p className="text-xs font-semibold text-[#D97706] break-words">
-                                  {parsedPost.pinyinSnippet}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                          <p className="text-xs sm:text-sm text-[#243447] dark:text-[#CBD5E1] leading-relaxed whitespace-pre-line break-words">
-                            {parsedPost.body}
-                          </p>
-
-                          {/* Audio reader button if post contains Chinese characters */}
-                          {hasChinese && (
-                            <button
-                              type="button"
-                              onClick={() => handleSpeakChinesePost(post.content)}
-                              className="min-h-11 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-[#E85D3F] text-xs font-bold hover:bg-orange-100 transition-colors cursor-pointer"
-                              title="Nghe phát âm các từ chữ Hán trong bài viết"
-                            >
-                              <Volume2 size={13} />
-                              <span>Nghe phát âm chữ Hán</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Image / QR preview */}
-                      {post.image && (
-                        <div className="pt-1">
-                          <div className="relative inline-block group">
-                            <img 
-                              src={post.image} 
-                              alt="Ảnh đính kèm" 
-                              onClick={() => setZoomImageModal(post.image)}
-                              className="max-h-64 sm:max-h-80 w-auto max-w-full rounded-2xl object-contain border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#0F172A] p-1.5 cursor-zoom-in group-hover:opacity-95 shadow-xs transition-all"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setZoomImageModal(post.image)}
-                              className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-sm text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 cursor-pointer shadow-md"
-                            >
-                              <QrCode size={12} />
-                              <span>Xem ảnh lớn / QR</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Actions: Like, Comment, Save, Solved */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] text-xs text-[#748092]">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <button
-                            onClick={() => handleToggleLike(post.id)}
-                            className={`min-h-11 px-2 flex items-center gap-1.5 rounded-lg transition-colors cursor-pointer ${
-                              post.liked ? 'text-[#E85D3F] font-bold' : 'hover:text-[#E85D3F]'
-                            }`}
-                          >
-                            <Heart size={16} className={post.liked ? 'fill-[#E85D3F]' : ''} />
-                            <span>{post.likes || 0}</span>
-                          </button>
-
-                          <button 
-                            onClick={() => handleToggleComments(post.id)}
-                            className="min-h-11 px-2 flex items-center gap-1.5 rounded-lg hover:text-[#243447] dark:hover:text-white transition-colors cursor-pointer"
-                          >
-                            <MessageCircle size={16} />
-                            <span>{commentsCount} bình luận</span>
-                          </button>
-
-                          {/* Solved toggle button for Q&A */}
-                          {post.tag === '#HoiDapNguPhap' && (
-                            <button
-                              onClick={() => handleToggleSolved(post.id)}
-                              className={`min-h-11 px-2 text-[11px] font-semibold flex items-center gap-1 rounded-lg hover:text-emerald-600 transition-colors cursor-pointer ${
-                                isSolved ? 'text-emerald-600 font-bold' : ''
-                              }`}
-                            >
-                              <CheckCircle size={14} />
-                              <span>{isSolved ? 'Đã giải đáp' : 'Chưa giải đáp'}</span>
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => handleToggleSave(post.id)}
-                            className={`min-h-11 px-2.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center ${
-                              post.saved ? 'text-[#F4B942]' : 'hover:text-[#243447] dark:hover:text-white'
-                            }`}
-                            title="Lưu bài viết"
-                          >
-                            <Bookmark size={16} className={post.saved ? 'fill-[#F4B942]' : ''} />
-                          </button>
-                          <button 
-                            onClick={() => {
-                              playClickSound();
-                              navigator.clipboard.writeText(`${window.location.origin}/#${post.id}`);
-                              showToast('Đã sao chép liên kết bài viết!');
-                            }}
-                            className="min-h-11 px-2.5 rounded-lg hover:text-[#243447] dark:hover:text-white cursor-pointer flex items-center justify-center"
-                            title="Chia sẻ"
-                          >
-                            <Share2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Expandable Comments Drawer */}
-                      {isExpanded && (
-                        <div className="pt-3 border-t border-[#F1E5D8] dark:border-[#2B3A4F] space-y-3">
-                          {loadingCommentsMap[post.id] ? (
-                            <div className="py-4 text-center text-xs text-[#748092] flex items-center justify-center gap-2">
-                              <RefreshCw size={14} className="animate-spin text-[#E85D3F]" />
-                              <span>Đang tải bình luận...</span>
-                            </div>
-                          ) : comments.length > 0 ? (
-                            <div className="space-y-2">
-                              {comments.map((c) => (
-                                <div 
-                                  key={c.id} 
-                                  className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-1"
-                                >
-                                  <div className="flex items-center justify-between gap-2 text-[11px]">
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                      <span className="font-bold text-[#243447] dark:text-white truncate">{c.author}</span>
-                                      {c.level && (
-                                        <span className="text-[10px] text-[#D97706] bg-[#FEF7E9] dark:bg-[#2D2619] px-1.5 py-0.5 rounded font-semibold shrink-0">{c.level}</span>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center gap-1 shrink-0">
-                                      <span className="text-[#748092]">{c.time}</span>
-                                      {c.isMyComment ? (
-                                        <>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setEditingCommentId(c.id);
-                                              setEditCommentDraft(c.content || '');
-                                            }}
-                                            className="min-h-11 px-1.5 text-[#748092] hover:text-[#E85D3F] transition-colors cursor-pointer flex items-center"
-                                            title="Chỉnh sửa bình luận"
-                                          >
-                                            <Edit3 size={12} />
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleDeleteComment(post.id, c.id)}
-                                            className="min-h-11 px-1.5 text-[#748092] hover:text-red-500 transition-colors cursor-pointer flex items-center"
-                                            title="Xóa bình luận"
-                                          >
-                                            <Trash2 size={12} />
-                                          </button>
-                                        </>
-                                      ) : (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleOpenReportModal('comment', c.id, c)}
-                                          className="min-h-11 px-1.5 text-[#748092] hover:text-[#E85D3F] transition-colors cursor-pointer flex items-center"
-                                          title="Báo cáo bình luận vi phạm"
-                                        >
-                                          <Flag size={12} />
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {editingCommentId === c.id ? (
-                                    <div className="flex flex-wrap items-center gap-2 pt-1">
-                                      <input
-                                        type="text"
-                                        value={editCommentDraft}
-                                        maxLength={POST_LIMITS.COMMENT_MAX}
-                                        onChange={(e) => setEditCommentDraft(e.target.value)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter' && !e.nativeEvent?.isComposing && !e.isComposing) {
-                                            handleSaveEditComment(post.id, c.id);
-                                          }
-                                        }}
-                                        className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-white dark:bg-[#1E293B] text-base sm:text-xs text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F]"
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => handleSaveEditComment(post.id, c.id)}
-                                        className="min-h-11 px-3 rounded-xl bg-[#E85D3F] text-white font-bold text-xs cursor-pointer"
-                                      >
-                                        Lưu
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingCommentId(null);
-                                          setEditCommentDraft('');
-                                        }}
-                                        className="min-h-11 px-3 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs text-[#748092] cursor-pointer"
-                                      >
-                                        Hủy
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <p className="text-xs text-[#243447] dark:text-[#CBD5E1] leading-relaxed break-words">
-                                      {c.content}
-                                    </p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-[#748092] italic">Chưa có bình luận nào. Hãy để lại ý kiến đầu tiên!</p>
-                          )}
-
-                          {/* Comment Input */}
-                          <div className="flex items-center gap-2 pt-1">
-                            <input
-                              type="text"
-                              placeholder="Viết bình luận của bạn..."
-                              maxLength={POST_LIMITS.COMMENT_MAX}
-                              value={commentInputs[post.id] || ''}
-                              onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
-                              onKeyDown={(e) => {
-                                if (
-                                  e.key === 'Enter' &&
-                                  !e.nativeEvent?.isComposing &&
-                                  !e.isComposing
-                                ) {
-                                  handleAddComment(post.id);
-                                }
-                              }}
-                              disabled={submittingCommentMap[post.id]}
-                              className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#E85D3F] disabled:opacity-50"
-                            />
-                            <button
-                              onClick={() => handleAddComment(post.id)}
-                              disabled={!commentInputs[post.id]?.trim() || submittingCommentMap[post.id]}
-                              className="min-h-11 px-3.5 py-2 rounded-xl bg-[#E85D3F] disabled:opacity-40 text-white font-bold text-xs hover:bg-[#D44C2E] transition-colors flex items-center gap-1 cursor-pointer shrink-0"
-                            >
-                              <span>{submittingCommentMap[post.id] ? 'Đang gửi...' : 'Gửi'}</span>
-                              <Send size={11} />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                    </div>
-                  );
-                })
+                filteredPosts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    user={user}
+                    isExpanded={Boolean(expandedComments[post.id])}
+                    comments={postCommentsMap[post.id] || post.comments || []}
+                    isLoadingComments={Boolean(loadingCommentsMap[post.id])}
+                    isSubmittingComment={Boolean(submittingCommentMap[post.id])}
+                    commentInput={commentInputs[post.id] || ''}
+                    onChangeCommentInput={(value) =>
+                      setCommentInputs({ ...commentInputs, [post.id]: value })
+                    }
+                    isSolved={Boolean(post.isSolved || solvedPostIds.includes(post.id))}
+                    editingPostId={editingPostId}
+                    setEditingPostId={setEditingPostId}
+                    editPostDraft={editPostDraft}
+                    setEditPostDraft={setEditPostDraft}
+                    editingCommentId={editingCommentId}
+                    setEditingCommentId={setEditingCommentId}
+                    editCommentDraft={editCommentDraft}
+                    setEditCommentDraft={setEditCommentDraft}
+                    onModeratePost={handleModeratePost}
+                    onDeletePost={handleDeletePost}
+                    onSaveEditPost={handleSaveEditPost}
+                    onOpenReportModal={handleOpenReportModal}
+                    onSpeakChinesePost={handleSpeakChinesePost}
+                    onZoomImage={setZoomImageModal}
+                    onToggleLike={handleToggleLike}
+                    onToggleComments={handleToggleComments}
+                    onToggleSolved={handleToggleSolved}
+                    onToggleSave={handleToggleSave}
+                    onShareLink={(id) => {
+                      navigator.clipboard.writeText(`${window.location.origin}/#${id}`);
+                      showToast('Đã sao chép liên kết bài viết!');
+                    }}
+                    onAddComment={handleAddComment}
+                    onSaveEditComment={handleSaveEditComment}
+                    onDeleteComment={handleDeleteComment}
+                    isImeEnterSubmit={isImeEnterSubmit}
+                  />
+                ))
               )}
 
               {/* Cursor-based Load More Button */}
@@ -2832,551 +581,49 @@ export default function CommunityPage({ user, setActiveTab, initialView = 'feed'
                 </div>
               )}
             </div>
-
           </div>
 
           {/* Right Sidebar (4 cols) */}
-          <div className="lg:col-span-4 space-y-6">
-            
-            {/* 1. Real Learner Progress & Milestones */}
-            <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-[#243447] dark:text-white flex items-center gap-2">
-                  <Trophy size={16} className="text-[#F4B942]" />
-                  <span>Thành tích của bạn</span>
-                </h3>
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg ${rankTier.bg} ${rankTier.color}`}>
-                  {rankTier.name}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                  <div className="flex items-center gap-1.5 text-xs text-[#748092] dark:text-[#94A3B8] font-semibold">
-                    <Flame size={14} className="text-[#E85D3F]" />
-                    <span>Chuỗi ngày</span>
-                  </div>
-                  <div className="text-lg font-black text-[#243447] dark:text-white mt-1">
-                    {currentStreak} ngày
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                  <div className="flex items-center gap-1.5 text-xs text-[#748092] dark:text-[#94A3B8] font-semibold">
-                    <Award size={14} className="text-[#F4B942]" />
-                    <span>Tổng điểm XP</span>
-                  </div>
-                  <div className="text-lg font-black text-[#E85D3F] mt-1">
-                    {totalUserXp} XP
-                  </div>
-                </div>
-              </div>
-
-              {/* Next tier progress */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-[#748092] dark:text-[#94A3B8]">Mục tiêu kế tiếp:</span>
-                  <span className="text-[#243447] dark:text-white">{rankTier.next}</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-[#FFF9F2] dark:bg-[#131B24] overflow-hidden border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                  <div 
-                    className="h-full bg-gradient-to-r from-[#E85D3F] to-[#F4B942] rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(100, Math.max(5, rankTier.progress))}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="text-[11px] text-[#748092] dark:text-[#94A3B8] flex items-center justify-between pt-1">
-                <span>Đã hoàn thành: {completedLessonsCount} bài học</span>
-                <span className="text-[#45B97C] font-semibold">Duy trì đều đặn!</span>
-              </div>
-            </div>
-
-            {/* 2. Mini XP Leaderboard Teaser Widget */}
-            <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E1B4B] text-white border border-white/10 shadow-sm space-y-2.5 sm:space-y-3.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5 uppercase">
-                  <Trophy size={14} className="text-amber-400" />
-                  <span>Bảng Xếp Hạng XP</span>
-                </span>
-                <button
-                  onClick={() => {
-                    playClickSound();
-                    setCommunityView('leaderboard');
-                  }}
-                  className="text-[11px] font-bold text-amber-300 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
-                >
-                  <span>Xem Top 50</span>
-                  <ArrowRight size={12} />
-                </button>
-              </div>
-              <p className="text-xs text-white/70 leading-relaxed">
-                Bạn đang có <span className="font-mono font-bold text-amber-300">{totalUserXp.toLocaleString()} XP</span>. Hãy thi đua cùng các học viên khác để ghi tên lên bục vinh quang!
-              </p>
-              <button
-                onClick={() => {
-                  playClickSound();
-                  setCommunityView('leaderboard');
-                }}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#E85D3F] text-white font-bold text-xs shadow-md transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <Crown size={14} />
-                <span>Xem Bảng Xếp Hạng Chi Tiết</span>
-              </button>
-            </div>
-
-            {/* 3. Real Interactive Chinese Daily Challenge */}
-            <ChineseChallengeCard user={user} onAddXp={awardXp} />
-
-            {/* 4. Mini Study Partner Call 1-1 Widget */}
-            <div className="p-6 rounded-3xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-[#243447] dark:text-white flex items-center gap-2">
-                  <Users size={16} className="text-[#45B97C]" />
-                  <span>Tìm bạn luyện nói 1-1</span>
-                </h3>
-                <button
-                  onClick={() => {
-                    playClickSound();
-                    setCommunityView('partners');
-                  }}
-                  className="text-xs font-bold text-[#E85D3F] hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Xem tất cả</span>
-                  <ArrowRight size={12} />
-                </button>
-              </div>
-
-              <p className="text-xs text-[#748092] dark:text-[#94A3B8]">
-                Hiện có <strong className="text-[#243447] dark:text-white">{studyPartners.length} học viên</strong> đang tìm bạn ghép đôi luyện khẩu ngữ.
-              </p>
-
-              <button
-                onClick={() => {
-                  playClickSound();
-                  setIsPartnerModalOpen(true);
-                }}
-                className="w-full py-2.5 rounded-xl bg-[#45B97C] hover:bg-[#3AA56E] text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Plus size={14} />
-                <span>Đăng tin tìm bạn ngay</span>
-              </button>
-            </div>
-
-          </div>
-
+          <CommunityRightSidebar
+            user={user}
+            rankTier={rankTier}
+            currentStreak={currentStreak}
+            totalUserXp={totalUserXp}
+            completedLessonsCount={completedLessonsCount}
+            studyPartnersCount={studyPartners.length}
+            setCommunityView={setCommunityView}
+            onOpenPartnerModal={() => setIsPartnerModalOpen(true)}
+          />
         </div>
       )}
 
-      {/* Modal: Đăng tin / Chỉnh sửa hồ sơ bạn học */}
-      {isPartnerModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-6 w-full max-w-md border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4 max-h-[90dvh] pb-[max(0.75rem,env(safe-area-inset-bottom))] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-3">
-              <h3 className="text-base font-bold text-[#243447] dark:text-white flex items-center gap-2">
-                {editingPartnerId ? <Edit3 size={18} className="text-[#45B97C]" /> : <Users size={18} className="text-[#45B97C]" />}
-                <span>{editingPartnerId ? 'Chỉnh sửa hồ sơ tìm bạn cùng tiến' : 'Đăng tin tìm bạn luyện nói 1-1'}</span>
-              </h3>
-              <button 
-                onClick={() => setIsPartnerModalOpen(false)}
-                className="p-1 rounded-lg text-[#748092] hover:text-[#243447] dark:hover:text-white cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
+      <StudyPartnerModals
+        user={user}
+        isPartnerModalOpen={isPartnerModalOpen}
+        setIsPartnerModalOpen={setIsPartnerModalOpen}
+        editingPartnerId={editingPartnerId}
+        partnerForm={partnerForm}
+        setPartnerForm={setPartnerForm}
+        handleSavePartner={handleSavePartner}
+        activeContactModal={activeContactModal}
+        setActiveContactModal={setActiveContactModal}
+        handleCopyContact={handleCopyContact}
+        handleOpenContactLink={handleOpenContactLink}
+        zoomImageModal={zoomImageModal}
+        setZoomImageModal={setZoomImageModal}
+        partnerModalPanelClassName={PARTNER_MODAL_PANEL_CLASS}
+      />
 
-            <form onSubmit={handleSavePartner} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1">
-                  Họ tên hoặc biệt danh *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Hoàng Nam"
-                  value={partnerForm.name}
-                  onChange={(e) => setPartnerForm({ ...partnerForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1">
-                    Cấp độ mục tiêu
-                  </label>
-                  <select
-                    value={partnerForm.level}
-                    onChange={(e) => setPartnerForm({ ...partnerForm, level: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none cursor-pointer"
-                  >
-                    <option value="HSK 1">HSK 1</option>
-                    <option value="HSK 2">HSK 2</option>
-                    <option value="HSK 3">HSK 3</option>
-                    <option value="HSK 4">HSK 4</option>
-                    <option value="HSK 5">HSK 5</option>
-                    <option value="HSK 6">HSK 6</option>
-                    <option value="Giao tiếp tự do">Giao tiếp tự do</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1">
-                    Kênh liên hệ
-                  </label>
-                  <select
-                    value={partnerForm.contactMethod}
-                    onChange={(e) => setPartnerForm({ ...partnerForm, contactMethod: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none cursor-pointer"
-                  >
-                    <option value="Zalo">Zalo</option>
-                    <option value="Google Meet">Google Meet</option>
-                    <option value="WeChat">WeChat</option>
-                    <option value="Zoom">Zoom</option>
-                    <option value="Telegram">Telegram</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1">
-                  Thông tin liên hệ (SĐT / Link / ID) *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: 0912.xxx.xxx hoặc @nam_chinese"
-                  value={partnerForm.contactInfo}
-                  onChange={(e) => setPartnerForm({ ...partnerForm, contactInfo: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1">
-                    Thời gian học phù hợp
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: Tối 20h - 21h"
-                    value={partnerForm.dailyTime}
-                    onChange={(e) => setPartnerForm({ ...partnerForm, dailyTime: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1">
-                    Kỹ năng rèn luyện
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: Luyện khẩu ngữ HSK"
-                    value={partnerForm.skills}
-                    onChange={(e) => setPartnerForm({ ...partnerForm, skills: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#243447] dark:text-white mb-1">
-                  Mục tiêu luyện tập
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Luyện nói 30p mỗi tối, sửa thanh điệu cho nhau"
-                  value={partnerForm.goal}
-                  onChange={(e) => setPartnerForm({ ...partnerForm, goal: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] bg-[#FFF9F2] dark:bg-[#131B24] text-base sm:text-sm text-[#243447] dark:text-white focus:outline-none focus:border-[#45B97C]"
-                />
-              </div>
-
-              {/* Tùy chọn quyền riêng tư & hiển thị */}
-              <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2 text-xs">
-                <label className="flex items-center gap-2 cursor-pointer font-bold text-[#243447] dark:text-white">
-                  <input
-                    type="checkbox"
-                    checked={partnerForm.isContactPublic}
-                    onChange={(e) => setPartnerForm({ ...partnerForm, isContactPublic: e.target.checked })}
-                    className="w-3.5 h-3.5 rounded text-[#45B97C] focus:ring-0 cursor-pointer"
-                  />
-                  <span>Công khai thông tin liên hệ trong danh sách</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer font-bold text-[#243447] dark:text-white">
-                  <input
-                    type="checkbox"
-                    checked={partnerForm.isActive}
-                    onChange={(e) => setPartnerForm({ ...partnerForm, isActive: e.target.checked })}
-                    className="w-3.5 h-3.5 rounded text-[#45B97C] focus:ring-0 cursor-pointer"
-                  />
-                  <span>Hiển thị hồ sơ tìm bạn học (Bỏ chọn để tạm ngưng)</span>
-                </label>
-              </div>
-
-              {/* Tải ảnh mã QR */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-[#243447] dark:text-white flex items-center gap-1.5">
-                    <QrCode size={14} className="text-[#45B97C]" />
-                    <span>Mã QR kết bạn (Zalo / WeChat - Tùy chọn)</span>
-                  </label>
-                  {partnerForm.qrImage && (
-                    <button
-                      type="button"
-                      onClick={() => setPartnerForm(prev => ({ ...prev, qrImage: '' }))}
-                      className="text-[10px] text-red-500 hover:underline flex items-center gap-0.5 cursor-pointer"
-                    >
-                      <Trash2 size={11} />
-                      <span>Xóa ảnh QR</span>
-                    </button>
-                  )}
-                </div>
-
-                {partnerForm.qrImage ? (
-                  <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center gap-3">
-                    <img 
-                      src={partnerForm.qrImage} 
-                      alt="Mã QR xem trước" 
-                      className="w-16 h-16 object-contain rounded-xl bg-white p-1 border border-[#F1E5D8] shadow-xs"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-[#243447] dark:text-white truncate">Đã đính kèm ảnh mã QR</p>
-                      <p className="text-[10px] text-[#748092]">Bạn bè có thể quét trực tiếp để kết bạn nhanh</p>
-                    </div>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center p-3 rounded-2xl border-2 border-dashed border-[#F1E5D8] dark:border-[#2B3A4F] hover:border-[#45B97C] bg-[#FFF9F2]/50 dark:bg-[#131B24]/50 cursor-pointer transition-colors group">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-[#748092] dark:text-[#94A3B8] group-hover:text-[#45B97C]">
-                      <QrCode size={18} className="text-[#45B97C]" />
-                      <span>Tải ảnh mã QR (Zalo, WeChat,...) từ máy</span>
-                    </div>
-                    <span className="text-[10px] text-[#748092] mt-0.5">Hỗ trợ PNG, JPG (Tối đa 10MB, tự động nén tối ưu)</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (file.size > 10 * 1024 * 1024) {
-                          alert('Kích thước ảnh tối đa 10MB');
-                          return;
-                        }
-                        try {
-                          const dataUrl = await compressImageFile(file, 600, 600);
-                          setPartnerForm(prev => ({ ...prev, qrImage: dataUrl }));
-                          playClickSound();
-                        } catch {
-                          alert('Không thể xử lý ảnh này, vui lòng thử lại.');
-                        }
-                      }}
-                    />
-                  </label>
-                )}
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsPartnerModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-[#F1E5D8] dark:border-[#2B3A4F] text-xs font-bold text-[#748092] hover:text-[#243447] dark:hover:text-white cursor-pointer"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#45B97C] hover:bg-[#3AA56E] text-white text-xs font-bold shadow-md transition-colors cursor-pointer"
-                >
-                  {editingPartnerId ? 'Lưu thay đổi' : 'Đăng tin ngay (+15 XP)'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Xem thông tin liên hệ của bạn học */}
-      {activeContactModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-6 w-full max-w-sm border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-4 text-center">
-            <div className="w-14 h-14 rounded-full bg-[#EBF8F2] dark:bg-[#162B21] text-[#45B97C] font-black text-xl flex items-center justify-center mx-auto border-2 border-[#45B97C]">
-              {activeContactModal.initial || 'H'}
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center justify-center gap-2">
-                <h3 className="text-base font-bold text-[#243447] dark:text-white">
-                  {activeContactModal.name}
-                </h3>
-                {activeContactModal.isActive === false ? (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700">
-                    Tạm ngưng
-                  </span>
-                ) : (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-700">
-                    Đang tìm bạn
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-[#E85D3F] font-bold">Mục tiêu: {activeContactModal.level || 'HSK 1'}</p>
-              <p className="text-xs text-[#748092] dark:text-[#94A3B8]">{activeContactModal.goal || 'Luyện phản xạ giao tiếp'}</p>
-            </div>
-
-            {/* Chi tiết kỹ năng & lịch học */}
-            {(activeContactModal.skills || activeContactModal.dailyTime) && (
-              <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-[#748092] dark:text-[#94A3B8]">
-                {activeContactModal.skills && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                    <Target size={12} className="text-[#E85D3F]" />
-                    <span>{activeContactModal.skills}</span>
-                  </span>
-                )}
-                {activeContactModal.dailyTime && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F]">
-                    <Clock size={12} className="text-[#45B97C]" />
-                    <span>{activeContactModal.dailyTime}</span>
-                  </span>
-                )}
-              </div>
-            )}
-
-            <div className="p-3.5 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] flex items-center justify-between gap-2">
-              <div className="text-left min-w-0">
-                <span className="text-[10px] text-[#748092] block font-bold uppercase">
-                  {activeContactModal.contactMethod || 'Kênh liên hệ'}
-                </span>
-                <span className="text-xs font-mono font-bold text-[#243447] dark:text-white truncate block">
-                  {activeContactModal.isContactPublic === false && !activeContactModal.isMyPartnerPost && activeContactModal.userId !== user?.id
-                    ? 'Thông tin liên hệ bảo mật'
-                    : (activeContactModal.contactInfo || activeContactModal.contact || 'Chưa cung cấp')}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1 shrink-0">
-                {(activeContactModal.isContactPublic !== false || activeContactModal.isMyPartnerPost || activeContactModal.userId === user?.id) && (
-                  <>
-                    <button
-                      onClick={() => handleCopyContact(activeContactModal.contactInfo || activeContactModal.contact)}
-                      className="p-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#E85D3F] hover:bg-[#FDEEEB] transition-colors cursor-pointer"
-                      title="Sao chép"
-                    >
-                      <Copy size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleOpenContactLink(activeContactModal.contactMethod, activeContactModal.contactInfo || activeContactModal.contact)}
-                      className="p-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#F1E5D8] dark:border-[#2B3A4F] text-[#45B97C] hover:bg-emerald-50 transition-colors cursor-pointer"
-                      title="Mở liên kết kết bạn"
-                    >
-                      <ExternalLink size={14} />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Mã QR kết bạn nếu có */}
-            {activeContactModal.qrImage && (
-              <div className="p-3 rounded-2xl bg-[#FFF9F2] dark:bg-[#131B24] border border-[#F1E5D8] dark:border-[#2B3A4F] space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-[#243447] dark:text-white">
-                  <span className="flex items-center gap-1.5">
-                    <QrCode size={14} className="text-[#45B97C]" />
-                    <span>Mã QR kết bạn</span>
-                  </span>
-                  <button
-                    onClick={() => setZoomImageModal({ url: activeContactModal.qrImage, title: `Mã QR kết bạn - ${activeContactModal.name}` })}
-                    className="text-[10px] text-[#45B97C] hover:underline cursor-pointer"
-                  >
-                    Phóng to
-                  </button>
-                </div>
-                <div
-                  onClick={() => setZoomImageModal({ url: activeContactModal.qrImage, title: `Mã QR kết bạn - ${activeContactModal.name}` })}
-                  className="p-2 bg-white rounded-xl border border-[#F1E5D8] cursor-pointer hover:shadow-md transition-shadow group flex items-center justify-center"
-                  title="Bấm để phóng to hoặc quét mã QR"
-                >
-                  <img
-                    src={activeContactModal.qrImage}
-                    alt="Mã QR kết bạn"
-                    className="w-40 h-40 object-contain mx-auto group-hover:scale-105 transition-transform"
-                  />
-                </div>
-                <p className="text-[10px] text-[#748092]">Mở camera hoặc app {activeContactModal.contactMethod || 'Zalo'} để quét kết bạn</p>
-              </div>
-            )}
-
-            <button
-              onClick={() => setActiveContactModal(null)}
-              className="w-full py-2.5 rounded-xl bg-[#243447] dark:bg-[#334155] text-white text-xs font-bold hover:bg-black transition-colors cursor-pointer"
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Modal phóng to ảnh / Mã QR */}
-      {zoomImageModal && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => setZoomImageModal(null)}
-        >
-          <div 
-            className="bg-white dark:bg-[#1E293B] rounded-3xl p-5 w-full max-w-md border border-[#F1E5D8] dark:border-[#2B3A4F] shadow-2xl space-y-3 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-[#F1E5D8] dark:border-[#2B3A4F] pb-3">
-              <div className="flex items-center gap-2">
-                <QrCode size={18} className="text-[#45B97C]" />
-                <h4 className="text-sm font-bold text-[#243447] dark:text-white truncate">
-                  {typeof zoomImageModal === 'object' ? zoomImageModal.title : 'Xem ảnh / Mã QR'}
-                </h4>
-              </div>
-              <button 
-                onClick={() => setZoomImageModal(null)}
-                className="p-1 rounded-lg text-[#748092] hover:text-[#243447] dark:hover:text-white cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-3 bg-[#FFF9F2] dark:bg-[#131B24] rounded-2xl flex items-center justify-center">
-              <img 
-                src={typeof zoomImageModal === 'object' ? zoomImageModal.url : zoomImageModal} 
-                alt="Ảnh phóng to" 
-                className="max-h-[70dvh] w-auto max-w-full object-contain rounded-xl bg-white p-2 shadow-xs"
-              />
-            </div>
-
-            <div className="flex items-center justify-between gap-2 pt-1">
-              <p className="text-[11px] text-[#748092]">
-                Có thể quét trực tiếp bằng camera hoặc app
-              </p>
-              <a
-                href={typeof zoomImageModal === 'object' ? zoomImageModal.url : zoomImageModal}
-                download="hanzigo-qr-image.png"
-                className="px-3 py-1.5 rounded-xl bg-[#45B97C] text-white text-xs font-bold hover:bg-[#3AA56E] flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
-              >
-                <Download size={13} />
-                <span>Tải ảnh về máy</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Student Report Modal (Task 24.08D) */}
+      {/* Student Report Modal */}
       <ReportModal
         isOpen={reportModalState.isOpen}
-        onClose={() => setReportModalState(prev => ({ ...prev, isOpen: false }))}
+        onClose={() => setReportModalState((prev) => ({ ...prev, isOpen: false }))}
         targetType={reportModalState.targetType}
         targetId={reportModalState.targetId}
         targetContent={reportModalState.targetContent}
         targetAuthor={reportModalState.targetAuthor}
         user={user}
       />
-
     </div>
   );
 }

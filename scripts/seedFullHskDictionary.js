@@ -21,6 +21,8 @@ import {
   registerHanVietReadings,
   resolveHanVietReading,
 } from './utils/chinesePhoneticsNormalizer.js';
+import { VOCABULARY_LIST } from '../src/data/chineseData.js';
+import { HSK79_VOCAB_GLOSSARY } from '../src/features/curriculum/hsk79VocabGlossary.js';
 
 function loadEmbeddedSeedFullVocabulary() {
   const seedVocabPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'seedFullVocabulary.js');
@@ -182,6 +184,21 @@ function loadCedictLookupMap() {
   return map;
 }
 
+export function sanitizeSeedDefinition(text = '') {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    .replace(/\[[a-zü:\s\d]+\]/gi, '')
+    .replace(/\bCL:[^;/]+/gi, '')
+    .replace(/\b(?:old\s+)?variant\s+of\s+/gi, 'biến thể của ')
+    .replace(/\bsurname\s+([A-Z][a-z]+)\b/g, 'họ $1')
+    .replace(/\babbr\.\s*(?:for|of)\s+/gi, 'viết tắt của ')
+    .replace(/\bsee\s+also\s+/gi, 'xem thêm ')
+    .replace(/\s*;\s*(?:;\s*)+/g, '; ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s;/,]+|[\s;/,]+$/g, '')
+    .trim();
+}
+
 export function buildDictionaryEntryRecord(rawItem, index = 0, cedictMap = new Map()) {
   const simplified = String(
     rawItem.simplified || rawItem.hanzi || rawItem.word || rawItem.chars || ''
@@ -197,10 +214,10 @@ export function buildDictionaryEntryRecord(rawItem, index = 0, cedictMap = new M
 
   const rawPinyin = String(
     rawItem.pinyin_numeric ||
-      rawItem.pinyin_display ||
-      rawItem.pinyin ||
-      cedictHit?.pinyinNumeric ||
-      ''
+    rawItem.pinyin_display ||
+    rawItem.pinyin ||
+    cedictHit?.pinyinNumeric ||
+    ''
   ).trim();
 
   const phonetics = normalizePinyinTriple(rawPinyin);
@@ -226,38 +243,43 @@ export function buildDictionaryEntryRecord(rawItem, index = 0, cedictMap = new M
     rawItem.han_viet || rawItem.hanviet || ''
   );
 
-  const meaningText = String(rawItem.meaning || rawItem.meaning_vi || '').trim();
+  const meaningText = sanitizeSeedDefinition(String(rawItem.meaning || rawItem.meaning_vi || '').trim());
+  const cleanedCedictMeanings = (cedictHit?.meanings || [])
+    .map((m) => sanitizeSeedDefinition(m))
+    .filter(Boolean);
   const posMeanings = Array.isArray(rawItem.pos_meanings)
     ? rawItem.pos_meanings
     : [
-        {
-          pos: rawItem.pos || rawItem.topic || 'n./v.',
-          definitions: meaningText
-            ? [meaningText]
-            : cedictHit?.meanings || ['Từ vựng chuẩn HSK'],
-        },
-      ];
+      {
+        pos: rawItem.pos || rawItem.topic || 'n./v.',
+        definitions: meaningText
+          ? [meaningText]
+          : cleanedCedictMeanings.length > 0
+            ? cleanedCedictMeanings
+            : ['Từ vựng chuẩn HSK'],
+      },
+    ];
 
   const examples = Array.isArray(rawItem.examples)
     ? rawItem.examples
     : rawItem.example?.hanzi
       ? [
-          {
-            zh: rawItem.example.hanzi,
-            pinyin: rawItem.example.pinyin || '',
-            vi: rawItem.example.meaning || '',
-          },
-        ]
+        {
+          zh: rawItem.example.hanzi,
+          pinyin: rawItem.example.pinyin || '',
+          vi: rawItem.example.meaning || '',
+        },
+      ]
       : [];
 
   const decomposition =
     rawItem.decomposition && typeof rawItem.decomposition === 'object'
       ? rawItem.decomposition
       : {
-          radical: rawItem.radical || '',
-          strokes: Number(rawItem.strokes || 0) || null,
-          mnemonic: rawItem.mnemonic || '',
-        };
+        radical: rawItem.radical || '',
+        strokes: Number(rawItem.strokes || 0) || null,
+        mnemonic: rawItem.mnemonic || '',
+      };
 
   return {
     simplified,
@@ -283,12 +305,25 @@ export function buildDictionaryEntryRecord(rawItem, index = 0, cedictMap = new M
 
 export function loadHskDictionarySources() {
   const embeddedVocab = loadEmbeddedSeedFullVocabulary();
+  const curatedGlossary79 = Object.entries(HSK79_VOCAB_GLOSSARY || {}).map(([hanzi, entry], i) => ({
+    simplified: hanzi,
+    traditional: hanzi,
+    pinyin: entry?.pinyin || '',
+    hanviet: entry?.hanViet || '',
+    meaning: entry?.meaning || '',
+    pos: entry?.pos || 'Từ vựng cao cấp',
+    hsk_3_level: 8,
+    rank: 2000 + i,
+  }));
   registerHanVietReadings(embeddedVocab);
+  registerHanVietReadings(VOCABULARY_LIST || []);
   const cedictMap = loadCedictLookupMap();
   const localFilesRows = loadLocalHskFiles();
 
   const rawCombined = [
+    ...(VOCABULARY_LIST || []),
     ...embeddedVocab,
+    ...curatedGlossary79,
     ...EMBEDDED_CORE_HSK_ENTRIES,
     ...localFilesRows,
   ];
@@ -334,13 +369,20 @@ function summarizeByHskLevel(records) {
 
 async function upsertBatchCompatible(supabase, batch) {
   const simplifiedList = Array.from(new Set(batch.map((r) => r.simplified)));
-  const { data: existingRows, error: fetchError } = await supabase
-    .from('dictionary_entries')
-    .select('id, simplified, pinyin_numeric')
-    .in('simplified', simplifiedList);
+  const existingRows = [];
+  for (let i = 0; i < simplifiedList.length; i += 80) {
+    const slice = simplifiedList.slice(i, i + 80);
+    const { data, error: fetchError } = await supabase
+      .from('dictionary_entries')
+      .select('id, simplified, pinyin_numeric')
+      .in('simplified', slice);
 
-  if (fetchError) {
-    throw fetchError;
+    if (fetchError) {
+      throw fetchError;
+    }
+    if (Array.isArray(data)) {
+      existingRows.push(...data);
+    }
   }
 
   const existingByPair = new Map();

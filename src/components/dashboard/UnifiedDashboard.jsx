@@ -2,8 +2,8 @@ import React, { lazy, Suspense } from 'react';
 import PageLoader from '../PageLoader';
 import HomePage from '../../pages/HomePage';
 import TeacherDashboard from './TeacherDashboard';
-import AdminDashboard from './AdminDashboard';
 
+const AdminDashboard = lazy(() => import('./AdminDashboard'));
 const DashboardPage = lazy(() => import('../../pages/DashboardPage'));
 
 /**
@@ -60,11 +60,24 @@ export default function UnifiedDashboard({
   // 3. Admin User: System Operations & Governance Dashboard
   if (role === 'admin') {
     return (
-      <AdminDashboard
-        user={user}
-        setActiveTab={setActiveTab}
-        onNavigate={onNavigate}
-      />
+      <Suspense fallback={<PageLoader />}>
+        <AdminDashboard
+          user={user}
+          setActiveTab={setActiveTab}
+          onNavigate={onNavigate}
+        />
+      </Suspense>
+    );
+  }
+  if (String(role).toLowerCase() === 'admin') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <AdminDashboard
+          user={user}
+          setActiveTab={setActiveTab}
+          onNavigate={onNavigate}
+        />
+      </Suspense>
     );
   }
 

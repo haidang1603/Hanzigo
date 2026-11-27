@@ -2542,7 +2542,7 @@ export const HSK_6_LESSONS = [
         "hanzi": "聘书",
         "pinyin": "pìnshū",
         "hanviet": "Sính thư",
-        "meaning": "Thư mời nhận việc, thư bổ nhiệm (Job Offer)",
+        "meaning": "Thư mời nhận việc, thư bổ nhiệm",
         "radical": "Bộ 言",
         "example": {
           "hanzi": "经过层层严格选拔，他终于如愿拿到了录用聘书。",
@@ -2819,7 +2819,7 @@ export const HSK_6_LESSONS = [
         "hanzi": "询价",
         "pinyin": "xúnjià",
         "hanviet": "Tuân giá",
-        "meaning": "Hỏi giá, yêu cầu báo giá (Inquiry)",
+        "meaning": "Hỏi giá, yêu cầu báo giá",
         "radical": "Bộ 讠",
         "example": {
           "hanzi": "外商发来函电，就一批机械零部件进行详细询价。",
@@ -3373,7 +3373,7 @@ export const HSK_6_LESSONS = [
         "hanzi": "交货期",
         "pinyin": "jiāohuòqī",
         "hanviet": "Giao hóa kỳ",
-        "meaning": "Thời hạn giao hàng (Delivery Date)",
+        "meaning": "Thời hạn giao hàng",
         "radical": "Bộ 亠",
         "example": {
           "hanzi": "由于订单排产紧张，本次合同交货期定为六十天。",
@@ -3699,7 +3699,7 @@ export const HSK_6_LESSONS = [
         "hanzi": "仲裁",
         "pinyin": "zhòngcái",
         "hanviet": "Trọng tài",
-        "meaning": "Trọng tài thương mại quốc tế (Arbitration)",
+        "meaning": "Trọng tài thương mại quốc tế",
         "radical": "Bộ 人",
         "example": {
           "hanzi": "本合同引起的争议均提交中国国际经济贸易仲裁委员会裁决。",
@@ -3946,7 +3946,7 @@ export const HSK_6_LESSONS = [
         "hanzi": "备忘录",
         "pinyin": "bèiwànglù",
         "hanviet": "Bị vọng lục",
-        "meaning": "Biên bản ghi nhớ (MOU - Memorandum of Understanding)",
+        "meaning": "Biên bản ghi nhớ",
         "radical": "Bộ 心",
         "example": {
           "hanzi": "该备忘录明确了未来五年的投资与技术交流框架。",
@@ -4502,7 +4502,7 @@ export const HSK_6_LESSONS = [
         "hanzi": "大数据",
         "pinyin": "dàshùjù",
         "hanviet": "Đại số cư",
-        "meaning": "Dữ liệu lớn (Big Data)",
+        "meaning": "Dữ liệu lớn",
         "radical": "Bộ 大",
         "example": {
           "hanzi": "利用大数据算法能够实现海量信息的精准分析与匹配。",

@@ -65,6 +65,10 @@
       "destination": "/api/newsletter/[action]?action=:action"
     },
     {
+      "source": "/api/telemetry/:action",
+      "destination": "/api/telemetry/[action]?action=:action"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },

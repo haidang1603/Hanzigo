@@ -23,7 +23,14 @@ import {
 import AudioButton from '../components/AudioButton';
 import { ALL_CONVERSATION_SCENARIOS, SCENARIO_CATEGORIES } from '../data/conversationScenarios';
 import AiContextBadge from '../components/personalization/AiContextBadge';
-import { speakChinese, playSuccessSound, playClickSound } from '../utils/audio';
+import {
+  speakChinese,
+  playSuccessSound,
+  playClickSound,
+  setActiveAudioPlaybackRate,
+  getTtsFunctionalSettings,
+  setTtsFunctionalSettings,
+} from '../utils/audio';
 import { playChineseTts } from '../services/ttsAudioService';
 import { triggerCloudSync } from '../supabase/services';
 import { awardXp } from '../utils/gamification';
@@ -102,6 +109,23 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
   const [historyFilter, setHistoryFilter] = useState('all');
   const [savedVocabKeys, setSavedVocabKeys] = useState({});
   const [toastMessage, setToastMessage] = useState(null);
+  const [speechRate, setSpeechRate] = useState(() => getTtsFunctionalSettings().rate || 1.0);
+  const [speechVoice, setSpeechVoice] = useState(() => {
+    const v = getTtsFunctionalSettings().voice;
+    return v === 'male' || v === 'male_standard' || v === 'zh-CN-YunxiNeural' ? 'male' : 'female';
+  });
+  const [usingDeviceVoice, setUsingDeviceVoice] = useState(false);
+
+  const handleChangeSpeechRate = (spd) => {
+    setSpeechRate(spd);
+    setTtsFunctionalSettings({ rate: spd });
+    setActiveAudioPlaybackRate(spd);
+  };
+
+  const handleChangeSpeechVoice = (voiceProfile) => {
+    setSpeechVoice(voiceProfile);
+    setTtsFunctionalSettings({ voice: voiceProfile });
+  };
 
   const chatContainerRef = useRef(null);
   const isInitialMount = useRef(true);
@@ -196,7 +220,11 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
     awardXp(10, null, `aichat_${conversation.id}_${Date.now()}`);
 
     // Speak user's sentence via unified 3-tier TTS service
-    void playChineseTts(cleanText);
+    void playChineseTts(cleanText, {
+      rate: speechRate,
+      voice: speechVoice,
+      onPlaybackMode: (mode) => setUsingDeviceVoice(mode === 'device'),
+    });
 
     // Simulate AI thinking and reply
     setIsAiTyping(true);
@@ -230,7 +258,11 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
 
       // Play success audio & speak AI reply
       playSuccessSound();
-      speakChinese(aiReply.hanzi);
+      speakChinese(aiReply.hanzi, {
+        rate: speechRate,
+        voice: speechVoice,
+        onPlaybackMode: (mode) => setUsingDeviceVoice(mode === 'device'),
+      });
 
       if (aiReply.userCorrection) {
         setAiFeedback({
@@ -706,6 +738,46 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Voice (Female/Male) & Speed (0.75x/1.0x/1.25x) controls */}
+            <div className="flex flex-wrap items-center gap-1 bg-white dark:bg-slate-800 px-1.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+              {[
+                { id: 'female', label: 'Nữ' },
+                { id: 'male', label: 'Nam' },
+              ].map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => handleChangeSpeechVoice(v.id)}
+                  className={`min-h-11 px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
+                    speechVoice === v.id
+                      ? 'bg-[#E85D3F] text-white'
+                      : 'text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+              {[0.75, 1.0, 1.25].map((spd) => (
+                <button
+                  key={spd}
+                  type="button"
+                  onClick={() => handleChangeSpeechRate(spd)}
+                  className={`min-h-11 px-2 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
+                    speechRate === spd
+                      ? 'bg-[#E85D3F] text-white'
+                      : 'text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  {spd}x
+                </button>
+              ))}
+            </div>
+            {usingDeviceVoice && (
+              <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[11px]">
+                Đang dùng giọng thiết bị
+              </span>
+            )}
+
             {/* Adjustable Proficiency */}
             <div className="flex items-center gap-1 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
               <span className="text-[10px] text-slate-400 font-bold uppercase">Trình độ:</span>
@@ -843,7 +915,12 @@ export default function ConversationPage({ user, openAuthModal, initialMode = 'r
                           type="button"
                           onClick={() =>
                             void playChineseTts(
-                              msg.turnEvaluation.corrected_user_sentence_zh || msg.hanzi
+                              msg.turnEvaluation.corrected_user_sentence_zh || msg.hanzi,
+                              {
+                                rate: speechRate,
+                                voice: speechVoice,
+                                onPlaybackMode: (mode) => setUsingDeviceVoice(mode === 'device'),
+                              }
                             )
                           }
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-semibold transition-colors cursor-pointer"

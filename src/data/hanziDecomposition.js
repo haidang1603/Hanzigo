@@ -533,10 +533,10 @@ export const HANZI_DECOMPOSITION_DATABASE = {
     components: [
       {
             "char": "子",
-            "pinyin": "zǐ",
+            "pinyin": "zǐ / zi",
             "hanviet": "Tử",
             "name": "Bộ Tử",
-            "meaning": "Đứa con, con nhỏ"
+            "meaning": "Đứa con, con nhỏ; hạt; hậu tố danh từ (桌子, 杯子)"
       }
 ],
     mnemonic: 'Hình em bé quấn tã dang rộng hai tay nhỏ tinh nghịch.'

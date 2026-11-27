@@ -1618,7 +1618,7 @@ export const HSK_5_LESSONS = [
         "hanzi": "内卷",
         "pinyin": "nèijuǎn",
         "hanviet": "Nội quyển",
-        "meaning": "Cuộn vào trong, cạnh tranh kiệt sức vô nghĩa (Involution)",
+        "meaning": "Nội quyển, cạnh tranh khốc liệt kiệt sức",
         "radical": "Bộ 人",
         "example": {
           "hanzi": "过度内卷导致年轻人普遍感到身心疲惫。",
@@ -1879,12 +1879,12 @@ export const HSK_5_LESSONS = [
         "hanzi": "种草",
         "pinyin": "zhòngcǎo",
         "hanviet": "Chủng thảo",
-        "meaning": "Gieo cỏ, bị review mê hoặc muốn mua (Slang)",
+        "meaning": "Bị hấp dẫn, muốn mua theo lời giới thiệu (tiếng lóng)",
         "radical": "Bộ 禾",
         "example": {
           "hanzi": "看了博主的测评，我被这台咖啡机深深种草了。",
           "pinyin": "Kàn le bózhu de cèpíng, wǒ bèi zhè tái kāfēijī shēnshēn zhòngcǎo le.",
-          "meaning": "Xem review của blogger xong, tôi bị chiếc máy pha cà phê này mê hoặc chết mê chết mệt."
+          "meaning": "Xem đánh giá của người sáng tạo nội dung xong, tôi bị chiếc máy pha cà phê này thu hút ngay lập tức."
         },
         "pos": "Cụm động tân"
       },
@@ -1912,7 +1912,7 @@ export const HSK_5_LESSONS = [
         "example": {
           "hanzi": "盲目跟风网购，很容易踩雷买到次品。",
           "pinyin": "Mángmù gēnfēng wǎnggòu, hěn róngyì cǎiléi mǎidào cìpǐn.",
-          "meaning": "Mù quáng chạy theo phong trào mua sắm online rất dễ dẫm phải mìn mua trúng hàng kém chất lượng."
+          "meaning": "Mù quáng chạy theo phong trào mua sắm trực tuyến rất dễ mua nhầm hàng kém chất lượng."
         },
         "pos": "Cụm động tân"
       },

@@ -4,15 +4,27 @@ import {
   playChineseTts,
   stopChineseAudio,
   prefetchTtsItems,
+  setActiveAudioPlaybackRate,
+  getTtsFunctionalSettings,
+  setTtsFunctionalSettings,
 } from '../services/ttsAudioService.js';
 
-export { unlockMobileAudio, prefetchTtsItems };
+export {
+  unlockMobileAudio,
+  prefetchTtsItems,
+  setActiveAudioPlaybackRate,
+  getTtsFunctionalSettings,
+  setTtsFunctionalSettings,
+};
 
 // Danh sách giọng đọc hỗ trợ
 export const AUDIO_VOICES = {
   XIAOXIAO: 'zh-CN-XiaoxiaoNeural', // Nữ chuẩn phổ thông
   YUNXI: 'zh-CN-YunxiNeural',       // Nam chuẩn phổ thông
   XIAOYI: 'zh-CN-XiaoyiNeural',     // Nữ trẻ trung
+  FEMALE: 'female',
+  MALE: 'male',
+  DIALOGUE: 'dialogue',
   DEVICE: 'device'                  // Giọng mặc định của thiết bị/trình duyệt
 };
 
@@ -152,18 +164,19 @@ export const speakChinese = (text, optionsOrRate = 0.85) => {
   }
 
   const options = typeof optionsOrRate === 'object' ? optionsOrRate : { rate: optionsOrRate };
-  const rate = options.rate ?? 0.85;
-  const preferredVoice = options.voice || (typeof localStorage !== 'undefined' ? localStorage.getItem(AUDIO_STORAGE_PREF) : null) || AUDIO_VOICES.XIAOXIAO;
+  const rate = options.rate ?? 1.0;
+  const preferredVoice = options.voice || (typeof localStorage !== 'undefined' ? localStorage.getItem(AUDIO_STORAGE_PREF) : null) || 'auto';
   const preferNeural = options.preferNeural !== false && preferredVoice !== AUDIO_VOICES.DEVICE;
   const hasChinese = /[\u4e00-\u9fa5]/.test(text);
 
   // If device voice requested, non-Hanzi, or very long passage: use hardened Web Speech directly
-  if (!preferNeural || !hasChinese || text.trim().length > 600) {
+  if (!preferNeural || !hasChinese || text.trim().length > 1200) {
+    options.onPlaybackMode?.('device');
     return speakWithWebSpeech(text, options);
   }
 
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timeoutId = controller ? setTimeout(() => controller.abort(), 6000) : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 12000) : null;
 
   void playChineseTts(text, {
     voice: preferredVoice,
@@ -172,15 +185,17 @@ export const speakChinese = (text, optionsOrRate = 0.85) => {
     onStart: options.onStart,
     onEnd: options.onEnd,
     onError: options.onError,
+    onPlaybackMode: options.onPlaybackMode,
   }).then((res) => {
     if (res?.audioUrl) {
-      const cacheKey = `${preferredVoice}_${Number(rate).toFixed(2)}_${text.trim()}`;
+      const cacheKey = `${preferredVoice}_1.00_${text.trim()}`;
       IN_MEMORY_AUDIO_CACHE.set(cacheKey, res.audioUrl);
     }
     if (res && !res.ok && options.onEnd) {
       options.onEnd();
     }
   }).catch(() => {
+    options.onPlaybackMode?.('device');
     speakWithWebSpeech(text, options);
   }).finally(() => {
     if (timeoutId !== null) clearTimeout(timeoutId);

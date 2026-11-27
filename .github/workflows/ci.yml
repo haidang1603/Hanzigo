@@ -1,0 +1,61 @@
+name: HanziGo CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify-core:
+    name: Verify Core (Lint, Test, Curriculum, Build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (oxlint)
+        run: npm run lint
+
+      - name: Run unit & integration tests
+        run: npm test
+
+      - name: Audit curriculum completeness
+        run: npm run audit:curriculum
+
+      - name: Build & verify bundle budget
+        run: npm run build:verify
+
+  e2e-smoke:
+    name: Playwright E2E Smoke (Mobile & Desktop)
+    needs: verify-core
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production preview
+        run: npm run build
+
+      - name: Install Playwright Chromium (ephemeral)
+        run: npm install --no-save playwright && npx playwright install chromium --with-deps
+
+      - name: Run Playwright smoke test (6 main routes x 2 viewports)
+        run: node scripts/e2eSmokePlaywright.mjs

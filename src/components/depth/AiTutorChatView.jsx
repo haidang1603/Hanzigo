@@ -40,6 +40,7 @@ import {
   clearControlledLearnerMemory
 } from '../../services/learnerContextService';
 import { saveUserVocabSrsCard } from '../../services/vocabularyService';
+import { SELECTION_TO_TUTOR_STORAGE_KEY } from '../../services/selectionAiService';
 import { speakChinese, playClickSound, playSuccessSound, playErrorSound } from '../../utils/audio';
 
 const TOOL_LABELS = {
@@ -181,6 +182,27 @@ export default function AiTutorChatView({ user, openAuthModal }) {
 
     setMessages(loadRealTutorHistory(`${STORAGE_PREFIX}_${user?.id || user?.uid || 'guest'}`));
   }, [user?.id, user?.uid]);
+
+  useEffect(() => {
+    const applySelectionPrefill = () => {
+      try {
+        if (typeof sessionStorage === 'undefined') return;
+        const raw = sessionStorage.getItem(SELECTION_TO_TUTOR_STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed?.prompt) {
+          setInputQuestion(String(parsed.prompt).slice(0, MAX_QUESTION_LEN));
+          sessionStorage.removeItem(SELECTION_TO_TUTOR_STORAGE_KEY);
+          setTimeout(() => {
+            textareaRef.current?.focus?.();
+          }, 50);
+        }
+      } catch {}
+    };
+    applySelectionPrefill();
+    window.addEventListener('hashchange', applySelectionPrefill);
+    return () => window.removeEventListener('hashchange', applySelectionPrefill);
+  }, []);
 
   // Gửi câu hỏi tới AI Gia sư
   const handleSendQuestion = async (customText = null) => {

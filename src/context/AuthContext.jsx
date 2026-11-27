@@ -273,6 +273,8 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('hanzigo_pending_exam_mode');
     localStorage.removeItem('hanzigo_ai_unified_dict_v1');
     localStorage.removeItem('hanzigo_oauth_intended_role');
+    localStorage.removeItem('hanzigo_bookmarked_materials');
+    localStorage.removeItem('hanzigo_completed_materials');
     try {
       const localKeysToRemove = [];
       for (let i = 0; i < localStorage.length; i += 1) {
@@ -285,6 +287,8 @@ export function AuthProvider({ children }) {
             key.startsWith('hanzigo_dual_exam_history_') ||
             key.startsWith('hanzigo_smart_coach_cache_') ||
             key.startsWith('hanzigo_ai_coach_cache_') ||
+            key.startsWith('hanzigo_bookmarked_materials_') ||
+            key.startsWith('hanzigo_completed_materials_') ||
             key.startsWith('hanzigo_telemetry_'))
         ) {
           localKeysToRemove.push(key);

@@ -8,6 +8,7 @@
 
 import { VOCABULARY_LIST } from '../data/chineseData.js';
 import { EXTENDED_COMMON_CHARS } from '../data/commonCharactersDict.js';
+import { lookupUnifiedChineseWord } from '../services/unifiedLookupService.js';
 
 let cachedIndex = null;
 
@@ -67,32 +68,23 @@ function ensureIndex() {
 export function lookupChineseTokenLocal(rawToken = '') {
   const token = String(rawToken || '').trim();
   if (!token) return null;
-  const index = ensureIndex();
-
-  if (index.has(token)) {
-    return index.get(token);
-  }
-
-  // Fallback tách từng chữ Hán nếu cụm chưa có trong từ điển ghép
-  const chars = token.match(/[\u4e00-\u9fa5]/g) || [];
-  if (chars.length > 1) {
-    const parts = chars.map((ch) => index.get(ch)).filter(Boolean);
-    if (parts.length > 0) {
-      return {
-        hanzi: token,
-        traditional: token,
-        pinyin: parts.map((p) => p.pinyin).filter(Boolean).join(' '),
-        hanviet: parts.map((p) => p.hanviet).filter(Boolean).join(' '),
-        meaning: parts.map((p) => `${p.hanzi}: ${p.meaning}`).join(' • '),
-        pos: 'Cụm từ',
-        level: parts[0].level || 'HSK',
-        radical: parts[0].radical || '',
-        strokes: parts.reduce((acc, p) => acc + (p.strokes || 0), 0),
-        mnemonic: '',
-        example: null,
-        found: true,
-      };
-    }
+  const unified = lookupUnifiedChineseWord(token);
+  if (unified) {
+    return {
+      hanzi: unified.hanzi,
+      traditional: unified.traditional || unified.hanzi,
+      pinyin: unified.pinyin || '',
+      hanviet: unified.hanviet || '',
+      meaning: unified.meaningVi || '',
+      pos: unified.pos || '',
+      level: unified.level || 'HSK',
+      radical: unified.radical || '',
+      strokes: unified.strokes || 0,
+      mnemonic: unified.mnemonic || '',
+      example: unified.example || null,
+      relatedCompounds: unified.relatedCompounds || [],
+      found: Boolean(unified.found),
+    };
   }
 
   return {
@@ -100,13 +92,14 @@ export function lookupChineseTokenLocal(rawToken = '') {
     traditional: token,
     pinyin: '',
     hanviet: '',
-    meaning: 'Chưa có mục từ chi tiết trong bộ từ điển nhanh.',
+    meaning: '',
     pos: '',
     level: 'HSK',
     radical: '',
     strokes: 0,
     mnemonic: '',
     example: null,
+    relatedCompounds: [],
     found: false,
   };
 }

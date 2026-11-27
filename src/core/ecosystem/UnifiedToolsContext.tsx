@@ -68,6 +68,8 @@ export interface UnifiedToolsContextValue
   ) => Promise<void>;
   speakChineseText: (text: string, rate?: number, voice?: string) => void;
   dismissToast: (id?: string) => void;
+  isActiveExamSession: boolean;
+  setActiveExamSession: (active: boolean) => void;
 }
 
 const GLOBAL_CTX_KEY = '__HANZIGO_UNIFIED_TOOLS_CONTEXT__';
@@ -99,6 +101,13 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
   const [grammarResults, setGrammarResults] = useState<GrammarPointRow[]>([]);
   const [savedVocabItem, setSavedVocabItem] = useState<UserVocabItemRow | null>(null);
   const [toasts, setToasts] = useState<ToastBanner[]>([]);
+  const [isActiveExamSession, setIsActiveExamSession] = useState(false);
+
+  const setActiveExamSession = useCallback((active: boolean) => {
+    const next = Boolean(active);
+    setIsActiveExamSession(next);
+    (globalThis as Record<string, unknown>).__HANZIGO_ACTIVE_EXAM_SESSION__ = next;
+  }, []);
 
   const pushToast = useCallback((message: string, type: ToastBanner['type'] = 'success') => {
     const id =
@@ -318,29 +327,6 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
           setSavedVocabItem(
             localMatch
               ? {
-                  id: localMatch.id,
-                  user_id: 'guest',
-                  deck_id: localMatch.deck_id,
-                  simplified: localMatch.simplified,
-                  pinyin: localMatch.pinyin,
-                  han_viet: localMatch.han_viet,
-                  meaning_vi: localMatch.meaning_vi,
-                  hsk_level: localMatch.hsk_level,
-                  source_context: (localMatch.source_context || []) as SourceContextPayload[],
-                  meaning_mastery: localMatch.meaning_mastery,
-                  writing_mastery: localMatch.writing_mastery,
-                  pronunciation_mastery: localMatch.pronunciation_mastery,
-                }
-              : null
-          );
-        }
-      } else {
-        setGrammarResults([]);
-        const localItems = await listVocabItems(null);
-        const localMatch = localItems.find((it) => it.simplified === cleanText);
-        setSavedVocabItem(
-          localMatch
-            ? {
                 id: localMatch.id,
                 user_id: 'guest',
                 deck_id: localMatch.deck_id,
@@ -354,6 +340,29 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
                 writing_mastery: localMatch.writing_mastery,
                 pronunciation_mastery: localMatch.pronunciation_mastery,
               }
+              : null
+          );
+        }
+      } else {
+        setGrammarResults([]);
+        const localItems = await listVocabItems(null);
+        const localMatch = localItems.find((it) => it.simplified === cleanText);
+        setSavedVocabItem(
+          localMatch
+            ? {
+              id: localMatch.id,
+              user_id: 'guest',
+              deck_id: localMatch.deck_id,
+              simplified: localMatch.simplified,
+              pinyin: localMatch.pinyin,
+              han_viet: localMatch.han_viet,
+              meaning_vi: localMatch.meaning_vi,
+              hsk_level: localMatch.hsk_level,
+              source_context: (localMatch.source_context || []) as SourceContextPayload[],
+              meaning_mastery: localMatch.meaning_mastery,
+              writing_mastery: localMatch.writing_mastery,
+              pronunciation_mastery: localMatch.pronunciation_mastery,
+            }
             : null
         );
       }
@@ -373,18 +382,18 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
 
       const mappedCtx: UnifiedSourceContext | undefined = context
         ? {
-            sourceType:
-              context.source_type === 'reading' ||
+          sourceType:
+            context.source_type === 'reading' ||
               context.source_type === 'listening' ||
               context.source_type === 'dictionary' ||
               context.source_type === 'grammar'
-                ? context.source_type
-                : 'dictionary',
-            sourceId: context.source_id,
-            sentenceZh: context.sentence_zh,
-            sentencePinyin: context.sentence_pinyin,
-            sentenceVi: context.sentence_vi,
-          }
+              ? context.source_type
+              : 'dictionary',
+          sourceId: context.source_id,
+          sentenceZh: context.sentence_zh,
+          sentencePinyin: context.sentence_pinyin,
+          sentenceVi: context.sentence_vi,
+        }
         : undefined;
 
       if (tab === 'dictionary') {
@@ -451,28 +460,28 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
       }
 
       const simplified = entry ? entry.simplified : cleanWord;
-      const pinyin = entry ? entry.pinyin_display : 'Đang cập nhật';
+      const pinyin = entry ? entry.pinyin_display : '';
       const hanViet = entry ? entry.han_viet : '';
       const primaryMeaning =
-        entry?.pos_meanings?.[0]?.definitions_vi?.[0] || 'Từ vựng lưu từ ngữ cảnh đọc/nghe';
+        entry?.pos_meanings?.[0]?.definitions_vi?.[0] || '';
       const hskLevel = entry?.hsk_2_level || entry?.hsk_3_level || 3;
 
       const normalizedContext: SourceContextPayload =
         context && 'sentence_zh' in context
           ? context
           : localSourceContext || {
-              source_type: 'selection',
-              sentence_zh:
-                (context as UnifiedSourceContext | undefined)?.sentenceZh || simplified,
-              sentence_pinyin: (context as UnifiedSourceContext | undefined)?.sentencePinyin,
-              sentence_vi: (context as UnifiedSourceContext | undefined)?.sentenceVi,
-            };
+            source_type: 'selection',
+            sentence_zh:
+              (context as UnifiedSourceContext | undefined)?.sentenceZh || simplified,
+            sentence_pinyin: (context as UnifiedSourceContext | undefined)?.sentencePinyin,
+            sentence_vi: (context as UnifiedSourceContext | undefined)?.sentenceVi,
+          };
 
       const persistLocalFallback = async (userIdLabel: string) => {
         await store.quickSaveToVocabulary(
           {
             simplified,
-            pinyin: pinyin === 'Đang cập nhật' ? '' : pinyin,
+            pinyin,
             han_viet: hanViet,
             meaning_vi: primaryMeaning,
             hsk_level: hskLevel,
@@ -480,8 +489,8 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
           {
             sourceType:
               normalizedContext.source_type === 'reading' ||
-              normalizedContext.source_type === 'listening' ||
-              normalizedContext.source_type === 'grammar'
+                normalizedContext.source_type === 'listening' ||
+                normalizedContext.source_type === 'grammar'
                 ? normalizedContext.source_type
                 : 'dictionary',
             sourceId: normalizedContext.source_id,
@@ -501,8 +510,8 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
           const mappedCtx = {
             source_type: (
               normalizedContext.source_type === 'reading' ||
-              normalizedContext.source_type === 'listening' ||
-              normalizedContext.source_type === 'grammar'
+                normalizedContext.source_type === 'listening' ||
+                normalizedContext.source_type === 'grammar'
                 ? normalizedContext.source_type
                 : 'dictionary'
             ) as 'reading' | 'listening' | 'dictionary' | 'grammar',
@@ -518,36 +527,36 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
 
           const savedLocalRow = existingLocal
             ? {
-                ...existingLocal,
-                pinyin: existingLocal.pinyin || (pinyin === 'Đang cập nhật' ? '' : pinyin),
-                han_viet: existingLocal.han_viet || hanViet,
-                meaning_vi: existingLocal.meaning_vi || primaryMeaning,
-                source_context: mergedLocalContexts,
-              }
+              ...existingLocal,
+              pinyin: existingLocal.pinyin || pinyin,
+              han_viet: existingLocal.han_viet || hanViet,
+              meaning_vi: existingLocal.meaning_vi || primaryMeaning,
+              source_context: mergedLocalContexts,
+            }
             : {
-                id: `vitem-local-${Date.now()}`,
-                deck_id: 'deck-default-core',
-                simplified,
-                pinyin: pinyin === 'Đang cập nhật' ? '' : pinyin,
-                han_viet: hanViet,
-                meaning_vi: primaryMeaning,
-                hsk_level: hskLevel,
-                personal_mnemonic: entry?.decomposition?.mnemonic_vi || '',
-                tags: ['tra-nhanh'],
-                source_context: mergedLocalContexts,
-                srs_state: 'new',
-                stability: 0,
-                difficulty: 5.0,
-                ease_factor: 2.5,
-                interval_days: 0,
-                repetitions: 0,
-                lapses: 0,
-                next_review_at: new Date().toISOString(),
-                last_reviewed_at: null,
-                meaning_mastery: 25,
-                writing_mastery: 0,
-                pronunciation_mastery: 0,
-              };
+              id: `vitem-local-${Date.now()}`,
+              deck_id: 'deck-default-core',
+              simplified,
+              pinyin,
+              han_viet: hanViet,
+              meaning_vi: primaryMeaning,
+              hsk_level: hskLevel,
+              personal_mnemonic: entry?.decomposition?.mnemonic_vi || '',
+              tags: ['tra-nhanh'],
+              source_context: mergedLocalContexts,
+              srs_state: 'new',
+              stability: 0,
+              difficulty: 5.0,
+              ease_factor: 2.5,
+              interval_days: 0,
+              repetitions: 0,
+              lapses: 0,
+              next_review_at: new Date().toISOString(),
+              last_reviewed_at: null,
+              meaning_mastery: 25,
+              writing_mastery: 0,
+              pronunciation_mastery: 0,
+            };
 
           const updatedList = existingLocal
             ? currentItems.map((it) => (it.simplified === simplified ? savedLocalRow : it))
@@ -695,6 +704,8 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
         recordDimensionScore,
         speakChineseText,
         dismissToast,
+        isActiveExamSession,
+        setActiveExamSession,
       }}
     >
       {children}
@@ -705,13 +716,12 @@ export const UnifiedToolsProvider: React.FC<UnifiedToolsProviderProps> = ({
           <div
             key={t.id}
             onClick={() => dismissToast(t.id)}
-            className={`pointer-events-auto cursor-pointer px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl text-sm font-medium transition-all duration-300 flex items-center gap-2.5 ${
-              t.type === 'error'
-                ? 'bg-red-950/90 border-red-500/50 text-red-200'
-                : t.type === 'info'
+            className={`pointer-events-auto cursor-pointer px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl text-sm font-medium transition-all duration-300 flex items-center gap-2.5 ${t.type === 'error'
+              ? 'bg-red-950/90 border-red-500/50 text-red-200'
+              : t.type === 'info'
                 ? 'bg-[#0a0a1f]/95 border-[#00D4FF]/50 text-[#00D4FF]'
                 : 'bg-[#0a0a1f]/95 border-emerald-400/50 text-emerald-300'
-            }`}
+              }`}
           >
             <span className="h-2 w-2 rounded-full bg-current shrink-0 animate-pulse" />
             <span>{t.message}</span>

@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import AudioButton from '../components/AudioButton.jsx';
 import { analyzeChineseText } from '../utils/chineseNlpEngine.js';
+import { buildSafeReaderFlashcard } from '../services/unifiedLookupService.js';
 import { 
   GRADED_READERS_DATA, 
   getGradedReadersByLevel, 
@@ -303,36 +304,17 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
   const handleSaveToFlashcard = (token) => {
     if (!token || !token.raw) return;
     playClickSound();
-
-    const newVocabItem = {
-      id: `srs-reader-${Date.now()}-${token.raw}`,
-      hanzi: token.raw,
-      traditional: token.traditional || token.raw,
-      pinyin: token.pinyin,
-      hanviet: token.hanviet || '',
-      meaning: token.meaningVi || 'Đang cập nhật',
-      level: token.level || 'HSK 1',
-      topic: 'Bài đọc thông minh',
-      radical: token.decomposition?.components?.[0]?.name || '—',
-      strokes: token.raw.length * 6,
-      mnemonic: token.mnemonic || token.decomposition?.mnemonic || 'Ghi nhớ qua bài đọc ngữ cảnh HanziGo.',
-      en: token.meaningEn || '',
-      pos: token.pos || 'Từ vựng',
-      example: {
-        hanzi: rawTextToAnalyze.slice(0, 50),
-        pinyin: '',
-        meaning: 'Trích từ bài đọc thông minh HanziGo'
-      }
-    };
-
-    saveCustomVocab(newVocabItem);
+    const res = buildSafeReaderFlashcard(token, rawTextToAnalyze);
+    if (!res.ok) {
+      showToast(res.error);
+      return;
+    }
+    saveCustomVocab(res.vocabItem);
     setSavedWordsMap(prev => ({ ...prev, [token.raw]: true }));
     awardXp(10, user, `srs_save_${token.raw}`);
     playSuccessSound();
     showToast(`✓ Đã lưu từ "${token.raw}" vào Flashcard SRS (+10 XP)!`);
-
-    // Phát sự kiện toàn cục để trang VocabularyPage tự động cập nhật
-    window.dispatchEvent(new CustomEvent('hanzigo_vocab_updated', { detail: newVocabItem }));
+    window.dispatchEvent(new CustomEvent('hanzigo_vocab_updated', { detail: res.vocabItem }));
   };
 
   // Chuyển sang trang luyện viết cho chữ Hán
@@ -1179,6 +1161,21 @@ export default function ReaderPage({ user, setActiveTab, onSelectWritingChar, in
                     <p className="text-xs text-gray-500 dark:text-gray-400 pt-0.5">
                       EN: {inspectedWord.meaningEn}
                     </p>
+                  )}
+                  {Array.isArray(inspectedWord.relatedCompounds) && inspectedWord.relatedCompounds.length > 0 && (
+                    <div className="space-y-1 pt-1">
+                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Từ ghép liên quan:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {inspectedWord.relatedCompounds.slice(0, 4).map((comp) => (
+                          <span
+                            key={comp.hanzi}
+                            className="text-xs px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200"
+                          >
+                            {comp.hanzi} ({comp.pinyin}): {comp.meaning}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
 

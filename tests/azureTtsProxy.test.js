@@ -106,8 +106,8 @@ test('TTS Proxy Input Validation: Rejects empty text with 400 Bad Request', asyn
   assert.ok(res.data.error.includes('không được để trống'));
 });
 
-test('TTS Proxy Input Validation: Rejects text > 600 characters with 400 Bad Request', async () => {
-  const longText = '你好'.repeat(305); // 610 chars
+test('TTS Proxy Input Validation: Rejects text > 1200 characters with 400 Bad Request', async () => {
+  const longText = '你好'.repeat(605); // 1210 chars
   const { req, res } = createMockHttp({
     method: 'POST',
     headers: { 'x-user-id': 'test-user-id' },

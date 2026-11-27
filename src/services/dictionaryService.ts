@@ -497,7 +497,7 @@ export async function fetchOrGenerateDictionaryEntry(
       pinyin_display: '',
       pinyin_numeric: '',
       pinyin_clean: '',
-      han_viet: 'ĐANG CẬP NHẬT',
+      han_viet: '',
       hsk_2_level: null,
       hsk_3_level: null,
       frequency_rank: 50000,
